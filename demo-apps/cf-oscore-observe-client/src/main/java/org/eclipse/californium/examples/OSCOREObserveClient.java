@@ -18,16 +18,15 @@
 package org.eclipse.californium.examples;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Random;
 
 import org.eclipse.californium.core.CoapClient;
+import org.eclipse.californium.core.CoapHandler;
+import org.eclipse.californium.core.CoapObserveRelation;
 import org.eclipse.californium.core.CoapResponse;
-import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.Request;
-import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
@@ -39,8 +38,6 @@ import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
 import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
 import org.eclipse.californium.cose.AlgorithmID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class OSCOREObserveClient {
 
@@ -103,40 +100,46 @@ public class OSCOREObserveClient {
 			}
 			OSCoreCoapStackFactory.useAsDefault(dbClient);
 			
-			//Create and send OSCORE request
-			CoapClient client = new CoapClient();
+			//Handler for Observe responses
+			class ObserveHandler implements CoapHandler {
+				
+				//Triggered when a Observe response is received
+				@Override public void onLoad(CoapResponse response) {
+					
+					String content = response.getResponseText();
+					System.out.println("INCOMING NOTIFICATION: " + content);		
+					
+				}
+			
+				@Override public void onError() {
+					System.err.println("Observing failed");
+				}
+			}
+			
+			//Create and send OSCORE observe request
 			Request request = Request.newGet();
 			request.setURI(uri);
+			request.setConfirmable(true);
 			request.getOptions().setOscore(Bytes.EMPTY);
+			request.setObserve();
+			byte[] token = Bytes.createBytes(new Random(), 8);
+			request.setToken(token);
 			
-			CoapResponse response = null;
-			try {
-				response = client.advanced(request);
-			} catch (ConnectorException | IOException e) {
-				LOGGER.error("Got an error: " + e);
+			CoapClient client = new CoapClient();
+			ObserveHandler handler = new ObserveHandler();
+			CoapObserveRelation relation = client.observe(request, handler);
+			
+			//Wait for messages to be received
+			while(relation.isCanceled() == false) {
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
 			}
 
-			if (response!=null) {
-				
-				System.out.println(response.getCode());
-				System.out.println(response.getOptions());
-				if (args.length > 1) {
-					try (FileOutputStream out = new FileOutputStream(args[1])) {
-						out.write(response.getPayload());
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				} else {
-					System.out.println(response.getResponseText());
-					
-					System.out.println(System.lineSeparator() + "ADVANCED" + System.lineSeparator());
-					// access advanced API with access to more details through
-					// .advanced()
-					System.out.println(Utils.prettyPrint(response));
-				}
-			} else {
-				System.out.println("No response received.");
-			}
 			client.shutdown();
 		} else {
 			// display help

@@ -21,15 +21,17 @@ package org.eclipse.californium.examples;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
+import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.EndpointManager;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
-import org.eclipse.californium.elements.tcp.TcpServerConnector;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 import org.eclipse.californium.oscore.OSCoreCtx;
@@ -112,6 +114,10 @@ public class OSCOREObserveServer extends CoapServer {
 		HelloWorldResource helloWorld = new HelloWorldResource();
 		LOGGER.info("Added new resource " + helloWorld.getURI());
 		add(helloWorld);
+		
+		ObserveResource observe = new ObserveResource("observe", true);
+		LOGGER.info("Added new resource " + observe.getURI());
+		add(observe);
 	}
 
 	/*
@@ -130,9 +136,58 @@ public class OSCOREObserveServer extends CoapServer {
 
 		@Override
 		public void handleGET(CoapExchange exchange) {
+			LOGGER.info("Received request for " + this.getURI() + " resource");
 
 			// respond to the request
 			exchange.respond("Hello World!");
+		}
+	}
+	
+	/**
+	 * The resource for testing Observe support 
+	 * 
+	 * Responds with incrementing number every second.
+	 *
+	 */
+	class ObserveResource extends CoapResource {
+		
+		public int value = 1;
+		private Timer timer;
+		private boolean firstRequestReceived = false;
+		
+		public ObserveResource(String name, boolean visible) {
+			super(name, visible);
+			
+			this.setObservable(true); 
+			this.setObserveType(Type.NON);
+			this.getAttributes().setObservable();
+			
+			timer = new Timer();
+		}
+
+		@Override
+		public void handleGET(CoapExchange exchange) {
+			if(firstRequestReceived == false) {
+				LOGGER.info("Received request for " + this.getURI() + " resource. Responding with value: " + value);
+				if(exchange.getRequestOptions().getObserve() != null) {
+					LOGGER.info("Using observe.");
+				}
+				
+				firstRequestReceived = true;
+				timer.schedule(new UpdateTask(), 1000, 1000);
+			}
+			
+			exchange.respond(String.valueOf(value));
+		}
+		
+		//Update the resource value when timer triggers (if 1st request has been received)
+		class UpdateTask extends TimerTask {
+			@Override
+			public void run() {	
+				value++;
+				LOGGER.info("Sending notification with value: " + value);
+				changed(); // notify all observers
+			}
 		}
 	}
 }
