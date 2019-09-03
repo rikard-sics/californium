@@ -54,6 +54,8 @@
 		<module>cf-extplugtest-server</module>
 		<module>cf-helloworld-client</module>
 		<module>cf-helloworld-server</module>
+		<module>cf-oscore-observe-client</module>
+		<module>cf-oscore-observe-server</module>
 		<module>cf-simplefile-server</module>
 		<module>cf-cocoa</module>
 		<module>cf-secure</module>
