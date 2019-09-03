@@ -150,6 +150,12 @@
 			</dependency>
 			<dependency>
 				<groupId>${project.groupId}</groupId>
+				<artifactId>cf-oscore</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>${project.groupId}</groupId>
 				<artifactId>element-connector-tcp</artifactId>
 				<version>${project.version}</version>
 			</dependency>
