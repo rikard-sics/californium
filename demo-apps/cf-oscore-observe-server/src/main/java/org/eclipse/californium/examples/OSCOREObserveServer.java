@@ -160,7 +160,7 @@ public class OSCOREObserveServer extends CoapServer {
 	 */
 	class ObserveResource extends CoapResource {
 		
-		public int value = 1;
+		public int value = 0;
 		private Timer timer;
 		private boolean firstRequestReceived = false;
 		
@@ -183,7 +183,7 @@ public class OSCOREObserveServer extends CoapServer {
 						+ ". Using Observe: " + usingObserve + ". Using OSCORE: " + usingOSCORE);
 				
 				firstRequestReceived = true;
-				timer.schedule(new UpdateTask(), 3000, 3000);
+				timer.schedule(new UpdateTask(), 2500, 2500);
 			}
 			
 			exchange.respond(String.valueOf(value));
