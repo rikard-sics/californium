@@ -346,6 +346,12 @@ public class CoapExchange {
 		respond(response);
 	}
 
+	//Rikard: Method to allow for skipping the observe option for specific payload
+	public static void setPayloadToSkipObserve(String payload) {
+		payloadToSkipObserve = payload;
+	}
+	static String payloadToSkipObserve;
+	
 	/**
 	 * Respond with the specified response.
 	 * 
@@ -371,6 +377,11 @@ public class CoapExchange {
 		}
 
 		resource.checkObserveRelation(exchange, response);
+		
+		//Rikard: Skip the observe option for specific payload
+		if(response.getPayloadString().equals(payloadToSkipObserve)) {
+			response.getOptions().removeObserve();
+		}
 
 		exchange.sendResponse(response);
 	}

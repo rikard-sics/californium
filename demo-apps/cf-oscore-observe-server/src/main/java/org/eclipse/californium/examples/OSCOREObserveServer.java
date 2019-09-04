@@ -64,6 +64,9 @@ public class OSCOREObserveServer extends CoapServer {
 	 * Application entry point.
 	 */
 	public static void main(String[] args) {
+		
+		//Remove the observe option if the payload is the following
+		CoapExchange.setPayloadToSkipObserve("10");
 
 		//Add OSCORE context for the server
 		if(USE_OSCORE) {
@@ -142,7 +145,7 @@ public class OSCOREObserveServer extends CoapServer {
 
 		@Override
 		public void handleGET(CoapExchange exchange) {
-			LOGGER.info("Received request for " + this.getURI() + " resource");
+			LOGGER.info("Received request for " + this.getURI() + " resource.");
 
 			// respond to the request
 			exchange.respond("Hello World!");
@@ -174,10 +177,10 @@ public class OSCOREObserveServer extends CoapServer {
 		@Override
 		public void handleGET(CoapExchange exchange) {
 			if(firstRequestReceived == false) {
-				LOGGER.info("Received request for " + this.getURI() + " resource. Responding with value: " + value);
-				if(exchange.getRequestOptions().getObserve() != null) {
-					LOGGER.info("Using observe.");
-				}
+				boolean usingObserve = exchange.getRequestOptions().getObserve() != null;
+				boolean usingOSCORE = exchange.getRequestOptions().getOscore() != null;
+				LOGGER.info("Received request for " + this.getURI() + " resource. Responding with value: " + value
+						+ ". Using Observe: " + usingObserve + ". Using OSCORE: " + usingOSCORE);
 				
 				firstRequestReceived = true;
 				timer.schedule(new UpdateTask(), 3000, 3000);
