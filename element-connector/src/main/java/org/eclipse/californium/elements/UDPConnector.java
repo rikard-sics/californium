@@ -369,6 +369,7 @@ public class UDPConnector implements Connector {
 							"UDPConnector ({}) received truncated UDP datagram from {}:{}. Maximum size allowed {}. Discarding ...",
 							effectiveAddr, datagram.getAddress(), datagram.getPort(), size - 1);
 				} else {
+					System.out.println();
 					LOGGER.debug("UDPConnector ({}) received {} bytes from {}:{}", effectiveAddr, datagram.getLength(),
 							datagram.getAddress(), datagram.getPort());
 					byte[] bytes = Arrays.copyOfRange(datagram.getData(), datagram.getOffset(), datagram.getLength());

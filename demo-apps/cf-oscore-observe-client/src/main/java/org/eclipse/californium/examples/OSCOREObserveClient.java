@@ -114,7 +114,7 @@ public class OSCOREObserveClient {
 					
 					String content = response.getResponseText();
 					System.out.println("INCOMING NOTIFICATION: " + content);		
-					
+
 				}
 			
 				@Override public void onError() {
