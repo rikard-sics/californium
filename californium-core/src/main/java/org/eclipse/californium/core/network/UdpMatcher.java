@@ -271,12 +271,14 @@ public final class UdpMatcher extends BaseMatcher {
 		Exchange tempExchange = exchangeStore.get(idByToken);
 
 		if (tempExchange == null) {
+			LOGGER.info("Try to find an existing observation for the token");
 			// we didn't find a message exchange for the token from the response
 			// let's try to find an existing observation for the token
 			tempExchange = matchNotifyResponse(response);
 		}
 
 		if (tempExchange == null) {
+			LOGGER.info("There is no exchange with the given token, nor observation. Checking for duplicate.");
 			// There is no exchange with the given token,
 			// nor is there an active observation for that token.
 			// finally check if the response is a duplicate
@@ -311,6 +313,7 @@ public final class UdpMatcher extends BaseMatcher {
 						}
 					});
 				} else {
+					LOGGER.info("Not duplicate but not matching other conditions so rejecting.");
 					reject(response, receiver);
 				}
 			} else {
@@ -326,6 +329,7 @@ public final class UdpMatcher extends BaseMatcher {
 			@Override
 			public void run() {
 				boolean checkResponseToken = !exchange.isNotification() || exchange.getRequest() != exchange.getCurrentRequest();
+				LOGGER.info("checkResponseToken state: " + checkResponseToken);
 				if (checkResponseToken && exchangeStore.get(idByToken) != exchange) {
 					if (running) {
 						LOGGER.info("ignoring response {}, exchange not longer matching!", response);
