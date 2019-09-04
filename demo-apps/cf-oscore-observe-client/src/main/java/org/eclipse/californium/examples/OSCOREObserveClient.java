@@ -70,6 +70,9 @@ public class OSCOREObserveClient {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(OSCOREObserveClient.class.getCanonicalName());
 	
+	//Use OSCORE or not
+	private static final boolean USE_OSCORE = false;
+	
 	/*
 	 * Application entry point.
 	 * 
@@ -91,14 +94,17 @@ public class OSCOREObserveClient {
 			}
 			
 			//Add OSCORE context for the client
-			try {
-				OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, context_id);
-				dbClient.addContext(uri.toString(), ctx);
+			if(USE_OSCORE) {
+				try {
+					OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, context_id);
+					dbClient.addContext(uri.toString(), ctx);
+				}
+				catch (OSException e) {
+					LOGGER.error("Failed to set server OSCORE Context information!");
+				}
+				OSCoreCoapStackFactory.useAsDefault(dbClient);
 			}
-			catch (OSException e) {
-				LOGGER.error("Failed to set server OSCORE Context information!");
-			}
-			OSCoreCoapStackFactory.useAsDefault(dbClient);
+			LOGGER.info("Using OSCORE: " + USE_OSCORE);
 			
 			//Handler for Observe responses
 			class ObserveHandler implements CoapHandler {
@@ -116,11 +122,13 @@ public class OSCOREObserveClient {
 				}
 			}
 			
-			//Create and send OSCORE observe request
+			//Create and send observe request
 			Request request = Request.newGet();
 			request.setURI(uri);
 			request.setConfirmable(true);
-			request.getOptions().setOscore(Bytes.EMPTY);
+			if(USE_OSCORE) {
+				request.getOptions().setOscore(Bytes.EMPTY);
+			}
 			request.setObserve();
 			byte[] token = Bytes.createBytes(new Random(), 8);
 			request.setToken(token);

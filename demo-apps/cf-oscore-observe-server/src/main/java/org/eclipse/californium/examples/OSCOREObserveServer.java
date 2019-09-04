@@ -57,20 +57,26 @@ public class OSCOREObserveServer extends CoapServer {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(OSCOREObserveServer.class.getCanonicalName());
 	
+	//Use OSCORE or not
+	private static final boolean USE_OSCORE = false;
+	
 	/*
 	 * Application entry point.
 	 */
 	public static void main(String[] args) {
 
 		//Add OSCORE context for the server
-		try {
-			OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, context_id);
-			dbServer.addContext(ctx);
+		if(USE_OSCORE) {
+			try {
+				OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, context_id);
+				dbServer.addContext(ctx);
+			}
+			catch (OSException e) {
+				LOGGER.error("Failed to set server OSCORE Context information!");
+			}
+			OSCoreCoapStackFactory.useAsDefault(dbServer);
 		}
-		catch (OSException e) {
-			LOGGER.error("Failed to set server OSCORE Context information!");
-		}
-		OSCoreCoapStackFactory.useAsDefault(dbServer);
+		LOGGER.info("Using OSCORE: " + USE_OSCORE);
 		
 		try {
 			// create server
@@ -174,7 +180,7 @@ public class OSCOREObserveServer extends CoapServer {
 				}
 				
 				firstRequestReceived = true;
-				timer.schedule(new UpdateTask(), 1000, 1000);
+				timer.schedule(new UpdateTask(), 3000, 3000);
 			}
 			
 			exchange.respond(String.valueOf(value));
