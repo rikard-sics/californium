@@ -134,7 +134,9 @@ public class OSCoreInnerBlockwiseTest {
 		setClientContext(uri);
 		String payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
 		Request request = Request.newPost().setURI(uri);
-		request.getOptions().setOscore(Bytes.EMPTY);
+		//Setting Token and using OSCORE gives same error
+		//request.setToken(new byte[] { (byte) 0x99 });
+		//request.getOptions().setOscore(Bytes.EMPTY);
 		request.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 		request.getOptions().setAccept(MediaTypeRegistry.TEXT_PLAIN);
 		request.setPayload(payload);

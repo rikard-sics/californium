@@ -281,6 +281,8 @@ public class ReliabilityLayer extends AbstractLayer {
 	@Override
 	public void receiveResponse(final Exchange exchange, final Response response) {
 
+		System.out.println("Received response!");
+		
 		exchange.setFailedTransmissionCount(0);
 		exchange.setRetransmissionHandle(null);
 

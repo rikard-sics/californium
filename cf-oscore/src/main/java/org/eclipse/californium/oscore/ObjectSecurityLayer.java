@@ -20,7 +20,7 @@ package org.eclipse.californium.oscore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
@@ -176,6 +176,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		/* If the request contained the Observe option always add a partial IV to the response.
 		 * A partial IV will also be added if the responsesIncludePartialIV flag is set in the context. */
 		boolean addPartialIV;
+		
+		System.out.println("Response before encrypt: ");
+		System.out.println(Utils.prettyPrint(response));
 		
 		if (shouldProtectResponse(exchange)) {
 			try {
