@@ -177,7 +177,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		 * A partial IV will also be added if the responsesIncludePartialIV flag is set in the context. */
 		boolean addPartialIV;
 		
-		System.out.println("Response before encrypt: ");
+		System.out.println("Server: Response before encrypt: ");
 		System.out.println(Utils.prettyPrint(response));
 		
 		if (shouldProtectResponse(exchange)) {
@@ -257,6 +257,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		if (exchange.getRequest().isObserveCancel()) {
 			ctxDb.removeToken(response.getToken());
 		}
+		
+		System.out.println("Client: Response after decrypt: ");
+		System.out.println(Utils.prettyPrint(response));
 		
 		super.receiveResponse(exchange, response);
 	}
