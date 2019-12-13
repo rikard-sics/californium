@@ -347,6 +347,7 @@ public class BlockwiseTransferTest {
 		try {
 			interceptor.clear();
 			Request request = Request.newPost().setURI(getUri(serverEndpoint, RESOURCE_TEST));
+			request.setToken(new byte[] { 0x11, 0x22, 0x33 });
 			if (shortRequest) {
 				request.setPayload(SHORT_POST_REQUEST);
 				request.getOptions().addUriQuery(PARAM_SHORT_REQ);

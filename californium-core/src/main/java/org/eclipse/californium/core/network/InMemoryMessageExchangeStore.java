@@ -67,6 +67,8 @@ import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfigDefaults;
 import org.eclipse.californium.core.network.deduplication.Deduplicator;
 import org.eclipse.californium.core.network.deduplication.DeduplicatorFactory;
+import org.eclipse.californium.core.network.stack.Block1BlockwiseStatus;
+import org.eclipse.californium.core.network.stack.KeyUri;
 import org.eclipse.californium.elements.EndpointIdentityResolver;
 import org.eclipse.californium.elements.UdpEndpointContextMatcher;
 import org.eclipse.californium.elements.util.StringUtil;
@@ -278,6 +280,13 @@ public class InMemoryMessageExchangeStore implements MessageExchangeStore {
 		Object peer = endpointIdentityResolver.getEndpointIdentity(request.getDestinationContext());
 		KeyToken key;
 		Token token = request.getToken();
+		System.out.println("ExchangeStore: Token: " + request.getTokenString());
+		
+		System.out.println("ExchangeStore: Token2: " + exchange.getRequest().getTokenString());
+		
+		//KeyUri keyX = getKey(exchange, exchange.getRequest());
+		//Block1BlockwiseStatus status = getBlock1Status(keyX);
+		
 		if (token == null) {
 			Scope scope = request.isMulticast() ? Scope.SHORT_TERM : Scope.SHORT_TERM_CLIENT_LOCAL;
 			do {

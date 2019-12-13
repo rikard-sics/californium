@@ -49,6 +49,10 @@ public final class Block1BlockwiseStatus extends BlockwiseStatus {
 		status.request = request;
 		status.exchange = exchange;
 		status.setCurrentSzx(BlockOption.size2Szx(preferredBlockSize));
+		
+		System.out.println("Block1Status Token1: " + exchange.getRequest().getTokenString());
+		System.out.println("Block1Status Token2: " + exchange.getCurrentRequest().getTokenString());
+		
 		return status;
 	}
 
@@ -69,6 +73,10 @@ public final class Block1BlockwiseStatus extends BlockwiseStatus {
 		Block1BlockwiseStatus status = new Block1BlockwiseStatus(bufferSize, contentFormat);
 		status.exchange = exchange;
 		status.setFirst(block);
+		
+		System.out.println("Block1Status Token3: " + exchange.getRequest().getTokenString());
+		System.out.println("Block1Status Token4: " + exchange.getCurrentRequest().getTokenString());
+		
 		return status;
 	}
 
@@ -90,6 +98,8 @@ public final class Block1BlockwiseStatus extends BlockwiseStatus {
 		if (request == null) {
 			throw new IllegalStateException("no request body");
 		}
+		
+		System.out.println("Block1Status Token5: " + request.getTokenString());
 
 		setCurrentNum(num);
 		setCurrentSzx(szx);
@@ -168,10 +178,14 @@ public final class Block1BlockwiseStatus extends BlockwiseStatus {
 	 */
 	public boolean hasMatchingToken(final Response response) {
 		
+		System.out.println("Block1Status TokenA: " + exchange.getRequest().getTokenString());
+		System.out.println("Block1Status TokenB: " + exchange.getCurrentRequest().getTokenString());
+		
 		System.out.println("Request is NULL: " + (request == null));
 		
 		System.out.println("Original request Token: " + request.getTokenString() + ". Response Token :" + response.getTokenString());
 		
-		return request != null && response.getToken().equals(request.getToken());
+		//return request != null && response.getToken().equals(request.getToken());
+		return request != null && response.getToken().equals(exchange.getCurrentRequest().getToken());
 	}
 }

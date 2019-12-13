@@ -235,11 +235,11 @@ public class BlockwiseLayer extends AbstractLayer {
 				public void run() {
 					if (enableStatus) {
 						{
-							org.eclipse.californium.core.MyLogger.LOG_debug("{} block1 transfers", block1Transfers.size());
+							org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  {} block1 transfers", block1Transfers.size());
 							Iterator<Block1BlockwiseStatus> iterator = block1Transfers.valuesIterator();
 							int max = 5;
 							while (iterator.hasNext()) {
-								org.eclipse.californium.core.MyLogger.LOG_debug("   block1 {}", iterator.next());
+								org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:     block1 {}", iterator.next());
 								--max;
 								if (max == 0) {
 									break;
@@ -247,18 +247,18 @@ public class BlockwiseLayer extends AbstractLayer {
 							}
 						}
 						{
-							org.eclipse.californium.core.MyLogger.LOG_debug("{} block2 transfers", block2Transfers.size());
+							org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  {} block2 transfers", block2Transfers.size());
 							Iterator<Block2BlockwiseStatus> iterator = block2Transfers.valuesIterator();
 							int max = 5;
 							while (iterator.hasNext()) {
-								org.eclipse.californium.core.MyLogger.LOG_debug("   block2 {}", iterator.next());
+								org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:     block2 {}", iterator.next());
 								--max;
 								if (max == 0) {
 									break;
 								}
 							}
 						}
-						org.eclipse.californium.core.MyLogger.LOG_debug("{} block2 responses ignored", ignoredBlock2.get());
+						org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  {} block2 responses ignored", ignoredBlock2.get());
 					}
 				}
 			}, healthStatusInterval, healthStatusInterval, TimeUnit.SECONDS);
@@ -288,7 +288,7 @@ public class BlockwiseLayer extends AbstractLayer {
 				// This is because the user might just want to do early block
 				// size negotiation but actually want to retrieve the whole body by means of
 				// a transparent blockwise transfer.
-				org.eclipse.californium.core.MyLogger.LOG_debug("outbound request contains block2 option, creating random-access blockwise status");
+				org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  outbound request contains block2 option, creating random-access blockwise status");
 				addRandomAccessBlock2Status(exchange, request);
 			} else {
 				KeyUri key = getKey(exchange, request);
@@ -418,7 +418,7 @@ public class BlockwiseLayer extends AbstractLayer {
 		} else {
 
 			BlockOption block1 = request.getOptions().getBlock1();
-			org.eclipse.californium.core.MyLogger.LOG_debug("inbound request contains block1 option {}", block1);
+			org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  inbound request contains block1 option {}", block1);
 			KeyUri key = getKey(exchange, request);
 			Block1BlockwiseStatus status = getInboundBlock1Status(key, exchange, request);
 
@@ -452,7 +452,7 @@ public class BlockwiseLayer extends AbstractLayer {
 
 					// do not assemble and deliver the request yet
 
-					org.eclipse.californium.core.MyLogger.LOG_debug("acknowledging incoming block1 [num={}], expecting more blocks to come", block1.getNum());
+					org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  acknowledging incoming block1 [num={}], expecting more blocks to come", block1.getNum());
 
 					Response piggybacked = Response.createResponse(request, ResponseCode.CONTINUE);
 					piggybacked.getOptions().setBlock1(block1.getSzx(), true, block1.getNum());
@@ -462,7 +462,7 @@ public class BlockwiseLayer extends AbstractLayer {
 
 				} else {
 
-					org.eclipse.californium.core.MyLogger.LOG_debug("peer has sent last block1 [num={}], delivering request to application layer", block1.getNum());
+					org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  peer has sent last block1 [num={}], delivering request to application layer", block1.getNum());
 
 					// Remember block to acknowledge. TODO: We might make this a boolean flag in status.
 					exchange.setBlock1ToAck(block1); 
@@ -512,11 +512,11 @@ public class BlockwiseLayer extends AbstractLayer {
 			Response block = status.getNextResponseBlock(block2);
 			if (status.isComplete()) {
 				// clean up blockwise status
-				org.eclipse.californium.core.MyLogger.LOG_debug("peer has requested last block of blockwise transfer: {}", status);
+				org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  peer has requested last block of blockwise transfer: {}", status);
 				clearBlock2Status(key, status);
 			} else {
 				prepareBlock2Cleanup(status, key);
-				org.eclipse.californium.core.MyLogger.LOG_debug("peer has requested intermediary block of blockwise transfer: {}", status);
+				org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  peer has requested intermediary block of blockwise transfer: {}", status);
 			}
 
 			exchange.setCurrentResponse(block);
@@ -702,11 +702,11 @@ public class BlockwiseLayer extends AbstractLayer {
 	private void handleBlock1Response(final Exchange exchange, final Response response) {
 
 		BlockOption block1 = response.getOptions().getBlock1();
-		org.eclipse.californium.core.MyLogger.LOG_debug("received response acknowledging block1 {}", block1);
+		org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  received response acknowledging block1 {}", block1);
 
 		// Block1 transfer has been originally created for an outbound request
 		final KeyUri key = getKey(exchange, exchange.getRequest());
-
+		
 		synchronized (block1Transfers) {
 
 			Block1BlockwiseStatus status = getBlock1Status(key);
@@ -714,14 +714,14 @@ public class BlockwiseLayer extends AbstractLayer {
 			if (status == null) {
 
 				// request has not been sent blockwise
-				org.eclipse.californium.core.MyLogger.LOG_debug("discarding unexpected block1 response: {}", response);
+				org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  discarding unexpected block1 response: {}", response);
 
 			} else if (!status.hasMatchingToken(response)) {
 
 				// a concurrent block1 transfer has been started in the meantime
 				// which has "overwritten" the status object with the new (concurrent) request
 				// so we simply discard the response
-				org.eclipse.californium.core.MyLogger.LOG_debug("discarding obsolete block1 response: {}", response);
+				org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  discarding obsolete block1 response: {}", response);
 
 			} else if (exchange.getRequest().isCanceled()) {
 
@@ -763,7 +763,7 @@ public class BlockwiseLayer extends AbstractLayer {
 				clearBlock1Status(key, status);
 
 				if (response.getOptions().hasBlock2()) {
-					org.eclipse.californium.core.MyLogger.LOG_debug("Block1 followed by Block2 transfer");
+					org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  Block1 followed by Block2 transfer");
 				} else {
 					// All request blocks have been acknowledged and we have received a
 					// response that does not need blockwise transfer. Thus, deliver it.
@@ -788,7 +788,7 @@ public class BlockwiseLayer extends AbstractLayer {
 			newSzx = status.getCurrentSzx();
 		}
 		int nextNum = status.getCurrentNum() + currentSize / newSize;
-		org.eclipse.californium.core.MyLogger.LOG_debug("sending next Block1 num={}", nextNum);
+		org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  sending next Block1 num={}", nextNum);
 		Request nextBlock = null;
 		try {
 			nextBlock = status.getNextRequestBlock(nextNum, newSzx);
@@ -801,7 +801,7 @@ public class BlockwiseLayer extends AbstractLayer {
 			prepareBlock1Cleanup(status, key);
 			lower().sendRequest(exchange, nextBlock);
 		} catch (RuntimeException ex) {
-			org.eclipse.californium.core.MyLogger.LOG_warn("cannot process next block request, aborting request!", ex);
+			org.eclipse.californium.core.MyLogger.LOG_warn("BLOCKWISE:  cannot process next block request, aborting request!", ex);
 			if (nextBlock != null) {
 				nextBlock.setSendError(ex);
 			} else {
@@ -828,24 +828,24 @@ public class BlockwiseLayer extends AbstractLayer {
 			// ongoing blockwise transfer
 			if (starting) {
 				if (status.isNew(response)) {
-					org.eclipse.californium.core.MyLogger.LOG_debug("discarding outdated block2 transfer {}, current is [{}]", status.getObserve(),
+					org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  discarding outdated block2 transfer {}, current is [{}]", status.getObserve(),
 							response);
 					clearBlock2Status(key, status);
 					status.completeOldTransfer(exchange);
 				} else {
-					org.eclipse.californium.core.MyLogger.LOG_debug("discarding old block2 transfer [{}], received during ongoing block2 transfer {}",
+					org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  discarding old block2 transfer [{}], received during ongoing block2 transfer {}",
 							response, status.getObserve());
 					status.completeNewTranfer(exchange);
 					return true;
 				}
 			} else if (!status.matchTransfer(exchange)) {
-				org.eclipse.californium.core.MyLogger.LOG_debug("discarding outdate block2 response [{}, {}] received during ongoing block2 transfer {}",
+				org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  discarding outdate block2 response [{}, {}] received during ongoing block2 transfer {}",
 						exchange.getNotificationNumber(), response, status.getObserve());
 				status.completeNewTranfer(exchange);
 				return true;
 			}
 		} else if (block != null && block.getNum() != 0) {
-			org.eclipse.californium.core.MyLogger.LOG_debug("discarding stale block2 response [{}, {}] received without ongoing block2 transfer for {}",
+			org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  discarding stale block2 response [{}, {}] received without ongoing block2 transfer for {}",
 					exchange.getNotificationNumber(), response, key);
 			exchange.setComplete();
 			return true;
@@ -885,7 +885,7 @@ public class BlockwiseLayer extends AbstractLayer {
 
 		} else if (responseExceedsMaxBodySize(response)) {
 
-			org.eclipse.californium.core.MyLogger.LOG_debug("requested resource body exceeds max buffer size [{}], aborting request", maxResourceBodySize);
+			org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  requested resource body exceeds max buffer size [{}], aborting request", maxResourceBodySize);
 			exchange.getRequest().cancel();
 
 		} else {
@@ -900,7 +900,7 @@ public class BlockwiseLayer extends AbstractLayer {
 			if (block2.getNum() == status.getCurrentNum()) {
 
 				// We got the block we expected :-)
-				org.eclipse.californium.core.MyLogger.LOG_debug("processing incoming block2 response [num={}]: {}", block2.getNum(), response);
+				org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  processing incoming block2 response [num={}]: {}", block2.getNum(), response);
 
 				if (status.isRandomAccess()) {
 
@@ -911,7 +911,7 @@ public class BlockwiseLayer extends AbstractLayer {
 
 				} else if (!status.addBlock(response)) {
 
-					org.eclipse.californium.core.MyLogger.LOG_debug("cannot process payload of block2 response, aborting request");
+					org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  cannot process payload of block2 response, aborting request");
 					exchange.getRequest().cancel();
 					return;
 
@@ -924,7 +924,7 @@ public class BlockwiseLayer extends AbstractLayer {
 					// we have received the last block of the block2 transfer
 
 					org.eclipse.californium.core.MyLogger.LOG_debug(
-							"all {} blocks have been retrieved, assembling response and delivering to application layer",
+							"BLOCKWISE: all {} blocks have been retrieved, assembling response and delivering to application layer",
 							status.getBlockCount());
 					Response assembled = new Response(response.getCode());
 					status.assembleReceivedMessage(assembled);
@@ -933,7 +933,7 @@ public class BlockwiseLayer extends AbstractLayer {
 					assembled.setRTT(exchange.calculateRTT());
 
 					clearBlock2Status(key, status);
-					org.eclipse.californium.core.MyLogger.LOG_debug("assembled response: {}", assembled);
+					org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  assembled response: {}", assembled);
 					// Set the original request as current request so that
 					// the Matcher can clean up its state based on the latest
 					// ("current") request's MID and token
@@ -948,7 +948,7 @@ public class BlockwiseLayer extends AbstractLayer {
 				// Canceling the request would interfere with Observe,
 				// so just ignore it
 				ignoredBlock2.incrementAndGet();
-				org.eclipse.californium.core.MyLogger.LOG_warn("ignoring block2 response with wrong block number {} (expected {}) - {}: {}",
+				org.eclipse.californium.core.MyLogger.LOG_warn("BLOCKWISE:  ignoring block2 response with wrong block number {} (expected {}) - {}: {}",
 						block2.getNum(), status.getCurrentNum(), exchange.getCurrentRequest().getToken(), response);
 			}
 		}
@@ -1010,15 +1010,15 @@ public class BlockwiseLayer extends AbstractLayer {
 			status.setCurrentNum(nextNum);
 
 			if (status.isComplete()) {
-				org.eclipse.californium.core.MyLogger.LOG_debug("stopped block2 transfer, droping response.");
+				org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  stopped block2 transfer, droping response.");
 			} else {
-				org.eclipse.californium.core.MyLogger.LOG_debug("requesting next Block2 [num={}]: {}", nextNum, block);
+				org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  requesting next Block2 [num={}]: {}", nextNum, block);
 				exchange.setCurrentRequest(block);
 				prepareBlock2Cleanup(status, key);
 				lower().sendRequest(exchange, block);
 			}
 		} catch (RuntimeException ex) {
-			org.eclipse.californium.core.MyLogger.LOG_warn("cannot process next block request, aborting request!", ex);
+			org.eclipse.californium.core.MyLogger.LOG_warn("BLOCKWISE:  cannot process next block request, aborting request!", ex);
 			block.setSendError(ex);
 		}
 	}
@@ -1051,7 +1051,7 @@ public class BlockwiseLayer extends AbstractLayer {
 				status = Block1BlockwiseStatus.forOutboundRequest(exchange, request, preferredBlockSize);
 				block1Transfers.put(key, status);
 				enableStatus = true;
-				org.eclipse.californium.core.MyLogger.LOG_debug("created tracker for outbound block1 transfer {}, transfers in progress: {}", status,
+				org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  created tracker for outbound block1 transfer {}, transfers in progress: {}", status,
 						block1Transfers.size());
 			}
 			return status;
@@ -1066,7 +1066,7 @@ public class BlockwiseLayer extends AbstractLayer {
 				status = Block1BlockwiseStatus.forInboundRequest(exchange, request, maxResourceBodySize);
 				block1Transfers.put(key, status);
 				enableStatus = true;
-				org.eclipse.californium.core.MyLogger.LOG_debug("created tracker for inbound block1 transfer {}, transfers in progress: {}", status,
+				org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  created tracker for inbound block1 transfer {}, transfers in progress: {}", status,
 						block1Transfers.size());
 			}
 		}
@@ -1080,7 +1080,7 @@ public class BlockwiseLayer extends AbstractLayer {
 		Block1BlockwiseStatus newStatus;
 		synchronized (block1Transfers) {
 			removedStatus = block1Transfers.remove(key);
-			org.eclipse.californium.core.MyLogger.LOG_warn("inbound block1 transfer reset at {} by peer: {}", removedStatus, request);
+			org.eclipse.californium.core.MyLogger.LOG_warn("BLOCKWISE:  inbound block1 transfer reset at {} by peer: {}", removedStatus, request);
 			// remove old status ensures, that getInboundBlock1Status could be
 			// called in synchronized (block1Transfers)
 			newStatus = getInboundBlock1Status(key, exchange, request);
@@ -1100,7 +1100,7 @@ public class BlockwiseLayer extends AbstractLayer {
 				status = Block2BlockwiseStatus.forOutboundResponse(exchange, response, preferredBlockSize);
 				block2Transfers.put(key, status);
 				enableStatus = true;
-				org.eclipse.californium.core.MyLogger.LOG_debug("created tracker for outbound block2 transfer {}, transfers in progress: {}", status,
+				org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  created tracker for outbound block2 transfer {}, transfers in progress: {}", status,
 						block2Transfers.size());
 			}
 		}
@@ -1117,7 +1117,7 @@ public class BlockwiseLayer extends AbstractLayer {
 				status = Block2BlockwiseStatus.forInboundResponse(exchange, response, maxResourceBodySize);
 				block2Transfers.put(key, status);
 				enableStatus = true;
-				org.eclipse.californium.core.MyLogger.LOG_debug("created tracker for {} inbound block2 transfer {}, transfers in progress: {}, {}", key,
+				org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  created tracker for {} inbound block2 transfer {}, transfers in progress: {}, {}", key,
 						status, block2Transfers.size(), response);
 			}
 			return status;
@@ -1135,7 +1135,7 @@ public class BlockwiseLayer extends AbstractLayer {
 		}
 		enableStatus = true;
 		addBlock2CleanUpObserver(request, key, status);
-		org.eclipse.californium.core.MyLogger.LOG_debug("created tracker for random access block2 retrieval {}, transfers in progress: {}", status, size);
+		org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  created tracker for random access block2 retrieval {}, transfers in progress: {}", status, size);
 		return key;
 	}
 
@@ -1147,10 +1147,10 @@ public class BlockwiseLayer extends AbstractLayer {
 			newStatus = getOutboundBlock2Status(key, exchange, response);
 		}
 		if (previousStatus != null && !previousStatus.isComplete()) {
-			org.eclipse.californium.core.MyLogger.LOG_debug("stop previous block transfer {} {} for new {}", key, previousStatus, response);
+			org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  stop previous block transfer {} {} for new {}", key, previousStatus, response);
 			previousStatus.completeResponse();
 		} else {
-			org.eclipse.californium.core.MyLogger.LOG_debug("block transfer {} for {}", key, response);
+			org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  block transfer {} for {}", key, response);
 		}
 		return newStatus;
 	}
@@ -1177,7 +1177,7 @@ public class BlockwiseLayer extends AbstractLayer {
 			size = block1Transfers.size();
 		}
 		if (removedTracker != null) {
-			org.eclipse.californium.core.MyLogger.LOG_debug("removing block1 tracker [{}], block1 transfers still in progress: {}", key, size);
+			org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  removing block1 tracker [{}], block1 transfers still in progress: {}", key, size);
 			removedTracker.setComplete(true);
 		}
 		return removedTracker;
@@ -1191,7 +1191,7 @@ public class BlockwiseLayer extends AbstractLayer {
 			size = block2Transfers.size();
 		}
 		if (removedTracker != null) {
-			org.eclipse.californium.core.MyLogger.LOG_debug("removing block2 tracker [{}], block2 transfers still in progress: {}", key, size);
+			org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  removing block2 tracker [{}], block2 transfers still in progress: {}", key, size);
 			removedTracker.setComplete(true);
 		}
 		return removedTracker;
@@ -1200,7 +1200,7 @@ public class BlockwiseLayer extends AbstractLayer {
 	private boolean requiresBlockwise(final Request request) {
 		boolean blockwiseRequired = request.getPayloadSize() > maxMessageSize;
 		if (blockwiseRequired) {
-			org.eclipse.californium.core.MyLogger.LOG_debug("request body [{}/{}] requires blockwise transfer", request.getPayloadSize(), maxMessageSize);
+			org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  request body [{}/{}] requires blockwise transfer", request.getPayloadSize(), maxMessageSize);
 		}
 		return blockwiseRequired;
 	}
@@ -1214,7 +1214,7 @@ public class BlockwiseLayer extends AbstractLayer {
 			blockwiseRequired = blockwiseRequired || strictBlock2Option || response.getPayloadSize() > requestBlock2.getSize();
 		}
 		if (blockwiseRequired) {
-			org.eclipse.californium.core.MyLogger.LOG_debug("response body [{}/{}] requires blockwise transfer", response.getPayloadSize(),
+			org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  response body [{}/{}] requires blockwise transfer", response.getPayloadSize(),
 					maxMessageSize);
 		}
 		return blockwiseRequired;
@@ -1240,19 +1240,19 @@ public class BlockwiseLayer extends AbstractLayer {
 	 */
 	protected void prepareBlock1Cleanup(final Block1BlockwiseStatus status, final KeyUri key) {
 
-		org.eclipse.californium.core.MyLogger.LOG_debug("scheduling clean up task for block1 transfer {}", key);
+		org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  scheduling clean up task for block1 transfer {}", key);
 		ScheduledFuture<?> taskHandle = scheduleBlockCleanupTask(new Runnable() {
 
 			@Override
 			public void run() {
 				try {
 					if (!status.isComplete()) {
-						org.eclipse.californium.core.MyLogger.LOG_debug("block1 transfer timed out: {}", key);
+						org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  block1 transfer timed out: {}", key);
 						status.timeoutCurrentTranfer();
 					}
 					clearBlock1Status(key, status);
 				} catch (Exception e) {
-					org.eclipse.californium.core.MyLogger.LOG_debug("Unexcepted error while block1 cleaning", e);
+					org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  Unexcepted error while block1 cleaning", e);
 				}
 			}
 		});
@@ -1305,19 +1305,19 @@ public class BlockwiseLayer extends AbstractLayer {
 	 */
 	protected void prepareBlock2Cleanup(final Block2BlockwiseStatus status, final KeyUri key) {
 
-		org.eclipse.californium.core.MyLogger.LOG_debug("scheduling clean up task for block2 transfer {}", key);
+		org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  scheduling clean up task for block2 transfer {}", key);
 		ScheduledFuture<?> taskHandle = scheduleBlockCleanupTask(new Runnable() {
 
 			@Override
 			public void run() {
 				try {
 					if (!status.isComplete()) {
-						org.eclipse.californium.core.MyLogger.LOG_debug("block2 transfer timed out: {}", key);
+						org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  block2 transfer timed out: {}", key);
 						status.timeoutCurrentTranfer();
 					}
 					clearBlock2Status(key, status);
 				} catch (Exception e) {
-					org.eclipse.californium.core.MyLogger.LOG_debug("Unexcepted error while block2 cleaning", e);
+					org.eclipse.californium.core.MyLogger.LOG_debug("BLOCKWISE:  Unexcepted error while block2 cleaning", e);
 				}
 			}
 		});
@@ -1328,7 +1328,7 @@ public class BlockwiseLayer extends AbstractLayer {
 
 		// prevent RejectedExecutionException
 		if (executor.isShutdown()) {
-			org.eclipse.californium.core.MyLogger.LOG_info("Endpoint is being destroyed: skipping block clean-up");
+			org.eclipse.californium.core.MyLogger.LOG_info("BLOCKWISE:  Endpoint is being destroyed: skipping block clean-up");
 			return null;
 
 		} else {
