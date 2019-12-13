@@ -301,6 +301,7 @@ public class InMemoryMessageExchangeStore implements MessageExchangeStore {
 				// ping, no exchange by token required!
 				return;
 			}
+			//exchange.getRequest().setToken(token); //Rikard: Other way???
 			key = tokenGenerator.getKeyToken(token, peer);
 			Exchange previous = exchangesByToken.put(key, exchange);
 			if (previous == null) {

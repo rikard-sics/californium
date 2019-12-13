@@ -35,9 +35,12 @@ import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.coap.BlockOption;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
+import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.Endpoint;
+import org.eclipse.californium.core.network.TokenGenerator;
+import org.eclipse.californium.core.network.TokenGenerator.Scope;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.core.test.lockstep.ServerBlockwiseInterceptor;
@@ -347,7 +350,12 @@ public class BlockwiseTransferTest {
 		try {
 			interceptor.clear();
 			Request request = Request.newPost().setURI(getUri(serverEndpoint, RESOURCE_TEST));
-			request.setToken(new byte[] { 0x11, 0x22, 0x33 });
+			//request.setToken(new byte[] { 0x11, 0x22, 0x33 });
+			Scope scope = request.isMulticast() ? Scope.SHORT_TERM : Scope.SHORT_TERM_CLIENT_LOCAL;
+			TokenGenerator tokenGenerator = new org.eclipse.californium.core.network.RandomTokenGenerator(config);
+			Token token = tokenGenerator.createToken(scope);
+			request.setToken(token);
+			
 			if (shortRequest) {
 				request.setPayload(SHORT_POST_REQUEST);
 				request.getOptions().addUriQuery(PARAM_SHORT_REQ);
