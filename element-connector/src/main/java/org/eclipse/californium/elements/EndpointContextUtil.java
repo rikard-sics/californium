@@ -39,8 +39,8 @@ public class EndpointContextUtil {
 	 *         keys are equal, false, if not.
 	 */
 	public static boolean match(String name, Set<String> keys, EndpointContext context1, EndpointContext context2) {
-		boolean warn = LOGGER.isWarnEnabled();
-		boolean trace = LOGGER.isTraceEnabled();
+		boolean warn = org.eclipse.californium.elements.MyLogger.isWarnEnabled();
+		boolean trace = org.eclipse.californium.elements.MyLogger.isTraceEnabled();
 		boolean matchAll = true;
 		for (String key : keys) {
 			String value1 = context1.get(key);
@@ -52,10 +52,10 @@ public class EndpointContextUtil {
 			}
 			if (!match) {
 				/* logging differences with warning level */
-				LOGGER.warn("{}, {}: \"{}\" != \"{}\"",  name, key, value1, value2);
+				org.eclipse.californium.elements.MyLogger.LOG_warn("{}, {}: \"{}\" != \"{}\"",  name, key, value1, value2);
 			} else if (trace) {
 				/* logging matches with finest level */
-				LOGGER.trace("{}, {}: \"{}\" == \"{}\"", name, key, value1, value2);
+				org.eclipse.californium.elements.MyLogger.LOG_trace("{}, {}: \"{}\" == \"{}\"", name, key, value1, value2);
 			}
 			matchAll = matchAll && match;
 		}

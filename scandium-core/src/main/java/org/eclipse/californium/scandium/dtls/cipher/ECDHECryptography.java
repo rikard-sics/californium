@@ -141,7 +141,7 @@ public final class ECDHECryptography {
 			try {
 				return new ECDHECryptography(group.name());
 			} catch (GeneralSecurityException e) {
-				LOGGER.warn(
+				org.eclipse.californium.elements.MyLogger.LOG_warn(
 					"Cannot create ephemeral keys for group [{}]: {}",
 					new Object[]{group.name(), e.getMessage()});
 				return null;
@@ -186,7 +186,7 @@ public final class ECDHECryptography {
 			secretKey = generateSecret(peerPublicKey);
 
 		} catch (GeneralSecurityException e) {
-			LOGGER.error("Could not generate the premaster secret", e);
+			org.eclipse.californium.elements.MyLogger.LOG_error("Could not generate the premaster secret", e);
 		}
 		return secretKey;
 	}
@@ -210,7 +210,7 @@ public final class ECDHECryptography {
 			secretKey = SecretUtil.create(secret, "TlsPremasterSecret");
 			Bytes.clear(secret);
 		} catch (GeneralSecurityException e) {
-			LOGGER.error("Could not generate the premaster secret", e);
+			org.eclipse.californium.elements.MyLogger.LOG_error("Could not generate the premaster secret", e);
 		}
 		return secretKey;
 	}
@@ -259,7 +259,7 @@ public final class ECDHECryptography {
 		byte[] yb = trimZeroes(point.getAffineY().toByteArray());
 
 		if ((xb.length > fieldSize) || (yb.length > fieldSize)) {
-			LOGGER.error("Point coordinates do not match field size.");
+			org.eclipse.californium.elements.MyLogger.LOG_error("Point coordinates do not match field size.");
 			return null;
 		}
 
@@ -433,7 +433,7 @@ public final class ECDHECryptography {
 				gen.initialize(new ECGenParameterSpec(name()));
 				usable = true;
 			} catch (GeneralSecurityException e) {
-				LOGGER.debug("Group [{}] is not supported by JRE", name());
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Group [{}] is not supported by JRE", name());
 			}
 		}
 

@@ -223,7 +223,7 @@ public class CoapObserveRelation {
 	public void reactiveCancel() {
 		Request request = this.request;
 		if (CoAP.isTcpScheme(request.getScheme())) {
-			LOGGER.info("change to cancel the observe {} proactive over TCP.", request.getTokenString());
+			org.eclipse.californium.core.MyLogger.LOG_info("change to cancel the observe {} proactive over TCP.", request.getTokenString());
 			proactiveCancel();
 		} else {
 			// cancel old ongoing request

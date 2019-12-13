@@ -77,7 +77,7 @@ public class ContextRederivation {
 		try {
 			initiateRequest(db, uri);
 		} catch (ConnectorException | IOException | OSException e) {
-			LOGGER.error(ErrorDescriptions.CONTEXT_REGENERATION_FAILED);
+			org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.CONTEXT_REGENERATION_FAILED);
 			throw new CoapOSException(ErrorDescriptions.CONTEXT_REGENERATION_FAILED, ResponseCode.BAD_REQUEST);
 		}
 	}
@@ -422,9 +422,9 @@ public class ContextRederivation {
 
 		String output = "Context re-derivation phase: " + currentPhase + " (" + supplemental + ")";
 		if (currentPhase == PHASE.INACTIVE) {
-			LOGGER.debug(output);
+			org.eclipse.californium.core.MyLogger.LOG_debug(output);
 		} else {
-			LOGGER.info(output);
+			org.eclipse.californium.core.MyLogger.LOG_info(output);
 		}
 	}
 

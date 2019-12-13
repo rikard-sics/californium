@@ -201,7 +201,7 @@ public abstract class HandshakeMessage extends AbstractMessage {
 		try {
 			DatagramReader reader = new DatagramReader(byteArray, false);
 			HandshakeType type = HandshakeType.getTypeByCode(reader.read(MESSAGE_TYPE_BITS));
-			LOGGER.trace("Parsing HANDSHAKE message of type [{}]", type);
+			org.eclipse.californium.elements.MyLogger.LOG_trace("Parsing HANDSHAKE message of type [{}]", type);
 			int left = byteArray.length - MESSAGE_HEADER_LENGTH_BYTES;
 			int length = reader.read(MESSAGE_LENGTH_BITS);
 
@@ -309,7 +309,7 @@ public abstract class HandshakeMessage extends AbstractMessage {
 
 			return body;
 		} catch (IllegalArgumentException ex) {
-			LOGGER.debug("Handshake message from peer [{}] malformed", peerAddress, ex);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Handshake message from peer [{}] malformed", peerAddress, ex);
 			throw new HandshakeException("Handshake message malformed, " + ex.getMessage(),
 					new AlertMessage(AlertLevel.FATAL, AlertDescription.DECODE_ERROR, peerAddress));
 		}

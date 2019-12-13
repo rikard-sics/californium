@@ -175,12 +175,12 @@ public final class CertificateVerify extends HandshakeMessage {
 			int index  = 0;
 			for (HandshakeMessage message : handshakeMessages) {
 				signature.update(message.toByteArray());
-				LOGGER.trace("  [{}] - {}", index, message.getMessageType());
+				org.eclipse.californium.elements.MyLogger.LOG_trace("  [{}] - {}", index, message.getMessageType());
 				++index;
 			}
 			signatureBytes = signature.sign();
 		} catch (Exception e) {
-			LOGGER.error("Could not create signature.", e);
+			org.eclipse.californium.elements.MyLogger.LOG_error("Could not create signature.", e);
 		}
 
 		return signatureBytes;
@@ -203,7 +203,7 @@ public final class CertificateVerify extends HandshakeMessage {
 			int index  = 0;
 			for (HandshakeMessage message : handshakeMessages) {
 				signature.update(message.toByteArray());
-				LOGGER.trace("  [{}] - {}", index, message.getMessageType());
+				org.eclipse.californium.elements.MyLogger.LOG_trace("  [{}] - {}", index, message.getMessageType());
 				++index;
 			}
 			if (signature.verify(signatureBytes)) {
@@ -211,7 +211,7 @@ public final class CertificateVerify extends HandshakeMessage {
 			}
 
 		} catch (SignatureException | InvalidKeyException | NoSuchAlgorithmException e) {
-			LOGGER.error("Could not verify the client's signature.", e);
+			org.eclipse.californium.elements.MyLogger.LOG_error("Could not verify the client's signature.", e);
 		}
 		String message = "The client's CertificateVerify message could not be verified.";
 		AlertMessage alert = new AlertMessage(AlertLevel.FATAL, AlertDescription.HANDSHAKE_FAILURE, getPeer());

@@ -605,8 +605,8 @@ public enum CipherSuite {
 				return suite;
 			}
 		}
-		if (LOGGER.isTraceEnabled()) {
-			LOGGER.trace("Cannot resolve cipher suite code [{}]", Integer.toHexString(code));
+		if (org.eclipse.californium.elements.MyLogger.isTraceEnabled()) {
+			org.eclipse.californium.elements.MyLogger.LOG_trace("Cannot resolve cipher suite code [{}]", Integer.toHexString(code));
 		}
 		return null;
 	}
@@ -625,8 +625,8 @@ public enum CipherSuite {
 				return suite;
 			}
 		}
-		if (LOGGER.isTraceEnabled()) {
-			LOGGER.trace("Cannot resolve cipher suite code [{}]", name);
+		if (org.eclipse.californium.elements.MyLogger.isTraceEnabled()) {
+			org.eclipse.californium.elements.MyLogger.LOG_trace("Cannot resolve cipher suite code [{}]", name);
 		}
 		return null;
 	}

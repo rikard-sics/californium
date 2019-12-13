@@ -750,10 +750,10 @@ public  class CoapResource implements Resource {
 	@Override
 	public void addObserveRelation(ObserveRelation relation) {
 		if (observeRelations.add(relation)) {
-			LOGGER.info("replacing observe relation between {} and resource {} (new {}, size {})", relation.getKey(),
+			org.eclipse.californium.core.MyLogger.LOG_info("replacing observe relation between {} and resource {} (new {}, size {})", relation.getKey(),
 					getURI(), relation.getExchange(), observeRelations.getSize());
 		} else {
-			LOGGER.info("successfully established observe relation between {} and resource {} ({}, size {})",
+			org.eclipse.californium.core.MyLogger.LOG_info("successfully established observe relation between {} and resource {} ({}, size {})",
 					relation.getKey(), getURI(), relation.getExchange(), observeRelations.getSize());
 		}
 		for (ResourceObserver obs:observers) {
@@ -767,7 +767,7 @@ public  class CoapResource implements Resource {
 	@Override
 	public void removeObserveRelation(ObserveRelation relation) {
 		if (observeRelations.remove(relation)) {
-			LOGGER.info("remove observe relation between {} and resource {} ({}, size {})", relation.getKey(), getURI(),
+			org.eclipse.californium.core.MyLogger.LOG_info("remove observe relation between {} and resource {} ({}, size {})", relation.getKey(), getURI(),
 					relation.getExchange(), observeRelations.getSize());
 			for (ResourceObserver obs : observers) {
 				obs.removedObserveRelation(relation);

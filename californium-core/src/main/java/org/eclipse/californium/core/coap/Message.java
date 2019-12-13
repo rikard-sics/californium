@@ -917,7 +917,7 @@ public abstract class Message {
 	}
 
 	public void onComplete() {
-		LOGGER.trace("Message completed {}", this);
+		org.eclipse.californium.core.MyLogger.LOG_trace("Message completed {}", this);
 		for (MessageObserver handler : getMessageObservers()) {
 			handler.onComplete();
 		}
@@ -1059,7 +1059,7 @@ public abstract class Message {
 				// guard against faulty MessageObservers
 				observer.onRetransmission();
 			} catch (Exception e) {
-				LOGGER.error("Faulty MessageObserver for retransmitting events", e);
+				org.eclipse.californium.core.MyLogger.LOG_error("Faulty MessageObserver for retransmitting events", e);
 			}
 		}
 	}

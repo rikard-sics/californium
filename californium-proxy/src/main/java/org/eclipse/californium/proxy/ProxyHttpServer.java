@@ -85,7 +85,7 @@ public class ProxyHttpServer {
 
 	public void handleRequest(final Request request, final HttpRequestContext context) {
 		
-		LOGGER.info("ProxyEndpoint handles request {}", request);
+		org.eclipse.californium.core.MyLogger.LOG_info("ProxyEndpoint handles request {}", request);
 		
 		Exchange exchange = new Exchange(request, Origin.REMOTE, null) {
 
@@ -106,7 +106,7 @@ public class ProxyHttpServer {
 				request.setResponse(response);
 				responseProduced(request, response);
 				context.handleRequestForwarding(response);
-				LOGGER.info("HTTP returned {}", response);
+				org.eclipse.californium.core.MyLogger.LOG_info("HTTP returned {}", response);
 			}
 		};
 		exchange.setRequest(request);
@@ -119,7 +119,7 @@ public class ProxyHttpServer {
 			// get the response from the cache
 			response = cacheResource.getResponse(request);
 
-				LOGGER.info("Cache returned {}", response);
+				org.eclipse.californium.core.MyLogger.LOG_info("Cache returned {}", response);
 
 			// update statistics
 			statsResource.updateStatistics(request, response != null);
@@ -138,10 +138,10 @@ public class ProxyHttpServer {
 			if (request.getOptions().hasProxyUri()) {
 				try {
 					manageProxyUriRequest(request);
-					LOGGER.info("after manageProxyUriRequest: {}", request);
+					org.eclipse.californium.core.MyLogger.LOG_info("after manageProxyUriRequest: {}", request);
 
 				} catch (URISyntaxException e) {
-					LOGGER.warn(String.format("Proxy-uri malformed: %s", request.getOptions().getProxyUri()));
+					org.eclipse.californium.core.MyLogger.LOG_warn(String.format("Proxy-uri malformed: %s", request.getOptions().getProxyUri()));
 
 					exchange.sendResponse(new Response(ResponseCode.BAD_OPTION));
 				}
@@ -184,7 +184,7 @@ public class ProxyHttpServer {
 			clientPath = PROXY_COAP_CLIENT;
 		}
 
-		LOGGER.info("Chose {} as clientPath", clientPath);
+		org.eclipse.californium.core.MyLogger.LOG_info("Chose {} as clientPath", clientPath);
 
 		// set the path in the request to be forwarded correctly
 		request.getOptions().setUriPath(clientPath);
@@ -194,11 +194,11 @@ public class ProxyHttpServer {
 	protected void responseProduced(Request request, Response response) {
 		// check if the proxy-uri is defined
 		if (request.getOptions().hasProxyUri()) {
-				LOGGER.info("Cache response");
+				org.eclipse.californium.core.MyLogger.LOG_info("Cache response");
 			// insert the response in the cache
 			cacheResource.cacheResponse(request, response);
 		} else {
-				LOGGER.info("Do not cache response");
+				org.eclipse.californium.core.MyLogger.LOG_info("Do not cache response");
 		}
 	}
 

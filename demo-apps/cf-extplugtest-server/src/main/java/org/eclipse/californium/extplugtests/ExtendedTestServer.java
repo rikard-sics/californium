@@ -105,7 +105,7 @@ public class ExtendedTestServer extends AbstractTestServer {
 		System.out.println("  -noBenchmark : disable benchmark resource");
 		System.out.println("  -noPlugtest  : disable plugtest server");
 
-		STATISTIC_LOGGER.error("start!");
+		org.eclipse.californium.core.MyLogger.LOG_error("start!");
 		startManagamentStatistic();
 
 		boolean noPlugtest = args.length > 1 ? args[1].equalsIgnoreCase("-noPlugTest") : false;
@@ -231,7 +231,7 @@ public class ExtendedTestServer extends AbstractTestServer {
 		OperatingSystemMXBean osMxBean = ManagementFactory.getOperatingSystemMXBean();
 		int processors = osMxBean.getAvailableProcessors();
 		Logger logger = STATISTIC_LOGGER;
-		logger.info("{} processors", processors);
+		org.eclipse.californium.core.MyLogger.LOG_info("{} processors", processors);
 		ThreadMXBean threadMxBean = ManagementFactory.getThreadMXBean();
 		if (threadMxBean.isThreadCpuTimeSupported() && threadMxBean.isThreadCpuTimeEnabled()) {
 			long alltime = 0;
@@ -243,7 +243,7 @@ public class ExtendedTestServer extends AbstractTestServer {
 				}
 			}
 			long pTime = alltime / processors;
-			logger.info("cpu-time: {} ms (per-processor: {} ms)",
+			org.eclipse.californium.core.MyLogger.LOG_info("cpu-time: {} ms (per-processor: {} ms)",
 					TimeUnit.NANOSECONDS.toMillis(alltime), TimeUnit.NANOSECONDS.toMillis(pTime));
 		}
 		long gcCount = 0;
@@ -258,10 +258,10 @@ public class ExtendedTestServer extends AbstractTestServer {
 				gcTime += time;
 			}
 		}
-		logger.info("gc: {} ms, {} calls", gcTime, gcCount);
+		org.eclipse.californium.core.MyLogger.LOG_info("gc: {} ms, {} calls", gcTime, gcCount);
 		double loadAverage = osMxBean.getSystemLoadAverage();
 		if (!(loadAverage < 0.0d)) {
-			logger.info("average load: {}", String.format("%.2f", loadAverage));
+			org.eclipse.californium.core.MyLogger.LOG_info("average load: {}", String.format("%.2f", loadAverage));
 		}
 	}
 	

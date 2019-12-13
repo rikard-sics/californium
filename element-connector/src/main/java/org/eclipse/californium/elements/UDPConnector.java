@@ -188,7 +188,7 @@ public class UDPConnector implements Connector {
 		running = true;
 
 		// start receiver and sender threads
-		LOGGER.info("UDPConnector starts up {} sender threads and {} receiver threads", senderCount, receiverCount);
+		org.eclipse.californium.elements.MyLogger.LOG_info("UDPConnector starts up {} sender threads and {} receiver threads", senderCount, receiverCount);
 
 		for (int i = 0; i < receiverCount; i++) {
 			receiverThreads.add(new Receiver("UDP-Receiver-" + localAddr + "[" + i + "]"));
@@ -212,7 +212,7 @@ public class UDPConnector implements Connector {
 		 * 1.7.0_09, Windows 7.
 		 */
 
-		LOGGER.info("UDPConnector listening on {}, recv buf = {}, send buf = {}, recv packet size = {}", effectiveAddr,
+		org.eclipse.californium.elements.MyLogger.LOG_info("UDPConnector listening on {}, recv buf = {}, send buf = {}, recv packet size = {}", effectiveAddr,
 				receiveBufferSize, sendBufferSize, receiverPacketSize);
 	}
 
@@ -255,7 +255,7 @@ public class UDPConnector implements Connector {
 				}
 			}
 			receiverThreads.clear();
-			LOGGER.info("UDPConnector on [{}] has stopped.", effectiveAddr);
+			org.eclipse.californium.elements.MyLogger.LOG_info("UDPConnector on [{}] has stopped.", effectiveAddr);
 		}
 		for (RawData data : pending) {
 			notifyMsgAsInterrupted(data);
@@ -317,26 +317,26 @@ public class UDPConnector implements Connector {
 		}
 
 		public void run() {
-			LOGGER.debug("Starting network stage thread [{}]", getName());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Starting network stage thread [{}]", getName());
 			while (running) {
 				try {
 					work();
 					if (!running) {
-						LOGGER.debug("Network stage thread [{}] was stopped successfully", getName());
+						org.eclipse.californium.elements.MyLogger.LOG_debug("Network stage thread [{}] was stopped successfully", getName());
 						break;
 					}
 				} catch (InterruptedIOException t) {
-					LOGGER.trace("Network stage thread [{}] was stopped successfully at:", getName(), t);
+					org.eclipse.californium.elements.MyLogger.LOG_trace("Network stage thread [{}] was stopped successfully at:", getName(), t);
 				} catch (InterruptedException t) {
-					LOGGER.trace("Network stage thread [{}] was stopped successfully at:", getName(), t);
+					org.eclipse.californium.elements.MyLogger.LOG_trace("Network stage thread [{}] was stopped successfully at:", getName(), t);
 				} catch (IOException t) {
 					if (running) {
-						LOGGER.error("Exception in network stage thread [{}]:", getName(), t);
+						org.eclipse.californium.elements.MyLogger.LOG_error("Exception in network stage thread [{}]:", getName(), t);
 					} else {
-						LOGGER.trace("Network stage thread [{}] was stopped successfully at:", getName(), t);
+						org.eclipse.californium.elements.MyLogger.LOG_trace("Network stage thread [{}] was stopped successfully at:", getName(), t);
 					}
 				} catch (Throwable t) {
-					LOGGER.error("Exception in network stage thread [{}]:", getName(), t);
+					org.eclipse.californium.elements.MyLogger.LOG_error("Exception in network stage thread [{}]:", getName(), t);
 				}
 			}
 		}
@@ -367,12 +367,12 @@ public class UDPConnector implements Connector {
 				if (datagram.getLength() >= size) {
 					// too large datagram for our buffer! data could have been
 					// truncated, so we discard it.
-					LOGGER.debug(
+					org.eclipse.californium.elements.MyLogger.LOG_debug(
 							"UDPConnector ({}) received truncated UDP datagram from {}:{}. Maximum size allowed {}. Discarding ...",
 							effectiveAddr, datagram.getAddress(), datagram.getPort(), size - 1);
 				} else {
 					long timestamp = ClockUtil.nanoRealtime();
-					LOGGER.debug("UDPConnector ({}) received {} bytes from {}:{}", effectiveAddr, datagram.getLength(),
+					org.eclipse.californium.elements.MyLogger.LOG_debug("UDPConnector ({}) received {} bytes from {}:{}", effectiveAddr, datagram.getLength(),
 							datagram.getAddress(), datagram.getPort());
 					byte[] bytes = Arrays.copyOfRange(datagram.getData(), datagram.getOffset(), datagram.getLength());
 					RawData msg = RawData.inbound(bytes,
@@ -404,7 +404,7 @@ public class UDPConnector implements Connector {
 			EndpointContext connectionContext = new UdpEndpointContext(destinationAddress);
 			EndpointContextMatcher endpointMatcher = UDPConnector.this.endpointContextMatcher;
 			if (endpointMatcher != null && !endpointMatcher.isToBeSent(destination, connectionContext)) {
-				LOGGER.warn("UDPConnector ({}) drops {} bytes to {}:{}", effectiveAddr, datagram.getLength(),
+				org.eclipse.californium.elements.MyLogger.LOG_warn("UDPConnector ({}) drops {} bytes to {}:{}", effectiveAddr, datagram.getLength(),
 						destinationAddress.getAddress(), destinationAddress.getPort());
 				raw.onError(new EndpointMismatchException());
 				return;
@@ -421,7 +421,7 @@ public class UDPConnector implements Connector {
 				} catch (IOException ex) {
 					raw.onError(ex);
 				}
-				LOGGER.debug("UDPConnector ({}) sent {} bytes to {}:{}", this, datagram.getLength(),
+				org.eclipse.californium.elements.MyLogger.LOG_debug("UDPConnector ({}) sent {} bytes to {}:{}", this, datagram.getLength(),
 						datagram.getAddress(), datagram.getPort());
 			} else {
 				raw.onError(new IOException("socket already closed!"));

@@ -134,14 +134,14 @@ public class InMemoryMessageExchangeStore implements MessageExchangeStore {
 		this.endpointIdentityResolver = endpointResolver;
 		this.config = config;
 		this.tag = StringUtil.normalizeLoggingTag(tag);
-		LOGGER.debug("{}using TokenProvider {}", tag, tokenProvider.getClass().getName());
+		org.eclipse.californium.core.MyLogger.LOG_debug("{}using TokenProvider {}", tag, tokenProvider.getClass().getName());
 	}
 
 	private void startStatusLogging() {
 		final int healthStatusInterval = config.getInt(NetworkConfig.Keys.HEALTH_STATUS_INTERVAL, NetworkConfigDefaults.DEFAULT_HEALTH_STATUS_INTERVAL); // seconds
 		// this is a useful health metric
 		// that could later be exported to some kind of monitoring interface
-		if (healthStatusInterval > 0 && HEALTH_LOGGER.isDebugEnabled() && executor != null) {
+		if (healthStatusInterval > 0 && org.eclipse.californium.core.MyLogger.isDebugEnabled() && executor != null) {
 			statusLogger = executor.scheduleAtFixedRate(new Runnable() {
 
 				@Override
@@ -223,7 +223,7 @@ public class InMemoryMessageExchangeStore implements MessageExchangeStore {
 			InetSocketAddress dest = message.getDestinationContext().getPeerAddress();
 			mid = messageIdProvider.getNextMessageId(dest);
 			if (Message.NONE == mid) {
-				LOGGER.warn("{}cannot send message to {}, all MIDs are in use", tag, dest);
+				org.eclipse.californium.core.MyLogger.LOG_warn("{}cannot send message to {}, all MIDs are in use", tag, dest);
 			} else {
 				message.setMID(mid);
 			}
@@ -245,7 +245,7 @@ public class InMemoryMessageExchangeStore implements MessageExchangeStore {
 					throw new IllegalArgumentException(String.format(
 							"generated mid [%d] already in use, cannot register %s", mid, exchange));
 				}
-				LOGGER.debug("{}{} added with generated mid {}, {}", tag, exchange, key, message);
+				org.eclipse.californium.core.MyLogger.LOG_debug("{}{} added with generated mid {}, {}", tag, exchange, key, message);
 			} else {
 				key = null;
 			}
@@ -262,7 +262,7 @@ public class InMemoryMessageExchangeStore implements MessageExchangeStore {
 							mid, exchange));
 				}
 			} else {
-				LOGGER.debug("{}{} added with {}, {}", tag, exchange, key, message);
+				org.eclipse.californium.core.MyLogger.LOG_debug("{}{} added with {}, {}", tag, exchange, key, message);
 			}
 		}
 		if (key != null) {
@@ -285,7 +285,7 @@ public class InMemoryMessageExchangeStore implements MessageExchangeStore {
 				request.setToken(token);
 				key = tokenGenerator.getKeyToken(token, peer);
 			} while (exchangesByToken.putIfAbsent(key, exchange) != null);
-			LOGGER.debug("{}{} added with generated token {}, {}", tag, exchange, key, request);
+			org.eclipse.californium.core.MyLogger.LOG_debug("{}{} added with generated token {}, {}", tag, exchange, key, request);
 		} else {
 			// ongoing requests may reuse token
 			if (token.isEmpty() && request.getCode() == null) {
@@ -297,20 +297,20 @@ public class InMemoryMessageExchangeStore implements MessageExchangeStore {
 			if (previous == null) {
 				BlockOption block2 = request.getOptions().getBlock2();
 				if (block2 != null) {
-					LOGGER.debug("{}block2 {} for block {} add with token {}", tag, exchange, block2.getNum(), key);
+					org.eclipse.californium.core.MyLogger.LOG_debug("{}block2 {} for block {} add with token {}", tag, exchange, block2.getNum(), key);
 				} else {
-					LOGGER.debug("{}{} added with token {}, {}", tag, exchange, key, request);
+					org.eclipse.californium.core.MyLogger.LOG_debug("{}{} added with token {}, {}", tag, exchange, key, request);
 				}
 			} else if (previous != exchange) {
 				if (exchange.getFailedTransmissionCount() == 0 && !request.getOptions().hasBlock1()
 						&& !request.getOptions().hasBlock2() && !request.getOptions().hasObserve()) {
-					LOGGER.warn("{}{} with manual token overrides existing {} with open request: {}", tag, exchange,
+					org.eclipse.californium.core.MyLogger.LOG_warn("{}{} with manual token overrides existing {} with open request: {}", tag, exchange,
 							previous, key);
 				} else {
-					LOGGER.debug("{}{} replaced with token {}, {}", tag, exchange, key, request);
+					org.eclipse.californium.core.MyLogger.LOG_debug("{}{} replaced with token {}, {}", tag, exchange, key, request);
 				}
 			} else {
-				LOGGER.debug("{}{} keep for {}, {}", tag, exchange, key, request);
+				org.eclipse.californium.core.MyLogger.LOG_debug("{}{} keep for {}, {}", tag, exchange, key, request);
 			}
 		}
 		if (key != null) {
@@ -360,7 +360,7 @@ public class InMemoryMessageExchangeStore implements MessageExchangeStore {
 	public void remove(final KeyToken token, final Exchange exchange) {
 		boolean removed = exchangesByToken.remove(token, exchange);
 		if (removed) {
-			LOGGER.debug("{}removing {} for token {}", tag, exchange, token);
+			org.eclipse.californium.core.MyLogger.LOG_debug("{}removing {} for token {}", tag, exchange, token);
 		}
 	}
 
@@ -375,7 +375,7 @@ public class InMemoryMessageExchangeStore implements MessageExchangeStore {
 			removedExchange = null;
 		}
 		if (null != removedExchange) {
-			LOGGER.debug("{}removing {} for MID {}", tag, removedExchange, messageId);
+			org.eclipse.californium.core.MyLogger.LOG_debug("{}removing {} for MID {}", tag, removedExchange, messageId);
 		}
 		return removedExchange;
 	}
@@ -428,7 +428,7 @@ public class InMemoryMessageExchangeStore implements MessageExchangeStore {
 			this.deduplicator.setExecutor(executor);
 			this.deduplicator.start();
 			if (messageIdProvider == null) {
-				LOGGER.debug("{}no MessageIdProvider set, using default {}", tag, InMemoryMessageIdProvider.class.getName());
+				org.eclipse.californium.core.MyLogger.LOG_debug("{}no MessageIdProvider set, using default {}", tag, InMemoryMessageIdProvider.class.getName());
 				messageIdProvider = new InMemoryMessageIdProvider(config);
 			}
 			running = true;
@@ -461,8 +461,8 @@ public class InMemoryMessageExchangeStore implements MessageExchangeStore {
 	 * @param logMaxExchanges maximum number of exchanges to include in dump.
 	 */
 	public void dump(int logMaxExchanges) {
-		if (HEALTH_LOGGER.isDebugEnabled()) {
-			HEALTH_LOGGER.debug(dumpCurrentLoadLevels());
+		if (org.eclipse.californium.core.MyLogger.isDebugEnabled()) {
+			org.eclipse.californium.core.MyLogger.LOG_debug(dumpCurrentLoadLevels());
 			if (0 < logMaxExchanges) {
 				if (!exchangesByMID.isEmpty()) {
 					dumpExchanges(logMaxExchanges, exchangesByMID.entrySet());
@@ -487,18 +487,18 @@ public class InMemoryMessageExchangeStore implements MessageExchangeStore {
 			Request current = exchange.getCurrentRequest();
 			String pending = exchange.getRetransmissionHandle() == null ? "" : "/pending";
 			if (origin != current && !origin.getToken().equals(current.getToken())) {
-				HEALTH_LOGGER.debug("  {}, {}, retransmission {}{}, org {}, {}, {}", exchangeEntry.getKey(),
+				org.eclipse.californium.core.MyLogger.LOG_debug("  {}, {}, retransmission {}{}, org {}, {}, {}", exchangeEntry.getKey(),
 						exchange, exchange.getFailedTransmissionCount(), pending, origin.getToken(),
 						current, exchange.getCurrentResponse());
 			} else {
 				String mark = origin == null ? "(missing origin request) " : "";
-				HEALTH_LOGGER.debug("  {}, {}, retransmission {}{}, {}{}, {}", exchangeEntry.getKey(),
+				org.eclipse.californium.core.MyLogger.LOG_debug("  {}, {}, retransmission {}{}, {}{}, {}", exchangeEntry.getKey(),
 						exchange, exchange.getFailedTransmissionCount(), pending, mark, current,
 						exchange.getCurrentResponse());
 			}
 			Throwable caller = exchange.getCaller();
 			if (caller != null) {
-				HEALTH_LOGGER.trace("  ", caller);
+				org.eclipse.californium.core.MyLogger.LOG_trace("  ", caller);
 			}
 			if (0 >= --logMaxExchanges) {
 				break;

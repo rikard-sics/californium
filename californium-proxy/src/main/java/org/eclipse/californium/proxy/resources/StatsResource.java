@@ -72,7 +72,7 @@ public class StatsResource extends CoapResource {
 		try {
 			proxyUri = new URI(request.getOptions().getProxyUri());
 		} catch (URISyntaxException e) {
-			LOGGER.warn("Proxy-uri malformed: {}", request.getOptions().getProxyUri());
+			org.eclipse.californium.core.MyLogger.LOG_warn("Proxy-uri malformed: {}", request.getOptions().getProxyUri());
 		}
 
 		if (proxyUri == null) {

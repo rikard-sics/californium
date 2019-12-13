@@ -40,31 +40,31 @@ public class MessageTracer implements MessageInterceptor {
 
 	@Override
 	public void sendRequest(Request request) {
-		LOGGER.info("{} <== req {}", new Object[]{request.getDestinationContext(), request});
+		org.eclipse.californium.core.MyLogger.LOG_info("{} <== req {}", new Object[]{request.getDestinationContext(), request});
 	}
 
 	@Override
 	public void sendResponse(Response response) {
-		LOGGER.info("{} <== res {}", new Object[]{response.getDestinationContext(), response});
+		org.eclipse.californium.core.MyLogger.LOG_info("{} <== res {}", new Object[]{response.getDestinationContext(), response});
 	}
 
 	@Override
 	public void sendEmptyMessage(EmptyMessage message) {
-		LOGGER.info("{} <== emp {}", new Object[]{message.getDestinationContext(), message});
+		org.eclipse.californium.core.MyLogger.LOG_info("{} <== emp {}", new Object[]{message.getDestinationContext(), message});
 	}
 
 	@Override
 	public void receiveRequest(Request request) {
-		LOGGER.info("{} ==> req {}", new Object[]{request.getSourceContext(), request});
+		org.eclipse.californium.core.MyLogger.LOG_info("{} ==> req {}", new Object[]{request.getSourceContext(), request});
 	}
 
 	@Override
 	public void receiveResponse(Response response) {
-		LOGGER.info("{} ==> res {}", new Object[]{response.getSourceContext(), response});
+		org.eclipse.californium.core.MyLogger.LOG_info("{} ==> res {}", new Object[]{response.getSourceContext(), response});
 	}
 
 	@Override
 	public void receiveEmptyMessage(EmptyMessage message) {
-		LOGGER.info("{} ==> emp {}", new Object[]{message.getSourceContext(), message});
+		org.eclipse.californium.core.MyLogger.LOG_info("{} ==> emp {}", new Object[]{message.getSourceContext(), message});
 	}
 }

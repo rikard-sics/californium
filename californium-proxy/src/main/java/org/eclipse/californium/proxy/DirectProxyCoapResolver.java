@@ -47,7 +47,7 @@ public class DirectProxyCoapResolver implements ProxyCoapResolver {
 
 	@Override
 	public void forwardRequest(Exchange exchange) {
-		LOGGER.debug("Forward CoAP request to ProxyCoap2Coap: {}", exchange.getRequest());
+		org.eclipse.californium.core.MyLogger.LOG_debug("Forward CoAP request to ProxyCoap2Coap: {}", exchange.getRequest());
 		proxyCoapClientResource.handleRequest(exchange);
 	}
 }

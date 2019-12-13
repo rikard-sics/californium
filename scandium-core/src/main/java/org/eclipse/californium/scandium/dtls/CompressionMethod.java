@@ -74,7 +74,7 @@ public enum CompressionMethod {
 			return CompressionMethod.DEFLATE;
 
 		default:
-			LOGGER.debug("Unknown compression method code: {}", code);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Unknown compression method code: {}", code);
 			return null;
 		}
 	}

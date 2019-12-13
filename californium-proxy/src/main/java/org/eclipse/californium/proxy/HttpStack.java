@@ -191,7 +191,7 @@ public class HttpStack {
 				// Create server-side I/O reactor
 				ioReactor = new DefaultListeningIOReactor();
 				// Listen of the given port
-				LOGGER.info("HttpStack listening on port {}", httpPort);
+				org.eclipse.californium.core.MyLogger.LOG_info("HttpStack listening on port {}", httpPort);
 				ioReactor.listen(new InetSocketAddress(httpPort));
 
 				// create the listener thread
@@ -202,22 +202,22 @@ public class HttpStack {
 						// Starts the reactor and initiates the dispatch of I/O
 						// event notifications to the given IOEventDispatch.
 						try {
-							LOGGER.info("Submitted http listening to thread 'HttpStack listener'");
+							org.eclipse.californium.core.MyLogger.LOG_info("Submitted http listening to thread 'HttpStack listener'");
 
 							ioReactor.execute(ioEventDispatch);
 						} catch (IOException e) {
-							LOGGER.error("I/O Exception in HttpStack", e);
+							org.eclipse.californium.core.MyLogger.LOG_error("I/O Exception in HttpStack", e);
 						}
 
-						LOGGER.info("Shutdown HttpStack");
+						org.eclipse.californium.core.MyLogger.LOG_info("Shutdown HttpStack");
 					}
 				};
 
 				listener.setDaemon(false);
 				listener.start();
-				LOGGER.info("HttpStack started");
+				org.eclipse.californium.core.MyLogger.LOG_info("HttpStack started");
 			} catch (IOException e) {
-				LOGGER.error("I/O error", e);
+				org.eclipse.californium.core.MyLogger.LOG_error("I/O error", e);
 			}
 		}
 
@@ -240,7 +240,7 @@ public class HttpStack {
 				httpResponse.setEntity(new StringEntity("Californium Proxy server"));
 
 //				if (Bench_Help.DO_LOG) 
-					LOGGER.debug("Root request handled");
+					org.eclipse.californium.core.MyLogger.LOG_debug("Root request handled");
 			}
 		}
 
@@ -281,25 +281,25 @@ public class HttpStack {
 			@Override
 			public void handle(HttpRequest httpRequest, HttpAsyncExchange httpExchange, HttpContext httpContext) throws HttpException, IOException {
 //				if (Bench_Help.DO_LOG) 
-					LOGGER.debug("Incoming http request: {}", httpRequest.getRequestLine());
+					org.eclipse.californium.core.MyLogger.LOG_debug("Incoming http request: {}", httpRequest.getRequestLine());
 
 				final HttpRequestContext httpRequestContext = new HttpRequestContext(httpExchange, httpRequest);
 				try {
 					// translate the request in a valid coap request
 					Request coapRequest = new HttpTranslator().getCoapRequest(httpRequest, localResource, proxyingEnabled);
 //					if (Bench_Help.DO_LOG) 
-						LOGGER.info("Received HTTP request and translate to {}", coapRequest);
+						org.eclipse.californium.core.MyLogger.LOG_info("Received HTTP request and translate to {}", coapRequest);
 
 					// handle the requset
 					requestHandler.handleRequest(coapRequest, httpRequestContext);
 				} catch (InvalidMethodException e) {
-					LOGGER.warn("Method not implemented", e);
+					org.eclipse.californium.core.MyLogger.LOG_warn("Method not implemented", e);
 					httpRequestContext.sendSimpleHttpResponse(HttpTranslator.STATUS_WRONG_METHOD);
 				} catch (InvalidFieldException e) {
-					LOGGER.warn("Request malformed", e);
+					org.eclipse.californium.core.MyLogger.LOG_warn("Request malformed", e);
 					httpRequestContext.sendSimpleHttpResponse(HttpTranslator.STATUS_URI_MALFORMED);
 				} catch (TranslationException e) {
-					LOGGER.warn("Failed to translate the http request in a valid coap request", e);
+					org.eclipse.californium.core.MyLogger.LOG_warn("Failed to translate the http request in a valid coap request", e);
 					httpRequestContext.sendSimpleHttpResponse(HttpTranslator.STATUS_TRANSLATION_ERROR);
 				}
 			}

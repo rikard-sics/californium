@@ -103,7 +103,7 @@ public abstract class Encryptor {
 
 			return enc.getEncryptedContent();
 		} catch (CoseException e) {
-			LOGGER.error("COSE/Crypto exception: " + e.getMessage());
+			org.eclipse.californium.core.MyLogger.LOG_error("COSE/Crypto exception: " + e.getMessage());
 			throw new OSException(e.getMessage());
 		}
 	}

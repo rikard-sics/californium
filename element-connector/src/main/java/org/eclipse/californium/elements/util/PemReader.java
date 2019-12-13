@@ -53,7 +53,7 @@ public class PemReader {
 			Matcher matcher = BEGIN_PATTERN.matcher(line);
 			if (matcher.matches()) {
 				tag = matcher.group(1);
-				LOGGER.debug("Found Begin of {}", tag);
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Found Begin of {}", tag);
 				break;
 			}
 		}
@@ -70,10 +70,10 @@ public class PemReader {
 				String end = matcher.group(1);
 				if (end.equals(tag)) {
 					byte[] decode = Base64.decode(buffer.toString());
-					LOGGER.debug("Found End of {}", tag);
+					org.eclipse.californium.elements.MyLogger.LOG_debug("Found End of {}", tag);
 					return decode;
 				} else {
-					LOGGER.warn("Found End of {}, but expected {}!", end, tag);
+					org.eclipse.californium.elements.MyLogger.LOG_warn("Found End of {}, but expected {}!", end, tag);
 					break;
 				}
 			}

@@ -67,16 +67,16 @@ public class DtlsHealthLogger implements DtlsHealth {
 				log.append(head).append(droppedSentRecords).append(eol);
 				log.append(head).append(receivedRecords).append(eol);
 				log.append(head).append(droppedReceivedRecords);
-				LOGGER.debug("{}", log);
+				org.eclipse.californium.elements.MyLogger.LOG_debug("{}", log);
 			}
 		} catch (Throwable e) {
-			LOGGER.error("{}", tag, e);
+			org.eclipse.californium.elements.MyLogger.LOG_error("{}", tag, e);
 		}
 	}
 
 	@Override
 	public boolean isEnabled() {
-		return LOGGER.isDebugEnabled();
+		return org.eclipse.californium.elements.MyLogger.isDebugEnabled();
 	}
 
 	@Override

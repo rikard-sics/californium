@@ -314,7 +314,7 @@ public final class NetworkConfig {
 	 * @return the configuration
 	 */
 	public static NetworkConfig createStandardWithoutFile() {
-		LOGGER.info("Creating standard network configuration properties without a file");
+		org.eclipse.californium.core.MyLogger.LOG_info("Creating standard network configuration properties without a file");
 		return standard = new NetworkConfig();
 	}
 
@@ -342,7 +342,7 @@ public final class NetworkConfig {
 	 */
 	public static NetworkConfig createFromStream(InputStream inStream,
 			final NetworkConfigDefaultHandler customHandler) {
-		LOGGER.info("Creating network configuration properties from stream");
+		org.eclipse.californium.core.MyLogger.LOG_info("Creating network configuration properties from stream");
 		NetworkConfig standard = new NetworkConfig();
 		if (customHandler != null) {
 			customHandler.applyDefaults(standard);
@@ -350,7 +350,7 @@ public final class NetworkConfig {
 		try {
 			standard.load(inStream);
 		} catch (IOException e) {
-			LOGGER.warn("cannot load properties from stream: {}", e.getMessage());
+			org.eclipse.californium.core.MyLogger.LOG_warn("cannot load properties from stream: {}", e.getMessage());
 		}
 		return standard;
 	}
@@ -433,11 +433,11 @@ public final class NetworkConfig {
 		if (file == null) {
 			throw new NullPointerException("file must not be null");
 		} else {
-			LOGGER.info("loading properties from file {}", file.getAbsolutePath());
+			org.eclipse.californium.core.MyLogger.LOG_info("loading properties from file {}", file.getAbsolutePath());
 			try (InputStream inStream = new FileInputStream(file)) {
 				load(inStream);
 			} catch (IOException e) {
-				LOGGER.warn("cannot load properties from file {}: {}",
+				org.eclipse.californium.core.MyLogger.LOG_warn("cannot load properties from file {}: {}",
 						new Object[] { file.getAbsolutePath(), e.getMessage() });
 			}
 		}
@@ -483,11 +483,11 @@ public final class NetworkConfig {
 		if (file == null) {
 			throw new NullPointerException("file must not be null");
 		} else {
-			LOGGER.info("writing properties to file {}", file.getAbsolutePath());
+			org.eclipse.californium.core.MyLogger.LOG_info("writing properties to file {}", file.getAbsolutePath());
 			try (FileWriter writer = new FileWriter(file)) {
 				properties.store(writer, header);
 			} catch (IOException e) {
-				LOGGER.warn("cannot write properties to file {}: {}",
+				org.eclipse.californium.core.MyLogger.LOG_warn("cannot write properties to file {}: {}",
 						new Object[] { file.getAbsolutePath(), e.getMessage() });
 			}
 		}
@@ -682,12 +682,12 @@ public final class NetworkConfig {
 			try {
 				result = parser.parseValue(value);
 			} catch (NumberFormatException e) {
-				LOGGER.warn("value for key [{}] is not a {0}, returning default value", key, defaultValue.getClass());
+				org.eclipse.californium.core.MyLogger.LOG_warn("value for key [{}] is not a {0}, returning default value", key, defaultValue.getClass());
 			}
 		} else if (value == null) {
-			LOGGER.warn("key [{}] is undefined, returning default value", key);
+			org.eclipse.californium.core.MyLogger.LOG_warn("key [{}] is undefined, returning default value", key);
 		} else {
-			LOGGER.warn("key [{}] is empty, returning default value", key);
+			org.eclipse.californium.core.MyLogger.LOG_warn("key [{}] is empty, returning default value", key);
 		}
 		return result;
 	}
@@ -705,7 +705,7 @@ public final class NetworkConfig {
 		if (value != null) {
 			return Boolean.parseBoolean(value);
 		} else {
-			LOGGER.warn("Key [{}] is undefined, returning defaultValue", key);
+			org.eclipse.californium.core.MyLogger.LOG_warn("Key [{}] is undefined, returning defaultValue", key);
 			return defaultValue;
 		}
 	}
@@ -721,7 +721,7 @@ public final class NetworkConfig {
 		if (value != null) {
 			return Boolean.parseBoolean(value);
 		} else {
-			LOGGER.warn("Key [{}] is undefined", key);
+			org.eclipse.californium.core.MyLogger.LOG_warn("Key [{}] is undefined", key);
 			return false;
 		}
 	}

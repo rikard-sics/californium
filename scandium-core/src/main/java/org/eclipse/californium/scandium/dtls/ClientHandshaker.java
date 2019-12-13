@@ -198,7 +198,7 @@ public class ClientHandshaker extends Handshaker {
 				break;
 				
 			case NULL:
-				LOGGER.info("Received unexpected ServerKeyExchange message in NULL key exchange mode.");
+				org.eclipse.californium.elements.MyLogger.LOG_info("Received unexpected ServerKeyExchange message in NULL key exchange mode.");
 				break;
 
 			default:
@@ -468,13 +468,13 @@ public class ClientHandshaker extends Handshaker {
 			break;
 		case PSK:
 			pskUtil = new PskUtil(sniEnabled, session, pskStore);
-			LOGGER.debug("Using PSK identity: {}", pskUtil.getPskPrincipal());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Using PSK identity: {}", pskUtil.getPskPrincipal());
 			clientKeyExchange = new PSKClientKeyExchange(pskUtil.getPskPublicIdentity(), session.getPeer());
 			premasterSecret = pskUtil.generatePremasterSecretFromPSK(null);
 			break;
 		case ECDHE_PSK:
 			pskUtil = new PskUtil(sniEnabled, session, pskStore);
-			LOGGER.debug("Using PSK identity: {}", pskUtil.getPskPrincipal());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Using PSK identity: {}", pskUtil.getPskPrincipal());
 			clientKeyExchange = new EcdhPskClientKeyExchange(pskUtil.getPskPublicIdentity(), ecdhe.getPublicKey(), session.getPeer());
 			SecretKey eck = ecdhe.generateSecret(ephemeralServerPublicKey);
 			premasterSecret = pskUtil.generatePremasterSecretFromPSK(eck);
@@ -561,15 +561,15 @@ public class ClientHandshaker extends Handshaker {
 				if (key != null) {
 					rawPublicKeyBytes = key.getEncoded();
 				}
-				if (LOGGER.isDebugEnabled()) {
-					LOGGER.debug("sending CERTIFICATE message with client RawPublicKey [{}] to server", StringUtil.byteArray2HexString(rawPublicKeyBytes));
+				if (org.eclipse.californium.elements.MyLogger.isDebugEnabled()) {
+					org.eclipse.californium.elements.MyLogger.LOG_debug("sending CERTIFICATE message with client RawPublicKey [{}] to server", StringUtil.byteArray2HexString(rawPublicKeyBytes));
 				}
 				clientCertificate = new CertificateMessage(rawPublicKeyBytes, session.getPeer());
 			} else if (CertificateType.X_509 == session.sendCertificateType()) {
 				List<X509Certificate> clientChain = determineClientCertificateChain(certificateRequest);
 				// make sure we only send certs not part of the server's trust anchor
 				List<X509Certificate> truncatedChain = certificateRequest.removeTrustedCertificates(clientChain);
-				LOGGER.debug("sending CERTIFICATE message with client certificate chain [length: {}] to server", truncatedChain.size());
+				org.eclipse.californium.elements.MyLogger.LOG_debug("sending CERTIFICATE message with client certificate chain [length: {}] to server", truncatedChain.size());
 				clientCertificate = new CertificateMessage(truncatedChain, session.getPeer());
 			} else {
 				throw new IllegalArgumentException("Certificate type " + session.sendCertificateType() + " not supported!");
@@ -671,7 +671,7 @@ public class ClientHandshaker extends Handshaker {
 		if (maxFragmentLengthCode != null) {
 			MaxFragmentLengthExtension ext = new MaxFragmentLengthExtension(maxFragmentLengthCode); 
 			helloMessage.addExtension(ext);
-			LOGGER.debug(
+			org.eclipse.californium.elements.MyLogger.LOG_debug(
 					"Indicating max. fragment length [{}] to server [{}]",
 					maxFragmentLengthCode, getPeerAddress());
 		}
@@ -695,7 +695,7 @@ public class ClientHandshaker extends Handshaker {
 	protected void addServerNameIndication(final ClientHello helloMessage) {
 
 		if (sniEnabled && session.getServerNames() != null) {
-			LOGGER.debug("adding SNI extension to CLIENT_HELLO message [{}]", session.getHostName());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("adding SNI extension to CLIENT_HELLO message [{}]", session.getHostName());
 			helloMessage.addExtension(ServerNameExtension.forServerNames(session.getServerNames()));
 		}
 	}

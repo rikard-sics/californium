@@ -137,7 +137,7 @@ public class ObserveRelation {
 				throw new IllegalStateException(String.format("Observe relation %s with %s not established (%s)!", getKey(),
 						resource.getURI(), exchange));
 			}
-			LOGGER.debug("Canceling observe relation {} with {} ({})", getKey(), resource.getURI(), exchange);
+			org.eclipse.californium.core.MyLogger.LOG_debug("Canceling observe relation {} with {} ({})", getKey(), resource.getURI(), exchange);
 			// stop ongoing retransmissions
 			canceled = true;
 			established = false;

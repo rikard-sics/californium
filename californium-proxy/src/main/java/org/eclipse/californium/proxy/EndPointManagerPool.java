@@ -51,7 +51,7 @@ public class EndPointManagerPool {
 			}
 		}
 
-		LOGGER.warn("Out of endpoint managers, creating more");
+		org.eclipse.californium.core.MyLogger.LOG_warn("Out of endpoint managers, creating more");
 
 		return createManager();
 	}

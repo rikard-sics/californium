@@ -93,7 +93,7 @@ public class TlsContextUtil extends TcpContextUtil {
 				// getPeerCertificates fails
 				checkKerberos = true;
 			} catch (RuntimeException e) {
-				LOGGER.warn("TLS({}) failed to extract principal {}", id, e.getMessage());
+				org.eclipse.californium.elements.MyLogger.LOG_warn("TLS({}) failed to extract principal {}", id, e.getMessage());
 			}
 
 			if (checkKerberos) {
@@ -102,26 +102,26 @@ public class TlsContextUtil extends TcpContextUtil {
 				} catch (SSLPeerUnverifiedException e2) {
 					// still unverified, so also no kerberos
 					if (warnMissingPrincipal) {
-						LOGGER.warn("TLS({}) failed to verify principal, {}", id, e2.getMessage());
+						org.eclipse.californium.elements.MyLogger.LOG_warn("TLS({}) failed to verify principal, {}", id, e2.getMessage());
 					} else {
-						LOGGER.trace("TLS({}) failed to verify principal, {}", id, e2.getMessage());
+						org.eclipse.californium.elements.MyLogger.LOG_trace("TLS({}) failed to verify principal, {}", id, e2.getMessage());
 					}
 				}
 			}
 
 			if (principal != null) {
-				LOGGER.debug("TLS({}) Principal {}", id, principal.getName());
+				org.eclipse.californium.elements.MyLogger.LOG_debug("TLS({}) Principal {}", id, principal.getName());
 			} else if (warnMissingPrincipal) {
-				LOGGER.warn("TLS({}) principal missing", id);
+				org.eclipse.californium.elements.MyLogger.LOG_warn("TLS({}) principal missing", id);
 			} else {
-				LOGGER.trace("TLS({}) principal missing", id);
+				org.eclipse.californium.elements.MyLogger.LOG_trace("TLS({}) principal missing", id);
 			}
 
 			byte[] sessionId = sslSession.getId();
 			if (sessionId != null && sessionId.length > 0) {
 				String sslId = StringUtil.byteArray2HexString(sessionId, StringUtil.NO_SEPARATOR, 0);
 				String cipherSuite = sslSession.getCipherSuite();
-				LOGGER.debug("TLS({},{},{})", id, StringUtil.trunc(sslId, 14), cipherSuite);
+				org.eclipse.californium.elements.MyLogger.LOG_debug("TLS({},{},{})", id, StringUtil.trunc(sslId, 14), cipherSuite);
 				return new TlsEndpointContext(address, principal, id, sslId, cipherSuite);
 			}
 		}

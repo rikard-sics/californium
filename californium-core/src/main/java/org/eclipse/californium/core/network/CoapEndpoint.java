@@ -381,7 +381,7 @@ public class CoapEndpoint implements Endpoint {
 			public void execute(Runnable command) {
 				final Executor exchangeExecutor = executor;
 				if (exchangeExecutor == null) {
-					LOGGER.error("{}Executor not ready for exchanges!",
+					org.eclipse.californium.core.MyLogger.LOG_error("{}Executor not ready for exchanges!",
 							tag, new Throwable("exchange execution failed!"));
 				} else {
 					exchangeExecutor.execute(command);
@@ -390,7 +390,7 @@ public class CoapEndpoint implements Endpoint {
 		};
 
 		this.connector.setEndpointContextMatcher(endpointContextMatcher);
-		LOGGER.info("{}{} uses {}", tag, getClass().getSimpleName(), endpointContextMatcher.getName());
+		org.eclipse.californium.core.MyLogger.LOG_info("{}{} uses {}", tag, getClass().getSimpleName(), endpointContextMatcher.getName());
 
 		this.coapstack = coapStackFactory.createCoapStack(connector.getProtocol(), config, new OutboxImpl(), customStackArgument);
 
@@ -463,7 +463,7 @@ public class CoapEndpoint implements Endpoint {
 	@Override
 	public synchronized void start() throws IOException {
 		if (started) {
-			LOGGER.debug("{}Endpoint at {} is already started", tag, getUri());
+			org.eclipse.californium.core.MyLogger.LOG_debug("{}Endpoint at {} is already started", tag, getUri());
 			return;
 		}
 
@@ -472,7 +472,7 @@ public class CoapEndpoint implements Endpoint {
 		}
 
 		if (this.executor == null) {
-			LOGGER.info("{}Endpoint [{}] requires an executor to start, using default single-threaded daemon executor", tag, getUri());
+			org.eclipse.californium.core.MyLogger.LOG_info("{}Endpoint [{}] requires an executor to start, using default single-threaded daemon executor", tag, getUri());
 
 			// in production environments the executor should be set to a multi
 			// threaded version in order to utilize all cores of the processor
@@ -499,7 +499,7 @@ public class CoapEndpoint implements Endpoint {
 		}
 
 		try {
-			LOGGER.debug("{}Starting endpoint at {}", tag, getUri());
+			org.eclipse.californium.core.MyLogger.LOG_debug("{}Starting endpoint at {}", tag, getUri());
 
 			started = true;
 			matcher.start();
@@ -508,7 +508,7 @@ public class CoapEndpoint implements Endpoint {
 			for (EndpointObserver obs : observers) {
 				obs.started(this);
 			}
-			LOGGER.info("{}Started endpoint at {}", tag, getUri());
+			org.eclipse.californium.core.MyLogger.LOG_info("{}Started endpoint at {}", tag, getUri());
 			if (health != null && secondaryExecutor != null) {
 				final int healthStatusInterval = config.getInt(NetworkConfig.Keys.HEALTH_STATUS_INTERVAL,
 						NetworkConfigDefaults.DEFAULT_HEALTH_STATUS_INTERVAL); // seconds
@@ -533,9 +533,9 @@ public class CoapEndpoint implements Endpoint {
 	@Override
 	public synchronized void stop() {
 		if (!started) {
-			LOGGER.info("{}Endpoint at {} is already stopped", tag, getUri());
+			org.eclipse.californium.core.MyLogger.LOG_info("{}Endpoint at {} is already stopped", tag, getUri());
 		} else {
-			LOGGER.info("{}Stopping endpoint at {}", tag, getUri());
+			org.eclipse.californium.core.MyLogger.LOG_info("{}Stopping endpoint at {}", tag, getUri());
 			started = false;
 			if (statusLogger != null) {
 				statusLogger.cancel(false);
@@ -551,7 +551,7 @@ public class CoapEndpoint implements Endpoint {
 
 	@Override
 	public synchronized void destroy() {
-		LOGGER.info("{}Destroying endpoint at {}", tag, getUri());
+		org.eclipse.californium.core.MyLogger.LOG_info("{}Destroying endpoint at {}", tag, getUri());
 		if (started) {
 			stop();
 		}
@@ -637,23 +637,23 @@ public class CoapEndpoint implements Endpoint {
 		InetSocketAddress destinationAddress = request.getDestinationContext().getPeerAddress();
 		if (request.isMulticast()) {
 			if (0 >= multicastBaseMid) {
-				LOGGER.warn(
+				org.eclipse.californium.core.MyLogger.LOG_warn(
 						"{}multicast messaging to destination {} is not enabled! Please enable it configuring \"MULTICAST_BASE_MID\" greater than 0",
 						tag, destinationAddress);
 				return;
 			} else if (request.getType() == Type.CON) {
-				LOGGER.warn(
+				org.eclipse.californium.core.MyLogger.LOG_warn(
 						"{}CON request to multicast destination {} is not allowed, as per RFC 7252, 8.1, a client MUST use NON message type for multicast requests ",
 						tag, destinationAddress);
 				return;
 			} else if (request.hasMID() && request.getMID() < multicastBaseMid) {
-				LOGGER.warn(
+				org.eclipse.californium.core.MyLogger.LOG_warn(
 						"{}multicast request to group {} has mid {} which is not in the MULTICAST_MID range [{}-65535]",
 						tag, destinationAddress, request.getMID(), multicastBaseMid);
 				return;
 			}
 		} else if (0 < multicastBaseMid && request.getMID() >= multicastBaseMid) {
-			LOGGER.warn("{}request has mid {}, which is in the MULTICAST_MID range [{}-65535]", tag, destinationAddress,
+			org.eclipse.californium.core.MyLogger.LOG_warn("{}request has mid {}, which is in the MULTICAST_MID range [{}-65535]", tag, destinationAddress,
 					request.getMID(), multicastBaseMid);
 			return;
 		}
@@ -753,11 +753,11 @@ public class CoapEndpoint implements Endpoint {
 					uri = new URI(scheme, null, host, socketAddress.getPort(), null, null, null);
 				} catch (URISyntaxException e2) {
 					// warn with the original violation
-					LOGGER.warn("{}URI", tag, e);
+					org.eclipse.californium.core.MyLogger.LOG_warn("{}URI", tag, e);
 				}
 			}
 		} catch (IllegalArgumentException e) {
-			LOGGER.warn("{}URI", tag, e);
+			org.eclipse.californium.core.MyLogger.LOG_warn("{}URI", tag, e);
 		}
 		return uri;
 	}
@@ -957,7 +957,7 @@ public class CoapEndpoint implements Endpoint {
 					receiveEmptyMessage((EmptyMessage) msg);
 
 				} else {
-					LOGGER.debug("{}silently ignoring non-CoAP message from {}", tag, raw.getEndpointContext());
+					org.eclipse.californium.core.MyLogger.LOG_debug("{}silently ignoring non-CoAP message from {}", tag, raw.getEndpointContext());
 				}
 
 			} catch (CoAPMessageFormatException e) {
@@ -966,16 +966,16 @@ public class CoapEndpoint implements Endpoint {
 					// reject erroneous reliably transmitted message as mandated by CoAP spec
 					// https://tools.ietf.org/html/rfc7252#section-4.2
 					reject(raw, e);
-					LOGGER.debug("{}rejected malformed message from [{}], reason: {}",
+					org.eclipse.californium.core.MyLogger.LOG_debug("{}rejected malformed message from [{}], reason: {}",
 							tag, raw.getEndpointContext(), e.getMessage());
 				} else {
 					// ignore erroneous messages that are not transmitted reliably
-					LOGGER.debug("{}discarding malformed message from [{}]", tag, raw.getEndpointContext());
+					org.eclipse.californium.core.MyLogger.LOG_debug("{}discarding malformed message from [{}]", tag, raw.getEndpointContext());
 				}
 			} catch (MessageFormatException e) {
 
 				// ignore erroneous messages that are not transmitted reliably
-				LOGGER.debug("{}discarding malformed message from [{}]", tag, raw.getEndpointContext());
+				org.eclipse.californium.core.MyLogger.LOG_debug("{}discarding malformed message from [{}]", tag, raw.getEndpointContext());
 			}
 		}
 
@@ -998,7 +998,7 @@ public class CoapEndpoint implements Endpoint {
 			request.setScheme(scheme);
 
 			if (!started) {
-				LOGGER.debug("{}not running, drop request {}", tag, request);
+				org.eclipse.californium.core.MyLogger.LOG_debug("{}not running, drop request {}", tag, request);
 				return;
 			}
 
@@ -1049,7 +1049,7 @@ public class CoapEndpoint implements Endpoint {
 			if (!message.isCanceled()) {
 				// CoAP Ping
 				if ((message.getType() == Type.CON || message.getType() == Type.NON) && message.hasMID()) {
-					LOGGER.debug("{}responding to ping from {}", tag, message.getSourceContext());
+					org.eclipse.californium.core.MyLogger.LOG_debug("{}responding to ping from {}", tag, message.getSourceContext());
 					endpointStackReceiver.reject(message);
 				} else {
 					 matcher.receiveEmptyMessage(message, endpointStackReceiver);
@@ -1165,12 +1165,12 @@ public class CoapEndpoint implements Endpoint {
 					try {
 						task.run();
 					} catch (final Throwable t) {
-						LOGGER.error("{}exception in protocol stage thread: {}", tag, t.getMessage(), t);
+						org.eclipse.californium.core.MyLogger.LOG_error("{}exception in protocol stage thread: {}", tag, t.getMessage(), t);
 					}
 				}
 			});
 		} catch (RejectedExecutionException e) {
-			LOGGER.debug("{} execute:", tag, e);
+			org.eclipse.californium.core.MyLogger.LOG_debug("{} execute:", tag, e);
 		}
 	}
 

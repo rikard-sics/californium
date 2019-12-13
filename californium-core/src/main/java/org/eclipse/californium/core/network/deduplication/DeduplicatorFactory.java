@@ -79,7 +79,7 @@ public class DeduplicatorFactory {
 		case NetworkConfig.Keys.NO_DEDUPLICATOR:
 			return new NoDeduplicator();
 		default:
-			LOGGER.warn("configuration contains unsupported deduplicator type, duplicate detection will be turned off");
+			org.eclipse.californium.core.MyLogger.LOG_warn("configuration contains unsupported deduplicator type, duplicate detection will be turned off");
 			return new NoDeduplicator();
 		}
 	}

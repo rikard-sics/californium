@@ -59,13 +59,13 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 				final String uri = request.getURI();
 
 				if (uri == null) {
-					LOGGER.error(ErrorDescriptions.URI_NULL);
+					org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.URI_NULL);
 					throw new OSException(ErrorDescriptions.URI_NULL);
 				}
 
 				OSCoreCtx ctx = ctxDb.getContext(uri);
 				if (ctx == null) {
-					LOGGER.error(ErrorDescriptions.CTX_NULL);
+					org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.CTX_NULL);
 					throw new OSException(ErrorDescriptions.CTX_NULL);
 				}
 
@@ -85,9 +85,9 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 							try {
 								OSCoreCtx ctx = ctxDb.getContext(uri);
 								if (ctx == null) {
-									LOGGER.error(ErrorDescriptions.CTX_NULL);
+									org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.CTX_NULL);
 								} else if (ctx.getContextRederivationPhase() != PHASE.CLIENT_PHASE_2) {
-									LOGGER.error("Expected phase 2, but is {}", ctx.getContextRederivationPhase());
+									org.eclipse.californium.core.MyLogger.LOG_error("Expected phase 2, but is {}", ctx.getContextRederivationPhase());
 								}
 							} catch (OSException e) {
 							}
@@ -97,7 +97,7 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 
 								@Override
 								public void run() {
-									LOGGER.info("Original Request: " + exchange.getRequest().toString());
+									org.eclipse.californium.core.MyLogger.LOG_info("Original Request: " + exchange.getRequest().toString());
 									ObjectSecurityContextLayer.super.sendRequest(exchange, request);
 								}
 							});
@@ -141,7 +141,7 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 
 					});
 					// send start rederivation request
-					LOGGER.info("Auxiliary Request: " + exchange.getRequest().toString());
+					org.eclipse.californium.core.MyLogger.LOG_info("Auxiliary Request: " + exchange.getRequest().toString());
 					final Exchange newExchange = new Exchange(startRederivation, Origin.LOCAL, executor);
 					newExchange.execute(new Runnable() {
 
@@ -154,14 +154,14 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 				}
 
 			} catch (OSException e) {
-				LOGGER.error("Error sending request: " + e.getMessage());
+				org.eclipse.californium.core.MyLogger.LOG_error("Error sending request: " + e.getMessage());
 				return;
 			} catch (IllegalArgumentException e) {
-				LOGGER.error("Unable to send request because of illegal argument: " + e.getMessage());
+				org.eclipse.californium.core.MyLogger.LOG_error("Unable to send request because of illegal argument: " + e.getMessage());
 				return;
 			}
 		}
-		LOGGER.info("Request: " + exchange.getRequest().toString());
+		org.eclipse.californium.core.MyLogger.LOG_info("Request: " + exchange.getRequest().toString());
 		super.sendRequest(exchange, request);
 	}
 

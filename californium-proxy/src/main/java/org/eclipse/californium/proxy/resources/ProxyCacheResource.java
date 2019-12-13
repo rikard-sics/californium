@@ -137,7 +137,7 @@ public class ProxyCacheResource extends CoapResource implements CacheResource {
 			try {
 				cacheKey = CacheKey.fromContentTypeOption(request);
 			} catch (URISyntaxException e) {
-				LOGGER.warn("Cannot create the cache key: {}", e.getMessage());
+				org.eclipse.californium.core.MyLogger.LOG_warn("Cannot create the cache key: {}", e.getMessage());
 			}
 
 			if (code == ResponseCode.CREATED || code == ResponseCode.DELETED || code == ResponseCode.CHANGED) {
@@ -160,9 +160,9 @@ public class ProxyCacheResource extends CoapResource implements CacheResource {
 					cachedResponse.getOptions().setMaxAge(newMaxAge);
 					cachedResponse.setNanoTimestamp(newCurrentTime);
 
-					LOGGER.debug("Updated cached response");
+					org.eclipse.californium.core.MyLogger.LOG_debug("Updated cached response");
 				} else {
-					LOGGER.warn("No max-age option set in response: {}", response);
+					org.eclipse.californium.core.MyLogger.LOG_warn("No max-age option set in response: {}", response);
 				}
 			} else if (code == ResponseCode.CONTENT) {
 				// set max-age if not set
@@ -181,13 +181,13 @@ public class ProxyCacheResource extends CoapResource implements CacheResource {
 						Response responseInserted = responseCache.get(cacheKey);
 						if (responseInserted != null) {
 //							if (Bench_Help.DO_LOG) 
-								LOGGER.debug("Cached response");
+								org.eclipse.californium.core.MyLogger.LOG_debug("Cached response");
 						} else {
-							LOGGER.warn("Failed to insert the response in the cache");
+							org.eclipse.californium.core.MyLogger.LOG_warn("Failed to insert the response in the cache");
 						}
 					} catch (ExecutionException e) {
 						// swallow
-						LOGGER.warn("Exception while inserting the response in the cache", e);
+						org.eclipse.californium.core.MyLogger.LOG_warn("Exception while inserting the response in the cache", e);
 					}
 				} else {
 					// if the max-age option is set to 0, then the response
@@ -196,7 +196,7 @@ public class ProxyCacheResource extends CoapResource implements CacheResource {
 				}
 			} else {
 				// this code should not be reached
-				LOGGER.error("Code not recognized: {}", code);
+				org.eclipse.californium.core.MyLogger.LOG_error("Code not recognized: {}", code);
 			}
 		}
 	}
@@ -236,7 +236,7 @@ public class ProxyCacheResource extends CoapResource implements CacheResource {
 
 		// if the response is not null, manage the cached response
 		if (response != null) {
-			LOGGER.debug("Cache hit");
+			org.eclipse.californium.core.MyLogger.LOG_debug("Cache hit");
 
 			// check if the response is expired
 			long currentTime = ClockUtil.nanoRealtime();
@@ -248,12 +248,12 @@ public class ProxyCacheResource extends CoapResource implements CacheResource {
 				// set the current time as the response timestamp
 				response.setNanoTimestamp(currentTime);
 			} else {
-				LOGGER.debug("Expired response");
+				org.eclipse.californium.core.MyLogger.LOG_debug("Expired response");
 
 				// try to validate the response
 				response = validate(cacheKey);
 				if (response != null) {
-					LOGGER.debug("Validation successful");
+					org.eclipse.californium.core.MyLogger.LOG_debug("Validation successful");
 				} else {
 					invalidateRequest(cacheKey);
 				}
@@ -266,7 +266,7 @@ public class ProxyCacheResource extends CoapResource implements CacheResource {
 	@Override
 	public void invalidateRequest(Request request) {
 		invalidateRequest(CacheKey.fromAcceptOptions(request));
-		LOGGER.debug("Invalidated request");
+		org.eclipse.californium.core.MyLogger.LOG_debug("Invalidated request");
 	}
 
 	@Override
@@ -377,7 +377,7 @@ public class ProxyCacheResource extends CoapResource implements CacheResource {
 				// TODO why not UTF-8?
 				proxyUri = URLEncoder.encode(proxyUri, "ISO-8859-1");
 			} catch (UnsupportedEncodingException e) {
-				LOGGER.error("ISO-8859-1 encoding not supported: {}", e.getMessage());
+				org.eclipse.californium.core.MyLogger.LOG_error("ISO-8859-1 encoding not supported: {}", e.getMessage());
 			}
 			byte[] payload = request.getPayload();
 

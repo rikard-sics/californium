@@ -65,10 +65,10 @@ public class ProxyProperties extends java.util.Properties {
 			try {
 				return Double.parseDouble(value);
 			} catch (NumberFormatException e) {
-				LOGGER.error(String.format("Invalid double property: %s=%s", key, value));
+				org.eclipse.californium.core.MyLogger.LOG_error(String.format("Invalid double property: %s=%s", key, value));
 			}
 		} else {
-			LOGGER.error(String.format("Undefined double property: %s", key));
+			org.eclipse.californium.core.MyLogger.LOG_error(String.format("Undefined double property: %s", key));
 		}
 		return 0.0;
 	}
@@ -79,10 +79,10 @@ public class ProxyProperties extends java.util.Properties {
 			try {
 				return Integer.parseInt(value.trim());
 			} catch (NumberFormatException e) {
-				LOGGER.error(String.format("Invalid integer property: %s=%s", key, value));
+				org.eclipse.californium.core.MyLogger.LOG_error(String.format("Invalid integer property: %s=%s", key, value));
 			}
 		} else {
-			LOGGER.error(String.format("Undefined integer property: %s", key));
+			org.eclipse.californium.core.MyLogger.LOG_error(String.format("Undefined integer property: %s", key));
 		}
 		return 0;
 	}
@@ -90,7 +90,7 @@ public class ProxyProperties extends java.util.Properties {
 	public String getStr(String key) {
 		String value = getProperty(key);
 		if (value == null) {
-			LOGGER.error(String.format("Undefined string property: %s", key));
+			org.eclipse.californium.core.MyLogger.LOG_error(String.format("Undefined string property: %s", key));
 		}
 		return value;
 	}
@@ -101,10 +101,10 @@ public class ProxyProperties extends java.util.Properties {
 			try {
 				return Boolean.parseBoolean(value);
 			} catch (NumberFormatException e) {
-				LOGGER.error(String.format("Invalid boolean property: %s=%s", key, value));
+				org.eclipse.californium.core.MyLogger.LOG_error(String.format("Invalid boolean property: %s=%s", key, value));
 			}
 		} else {
-			LOGGER.error(String.format("Undefined boolean property: %s", key));
+			org.eclipse.californium.core.MyLogger.LOG_error(String.format("Undefined boolean property: %s", key));
 		}
 		return false;
 	}
@@ -249,7 +249,7 @@ public class ProxyProperties extends java.util.Properties {
 			try {
 				store(fileName);
 			} catch (IOException e1) {
-				LOGGER.warn(String.format("Failed to create configuration file: %s", e1.getMessage()));
+				org.eclipse.californium.core.MyLogger.LOG_warn(String.format("Failed to create configuration file: %s", e1.getMessage()));
 			}
 		}
 	}

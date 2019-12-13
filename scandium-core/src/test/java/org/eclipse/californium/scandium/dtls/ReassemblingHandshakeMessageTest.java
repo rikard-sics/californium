@@ -96,7 +96,7 @@ public class ReassemblingHandshakeMessageTest {
 	}
 
 	private void log(FragmentedHandshakeMessage msg) {
-		LOGGER.info(" fragment [{}:{})", msg.getFragmentOffset(), msg.getFragmentOffset() + msg.getFragmentLength());
+		org.eclipse.californium.elements.MyLogger.LOG_info(" fragment [{}:{})", msg.getFragmentOffset(), msg.getFragmentOffset() + msg.getFragmentLength());
 	}
 
 	private void log() {
@@ -107,9 +107,9 @@ public class ReassemblingHandshakeMessageTest {
 
 	private void log(ReassemblingHandshakeMessage reassembledMessage) {
 		List<Object> ranges = reassembledMessage.getRanges();
-		LOGGER.info("{} ranges", ranges.size());
+		org.eclipse.californium.elements.MyLogger.LOG_info("{} ranges", ranges.size());
 		for (Object range : ranges) {
-			LOGGER.info("  {}", range);
+			org.eclipse.californium.elements.MyLogger.LOG_info("  {}", range);
 		}
 	}
 

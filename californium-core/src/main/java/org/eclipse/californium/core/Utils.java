@@ -97,6 +97,10 @@ public final class Utils {
 	 * @return the pretty print
 	 */
 	public static String prettyPrint(Request r) {
+		
+		if(r == null) {
+			return "NULL REQUEST";
+		}
 
 		StringBuilder sb = new StringBuilder();
 
@@ -124,6 +128,11 @@ public final class Utils {
 	 * @return the pretty print
 	 */
 	public static String prettyPrint(CoapResponse r) {
+		
+		if(r == null) {
+			return "NULL INNER RESPONSE";
+		}
+		
 		return prettyPrint(r.advanced());
 	}
 
@@ -134,14 +143,27 @@ public final class Utils {
 	 * @return the pretty print
 	 */
 	public static String prettyPrint(Response r) {
+		
+		if(r == null) {
+			return "NULL RESPONSE";
+		}
+		
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("==[ CoAP Response ]============================================").append(StringUtil.lineSeparator());
 		sb.append(String.format("MID    : %d", r.getMID())).append(StringUtil.lineSeparator());
-		sb.append(String.format("Token  : %s", r.getTokenString())).append(StringUtil.lineSeparator());
-		sb.append(String.format("Type   : %s", r.getType().toString())).append(StringUtil.lineSeparator());
-		sb.append(String.format("Status : %s - %s", r.getCode().toString(), r.getCode().name())).append(StringUtil.lineSeparator());
-		sb.append(String.format("Options: %s", r.getOptions().toString())).append(StringUtil.lineSeparator());
+		if(r.getTokenString() != null) {
+			sb.append(String.format("Token  : %s", r.getTokenString())).append(StringUtil.lineSeparator());
+		}
+		if(r.getType() != null) {
+			sb.append(String.format("Type   : %s", r.getType().toString())).append(StringUtil.lineSeparator());
+		}
+		if(r.getCode() != null) {
+			sb.append(String.format("Status : %s - %s", r.getCode().toString(), r.getCode().name())).append(StringUtil.lineSeparator());
+		}
+		if(r.getOptions() != null) {
+			sb.append(String.format("Options: %s", r.getOptions().toString())).append(StringUtil.lineSeparator());
+		}
 		if (r.getRTT() != null) {
 			sb.append(String.format("RTT    : %d ms", r.getRTT())).append(StringUtil.lineSeparator());
 		}

@@ -74,13 +74,13 @@ public class ObserveLayer extends AbstractLayer {
 			if (exchange.getRequest().isAcknowledged() || exchange.getRequest().getType() == Type.NON) {
 				// Transmit errors as CON
 				if (!ResponseCode.isSuccess(response.getCode())) {
-					LOGGER.debug("response has error code {} and must be sent as CON", response.getCode());
+					org.eclipse.californium.core.MyLogger.LOG_debug("response has error code {} and must be sent as CON", response.getCode());
 					response.setType(Type.CON);
 					relation.cancel();
 				} else {
 					// Make sure that every now and than a CON is mixed within
 					if (relation.check()) {
-						LOGGER.debug("observe relation check requires the notification to be sent as CON");
+						org.eclipse.californium.core.MyLogger.LOG_debug("observe relation check requires the notification to be sent as CON");
 						response.setType(Type.CON);
 					} else {
 						// By default use NON, but do not override resource
@@ -110,7 +110,7 @@ public class ObserveLayer extends AbstractLayer {
 			// synchronized
 			Response current = relation.getCurrentControlNotification();
 			if (current != null && isInTransit(current)) {
-				LOGGER.debug("a former notification is still in transit. Postponing {}", response);
+				org.eclipse.californium.core.MyLogger.LOG_debug("a former notification is still in transit. Postponing {}", response);
 				relation.setNextControlNotification(response);
 				// do not send now
 				return;
@@ -141,7 +141,7 @@ public class ObserveLayer extends AbstractLayer {
 
 		if (response.isNotification() && exchange.getRequest().isCanceled()) {
 			// The request was canceled and we no longer want notifications
-			LOGGER.debug("rejecting notification for canceled Exchange");
+			org.eclipse.californium.core.MyLogger.LOG_debug("rejecting notification for canceled Exchange");
 			EmptyMessage rst = EmptyMessage.newRST(response);
 			sendEmptyMessage(exchange, rst);
 			// Matcher sets exchange as complete when RST is sent
@@ -189,7 +189,7 @@ public class ObserveLayer extends AbstractLayer {
 			// next may be null
 			relation.setNextControlNotification(null);
 			if (next != null) {
-				LOGGER.debug("notification has been acknowledged, send the next one");
+				org.eclipse.californium.core.MyLogger.LOG_debug("notification has been acknowledged, send the next one");
 				// Create a new task for sending next response so that we
 				// can leave the sync-block
 				exchange.execute(new Runnable() {
@@ -208,7 +208,7 @@ public class ObserveLayer extends AbstractLayer {
 			ObserveRelation relation = exchange.getRelation();
 			final Response next = relation.getNextControlNotification();
 			if (next != null) {
-				LOGGER.debug("notification has timed out and there is a fresher notification for the retransmission");
+				org.eclipse.californium.core.MyLogger.LOG_debug("notification has timed out and there is a fresher notification for the retransmission");
 				// Cancel the original retransmission and 
 				// send the fresh notification here
 				exchange.getCurrentResponse().cancel();
@@ -228,7 +228,7 @@ public class ObserveLayer extends AbstractLayer {
 		@Override
 		public void onTimeout() {
 			ObserveRelation relation = exchange.getRelation();
-			LOGGER.info("notification for token [{}] timed out. Canceling all relations with source [{}]",
+			org.eclipse.californium.core.MyLogger.LOG_info("notification for token [{}] timed out. Canceling all relations with source [{}]",
 					relation.getExchange().getRequest().getToken(), relation.getSource());
 			relation.cancelAll();
 		}

@@ -225,7 +225,7 @@ public class CoapServer implements ServerInterface {
 			return;
 		}
 
-		LOGGER.info("Starting server");
+		org.eclipse.californium.core.MyLogger.LOG_info("Starting server");
 
 		if (executor == null) {
 			// sets the central thread pool for the protocol stage over all
@@ -239,7 +239,7 @@ public class CoapServer implements ServerInterface {
 		if (endpoints.isEmpty()) {
 			// servers should bind to the configured port (while clients should use an ephemeral port through the default endpoint)
 			int port = config.getInt(NetworkConfig.Keys.COAP_PORT);
-			LOGGER.info("no endpoints have been defined for server, setting up server endpoint on default port {}", port);
+			org.eclipse.californium.core.MyLogger.LOG_info("no endpoints have been defined for server, setting up server endpoint on default port {}", port);
 			CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
 			builder.setPort(port);
 			builder.setNetworkConfig(config);
@@ -253,7 +253,7 @@ public class CoapServer implements ServerInterface {
 				// only reached on success
 				++started;
 			} catch (IOException e) {
-				LOGGER.error("cannot start server endpoint [{}]", ep.getAddress(), e);
+				org.eclipse.californium.core.MyLogger.LOG_error("cannot start server endpoint [{}]", ep.getAddress(), e);
 			}
 		}
 		if (started == 0) {
@@ -272,7 +272,7 @@ public class CoapServer implements ServerInterface {
 	public synchronized void stop() {
 
 		if (running) {
-			LOGGER.info("Stopping server");
+			org.eclipse.californium.core.MyLogger.LOG_info("Stopping server");
 			for (Endpoint ep : endpoints) {
 				ep.stop();
 			}
@@ -285,7 +285,7 @@ public class CoapServer implements ServerInterface {
 	 */
 	@Override
 	public synchronized void destroy() {
-		LOGGER.info("Destroying server");
+		org.eclipse.californium.core.MyLogger.LOG_info("Destroying server");
 		// prevent new tasks from being submitted
 		try {
 			if (!detachExecutor)
@@ -303,7 +303,7 @@ public class CoapServer implements ServerInterface {
 			for (Endpoint ep : endpoints) {
 				ep.destroy();
 			}
-			LOGGER.info("CoAP server has been destroyed");
+			org.eclipse.californium.core.MyLogger.LOG_info("CoAP server has been destroyed");
 			running = false;
 		}
 	}

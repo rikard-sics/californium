@@ -69,7 +69,7 @@ public class HttpClientFactory {
 			client.start();
 			return client;
 		} catch (IOReactorException e) {
-			LOGGER.log(Level.SEVERE, e.getMessage(), e);
+			org.eclipse.californium.core.MyLogger.LOG_log(Level.SEVERE, e.getMessage(), e);
 			return null;
 		}
 	}

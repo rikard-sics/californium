@@ -257,7 +257,7 @@ public class Request extends Message {
 			String coapUri = uri;
 			if (!uri.contains("://")) {
 				coapUri = "coap://" + uri;
-				LOGGER.warn("update your code to supply an RFC 7252 compliant URI including a scheme");
+				org.eclipse.californium.core.MyLogger.LOG_warn("update your code to supply an RFC 7252 compliant URI including a scheme");
 			}
 			return setURI(new URI(coapUri));
 		} catch (URISyntaxException e) {
@@ -301,7 +301,7 @@ public class Request extends Message {
 		} catch (URISyntaxException e) {
 			// should not happen because we are creating the URI from an
 			// existing URI object
-			LOGGER.warn("cannot set URI on request", e);
+			org.eclipse.californium.core.MyLogger.LOG_warn("cannot set URI on request", e);
 			throw new IllegalArgumentException(e);
 		}
 	}
@@ -351,7 +351,7 @@ public class Request extends Message {
 				} catch (UnknownHostException e) {
 					// this should not happen because we do not need to resolve
 					// a host name
-					LOGGER.warn("could not parse IP address of URI despite successful IP address pattern matching");
+					org.eclipse.californium.core.MyLogger.LOG_warn("could not parse IP address of URI despite successful IP address pattern matching");
 				}
 			} else {
 				// host contains a host name, put it into Uri-Host option to

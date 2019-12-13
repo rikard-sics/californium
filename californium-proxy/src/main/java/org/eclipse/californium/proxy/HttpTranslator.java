@@ -233,7 +233,7 @@ public final class HttpTranslator {
 				try {
 					optionNumber = Integer.parseInt(optionCodeString.trim());
 				} catch (Exception e) {
-					LOGGER.warn("Problems in the parsing", e);
+					org.eclipse.californium.core.MyLogger.LOG_warn("Problems in the parsing", e);
 					// ignore the option if not recognized
 					continue;
 				}
@@ -283,7 +283,7 @@ public final class HttpTranslator {
 							try {
 								maxAge = Integer.parseInt(headerValue.substring(index + 1).trim());
 							} catch (NumberFormatException e) {
-								LOGGER.warn("Cannot convert cache control in max-age option", e);
+								org.eclipse.californium.core.MyLogger.LOG_warn("Cannot convert cache control in max-age option", e);
 								continue;
 							}
 						}
@@ -317,7 +317,7 @@ public final class HttpTranslator {
 				// Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
 				// This cannot be parsed into a single CoAP Option and yields a
 				// NumberFormatException
-				LOGGER.warn("Could not parse header line {}", header);
+				org.eclipse.californium.core.MyLogger.LOG_warn("Could not parse header line {}", header);
 			}
 		} // while (headerIterator.hasNext())
 
@@ -361,7 +361,7 @@ public final class HttpTranslator {
 				}
 			}
 		} catch (IOException e) {
-			LOGGER.warn("Cannot get the content of the http entity: " + e.getMessage());
+			org.eclipse.californium.core.MyLogger.LOG_warn("Cannot get the content of the http entity: " + e.getMessage());
 			throw new TranslationException("Cannot get the content of the http entity", e);
 		} finally {
 			try {
@@ -422,7 +422,7 @@ public final class HttpTranslator {
 		try {
 			coapMethod = Integer.parseInt(coapMethodString.trim());
 		} catch (NumberFormatException e) {
-			LOGGER.warn("Cannot convert the http method in coap method", e);
+			org.eclipse.californium.core.MyLogger.LOG_warn("Cannot convert the http method in coap method", e);
 			throw new TranslationException("Cannot convert the http method in coap method", e);
 		}
 
@@ -439,10 +439,10 @@ public final class HttpTranslator {
 		try {
 			uriString = URLDecoder.decode(uriString, "UTF-8");
 		} catch (UnsupportedEncodingException e) {
-			LOGGER.warn("Failed to decode the uri", e);
+			org.eclipse.californium.core.MyLogger.LOG_warn("Failed to decode the uri", e);
 			throw new TranslationException("Failed decoding the uri: " + e.getMessage());
 		} catch (Throwable e) {
-			LOGGER.warn("Malformed uri", e);
+			org.eclipse.californium.core.MyLogger.LOG_warn("Malformed uri", e);
 			throw new InvalidFieldException("Malformed uri: " + e.getMessage());
 		}
 
@@ -481,7 +481,7 @@ public final class HttpTranslator {
 				coapRequest.setDestination(localHostAddress);
 				// TODO: setDestinationPort???
 			} catch (UnknownHostException e) {
-				LOGGER.warn("Cannot get the localhost address", e);
+				org.eclipse.californium.core.MyLogger.LOG_warn("Cannot get the localhost address", e);
 				throw new TranslationException("Cannot get the localhost address: " + e.getMessage());
 			}
 		} else {
@@ -559,14 +559,14 @@ public final class HttpTranslator {
 			String coapCodeString = httpTranslationProperties.getProperty(KEY_HTTP_CODE + httpCode);
 
 			if (coapCodeString == null || coapCodeString.isEmpty()) {
-				LOGGER.warn("coapCodeString == null");
+				org.eclipse.californium.core.MyLogger.LOG_warn("coapCodeString == null");
 				throw new TranslationException("coapCodeString == null");
 			}
 
 			try {
 				coapCode = ResponseCode.valueOf(Integer.parseInt(coapCodeString.trim()));
 			} catch (NumberFormatException e) {
-				LOGGER.warn("Cannot convert the status code in number", e);
+				org.eclipse.californium.core.MyLogger.LOG_warn("Cannot convert the status code in number", e);
 				throw new TranslationException("Cannot convert the status code in number", e);
 			}
 		}
@@ -664,7 +664,7 @@ public final class HttpTranslator {
 				try {
 					contentType = ContentType.parse(coapContentTypeString);
 				} catch (UnsupportedCharsetException e) {
-					LOGGER.debug("Cannot convert string to ContentType", e);
+					org.eclipse.californium.core.MyLogger.LOG_debug("Cannot convert string to ContentType", e);
 					contentType = ContentType.APPLICATION_OCTET_STREAM;
 				}
 			}
@@ -815,10 +815,10 @@ public final class HttpTranslator {
 					coapRequest.getOptions().getProxyUri(), "UTF-8");
 			proxyUri = new URI(proxyUriString);
 		} catch (UnsupportedEncodingException e) {
-			LOGGER.warn("UTF-8 do not support this encoding", e);
+			org.eclipse.californium.core.MyLogger.LOG_warn("UTF-8 do not support this encoding", e);
 			throw new TranslationException("UTF-8 do not support this encoding", e);
 		} catch (URISyntaxException e) {
-			LOGGER.warn("Cannot translate the server uri", e);
+			org.eclipse.californium.core.MyLogger.LOG_warn("Cannot translate the server uri", e);
 			throw new InvalidFieldException("Cannot get the proxy-uri from the coap message", e);
 		}
 
@@ -885,7 +885,7 @@ public final class HttpTranslator {
 		String httpCodeString = httpTranslationProperties.getProperty(KEY_COAP_CODE + coapCode.value);
 
 		if (httpCodeString == null || httpCodeString.isEmpty()) {
-			LOGGER.warn("httpCodeString == null");
+			org.eclipse.californium.core.MyLogger.LOG_warn("httpCodeString == null");
 			throw new TranslationException("httpCodeString == null");
 		}
 
@@ -893,7 +893,7 @@ public final class HttpTranslator {
 		try {
 			httpCode = Integer.parseInt(httpCodeString.trim());
 		} catch (NumberFormatException e) {
-			LOGGER.warn("Cannot convert the coap code in http status code", e);
+			org.eclipse.californium.core.MyLogger.LOG_warn("Cannot convert the coap code in http status code", e);
 			throw new TranslationException("Cannot convert the coap code in http status code", e);
 		}
 
@@ -920,7 +920,7 @@ public final class HttpTranslator {
 			if (coapResponse.getOptions().getContentFormat() == MediaTypeRegistry.UNDEFINED
 					&& (ResponseCode.isClientError(coapCode) 
 					|| ResponseCode.isServerError(coapCode))) {
-				LOGGER.info("Set contenttype to TEXT_PLAIN");
+				org.eclipse.californium.core.MyLogger.LOG_info("Set contenttype to TEXT_PLAIN");
 				coapResponse.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 			}
 
@@ -971,10 +971,10 @@ public final class HttpTranslator {
 			// If the character sequence starting at the input buffer's current
 			// position cannot be mapped to an equivalent byte sequence and the
 			// current unmappable-character
-			LOGGER.debug("Charset translation: cannot mapped to an output char byte", e);
+			org.eclipse.californium.core.MyLogger.LOG_debug("Charset translation: cannot mapped to an output char byte", e);
 			return null;
 		} catch (CharacterCodingException e) {
-			LOGGER.warn("Problem in the decoding/encoding charset", e);
+			org.eclipse.californium.core.MyLogger.LOG_warn("Problem in the decoding/encoding charset", e);
 			throw new TranslationException("Problem in the decoding/encoding charset", e);
 		}
 

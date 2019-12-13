@@ -77,7 +77,7 @@ public class ReliabilityLayer extends AbstractLayer {
 	 */
 	public ReliabilityLayer(NetworkConfig config) {
 		defaultReliabilityLayerParameters = ReliabilityLayerParameters.builder().applyConfig(config).build();
-		LOGGER.info("ReliabilityLayer uses ACK_TIMEOUT={}, ACK_RANDOM_FACTOR={}, and ACK_TIMEOUT_SCALE={} as default",
+		org.eclipse.californium.core.MyLogger.LOG_info("ReliabilityLayer uses ACK_TIMEOUT={}, ACK_RANDOM_FACTOR={}, and ACK_TIMEOUT_SCALE={} as default",
 				defaultReliabilityLayerParameters.getAckTimeout(), defaultReliabilityLayerParameters.getAckRandomFactor(),
 				defaultReliabilityLayerParameters.getAckTimeoutScale());
 	}
@@ -88,13 +88,13 @@ public class ReliabilityLayer extends AbstractLayer {
 	@Override
 	public void sendRequest(final Exchange exchange, final Request request) {
 
-		LOGGER.debug("{} send request, failed transmissions: {}", exchange, exchange.getFailedTransmissionCount());
+		org.eclipse.californium.core.MyLogger.LOG_debug("{} send request, failed transmissions: {}", exchange, exchange.getFailedTransmissionCount());
 
 		if (request.getType() == null) {
 			request.setType(Type.CON);
 		}
 		if (request.getType() == Type.CON) {
-			LOGGER.debug("{} prepare retransmission for {}", exchange, request);
+			org.eclipse.californium.core.MyLogger.LOG_debug("{} prepare retransmission for {}", exchange, request);
 			prepareRetransmission(exchange, new RetransmissionTask(exchange, request) {
 
 				public void retransmit() {
@@ -114,7 +114,7 @@ public class ReliabilityLayer extends AbstractLayer {
 	@Override
 	public void sendResponse(final Exchange exchange, final Response response) {
 
-		LOGGER.debug("{} send response {}, failed transmissions: {}", exchange, response,
+		org.eclipse.californium.core.MyLogger.LOG_debug("{} send response {}, failed transmissions: {}", exchange, response,
 				exchange.getFailedTransmissionCount());
 
 		// If a response type is set, we do not mess around with it.
@@ -138,7 +138,7 @@ public class ReliabilityLayer extends AbstractLayer {
 				response.setType(Type.NON);
 			}
 
-			LOGGER.trace("{} switched response message type from {} to {} (request was {})", exchange, respType,
+			org.eclipse.californium.core.MyLogger.LOG_trace("{} switched response message type from {} to {} (request was {})", exchange, respType,
 					response.getType(), reqType);
 
 		} else if (respType == Type.ACK || respType == Type.RST) {
@@ -146,7 +146,7 @@ public class ReliabilityLayer extends AbstractLayer {
 		}
 
 		if (response.getType() == Type.CON) {
-			LOGGER.debug("{} prepare retransmission for {}", exchange, response);
+			org.eclipse.californium.core.MyLogger.LOG_debug("{} prepare retransmission for {}", exchange, response);
 			prepareRetransmission(exchange, new RetransmissionTask(exchange, response) {
 
 				public void retransmit() {
@@ -168,7 +168,7 @@ public class ReliabilityLayer extends AbstractLayer {
 
 		// prevent RejectedExecutionException
 		if (executor.isShutdown()) {
-			LOGGER.info("Endpoint is being destroyed: skipping retransmission");
+			org.eclipse.californium.core.MyLogger.LOG_info("Endpoint is being destroyed: skipping retransmission");
 			return;
 		}
 
@@ -210,7 +210,7 @@ public class ReliabilityLayer extends AbstractLayer {
 			if (exchange.getSendNanoTimestamp() > request.getNanoTimestamp()) {
 				// received before response was sent
 				int count = counter.incrementAndGet();
-				LOGGER.debug("{}: {} duplicate request {}, server sent response delayed, ignore request", count,
+				org.eclipse.californium.core.MyLogger.LOG_debug("{}: {} duplicate request {}, server sent response delayed, ignore request", count,
 						exchange, request);
 				return;
 			}
@@ -231,11 +231,11 @@ public class ReliabilityLayer extends AbstractLayer {
 					if (type == Type.CON) {
 						// retransmission cycle
 						if (currentResponse.isAcknowledged()) {
-							LOGGER.debug("{} request duplicate: ignore, response already acknowledged!", exchange);
+							org.eclipse.californium.core.MyLogger.LOG_debug("{} request duplicate: ignore, response already acknowledged!", exchange);
 						} else {
 							int failedCount = exchange.getFailedTransmissionCount() + 1;
 							exchange.setFailedTransmissionCount(failedCount);
-							LOGGER.debug("{} request duplicate: retransmit response, failed: {}, response: {}",
+							org.eclipse.californium.core.MyLogger.LOG_debug("{} request duplicate: retransmit response, failed: {}, response: {}",
 									exchange, failedCount, currentResponse);
 							currentResponse.retransmitting();
 							sendResponse(exchange, currentResponse);
@@ -243,23 +243,23 @@ public class ReliabilityLayer extends AbstractLayer {
 						return;
 					}
 				}
-				LOGGER.debug("{} respond with the current response to the duplicate request", exchange);
+				org.eclipse.californium.core.MyLogger.LOG_debug("{} respond with the current response to the duplicate request", exchange);
 				// Do not restart retransmission cycle
 				lower().sendResponse(exchange, currentResponse);
 
 			} else if (exchange.getCurrentRequest().isAcknowledged()) {
-				LOGGER.debug("{} duplicate request was acknowledged but no response computed yet. Retransmit ACK",
+				org.eclipse.californium.core.MyLogger.LOG_debug("{} duplicate request was acknowledged but no response computed yet. Retransmit ACK",
 						exchange);
 				EmptyMessage ack = EmptyMessage.newACK(request);
 				sendEmptyMessage(exchange, ack);
 
 			} else if (exchange.getCurrentRequest().isRejected()) {
-				LOGGER.debug("{} duplicate request was rejected. Reject again", exchange);
+				org.eclipse.californium.core.MyLogger.LOG_debug("{} duplicate request was rejected. Reject again", exchange);
 				EmptyMessage rst = EmptyMessage.newRST(request);
 				sendEmptyMessage(exchange, rst);
 
 			} else {
-				LOGGER.debug("{} server has not yet decided what to do with the request. We ignore the duplicate.",
+				org.eclipse.californium.core.MyLogger.LOG_debug("{} server has not yet decided what to do with the request. We ignore the duplicate.",
 						exchange);
 				// The server has not yet decided, whether to acknowledge or
 				// reject the request. We know for sure that the server has
@@ -288,18 +288,18 @@ public class ReliabilityLayer extends AbstractLayer {
 			if (exchange.getSendNanoTimestamp() > response.getNanoTimestamp()) {
 				// received before ACK/RST was sent
 				int count = counter.incrementAndGet();
-				LOGGER.debug("{}: {} duplicate response {}, server sent ACK delayed, ignore response", count,
+				org.eclipse.californium.core.MyLogger.LOG_debug("{}: {} duplicate response {}, server sent ACK delayed, ignore response", count,
 						exchange, response);
 				return;
 			} else {
-				LOGGER.debug("{} acknowledging CON response", exchange);
+				org.eclipse.californium.core.MyLogger.LOG_debug("{} acknowledging CON response", exchange);
 				EmptyMessage ack = EmptyMessage.newACK(response);
 				sendEmptyMessage(exchange, ack);
 			}
 		}
 
 		if (response.isDuplicate()) {
-			LOGGER.debug("{} ignoring duplicate response", exchange);
+			org.eclipse.californium.core.MyLogger.LOG_debug("{} ignoring duplicate response", exchange);
 		} else {
 			exchange.getCurrentRequest().setAcknowledged(true);
 			upper().receiveResponse(exchange, response);
@@ -329,14 +329,14 @@ public class ReliabilityLayer extends AbstractLayer {
 		}
 		int observer = currentMessage.getMessageObservers().size();
 		if (message.getType() == Type.ACK) {
-			LOGGER.debug("{} acknowledge {} for {} {} ({} msg observer)", exchange, message, type, currentMessage,
+			org.eclipse.californium.core.MyLogger.LOG_debug("{} acknowledge {} for {} {} ({} msg observer)", exchange, message, type, currentMessage,
 					observer);
 			currentMessage.setAcknowledged(true);
 		} else if (message.getType() == Type.RST) {
-			LOGGER.debug("{} reject {} for {} {} ({} msg observer)", exchange, message, type, currentMessage, observer);
+			org.eclipse.californium.core.MyLogger.LOG_debug("{} reject {} for {} {} ({} msg observer)", exchange, message, type, currentMessage, observer);
 			currentMessage.setRejected(true);
 		} else {
-			LOGGER.warn("{} received empty message that is neither ACK nor RST: {}", exchange, message);
+			org.eclipse.californium.core.MyLogger.LOG_warn("{} received empty message that is neither ACK nor RST: {}", exchange, message);
 			return;
 		}
 
@@ -444,30 +444,30 @@ public class ReliabilityLayer extends AbstractLayer {
 			try {
 				exchange.setRetransmissionHandle(null);
 				if (exchange.isComplete()) {
-					LOGGER.debug("Timeout: for {}, {}", exchange, message);
+					org.eclipse.californium.core.MyLogger.LOG_debug("Timeout: for {}, {}", exchange, message);
 					return;
 				}
 				int failedCount = exchange.getFailedTransmissionCount() + 1;
 				exchange.setFailedTransmissionCount(failedCount);
 
-				LOGGER.debug("Timeout: for {} retry {} of {}", exchange, failedCount, message);
+				org.eclipse.californium.core.MyLogger.LOG_debug("Timeout: for {} retry {} of {}", exchange, failedCount, message);
 
 				if (message.isAcknowledged()) {
-					LOGGER.trace("Timeout: for {} message already acknowledged, cancel retransmission of {}", exchange,
+					org.eclipse.californium.core.MyLogger.LOG_trace("Timeout: for {} message already acknowledged, cancel retransmission of {}", exchange,
 							message);
 					return;
 
 				} else if (message.isRejected()) {
-					LOGGER.trace("Timeout: for {} message already rejected, cancel retransmission of {}", exchange,
+					org.eclipse.californium.core.MyLogger.LOG_trace("Timeout: for {} message already rejected, cancel retransmission of {}", exchange,
 							message);
 					return;
 
 				} else if (message.isCanceled()) {
-					LOGGER.trace("Timeout: for {}, {} is canceled, do not retransmit", exchange, message);
+					org.eclipse.californium.core.MyLogger.LOG_trace("Timeout: for {}, {} is canceled, do not retransmit", exchange, message);
 					return;
 
 				} else if (failedCount <= getReliabilityLayerParameters().getMaxRetransmit()) {
-					LOGGER.debug("Timeout: for {} retransmit message, failed: {}, message: {}", exchange, failedCount,
+					org.eclipse.californium.core.MyLogger.LOG_debug("Timeout: for {} retransmit message, failed: {}, message: {}", exchange, failedCount,
 							message);
 
 					// Trigger MessageObservers
@@ -475,17 +475,17 @@ public class ReliabilityLayer extends AbstractLayer {
 
 					// MessageObserver might have canceled
 					if (message.isCanceled()) {
-						LOGGER.trace("Timeout: for {}, {} got canceled, do not retransmit", exchange, message);
+						org.eclipse.californium.core.MyLogger.LOG_trace("Timeout: for {}, {} got canceled, do not retransmit", exchange, message);
 						return;
 					}
 					retransmit();
 				} else {
-					LOGGER.debug("Timeout: for {} retransmission limit reached, exchange failed, message: {}", exchange,
+					org.eclipse.californium.core.MyLogger.LOG_debug("Timeout: for {} retransmission limit reached, exchange failed, message: {}", exchange,
 							message);
 					exchange.setTimedOut(message);
 				}
 			} catch (Exception e) {
-				LOGGER.error("Exception for {} in MessageObserver: {}", exchange, e.getMessage(), e);
+				org.eclipse.californium.core.MyLogger.LOG_error("Exception for {} in MessageObserver: {}", exchange, e.getMessage(), e);
 			}
 		}
 

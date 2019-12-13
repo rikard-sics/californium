@@ -99,10 +99,10 @@ public final class CoapTranslator {
 					incomingRequest.getOptions().getProxyUri(), "UTF-8");
 			serverUri = new URI(proxyUriString);
 		} catch (UnsupportedEncodingException e) {
-			LOGGER.warn("UTF-8 do not support this encoding", e);
+			org.eclipse.californium.core.MyLogger.LOG_warn("UTF-8 do not support this encoding", e);
 			throw new TranslationException("UTF-8 do not support this encoding", e);
 		} catch (URISyntaxException e) {
-			LOGGER.warn("Cannot translate the server uri", e);
+			org.eclipse.californium.core.MyLogger.LOG_warn("Cannot translate the server uri", e);
 			throw new TranslationException("Cannot translate the server uri", e);
 		}
 
@@ -128,7 +128,7 @@ public final class CoapTranslator {
 			outgoingRequest.setURI(serverUri);
 		}
 
-		LOGGER.debug("Incoming request translated correctly");
+		org.eclipse.californium.core.MyLogger.LOG_debug("Incoming request translated correctly");
 		return outgoingRequest;
 	}
 	
@@ -166,7 +166,7 @@ public final class CoapTranslator {
 		outgoingResponse.setOptions(new OptionSet(
 				incomingResponse.getOptions()));
 		
-		LOGGER.debug("Incoming response translated correctly");
+		org.eclipse.californium.core.MyLogger.LOG_debug("Incoming response translated correctly");
 		return outgoingResponse;
 	}
 

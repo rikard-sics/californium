@@ -63,7 +63,7 @@ public class RequestDecryptor extends Decryptor {
 	 */
 	public static Request decrypt(OSCoreCtxDB db, Request request) throws CoapOSException {
 		
-		LOGGER.info("Removes E options from outer options which are not allowed there");
+		org.eclipse.californium.core.MyLogger.LOG_info("Removes E options from outer options which are not allowed there");
 		discardEOptions(request);
 
 		byte[] protectedData = request.getPayload();
@@ -72,13 +72,13 @@ public class RequestDecryptor extends Decryptor {
 		try {
 			enc = decompression(protectedData, request);
 		} catch (OSException e) {
-			LOGGER.error(ErrorDescriptions.FAILED_TO_DECODE_COSE);
+			org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.FAILED_TO_DECODE_COSE);
 			throw new CoapOSException(ErrorDescriptions.FAILED_TO_DECODE_COSE, ResponseCode.BAD_OPTION);
 		}
 
 		CBORObject kid = enc.findAttribute(HeaderKeys.KID);
 		if (kid == null || !kid.getType().equals(CBORType.ByteString)) {
-			LOGGER.error(ErrorDescriptions.MISSING_KID);
+			org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.MISSING_KID);
 			throw new CoapOSException(ErrorDescriptions.FAILED_TO_DECODE_COSE, ResponseCode.BAD_OPTION);
 		}
 		byte[] rid = kid.GetByteString();
@@ -93,7 +93,7 @@ public class RequestDecryptor extends Decryptor {
 		OSCoreCtx ctx = db.getContext(rid);
 
 		if (ctx == null) {
-			LOGGER.error(ErrorDescriptions.CONTEXT_NOT_FOUND);
+			org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.CONTEXT_NOT_FOUND);
 			throw new CoapOSException(ErrorDescriptions.CONTEXT_NOT_FOUND, ResponseCode.UNAUTHORIZED);
 		}
 
@@ -101,7 +101,7 @@ public class RequestDecryptor extends Decryptor {
 		try {
 			ctx = ContextRederivation.incomingRequest(db, ctx, contextID);
 		} catch (OSException e) {
-			LOGGER.error(ErrorDescriptions.CONTEXT_REGENERATION_FAILED);
+			org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.CONTEXT_REGENERATION_FAILED);
 			throw new CoapOSException(ErrorDescriptions.CONTEXT_REGENERATION_FAILED, ResponseCode.BAD_REQUEST);
 		}
 
@@ -111,11 +111,11 @@ public class RequestDecryptor extends Decryptor {
 		} catch (OSException e) {
 			//First check for replay exceptions
 			if (e.getMessage().equals(ErrorDescriptions.REPLAY_DETECT)) { 
-				LOGGER.error(ErrorDescriptions.REPLAY_DETECT);
+				org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.REPLAY_DETECT);
 				throw new CoapOSException(ErrorDescriptions.REPLAY_DETECT, ResponseCode.UNAUTHORIZED);
 			}
 			//Otherwise return generic error message
-			LOGGER.error(ErrorDescriptions.DECRYPTION_FAILED);
+			org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.DECRYPTION_FAILED);
 			throw new CoapOSException(ErrorDescriptions.DECRYPTION_FAILED, ResponseCode.BAD_REQUEST);
 		}
 		
@@ -127,7 +127,7 @@ public class RequestDecryptor extends Decryptor {
 			request.setOptions(EMPTY);
 			DataParser.parseOptionsAndPayload(reader, request);
 		} catch (Exception e) {
-			LOGGER.error(ErrorDescriptions.DECRYPTION_FAILED);
+			org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.DECRYPTION_FAILED);
 			throw new CoapOSException(ErrorDescriptions.DECRYPTION_FAILED, ResponseCode.BAD_REQUEST);
 		}
 			

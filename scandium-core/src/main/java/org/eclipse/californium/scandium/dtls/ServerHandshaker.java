@@ -264,7 +264,7 @@ public class ServerHandshaker extends Handshaker {
 		clientPublicKey = message.getPublicKey();
 		if (clientAuthenticationRequired && message.getCertificateChain() != null
 				&& clientPublicKey == null) {
-			LOGGER.debug("Client authentication failed: missing certificate!");
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Client authentication failed: missing certificate!");
 			AlertMessage alert = new AlertMessage(AlertLevel.FATAL, AlertDescription.HANDSHAKE_FAILURE,
 					session.getPeer());
 			throw new HandshakeException("Client Certificate required!", alert);
@@ -346,7 +346,7 @@ public class ServerHandshaker extends Handshaker {
 							AlertLevel.FATAL,
 							AlertDescription.INTERNAL_ERROR,
 							message.getPeer()));
-//			LOGGER.error("Cannot compute digest for server's Finish handshake message", e);
+//			org.eclipse.californium.elements.MyLogger.LOG_error("Cannot compute digest for server's Finish handshake message", e);
 		}
 
 		// Verify client's data
@@ -585,7 +585,7 @@ public class ServerHandshaker extends Handshaker {
 		if (maxFragmentLengthExt != null) {
 			session.setMaxFragmentLength(maxFragmentLengthExt.getFragmentLength().length());
 			serverHelloExtensions.addExtension(maxFragmentLengthExt);
-			LOGGER.debug(
+			org.eclipse.californium.elements.MyLogger.LOG_debug(
 					"Negotiated max. fragment length [{} bytes] with peer [{}]",
 					maxFragmentLengthExt.getFragmentLength().length(), clientHello.getPeer());
 		}
@@ -600,11 +600,11 @@ public class ServerHandshaker extends Handshaker {
 				// provided by the client
 				serverHelloExtensions.addExtension(ServerNameExtension.emptyServerNameIndication());
 				session.setSniSupported(true);
-				LOGGER.debug(
+				org.eclipse.californium.elements.MyLogger.LOG_debug(
 						"using server name indication received from peer [{}]",
 						clientHello.getPeer());
 			} else {
-				LOGGER.debug("client [{}] included SNI in HELLO but SNI support is disabled",
+				org.eclipse.californium.elements.MyLogger.LOG_debug("client [{}] included SNI in HELLO but SNI support is disabled",
 						clientHello.getPeer());
 			}
 		}
@@ -706,7 +706,7 @@ public class ServerHandshaker extends Handshaker {
 					session.setCipherSuite(cipherSuite);
 					addServerHelloExtensions(cipherSuite, clientHello, serverHelloExtensions);
 					session.setParameterAvailable();
-					LOGGER.debug("Negotiated cipher suite [{}] with peer [{}]",
+					org.eclipse.californium.elements.MyLogger.LOG_debug("Negotiated cipher suite [{}] with peer [{}]",
 							cipherSuite.name(), getPeerAddress());
 					return;
 				}

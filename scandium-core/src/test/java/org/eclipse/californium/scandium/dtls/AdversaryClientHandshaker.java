@@ -87,13 +87,13 @@ public class AdversaryClientHandshaker extends ClientHandshaker {
 			break;
 		case PSK:
 			pskUtil = new PskUtil(sniEnabled, session, pskStore);
-			LOGGER.debug("Using PSK identity: {}", pskUtil.getPskPrincipal());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Using PSK identity: {}", pskUtil.getPskPrincipal());
 			clientKeyExchange = new PSKClientKeyExchange(pskUtil.getPskPublicIdentity(), session.getPeer());
 			premasterSecret = pskUtil.generatePremasterSecretFromPSK(null);
 			break;
 		case ECDHE_PSK:
 			pskUtil = new PskUtil(sniEnabled, session, pskStore);
-			LOGGER.debug("Using PSK identity: {}", pskUtil.getPskPrincipal());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Using PSK identity: {}", pskUtil.getPskPrincipal());
 			clientKeyExchange = new EcdhPskClientKeyExchange(pskUtil.getPskPublicIdentity(), ecdhe.getPublicKey(),
 					session.getPeer());
 			SecretKey eck = ecdhe.generateSecret(ephemeralServerPublicKey);

@@ -152,10 +152,10 @@ public class TlsClientConnector extends TcpClientConnector {
 	private SSLEngine createSllEngine(SocketAddress remoteAddress) {
 		if (remoteAddress instanceof InetSocketAddress) {
 			InetSocketAddress remote = (InetSocketAddress) remoteAddress;
-			LOGGER.info("Connection to inet {}", remote);
+			org.eclipse.californium.elements.MyLogger.LOG_info("Connection to inet {}", remote);
 			return sslContext.createSSLEngine(remote.getAddress().getHostAddress(), remote.getPort());
 		} else {
-			LOGGER.info("Connection to {}", remoteAddress);
+			org.eclipse.californium.elements.MyLogger.LOG_info("Connection to {}", remoteAddress);
 			return sslContext.createSSLEngine();
 		}
 	}

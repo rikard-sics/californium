@@ -52,14 +52,14 @@ public final class OriginTracer extends MessageInterceptorAdapter {
 
 	@Override
 	public void receiveRequest(Request request) {
-		LOGGER.trace("{}", request.getSourceContext().getPeerAddress());
+		org.eclipse.californium.core.MyLogger.LOG_trace("{}", request.getSourceContext().getPeerAddress());
 	}
 
 	@Override
 	public void receiveEmptyMessage(EmptyMessage message) {
 		// only log pings
 		if (message.getType() == Type.CON) {
-			LOGGER.trace("{}", message.getSourceContext().getPeerAddress());
+			org.eclipse.californium.core.MyLogger.LOG_trace("{}", message.getSourceContext().getPeerAddress());
 		}
 	}
 }

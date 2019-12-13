@@ -168,7 +168,7 @@ public final class ECDHServerKeyExchange extends ServerKeyExchange {
 				DatagramReader reader = new DatagramReader(pointEncoded, false);
 				publicKey = Asn1DerDecoder.readEcPublicKey(reader, params);
 			} catch (GeneralSecurityException e) {
-				LOGGER.debug("Cannot re-create server's public key from params", e);
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Cannot re-create server's public key from params", e);
 				throw new HandshakeException(
 					String.format("Cannot re-create server's public key from params: %s", e.getMessage()),
 					new AlertMessage(AlertLevel.FATAL, AlertDescription.INTERNAL_ERROR, peerAddress));
@@ -200,7 +200,7 @@ public final class ECDHServerKeyExchange extends ServerKeyExchange {
 			break;
 
 		default:
-			LOGGER.warn(MSG_UNKNOWN_CURVE_TYPE, curveType);
+			org.eclipse.californium.elements.MyLogger.LOG_warn(MSG_UNKNOWN_CURVE_TYPE, curveType);
 			break;
 		}
 
@@ -278,7 +278,7 @@ public final class ECDHServerKeyExchange extends ServerKeyExchange {
 			break;
 
 		default:
-			LOGGER.warn(MSG_UNKNOWN_CURVE_TYPE, curveType);
+			org.eclipse.californium.elements.MyLogger.LOG_warn(MSG_UNKNOWN_CURVE_TYPE, curveType);
 			break;
 		}
 		
@@ -313,7 +313,7 @@ public final class ECDHServerKeyExchange extends ServerKeyExchange {
 			verified = signature.verify(signatureEncoded);
 
 		} catch (GeneralSecurityException e) {
-			LOGGER.error("Could not verify the server's signature.",e);
+			org.eclipse.californium.elements.MyLogger.LOG_error("Could not verify the server's signature.",e);
 		}
 		
 		if (!verified) {
@@ -353,7 +353,7 @@ public final class ECDHServerKeyExchange extends ServerKeyExchange {
 			break;
 
 		default:
-			LOGGER.warn(MSG_UNKNOWN_CURVE_TYPE, curveType);
+			org.eclipse.californium.elements.MyLogger.LOG_warn(MSG_UNKNOWN_CURVE_TYPE, curveType);
 			break;
 		}
 	}

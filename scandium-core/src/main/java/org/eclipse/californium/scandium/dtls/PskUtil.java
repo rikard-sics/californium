@@ -90,11 +90,11 @@ public class PskUtil implements Destroyable {
 		ServerNames serverNames = session.getServerNames();
 		if (sniEnabled && serverNames != null) {
 			hostName = session.getHostName();
-			LOGGER.debug("client [{}] uses PSK identity [{}] for server [{}]", session.getPeer(), pskIdentity,
+			org.eclipse.californium.elements.MyLogger.LOG_debug("client [{}] uses PSK identity [{}] for server [{}]", session.getPeer(), pskIdentity,
 					hostName);
 			pskSecret = pskStore.getKey(serverNames, pskIdentity);
 		} else {
-			LOGGER.debug("client [{}] uses PSK identity [{}]", session.getPeer(), pskIdentity);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("client [{}] uses PSK identity [{}]", session.getPeer(), pskIdentity);
 			pskSecret = pskStore.getKey(pskIdentity);
 		}
 		if (pskSecret == null) {
@@ -139,7 +139,7 @@ public class PskUtil implements Destroyable {
 		ServerNames serverName = session.getServerNames();
 		if (sniEnabled && serverName != null) {
 			if (!session.isSniSupported()) {
-				LOGGER.warn(
+				org.eclipse.californium.elements.MyLogger.LOG_warn(
 						"client is configured to use SNI but server does not support it, PSK authentication is likely to fail");
 			}
 			// look up identity in scope of virtual host

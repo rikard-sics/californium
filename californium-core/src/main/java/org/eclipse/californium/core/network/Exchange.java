@@ -129,7 +129,7 @@ public class Exchange {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Exchange.class.getName());
 	
-	static final boolean DEBUG = LOGGER.isTraceEnabled();
+	static final boolean DEBUG = org.eclipse.californium.core.MyLogger.isTraceEnabled();
 
 	private static final int MAX_OBSERVE_NO = (1 << 24) - 1;
 	/**
@@ -463,7 +463,7 @@ public class Exchange {
 		if (currentRequest != newCurrentRequest) {
 			setRetransmissionHandle(null);
 			failedTransmissionCount = 0;
-			LOGGER.debug("{} replace {} by {}", this, currentRequest, newCurrentRequest);
+			org.eclipse.californium.core.MyLogger.LOG_debug("{} replace {} by {}", this, currentRequest, newCurrentRequest);
 			currentRequest = newCurrentRequest;
 		}
 	}
@@ -517,7 +517,7 @@ public class Exchange {
 			if (!isOfLocalOrigin() && currentKeyMID != null && currentResponse != null
 					&& currentResponse.getType() == Type.NON && currentResponse.isNotification()) {
 				// keep NON notifies in KeyMID store.
-				LOGGER.info("{} store NON notification: {}", this, currentKeyMID);
+				org.eclipse.californium.core.MyLogger.LOG_info("{} store NON notification: {}", this, currentKeyMID);
 				notifications.add(currentKeyMID);
 				currentKeyMID = null;
 			}
@@ -637,7 +637,7 @@ public class Exchange {
 	 */
 	public void setTimedOut(Message message) {
 		assertOwner();
-		LOGGER.debug("{} timed out {}!", this, message);
+		org.eclipse.californium.core.MyLogger.LOG_debug("{} timed out {}!", this, message);
 		if (!isComplete()) {
 			setComplete();
 			this.timedOut = true;
@@ -795,13 +795,13 @@ public class Exchange {
 		if (complete.compareAndSet(false, true)) {
 			if (DEBUG) {
 				caller = new Throwable(toString());
-				if (LOGGER.isTraceEnabled()) {
-					LOGGER.trace("{}!", this, caller);
+				if (org.eclipse.californium.core.MyLogger.isTraceEnabled()) {
+					org.eclipse.californium.core.MyLogger.LOG_trace("{}!", this, caller);
 				} else {
-					LOGGER.debug("{}!", this);
+					org.eclipse.californium.core.MyLogger.LOG_debug("{}!", this);
 				}
 			} else {
-				LOGGER.debug("{}!", this);
+				org.eclipse.californium.core.MyLogger.LOG_debug("{}!", this);
 			}
 			setRetransmissionHandle(null);
 			RemoveHandler handler = this.removeHandler;
@@ -813,19 +813,19 @@ public class Exchange {
 					if (currentKeyToken != originalKeyToken) {
 						handler.remove(this, originalKeyToken, null);
 					}
-					if (LOGGER.isDebugEnabled()) {
+					if (org.eclipse.californium.core.MyLogger.isDebugEnabled()) {
 						Request currrentRequest = getCurrentRequest();
 						Request request = getRequest();
 						if (request == currrentRequest) {
-							LOGGER.debug("local {} completed {}!", this, request);
+							org.eclipse.californium.core.MyLogger.LOG_debug("local {} completed {}!", this, request);
 						} else {
-							LOGGER.debug("local {} completed {} -/- {}!", this, request, currrentRequest);
+							org.eclipse.californium.core.MyLogger.LOG_debug("local {} completed {} -/- {}!", this, request, currrentRequest);
 						}
 					}
 				} else {
 					Response currentResponse = getCurrentResponse();
 					if (currentResponse == null) {
-						LOGGER.debug("remote {} rejected (without response)!", this);
+						org.eclipse.californium.core.MyLogger.LOG_debug("remote {} rejected (without response)!", this);
 					} else {
 						if (currentKeyMID != null) {
 							handler.remove(this, null, currentKeyMID);
@@ -833,9 +833,9 @@ public class Exchange {
 						removeNotifications();
 						Response response = getResponse();
 						if (response == currentResponse || response == null) {
-							LOGGER.debug("Remote {} completed {}!", this, currentResponse);
+							org.eclipse.californium.core.MyLogger.LOG_debug("Remote {} completed {}!", this, currentResponse);
 						} else {
-							LOGGER.debug("Remote {} completed {} -/- {}!", this, response, currentResponse);
+							org.eclipse.californium.core.MyLogger.LOG_debug("Remote {} completed {} -/- {}!", this, response, currentResponse);
 						}
 					}
 				}
@@ -964,14 +964,14 @@ public class Exchange {
 		RemoveHandler handler = this.removeHandler;
 		if (notifications != null && !notifications.isEmpty()) {
 			for (KeyMID keyMid : notifications) {
-				LOGGER.info("{} removing NON notification: {}", this, keyMid);
+				org.eclipse.californium.core.MyLogger.LOG_info("{} removing NON notification: {}", this, keyMid);
 				// notifications are local MID namespace
 				if (handler != null) {
 					handler.remove(this, null, keyMid);
 				}
 			}
 			notifications.clear();
-			LOGGER.debug("{} removing all remaining NON-notifications of observe relation with {}", this,
+			org.eclipse.californium.core.MyLogger.LOG_debug("{} removing all remaining NON-notifications of observe relation with {}", this,
 					relation.getSource());
 		}
 	}
@@ -1042,9 +1042,9 @@ public class Exchange {
 				executor.execute(command);
 			}
 		} catch (RejectedExecutionException e) {
-			LOGGER.debug("{} execute:", this, e);
+			org.eclipse.californium.core.MyLogger.LOG_debug("{} execute:", this, e);
 		} catch (Throwable t) {
-			LOGGER.error("{} execute:", this, t);
+			org.eclipse.californium.core.MyLogger.LOG_error("{} execute:", this, t);
 		}
 	}
 

@@ -1389,12 +1389,12 @@ public class DTLSConnectorAdvancedTest {
 						record.applySession(null);
 						record.getFragment();
 					} catch (GeneralSecurityException e) {
-						LOGGER.error("",  e);
+						org.eclipse.californium.elements.MyLogger.LOG_error("",  e);
 					} catch (HandshakeException e) {
-						LOGGER.error("",  e);
+						org.eclipse.californium.elements.MyLogger.LOG_error("",  e);
 					}
 				}
-				LOGGER.info("   {}", record);
+				org.eclipse.californium.elements.MyLogger.LOG_info("   {}", record);
 			}
 			if (rs.size() < records) {
 				assertThat(description + " missing records", rs.size(), is(records));

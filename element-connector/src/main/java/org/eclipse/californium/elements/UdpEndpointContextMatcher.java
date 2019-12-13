@@ -74,7 +74,7 @@ public class UdpEndpointContextMatcher extends KeySetEndpointContextMatcher {
 			InetSocketAddress peerAddress2 = responseContext.getPeerAddress();
 			if (peerAddress1.getPort() != peerAddress2.getPort() || (!peerAddress1.getAddress().isMulticastAddress()
 					&& !peerAddress1.getAddress().equals(peerAddress2.getAddress()))) {
-				LOGGER.info("request {}:{} doesn't match {}:{}!", peerAddress1.getAddress().getHostAddress(),
+				org.eclipse.californium.elements.MyLogger.LOG_info("request {}:{} doesn't match {}:{}!", peerAddress1.getAddress().getHostAddress(),
 						peerAddress1.getPort(), peerAddress2.getAddress().getHostAddress(), peerAddress2.getPort());
 				return false;
 			}

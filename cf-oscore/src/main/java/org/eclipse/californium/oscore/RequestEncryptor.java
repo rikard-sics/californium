@@ -51,7 +51,7 @@ public class RequestEncryptor extends Encryptor {
 		OSCoreCtx ctx = db.getContext(uri);
 
 		if (ctx == null) {
-			LOGGER.error(ErrorDescriptions.CTX_NULL);
+			org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.CTX_NULL);
 			throw new OSException(ErrorDescriptions.CTX_NULL);
 		}
 
@@ -59,7 +59,7 @@ public class RequestEncryptor extends Encryptor {
 		try {
 			ctx = ContextRederivation.outgoingRequest(db, ctx);
 		} catch (OSException e) {
-			LOGGER.error(ErrorDescriptions.CONTEXT_REGENERATION_FAILED);
+			org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.CONTEXT_REGENERATION_FAILED);
 			throw new OSException(ErrorDescriptions.CONTEXT_REGENERATION_FAILED);
 		}
 

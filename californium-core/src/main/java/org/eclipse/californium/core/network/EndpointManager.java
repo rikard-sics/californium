@@ -137,9 +137,9 @@ public class EndpointManager {
 			}
 			try {
 				endpoint.start();
-				LOGGER.info("created implicit endpoint {} for {}", new Object[] { endpoint.getUri(), uriScheme });
+				org.eclipse.californium.core.MyLogger.LOG_info("created implicit endpoint {} for {}", new Object[] { endpoint.getUri(), uriScheme });
 			} catch (IOException e) {
-				LOGGER.error("could not create {} endpoint", uriScheme, e);
+				org.eclipse.californium.core.MyLogger.LOG_error("could not create {} endpoint", uriScheme, e);
 			}
 			endpoints.put(uriScheme, endpoint);
 		}
@@ -179,7 +179,7 @@ public class EndpointManager {
 			try {
 				newEndpoint.start();
 			} catch (IOException e) {
-				LOGGER.error("could not start new {} endpoint", uriScheme, e);
+				org.eclipse.californium.core.MyLogger.LOG_error("could not start new {} endpoint", uriScheme, e);
 			}
 		}
 	}
@@ -214,7 +214,7 @@ public class EndpointManager {
 				}
 			}
 		} catch (SocketException e) {
-			LOGGER.error("could not fetch all interface addresses", e);
+			org.eclipse.californium.core.MyLogger.LOG_error("could not fetch all interface addresses", e);
 		}
 		return interfaces;
 	}
@@ -254,7 +254,7 @@ public class EndpointManager {
 
 		@Override
 		public void deliverRequest(Exchange exchange) {
-			LOGGER.error("Default endpoint without CoapServer has received a request.");
+			org.eclipse.californium.core.MyLogger.LOG_error("Default endpoint without CoapServer has received a request.");
 			exchange.sendReject();
 		}
 

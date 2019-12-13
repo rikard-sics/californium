@@ -169,7 +169,7 @@ public final class SweepDeduplicator implements Deduplicator {
 		DedupExchange previous = incomingMessages.putIfAbsent(key, current);
 		if (replace && previous != null) {
 			if (previous.exchange.getOrigin() != exchange.getOrigin()) {
-				LOGGER.debug("replace exchange for {}", key);
+				org.eclipse.californium.core.MyLogger.LOG_debug("replace exchange for {}", key);
 				if (incomingMessages.replace(key, previous, current)) {
 					previous = null;
 				} else {
@@ -225,11 +225,11 @@ public final class SweepDeduplicator implements Deduplicator {
 		@Override
 		public void run() {
 			try {
-				LOGGER.trace("Start Mark-And-Sweep with {} entries", incomingMessages.size());
+				org.eclipse.californium.core.MyLogger.LOG_trace("Start Mark-And-Sweep with {} entries", incomingMessages.size());
 				sweep();
 
 			} catch (Throwable t) {
-				LOGGER.warn("Exception in Mark-and-Sweep algorithm", t);
+				org.eclipse.californium.core.MyLogger.LOG_warn("Exception in Mark-and-Sweep algorithm", t);
 			}
 		}
 
@@ -247,11 +247,11 @@ public final class SweepDeduplicator implements Deduplicator {
 					DedupExchange exchange = entry.getValue();
 					if ((exchange.nanoTimestamp - oldestAllowed) < 0) {
 						//TODO check if exchange of observe relationship is periodically created and sweeped
-						LOGGER.trace("Mark-And-Sweep removes {}", entry.getKey());
+						org.eclipse.californium.core.MyLogger.LOG_trace("Mark-And-Sweep removes {}", entry.getKey());
 						incomingMessages.remove(entry.getKey());
 					}
 				}
-				LOGGER.debug("Sweep run took {}ms", TimeUnit.NANOSECONDS.toMillis(ClockUtil.nanoRealtime() - start));
+				org.eclipse.californium.core.MyLogger.LOG_debug("Sweep run took {}ms", TimeUnit.NANOSECONDS.toMillis(ClockUtil.nanoRealtime() - start));
 			}
 		}
 	}

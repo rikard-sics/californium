@@ -207,10 +207,10 @@ public class NatUtil implements Runnable {
 			int sent = sentMessages.get();
 			int manipulated = manipulatedMessages.get();
 			if (sent > 0) {
-				LOGGER.warn("manipulated {} {}/{}%, sent {} {}.", title, manipulated,
+				org.eclipse.californium.examples.MyLogger.LOG_warn("manipulated {} {}/{}%, sent {} {}.", title, manipulated,
 						manipulated * 100 / (manipulated + sent), title, sent);
 			} else if (manipulated > 0) {
-				LOGGER.warn("manipulated {} {}/100%, no {} sent!.", title, manipulated, title);
+				org.eclipse.californium.examples.MyLogger.LOG_warn("manipulated {} {}/100%, no {} sent!.", title, manipulated, title);
 			}
 		}
 	}
@@ -278,16 +278,16 @@ public class NatUtil implements Runnable {
 						if (isRunning()) {
 							try {
 								if (entry != null) {
-									LOGGER.info("send message {} bytes, delayed {}ms to {}", clone.getLength(), delay,
+									org.eclipse.californium.examples.MyLogger.LOG_info("send message {} bytes, delayed {}ms to {}", clone.getLength(), delay,
 											clone.getSocketAddress());
 									entry.forward(clone);
 								} else {
-									LOGGER.info("deliver message {} bytes, delayed {}ms to {}", clone.getLength(),
+									org.eclipse.californium.examples.MyLogger.LOG_info("deliver message {} bytes, delayed {}ms to {}", clone.getLength(),
 											delay, clone.getSocketAddress());
 									deliver(clone);
 								}
 							} catch (IOException ex) {
-								LOGGER.info("delayed forward failed!", ex);
+								org.eclipse.californium.examples.MyLogger.LOG_info("delayed forward failed!", ex);
 							}
 						}
 					}
@@ -344,7 +344,7 @@ public class NatUtil implements Runnable {
 	@Override
 	public void run() {
 		messageDroppingLogTime.set(System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(MESSAGE_DROPPING_LOG_INTERVAL_MS));
-		LOGGER.info("starting NAT {} to {}.", proxyName, destinationName);
+		org.eclipse.californium.examples.MyLogger.LOG_info("starting NAT {} to {}.", proxyName, destinationName);
 		while (running) {
 			try {
 				if (messageDroppingLogTime.get() - System.nanoTime() < 0) {
@@ -361,18 +361,18 @@ public class NatUtil implements Runnable {
 				}
 			} catch (SocketTimeoutException e) {
 				if (running) {
-					LOGGER.info("listen NAT {} to {} ...", proxyName, destinationName);
+					org.eclipse.californium.examples.MyLogger.LOG_info("listen NAT {} to {} ...", proxyName, destinationName);
 				}
 			} catch (SocketException e) {
 				if (running) {
-					LOGGER.error("NAT {} to {} socket error", proxyName, destinationName, e);
+					org.eclipse.californium.examples.MyLogger.LOG_error("NAT {} to {} socket error", proxyName, destinationName, e);
 				}
 			} catch (InterruptedIOException e) {
 				if (running) {
-					LOGGER.error("NAT {} to {} interrupted", proxyName, destinationName, e);
+					org.eclipse.californium.examples.MyLogger.LOG_error("NAT {} to {} interrupted", proxyName, destinationName, e);
 				}
 			} catch (Exception e) {
-				LOGGER.error("NAT {} to {} error", proxyName, destinationName, e);
+				org.eclipse.californium.examples.MyLogger.LOG_error("NAT {} to {} error", proxyName, destinationName, e);
 			}
 		}
 	}
@@ -406,9 +406,9 @@ public class NatUtil implements Runnable {
 			proxyThread.join(1000);
 			scheduler.awaitTermination(1000, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException ex) {
-			LOGGER.error("shutdown failed!", ex);
+			org.eclipse.californium.examples.MyLogger.LOG_error("shutdown failed!", ex);
 		}
-		LOGGER.warn("NAT stopped. {} forwarded messages, {} backwarded", forwardCounter, backwardCounter);
+		org.eclipse.californium.examples.MyLogger.LOG_warn("NAT stopped. {} forwarded messages, {} backwarded", forwardCounter, backwardCounter);
 	}
 
 	/**
@@ -430,7 +430,7 @@ public class NatUtil implements Runnable {
 			try {
 				assignLocalAddress(incoming);
 			} catch (SocketException e) {
-				LOGGER.error("Failed to reassing NAT entry for {}.", incoming, e);
+				org.eclipse.californium.examples.MyLogger.LOG_error("Failed to reassing NAT entry for {}.", incoming, e);
 			}
 		}
 	}
@@ -446,10 +446,10 @@ public class NatUtil implements Runnable {
 		NatEntry entry = new NatEntry(incoming);
 		NatEntry old = nats.put(incoming, entry);
 		if (null != old) {
-			LOGGER.info("changed NAT for {} from {} to {}.", incoming, old.getPort(), entry.getPort());
+			org.eclipse.californium.examples.MyLogger.LOG_info("changed NAT for {} from {} to {}.", incoming, old.getPort(), entry.getPort());
 			old.stop();
 		} else {
-			LOGGER.info("add NAT for {} to {}.", incoming, entry.getPort());
+			org.eclipse.californium.examples.MyLogger.LOG_info("add NAT for {} to {}.", incoming, entry.getPort());
 		}
 		return entry.getPort();
 	}
@@ -489,7 +489,7 @@ public class NatUtil implements Runnable {
 		if (null != entry) {
 			entry.stop();
 		} else {
-			LOGGER.warn("no mapping found for {}!", incoming);
+			org.eclipse.californium.examples.MyLogger.LOG_warn("no mapping found for {}!", incoming);
 		}
 		return null != entry;
 	}
@@ -505,7 +505,7 @@ public class NatUtil implements Runnable {
 		if (null != entry) {
 			return entry.getPort();
 		} else {
-			LOGGER.warn("no mapping found for {}!", incoming);
+			org.eclipse.californium.examples.MyLogger.LOG_warn("no mapping found for {}!", incoming);
 			return -1;
 		}
 	}
@@ -521,7 +521,7 @@ public class NatUtil implements Runnable {
 		if (null != entry) {
 			return new InetSocketAddress(destination.getAddress(), entry.getPort());
 		} else {
-			LOGGER.warn("no mapping found for {}!", incoming);
+			org.eclipse.californium.examples.MyLogger.LOG_warn("no mapping found for {}!", incoming);
 			return null;
 		}
 	}
@@ -551,12 +551,12 @@ public class NatUtil implements Runnable {
 			if (forward != null || backward != null) {
 				forward = null;
 				backward = null;
-				LOGGER.info("NAT stops message dropping.");
+				org.eclipse.californium.examples.MyLogger.LOG_info("NAT stops message dropping.");
 			}
 		} else {
 			forward = new MessageDropping("request", percent);
 			backward = new MessageDropping("responses", percent);
-			LOGGER.info("NAT message dropping {}%.", percent);
+			org.eclipse.californium.examples.MyLogger.LOG_info("NAT message dropping {}%.", percent);
 		}
 	}
 
@@ -573,11 +573,11 @@ public class NatUtil implements Runnable {
 		if (percent == 0) {
 			if (forward != null) {
 				forward = null;
-				LOGGER.info("NAT stops forward message dropping.");
+				org.eclipse.californium.examples.MyLogger.LOG_info("NAT stops forward message dropping.");
 			}
 		} else {
 			forward = new MessageDropping("request", percent);
-			LOGGER.info("NAT forward message dropping {}%.", percent);
+			org.eclipse.californium.examples.MyLogger.LOG_info("NAT forward message dropping {}%.", percent);
 		}
 	}
 
@@ -594,11 +594,11 @@ public class NatUtil implements Runnable {
 		if (percent == 0) {
 			if (backward != null) {
 				backward = null;
-				LOGGER.info("NAT stops backward message dropping.");
+				org.eclipse.californium.examples.MyLogger.LOG_info("NAT stops backward message dropping.");
 			}
 		} else {
 			backward = new MessageDropping("response", percent);
-			LOGGER.info("NAT backward message dropping {}%.", percent);
+			org.eclipse.californium.examples.MyLogger.LOG_info("NAT backward message dropping {}%.", percent);
 		}
 	}
 
@@ -620,11 +620,11 @@ public class NatUtil implements Runnable {
 		if (percent == 0) {
 			if (reorder != null) {
 				reorder = null;
-				LOGGER.info("NAT stops message reordering.");
+				org.eclipse.californium.examples.MyLogger.LOG_info("NAT stops message reordering.");
 			}
 		} else {
 			reorder = new MessageReordering("reordering", percent, delayMillis, randomDelayMillis);
-			LOGGER.info("NAT message reordering {}%.", percent);
+			org.eclipse.californium.examples.MyLogger.LOG_info("NAT message reordering {}%.", percent);
 		}
 	}
 
@@ -679,7 +679,7 @@ public class NatUtil implements Runnable {
 
 		@Override
 		public void run() {
-			LOGGER.info("start listening on {} for incoming {}", natName, incomingName);
+			org.eclipse.californium.examples.MyLogger.LOG_info("start listening on {} for incoming {}", natName, incomingName);
 			try {
 				while (running) {
 					try {
@@ -695,10 +695,10 @@ public class NatUtil implements Runnable {
 						packet.setSocketAddress(incoming);
 						MessageDropping dropping = backward;
 						if (dropping != null && dropping.dropMessage()) {
-							LOGGER.info("backward drops {} bytes from {} to {} via {}", packet.getLength(),
+							org.eclipse.californium.examples.MyLogger.LOG_info("backward drops {} bytes from {} to {} via {}", packet.getLength(),
 									destinationName, incomingName, natName);
 						} else {
-							LOGGER.info("backward {} bytes from {} to {} via {}", packet.getLength(), destinationName,
+							org.eclipse.californium.examples.MyLogger.LOG_info("backward {} bytes from {} to {} via {}", packet.getLength(), destinationName,
 									incomingName, natName);
 							proxySocket.send(packet);
 							backwardCounter.incrementAndGet();
@@ -711,9 +711,9 @@ public class NatUtil implements Runnable {
 							}
 							if (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastUsage.get()) > NAT_TIMEOUT_MS) {
 								running = false;
-								LOGGER.info("expired listen on {} for incoming {}", natName, incomingName);
+								org.eclipse.californium.examples.MyLogger.LOG_info("expired listen on {} for incoming {}", natName, incomingName);
 							} else {
-								LOGGER.debug("listen on {} for incoming {}", natName, incomingName);
+								org.eclipse.californium.examples.MyLogger.LOG_debug("listen on {} for incoming {}", natName, incomingName);
 							}
 						}
 					} catch (IOException e) {
@@ -722,7 +722,7 @@ public class NatUtil implements Runnable {
 							synchronized (this) {
 								incomingName = this.incomingName;
 							}
-							LOGGER.info("error occured on {} for incoming {}", natName, incomingName, e);
+							org.eclipse.californium.examples.MyLogger.LOG_info("error occured on {} for incoming {}", natName, incomingName, e);
 						}
 					}
 				}
@@ -733,7 +733,7 @@ public class NatUtil implements Runnable {
 					incoming = this.incoming;
 					incomingName = this.incomingName;
 				}
-				LOGGER.info("stop listen on {} for incoming {}", natName, incomingName);
+				org.eclipse.californium.examples.MyLogger.LOG_info("stop listen on {} for incoming {}", natName, incomingName);
 				outgoingSocket.close();
 				if (running) {
 					nats.remove(incoming, this);
@@ -748,7 +748,7 @@ public class NatUtil implements Runnable {
 			try {
 				thread.join(2000);
 			} catch (InterruptedException e) {
-				LOGGER.error("shutdown failed!", e);
+				org.eclipse.californium.examples.MyLogger.LOG_error("shutdown failed!", e);
 			}
 		}
 
@@ -763,10 +763,10 @@ public class NatUtil implements Runnable {
 			}
 			MessageDropping dropping = forward;
 			if (dropping != null && dropping.dropMessage()) {
-				LOGGER.info("forward drops {} bytes from {} to {} via {}", packet.getLength(), incomingName,
+				org.eclipse.californium.examples.MyLogger.LOG_info("forward drops {} bytes from {} to {} via {}", packet.getLength(), incomingName,
 						destinationName, natName);
 			} else {
-				LOGGER.info("forward {} bytes from {} to {} via {}", packet.getLength(), incomingName, destinationName,
+				org.eclipse.californium.examples.MyLogger.LOG_info("forward {} bytes from {} to {} via {}", packet.getLength(), incomingName, destinationName,
 						natName);
 				packet.setSocketAddress(destination);
 				lastUsage.set(System.nanoTime());

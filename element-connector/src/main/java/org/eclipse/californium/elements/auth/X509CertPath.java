@@ -162,9 +162,9 @@ public class X509CertPath extends AbstractExtensiblePrincipal<X509CertPath> {
 					throw new IllegalArgumentException("Given certificate is not X.509! " + cert);
 				}
 				X509Certificate xcert = (X509Certificate) cert;
-				LOGGER.debug("Current Subject DN: {}", xcert.getSubjectX500Principal().getName());
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Current Subject DN: {}", xcert.getSubjectX500Principal().getName());
 				if (issuer != null && !issuer.equals(xcert.getSubjectX500Principal())) {
-					LOGGER.debug("Actual Issuer DN: {}", xcert.getSubjectX500Principal().getName());
+					org.eclipse.californium.elements.MyLogger.LOG_debug("Actual Issuer DN: {}", xcert.getSubjectX500Principal().getName());
 					throw new IllegalArgumentException("Given certificates do not form a chain");
 				}
 				++index;
@@ -181,7 +181,7 @@ public class X509CertPath extends AbstractExtensiblePrincipal<X509CertPath> {
 					// not a self-signed certificate
 					certificates.add(xcert);
 					issuer = xcert.getIssuerX500Principal();
-					LOGGER.debug("Expected Issuer DN: {}", issuer.getName());
+					org.eclipse.californium.elements.MyLogger.LOG_debug("Expected Issuer DN: {}", issuer.getName());
 				}
 			}
 			return factory.generateCertPath(certificates);

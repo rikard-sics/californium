@@ -80,10 +80,10 @@ public class StaticCertificateVerifier implements CertificateVerifier {
 			validator.validate(message.getCertificateChain(), params);
 
 		} catch (GeneralSecurityException e) {
-			if (LOGGER.isTraceEnabled()) {
-				LOGGER.trace("Certificate validation failed", e);
-			} else if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug("Certificate validation failed due to {}", e.getMessage());
+			if (org.eclipse.californium.elements.MyLogger.isTraceEnabled()) {
+				org.eclipse.californium.elements.MyLogger.LOG_trace("Certificate validation failed", e);
+			} else if (org.eclipse.californium.elements.MyLogger.isDebugEnabled()) {
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Certificate validation failed due to {}", e.getMessage());
 			}
 			AlertMessage alert = new AlertMessage(AlertLevel.FATAL, AlertDescription.BAD_CERTIFICATE,
 					session.getPeer());

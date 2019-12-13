@@ -175,7 +175,7 @@ public class DTLSConnectorStartStopTest {
 			}
 			clientConnectionStore.dump();
 			serverHelper.serverConnectionStore.dump();
-			LOGGER.info("{} start/stop: {}/{} loops, {} msgs server {}, client {}",
+			org.eclipse.californium.elements.MyLogger.LOG_info("{} start/stop: {}/{} loops, {} msgs server {}, client {}",
 					testLogTag, loop, loops, pending, dest, client.getAddress());
 
 			List<SimpleMessageCallback> callbacks = new ArrayList<>();
@@ -196,7 +196,7 @@ public class DTLSConnectorStartStopTest {
 			}
 
 			for (int index = 1; index < pending; ++index) {
-				LOGGER.info("{} loop: {}, send {}", testLogTag, loop, index);
+				org.eclipse.californium.elements.MyLogger.LOG_info("{} loop: {}, send {}", testLogTag, loop, index);
 				messageCallback = new SimpleMessageCallback(0, true, callback);
 				callbacks.add(messageCallback);
 				message = RawData.outbound(data, context, messageCallback, false);
@@ -208,11 +208,11 @@ public class DTLSConnectorStartStopTest {
 
 			boolean complete = callback.await(200);
 			if (!complete) {
-				LOGGER.info("{} loop: {}, still miss {} callbacks!", testLogTag, loop, callback.getPendingCalls());
+				org.eclipse.californium.elements.MyLogger.LOG_info("{} loop: {}, still miss {} callbacks!", testLogTag, loop, callback.getPendingCalls());
 				for (int index = 0; index < callbacks.size(); ++index) {
 					SimpleMessageCallback calls = callbacks.get(index);
 					if (!calls.isSent() && calls.getError() == null) {
-						LOGGER.info("{} loop: {}, call {} {}", testLogTag, loop, index, calls);
+						org.eclipse.californium.elements.MyLogger.LOG_info("{} loop: {}, call {} {}", testLogTag, loop, index, calls);
 					}
 				}
 			}

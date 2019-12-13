@@ -58,7 +58,7 @@ public class ResponseDecryptor extends Decryptor {
 	 */
 	public static Response decrypt(OSCoreCtxDB db, Response response) throws OSException {
 
-		LOGGER.info("Removes E options from outer options which are not allowed there");
+		org.eclipse.californium.core.MyLogger.LOG_info("Removes E options from outer options which are not allowed there");
 		discardEOptions(response);
 
 		byte[] protectedData = response.getPayload();
@@ -70,12 +70,12 @@ public class ResponseDecryptor extends Decryptor {
 		if (token != null) {
 			ctx = db.getContextByToken(token);
 			if (ctx == null) {
-				LOGGER.error(ErrorDescriptions.TOKEN_INVALID);
+				org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.TOKEN_INVALID);
 				throw new OSException(ErrorDescriptions.TOKEN_INVALID);
 			}
 			enc = decompression(protectedData, response);
 		} else {
-			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
+			org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.TOKEN_NULL);
 			throw new OSException(ErrorDescriptions.TOKEN_NULL);
 		}
 
@@ -90,7 +90,7 @@ public class ResponseDecryptor extends Decryptor {
 		try {
 			ctx = ContextRederivation.incomingResponse(db, ctx, contextID);
 		} catch (OSException e) {
-			LOGGER.error(ErrorDescriptions.CONTEXT_REGENERATION_FAILED);
+			org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.CONTEXT_REGENERATION_FAILED);
 			throw new OSException(ErrorDescriptions.CONTEXT_REGENERATION_FAILED);
 		}
 
@@ -109,7 +109,7 @@ public class ResponseDecryptor extends Decryptor {
 			response.setOptions(EMPTY);
 			DataParser.parseOptionsAndPayload(reader, response);
 		} catch (Exception e) {
-			LOGGER.error(ErrorDescriptions.DECRYPTION_FAILED);
+			org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.DECRYPTION_FAILED);
 			throw new OSException(ErrorDescriptions.DECRYPTION_FAILED);
 		}
 

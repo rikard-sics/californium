@@ -66,15 +66,15 @@ public class CountingCoapHandler implements CoapHandler {
 			try {
 				assertLoad(response);
 			} catch (AssertionError error) {
-				LOGGER.error("Assert:", error);
+				org.eclipse.californium.core.MyLogger.LOG_error("Assert:", error);
 				this.exception = error;
 			} catch (RuntimeException exception) {
-				LOGGER.error("Unexpected error:", exception);
+				org.eclipse.californium.core.MyLogger.LOG_error("Unexpected error:", exception);
 				this.exception = exception;
 			}
 			notifyAll();
 		}
-		LOGGER.info("Received {}. Notification: {}", counter, response.advanced());
+		org.eclipse.californium.core.MyLogger.LOG_info("Received {}. Notification: {}", counter, response.advanced());
 	}
 
 	/**
@@ -95,7 +95,7 @@ public class CountingCoapHandler implements CoapHandler {
 			counter = errorCalls.incrementAndGet();
 			notifyAll();
 		}
-		LOGGER.info("{} Errors!", counter);
+		org.eclipse.californium.core.MyLogger.LOG_info("{} Errors!", counter);
 	}
 
 	public int getOnLoadCalls() {

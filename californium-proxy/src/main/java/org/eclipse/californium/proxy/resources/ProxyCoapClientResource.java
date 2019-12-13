@@ -54,11 +54,11 @@ public class ProxyCoapClientResource extends ForwardingResource {
 	public CompletableFuture<Response> forwardRequest(Request incomingRequest) {
 		final CompletableFuture<Response> future = new CompletableFuture<>();
 
-		LOGGER.info("ProxyCoapClientResource forwards {}", incomingRequest);
+		org.eclipse.californium.core.MyLogger.LOG_info("ProxyCoapClientResource forwards {}", incomingRequest);
 
 		// check the invariant: the request must have the proxy-uri set
 		if (!incomingRequest.getOptions().hasProxyUri()) {
-			LOGGER.warn("Proxy-uri option not set.");
+			org.eclipse.californium.core.MyLogger.LOG_warn("Proxy-uri option not set.");
 			future.complete(new Response(ResponseCode.BAD_OPTION));
 			return future;
 		}
@@ -80,28 +80,28 @@ public class ProxyCoapClientResource extends ForwardingResource {
 
 				@Override
 				public void onResponse(Response incomingResponse) {
-					LOGGER.debug("ProxyCoapClientResource received {}", incomingResponse);
+					org.eclipse.californium.core.MyLogger.LOG_debug("ProxyCoapClientResource received {}", incomingResponse);
 					future.complete(CoapTranslator.getResponse(incomingResponse));
 					EndPointManagerPool.putClient(endpointManager);
 				}
 
 				@Override
 				public void onReject() {
-					LOGGER.warn("Request rejected");
+					org.eclipse.californium.core.MyLogger.LOG_warn("Request rejected");
 					future.complete(new Response(ResponseCode.SERVICE_UNAVAILABLE));
 					EndPointManagerPool.putClient(endpointManager);
 				}
 
 				@Override
 				public void onTimeout() {
-					LOGGER.warn("Request timed out.");
+					org.eclipse.californium.core.MyLogger.LOG_warn("Request timed out.");
 					future.complete(new Response(ResponseCode.GATEWAY_TIMEOUT));
 					EndPointManagerPool.putClient(endpointManager);
 				}
 
 				@Override
 				public void onCancel() {
-					LOGGER.warn("Request canceled");
+					org.eclipse.californium.core.MyLogger.LOG_warn("Request canceled");
 					future.complete(new Response(ResponseCode.SERVICE_UNAVAILABLE));
 					EndPointManagerPool.putClient(endpointManager);
 				}
@@ -109,7 +109,7 @@ public class ProxyCoapClientResource extends ForwardingResource {
 				@Override
 				public void onSendError(Throwable e) {
 					future.complete(new Response(ResponseCode.SERVICE_UNAVAILABLE));
-					LOGGER.warn("Send error", e);
+					org.eclipse.californium.core.MyLogger.LOG_warn("Send error", e);
 					EndPointManagerPool.putClient(endpointManager);
 				}
 
@@ -119,7 +119,7 @@ public class ProxyCoapClientResource extends ForwardingResource {
 			});
 
 			// execute the request
-			LOGGER.debug("Sending proxied CoAP request.");
+			org.eclipse.californium.core.MyLogger.LOG_debug("Sending proxied CoAP request.");
 
 			if (outgoingRequest.getDestination() == null) {
 				throw new NullPointerException("Destination is null");
@@ -130,11 +130,11 @@ public class ProxyCoapClientResource extends ForwardingResource {
 
 			endpointManager.getDefaultEndpoint().sendRequest(outgoingRequest);
 		} catch (TranslationException e) {
-			LOGGER.warn("Proxy-uri option malformed: {}", e.getMessage());
+			org.eclipse.californium.core.MyLogger.LOG_warn("Proxy-uri option malformed: {}", e.getMessage());
 			future.complete(new Response(CoapTranslator.STATUS_FIELD_MALFORMED));
 			return future;
 		} catch (Exception e) {
-			LOGGER.warn("Failed to execute request: {}", e.getMessage());
+			org.eclipse.californium.core.MyLogger.LOG_warn("Failed to execute request: {}", e.getMessage());
 			future.complete(new Response(ResponseCode.INTERNAL_SERVER_ERROR));
 			return future;
 		}

@@ -149,7 +149,7 @@ public final class CertificateMessage extends HandshakeMessage {
 				encodedChain = null;
 				publicKey = null;
 				length = CERTIFICATE_LENGTH_BITS / Byte.SIZE;
-				LOGGER.warn("Could not encode certificate chain", e);
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Could not encode certificate chain", e);
 			}
 		}
 		this.publicKey = publicKey;
@@ -183,9 +183,9 @@ public final class CertificateMessage extends HandshakeMessage {
 				publicKey = KeyFactory.getInstance(keyAlgorithm)
 						.generatePublic(new X509EncodedKeySpec(rawPublicKeyBytes));
 			} catch (GeneralSecurityException e) {
-				LOGGER.warn("Could not reconstruct the peer's public key", e);
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Could not reconstruct the peer's public key", e);
 			} catch (IllegalArgumentException e) {
-				LOGGER.warn("Could not reconstruct the peer's public key", e);
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Could not reconstruct the peer's public key", e);
 			}
 			this.publicKey = publicKey;
 		}
@@ -277,7 +277,7 @@ public final class CertificateMessage extends HandshakeMessage {
 			InetSocketAddress peerAddress) throws HandshakeException {
 
 		if (CertificateType.RAW_PUBLIC_KEY == certificateType) {
-			LOGGER.debug("Parsing RawPublicKey CERTIFICATE message");
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Parsing RawPublicKey CERTIFICATE message");
 			int certificateLength = reader.read(CERTIFICATE_LENGTH_BITS);
 			byte[] rawPublicKey = reader.readBytes(certificateLength);
 			return new CertificateMessage(rawPublicKey, peerAddress);
@@ -290,7 +290,7 @@ public final class CertificateMessage extends HandshakeMessage {
 
 	private static CertificateMessage readX509CertificateMessage(final DatagramReader reader, final InetSocketAddress peerAddress) throws HandshakeException {
 
-		LOGGER.debug("Parsing X.509 CERTIFICATE message");
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Parsing X.509 CERTIFICATE message");
 		List<Certificate> certs = new ArrayList<>();
 		int certificateChainLength = reader.read(CERTIFICATE_LIST_LENGTH_BITS);
 		DatagramReader rangeReader = reader.createRangeReader(certificateChainLength);

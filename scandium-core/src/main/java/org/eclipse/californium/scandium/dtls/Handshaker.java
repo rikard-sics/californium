@@ -397,12 +397,12 @@ public abstract class Handshaker implements Destroyable {
 						return candidate;
 					} else if (changeCipherSpec == null) {
 						// store message for later processing
-						LOGGER.debug("Change Cipher Spec is not expected and therefore kept for later processing!");
+						org.eclipse.californium.elements.MyLogger.LOG_debug("Change Cipher Spec is not expected and therefore kept for later processing!");
 						changeCipherSpec = candidate;
 						return null;
 					} else {
 						// already stored message for later processing
-						LOGGER.debug("Change Cipher Spec is received again!");
+						org.eclipse.californium.elements.MyLogger.LOG_debug("Change Cipher Spec is received again!");
 						return null;
 					}
 				case HANDSHAKE:
@@ -411,7 +411,7 @@ public abstract class Handshaker implements Destroyable {
 					if (messageSeq == nextReceiveMessageSequence) {
 						return candidate;
 					} else if (messageSeq > nextReceiveMessageSequence) {
-						LOGGER.debug(
+						org.eclipse.californium.elements.MyLogger.LOG_debug(
 								"Queued newer {} message from current epoch, message_seq [{}] > next_receive_seq [{}]",
 								handshakeMessage.getMessageType(),
 								messageSeq,
@@ -422,14 +422,14 @@ public abstract class Handshaker implements Destroyable {
 						// Dropped handshake messages are retransmitted by the other peer!
 						return null;
 					} else {
-						LOGGER.debug("Discarding old {} message_seq [{}] < next_receive_seq [{}]",
+						org.eclipse.californium.elements.MyLogger.LOG_debug("Discarding old {} message_seq [{}] < next_receive_seq [{}]",
 								handshakeMessage.getMessageType(),
 								messageSeq,
 								nextReceiveMessageSequence);
 						return null;
 					}
 				default:
-					LOGGER.warn("Cannot process message of type [{}], discarding...", fragment.getContentType());
+					org.eclipse.californium.elements.MyLogger.LOG_warn("Cannot process message of type [{}], discarding...", fragment.getContentType());
 					return null;
 				}
 			} else {
@@ -507,14 +507,14 @@ public abstract class Handshaker implements Destroyable {
 	public final void processMessage(Record record) throws HandshakeException {
 		int epoch = session.getReadEpoch();
 		if (epoch != record.getEpoch()) {
-			LOGGER.debug("Discarding {} message with wrong epoch received from peer [{}]:{}{}",
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Discarding {} message with wrong epoch received from peer [{}]:{}{}",
 					record.getType(), record.getPeerAddress(), StringUtil.lineSeparator(), record);
 			throw new IllegalArgumentException("processing record with wrong epoch! " + record.getEpoch() + " expected " + epoch);
 		}
 		if (record.getReceiveNanos() < flightSendNanos) {
 			// TODO reuse debug level after the M17. 
 			// (see https://github.com/eclipse/californium/issues/1034#issuecomment-526656943)
-			LOGGER.info("Discarding {} message received from peer [{}] before last flight was sent:{}{}",
+			org.eclipse.californium.elements.MyLogger.LOG_info("Discarding {} message received from peer [{}] before last flight was sent:{}{}",
 					record.getType(), record.getPeerAddress(), StringUtil.lineSeparator(), record);
 			return;
 		}
@@ -526,16 +526,16 @@ public abstract class Handshaker implements Destroyable {
 				
 				if (messageToProcess.getContentType() == ContentType.CHANGE_CIPHER_SPEC) {
 					// is thrown during processing
-					LOGGER.debug("Processing {} message from peer [{}]", messageToProcess.getContentType(),
+					org.eclipse.californium.elements.MyLogger.LOG_debug("Processing {} message from peer [{}]", messageToProcess.getContentType(),
 							messageToProcess.getPeer());
 					setCurrentReadState();
 					++statesIndex;
-					LOGGER.debug("Processed {} message from peer [{}]", messageToProcess.getContentType(),
+					org.eclipse.californium.elements.MyLogger.LOG_debug("Processed {} message from peer [{}]", messageToProcess.getContentType(),
 							messageToProcess.getPeer());
 				} else if (messageToProcess.getContentType() == ContentType.HANDSHAKE) {
 					HandshakeMessage handshakeMessage = (HandshakeMessage) messageToProcess;
 					if (handshakeMessage.getMessageType() == HandshakeType.FINISHED && epoch == 0) {
-						LOGGER.debug("FINISH with epoch 0 from peer [{}]!", getSession().getPeer());
+						org.eclipse.californium.elements.MyLogger.LOG_debug("FINISH with epoch 0 from peer [{}]!", getSession().getPeer());
 						AlertMessage alert = new AlertMessage(AlertLevel.FATAL, AlertDescription.UNEXPECTED_MESSAGE,
 								getSession().getPeer());
 						throw new HandshakeException("FINISH with epoch 0!", alert);
@@ -545,7 +545,7 @@ public abstract class Handshaker implements Destroyable {
 					// must be not canceled before the FINISH
 					DTLSFlight flight = pendingFlight.get();
 					if (flight != null) {
-						LOGGER.debug("response for flight {} started", flight.getFlightNumber());
+						org.eclipse.californium.elements.MyLogger.LOG_debug("response for flight {} started", flight.getFlightNumber());
 						flight.setResponseStarted();
 					}
 					if (handshakeMessage instanceof FragmentedHandshakeMessage) {
@@ -556,7 +556,7 @@ public abstract class Handshaker implements Destroyable {
 							GenericHandshakeMessage genericMessage = (GenericHandshakeMessage) handshakeMessage;
 							HandshakeParameter parameter = session.getParameter();
 							if (parameter == null) {
-								LOGGER.warn("Cannot process handshake {} message from peer [{}], parameter are required!",
+								org.eclipse.californium.elements.MyLogger.LOG_warn("Cannot process handshake {} message from peer [{}], parameter are required!",
 										genericMessage.getMessageType(), getSession().getPeer());
 								AlertMessage alert = new AlertMessage(AlertLevel.FATAL, AlertDescription.INTERNAL_ERROR,
 										session.getPeer());
@@ -569,28 +569,28 @@ public abstract class Handshaker implements Destroyable {
 							// we already sent the last flight (including our FINISHED message),
 							// but the other peer does not seem to have received it because we received
 							// its finished message again, so we simply retransmit our last flight
-							LOGGER.debug("Received ({}) FINISHED message again, retransmitting last flight...",
+							org.eclipse.californium.elements.MyLogger.LOG_debug("Received ({}) FINISHED message again, retransmitting last flight...",
 									getPeerAddress());
 							flight.incrementTries();
 							flight.setNewSequenceNumbers();
 							sendFlight(flight);
 						} else {
 							// is thrown during processing
-							if (LOGGER.isDebugEnabled()) {
+							if (org.eclipse.californium.elements.MyLogger.isDebugEnabled()) {
 								StringBuilder msg = new StringBuilder();
 								msg.append(String.format("Processing %s message from peer [%s], seqn: [%d]",
 										handshakeMessage.getMessageType(), handshakeMessage.getPeer(),
 										handshakeMessage.getMessageSeq()));
-								if (LOGGER.isTraceEnabled()) {
+								if (org.eclipse.californium.elements.MyLogger.isTraceEnabled()) {
 									msg.append(":").append(StringUtil.lineSeparator()).append(handshakeMessage);
 								}
-								LOGGER.debug(msg.toString());
+								org.eclipse.californium.elements.MyLogger.LOG_debug(msg.toString());
 							}
 							if (epoch == 0) {
 								handshakeMessages.add(handshakeMessage);
 							}
 							doProcessMessage(handshakeMessage);
-							LOGGER.debug("Processed {} message from peer [{}]", handshakeMessage.getMessageType(),
+							org.eclipse.californium.elements.MyLogger.LOG_debug("Processed {} message from peer [{}]", handshakeMessage.getMessageType(),
 									handshakeMessage.getPeer());
 							if (!lastFlight) {
 								// last Flight may have changed processing
@@ -637,7 +637,7 @@ public abstract class Handshaker implements Destroyable {
 				}
 			}
 		} catch (GeneralSecurityException e) {
-			LOGGER.warn("Cannot process handshake message from peer [{}] due to [{}]", getSession().getPeer(),
+			org.eclipse.californium.elements.MyLogger.LOG_warn("Cannot process handshake message from peer [{}] due to [{}]", getSession().getPeer(),
 					e.getMessage(), e);
 			AlertMessage alert = new AlertMessage(AlertLevel.FATAL, AlertDescription.INTERNAL_ERROR,
 					session.getPeer());
@@ -656,7 +656,7 @@ public abstract class Handshaker implements Destroyable {
 	protected void expectMessage(DTLSMessage message) throws HandshakeException {
 		if (useStateValidation && states != null) {
 			if (statesIndex >= states.length) {
-				LOGGER.warn("Cannot process {} message from peer [{}], no more expected!", HandshakeState.toString(message),
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Cannot process {} message from peer [{}], no more expected!", HandshakeState.toString(message),
 						getSession().getPeer());
 				AlertMessage alert = new AlertMessage(AlertLevel.FATAL, AlertDescription.INTERNAL_ERROR,
 						session.getPeer());
@@ -676,7 +676,7 @@ public abstract class Handshaker implements Destroyable {
 			}
 
 			if (!expected) {
-				LOGGER.warn("Cannot process {} message from peer [{}], {} expected!", HandshakeState.toString(message),
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Cannot process {} message from peer [{}], {} expected!", HandshakeState.toString(message),
 						getSession().getPeer(), expectedState);
 				AlertMessage alert = new AlertMessage(AlertLevel.FATAL, AlertDescription.INTERNAL_ERROR,
 						session.getPeer());
@@ -726,7 +726,7 @@ public abstract class Handshaker implements Destroyable {
 		int index = 0;
 		for (HandshakeMessage handshakeMessage : handshakeMessages) {
 			md.update(handshakeMessage.toByteArray());
-			LOGGER.trace("  [{}] - {}", index, handshakeMessage.getMessageType());
+			org.eclipse.californium.elements.MyLogger.LOG_trace("  [{}] - {}", index, handshakeMessage.getMessageType());
 			++index;
 		}
 		return md;
@@ -907,7 +907,7 @@ public abstract class Handshaker implements Destroyable {
 		}
 
 		// message needs to be fragmented
-		LOGGER.debug("Splitting up {} message for [{}] into multiple fragments of max {} bytes",
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Splitting up {} message for [{}] into multiple fragments of max {} bytes",
 				handshakeMessage.getMessageType(), handshakeMessage.getPeer(), maxFragmentLength);
 		// create N handshake messages, all with the
 		// same message_seq value as the original handshake message
@@ -958,7 +958,7 @@ public abstract class Handshaker implements Destroyable {
 	protected final HandshakeMessage handleFragmentation(FragmentedHandshakeMessage fragment)
 			throws HandshakeException {
 
-		LOGGER.debug("Processing {} message fragment ...", fragment.getMessageType());
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Processing {} message fragment ...", fragment.getMessageType());
 
 		if (fragment.getMessageLength() > maxFragmentedHandshakeMessageLength) {
 			throw new HandshakeException(
@@ -981,7 +981,7 @@ public abstract class Handshaker implements Destroyable {
 			if (reassembledMessage.isComplete()) {
 				HandshakeMessage message = HandshakeMessage.fromByteArray(reassembledMessage.toByteArray(),
 						session.getParameter(), reassembledMessage.getPeer());
-				LOGGER.debug("Successfully re-assembled {} message", message.getMessageType());
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Successfully re-assembled {} message", message.getMessageType());
 				reassembledMessage = null;
 				return message;
 			}
@@ -1081,7 +1081,7 @@ public abstract class Handshaker implements Destroyable {
 			deferredRecordsSize += size;
 			return true;
 		} else {
-			LOGGER.debug("Dropped incoming record from peer [{}], limit of {} bytes exceeded by {}+{} bytes!",
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Dropped incoming record from peer [{}], limit of {} bytes exceeded by {}+{} bytes!",
 					incomingMessage.getPeerAddress(), maxDeferredProcessedIncomingRecordsSize, deferredRecordsSize, size);
 			return false;
 		}
@@ -1090,7 +1090,7 @@ public abstract class Handshaker implements Destroyable {
 	private void removeDeferredProcessedRecord(Record incomingMessage) {
 		int size = incomingMessage.size();
 		if (deferredRecordsSize < size) {
-			LOGGER.warn(
+			org.eclipse.californium.elements.MyLogger.LOG_warn(
 					"deferred processed incoming records corrupted for peer [{}]! Removing {} bytes exceeds available {} bytes!",
 					incomingMessage.getPeerAddress(), size, deferredRecordsSize);
 			throw new IllegalArgumentException("deferred processing of incoming records corrupted!");
@@ -1174,7 +1174,7 @@ public abstract class Handshaker implements Destroyable {
 	}
 
 	protected final void handshakeStarted() throws HandshakeException {
-		LOGGER.debug("handshake started {}", connection);
+		org.eclipse.californium.elements.MyLogger.LOG_debug("handshake started {}", connection);
 		for (SessionListener sessionListener : sessionListeners) {
 			sessionListener.handshakeStarted(this);
 		}
@@ -1182,7 +1182,7 @@ public abstract class Handshaker implements Destroyable {
 
 	protected final void sessionEstablished() throws HandshakeException {
 		if (!sessionEstablished) {
-			LOGGER.debug("session established {}", connection);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("session established {}", connection);
 			amendPeerPrincipal();
 			sessionEstablished = true;
 			for (SessionListener sessionListener : sessionListeners) {
@@ -1197,7 +1197,7 @@ public abstract class Handshaker implements Destroyable {
 			sessionListener.handshakeCompleted(this);
 		}
 		SecretUtil.destroy(this);
-		LOGGER.debug("handshake completed {}", connection);
+		org.eclipse.californium.elements.MyLogger.LOG_debug("handshake completed {}", connection);
 	}
 
 	/**
@@ -1215,7 +1215,7 @@ public abstract class Handshaker implements Destroyable {
 			this.cause = cause;
 		}
 		if (!handshakeFailed && this.cause == cause) {
-			LOGGER.debug("handshake failed {}", connection, cause);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("handshake failed {}", connection, cause);
 			handshakeFailed = true;
 			setPendingFlight(null);
 			if (!sessionEstablished) {
@@ -1305,7 +1305,7 @@ public abstract class Handshaker implements Destroyable {
 	public void verifyCertificate(CertificateMessage message) throws HandshakeException {
 		if (message.getCertificateChain() != null) {
 			if (isClient && message.getCertificateChain().getCertificates().isEmpty()) {
-				LOGGER.debug("Certificate validation failed: empty server certificate!");
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Certificate validation failed: empty server certificate!");
 				AlertMessage alert = new AlertMessage(AlertLevel.FATAL, AlertDescription.BAD_CERTIFICATE,
 						session.getPeer());
 				throw new HandshakeException("Empty server certificate!", alert);
@@ -1313,7 +1313,7 @@ public abstract class Handshaker implements Destroyable {
 			if (certificateVerifier != null) {
 				certificateVerifier.verifyCertificate(message, session);
 			} else {
-				LOGGER.debug("Certificate validation failed: x509 could not be trusted!");
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Certificate validation failed: x509 could not be trusted!");
 				AlertMessage alert = new AlertMessage(AlertLevel.FATAL, AlertDescription.UNEXPECTED_MESSAGE,
 						session.getPeer());
 				throw new HandshakeException("Trust is not possible!", alert);
@@ -1321,7 +1321,7 @@ public abstract class Handshaker implements Destroyable {
 		} else {
 			RawPublicKeyIdentity rpk = new RawPublicKeyIdentity(message.getPublicKey());
 			if (!rpkStore.isTrusted(rpk)) {
-				LOGGER.debug("Certificate validation failed: Raw public key is not trusted");
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Certificate validation failed: Raw public key is not trusted");
 				AlertMessage alert = new AlertMessage(AlertLevel.FATAL, AlertDescription.BAD_CERTIFICATE,
 						session.getPeer());
 				throw new HandshakeException("Raw public key is not trusted", alert);

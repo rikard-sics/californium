@@ -32,7 +32,7 @@ class CloseOnIdleHandler extends ChannelDuplexHandler {
 
 	@Override public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
 		if (evt instanceof IdleStateEvent) {
-			LOGGER.debug("Closing channel with {} due to idle time.", ctx.channel().remoteAddress());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Closing channel with {} due to idle time.", ctx.channel().remoteAddress());
 			ctx.channel().close();
 		}
 	}

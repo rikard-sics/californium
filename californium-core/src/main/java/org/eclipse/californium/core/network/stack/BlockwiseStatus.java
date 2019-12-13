@@ -192,7 +192,7 @@ public abstract class BlockwiseStatus {
 			result = true;
 			buf.put(block);
 		} else {
-			LOGGER.debug("resource body exceeds buffer size [{}]", getBufferSize());
+			org.eclipse.californium.core.MyLogger.LOG_debug("resource body exceeds buffer size [{}]", getBufferSize());
 		}
 		blockCount++;
 		return result;

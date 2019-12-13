@@ -133,7 +133,7 @@ public class ResumingClientHandshaker extends ClientHandshaker {
 	protected void receivedServerHello(ServerHello message) throws HandshakeException {
 		if (!session.getSessionIdentifier().equals(message.getSessionId()))
 		{
-			LOGGER.debug(
+			org.eclipse.californium.elements.MyLogger.LOG_debug(
 					"Server [{}] refuses to resume session [{}], performing full handshake instead...",
 					message.getPeer(), session.getSessionIdentifier());
 			// Server refuse to resume the session, go for a full handshake

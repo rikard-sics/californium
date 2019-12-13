@@ -71,7 +71,7 @@ public class ProxyHttpClientResource extends ForwardingResource {
 		
 		// check the invariant: the request must have the proxy-uri set
 		if (!incomingCoapRequest.getOptions().hasProxyUri()) {
-			LOGGER.warn("Proxy-uri option not set.");
+			org.eclipse.californium.core.MyLogger.LOG_warn("Proxy-uri option not set.");
 			future.complete(new Response(ResponseCode.BAD_OPTION));
 			return future;
 		}
@@ -86,11 +86,11 @@ public class ProxyHttpClientResource extends ForwardingResource {
 					incomingCoapRequest.getOptions().getProxyUri(), "UTF-8");
 			proxyUri = new URI(proxyUriString);
 		} catch (UnsupportedEncodingException e) {
-			LOGGER.warn("Proxy-uri option malformed: {}", e.getMessage());
+			org.eclipse.californium.core.MyLogger.LOG_warn("Proxy-uri option malformed: {}", e.getMessage());
 			future.complete(new Response(CoapTranslator.STATUS_FIELD_MALFORMED));
 			return future;
 		} catch (URISyntaxException e) {
-			LOGGER.warn("Proxy-uri option malformed: {}", e.getMessage());
+			org.eclipse.californium.core.MyLogger.LOG_warn("Proxy-uri option malformed: {}", e.getMessage());
 			future.complete(new Response(CoapTranslator.STATUS_FIELD_MALFORMED));
 			return future;
 		}
@@ -103,13 +103,13 @@ public class ProxyHttpClientResource extends ForwardingResource {
 		try {
 			// get the mapping to http for the incoming coap request
 			httpRequest = new HttpTranslator().getHttpRequest(incomingCoapRequest);
-			LOGGER.debug("Outgoing http request: {}", httpRequest.getRequestLine());
+			org.eclipse.californium.core.MyLogger.LOG_debug("Outgoing http request: {}", httpRequest.getRequestLine());
 		} catch (InvalidFieldException e) {
-			LOGGER.warn("Problems during the http/coap translation: {}", e.getMessage());
+			org.eclipse.californium.core.MyLogger.LOG_warn("Problems during the http/coap translation: {}", e.getMessage());
 			future.complete(new Response(CoapTranslator.STATUS_FIELD_MALFORMED));
 			return future;
 		} catch (TranslationException e) {
-			LOGGER.warn("Problems during the http/coap translation: {}", e.getMessage());
+			org.eclipse.californium.core.MyLogger.LOG_warn("Problems during the http/coap translation: {}", e.getMessage());
 			future.complete(new Response(CoapTranslator.STATUS_TRANSLATION_ERROR));
 			return future;
 		}
@@ -118,7 +118,7 @@ public class ProxyHttpClientResource extends ForwardingResource {
 			@Override
 			public void completed(HttpResponse result) {
 				long timestamp = ClockUtil.nanoRealtime();
-				LOGGER.debug("Incoming http response: {}", result.getStatusLine());
+				org.eclipse.californium.core.MyLogger.LOG_debug("Incoming http response: {}", result.getStatusLine());
 				// the entity of the response, if non repeatable, could be
 				// consumed only one time, so do not debug it!
 				// System.out.println(EntityUtils.toString(httpResponse.getEntity()));
@@ -130,23 +130,23 @@ public class ProxyHttpClientResource extends ForwardingResource {
 
 					future.complete(coapResponse);
 				} catch (InvalidFieldException e) {
-					LOGGER.warn("Problems during the http/coap translation: {}", e.getMessage());
+					org.eclipse.californium.core.MyLogger.LOG_warn("Problems during the http/coap translation: {}", e.getMessage());
 					future.complete(new Response(CoapTranslator.STATUS_FIELD_MALFORMED));
 				} catch (TranslationException e) {
-					LOGGER.warn("Problems during the http/coap translation: {}", e.getMessage());
+					org.eclipse.californium.core.MyLogger.LOG_warn("Problems during the http/coap translation: {}", e.getMessage());
 					future.complete(new Response(CoapTranslator.STATUS_TRANSLATION_ERROR));
 				}
 			}
 
 			@Override
 			public void failed(Exception ex) {
-				LOGGER.warn("Failed to get the http response: {}", ex.getMessage());
+				org.eclipse.californium.core.MyLogger.LOG_warn("Failed to get the http response: {}", ex.getMessage());
 				future.complete(new Response(ResponseCode.INTERNAL_SERVER_ERROR));
 			}
 
 			@Override
 			public void cancelled() {
-				LOGGER.warn("Request canceled");
+				org.eclipse.californium.core.MyLogger.LOG_warn("Request canceled");
 				future.complete(new Response(ResponseCode.SERVICE_UNAVAILABLE));
 			}
 		});

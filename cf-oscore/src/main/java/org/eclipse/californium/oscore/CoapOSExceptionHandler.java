@@ -78,13 +78,13 @@ public class CoapOSExceptionHandler {
 					
 					return error;
 				} else {
-					LOGGER.error(ErrorDescriptions.CANNOT_CREATE_ERROR_MESS + ": " + ErrorDescriptions.ERROR_MESS_NULL);
+					org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.CANNOT_CREATE_ERROR_MESS + ": " + ErrorDescriptions.ERROR_MESS_NULL);
 				}
 			} else {
-				LOGGER.error(ErrorDescriptions.CANNOT_CREATE_ERROR_MESS + ": " + ErrorDescriptions.TYPE_NULL);
+				org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.CANNOT_CREATE_ERROR_MESS + ": " + ErrorDescriptions.TYPE_NULL);
 			}
 		} else {
-			LOGGER.error(ErrorDescriptions.CANNOT_CREATE_ERROR_MESS + ": " + ErrorDescriptions.REQUEST_NULL);
+			org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.CANNOT_CREATE_ERROR_MESS + ": " + ErrorDescriptions.REQUEST_NULL);
 		}
 		return null;
 	}
@@ -100,23 +100,23 @@ public class CoapOSExceptionHandler {
 	 */
 	public static EmptyMessage manageError(OSException e, Response response) {
 		if (e == null) {
-			LOGGER.error(ErrorDescriptions.EXCEPTION_NULL);
+			org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.EXCEPTION_NULL);
 			throw new NullPointerException(ErrorDescriptions.EXCEPTION_NULL);
 		}
 
 		String errMess = e.getMessage();
 
 		if (errMess == null) {
-			LOGGER.error(ErrorDescriptions.ERROR_MESS_NULL);
+			org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.ERROR_MESS_NULL);
 			throw new NullPointerException(ErrorDescriptions.ERROR_MESS_NULL);
 		}
 		
 		if (!response.isConfirmable()) {
-			LOGGER.error("An Empty Message will not be created");
+			org.eclipse.californium.core.MyLogger.LOG_error("An Empty Message will not be created");
 			return null;
 		}
 		
-		LOGGER.info("Sending empty RST message");
+		org.eclipse.californium.core.MyLogger.LOG_info("Sending empty RST message");
 		return EmptyMessage.newRST(response);
 	}
 }

@@ -107,7 +107,7 @@ public final class TcpMatcher extends BaseMatcher {
 		}
 		exchange.setRemoveHandler(exchangeRemoveHandler);
 		exchangeStore.registerOutboundRequestWithTokenOnly(exchange);
-		LOGGER.debug("tracking open request using {}", request.getTokenString());
+		org.eclipse.californium.core.MyLogger.LOG_debug("tracking open request using {}", request.getTokenString());
 	}
 
 	@Override
@@ -170,7 +170,7 @@ public final class TcpMatcher extends BaseMatcher {
 
 		if (tempExchange == null) {
 			// There is no exchange with the given token - ignore response
-			LOGGER.trace("discarding unmatchable response from [{}]: {}", response.getSourceContext(), response);
+			org.eclipse.californium.core.MyLogger.LOG_trace("discarding unmatchable response from [{}]: {}", response.getSourceContext(), response);
 			return;
 		}
 
@@ -182,7 +182,7 @@ public final class TcpMatcher extends BaseMatcher {
 				boolean checkResponseToken = !exchange.isNotification() || exchange.getRequest() != exchange.getCurrentRequest();
 				if (checkResponseToken && exchangeStore.get(idByToken) != exchange) {
 					if (running) {
-						LOGGER.debug("ignoring response {}, exchange not longer matching!", response);
+						org.eclipse.californium.core.MyLogger.LOG_debug("ignoring response {}, exchange not longer matching!", response);
 					}
 					return;
 				}
@@ -190,7 +190,7 @@ public final class TcpMatcher extends BaseMatcher {
 				EndpointContext context = exchange.getEndpointContext();
 				if (context == null) {
 					// ignore response
-					LOGGER.error("ignoring response from [{}]: {}, request pending to sent!",
+					org.eclipse.californium.core.MyLogger.LOG_error("ignoring response from [{}]: {}, request pending to sent!",
 							response.getSourceContext(), response);
 					return;
 				}
@@ -201,17 +201,17 @@ public final class TcpMatcher extends BaseMatcher {
 								&& response.isNotification() && currentRequest.isObserveCancel()) {
 							// overlapping notification for observation cancel
 							// request
-							LOGGER.debug("ignoring notify for pending cancel {}!", response);
+							org.eclipse.californium.core.MyLogger.LOG_debug("ignoring notify for pending cancel {}!", response);
 							return;
 						}
 						receiver.receiveResponse(exchange, response);
-					} else if (LOGGER.isDebugEnabled()) {
-						LOGGER.debug(
+					} else if (org.eclipse.californium.core.MyLogger.isDebugEnabled()) {
+						org.eclipse.californium.core.MyLogger.LOG_debug(
 								"ignoring potentially forged response from [{}]: {} for {} with non-matching endpoint context",
 								endpointContextMatcher.toRelevantState(response.getSourceContext()), response, exchange);
 					}
 				} catch (Exception ex) {
-					LOGGER.error("error receiving response from [{}]: {} for {}", response.getSourceContext(), response,
+					org.eclipse.californium.core.MyLogger.LOG_error("error receiving response from [{}]: {} for {}", response.getSourceContext(), response,
 							exchange, ex);
 				}
 			}

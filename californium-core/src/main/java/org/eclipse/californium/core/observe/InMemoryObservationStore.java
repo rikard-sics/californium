@@ -71,9 +71,9 @@ public final class InMemoryObservationStore implements ObservationStore {
 			enableStatus = true;
 			Observation result = map.putIfAbsent(key, obs);
 			if (result == null) {
-				LOGGER.debug("added observation for {}", key);
+				org.eclipse.californium.core.MyLogger.LOG_debug("added observation for {}", key);
 			} else {
-				LOGGER.debug("kept observation {} for {}", result, key);
+				org.eclipse.californium.core.MyLogger.LOG_debug("kept observation {} for {}", result, key);
 			}
 			return result;
 		}
@@ -89,9 +89,9 @@ public final class InMemoryObservationStore implements ObservationStore {
 			enableStatus = true;
 			Observation result = map.put(key, obs);
 			if (result == null) {
-				LOGGER.debug("added observation for {}", key);
+				org.eclipse.californium.core.MyLogger.LOG_debug("added observation for {}", key);
 			} else {
-				LOGGER.debug("replaced observation {} for {}", result, key);
+				org.eclipse.californium.core.MyLogger.LOG_debug("replaced observation {} for {}", result, key);
 			}
 			return result;
 		}
@@ -103,7 +103,7 @@ public final class InMemoryObservationStore implements ObservationStore {
 			return null;
 		} else {
 			Observation obs = map.get(token);
-			LOGGER.debug("looking up observation for token {}: {}", token, obs);
+			org.eclipse.californium.core.MyLogger.LOG_debug("looking up observation for token {}: {}", token, obs);
 			// clone request in order to prevent accumulation of
 			// message observers on original request
 			return ObservationUtil.shallowClone(obs);
@@ -114,9 +114,9 @@ public final class InMemoryObservationStore implements ObservationStore {
 	public void remove(Token token) {
 		if (token != null) {
 			if (map.remove(token) != null) {
-				LOGGER.debug("removed observation for token {}", token);
+				org.eclipse.californium.core.MyLogger.LOG_debug("removed observation for token {}", token);
 			} else {
-				LOGGER.debug("Already removed observation for token {}", token);
+				org.eclipse.californium.core.MyLogger.LOG_debug("Already removed observation for token {}", token);
 			}
 		}
 	}
@@ -162,17 +162,17 @@ public final class InMemoryObservationStore implements ObservationStore {
 		int healthStatusInterval = config.getInt(NetworkConfig.Keys.HEALTH_STATUS_INTERVAL,
 				NetworkConfigDefaults.DEFAULT_HEALTH_STATUS_INTERVAL); // seconds
 
-		if (healthStatusInterval > 0 && HEALTH_LOGGER.isDebugEnabled() && executor != null) {
+		if (healthStatusInterval > 0 && org.eclipse.californium.core.MyLogger.isDebugEnabled() && executor != null) {
 			statusLogger = executor.scheduleAtFixedRate(new Runnable() {
 
 				@Override
 				public void run() {
 					if (enableStatus) {
-						HEALTH_LOGGER.debug("{} observes", map.size());
+						org.eclipse.californium.core.MyLogger.LOG_debug("{} observes", map.size());
 						Iterator<Token> iterator = map.keySet().iterator();
 						int max = 5;
 						while (iterator.hasNext()) {
-							HEALTH_LOGGER.debug("   observe {}", iterator.next());
+							org.eclipse.californium.core.MyLogger.LOG_debug("   observe {}", iterator.next());
 							--max;
 							if (max == 0) {
 								break;

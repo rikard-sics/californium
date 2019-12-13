@@ -67,11 +67,11 @@ public class OSSerializer {
 				DataSerializer.serializeOptionsAndPayload(writer, filteredOptions, payload);
 				return writer.toByteArray();
 			} else {
-				LOGGER.error(ErrorDescriptions.COAP_CODE_INVALID);
+				org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.COAP_CODE_INVALID);
 				throw new IllegalArgumentException(ErrorDescriptions.COAP_CODE_INVALID);
 			}
 		} else {
-			LOGGER.error(ErrorDescriptions.OPTIONSET_NULL);
+			org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.OPTIONSET_NULL);
 			throw new NullPointerException(ErrorDescriptions.OPTIONSET_NULL);
 		}
 	}
@@ -111,19 +111,19 @@ public class OSSerializer {
 						
 						return aad.EncodeToBytes();
 					} else {
-						LOGGER.error(ErrorDescriptions.OPTIONSET_NULL);
+						org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.OPTIONSET_NULL);
 						throw new NullPointerException(ErrorDescriptions.OPTIONSET_NULL);
 					}
 				} else {
-					LOGGER.error(ErrorDescriptions.ALGORITHM_NOT_DEFINED);
+					org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.ALGORITHM_NOT_DEFINED);
 					throw new NullPointerException(ErrorDescriptions.ALGORITHM_NOT_DEFINED);
 				}
 			} else {
-				LOGGER.error(ErrorDescriptions.SEQ_NBR_INVALID);
+				org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.SEQ_NBR_INVALID);
 				throw new IllegalArgumentException(ErrorDescriptions.SEQ_NBR_INVALID);
 			}
 		} else {
-			LOGGER.error(ErrorDescriptions.WRONG_VERSION_NBR);
+			org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.WRONG_VERSION_NBR);
 			throw new IllegalArgumentException(ErrorDescriptions.WRONG_VERSION_NBR);
 		}
 	}
@@ -183,19 +183,19 @@ public class OSSerializer {
 
 						return result;
 					} else {
-						LOGGER.error(ErrorDescriptions.NONCE_LENGTH_INVALID);
+						org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.NONCE_LENGTH_INVALID);
 						throw new IllegalArgumentException(ErrorDescriptions.NONCE_LENGTH_INVALID);
 					}
 				} else {
-					LOGGER.error(ErrorDescriptions.COMMON_IV_NULL);
+					org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.COMMON_IV_NULL);
 					throw new NullPointerException(ErrorDescriptions.COMMON_IV_NULL);
 				}
 			} else {
-				LOGGER.error(ErrorDescriptions.SENDER_ID_NULL);
+				org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.SENDER_ID_NULL);
 				throw new NullPointerException(ErrorDescriptions.SENDER_ID_NULL);
 			}
 		} else {
-			LOGGER.error(ErrorDescriptions.PARTIAL_IV_NULL);
+			org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.PARTIAL_IV_NULL);
 			throw new NullPointerException(ErrorDescriptions.PARTIAL_IV_NULL);
 		}
 	}
@@ -256,7 +256,7 @@ public class OSSerializer {
 
 			return out;
 		} else {
-			LOGGER.error(ErrorDescriptions.BYTE_ARRAY_NULL);
+			org.eclipse.californium.core.MyLogger.LOG_error(ErrorDescriptions.BYTE_ARRAY_NULL);
 			throw new NullPointerException(ErrorDescriptions.BYTE_ARRAY_NULL);
 		}
 	}

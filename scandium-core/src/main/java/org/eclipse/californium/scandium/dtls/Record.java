@@ -347,7 +347,7 @@ public class Record {
 		while (reader.bytesAvailable()) {
 
 			if (reader.bitsLeft() < RECORD_HEADER_BITS) {
-				LOGGER.debug("Received truncated DTLS record(s). Discarding ...");
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Received truncated DTLS record(s). Discarding ...");
 				return records;
 			}
 
@@ -362,28 +362,28 @@ public class Record {
 			ConnectionId connectionId = null;
 			if (type == ContentType.TLS12_CID.getCode()) {
 				if (cidGenerator == null) {
-					LOGGER.debug("Received TLS_CID record, but cid is not supported. Discarding ...");
+					org.eclipse.californium.elements.MyLogger.LOG_debug("Received TLS_CID record, but cid is not supported. Discarding ...");
 					return records;
 				} else if (cidGenerator.useConnectionId()) {
 					try {
 						connectionId = cidGenerator.read(reader);
 						if (connectionId == null) {
-							LOGGER.debug("Received TLS_CID record, but cid is not matching. Discarding ...");
+							org.eclipse.californium.elements.MyLogger.LOG_debug("Received TLS_CID record, but cid is not matching. Discarding ...");
 							return records;
 						}
 					} catch (RuntimeException ex) {
-						LOGGER.debug("Received TLS_CID record, failed to read cid. Discarding ...", ex.getMessage());
+						org.eclipse.californium.elements.MyLogger.LOG_debug("Received TLS_CID record, failed to read cid. Discarding ...", ex.getMessage());
 						return records;
 					}
 				} else {
-					LOGGER.debug("Received TLS_CID record, but cid is not used. Discarding ...");
+					org.eclipse.californium.elements.MyLogger.LOG_debug("Received TLS_CID record, but cid is not used. Discarding ...");
 					return records;
 				}
 			}
 			int length = reader.read(LENGTH_BITS);
 
 			if (reader.bitsLeft() < (length * Byte.SIZE)) {
-				LOGGER.debug("Received truncated DTLS record(s). Discarding ...");
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Received truncated DTLS record(s). Discarding ...");
 				return records;
 			}
 
@@ -392,7 +392,7 @@ public class Record {
 
 			ContentType contentType = ContentType.getTypeByValue(type);
 			if (contentType == null) {
-				LOGGER.debug("Received DTLS record of unsupported type [{}]. Discarding ...", type);
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Received DTLS record of unsupported type [{}]. Discarding ...", type);
 			} else {
 				records.add(new Record(contentType, version, epoch, sequenceNumber, connectionId, fragmentBytes,
 						peerAddress, receiveNanos));
@@ -589,7 +589,7 @@ public class Record {
 		
 		if (fragment != null) {
 			if (incomingReadState != readState) {
-				LOGGER.error("{} != {}", readState, incomingReadState);
+				org.eclipse.californium.elements.MyLogger.LOG_error("{} != {}", readState, incomingReadState);
 				throw new IllegalArgumentException("session read state changed!");
 			}
 		} else {
@@ -719,23 +719,23 @@ public class Record {
 			break;
 
 		default:
-			LOGGER.warn("Cannot decrypt message of unsupported type [{}]", type);
+			org.eclipse.californium.elements.MyLogger.LOG_warn("Cannot decrypt message of unsupported type [{}]", type);
 		}
 		type = actualType;
 	}
 
 	private DTLSMessage handshakeMessageFromByteArray(byte[] decryptedMessage) throws GeneralSecurityException, HandshakeException {
-		if (LOGGER.isTraceEnabled()) {
-			LOGGER.trace("Parsing HANDSHAKE message plaintext{}{}", StringUtil.lineSeparator(),
+		if (org.eclipse.californium.elements.MyLogger.isTraceEnabled()) {
+			org.eclipse.californium.elements.MyLogger.LOG_trace("Parsing HANDSHAKE message plaintext{}{}", StringUtil.lineSeparator(),
 					StringUtil.byteArray2HexString(decryptedMessage));
 		}
 
 		HandshakeParameter parameter = null;
 		if (incomingSession != null) {
 			parameter = incomingSession.getParameter();
-			LOGGER.debug("Parsing HANDSHAKE message plaintext with parameter [{}]", parameter);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Parsing HANDSHAKE message plaintext with parameter [{}]", parameter);
 		} else {
-			LOGGER.debug("Parsing HANDSHAKE message without a session");
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Parsing HANDSHAKE message without a session");
 		}
 		return HandshakeMessage.fromByteArray(decryptedMessage, parameter, getPeerAddress());
 	}
