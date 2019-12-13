@@ -125,7 +125,7 @@ public class Request extends Message {
 			.compile("(\\[[0-9a-f:]+(%\\w+)?\\]|[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})");
 
 	/** The request code. */
-	private final CoAP.Code code;
+	private CoAP.Code code;
 
 	/** Marks this request as multicast request */
 	private boolean multicast;
@@ -175,6 +175,16 @@ public class Request extends Message {
 		return code;
 	}
 
+	/**
+	 * sets the request code.
+	 *
+	 * @return the code
+	 */
+	public Request setCode(Code c) {
+		this.code = c;
+		return this;
+	}
+	
 	@Override
 	public int getRawCode() {
 		return code == null ? 0 : code.value;

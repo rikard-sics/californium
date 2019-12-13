@@ -250,29 +250,32 @@ public class OptionJuggle {
 	 * @param code the new CoAP Code
 	 */
 	private static Request requestWithNewCode(Request request, Code code) {
-		OptionSet options = request.getOptions();
-		byte[] payload = request.getPayload();
-		Token token = request.getToken();
-		EndpointContext destinationContext = request.getDestinationContext();
-		EndpointContext sourceContext = request.getSourceContext();
-		List<MessageObserver> messageObservers = request.getMessageObservers();
-		int mid = request.getMID();
-		Type type = request.getType();
-		Map<String, String> userContext = request.getUserContext();
+//		OptionSet options = request.getOptions();
+//		byte[] payload = request.getPayload();
+//		Token token = request.getToken();
+//		EndpointContext destinationContext = request.getDestinationContext();
+//		EndpointContext sourceContext = request.getSourceContext();
+//		List<MessageObserver> messageObservers = request.getMessageObservers();
+//		int mid = request.getMID();
+//		Type type = request.getType();
+//		Map<String, String> userContext = request.getUserContext();
+//
+//		Request newRequest = request;
+//		request.getCode();
+//
+//		newRequest.setOptions(options);
+//		newRequest.setPayload(payload);
+//		newRequest.setToken(token);
+//		newRequest.setDestinationContext(destinationContext);
+//		newRequest.setSourceContext(sourceContext);
+//		newRequest.addMessageObservers(messageObservers);
+//		newRequest.setMID(mid);
+//		newRequest.setType(type);
+//		newRequest.setUserContext(userContext);
+		
+		request.setCode(code);
 
-		Request newRequest = new Request(code);
-
-		newRequest.setOptions(options);
-		newRequest.setPayload(payload);
-		newRequest.setToken(token);
-		newRequest.setDestinationContext(destinationContext);
-		newRequest.setSourceContext(sourceContext);
-		newRequest.addMessageObservers(messageObservers);
-		newRequest.setMID(mid);
-		newRequest.setType(type);
-		newRequest.setUserContext(userContext);
-
-		return newRequest;
+		return request;
 	}
 
 	/**

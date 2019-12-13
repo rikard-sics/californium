@@ -167,6 +167,11 @@ public final class Block1BlockwiseStatus extends BlockwiseStatus {
 	 * @return {@code true} if the tokens match.
 	 */
 	public boolean hasMatchingToken(final Response response) {
+		
+		System.out.println("Request is NULL: " + (request == null));
+		
+		System.out.println("Original request Token: " + request.getTokenString() + ". Response Token :" + response.getTokenString());
+		
 		return request != null && response.getToken().equals(request.getToken());
 	}
 }

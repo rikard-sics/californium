@@ -171,6 +171,9 @@ public class EndpointContextInfoTest {
 		// Send second request
 		// This makes sure the server did not fail any of its checks on the
 		// first request.
+		request = new Request(CoAP.Code.GET);
+		request.getOptions().setOscore(Bytes.EMPTY); // Use OSCORE
+		request.setURI(serverUri);
 		request.send();
 		System.out.println("client sent second request");
 
