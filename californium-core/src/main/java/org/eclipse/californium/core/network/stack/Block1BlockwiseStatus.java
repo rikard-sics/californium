@@ -125,6 +125,7 @@ public final class Block1BlockwiseStatus extends BlockwiseStatus {
 		int szx = getCurrentSzx();
 
 		Request block = new Request(request.getCode());
+		//block.setToken(request.getToken()); //Rikard: Another fix
 		// do not enforce CON, since NON could make sense over SMS or similar transports
 		block.setType(request.getType());
 		block.setDestinationContext(request.getDestinationContext());
@@ -186,6 +187,7 @@ public final class Block1BlockwiseStatus extends BlockwiseStatus {
 		System.out.println("Original request Token: " + request.getTokenString() + ". Response Token :" + response.getTokenString());
 		
 		//return request != null && response.getToken().equals(request.getToken());
-		return request != null && response.getToken().equals(exchange.getCurrentRequest().getToken());
+		
+		return request != null && response.getToken().equals(exchange.getCurrentRequest().getToken()); //Rikard: A fix
 	}
 }

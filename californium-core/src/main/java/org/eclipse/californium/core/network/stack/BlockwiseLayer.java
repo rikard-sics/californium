@@ -318,6 +318,7 @@ public class BlockwiseLayer extends AbstractLayer {
 			}
 		}
 
+		System.out.println("Request to send Token: " + requestToSend.getTokenString());
 		exchange.setCurrentRequest(requestToSend);
 		lower().sendRequest(exchange, requestToSend);
 	}
@@ -348,7 +349,7 @@ public class BlockwiseLayer extends AbstractLayer {
 					// original request so that at the end of the
 					// blockwise transfer the Matcher can correctly
 					// close the overall exchange
-					if (request.getToken() == null) {
+					if (request.getToken() == null) { //Rikard: Set to true for one fix way
 						request.setToken(block.getToken());
 					}
 					if (!request.hasMID()) {

@@ -113,6 +113,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	@Override
 	public void sendRequest(Exchange exchange, Request request) {
+		System.out.println("OSCORE Layer Token: " + request.getTokenString());
 		Request req = request;
 		if (shouldProtectRequest(request)) {
 			try {
@@ -151,7 +152,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 					@Override
 					public void onReadyToSend() {
+						
 						Token token = preparedRequest.getToken();
+						
 						ctxDb.addContext(token, finalCtx);
 						ctxDb.addSeqByToken(token, seqByToken);
 					}
@@ -168,6 +171,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			}
 		}
 		org.eclipse.californium.core.MyLogger.LOG_info("Request: " + exchange.getRequest().toString());
+		
 		super.sendRequest(exchange, req);
 	}
 

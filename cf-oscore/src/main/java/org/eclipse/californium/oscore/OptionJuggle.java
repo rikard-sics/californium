@@ -18,10 +18,12 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.MessageObserver;
 import org.eclipse.californium.core.coap.Option;
 import org.eclipse.californium.core.coap.OptionNumberRegistry;
@@ -261,6 +263,26 @@ public class OptionJuggle {
 		Map<String, String> userContext = request.getUserContext();
 
 		Request newRequest = new Request(code);
+		
+		//Rikard: With reflection
+//		Field xField = null;
+//		try {
+//			xField = request.getClass().getDeclaredField("code");
+//		} catch (NoSuchFieldException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		} catch (SecurityException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		try {
+//			xField.setAccessible(true);
+//			xField.set(request, code);
+//		} catch (IllegalArgumentException | IllegalAccessException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+		
 
 		newRequest.setOptions(options);
 		newRequest.setPayload(payload);
