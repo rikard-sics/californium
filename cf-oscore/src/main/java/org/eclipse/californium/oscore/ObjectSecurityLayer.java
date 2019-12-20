@@ -157,8 +157,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						
 						Token token = preparedRequest.getToken();
 						
+						// Rikard: Fix for Block-Wise:
 						//if(exchange.getCurrentRequest().getOptions().hasBlock1()) {
-						if(request.getOptions().hasBlock1()) {
+						if (request.getOptions().hasBlock1()) {
 							exchange.getRequest().setToken(token);
 						}
 						//}

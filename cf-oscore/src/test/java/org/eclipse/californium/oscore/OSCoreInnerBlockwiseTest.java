@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018 Bosch Software Innovations GmbH and others.
+ * Copyright (c) 2020 RISE SICS and others.
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -9,9 +9,11 @@
  *    http://www.eclipse.org/legal/epl-v20.html
  * and the Eclipse Distribution License is available at
  *    http://www.eclipse.org/org/documents/edl-v10.html.
+ *
+ * This test class is based on org.eclipse.californium.integration.test.SecureBlockwiseTest
  * 
- * Contributors:
- *    Achim Kraus (Bosch Software Innovations GmbH) - initial implementation.
+ * Contributors: 
+ *    Rikard Höglund (RISE SICS) - testing OSCORE Block-Wise messages
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
@@ -51,9 +53,13 @@ import org.junit.experimental.categories.Category;
 
 /**
  * Class for testing OSCORE together with Block-Wise requests and responses.
+ * This is for testing the "inner Block-Wise" mode of OSCORE where the Block
+ * CoAP options are encrypted. FIXME: Class name, "inner Block-Wise" term.
+ * https://tools.ietf.org/html/rfc8613#section-4.1.3.4.1
  * 
- * The tests cover POST, PUT and GET methods. It tests Block-Wise requests with Block-Wise responses,
- * Block-Wise requests with normal responses and normal requests with Block-Wise responses. 
+ * The tests cover POST, PUT and GET methods. It tests Block-Wise requests with
+ * Block-Wise responses, Block-Wise requests with normal responses and normal
+ * requests with Block-Wise responses.
  *
  */
 @Category(Medium.class)
@@ -171,7 +177,7 @@ public class OSCoreInnerBlockwiseTest {
 		assertEquals(1, resource.getCounter());
 		client.shutdown();
 	}
-	
+
 	/**
 	 * Perform POST Block-Wise request with normal response.
 	 * 
@@ -235,8 +241,7 @@ public class OSCoreInnerBlockwiseTest {
 				.setFloat(Keys.ACK_RANDOM_FACTOR, 1f).setFloat(Keys.ACK_TIMEOUT_SCALE, 1f)
 				// set response timeout (indirect) to 10s
 				.setLong(Keys.EXCHANGE_LIFETIME, 10 * 1000L).setInt(Keys.MAX_MESSAGE_SIZE, DEFAULT_BLOCK_SIZE)
-				.setInt(Keys.PREFERRED_BLOCK_SIZE, DEFAULT_BLOCK_SIZE)
-				.setString(Keys.RESPONSE_MATCHING, mode.name());
+				.setInt(Keys.PREFERRED_BLOCK_SIZE, DEFAULT_BLOCK_SIZE).setString(Keys.RESPONSE_MATCHING, mode.name());
 		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
 		builder.setNetworkConfig(config);
 		builder.setInetSocketAddress(TestTools.LOCALHOST_EPHEMERAL);
