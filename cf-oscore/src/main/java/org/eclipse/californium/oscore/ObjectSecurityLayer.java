@@ -112,7 +112,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	}
 
 	@Override
-	public void sendRequest(Exchange exchange, Request request) {
+	public void sendRequest(final Exchange exchange, final Request request) {
 		System.out.println("OSCORE Layer Token: " + request.getTokenString());
 		Request req = request;
 		if (shouldProtectRequest(request)) {
@@ -153,7 +153,15 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					@Override
 					public void onReadyToSend() {
 						
+						
+						
 						Token token = preparedRequest.getToken();
+						
+						//if(exchange.getCurrentRequest().getOptions().hasBlock1()) {
+						if(request.getOptions().hasBlock1()) {
+							exchange.getRequest().setToken(token);
+						}
+						//}
 						
 						ctxDb.addContext(token, finalCtx);
 						ctxDb.addSeqByToken(token, seqByToken);

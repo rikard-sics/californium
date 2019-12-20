@@ -88,6 +88,8 @@ import org.eclipse.californium.elements.util.ClockUtil;
  * @see EmptyMessage
  */
 public abstract class Message {
+	
+	public boolean original = false;
 
 	protected final static Logger LOGGER = LoggerFactory.getLogger(Message.class.getCanonicalName());
 
@@ -423,6 +425,12 @@ public abstract class Message {
 		if (tokenBytes != null) {
 			token = new Token(tokenBytes);
 		}
+		
+		if(original) {
+			StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+			System.out.println("Setting Token from: " + stackTraceElements[2].getMethodName() + " " + stackTraceElements[3].getMethodName() +
+					stackTraceElements[2].getClassName());
+		}
 		return setToken(token);
 	}
 
@@ -446,6 +454,11 @@ public abstract class Message {
 		this.token = token;
 		if (bytes != null) {
 			throw new IllegalStateException("already serialized!");
+		}
+		if(original) {
+			StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+			System.out.println("Setting Token from: " + stackTraceElements[2].getMethodName() + " " + stackTraceElements[3].getMethodName() +
+					stackTraceElements[2].getClassName() + stackTraceElements[2].getFileName() + " " + stackTraceElements[2].getLineNumber());
 		}
 		return this;
 	}

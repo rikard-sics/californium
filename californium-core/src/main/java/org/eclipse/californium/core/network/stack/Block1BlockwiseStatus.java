@@ -186,8 +186,8 @@ public final class Block1BlockwiseStatus extends BlockwiseStatus {
 		
 		System.out.println("Original request Token: " + request.getTokenString() + ". Response Token :" + response.getTokenString());
 		
-		//return request != null && response.getToken().equals(request.getToken());
+		return request != null && response.getToken().equals(request.getToken());
 		
-		return request != null && response.getToken().equals(exchange.getCurrentRequest().getToken()); //Rikard: A fix
+		//return request != null && response.getToken().equals(exchange.getCurrentRequest().getToken()); //Rikard: A fix
 	}
 }

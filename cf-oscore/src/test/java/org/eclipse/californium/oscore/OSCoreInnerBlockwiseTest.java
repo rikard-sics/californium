@@ -49,6 +49,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+/**
+ * Class for testing OSCORE together with Block-Wise requests and responses.
+ * 
+ * The tests cover POST, PUT and GET methods. It tests Block-Wise requests with Block-Wise responses,
+ * Block-Wise requests with normal responses and normal requests with Block-Wise responses. 
+ *
+ */
 @Category(Medium.class)
 public class OSCoreInnerBlockwiseTest {
 
@@ -96,6 +103,11 @@ public class OSCoreInnerBlockwiseTest {
 		resource.setPayload(payload);
 	}
 
+	/**
+	 * Perform GET request with Block-Wise response.
+	 * 
+	 * @throws Exception on test failure
+	 */
 	@Test
 	public void testOscoreBlockwiseGet() throws Exception {
 		setClientContext(uri);
@@ -111,6 +123,11 @@ public class OSCoreInnerBlockwiseTest {
 		client.shutdown();
 	}
 
+	/**
+	 * Perform PUT Block-Wise request with Block-Wise response.
+	 * 
+	 * @throws Exception on test failure
+	 */
 	@Test
 	public void testOscoreBlockwisePut() throws Exception {
 		setClientContext(uri);
@@ -129,13 +146,17 @@ public class OSCoreInnerBlockwiseTest {
 		client.shutdown();
 	}
 
+	/**
+	 * Perform POST Block-Wise request with Block-Wise response.
+	 * 
+	 * @throws Exception on test failure
+	 */
 	@Test
 	public void testOscoreBlockwisePost() throws Exception {
 		setClientContext(uri);
 		String payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
 		Request request = Request.newPost().setURI(uri);
-		//Setting Token and using OSCORE gives same error
-		request.setToken(new byte[] { (byte) 0x12, 0x34, 0x56 });
+		request.original = true;
 		request.getOptions().setOscore(Bytes.EMPTY);
 		request.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 		request.getOptions().setAccept(MediaTypeRegistry.TEXT_PLAIN);
@@ -147,6 +168,34 @@ public class OSCoreInnerBlockwiseTest {
 		assertEquals(response.getCode(), CoAP.ResponseCode.CONTENT);
 		assertEquals(this.payload + payload, response.getResponseText());
 		assertEquals(this.payload + payload, resource.currentPayload);
+		assertEquals(1, resource.getCounter());
+		client.shutdown();
+	}
+	
+	/**
+	 * Perform POST Block-Wise request with normal response.
+	 * 
+	 * @throws Exception on test failure
+	 */
+	@Test
+	public void testOscoreBlockwisePostShort() throws Exception {
+		setClientContext(uri);
+		String responsePayload = "test";
+		resource.setPayload(responsePayload);
+		String payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
+		Request request = Request.newPost().setURI(uri);
+		request.original = true;
+		request.getOptions().setOscore(Bytes.EMPTY);
+		request.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
+		request.getOptions().setAccept(MediaTypeRegistry.TEXT_PLAIN);
+		request.setPayload(payload);
+
+		CoapClient client = new CoapClient();
+		CoapResponse response = client.advanced(request);
+		assertNotNull(response);
+		assertEquals(response.getCode(), CoAP.ResponseCode.CONTENT);
+		assertEquals(responsePayload + payload, response.getResponseText());
+		assertEquals(responsePayload + payload, resource.currentPayload);
 		assertEquals(1, resource.getCounter());
 		client.shutdown();
 	}
@@ -171,7 +220,7 @@ public class OSCoreInnerBlockwiseTest {
 
 		try {
 			OSCoreCtx ctx_B = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, null);
-			dbServer.addContext("coap://localhost", ctx_B);
+			dbServer.addContext(ctx_B);
 		} catch (OSException e) {
 			System.err.println("Failed to set server OSCORE Context information!");
 		}
