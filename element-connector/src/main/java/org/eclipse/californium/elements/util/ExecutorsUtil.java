@@ -45,7 +45,7 @@ public class ExecutorsUtil {
 
 		@Override
 		public void run() {
-			LOGGER.trace("warmup ...");
+			org.eclipse.californium.elements.MyLogger.LOG_trace("warmup ...");
 		}
 	};
 
@@ -73,12 +73,12 @@ public class ExecutorsUtil {
 	 */
 	public static ScheduledExecutorService newScheduledThreadPool(int poolSize, ThreadFactory threadFactory) {
 		if (SPLIT_THRESHOLD == 0 || poolSize <= SPLIT_THRESHOLD) {
-			LOGGER.trace("create scheduled thread pool of {} threads", poolSize);
+			org.eclipse.californium.elements.MyLogger.LOG_trace("create scheduled thread pool of {} threads", poolSize);
 			ScheduledExecutorService executor = Executors.newScheduledThreadPool(poolSize, threadFactory);
 			executor.execute(WARMUP);
 			return executor;
 		} else {
-			LOGGER.trace("create special thread pool of {} threads", poolSize);
+			org.eclipse.californium.elements.MyLogger.LOG_trace("create special thread pool of {} threads", poolSize);
 			SplitScheduledThreadPoolExecutor executor = new SplitScheduledThreadPoolExecutor(poolSize, threadFactory);
 			executor.execute(WARMUP);
 			executor.schedule(WARMUP, 0, TimeUnit.NANOSECONDS);
@@ -94,7 +94,7 @@ public class ExecutorsUtil {
 	 * @return thread pool based executor service
 	 */
 	public static ExecutorService newFixedThreadPool(int poolSize, ThreadFactory threadFactory) {
-		LOGGER.trace("create thread pool of {} threads", poolSize);
+		org.eclipse.californium.elements.MyLogger.LOG_trace("create thread pool of {} threads", poolSize);
 		ExecutorService executor = Executors.newFixedThreadPool(poolSize, threadFactory);
 		executor.execute(WARMUP);
 		return executor;
@@ -107,7 +107,7 @@ public class ExecutorsUtil {
 	 * @return single threaded scheduled executor service
 	 */
 	public static ScheduledExecutorService newSingleThreadScheduledExecutor(ThreadFactory threadFactory) {
-		LOGGER.trace("create scheduled single thread pool");
+		org.eclipse.californium.elements.MyLogger.LOG_trace("create scheduled single thread pool");
 		ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(threadFactory);
 		executor.execute(WARMUP);
 		return executor;
@@ -158,7 +158,7 @@ public class ExecutorsUtil {
 						// incomplete blockwise transfer
 						// and the BlockwiseLayer has scheduled a
 						// pending BlockCleanupTask for tidying up
-						LOGGER.debug("ignoring remaining {} scheduled task(s)", runningTasks.size());
+						org.eclipse.californium.elements.MyLogger.LOG_debug("ignoring remaining {} scheduled task(s)", runningTasks.size());
 					}
 					// wait for executing tasks to respond to being cancelled
 					executor.awaitTermination(timeToWait, TimeUnit.MILLISECONDS);
@@ -223,7 +223,7 @@ public class ExecutorsUtil {
 				long size = getQueue().size();
 				long diff = Math.abs(lastSize - size);
 				if (diff > QUEUE_SIZE_DIFF && scheduleQueueSize.compareAndSet(lastSize, size)) {
-					LOGGER.debug("Job queue {}", size);
+					org.eclipse.californium.elements.MyLogger.LOG_debug("Job queue {}", size);
 				}
 				directExecutor.execute(command);
 			}

@@ -120,7 +120,7 @@ public class Feed extends CoapResource {
 		@Override
 		public void run() {
 			changeScheduled.set(false);
-			LOGGER.info("client[{}] feed change triggered, {} observers", id, getObserverCount());
+			org.eclipse.californium.elements.MyLogger.LOG_info("client[{}] feed change triggered, {} observers", id, getObserverCount());
 			changed();
 		}
 	};
@@ -222,18 +222,18 @@ public class Feed extends CoapResource {
 					if (timeout < DEFAULT_TIMEOUT_IN_MILLIS) {
 						timeout = DEFAULT_TIMEOUT_IN_MILLIS;
 					}
-					LOGGER.info("client[{}] {} observer, wait for response {} completed.", id, observer,
+					org.eclipse.californium.elements.MyLogger.LOG_info("client[{}] {} observer, wait for response {} completed.", id, observer,
 							response.getToken());
 				} else {
 					timeout = 0;
-					LOGGER.info("client[{}] next change in {} ms, {} observer.", id, interval, observer);
+					org.eclipse.californium.elements.MyLogger.LOG_info("client[{}] next change in {} ms, {} observer.", id, interval, observer);
 					executorService.schedule(change, interval, TimeUnit.MILLISECONDS);
 				}
 			} else {
-				LOGGER.info("client[{}] pending change, {} observer, send {}!", id, observer, response.getToken());
+				org.eclipse.californium.elements.MyLogger.LOG_info("client[{}] pending change, {} observer, send {}!", id, observer, response.getToken());
 			}
 		} else {
-			LOGGER.info("client[{}] no observe {}!", id, request);
+			org.eclipse.californium.elements.MyLogger.LOG_info("client[{}] no observe {}!", id, request);
 			if (ack) {
 				exchange.accept();
 			}
@@ -285,7 +285,7 @@ public class Feed extends CoapResource {
 			// timeout
 			if (completed.compareAndSet(false, true)) {
 				if (interval < 0) {
-					LOGGER.info("client[{}] response didn't complete in time, next change in {} ms, {} observer.", id,
+					org.eclipse.californium.elements.MyLogger.LOG_info("client[{}] response didn't complete in time, next change in {} ms, {} observer.", id,
 							-interval, getObserverCount());
 					timeouts.incrementAndGet();
 					executorService.schedule(change, -interval, TimeUnit.MILLISECONDS);
@@ -299,11 +299,11 @@ public class Feed extends CoapResource {
 				timeoutJob.cancel(false);
 			}
 			if (interval < 0) {
-				LOGGER.info("client[{}] response {}, next change in {} ms, {} observer.", id, state, -interval,
+				org.eclipse.californium.elements.MyLogger.LOG_info("client[{}] response {}, next change in {} ms, {} observer.", id, state, -interval,
 						getObserverCount());
 				executorService.schedule(change, -interval, TimeUnit.MILLISECONDS);
 			} else {
-				LOGGER.info("client[{}] response {}, {} observer.", id, state, getObserverCount());
+				org.eclipse.californium.elements.MyLogger.LOG_info("client[{}] response {}, {} observer.", id, state, getObserverCount());
 			}
 		}
 	}

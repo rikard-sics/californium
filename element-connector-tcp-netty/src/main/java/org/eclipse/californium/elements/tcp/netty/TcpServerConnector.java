@@ -164,7 +164,7 @@ public class TcpServerConnector implements Connector {
 			throw new NullPointerException("Message must not be null");
 		}
 		if (msg.isMulticast()) {
-			LOGGER.warn("TcpConnector drops {} bytes to multicast {}:{}", msg.getSize(), msg.getAddress(), msg.getPort());
+			org.eclipse.californium.elements.MyLogger.LOG_warn("TcpConnector drops {} bytes to multicast {}:{}", msg.getSize(), msg.getAddress(), msg.getPort());
 			msg.onError(new MulticastNotSupportedException("TCP doesn't support multicast!"));
 			return;
 		}
@@ -175,7 +175,7 @@ public class TcpServerConnector implements Connector {
 		Channel channel = activeChannels.get(msg.getInetSocketAddress());
 		if (channel == null) {
 			// TODO: Is it worth allowing opening a new connection when in server mode?
-			LOGGER.debug("Attempting to send message to an address without an active connection {}",
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Attempting to send message to an address without an active connection {}",
 					msg.getAddress());
 			msg.onError(new EndpointUnconnectedException());
 			return;
@@ -185,7 +185,7 @@ public class TcpServerConnector implements Connector {
 		/* check, if the message should be sent with the established connection */
 		if (null != endpointMatcher
 				&& !endpointMatcher.isToBeSent(msg.getEndpointContext(), context)) {
-			LOGGER.warn("TcpConnector drops {} bytes to {}:{}", msg.getSize(), msg.getAddress(), msg.getPort());
+			org.eclipse.californium.elements.MyLogger.LOG_warn("TcpConnector drops {} bytes to {}:{}", msg.getSize(), msg.getAddress(), msg.getPort());
 			msg.onError(new EndpointMismatchException());
 			return;
 		}

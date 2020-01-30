@@ -56,17 +56,17 @@ class CloseOnErrorHandler extends ChannelHandlerAdapter {
 					&& (rootCause instanceof SSLException || rootCause instanceof GeneralSecurityException)) {
 				/* comprehensive message for security exceptions */
 				if (LOGGER.isWarnEnabled()) {
-					LOGGER.error("Security Exception in channel handler chain for endpoint {}. Closing connection.",
+					org.eclipse.californium.elements.MyLogger.LOG_error("Security Exception in channel handler chain for endpoint {}. Closing connection.",
 							ctx.channel().remoteAddress(), rootCause);
 				} else {
-					LOGGER.error("{} in channel handler chain for endpoint {}. Closing connection.", rootCause,
+					org.eclipse.californium.elements.MyLogger.LOG_error("{} in channel handler chain for endpoint {}. Closing connection.", rootCause,
 							ctx.channel().remoteAddress());
 				}
 			} else if (!LOGGER.isDebugEnabled() && rootCause instanceof RejectedExecutionException) {
-				LOGGER.error("{} in channel handler chain for endpoint {}. Closing connection.", rootCause,
+				org.eclipse.californium.elements.MyLogger.LOG_error("{} in channel handler chain for endpoint {}. Closing connection.", rootCause,
 						ctx.channel().remoteAddress());
 			} else {
-				LOGGER.error("Exception in channel handler chain for endpoint {}. Closing connection.",
+				org.eclipse.californium.elements.MyLogger.LOG_error("Exception in channel handler chain for endpoint {}. Closing connection.",
 						ctx.channel().remoteAddress(), cause);
 			}
 		} finally {

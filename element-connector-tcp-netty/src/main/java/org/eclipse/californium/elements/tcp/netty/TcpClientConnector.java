@@ -172,7 +172,7 @@ public class TcpClientConnector implements Connector {
 			throw new NullPointerException("Message must not be null");
 		}
 		if (msg.isMulticast()) {
-			LOGGER.warn("TcpConnector drops {} bytes to multicast {}:{}", msg.getSize(), msg.getAddress(), msg.getPort());
+			org.eclipse.californium.elements.MyLogger.LOG_warn("TcpConnector drops {} bytes to multicast {}:{}", msg.getSize(), msg.getAddress(), msg.getPort());
 			msg.onError(new MulticastNotSupportedException("TCP doesn't support multicast!"));
 			return;
 		}
@@ -185,7 +185,7 @@ public class TcpClientConnector implements Connector {
 		final EndpointContextMatcher endpointMatcher = getEndpointContextMatcher();
 		/* check, if a new connection should be established */
 		if (endpointMatcher != null && !connected && !endpointMatcher.isToBeSent(msg.getEndpointContext(), null)) {
-			LOGGER.warn("TcpConnector drops {} bytes to new {}:{}", msg.getSize(), msg.getAddress(), msg.getPort());
+			org.eclipse.californium.elements.MyLogger.LOG_warn("TcpConnector drops {} bytes to new {}:{}", msg.getSize(), msg.getAddress(), msg.getPort());
 			msg.onError(new EndpointMismatchException("no connection"));
 			return;
 		}
@@ -209,7 +209,7 @@ public class TcpClientConnector implements Connector {
 						try {
 							channelPool.release(channel);
 						} catch (RejectedExecutionException e) {
-							LOGGER.debug("{}", e.getMessage());
+							org.eclipse.californium.elements.MyLogger.LOG_debug("{}", e.getMessage());
 						}
 					}
 				} else if (future.isCancelled()) {
@@ -219,11 +219,11 @@ public class TcpClientConnector implements Connector {
 				}
 				if (cause != null) {
 					if (cause instanceof ConnectTimeoutException) {
-						LOGGER.warn("{}", cause.getMessage());
+						org.eclipse.californium.elements.MyLogger.LOG_warn("{}", cause.getMessage());
 					} else if (cause instanceof CancellationException) {
-						LOGGER.debug("{}", cause.getMessage());
+						org.eclipse.californium.elements.MyLogger.LOG_debug("{}", cause.getMessage());
 					} else {
-						LOGGER.warn("Unable to open connection to {}", msg.getAddress(), future.cause());
+						org.eclipse.californium.elements.MyLogger.LOG_warn("Unable to open connection to {}", msg.getAddress(), future.cause());
 					}
 					msg.onError(future.cause());
 				}
@@ -247,7 +247,7 @@ public class TcpClientConnector implements Connector {
 		 * check, if the message should be sent with the established connection
 		 */
 		if (endpointMatcher != null && !endpointMatcher.isToBeSent(msg.getEndpointContext(), context)) {
-			LOGGER.warn("TcpConnector drops {} bytes to {}:{}", msg.getSize(), msg.getAddress(), msg.getPort());
+			org.eclipse.californium.elements.MyLogger.LOG_warn("TcpConnector drops {} bytes to {}:{}", msg.getSize(), msg.getAddress(), msg.getPort());
 			msg.onError(new EndpointMismatchException());
 			return;
 		}
@@ -262,7 +262,7 @@ public class TcpClientConnector implements Connector {
 				} else if (future.isCancelled()) {
 					msg.onError(new CancellationException());
 				} else {
-					LOGGER.warn("TcpConnector drops {} bytes to {}:{} caused by", msg.getSize(), msg.getAddress(), msg.getPort(), future.cause());
+					org.eclipse.californium.elements.MyLogger.LOG_warn("TcpConnector drops {} bytes to {}:{} caused by", msg.getSize(), msg.getAddress(), msg.getPort(), future.cause());
 					msg.onError(future.cause());
 				}
 			}
@@ -326,7 +326,7 @@ public class TcpClientConnector implements Connector {
 
 		@Override
 		public void channelCreated(Channel ch) throws Exception {
-			LOGGER.debug("new channel to {}", key);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("new channel to {}", key);
 			onNewChannelCreated(key, ch);
 
 			// Handler order:
@@ -358,7 +358,7 @@ public class TcpClientConnector implements Connector {
 		@Override
 		public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 			if (poolMap.remove(key)) {
-				LOGGER.trace("removed channel pool for {}", key);
+				org.eclipse.californium.elements.MyLogger.LOG_trace("removed channel pool for {}", key);
 			}
 		}
 	}

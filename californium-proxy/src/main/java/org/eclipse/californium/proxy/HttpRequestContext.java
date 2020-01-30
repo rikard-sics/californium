@@ -68,7 +68,7 @@ public final class HttpRequestContext {
 
 	public void handleRequestForwarding(final Response coapResponse) {
 		if (coapResponse == null) {
-			LOGGER.warn("No coap response");
+			org.eclipse.californium.elements.MyLogger.LOG_warn("No coap response");
 			sendSimpleHttpResponse(HttpTranslator.STATUS_NOT_FOUND);
 			return;
 		}
@@ -80,11 +80,11 @@ public final class HttpRequestContext {
 			// translate the coap response in an http response
 			new HttpTranslator().getHttpResponse(httpRequest, coapResponse, httpResponse);
 
-			LOGGER.debug("Outgoing http response: {}", httpResponse.getStatusLine());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Outgoing http response: {}", httpResponse.getStatusLine());
 			// send the response
 			httpExchange.submitResponse();
 		} catch (TranslationException e) {
-			LOGGER.warn("Failed to translate coap response to http response: {}", e.getMessage());
+			org.eclipse.californium.elements.MyLogger.LOG_warn("Failed to translate coap response to http response: {}", e.getMessage());
 			sendSimpleHttpResponse(HttpTranslator.STATUS_TRANSLATION_ERROR);
 		}
 

@@ -120,7 +120,7 @@ public final class UdpMatcher extends BaseMatcher {
 			if (exchangeStore.assignMessageId(request) != Message.NONE) {
 				registerObserve(request);
 			} else {
-				LOGGER.warn("message IDs exhausted, could not register outbound observe request for tracking");
+				org.eclipse.californium.elements.MyLogger.LOG_warn("message IDs exhausted, could not register outbound observe request for tracking");
 				request.setSendError(new IllegalStateException("automatic message IDs exhausted"));
 				return;
 			}
@@ -129,9 +129,9 @@ public final class UdpMatcher extends BaseMatcher {
 		try {
 			if (exchangeStore.registerOutboundRequest(exchange)) {
 				exchange.setRemoveHandler(exchangeRemoveHandler);
-				LOGGER.debug("tracking open request [{}, {}]", exchange.getKeyMID(), exchange.getKeyToken());
+				org.eclipse.californium.elements.MyLogger.LOG_debug("tracking open request [{}, {}]", exchange.getKeyMID(), exchange.getKeyToken());
 			} else {
-				LOGGER.warn("message IDs exhausted, could not register outbound request for tracking");
+				org.eclipse.californium.elements.MyLogger.LOG_warn("message IDs exhausted, could not register outbound request for tracking");
 				request.setSendError(new IllegalStateException("automatic message IDs exhausted"));
 			}
 		} catch (IllegalArgumentException ex) {
@@ -153,7 +153,7 @@ public final class UdpMatcher extends BaseMatcher {
 			// all previous NON notifications
 			exchange.removeNotifications();
 			exchangeStore.registerOutboundResponse(exchange);
-			LOGGER.debug("tracking open response [{}]", exchange.getKeyMID());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("tracking open response [{}]", exchange.getKeyMID());
 			ready = false;
 		} else if (response.getType() == Type.NON) {
 			if (response.isNotification()) {
@@ -225,15 +225,15 @@ public final class UdpMatcher extends BaseMatcher {
 			if (!duplicate) {
 				// the new context doesn't match the previous.
 				if (exchangeStore.replacePrevious(idByMID, previous, exchange)) {
-					LOGGER.debug("replaced request {} by new request {}!", previousRequest, request);
+					org.eclipse.californium.elements.MyLogger.LOG_debug("replaced request {} by new request {}!", previousRequest, request);
 				} else {
-					LOGGER.warn("new request {} could not be registered! Deduplication disabled!", request);
+					org.eclipse.californium.elements.MyLogger.LOG_warn("new request {} could not be registered! Deduplication disabled!", request);
 				}
 			}
 		}
 
 		if (duplicate) {
-			LOGGER.trace("duplicate request: {}", request);
+			org.eclipse.californium.elements.MyLogger.LOG_trace("duplicate request: {}", request);
 			request.setDuplicate(true);
 			previous.execute(new Runnable() {
 
@@ -242,7 +242,7 @@ public final class UdpMatcher extends BaseMatcher {
 					try {
 						receiver.receiveRequest(previous, request);
 					} catch (RuntimeException ex) {
-						LOGGER.warn("error receiving request {} again!", request, ex);
+						org.eclipse.californium.elements.MyLogger.LOG_warn("error receiving request {} again!", request, ex);
 						receiver.reject(request);
 					}
 				}
@@ -256,7 +256,7 @@ public final class UdpMatcher extends BaseMatcher {
 					try {
 						receiver.receiveRequest(exchange, request);
 					} catch (RuntimeException ex) {
-						LOGGER.warn("error receiving request {}", request, ex);
+						org.eclipse.californium.elements.MyLogger.LOG_warn("error receiving request {}", request, ex);
 						receiver.reject(request);
 					}
 				}
@@ -274,7 +274,7 @@ public final class UdpMatcher extends BaseMatcher {
 
 		final Object peer = endpointContextMatcher.getEndpointIdentity( response.getSourceContext());
 		final KeyToken idByToken = tokenGenerator.getKeyToken(response.getToken(), peer);
-		LOGGER.trace("received response {} from {}", response, response.getSourceContext());
+		org.eclipse.californium.elements.MyLogger.LOG_trace("received response {} from {}", response, response.getSourceContext());
 		Exchange tempExchange = exchangeStore.get(idByToken);
 
 		if (tempExchange == null) {
@@ -298,7 +298,7 @@ public final class UdpMatcher extends BaseMatcher {
 						public void run() {
 
 							if (prev.getCurrentRequest().isMulticast()) {
-								LOGGER.debug("Ignore delayed response {} to multicast request {}", response,
+								org.eclipse.californium.elements.MyLogger.LOG_debug("Ignore delayed response {} to multicast request {}", response,
 										prev.getCurrentRequest().getDestinationContext().getPeerAddress());
 								cancel(response, receiver);
 								return;
@@ -307,7 +307,7 @@ public final class UdpMatcher extends BaseMatcher {
 							try {
 								if (endpointContextMatcher.isResponseRelatedToRequest(prev.getEndpointContext(),
 										response.getSourceContext())) {
-									LOGGER.trace("received response for already completed {}: {}", prev, response);
+									org.eclipse.californium.elements.MyLogger.LOG_trace("received response for already completed {}: {}", prev, response);
 									response.setDuplicate(true);
 									Response prevResponse = prev.getCurrentResponse();
 									if (prevResponse != null) {
@@ -317,7 +317,7 @@ public final class UdpMatcher extends BaseMatcher {
 									return;
 								}
 							} catch (RuntimeException ex) {
-								LOGGER.warn("error receiving response {} for {}", response, prev, ex);
+								org.eclipse.californium.elements.MyLogger.LOG_warn("error receiving response {} for {}", response, prev, ex);
 							}
 							reject(response, receiver);
 						}
@@ -326,7 +326,7 @@ public final class UdpMatcher extends BaseMatcher {
 					reject(response, receiver);
 				}
 			} else {
-				LOGGER.trace("discarding by [{}] unmatchable piggy-backed response from [{}]: {}", idByToken,
+				org.eclipse.californium.elements.MyLogger.LOG_trace("discarding by [{}] unmatchable piggy-backed response from [{}]: {}", idByToken,
 						response.getSourceContext(), response);
 				cancel(response, receiver);
 			}
@@ -341,7 +341,7 @@ public final class UdpMatcher extends BaseMatcher {
 				boolean checkResponseToken = !exchange.isNotification() || exchange.getRequest() != exchange.getCurrentRequest();
 				if (checkResponseToken && exchangeStore.get(idByToken) != exchange) {
 					if (running) {
-						LOGGER.debug("ignoring response {}, exchange not longer matching!", response);
+						org.eclipse.californium.elements.MyLogger.LOG_debug("ignoring response {}, exchange not longer matching!", response);
 					}
 					cancel(response, receiver);
 					return;
@@ -349,7 +349,7 @@ public final class UdpMatcher extends BaseMatcher {
 
 				EndpointContext context = exchange.getEndpointContext();
 				if (context == null) {
-					LOGGER.debug("ignoring response {}, request pending to sent!", response);
+					org.eclipse.californium.elements.MyLogger.LOG_debug("ignoring response {}, request pending to sent!", response);
 					cancel(response, receiver);
 					return;
 				}
@@ -367,7 +367,7 @@ public final class UdpMatcher extends BaseMatcher {
 							// do some check, e.g. NON ...
 							// this avoids flooding of ACK messages to multicast groups
 							if (type != Type.NON) {
-								LOGGER.debug(
+								org.eclipse.californium.elements.MyLogger.LOG_debug(
 										"ignoring response of type {} for multicast request with token [{}], from {}",
 										response.getType(), response.getTokenString(), response.getSourceContext().getPeerAddress());
 								cancel(response, receiver);
@@ -375,7 +375,7 @@ public final class UdpMatcher extends BaseMatcher {
 							}
 						} else if (type == Type.ACK && requestMid != response.getMID()) {
 							// The token matches but not the MID.
-							LOGGER.debug("ignoring ACK, possible MID reuse before lifetime end for token {}, expected MID {} but received {}",
+							org.eclipse.californium.elements.MyLogger.LOG_debug("ignoring ACK, possible MID reuse before lifetime end for token {}, expected MID {} but received {}",
 									response.getTokenString(), requestMid, response.getMID());
 							// when nested blockwise request/responses occurs (e.g.
 							// caused by retransmission), a old response may stop the
@@ -393,7 +393,7 @@ public final class UdpMatcher extends BaseMatcher {
 								&& response.isNotification() && currentRequest.isObserveCancel()) {
 							// overlapping notification for observation cancel
 							// request
-							LOGGER.debug("ignoring notify for pending cancel {}!", response);
+							org.eclipse.californium.elements.MyLogger.LOG_debug("ignoring notify for pending cancel {}!", response);
 							cancel(response, receiver);
 							return;
 						}
@@ -405,7 +405,7 @@ public final class UdpMatcher extends BaseMatcher {
 							KeyMID idByMID = new KeyMID(response.getMID(), peer);
 							Exchange prev = exchangeStore.findPrevious(idByMID, exchange);
 							if (prev != null) {
-								LOGGER.trace("received duplicate response for open {}: {}", exchange, response);
+								org.eclipse.californium.elements.MyLogger.LOG_trace("received duplicate response for open {}: {}", exchange, response);
 								response.setDuplicate(true);
 								Response prevResponse = prev.getCurrentResponse();
 								if (prevResponse != null) {
@@ -416,11 +416,11 @@ public final class UdpMatcher extends BaseMatcher {
 						receiver.receiveResponse(exchange, response);
 						return;
 					} else {
-						LOGGER.debug("ignoring potentially forged response for token {} with non-matching endpoint context",
+						org.eclipse.californium.elements.MyLogger.LOG_debug("ignoring potentially forged response for token {} with non-matching endpoint context",
 								idByToken);
 					}
 				} catch (RuntimeException ex) {
-					LOGGER.warn("error receiving response {} for {}", response, exchange, ex);
+					org.eclipse.californium.elements.MyLogger.LOG_warn("error receiving response {} for {}", response, exchange, ex);
 				}
 				reject(response, receiver);
 			}
@@ -438,7 +438,7 @@ public final class UdpMatcher extends BaseMatcher {
 		final Exchange exchange = exchangeStore.get(idByMID);
 
 		if (exchange == null) {
-			LOGGER.debug("ignoring by [{}] unmatchable empty message from {}: {}", idByMID, message.getSourceContext(), message);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("ignoring by [{}] unmatchable empty message from {}: {}", idByMID, message.getSourceContext(), message);
 			cancel(message, receiver);
 			return;
 		}
@@ -448,13 +448,13 @@ public final class UdpMatcher extends BaseMatcher {
 			@Override
 			public void run() {
 				if (exchange.getCurrentRequest().isMulticast()) {
-					LOGGER.debug("ignoring {} message for multicast request {}", message.getType(), idByMID);
+					org.eclipse.californium.elements.MyLogger.LOG_debug("ignoring {} message for multicast request {}", message.getType(), idByMID);
 					cancel(message, receiver);
 					return;
 				}
 				if (exchangeStore.get(idByMID) != exchange) {
 					if (running) {
-						LOGGER.debug("ignoring ack/rst {}, not longer matching!", message);
+						org.eclipse.californium.elements.MyLogger.LOG_debug("ignoring ack/rst {}, not longer matching!", message);
 					}
 					cancel(message, receiver);
 					return;
@@ -463,16 +463,16 @@ public final class UdpMatcher extends BaseMatcher {
 					if (endpointContextMatcher.isResponseRelatedToRequest(exchange.getEndpointContext(),
 							message.getSourceContext())) {
 						exchangeStore.remove(idByMID, exchange);
-						LOGGER.debug("received expected reply for message {}", idByMID);
+						org.eclipse.californium.elements.MyLogger.LOG_debug("received expected reply for message {}", idByMID);
 						receiver.receiveEmptyMessage(exchange, message);
 						return;
 					} else {
-						LOGGER.debug(
+						org.eclipse.californium.elements.MyLogger.LOG_debug(
 								"ignoring potentially forged reply for message {} with non-matching endpoint context",
 								idByMID);
 					}
 				} catch (RuntimeException ex) {
-					LOGGER.warn("error receiving empty message {} for {}", message, exchange, ex);
+					org.eclipse.californium.elements.MyLogger.LOG_warn("error receiving empty message {} for {}", message, exchange, ex);
 				}
 				cancel(message, receiver);
 			}
@@ -483,7 +483,7 @@ public final class UdpMatcher extends BaseMatcher {
 
 		if (response.getType() != Type.ACK && response.hasMID()) {
 			// reject only messages with MID, ignore for TCP
-			LOGGER.debug("rejecting response from {}", response.getSourceContext());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("rejecting response from {}", response.getSourceContext());
 			receiver.reject(response);
 		}
 		cancel(response, receiver);

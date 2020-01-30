@@ -108,7 +108,7 @@ public class ServerMessageDeliverer implements MessageDeliverer {
 				}
 			} else {
 				if (LOGGER.isInfoEnabled()) {
-					LOGGER.info("did not find resource /{} requested by {}", request.getOptions().getUriPathString(),
+					org.eclipse.californium.elements.MyLogger.LOG_info("did not find resource /{} requested by {}", request.getOptions().getUriPathString(),
 							request.getSourceContext().getPeerAddress());
 				}
 				exchange.sendResponse(new Response(ResponseCode.NOT_FOUND));
@@ -153,7 +153,7 @@ public class ServerMessageDeliverer implements MessageDeliverer {
 
 			if (request.isObserve()) {
 				// Requests wants to observe and resource allows it :-)
-				LOGGER.debug("initiating an observe relation between {} and resource {}, {}", source, resource.getURI(), exchange);
+				org.eclipse.californium.elements.MyLogger.LOG_debug("initiating an observe relation between {} and resource {}, {}", source, resource.getURI(), exchange);
 				ObservingEndpoint remote = observeManager.findObservingEndpoint(source);
 				ObserveRelation relation = new ObserveRelation(remote, resource, exchange);
 				remote.addObserveRelation(relation);

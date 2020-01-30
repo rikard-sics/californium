@@ -184,7 +184,7 @@ public class OSCoreCtx {
 		if (master_secret != null) {
 			this.common_master_secret = master_secret.clone();
 		} else {
-			LOGGER.error("Input master secret is null");
+			org.eclipse.californium.elements.MyLogger.LOG_error("Input master secret is null");
 			throw new NullPointerException("Input master secret is null");
 		}
 		if (sender_id == null || sender_id.length > this.id_length) {
@@ -262,7 +262,7 @@ public class OSCoreCtx {
 		case HKDF_HMAC_AES_128:
 		case HKDF_HMAC_AES_256:
 		default:
-			LOGGER.error("Requested HKDF algorithm is not supported: " + this.kdf.toString());
+			org.eclipse.californium.elements.MyLogger.LOG_error("Requested HKDF algorithm is not supported: " + this.kdf.toString());
 			throw new OSException("HKDF algorithm not supported");
 		}
 
@@ -278,7 +278,7 @@ public class OSCoreCtx {
 			this.sender_key = deriveKey(this.common_master_secret, this.common_master_salt, this.key_length, digest,
 					info.EncodeToBytes());
 		} catch (CoseException e) {
-			LOGGER.error(e.getMessage());
+			org.eclipse.californium.elements.MyLogger.LOG_error(e.getMessage());
 			throw new OSException(e.getMessage());
 		}
 
@@ -294,7 +294,7 @@ public class OSCoreCtx {
 			this.recipient_key = deriveKey(this.common_master_secret, this.common_master_salt, this.key_length, digest,
 					info.EncodeToBytes());
 		} catch (CoseException e) {
-			LOGGER.error(e.getMessage());
+			org.eclipse.californium.elements.MyLogger.LOG_error(e.getMessage());
 			throw new OSException(e.getMessage());
 		}
 
@@ -310,7 +310,7 @@ public class OSCoreCtx {
 			this.common_iv = deriveKey(this.common_master_secret, this.common_master_salt, this.iv_length, digest,
 					info.EncodeToBytes());
 		} catch (CoseException e) {
-			LOGGER.error(e.getMessage());
+			org.eclipse.californium.elements.MyLogger.LOG_error(e.getMessage());
 			throw new OSException(e.getMessage());
 		}
 
@@ -483,7 +483,7 @@ public class OSCoreCtx {
 	 */
 	public void setIncludeContextId(boolean includeContextId) {
 		if (context_id == null && overrideContextId == null) {
-			LOGGER.error("Context ID cannot be included for a context without one set.");
+			org.eclipse.californium.elements.MyLogger.LOG_error("Context ID cannot be included for a context without one set.");
 			throw new IllegalStateException("Context ID cannot be included for a context without one set.");
 		}
 		
@@ -623,11 +623,11 @@ public class OSCoreCtx {
 				id_length = 7;
 				key_length = common_alg.getKeySize() / 8; // 16;
 			} else {
-				LOGGER.error("Unable to set lengths, since algorithm");
+				org.eclipse.californium.elements.MyLogger.LOG_error("Unable to set lengths, since algorithm");
 				throw new RuntimeException("Unable to set lengths, since algorithm");
 			}
 		} else {
-			LOGGER.error("Common_alg has not yet been initiated.");
+			org.eclipse.californium.elements.MyLogger.LOG_error("Common_alg has not yet been initiated.");
 			throw new RuntimeException("Common_alg has not yet been initiated.");
 		}
 	}
@@ -694,7 +694,7 @@ public class OSCoreCtx {
 	 */
 	public synchronized void increaseSenderSeq() throws OSException {
 		if (sender_seq >= seqMax) {
-			LOGGER.error("Sequence number wrapped, get a new OSCore context");
+			org.eclipse.californium.elements.MyLogger.LOG_error("Sequence number wrapped, get a new OSCore context");
 			throw new OSException("Sequence number wrapped");
 		}
 		sender_seq++;
@@ -709,7 +709,7 @@ public class OSCoreCtx {
 	 */
 	public synchronized void checkIncomingSeq(int seq) throws OSException {
 		if (seq >= seqMax) {
-			LOGGER.error("Sequence number wrapped, get new OSCore context");
+			org.eclipse.californium.elements.MyLogger.LOG_error("Sequence number wrapped, get new OSCore context");
 			throw new OSException(ErrorDescriptions.REPLAY_DETECT);
 		}
 		rollback_recipient_seq = recipient_seq;
@@ -720,11 +720,11 @@ public class OSCoreCtx {
 			recipient_replay_window = recipient_replay_window << shift;
 			recipient_seq = seq;
 		} else if (seq == recipient_seq) {
-			LOGGER.error("Sequence number is replay");
+			org.eclipse.californium.elements.MyLogger.LOG_error("Sequence number is replay");
 			throw new OSException(ErrorDescriptions.REPLAY_DETECT);
 		} else { // seq < recipient_seq
 			if (seq + recipient_replay_window_size < recipient_seq) {
-				LOGGER.error("Message too old");
+				org.eclipse.californium.elements.MyLogger.LOG_error("Message too old");
 				throw new OSException(ErrorDescriptions.REPLAY_DETECT);
 			}
 			// seq+replay_window_size > recipient_seq

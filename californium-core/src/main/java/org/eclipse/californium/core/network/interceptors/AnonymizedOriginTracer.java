@@ -166,9 +166,9 @@ public final class AnonymizedOriginTracer extends MessageInterceptorAdapter {
 		String id = getAnonymizedOrigin(address.getAddress());
 		if (id != null) {
 			if (scheme == null) {
-				LOGGER.trace("{}:{}", id, address.getPort());
+				org.eclipse.californium.elements.MyLogger.LOG_trace("{}:{}", id, address.getPort());
 			} else {
-				LOGGER.trace("{}://{}:{}", scheme, id, address.getPort());
+				org.eclipse.californium.elements.MyLogger.LOG_trace("{}://{}:{}", scheme, id, address.getPort());
 			}
 			return true;
 		}

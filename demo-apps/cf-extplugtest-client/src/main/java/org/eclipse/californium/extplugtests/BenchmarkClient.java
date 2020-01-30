@@ -376,15 +376,15 @@ public class BenchmarkClient {
 					next();
 				}
 				long c = overallRequestsDownCounter.get();
-				LOGGER.trace("Received response: {} {}", response.advanced(), c);
+				org.eclipse.californium.elements.MyLogger.LOG_trace("Received response: {} {}", response.advanced(), c);
 			} else if (noneStop) {
 				long c = requestsCounter.get();
 				transmissionErrorCounter.incrementAndGet();
-				LOGGER.warn("Error after {} requests. {}", c, response.advanced());
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Error after {} requests. {}", c, response.advanced());
 				next();
 			} else {
 				long c = requestsCounter.get();
-				LOGGER.warn("Received error response: {} {} ({} successful)", endpoint.getUri(), response.advanced(), c);
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Received error response: {} {} ({} successful)", endpoint.getUri(), response.advanced(), c);
 				checkReady(true, true);
 				stop();
 			}
@@ -404,10 +404,10 @@ public class BenchmarkClient {
 				}
 				if (noneStop) {
 					transmissionErrorCounter.incrementAndGet();
-					LOGGER.info("Error after {} requests. {}", c, msg);
+					org.eclipse.californium.elements.MyLogger.LOG_info("Error after {} requests. {}", c, msg);
 					next();
 				} else {
-					LOGGER.error("failed after {} requests! {}", c, msg);
+					org.eclipse.californium.elements.MyLogger.LOG_error("failed after {} requests! {}", c, msg);
 					checkReady(true, false);
 					stop();
 				}
@@ -485,19 +485,19 @@ public class BenchmarkClient {
 			if (response != null) {
 				if (response.isSuccess()) {
 					if (LOGGER.isInfoEnabled()) {
-						LOGGER.info("Received response:{}{}", StringUtil.lineSeparator(), Utils.prettyPrint(response));
+						org.eclipse.californium.elements.MyLogger.LOG_info("Received response:{}{}", StringUtil.lineSeparator(), Utils.prettyPrint(response));
 					}
 					clientCounter.incrementAndGet();
 					checkReady(true, true);
 					return true;
 				} else {
-					LOGGER.warn("Received error response: {} - {}", response.getCode(), response.getResponseText());
+					org.eclipse.californium.elements.MyLogger.LOG_warn("Received error response: {} - {}", response.getCode(), response.getResponseText());
 				}
 			} else {
-				LOGGER.warn("Received no response!");
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Received no response!");
 			}
 		} catch (Exception ex) {
-			LOGGER.warn("Test failed!", ex);
+			org.eclipse.californium.elements.MyLogger.LOG_warn("Test failed!", ex);
 		}
 		return false;
 	}
@@ -923,35 +923,35 @@ public class BenchmarkClient {
 		stop.await();
 		Thread.sleep(1000);
 		executor.shutdown();
-		statisticsLogger.info("{} requests sent, {} expected", overallSentRequests, overallRequests);
-		statisticsLogger.info("{} requests in {} ms{}", overallSentRequests, TimeUnit.NANOSECONDS.toMillis(requestNanos),
+		org.eclipse.californium.elements.MyLogger.LOG_info("{} requests sent, {} expected", overallSentRequests, overallRequests);
+		org.eclipse.californium.elements.MyLogger.LOG_info("{} requests in {} ms{}", overallSentRequests, TimeUnit.NANOSECONDS.toMillis(requestNanos),
 				formatPerSecond("reqs", overallSentRequests, requestNanos));
 		if (overallReverseResponses > 0) {
 			if (observe) {
-				statisticsLogger.info("{} notifies sent, {} expected, {} observe request", overallSentReverseResponses,
+				org.eclipse.californium.elements.MyLogger.LOG_info("{} notifies sent, {} expected, {} observe request", overallSentReverseResponses,
 						overallReverseResponses, overallObservationRegistrationCounter.get());
-				statisticsLogger.info("{} notifies in {} ms{}", overallSentReverseResponses,
+				org.eclipse.californium.elements.MyLogger.LOG_info("{} notifies in {} ms{}", overallSentReverseResponses,
 						TimeUnit.NANOSECONDS.toMillis(reverseResponseNanos),
 						formatPerSecond("notifies", overallSentReverseResponses, reverseResponseNanos));
-				statisticsLogger.info("{} notifies could not be completed", notifiesCompleteTimeouts.get());
+				org.eclipse.californium.elements.MyLogger.LOG_info("{} notifies could not be completed", notifiesCompleteTimeouts.get());
 			} else {
-				statisticsLogger.info("{} reverse-responses sent, {} expected", overallSentReverseResponses,
+				org.eclipse.californium.elements.MyLogger.LOG_info("{} reverse-responses sent, {} expected", overallSentReverseResponses,
 						overallReverseResponses);
-				statisticsLogger.info("{} reverse-responses in {} ms{}", overallSentReverseResponses,
+				org.eclipse.californium.elements.MyLogger.LOG_info("{} reverse-responses in {} ms{}", overallSentReverseResponses,
 						TimeUnit.NANOSECONDS.toMillis(reverseResponseNanos),
 						formatPerSecond("reverse-responses", overallSentReverseResponses, reverseResponseNanos));
 			}
 		}
 		long retransmissions = retransmissionCounter.get();
 		if (retransmissions > 0) {
-			statisticsLogger.info("{}", formatRetransmissions(retransmissions, overallSentRequests));
+			org.eclipse.californium.elements.MyLogger.LOG_info("{}", formatRetransmissions(retransmissions, overallSentRequests));
 		}
 		long transmissionErrors = transmissionErrorCounter.get();
 		if (transmissionErrors > 0) {
-			statisticsLogger.info("{}", formatTransmissionErrors(transmissionErrors, overallSentRequests));
+			org.eclipse.californium.elements.MyLogger.LOG_info("{}", formatTransmissionErrors(transmissionErrors, overallSentRequests));
 		}
 		if (overallSentRequests < overallRequests) {
-			statisticsLogger.info("Stale at {} messages ({}%)", overallSentRequests,
+			org.eclipse.californium.elements.MyLogger.LOG_info("Stale at {} messages ({}%)", overallSentRequests,
 					(overallSentRequests * 100L) / overallRequests);
 		}
 		health.dump();
@@ -983,7 +983,7 @@ public class BenchmarkClient {
 			System.out.println("Use RPK.");
 			return keyPairGenerator;
 		} catch (GeneralSecurityException ex) {
-			LOGGER.error("EC failed!", ex);
+			org.eclipse.californium.elements.MyLogger.LOG_error("EC failed!", ex);
 			return null;
 		}
 	}
@@ -1003,21 +1003,21 @@ public class BenchmarkClient {
 		if (tag != null) {
 			// with tag, use file
 			logger = LoggerFactory.getLogger(logger.getName() + ".file");
-			logger.info("------- {} ------------------------------------------------", tag);
-			logger.info("{}, {}, {}", osMxBean.getName(), osMxBean.getVersion(), osMxBean.getArch());
+			org.eclipse.californium.elements.MyLogger.LOG_info("------- {} ------------------------------------------------", tag);
+			org.eclipse.californium.elements.MyLogger.LOG_info("{}, {}, {}", osMxBean.getName(), osMxBean.getVersion(), osMxBean.getArch());
 			StringBuilder line = new StringBuilder();
 			List<String> vmArgs = ManagementFactory.getRuntimeMXBean().getInputArguments();
 			for (String arg : vmArgs) {
 				line.append(arg).append(" ");
 			}
-			logger.info("{}", line);
+			org.eclipse.californium.elements.MyLogger.LOG_info("{}", line);
 			line.setLength(0);
 			for (String arg : args) {
 				line.append(arg).append(" ");
 			}
-			logger.info("{}", line);
+			org.eclipse.californium.elements.MyLogger.LOG_info("{}", line);
 		}
-		logger.info("uptime: {} ms, {} processors", TimeUnit.NANOSECONDS.toMillis(uptimeNanos), processors);
+		org.eclipse.californium.elements.MyLogger.LOG_info("uptime: {} ms, {} processors", TimeUnit.NANOSECONDS.toMillis(uptimeNanos), processors);
 		ThreadMXBean threadMxBean = ManagementFactory.getThreadMXBean();
 		if (threadMxBean.isThreadCpuTimeSupported() && threadMxBean.isThreadCpuTimeEnabled()) {
 			long alltime = 0;
@@ -1029,7 +1029,7 @@ public class BenchmarkClient {
 				}
 			}
 			long pTime = alltime / processors;
-			logger.info("cpu-time: {} ms (per-processor: {} ms, load: {}%)",
+			org.eclipse.californium.elements.MyLogger.LOG_info("cpu-time: {} ms (per-processor: {} ms, load: {}%)",
 					TimeUnit.NANOSECONDS.toMillis(alltime), TimeUnit.NANOSECONDS.toMillis(pTime),
 					(pTime * 100) / uptimeNanos);
 		}
@@ -1045,10 +1045,10 @@ public class BenchmarkClient {
 				gcTime += time;
 			}
 		}
-		logger.info("gc: {} ms, {} calls", gcTime, gcCount);
+		org.eclipse.californium.elements.MyLogger.LOG_info("gc: {} ms, {} calls", gcTime, gcCount);
 		double loadAverage = osMxBean.getSystemLoadAverage();
 		if (!(loadAverage < 0.0d)) {
-			logger.info("average load: {}", String.format("%.2f", loadAverage));
+			org.eclipse.californium.elements.MyLogger.LOG_info("average load: {}", String.format("%.2f", loadAverage));
 		}
 		return logger;
 	}

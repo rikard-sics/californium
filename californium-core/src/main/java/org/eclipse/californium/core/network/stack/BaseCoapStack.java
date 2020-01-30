@@ -85,7 +85,7 @@ public abstract class BaseCoapStack implements CoapStack {
 		try {
 			top.sendRequest(exchange, request);
 		} catch (RuntimeException ex) {
-			LOGGER.warn("error send request {}", request, ex);
+			org.eclipse.californium.elements.MyLogger.LOG_warn("error send request {}", request, ex);
 			request.setSendError(ex);
 		}
 	}
@@ -105,10 +105,10 @@ public abstract class BaseCoapStack implements CoapStack {
 			}
 			top.sendResponse(exchange, response);
 		} catch (ExchangeCompleteException ex) {
-			LOGGER.warn("error send response {}", response, ex);
+			org.eclipse.californium.elements.MyLogger.LOG_warn("error send response {}", response, ex);
 			response.setSendError(ex);
 		} catch (RuntimeException ex) {
-			LOGGER.warn("error send response {}", response, ex);
+			org.eclipse.californium.elements.MyLogger.LOG_warn("error send response {}", response, ex);
 			if (!retransmit) {
 				exchange.sendReject();
 			}
@@ -122,7 +122,7 @@ public abstract class BaseCoapStack implements CoapStack {
 		try {
 			top.sendEmptyMessage(exchange, message);
 		} catch (RuntimeException ex) {
-			LOGGER.warn("error send empty message {}", message, ex);
+			org.eclipse.californium.elements.MyLogger.LOG_warn("error send empty message {}", message, ex);
 			message.setSendError(ex);
 		}
 	}
@@ -199,7 +199,7 @@ public abstract class BaseCoapStack implements CoapStack {
 			if (hasDeliverer()) {
 				deliverer.deliverRequest(exchange);
 			} else {
-				LOGGER.error("Top of CoAP stack has no deliverer to deliver request");
+				org.eclipse.californium.elements.MyLogger.LOG_error("Top of CoAP stack has no deliverer to deliver request");
 			}
 		}
 
@@ -209,7 +209,7 @@ public abstract class BaseCoapStack implements CoapStack {
 				// notify request that response has arrived
 				deliverer.deliverResponse(exchange, response);
 			} else {
-				LOGGER.error("Top of CoAP stack has no deliverer to deliver response");
+				org.eclipse.californium.elements.MyLogger.LOG_error("Top of CoAP stack has no deliverer to deliver response");
 			}
 		}
 

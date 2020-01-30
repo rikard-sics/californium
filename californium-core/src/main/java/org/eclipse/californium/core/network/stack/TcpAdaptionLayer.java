@@ -40,7 +40,7 @@ public class TcpAdaptionLayer extends AbstractLayer {
 			lower().sendEmptyMessage(exchange, message);
 		} else {
 			// Empty messages don't make sense when running over TCP connector.
-			LOGGER.warn("attempting to send empty message (ACK/RST) in TCP mode {} - {}", message, exchange.getCurrentRequest(), new Throwable());
+			org.eclipse.californium.elements.MyLogger.LOG_warn("attempting to send empty message (ACK/RST) in TCP mode {} - {}", message, exchange.getCurrentRequest(), new Throwable());
 		}
 	}
 
@@ -59,7 +59,7 @@ public class TcpAdaptionLayer extends AbstractLayer {
 	@Override
 	public void receiveEmptyMessage(Exchange exchange, EmptyMessage message) {
 		// Empty messages are ignored when running over TCP connector.
-		LOGGER.info("discarding empty message received in TCP mode: {}", message);
+		org.eclipse.californium.elements.MyLogger.LOG_info("discarding empty message received in TCP mode: {}", message);
 	}
 
 }

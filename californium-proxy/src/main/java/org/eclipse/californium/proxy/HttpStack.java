@@ -249,29 +249,29 @@ public class HttpStack {
 			int sourcePort = connection.getRemotePort();
 			EndpointContext source = new AddressEndpointContext(new InetSocketAddress(sourceAddress, sourcePort));
 	
-			LOGGER.debug("handler {}, proxy {}", resourceName, proxyingEnabled);
-			LOGGER.debug("Incoming http request: {} from {}", httpRequest.getRequestLine(), source);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("handler {}, proxy {}", resourceName, proxyingEnabled);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Incoming http request: {} from {}", httpRequest.getRequestLine(), source);
 
 			final HttpRequestContext httpRequestContext = new HttpRequestContext(httpExchange);
 			try {
 				// translate the request in a valid coap request
 				Request coapRequest = new HttpTranslator().getCoapRequest(httpRequest, resourceName, proxyingEnabled);
 				// if (Bench_Help.DO_LOG)
-				LOGGER.info("Received HTTP request and translate to {}", coapRequest);
+				org.eclipse.californium.elements.MyLogger.LOG_info("Received HTTP request and translate to {}", coapRequest);
 				coapRequest.setSourceContext(source);
 				// handle the requset
 				doReceiveMessage(coapRequest, httpRequestContext);
 			} catch (InvalidMethodException e) {
-				LOGGER.warn("Method not implemented", e);
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Method not implemented", e);
 				httpRequestContext.sendSimpleHttpResponse(HttpTranslator.STATUS_WRONG_METHOD, e.getMessage());
 			} catch (InvalidFieldException e) {
-				LOGGER.warn("Request malformed", e);
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Request malformed", e);
 				httpRequestContext.sendSimpleHttpResponse(HttpTranslator.STATUS_URI_MALFORMED, e.getMessage());
 			} catch (TranslationException e) {
-				LOGGER.warn("Failed to translate the http request in a valid coap request", e);
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Failed to translate the http request in a valid coap request", e);
 				httpRequestContext.sendSimpleHttpResponse(HttpTranslator.STATUS_TRANSLATION_ERROR, e.getMessage());
 			} catch (Throwable e) {
-				LOGGER.error("Unexpected error", e);
+				org.eclipse.californium.elements.MyLogger.LOG_error("Unexpected error", e);
 				httpRequestContext.sendSimpleHttpResponse(HttpTranslator.STATUS_INTERNAL_SERVER_ERROR, e.getMessage());
 			}
 		}

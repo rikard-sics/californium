@@ -482,7 +482,7 @@ public abstract class CongestionControlLayer extends ReliabilityLayer {
 		case "PeakhopperRto":
 			return new PeakhopperRto(config);
 		default:
-			LOGGER.info(
+			org.eclipse.californium.elements.MyLogger.LOG_info(
 				"configuration contains unsupported {}, using Cocoa",
 				NetworkConfig.Keys.CONGESTION_CONTROL_ALGORITHM);
 			return new Cocoa(config);

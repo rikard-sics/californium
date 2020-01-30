@@ -119,13 +119,13 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				String uri = request.getURI();
 
 				if (uri == null) {
-					LOGGER.error(ErrorDescriptions.URI_NULL);
+					org.eclipse.californium.elements.MyLogger.LOG_error(ErrorDescriptions.URI_NULL);
 					throw new OSException(ErrorDescriptions.URI_NULL);
 				}
 
 				OSCoreCtx ctx = ctxDb.getContext(uri);
 				if (ctx == null) {
-					LOGGER.error(ErrorDescriptions.CTX_NULL);
+					org.eclipse.californium.elements.MyLogger.LOG_error(ErrorDescriptions.CTX_NULL);
 					throw new OSException(ErrorDescriptions.CTX_NULL);
 				}
 
@@ -168,14 +168,14 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				req = preparedRequest;
 
 			} catch (OSException e) {
-				LOGGER.error("Error sending request: " + e.getMessage());
+				org.eclipse.californium.elements.MyLogger.LOG_error("Error sending request: " + e.getMessage());
 				return;
 			} catch (IllegalArgumentException e) {
-				LOGGER.error("Unable to send request because of illegal argument: " + e.getMessage());
+				org.eclipse.californium.elements.MyLogger.LOG_error("Unable to send request because of illegal argument: " + e.getMessage());
 				return;
 			}
 		}
-		LOGGER.info("Request: " + exchange.getRequest().toString());
+		org.eclipse.californium.elements.MyLogger.LOG_info("Request: " + exchange.getRequest().toString());
 		super.sendRequest(exchange, req);
 	}
 
@@ -193,7 +193,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				response = prepareSend(ctxDb, response, ctx, addPartialIV);
 				exchange.setResponse(response);
 			} catch (OSException e) {
-				LOGGER.error("Error sending response: " + e.getMessage());
+				org.eclipse.californium.elements.MyLogger.LOG_error("Error sending response: " + e.getMessage());
 				return;
 			}
 		}
@@ -215,7 +215,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				request.getOptions().setOscore(Bytes.EMPTY);
 				exchange.setRequest(request);
 			} catch (CoapOSException e) {
-				LOGGER.error("Error while receiving OSCore request: " + e.getMessage());
+				org.eclipse.californium.elements.MyLogger.LOG_error("Error while receiving OSCore request: " + e.getMessage());
 				Response error;
 				error = CoapOSExceptionHandler.manageError(e, request);
 				if (error != null) {
@@ -233,16 +233,16 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	public void receiveResponse(Exchange exchange, Response response) {
 		Request request = exchange.getCurrentRequest();
 		if (request == null) {
-			LOGGER.error("No request tied to this response");
+			org.eclipse.californium.elements.MyLogger.LOG_error("No request tied to this response");
 			return;
 		}
 		try {
 			//Printing of status information.
 			//Warns when expecting OSCORE response but unprotected response is received
 			if (!isProtected(response) && responseShouldBeProtected(exchange, response)) {
-				LOGGER.warn("Incoming response is NOT OSCORE protected!");
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Incoming response is NOT OSCORE protected!");
 			} else if (isProtected(response)) {
-				LOGGER.info("Incoming response is OSCORE protected");
+				org.eclipse.californium.elements.MyLogger.LOG_info("Incoming response is OSCORE protected");
 			}
 
 			//If response is protected with OSCORE parse it first with prepareReceive
@@ -250,7 +250,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				response = prepareReceive(ctxDb, response);
 			}
 		} catch (OSException e) {
-			LOGGER.error("Error while receiving OSCore response: " + e.getMessage());
+			org.eclipse.californium.elements.MyLogger.LOG_error("Error while receiving OSCore response: " + e.getMessage());
 			EmptyMessage error = CoapOSExceptionHandler.manageError(e, response);
 			if (error != null) {
 				sendEmptyMessage(exchange, error);
@@ -290,7 +290,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						OSCoreCtx ctx = ctxDb.getContext(uri);
 						exchange.setCryptographicContextID(ctx.getRecipientId());
 					} catch (OSException e) {
-						LOGGER.error("Error when re-creating exchange at OSCORE level");
+						org.eclipse.californium.elements.MyLogger.LOG_error("Error when re-creating exchange at OSCORE level");
 						throw new OSException("Error when re-creating exchange at OSCORE level");
 					}
 				}

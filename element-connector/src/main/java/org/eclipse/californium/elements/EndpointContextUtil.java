@@ -52,10 +52,10 @@ public class EndpointContextUtil {
 			}
 			if (!match) {
 				/* logging differences with warning level */
-				LOGGER.warn("{}, {}: \"{}\" != \"{}\"",  name, key, value1, value2);
+				org.eclipse.californium.elements.MyLogger.LOG_warn("{}, {}: \"{}\" != \"{}\"",  name, key, value1, value2);
 			} else if (trace) {
 				/* logging matches with finest level */
-				LOGGER.trace("{}, {}: \"{}\" == \"{}\"", name, key, value1, value2);
+				org.eclipse.californium.elements.MyLogger.LOG_trace("{}, {}: \"{}\" == \"{}\"", name, key, value1, value2);
 			}
 			matchAll = matchAll && match;
 		}

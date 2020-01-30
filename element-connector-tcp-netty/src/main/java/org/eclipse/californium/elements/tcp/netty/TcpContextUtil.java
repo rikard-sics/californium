@@ -42,7 +42,7 @@ public class TcpContextUtil {
 		InetSocketAddress address = (InetSocketAddress) channel.remoteAddress();
 		String id = channel.id().asShortText();
 		EndpointContext context = new TcpEndpointContext(address, id);
-		LOGGER.debug("{}", context);
+		org.eclipse.californium.elements.MyLogger.LOG_debug("{}", context);
 		return context;
 	}
 }

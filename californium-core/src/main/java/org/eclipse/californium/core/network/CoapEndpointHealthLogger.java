@@ -68,10 +68,10 @@ public class CoapEndpointHealthLogger implements CoapEndpointHealth {
 				log.append(head).append(receivedRejects).append(eol);
 				log.append(head).append(duplicateRequests).append(eol);
 				log.append(head).append(duplicateResponses);
-				LOGGER.debug("{}", log);
+				org.eclipse.californium.elements.MyLogger.LOG_debug("{}", log);
 			}
 		} catch (Throwable e) {
-			LOGGER.error("{}", tag, e);
+			org.eclipse.californium.elements.MyLogger.LOG_error("{}", tag, e);
 		}
 	}
 

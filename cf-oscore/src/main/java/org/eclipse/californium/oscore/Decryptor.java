@@ -84,7 +84,7 @@ public abstract class Decryptor {
 			CBORObject piv = enc.findAttribute(HeaderKeys.PARTIAL_IV);
 
 			if (piv == null) {
-				LOGGER.error("Decryption failed: no partialIV in request");
+				org.eclipse.californium.elements.MyLogger.LOG_error("Decryption failed: no partialIV in request");
 				throw new OSException(ErrorDescriptions.DECRYPTION_FAILED);
 			} else {
 
@@ -101,7 +101,7 @@ public abstract class Decryptor {
 			}
 		} else {
 			if (seqByToken == null) {
-				LOGGER.error("Decryption failed: the arrived response is not connected to a request we sent");
+				org.eclipse.californium.elements.MyLogger.LOG_error("Decryption failed: the arrived response is not connected to a request we sent");
 				throw new OSException(ErrorDescriptions.DECRYPTION_FAILED);
 			}
 
@@ -142,7 +142,7 @@ public abstract class Decryptor {
 			plaintext = enc.decrypt(key);
 
 		} catch (CoseException e) {
-			LOGGER.error(ErrorDescriptions.DECRYPTION_FAILED + " " + e.getMessage());
+			org.eclipse.californium.elements.MyLogger.LOG_error(ErrorDescriptions.DECRYPTION_FAILED + " " + e.getMessage());
 			throw new OSException(ErrorDescriptions.DECRYPTION_FAILED + " " + e.getMessage());
 		}
 
@@ -157,7 +157,7 @@ public abstract class Decryptor {
 	 */
 	private static byte[] expandToIntSize(byte[] partialIV) throws OSException {
 		if (partialIV.length > INTEGER_BYTES) {
-			LOGGER.error("The partial IV is: " + partialIV.length + " long, " + INTEGER_BYTES + " was expected");
+			org.eclipse.californium.elements.MyLogger.LOG_error("The partial IV is: " + partialIV.length + " long, " + INTEGER_BYTES + " was expected");
 			throw new OSException("Partial IV too long");
 		} else if (partialIV.length == INTEGER_BYTES) {
 			return partialIV;
@@ -199,10 +199,10 @@ public abstract class Decryptor {
 		try {
 			decodeObjectSecurity(message, enc);
 		} catch (OSException e) {
-			LOGGER.error(e.getMessage());
+			org.eclipse.californium.elements.MyLogger.LOG_error(e.getMessage());
 			throw e;
 		} catch (Exception e) {
-			LOGGER.error("Failed to decode object security option.");
+			org.eclipse.californium.elements.MyLogger.LOG_error("Failed to decode object security option.");
 			throw new OSException("Failed to decode object security option.");
 		}
 
@@ -247,7 +247,7 @@ public abstract class Decryptor {
 				partialIV = Arrays.copyOfRange(total, index, index + n);
 				index += n;
 			} catch (Exception e) {
-				LOGGER.error("Partial_IV is missing from message when it is expected.");
+				org.eclipse.californium.elements.MyLogger.LOG_error("Partial_IV is missing from message when it is expected.");
 				throw new OSException(ErrorDescriptions.FAILED_TO_DECODE_COSE);
 			}
 		}
@@ -261,9 +261,9 @@ public abstract class Decryptor {
 			index += s + 1;
 
 			if (s > 0) {
-				LOGGER.info("Received KID Context: " + Utils.toHexString(kidContext));
+				org.eclipse.californium.elements.MyLogger.LOG_info("Received KID Context: " + Utils.toHexString(kidContext));
 			} else {
-				LOGGER.error("Kid context is missing from message when it is expected.");
+				org.eclipse.californium.elements.MyLogger.LOG_error("Kid context is missing from message when it is expected.");
 				throw new OSException(ErrorDescriptions.FAILED_TO_DECODE_COSE);
 			}
 		}
@@ -273,7 +273,7 @@ public abstract class Decryptor {
 			kid = Arrays.copyOfRange(total, index, total.length);
 		} else {
 			if (message instanceof Request) {
-				LOGGER.error("Kid is missing from message when it is expected.");
+				org.eclipse.californium.elements.MyLogger.LOG_error("Kid is missing from message when it is expected.");
 				throw new OSException(ErrorDescriptions.FAILED_TO_DECODE_COSE);
 			}
 		}
@@ -292,7 +292,7 @@ public abstract class Decryptor {
 				enc.addAttribute(CBORObject.FromObject(10), CBORObject.FromObject(kidContext), Attribute.UNPROTECTED);
 			}
 		} catch (CoseException e) {
-			LOGGER.error("COSE processing of message failed.");
+			org.eclipse.californium.elements.MyLogger.LOG_error("COSE processing of message failed.");
 			e.printStackTrace();
 		}
 	}

@@ -840,7 +840,7 @@ public class SslContextUtil {
 						}
 						keys.setPublicKey(read);
 					} else {
-						LOGGER.warn("{} not supported!", tag);
+						org.eclipse.californium.elements.MyLogger.LOG_warn("{} not supported!", tag);
 					}
 				}
 			}

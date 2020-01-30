@@ -275,7 +275,7 @@ public class SerialExecutor extends AbstractExecutorService {
 							try {
 								command.run();
 							} catch (Throwable t) {
-								LOGGER.error("unexpected error occurred:", t);
+								org.eclipse.californium.elements.MyLogger.LOG_error("unexpected error occurred:", t);
 							} finally {
 								clearOwner();
 							}

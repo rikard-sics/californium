@@ -113,7 +113,7 @@ public class NetworkRule implements TestRule {
 			try {
 				mode = Mode.valueOf(envMode);
 			} catch (IllegalArgumentException ex) {
-				LOGGER.error("Value {} for property {} not supported!", envMode, PROPERTY_NAME);
+				org.eclipse.californium.elements.MyLogger.LOG_error("Value {} for property {} not supported!", envMode, PROPERTY_NAME);
 			}
 		}
 		usedMode = mode;
@@ -124,7 +124,7 @@ public class NetworkRule implements TestRule {
 				public DatagramSocketImpl createDatagramSocketImpl() {
 					if (!isActive()) {
 						String message = "Use " + NetworkRule.class.getName() + " to define DatagramSocket behaviour!";
-						LOGGER.error(message);
+						org.eclipse.californium.elements.MyLogger.LOG_error(message);
 						/*
 						 * check, if datagram socket is created in the scope of
 						 * a NetworkRule.
@@ -275,7 +275,7 @@ public class NetworkRule implements TestRule {
 			RULES_STACK.push(this);
 			size = RULES_STACK.size();
 		}
-		LOGGER.info("{} rules active.", size);
+		org.eclipse.californium.elements.MyLogger.LOG_info("{} rules active.", size);
 		initNetwork(first);
 	}
 
@@ -297,7 +297,7 @@ public class NetworkRule implements TestRule {
 			activeRule = RULES_STACK.peek();
 			size = RULES_STACK.size();
 		}
-		LOGGER.info("{} rules active.", size);
+		org.eclipse.californium.elements.MyLogger.LOG_info("{} rules active.", size);
 		if (this != closedRule) {
 			throw new IllegalStateException("closed rule differs!");
 		}
@@ -324,7 +324,7 @@ public class NetworkRule implements TestRule {
 				}
 			};
 		} else {
-			LOGGER.warn("Skip {} not applicable with socket mode {}", description, usedMode);
+			org.eclipse.californium.elements.MyLogger.LOG_warn("Skip {} not applicable with socket mode {}", description, usedMode);
 			return SKIP;
 		}
 	}
@@ -348,7 +348,7 @@ public class NetworkRule implements TestRule {
 	protected void initNetwork(boolean outerScope) {
 		if (Mode.DIRECT == usedMode) {
 			if (outerScope && !DirectDatagramSocketImpl.isEmpty()) {
-				LOGGER.info("Previous test didn't 'closeNetwork()'!");
+				org.eclipse.californium.elements.MyLogger.LOG_info("Previous test didn't 'closeNetwork()'!");
 				DirectDatagramSocketImpl.clearAll();
 			}
 			DirectDatagramSocketImpl.configure(formatter, delayInMillis);
@@ -367,7 +367,7 @@ public class NetworkRule implements TestRule {
 	protected void closeNetwork() {
 		if (Mode.DIRECT == usedMode) {
 			if (!DirectDatagramSocketImpl.isEmpty()) {
-				LOGGER.info("Test didn't close all DatagramSockets!");
+				org.eclipse.californium.elements.MyLogger.LOG_info("Test didn't close all DatagramSockets!");
 				DirectDatagramSocketImpl.clearAll();
 			}
 			DirectDatagramSocketImpl.configure(DEFAULT_FORMATTER, DEFAULT_DELAY_IN_MILLIS);
@@ -402,7 +402,7 @@ public class NetworkRule implements TestRule {
 				messageBuilder.append(" Instead ").append(activeRule).append(" is active!");
 			}
 			String message = messageBuilder.toString();
-			LOGGER.error(message);
+			org.eclipse.californium.elements.MyLogger.LOG_error(message);
 			throw new IllegalStateException(message);
 		}
 	}
@@ -422,7 +422,7 @@ public class NetworkRule implements TestRule {
 			size = RULES_STACK.size();
 			active = !RULES_STACK.isEmpty();
 		}
-		LOGGER.info("{} rules active.", size);
+		org.eclipse.californium.elements.MyLogger.LOG_info("{} rules active.", size);
 		return active;
 	}
 }

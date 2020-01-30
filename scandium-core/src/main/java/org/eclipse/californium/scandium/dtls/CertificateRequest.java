@@ -381,7 +381,7 @@ public final class CertificateRequest extends HandshakeMessage {
 		int authoritiesAdded = 0;
 		for (X500Principal authority : authorities) {
 			if (!addCertificateAuthority(authority)) {
-				LOGGER.debug("could add only {} of {} certificate authorities, max length exceeded", authoritiesAdded,
+				org.eclipse.californium.elements.MyLogger.LOG_debug("could add only {} of {} certificate authorities, max length exceeded", authoritiesAdded,
 						authorities.size());
 				return false;
 			} else {
@@ -426,7 +426,7 @@ public final class CertificateRequest extends HandshakeMessage {
 		for (ClientCertificateType type : certificateTypes) {
 			boolean isCompatibleType = type.isCompatibleWithKeyAlgorithm(cert.getPublicKey().getAlgorithm());
 			if (!isCompatibleType) {
-				LOGGER.error("type: {}, is not compatible with KeyAlgorithm[{}]: {}", type,
+				org.eclipse.californium.elements.MyLogger.LOG_error("type: {}, is not compatible with KeyAlgorithm[{}]: {}", type,
 						cert.getPublicKey().getAlgorithm());
 				continue;
 			}
@@ -442,15 +442,15 @@ public final class CertificateRequest extends HandshakeMessage {
 					clientUsage = CertPathUtil.canBeUsedForAuthentication(cert, true);
 				}
 				if (!clientUsage) {
-					LOGGER.error("type: {}, requires missing signing capability!", type);
+					org.eclipse.californium.elements.MyLogger.LOG_error("type: {}, requires missing signing capability!", type);
 					continue;
 				}
 			}
-			LOGGER.debug("type: {}, is compatible with KeyAlgorithm[{}] and meets signing requirements", type,
+			org.eclipse.californium.elements.MyLogger.LOG_debug("type: {}, is compatible with KeyAlgorithm[{}] and meets signing requirements", type,
 					cert.getPublicKey().getAlgorithm());
 			return true;
 		}
-		LOGGER.debug("certificate [{}] is not of any supported type", cert);
+		org.eclipse.californium.elements.MyLogger.LOG_debug("certificate [{}] is not of any supported type", cert);
 		return false;
 	}
 
@@ -500,11 +500,11 @@ public final class CertificateRequest extends HandshakeMessage {
 	boolean isSignedWithSupportedAlgorithm(List<X509Certificate> chain) {
 		for (X509Certificate certificate : chain) {
 			if (!isSignedWithSupportedAlgorithm(certificate)) {
-				LOGGER.debug("certificate chain is NOT signed with supported algorithm(s)");
+				org.eclipse.californium.elements.MyLogger.LOG_debug("certificate chain is NOT signed with supported algorithm(s)");
 				return false;
 			}
 		}
-		LOGGER.debug("certificate chain is signed with supported algorithm(s)");
+		org.eclipse.californium.elements.MyLogger.LOG_debug("certificate chain is signed with supported algorithm(s)");
 		return true;
 	}
 
@@ -525,7 +525,7 @@ public final class CertificateRequest extends HandshakeMessage {
 				return true;
 			}
 		}
-		LOGGER.debug("certificate is NOT signed with supported algorithm(s)");
+		org.eclipse.californium.elements.MyLogger.LOG_debug("certificate is NOT signed with supported algorithm(s)");
 		return false;
 	}
 

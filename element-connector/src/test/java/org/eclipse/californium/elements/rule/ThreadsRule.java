@@ -184,18 +184,18 @@ public class ThreadsRule implements TestRule {
 	 * @param list list of threads
 	 */
 	public void dump(String message, List<Thread> list) {
-		LOGGER.info("Threads {}: {} threads", message, list.size());
+		org.eclipse.californium.elements.MyLogger.LOG_info("Threads {}: {} threads", message, list.size());
 		for (Thread thread : list) {
 			ThreadGroup threadGroup = thread.getThreadGroup();
 			if (threadGroup != null) {
-				LOGGER.info("Threads {} : {}-{}", description, thread.getName(), threadGroup.getName());
+				org.eclipse.californium.elements.MyLogger.LOG_info("Threads {} : {}-{}", description, thread.getName(), threadGroup.getName());
 			} else {
-				LOGGER.info("Threads {} : {}", description, thread.getName());
+				org.eclipse.californium.elements.MyLogger.LOG_info("Threads {} : {}", description, thread.getName());
 			}
 			if (LOGGER.isTraceEnabled()) {
 				StackTraceElement[] stackTrace = thread.getStackTrace();
 				for (StackTraceElement trace : stackTrace) {
-					LOGGER.trace("   {}", trace);
+					org.eclipse.californium.elements.MyLogger.LOG_trace("   {}", trace);
 				}
 			}
 		}

@@ -139,13 +139,13 @@ public class HttpServer {
 				try {
 					ioReactor.execute(ioEventDispatch);
 				} catch (IOException e) {
-					LOGGER.error("I/O Exception in HttpServer", e);
+					org.eclipse.californium.elements.MyLogger.LOG_error("I/O Exception in HttpServer", e);
 				}
 			}
 		};
 		listener.setDaemon(false);
 		listener.start();
-		LOGGER.info("HttpServer listening on port {} started.", httpPort);
+		org.eclipse.californium.elements.MyLogger.LOG_info("HttpServer listening on port {} started.", httpPort);
 	}
 
 	/**
@@ -156,9 +156,9 @@ public class HttpServer {
 			ioReactor.shutdown(1000);
 			System.out.println("shutdown ...");
 		} catch (IOException e) {
-			LOGGER.error("shutdown failed!", e);
+			org.eclipse.californium.elements.MyLogger.LOG_error("shutdown failed!", e);
 		}
-		LOGGER.info("HttpServer on port {} stopped.", httpPort);
+		org.eclipse.californium.elements.MyLogger.LOG_info("HttpServer on port {} stopped.", httpPort);
 	}
 
 	/**
@@ -199,7 +199,7 @@ public class HttpServer {
 			String payload = String.format(message, httpPort, counter);
 			httpResponse.setStatusCode(HttpStatus.SC_OK);
 			httpResponse.setEntity(new StringEntity(payload));
-			LOGGER.debug("{} request handled!", counter);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("{} request handled!", counter);
 		}
 	}
 }

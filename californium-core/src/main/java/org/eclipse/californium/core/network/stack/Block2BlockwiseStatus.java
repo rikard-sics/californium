@@ -145,11 +145,11 @@ public final class Block2BlockwiseStatus extends BlockwiseStatus {
 		if (exchange.getRequest() != null) {
 			BlockOption block2 = exchange.getRequest().getOptions().getBlock2();
 			if (block2 != null) {
-				LOGGER.debug("using block2 szx from early negotiation in request: {}", block2.getSize());
+				org.eclipse.californium.elements.MyLogger.LOG_debug("using block2 szx from early negotiation in request: {}", block2.getSize());
 				return block2.getSzx();
 			}
 		}
-		LOGGER.debug("using default preferred block size for response: {}", preferredBlockSize);
+		org.eclipse.californium.elements.MyLogger.LOG_debug("using default preferred block size for response: {}", preferredBlockSize);
 		return BlockOption.size2Szx(preferredBlockSize);
 	}
 
@@ -231,10 +231,10 @@ public final class Block2BlockwiseStatus extends BlockwiseStatus {
 				if (etag != null) {
 					// response must contain the same ETag
 					if (responseBlock.getOptions().getETagCount() != 1) {
-						LOGGER.debug("response does not contain a single ETag");
+						org.eclipse.californium.elements.MyLogger.LOG_debug("response does not contain a single ETag");
 						return false;
 					} else if (!Arrays.equals(etag, responseBlock.getOptions().getETags().get(0))) {
-						LOGGER.debug("response does not contain expected ETag");
+						org.eclipse.californium.elements.MyLogger.LOG_debug("response does not contain expected ETag");
 						return false;
 					}
 				}
@@ -448,7 +448,7 @@ public final class Block2BlockwiseStatus extends BlockwiseStatus {
 			int to = Math.min((requestedBlock.getNum() + 1) * requestedBlock.getSize(), bodySize);
 			int length = to - from;
 
-			LOGGER.debug("cropping response body [size={}] to block {}", bodySize, requestedBlock);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("cropping response body [size={}] to block {}", bodySize, requestedBlock);
 
 			byte[] blockPayload = new byte[length];
 			boolean m = to < bodySize;

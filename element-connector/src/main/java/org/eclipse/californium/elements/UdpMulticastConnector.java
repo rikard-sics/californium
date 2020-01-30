@@ -99,7 +99,7 @@ public class UdpMulticastConnector extends UDPConnector {
 		for (InetAddress group : multicastGroups) {
 			try {
 				socket.joinGroup(group);
-				LOGGER.info("joined group {}", StringUtil.toString(group));
+				org.eclipse.californium.elements.MyLogger.LOG_info("joined group {}", StringUtil.toString(group));
 			} catch (SocketException ex) {
 				socket.close();
 				if (group instanceof Inet4Address) {

@@ -183,7 +183,7 @@ public class DirectDatagramSocketImpl extends AbstractDatagramSocketImpl {
 
 	@Override
 	protected void bind(int lport, InetAddress laddr) throws SocketException {
-		LOGGER.debug("binding to port {}, address {}", lport, laddr);
+		org.eclipse.californium.elements.MyLogger.LOG_debug("binding to port {}, address {}", lport, laddr);
 		int port = bind(lport);
 		synchronized (this) {
 			this.localPort = port;
@@ -203,13 +203,13 @@ public class DirectDatagramSocketImpl extends AbstractDatagramSocketImpl {
 			addr = this.localAddress;
 			this.closed = true;
 		}
-		LOGGER.debug("closing port {}, address {}", port, addr);
+		org.eclipse.californium.elements.MyLogger.LOG_debug("closing port {}, address {}", port, addr);
 		if (!isClosed) {
 			List<DirectDatagramSocketImpl> destinations = map.get(port);
 			if (destinations == null) {
-				LOGGER.info("cannot close unknown port {}, address {}", port, addr);
+				org.eclipse.californium.elements.MyLogger.LOG_info("cannot close unknown port {}, address {}", port, addr);
 			} else if (!destinations.remove(this)) {
-				LOGGER.info("cannot close unknown port {}, address {}", port, addr);
+				org.eclipse.californium.elements.MyLogger.LOG_info("cannot close unknown port {}, address {}", port, addr);
 			} else if (destinations.isEmpty()) {
 				map.remove(port, destinations);
 			}
@@ -242,7 +242,7 @@ public class DirectDatagramSocketImpl extends AbstractDatagramSocketImpl {
 			}
 		} catch (InterruptedException exception) {
 			if (!incomingQueue.isEmpty()) {
-				LOGGER.warn("interrupted while receiving!");
+				org.eclipse.californium.elements.MyLogger.LOG_warn("interrupted while receiving!");
 			}
 			throw new InterruptedIOException(addr + ":" + port);
 		}
@@ -252,13 +252,13 @@ public class DirectDatagramSocketImpl extends AbstractDatagramSocketImpl {
 		}
 		if (isClosed) {
 			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug("socket already closed {}", exchange.format(currentSetup));
+				org.eclipse.californium.elements.MyLogger.LOG_debug("socket already closed {}", exchange.format(currentSetup));
 			}
 			throw new SocketException("Socket " + addr + ":" + port + " already closed!");
 		} else if (LOGGER.isTraceEnabled()) {
-			LOGGER.trace("incoming {}", exchange.format(currentSetup));
+			org.eclipse.californium.elements.MyLogger.LOG_trace("incoming {}", exchange.format(currentSetup));
 		} else if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug(">> {}", exchange.format(currentSetup));
+			org.eclipse.californium.elements.MyLogger.LOG_debug(">> {}", exchange.format(currentSetup));
 		} else if (LOGGER.isInfoEnabled() && enableLoggingBuffer.get()) {
 			String line = exchange.format(currentSetup);
 			long time = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - loggingBufferStartTimeNanos.get());
@@ -269,12 +269,12 @@ public class DirectDatagramSocketImpl extends AbstractDatagramSocketImpl {
 		byte[] destPacketData = destPacket.getData();
 		if (destPacketLength < receivedLength) {
 			if (destPacketData.length > destPacketLength) {
-				LOGGER.debug("increasing receive buffer from {} to full buffer capacity [{}]", destPacketLength,
+				org.eclipse.californium.elements.MyLogger.LOG_debug("increasing receive buffer from {} to full buffer capacity [{}]", destPacketLength,
 						destPacketData.length);
 				destPacketLength = destPacketData.length;
 			}
 			if (destPacketLength < receivedLength) {
-				LOGGER.debug("truncating data [length: {}] to fit into receive buffer [size: {}]", receivedLength,
+				org.eclipse.californium.elements.MyLogger.LOG_debug("truncating data [length: {}] to fit into receive buffer [size: {}]", receivedLength,
 						destPacketLength);
 				receivedLength = destPacketLength;
 			}
@@ -308,7 +308,7 @@ public class DirectDatagramSocketImpl extends AbstractDatagramSocketImpl {
 		final DatagramExchange exchange = new DatagramExchange(local, port, packet);
 		if (isClosed) {
 			if (LOGGER.isWarnEnabled()) {
-				LOGGER.warn("closed/packet dropped! {}", exchange.format(currentSetup));
+				org.eclipse.californium.elements.MyLogger.LOG_warn("closed/packet dropped! {}", exchange.format(currentSetup));
 			}
 			throw new SocketException("socket is closed");
 		}
@@ -316,7 +316,7 @@ public class DirectDatagramSocketImpl extends AbstractDatagramSocketImpl {
 		if (null == destinations) {
 			String message = String.format("destination port %s not available!", exchange.destinationPort);
 			if (LOGGER.isErrorEnabled()) {
-				LOGGER.error("{} {}", message, exchange.format(currentSetup));
+				org.eclipse.californium.elements.MyLogger.LOG_error("{} {}", message, exchange.format(currentSetup));
 			}
 			throw new PortUnreachableException(message);
 		}
@@ -325,7 +325,7 @@ public class DirectDatagramSocketImpl extends AbstractDatagramSocketImpl {
 		if (destinations.isEmpty()) {
 			String message = String.format("destination port %s not longer available!", exchange.destinationPort);
 			if (LOGGER.isErrorEnabled()) {
-				LOGGER.error("{} {}", message, exchange.format(currentSetup));
+				org.eclipse.californium.elements.MyLogger.LOG_error("{} {}", message, exchange.format(currentSetup));
 			}
 			throw new PortUnreachableException(message);
 		}
@@ -333,14 +333,14 @@ public class DirectDatagramSocketImpl extends AbstractDatagramSocketImpl {
 			if (destinationSocket.matches(destinationAddress)) {
 				if (!destinationSocket.incomingQueue.offer(exchange)) {
 					if (LOGGER.isErrorEnabled()) {
-						LOGGER.error("packet dropped! {}", exchange.format(currentSetup));
+						org.eclipse.californium.elements.MyLogger.LOG_error("packet dropped! {}", exchange.format(currentSetup));
 					}
 					throw new PortUnreachableException("buffer exhausted");
 				}
 			}
 		}
 		if (LOGGER.isTraceEnabled()) {
-			LOGGER.trace("outgoing {}", exchange.format(currentSetup));
+			org.eclipse.californium.elements.MyLogger.LOG_trace("outgoing {}", exchange.format(currentSetup));
 		}
 	}
 
@@ -469,7 +469,7 @@ public class DirectDatagramSocketImpl extends AbstractDatagramSocketImpl {
 					throw new SocketException("No left free port!");
 				}
 			}
-			LOGGER.debug("assigned port {}", port);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("assigned port {}", port);
 			return port;
 		} else {
 			List<DirectDatagramSocketImpl> destinations = map.putIfAbsent(lport, newDestinations);
@@ -564,10 +564,10 @@ public class DirectDatagramSocketImpl extends AbstractDatagramSocketImpl {
 				DatagramSocket.setDatagramSocketImplFactory(factory);
 				return true;
 			} catch (IOException ex) {
-				LOGGER.error("DatagramSocketImplFactory", ex);
+				org.eclipse.californium.elements.MyLogger.LOG_error("DatagramSocketImplFactory", ex);
 			}
 		} else if (factory != init.get()) {
-			LOGGER.warn("DatagramSocketImplFactory already set to {}", init.get().getClass());
+			org.eclipse.californium.elements.MyLogger.LOG_warn("DatagramSocketImplFactory already set to {}", init.get().getClass());
 		}
 		return false;
 	}
@@ -628,7 +628,7 @@ public class DirectDatagramSocketImpl extends AbstractDatagramSocketImpl {
 		String message;
 		while ((message = logBuffer.poll()) != null) {
 			++counter;
-			LOGGER.info(String.format("--%02d--> %s", counter, message));
+			org.eclipse.californium.elements.MyLogger.LOG_info(String.format("--%02d--> %s", counter, message));
 		}
 	}
 

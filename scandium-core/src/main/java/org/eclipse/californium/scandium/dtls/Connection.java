@@ -549,19 +549,19 @@ public final class Connection {
 		@Override
 		public void handshakeStarted(Handshaker handshaker)	throws HandshakeException {
 			ongoingHandshake.set(handshaker);
-			LOGGER.debug("Handshake with [{}] has been started", handshaker.getPeerAddress());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Handshake with [{}] has been started", handshaker.getPeerAddress());
 		}
 
 		@Override
 		public void sessionEstablished(Handshaker handshaker, DTLSSession session) throws HandshakeException {
 			establishedSession = session;
-			LOGGER.debug("Session with [{}] has been established", session.getPeer());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Session with [{}] has been established", session.getPeer());
 		}
 
 		@Override
 		public void handshakeCompleted(Handshaker handshaker) {
 			if (ongoingHandshake.compareAndSet(handshaker, null)) {
-				LOGGER.debug("Handshake with [{}] has been completed", handshaker.getPeerAddress());
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Handshake with [{}] has been completed", handshaker.getPeerAddress());
 			}
 		}
 
@@ -569,7 +569,7 @@ public final class Connection {
 		public void handshakeFailed(Handshaker handshaker, Throwable error) {
 			if (ongoingHandshake.compareAndSet(handshaker, null)) {
 				startingClientHello = null;
-				LOGGER.debug("Handshake with [{}] has failed", handshaker.getPeerAddress());
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Handshake with [{}] has failed", handshaker.getPeerAddress());
 			}
 		}
 

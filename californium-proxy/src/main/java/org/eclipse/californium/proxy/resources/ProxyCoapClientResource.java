@@ -86,11 +86,11 @@ public class ProxyCoapClientResource extends ForwardingResource {
 	@Override
 	public void handleRequest(final Exchange exchange) {
 		Request incomingRequest = exchange.getRequest();
-		LOGGER.debug("ProxyCoapClientResource forwards {}", incomingRequest);
+		org.eclipse.californium.elements.MyLogger.LOG_debug("ProxyCoapClientResource forwards {}", incomingRequest);
 
 		// check the invariant: the request must have the proxy-uri set
 		if (!incomingRequest.getOptions().hasProxyUri()) {
-			LOGGER.debug("Proxy-uri option not set.");
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Proxy-uri option not set.");
 			exchange.sendResponse(new Response(ResponseCode.BAD_OPTION));
 			return;
 		}
@@ -117,13 +117,13 @@ public class ProxyCoapClientResource extends ForwardingResource {
 				pool.release(endpoint);
 				throw new NullPointerException("Destination is null");
 			}
-			LOGGER.debug("Sending proxied CoAP request to {}", outgoingRequest.getDestinationContext());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Sending proxied CoAP request to {}", outgoingRequest.getDestinationContext());
 			endpoint.sendRequest(outgoingRequest);
 		} catch (TranslationException e) {
-			LOGGER.debug("Proxy-uri option malformed: {}", e.getMessage());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Proxy-uri option malformed: {}", e.getMessage());
 			exchange.sendResponse(new Response(CoapTranslator.STATUS_FIELD_MALFORMED));
 		} catch (Exception e) {
-			LOGGER.warn("Failed to execute request: {}", e.getMessage());
+			org.eclipse.californium.elements.MyLogger.LOG_warn("Failed to execute request: {}", e.getMessage());
 			exchange.sendResponse(new Response(ResponseCode.INTERNAL_SERVER_ERROR));
 			if (pool != null) {
 				pool.release(endpoint);
@@ -170,7 +170,7 @@ public class ProxyCoapClientResource extends ForwardingResource {
 
 		@Override
 		public void onResponse(Response incomingResponse) {
-			LOGGER.debug("ProxyCoapClientResource received {}", incomingResponse);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("ProxyCoapClientResource received {}", incomingResponse);
 			incomingExchange.sendResponse(CoapTranslator.getResponse(incomingResponse));
 			pool.release(outgoingEndpoint);
 		}
@@ -178,25 +178,25 @@ public class ProxyCoapClientResource extends ForwardingResource {
 		@Override
 		public void onReject() {
 			fail(ResponseCode.SERVICE_UNAVAILABLE);
-			LOGGER.debug("Request rejected");
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Request rejected");
 		}
 
 		@Override
 		public void onTimeout() {
 			fail(ResponseCode.GATEWAY_TIMEOUT);
-			LOGGER.debug("Request timed out.");
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Request timed out.");
 		}
 
 		@Override
 		public void onCancel() {
 			fail(ResponseCode.SERVICE_UNAVAILABLE);
-			LOGGER.debug("Request canceled");
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Request canceled");
 		}
 
 		@Override
 		public void onSendError(Throwable e) {
 			fail(ResponseCode.SERVICE_UNAVAILABLE);
-			LOGGER.warn("Send error", e);
+			org.eclipse.californium.elements.MyLogger.LOG_warn("Send error", e);
 		}
 
 		@Override

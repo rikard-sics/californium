@@ -103,9 +103,9 @@ public class DtlsAeadConnectionState extends DTLSConnectionState {
 		byte[] additionalData = record.generateAdditionalData(fragment.length);
 
 		if (LOGGER.isTraceEnabled()) {
-			LOGGER.trace("encrypt: {} bytes", fragment.length);
-			LOGGER.trace("nonce: {}", StringUtil.byteArray2HexString(nonce));
-			LOGGER.trace("adata: {}", StringUtil.byteArray2HexString(additionalData));
+			org.eclipse.californium.elements.MyLogger.LOG_trace("encrypt: {} bytes", fragment.length);
+			org.eclipse.californium.elements.MyLogger.LOG_trace("nonce: {}", StringUtil.byteArray2HexString(nonce));
+			org.eclipse.californium.elements.MyLogger.LOG_trace("adata: {}", StringUtil.byteArray2HexString(additionalData));
 		}
 		byte[] encryptedFragment = AeadBlockCipher.encrypt(explicitNonce.length, cipherSuite, encryptionKey, nonce,
 				additionalData, fragment);
@@ -117,7 +117,7 @@ public class DtlsAeadConnectionState extends DTLSConnectionState {
 		 * http://tools.ietf.org/html/draft-mcgrew-tls-aes-ccm-04#section-3
 		 */
 		System.arraycopy(explicitNonce, 0, encryptedFragment, 0, explicitNonce.length);
-		LOGGER.trace("==> {} bytes", encryptedFragment.length);
+		org.eclipse.californium.elements.MyLogger.LOG_trace("==> {} bytes", encryptedFragment.length);
 
 		return encryptedFragment;
 	}
@@ -146,9 +146,9 @@ public class DtlsAeadConnectionState extends DTLSConnectionState {
 		byte[] nonce = iv.getIV(ciphertextFragment, 0, cipherSuite.getRecordIvLength());
 
 		if (LOGGER.isTraceEnabled()) {
-			LOGGER.trace("decrypt: {} bytes", applicationDataLength);
-			LOGGER.trace("nonce: {}", StringUtil.byteArray2HexString(nonce));
-			LOGGER.trace("adata: {}", StringUtil.byteArray2HexString(additionalData));
+			org.eclipse.californium.elements.MyLogger.LOG_trace("decrypt: {} bytes", applicationDataLength);
+			org.eclipse.californium.elements.MyLogger.LOG_trace("nonce: {}", StringUtil.byteArray2HexString(nonce));
+			org.eclipse.californium.elements.MyLogger.LOG_trace("adata: {}", StringUtil.byteArray2HexString(additionalData));
 		}
 		if (LOGGER.isDebugEnabled() && AeadBlockCipher.AES_CCM.equals(cipherSuite.getTransformation())) {
 			// create explicit nonce from values provided in DTLS record
@@ -163,7 +163,7 @@ public class DtlsAeadConnectionState extends DTLSConnectionState {
 						.append(StringUtil.byteArray2HexString(explicitNonceUsed));
 				b.append(StringUtil.lineSeparator()).append("Expected: ")
 						.append(StringUtil.byteArray2HexString(explicitNonce));
-				LOGGER.debug(b.toString());
+				org.eclipse.californium.elements.MyLogger.LOG_debug(b.toString());
 			}
 		}
 		byte[] payload = AeadBlockCipher.decrypt(cipherSuite, encryptionKey, nonce, additionalData, ciphertextFragment,

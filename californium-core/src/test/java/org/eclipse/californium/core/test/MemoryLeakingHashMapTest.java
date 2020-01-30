@@ -159,7 +159,7 @@ public class MemoryLeakingHashMapTest {
 	public void testSimpleNONGet() throws Exception {
 
 		String uri = uriOf(URI);
-		LOGGER.debug("Test simple NON GET to {}", uri);
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Test simple NON GET to {}", uri);
 
 		String currentResponseText = "simple NON GET";
 		resource.setResponse(currentResponseText, Mode.PIGGY_BACKED_RESPONSE);
@@ -169,7 +169,7 @@ public class MemoryLeakingHashMapTest {
 		request.setType(Type.NON);
 		Response response = request.send(clientEndpoint).waitForResponse(ACK_TIMEOUT);
 		assertThat("Client did not receive response to NON request in time", response, is(notNullValue()));
-		LOGGER.debug("Client received response [{}] with msg type [{}]", new Object[]{response.getPayloadString(), response.getType()});
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Client received response [{}] with msg type [{}]", new Object[]{response.getPayloadString(), response.getType()});
 		assertThat(response.getPayloadString(), is(currentResponseText));
 		assertThat(response.getType(), is(Type.NON));
 	}
@@ -199,7 +199,7 @@ public class MemoryLeakingHashMapTest {
 	private static void testSimpleGet(final Mode mode) throws Exception {
 
 		String uri = uriOf(URI);
-		LOGGER.debug("Test simple GET to {}", uri);
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Test simple GET to {}", uri);
 
 		String currentResponseText = "simple GET";
 		resource.setResponse(currentResponseText, mode);
@@ -257,7 +257,7 @@ public class MemoryLeakingHashMapTest {
 
 	private static void testBlockwise(final CoapClient client, final Mode mode) throws ConnectorException, IOException {
 
-		LOGGER.debug("Test blockwise POST to {}", client.getURI());
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Test blockwise POST to {}", client.getURI());
 
 		currentRequestText = LONG_REQUEST;
 		String currentResponseText = LONG_RESPONSE;
@@ -269,7 +269,7 @@ public class MemoryLeakingHashMapTest {
 
 	private static void assertThatResponseContainsValue(CoapResponse response, String expectedValue) {
 		assertThat(response, is(notNullValue()));
-		LOGGER.debug("Client received response [{}]", response.getResponseText());
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Client received response [{}]", response.getResponseText());
 		assertThat(response.getResponseText(), is(expectedValue));
 	}
 
@@ -282,7 +282,7 @@ public class MemoryLeakingHashMapTest {
 	 */
 	@Test
 	public void testObserveProactive() throws Exception {
-		LOGGER.debug("Test observe relation with a proactive cancelation");
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Test observe relation with a proactive cancelation");
 		testObserveProactive("Hello observer");
 	}
 
@@ -295,7 +295,7 @@ public class MemoryLeakingHashMapTest {
 	 */
 	@Test
 	public void testObserveProactiveBlockwise() throws Exception {
-		LOGGER.debug("Test observe relation with blockwise notifications and proactive cancelation");
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Test observe relation with blockwise notifications and proactive cancelation");
 		// We need a long response text (>16)
 		testObserveProactive(LONG_RESPONSE);
 	}
@@ -476,7 +476,7 @@ public class MemoryLeakingHashMapTest {
 				exchange.accept();
 			}
 
-			LOGGER.debug("TestResource [{}] received POST message: {}", new Object[]{getName(), exchange.getRequestText()});
+			org.eclipse.californium.elements.MyLogger.LOG_debug("TestResource [{}] received POST message: {}", new Object[]{getName(), exchange.getRequestText()});
 
 			exchange.respond(ResponseCode.CREATED, currentResponseText);
 		}
@@ -517,20 +517,20 @@ public class MemoryLeakingHashMapTest {
 			int counter = this.loadCalls.get();
 
 			if (null == relation) {
-				LOGGER.info("Client ignore notification {}: [{}]", counter, response.getResponseText());
+				org.eclipse.californium.elements.MyLogger.LOG_info("Client ignore notification {}: [{}]", counter, response.getResponseText());
 				return;
 			}
 
-			LOGGER.debug("Client received notification {}: [{}]", counter, response.getResponseText());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Client received notification {}: [{}]", counter, response.getResponseText());
 
 			if (cancelProactively) {
 				if ((counter + 1) == expectedNotifies) {
-					LOGGER.debug("Client proactively cancels observe relation");
+					org.eclipse.californium.elements.MyLogger.LOG_debug("Client proactively cancels observe relation");
 					relation.proactiveCancel();
 				}
 			} else {
 				if (counter == expectedNotifies) {
-					LOGGER.debug("Client forgets observe relation");
+					org.eclipse.californium.elements.MyLogger.LOG_debug("Client forgets observe relation");
 					relation.reactiveCancel();
 				}
 			}

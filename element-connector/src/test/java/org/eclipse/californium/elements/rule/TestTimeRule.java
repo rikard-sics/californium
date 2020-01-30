@@ -60,7 +60,7 @@ public class TestTimeRule extends TestWatcher {
 	 * @param unit unit of time to add
 	 */
 	public final synchronized void addTestTimeShift(final long delta, final TimeUnit unit) {
-		LOGGER.debug("add {} {} to timeshift {} ns", delta, unit, timeShiftNanos);
+		org.eclipse.californium.elements.MyLogger.LOG_debug("add {} {} to timeshift {} ns", delta, unit, timeShiftNanos);
 		timeShiftNanos += unit.toNanos(delta);
 	}
 
@@ -71,7 +71,7 @@ public class TestTimeRule extends TestWatcher {
 	 * @param unit unit of time shift
 	 */
 	public final synchronized void setTestTimeShift(final long shift, final TimeUnit unit) {
-		LOGGER.debug("set {} {} as timeshift", shift, unit);
+		org.eclipse.californium.elements.MyLogger.LOG_debug("set {} {} as timeshift", shift, unit);
 		timeShiftNanos = unit.toNanos(shift);
 	}
 

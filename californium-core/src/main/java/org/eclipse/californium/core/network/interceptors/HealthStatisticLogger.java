@@ -145,10 +145,10 @@ public class HealthStatisticLogger extends CounterStatisticManager implements Me
 				long sent = getSentCounters();
 				long processed = getProcessedCounters();
 				log.append(tag).append("sent ").append(sent).append(", received ").append(processed);
-				LOGGER.debug("{}", log);
+				org.eclipse.californium.elements.MyLogger.LOG_debug("{}", log);
 			}
 		} catch (Throwable e) {
-			LOGGER.error("{}", tag, e);
+			org.eclipse.californium.elements.MyLogger.LOG_error("{}", tag, e);
 		}
 	}
 

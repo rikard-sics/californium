@@ -78,9 +78,9 @@ public class StaticCertificateVerifier implements AdvancedCertificateVerifier {
 			CertPathUtil.validateCertificatePath(false, message.getCertificateChain(), rootCertificates);
 		} catch (GeneralSecurityException e) {
 			if (LOGGER.isTraceEnabled()) {
-				LOGGER.trace("Certificate validation failed", e);
+				org.eclipse.californium.elements.MyLogger.LOG_trace("Certificate validation failed", e);
 			} else if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug("Certificate validation failed due to {}", e.getMessage());
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Certificate validation failed due to {}", e.getMessage());
 			}
 			AlertMessage alert = new AlertMessage(AlertLevel.FATAL, AlertDescription.BAD_CERTIFICATE,
 					session.getPeer());
@@ -105,7 +105,7 @@ public class StaticCertificateVerifier implements AdvancedCertificateVerifier {
 					Certificate certificate = certificates.get(0);
 					if (certificate instanceof X509Certificate) {
 						if (!CertPathUtil.canBeUsedForAuthentication((X509Certificate) certificate, clientUsage)) {
-							LOGGER.debug("Certificate validation failed: key usage doesn't match");
+							org.eclipse.californium.elements.MyLogger.LOG_debug("Certificate validation failed: key usage doesn't match");
 							AlertMessage alert = new AlertMessage(AlertLevel.FATAL, AlertDescription.BAD_CERTIFICATE,
 									session.getPeer());
 							throw new HandshakeException("Key Usage doesn't match!", alert);
@@ -116,9 +116,9 @@ public class StaticCertificateVerifier implements AdvancedCertificateVerifier {
 			return CertPathUtil.validateCertificatePath(truncateCertificatePath, certPath, rootCertificates);
 		} catch (GeneralSecurityException e) {
 			if (LOGGER.isTraceEnabled()) {
-				LOGGER.trace("Certificate validation failed", e);
+				org.eclipse.californium.elements.MyLogger.LOG_trace("Certificate validation failed", e);
 			} else if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug("Certificate validation failed due to {}", e.getMessage());
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Certificate validation failed due to {}", e.getMessage());
 			}
 			AlertMessage alert = new AlertMessage(AlertLevel.FATAL, AlertDescription.BAD_CERTIFICATE,
 					session.getPeer());

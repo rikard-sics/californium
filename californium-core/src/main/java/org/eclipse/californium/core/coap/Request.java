@@ -426,12 +426,12 @@ public class Request extends Message {
 		if (uri == null) {
 			throw new NullPointerException("URI must not be null");
 		}
-
+		System.out.println("URI: " + uri);
 		try {
 			String coapUri = uri;
 			if (!uri.contains("://")) {
 				coapUri = "coap://" + uri;
-				LOGGER.warn("update your code to supply an RFC 7252 compliant URI including a scheme");
+				org.eclipse.californium.elements.MyLogger.LOG_warn("update your code to supply an RFC 7252 compliant URI including a scheme");
 			}
 			return setURI(new URI(coapUri));
 		} catch (URISyntaxException e) {
@@ -594,7 +594,7 @@ public class Request extends Message {
 					}
 				} catch (UnknownHostException e) {
 					// this should not happen because we do not need to resolve a host name
-					LOGGER.warn("could not parse IP address of URI despite successful IP address pattern matching");
+					org.eclipse.californium.elements.MyLogger.LOG_warn("could not parse IP address of URI despite successful IP address pattern matching");
 				}
 			} else {
 				if (!StringUtil.isValidHostName(host)) {

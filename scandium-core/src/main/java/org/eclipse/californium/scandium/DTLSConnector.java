@@ -429,7 +429,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 					}
 					List<RawData> listOut = handshaker.takeDeferredApplicationData();
 					if (!listOut.isEmpty()) {
-						LOGGER.debug("Handshake with [{}] failed, report error to deferred {} messages",
+						org.eclipse.californium.elements.MyLogger.LOG_debug("Handshake with [{}] failed, report error to deferred {} messages",
 								handshaker.getPeerAddress(), listOut.size());
 						for (RawData message : listOut) {
 							message.onError(error);
@@ -439,17 +439,17 @@ public class DTLSConnector implements Connector, RecordLayer {
 					if (handshaker.isRemovingConnection()) {
 						connectionStore.remove(connection, false);
 					} else if (handshaker.isProbing()) {
-						LOGGER.debug("Handshake with [{}] failed within probe!", handshaker.getPeerAddress());
+						org.eclipse.californium.elements.MyLogger.LOG_debug("Handshake with [{}] failed within probe!", handshaker.getPeerAddress());
 					} else if (connection.getEstablishedSession() == handshaker.getSession()) {
 						// failure after established (last FINISH),
 						// but before completed (first data)
-						LOGGER.warn("Handshake with [{}] failed after session was established!",
+						org.eclipse.californium.elements.MyLogger.LOG_warn("Handshake with [{}] failed after session was established!",
 								handshaker.getPeerAddress());
 					} else if (connection.hasEstablishedSession()) {
-						LOGGER.warn("Handshake with [{}] failed, but has an established session!",
+						org.eclipse.californium.elements.MyLogger.LOG_warn("Handshake with [{}] failed, but has an established session!",
 								handshaker.getPeerAddress());
 					} else {
-						LOGGER.warn("Handshake with [{}] failed, connection preserved!", handshaker.getPeerAddress());
+						org.eclipse.californium.elements.MyLogger.LOG_warn("Handshake with [{}] failed, connection preserved!", handshaker.getPeerAddress());
 					}
 				}
 			};
@@ -471,7 +471,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 		final SerialExecutor serialExecutor = connection.getExecutor();
 		List<RawData> listOut = handshaker.takeDeferredApplicationData();
 		if (!listOut.isEmpty()) {
-			LOGGER.debug("Session with [{}] established, now process deferred {} messages",
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Session with [{}] established, now process deferred {} messages",
 					establishedSession.getPeer(), listOut.size());
 			for (RawData message : listOut) {
 				final RawData rawData = message;
@@ -486,7 +486,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 		}
 		List<Record> listIn = handshaker.takeDeferredRecords();
 		if (!listIn.isEmpty()) {
-			LOGGER.debug("Session with [{}] established, now process deferred {} messages",
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Session with [{}] established, now process deferred {} messages",
 					establishedSession.getPeer(), listIn.size());
 			for (Record message : listIn) {
 				final Record record = message;
@@ -654,10 +654,10 @@ public class DTLSConnector implements Connector, RecordLayer {
 		}
 		if (bindAddress.getPort() != 0 && config.isAddressReuseEnabled()) {
 			// make it easier to stop/start a server consecutively without delays
-			LOGGER.info("Enable address reuse for socket!");
+			org.eclipse.californium.elements.MyLogger.LOG_info("Enable address reuse for socket!");
 			socket.setReuseAddress(true);
 			if (!socket.getReuseAddress()) {
-				LOGGER.warn("Enable address reuse for socket failed!");
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Enable address reuse for socket failed!");
 			}
 		}
 
@@ -671,7 +671,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 				socket.setSendBufferSize(size);
 			}
 		} catch(IllegalArgumentException ex) {
-			LOGGER.error("failed to apply {}", size, ex);
+			org.eclipse.californium.elements.MyLogger.LOG_error("failed to apply {}", size, ex);
 		}
 		// don't try to access the buffer sizes,
 		// when receive may already lock the socket!
@@ -695,16 +695,16 @@ public class DTLSConnector implements Connector, RecordLayer {
 			InetAddress localInterfaceAddress = bindAddress.getAddress();
 			if (localInterfaceAddress.isAnyLocalAddress()) {
 				this.maximumTransmissionUnit = NetworkInterfacesUtil.getAnyMtu();
-				LOGGER.info("multiple network interfaces, using smallest MTU [{}]", this.maximumTransmissionUnit);
+				org.eclipse.californium.elements.MyLogger.LOG_info("multiple network interfaces, using smallest MTU [{}]", this.maximumTransmissionUnit);
 			} else {
 				NetworkInterface ni = NetworkInterface.getByInetAddress(localInterfaceAddress);
 				if (ni != null && ni.getMTU() > 0) {
 					this.maximumTransmissionUnit = ni.getMTU();
 				} else if (localInterfaceAddress instanceof Inet4Address) {
-					LOGGER.info("Cannot determine MTU of network interface, using minimum MTU [{}] of IPv4 instead", DEFAULT_IPV4_MTU);
+					org.eclipse.californium.elements.MyLogger.LOG_info("Cannot determine MTU of network interface, using minimum MTU [{}] of IPv4 instead", DEFAULT_IPV4_MTU);
 					this.maximumTransmissionUnit = DEFAULT_IPV4_MTU;
 				} else {
-					LOGGER.info("Cannot determine MTU of network interface, using minimum MTU [{}] of IPv6 instead", DEFAULT_IPV6_MTU);
+					org.eclipse.californium.elements.MyLogger.LOG_info("Cannot determine MTU of network interface, using minimum MTU [{}] of IPv6 instead", DEFAULT_IPV6_MTU);
 					this.maximumTransmissionUnit = DEFAULT_IPV6_MTU;
 				}
 			}
@@ -740,7 +740,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 			receiverThreads.add(receiver);
 		}
 
-		LOGGER.info("DTLSConnector listening on {}, recv buf = {}, send buf = {}, recv packet size = {}, MTU = {}",
+		org.eclipse.californium.elements.MyLogger.LOG_info("DTLSConnector listening on {}, recv buf = {}, send buf = {}, recv packet size = {}, MTU = {}",
 				lastBindAddress, recvBuffer, sendBuffer, inboundDatagramBufferSize, maximumTransmissionUnit);
 
 		// this is a useful health metric
@@ -807,7 +807,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 					statusLogger.cancel(false);
 					statusLogger = null;
 				}
-				LOGGER.info("Stopping DTLS connector on [{}]", lastBindAddress);
+				org.eclipse.californium.elements.MyLogger.LOG_info("Stopping DTLS connector on [{}]", lastBindAddress);
 				for (Thread t : receiverThreads) {
 					t.interrupt();
 				}
@@ -841,7 +841,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 		if (shutdownTimer != null) {
 			try {
 				if (!shutdownTimer.awaitTermination(500, TimeUnit.MILLISECONDS)) {
-					LOGGER.warn("Shutdown DTLS connector on [{}] timer not terminated in time!", lastBindAddress);
+					org.eclipse.californium.elements.MyLogger.LOG_warn("Shutdown DTLS connector on [{}] timer not terminated in time!", lastBindAddress);
 				}
 			} catch (InterruptedException e) {
 			}
@@ -849,7 +849,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 		if (shutdown != null) {
 			try {
 				if (!shutdown.awaitTermination(500, TimeUnit.MILLISECONDS)) {
-					LOGGER.warn("Shutdown DTLS connector on [{}] executor not terminated in time!", lastBindAddress);
+					org.eclipse.californium.elements.MyLogger.LOG_warn("Shutdown DTLS connector on [{}] executor not terminated in time!", lastBindAddress);
 				}
 			} catch (InterruptedException e) {
 			}
@@ -858,7 +858,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 			try {
 				job.run();
 			} catch (Exception e) {
-				LOGGER.warn("Shutdown DTLS connector:", e);
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Shutdown DTLS connector:", e);
 			}
 		}
 	}
@@ -1031,7 +1031,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 			} else {
 				connection = connectionStore.get(peerAddress);
 				if (connection == null && create) {
-					LOGGER.debug("create new connection for {}", peerAddress);
+					org.eclipse.californium.elements.MyLogger.LOG_debug("create new connection for {}", peerAddress);
 					Connection newConnection = new Connection(peerAddress, new SerialExecutor(executor));
 					if (running.get()) {
 						// only add, if connector is running!
@@ -1043,12 +1043,12 @@ public class DTLSConnector implements Connector, RecordLayer {
 				}
 			}
 			if (connection == null) {
-				LOGGER.debug("no connection available for {},{}", peerAddress, cid);
+				org.eclipse.californium.elements.MyLogger.LOG_debug("no connection available for {},{}", peerAddress, cid);
 			} else if (!connection.isExecuting() && running.get()) {
-				LOGGER.debug("revive connection for {},{}", peerAddress, cid);
+				org.eclipse.californium.elements.MyLogger.LOG_debug("revive connection for {},{}", peerAddress, cid);
 				connection.setExecutor(new SerialExecutor(executor));
 			} else {
-				LOGGER.trace("connection available for {},{}", peerAddress, cid);
+				org.eclipse.californium.elements.MyLogger.LOG_trace("connection available for {},{}", peerAddress, cid);
 			}
 			return connection;
 		}
@@ -1098,7 +1098,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 
 		byte[] data = Arrays.copyOfRange(packet.getData(), packet.getOffset(), packet.getLength());
 		List<Record> records = Record.fromByteArray(data, peerAddress, connectionIdGenerator, timestamp);
-		LOGGER.debug("Received {} DTLS records from {} using a {} byte datagram buffer",
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Received {} DTLS records from {} using a {} byte datagram buffer",
 				records.size(), peerAddress, inboundDatagramBufferSize);
 
 		if (records.isEmpty()) {
@@ -1106,7 +1106,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 		}
 
 		if (!running.get()) {
-			LOGGER.debug("Execution shutdown while processing incoming records from peer: {}", peerAddress);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Execution shutdown while processing incoming records from peer: {}", peerAddress);
 			return;
 		}
 
@@ -1131,10 +1131,10 @@ public class DTLSConnector implements Connector, RecordLayer {
 				health.receivingRecord(true);
 			}
 			if (connectionId == null) {
-				LOGGER.debug("Discarding {} records from [{}] received without existing connection",
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Discarding {} records from [{}] received without existing connection",
 						records.size(), peerAddress);
 			} else {
-				LOGGER.debug("Discarding {} records from [{},{}] received without existing connection",
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Discarding {} records from [{},{}] received without existing connection",
 						records.size(), peerAddress, connectionId);
 			}
 			return;
@@ -1156,11 +1156,11 @@ public class DTLSConnector implements Connector, RecordLayer {
 				});
 			} catch (RejectedExecutionException e) {
 				// dont't terminate connection on shutdown!
-				LOGGER.debug("Execution rejected while processing record [type: {}, peer: {}]",
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Execution rejected while processing record [type: {}, peer: {}]",
 						record.getType(), peerAddress, e);
 				break;
 			} catch (RuntimeException e) {
-				LOGGER.warn("Unexpected error occurred while processing record [type: {}, peer: {}]",
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Unexpected error occurred while processing record [type: {}, peer: {}]",
 						record.getType(), peerAddress, e);
 				terminateConnection(connection, e, AlertLevel.FATAL, AlertDescription.INTERNAL_ERROR);
 				break;
@@ -1182,7 +1182,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 			// and not changed by processing an other record before 
 			if (record.getConnectionId() == null && !connection.equalsPeerAddress(record.getPeerAddress())) {
 				long delay = TimeUnit.NANOSECONDS.toMillis(ClockUtil.nanoRealtime() - record.getReceiveNanos());
-				LOGGER.warn("Drop record {}, connection changed address {} => {}! (shift {}ms)", record.getType(),
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Drop record {}, connection changed address {} => {}! (shift {}ms)", record.getType(),
 						record.getPeerAddress(), connection.getPeerAddress(), delay);
 				if (health != null) {
 					health.receivingRecord(true);
@@ -1191,7 +1191,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 			}
 
 			int epoch = record.getEpoch();
-			LOGGER.trace("Received DTLS record of type [{}], length: {}, [epoche:{},reqn:{}]", 
+			org.eclipse.californium.elements.MyLogger.LOG_trace("Received DTLS record of type [{}], length: {}, [epoche:{},reqn:{}]", 
 					record.getType(), record.getFragmentLength(), epoch, record.getSequenceNumber());
 
 			Handshaker handshaker = connection.getOngoingHandshake();
@@ -1201,7 +1201,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 				handshaker.handshakeFailed(new Exception("handshake already expired!"));
 				if (connectionStore.get(connection.getConnectionId()) != connection) {
 					// connection removed, then drop record
-					LOGGER.debug("Discarding {} record received from peer [{}], handshake expired!",
+					org.eclipse.californium.elements.MyLogger.LOG_debug("Discarding {} record received from peer [{}], handshake expired!",
 							record.getType(), record.getPeerAddress(), epoch);
 					if (health != null) {
 						health.receivingRecord(true);
@@ -1218,7 +1218,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 					// future records, apply session after handshake finished.
 					handshaker.addRecordsForDeferredProcessing(record);
 				} else {
-					LOGGER.debug("Discarding {} record received from peer [{}] without an active session for epoch {}",
+					org.eclipse.californium.elements.MyLogger.LOG_debug("Discarding {} record received from peer [{}] without an active session for epoch {}",
 							record.getType(), record.getPeerAddress(), epoch);
 					if (health != null) {
 						health.receivingRecord(true);
@@ -1231,7 +1231,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 			// before MAC validation based on the record's sequence numbers
 			// see http://tools.ietf.org/html/rfc6347#section-4.1.2.6
 			if (useFilter && (session != null) && !session.isRecordProcessable(record.getEpoch(), record.getSequenceNumber(), useWindowFilter)) {
-				LOGGER.debug("Discarding duplicate {} record received from peer [{}]",
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Discarding duplicate {} record received from peer [{}]",
 						record.getType(), record.getPeerAddress());
 				if (health != null) {
 					health.receivingRecord(true);
@@ -1243,7 +1243,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 			if (record.getType() == ContentType.TLS12_CID) {
 				// !useCid already dropped in Record.fromByteArray
 				if (epoch == 0) {
-					LOGGER.debug("Discarding TLS_CID record received from peer [{}] during handshake",
+					org.eclipse.californium.elements.MyLogger.LOG_debug("Discarding TLS_CID record received from peer [{}] during handshake",
 							record.getPeerAddress());
 					if (health != null) {
 						health.receivingRecord(true);
@@ -1251,7 +1251,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 					return;
 				}
 			} else if (epoch > 0 && useCid && connection.expectCid()) {
-				LOGGER.debug("Discarding record received from peer [{}], CID required!", record.getPeerAddress());
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Discarding record received from peer [{}], CID required!", record.getPeerAddress());
 				if (health != null) {
 					health.receivingRecord(true);
 				}
@@ -1267,7 +1267,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 				}
 				connection.resetSession();
 				handshaker.resetProbing();
-				LOGGER.debug("handshake probe successful {}", connection.getPeerAddress());
+				org.eclipse.californium.elements.MyLogger.LOG_debug("handshake probe successful {}", connection.getPeerAddress());
 			}
 
 			switch (record.getType()) {
@@ -1284,24 +1284,24 @@ public class DTLSConnector implements Connector, RecordLayer {
 				processHandshakeRecord(record, connection);
 				break;
 			default:
-				LOGGER.debug("Discarding record of unsupported type [{}] from peer [{}]",
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Discarding record of unsupported type [{}] from peer [{}]",
 					record.getType(), record.getPeerAddress());
 			}
 		} catch (RuntimeException e) {
 			if (health != null) {
 				health.receivingRecord(true);
 			}
-			LOGGER.warn("Unexpected error occurred while processing record from peer [{}]",
+			org.eclipse.californium.elements.MyLogger.LOG_warn("Unexpected error occurred while processing record from peer [{}]",
 					record.getPeerAddress(), e);
 			terminateConnection(connection, e, AlertLevel.FATAL, AlertDescription.INTERNAL_ERROR);
 		} catch (GeneralSecurityException e) {
 			if (health != null) {
 				health.receivingRecord(true);
 			}
-			LOGGER.info("error occurred while processing record from peer [{}]",
+			org.eclipse.californium.elements.MyLogger.LOG_info("error occurred while processing record from peer [{}]",
 					record.getPeerAddress(), e);
 		} catch (HandshakeException e) {
-			LOGGER.info("error occurred while processing record from peer [{}]",
+			org.eclipse.californium.elements.MyLogger.LOG_info("error occurred while processing record from peer [{}]",
 					record.getPeerAddress(), e);
 		}
 	}
@@ -1324,9 +1324,9 @@ public class DTLSConnector implements Connector, RecordLayer {
 		Handshaker handshaker = connection.getOngoingHandshake();
 		if (handshaker != null) {
 			if (LOGGER.isTraceEnabled()) {
-				LOGGER.trace("Aborting handshake with peer [{}]:", connection.getPeerAddress(), cause);
+				org.eclipse.californium.elements.MyLogger.LOG_trace("Aborting handshake with peer [{}]:", connection.getPeerAddress(), cause);
 			} else if (LOGGER.isInfoEnabled()) {
-				LOGGER.info("Aborting handshake with peer [{}]: {}", connection.getPeerAddress(), cause.getMessage());
+				org.eclipse.californium.elements.MyLogger.LOG_info("Aborting handshake with peer [{}]: {}", connection.getPeerAddress(), cause.getMessage());
 			}
 			handshaker.setFailureCause(cause);
 			DTLSSession session = handshaker.getSession();
@@ -1337,9 +1337,9 @@ public class DTLSConnector implements Connector, RecordLayer {
 				// keep established session intact and only terminate ongoing handshake
 				if (connection.getEstablishedSession() == handshaker.getSession()) {
 					// failure after established (last FINISH), but before completed (first data)
-					LOGGER.warn("Handshake with [{}] failed after session was established!", handshaker.getPeerAddress());
+					org.eclipse.californium.elements.MyLogger.LOG_warn("Handshake with [{}] failed after session was established!", handshaker.getPeerAddress());
 				} else {
-					LOGGER.warn("Handshake with [{}] failed, but has an established session!", handshaker.getPeerAddress());
+					org.eclipse.californium.elements.MyLogger.LOG_warn("Handshake with [{}] failed, but has an established session!", handshaker.getPeerAddress());
 				}
 				send(alert, session);
 			}
@@ -1387,12 +1387,12 @@ public class DTLSConnector implements Connector, RecordLayer {
 	 */
 	private void terminateConnection(Connection connection, AlertMessage alert, DTLSSession session) {
 		if (alert == null) {
-			LOGGER.debug("Terminating connection with peer [{}]", connection.getPeerAddress());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Terminating connection with peer [{}]", connection.getPeerAddress());
 		} else {
 			if (session == null) {
 				throw new IllegalArgumentException("Session must not be null, if alert message is to be sent");
 			}
-			LOGGER.debug("Terminating connection with peer [{}], reason [{}]", connection.getPeerAddress(),
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Terminating connection with peer [{}], reason [{}]", connection.getPeerAddress(),
 					alert.getDescription());
 			send(alert, session);
 		}
@@ -1446,11 +1446,11 @@ public class DTLSConnector implements Connector, RecordLayer {
 					session.setPeer(record.getPeerAddress());
 					context = session.getConnectionWriteContext();
 					session.setPeer(null);
-					LOGGER.warn("Received APPLICATION_DATA from deprecated {}", record.getPeerAddress());
+					org.eclipse.californium.elements.MyLogger.LOG_warn("Received APPLICATION_DATA from deprecated {}", record.getPeerAddress());
 				} else {
 					context = session.getConnectionWriteContext();
 				}
-				LOGGER.debug("Received APPLICATION_DATA for {}", context);
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Received APPLICATION_DATA for {}", context);
 				RawData receivedApplicationMessage = RawData.inbound(message.getData(), context, false, record.getReceiveNanos());
 				channel.receiveData(receivedApplicationMessage);
 			}
@@ -1458,7 +1458,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 			// wait for FINISH
 			ongoingHandshake.addRecordsForDeferredProcessing(record);
 		} else {
-			LOGGER.debug("Discarding APPLICATION_DATA record received from peer [{}]",
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Discarding APPLICATION_DATA record received from peer [{}]",
 					record.getPeerAddress());
 		}
 	}
@@ -1474,7 +1474,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 		AlertMessage alert = (AlertMessage) record.getFragment();
 		Handshaker handshaker = connection.getOngoingHandshake();
 		HandshakeException error = null;
-		LOGGER.trace("Processing {} ALERT from [{}]: {}",
+		org.eclipse.californium.elements.MyLogger.LOG_trace("Processing {} ALERT from [{}]: {}",
 				alert.getLevel(), alert.getPeer(), alert.getDescription());
 		if (AlertDescription.CLOSE_NOTIFY.equals(alert.getDescription())) {
 			// according to section 7.2.1 of the TLS 1.2 spec
@@ -1536,7 +1536,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 		} else {
 			// change cipher spec can only be processed within the
 			// context of an existing handshake -> ignore record
-			LOGGER.debug("Received CHANGE_CIPHER_SPEC record from peer [{}] with no handshake going on", record.getPeerAddress());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Received CHANGE_CIPHER_SPEC record from peer [{}] with no handshake going on", record.getPeerAddress());
 		}
 	}
 
@@ -1547,7 +1547,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 	 * @param connection connection to process the record.
 	 */
 	private void processHandshakeRecord(final Record record, final Connection connection) {
-		LOGGER.debug("Received {} record from peer [{}]", record.getType(), record.getPeerAddress());
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Received {} record from peer [{}]", record.getType(), record.getPeerAddress());
 		try {
 			if (record.isNewClientHello()) {
 				throw new IllegalArgumentException("new CLIENT_HELLO must be processed by processClientHello!");
@@ -1557,7 +1557,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 			case CLIENT_HELLO:
 				// We do not support re-negotiation as recommended in :
 				// https://tools.ietf.org/html/rfc7925#section-17
-				LOGGER.debug("Reject re-negociation from peer {}", record.getPeerAddress());
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Reject re-negociation from peer {}", record.getPeerAddress());
 				DTLSSession session = connection.getEstablishedSession();
 				send(new AlertMessage(AlertLevel.WARNING, AlertDescription.NO_RENEGOTIATION, record.getPeerAddress()),
 						session);
@@ -1570,7 +1570,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 				if (handshaker != null) {
 					handshaker.processMessage(record);
 				} else {
-					LOGGER.debug(
+					org.eclipse.californium.elements.MyLogger.LOG_debug(
 							"Discarding HANDSHAKE message [epoch={}] from peer [{}], no ongoing handshake!",
 							record.getEpoch(), record.getPeerAddress());
 				}
@@ -1593,7 +1593,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 			// TLS 1.2, Section 7.4 advises to ignore HELLO_REQUEST messages
 			// arriving while in an ongoing handshake
 			// (http://tools.ietf.org/html/rfc5246#section-7.4)
-			LOGGER.debug("Ignoring HELLO_REQUEST received from [{}] while already in an ongoing handshake with peer",
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Ignoring HELLO_REQUEST received from [{}] while already in an ongoing handshake with peer",
 					connection.getPeerAddress());
 		} else {
 			// We do not support re-negotiation as recommended in :
@@ -1624,7 +1624,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 			if (LOGGER.isTraceEnabled()) {
 				msg.append(":").append(StringUtil.lineSeparator()).append(record);
 			}
-			LOGGER.debug(msg.toString());
+			org.eclipse.californium.elements.MyLogger.LOG_debug(msg.toString());
 		}
 		try {
 			// CLIENT_HELLO with epoch 0 is not encrypted, so use DTLSConnectionState.NULL 
@@ -1675,21 +1675,21 @@ public class DTLSConnector implements Connector, RecordLayer {
 						});
 					} catch (RejectedExecutionException e) {
 						// dont't terminate connection on shutdown!
-						LOGGER.debug("Execution rejected while processing record [type: {}, peer: {}]",
+						org.eclipse.californium.elements.MyLogger.LOG_debug("Execution rejected while processing record [type: {}, peer: {}]",
 								record.getType(), peerAddress, e);
 					} catch (RuntimeException e) {
-						LOGGER.warn("Unexpected error occurred while processing record [type: {}, peer: {}]",
+						org.eclipse.californium.elements.MyLogger.LOG_warn("Unexpected error occurred while processing record [type: {}, peer: {}]",
 								record.getType(), peerAddress, e);
 						terminateConnection(connections.getConnectionByAddress(), e, AlertLevel.FATAL, AlertDescription.INTERNAL_ERROR);
 					}
 				}
 			}
 		} catch (HandshakeException e) {
-			LOGGER.debug("Processing new CLIENT_HELLO from peer [{}] failed!", record.getPeerAddress(), e);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Processing new CLIENT_HELLO from peer [{}] failed!", record.getPeerAddress(), e);
 		} catch (GeneralSecurityException e) {
-			LOGGER.debug("Processing new CLIENT_HELLO from peer [{}] failed!", record.getPeerAddress(), e);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Processing new CLIENT_HELLO from peer [{}] failed!", record.getPeerAddress(), e);
 		} catch (RuntimeException e) {
-			LOGGER.debug("Processing new CLIENT_HELLO from peer [{}] failed!", record.getPeerAddress(), e);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Processing new CLIENT_HELLO from peer [{}] failed!", record.getPeerAddress(), e);
 		}
 	}
 
@@ -1708,7 +1708,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 		if (connection == null) {
 			throw new NullPointerException("connection by address must not be null!");
 		} else if (!connection.equalsPeerAddress(record.getPeerAddress())) {
-			LOGGER.warn("Drop CLIENT_HELLO, changed address {} => {}!", record.getPeerAddress(),
+			org.eclipse.californium.elements.MyLogger.LOG_warn("Drop CLIENT_HELLO, changed address {} => {}!", record.getPeerAddress(),
 					connection.getPeerAddress());
 			return;
 		}
@@ -1717,12 +1717,12 @@ public class DTLSConnector implements Connector, RecordLayer {
 			if (LOGGER.isTraceEnabled()) {
 				msg.append(":").append(StringUtil.lineSeparator()).append(record);
 			}
-			LOGGER.debug(msg.toString());
+			org.eclipse.californium.elements.MyLogger.LOG_debug(msg.toString());
 		}
 
 		try {
 			if (connection.hasEstablishedSession() || connection.getOngoingHandshake() != null) {
-				LOGGER.debug("Discarding duplicate CLIENT_HELLO message [epoch={}] from peer [{}]!", record.getEpoch(),
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Discarding duplicate CLIENT_HELLO message [epoch={}] from peer [{}]!", record.getEpoch(),
 						record.getPeerAddress());
 			} else if (clientHello.hasSessionId()) {
 				// client wants to resume a cached session
@@ -1784,7 +1784,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 					return true;
 				}
 				if (LOGGER.isDebugEnabled()) {
-					LOGGER.debug("provided cookie must {} match {}. Send verify request to {}",
+					org.eclipse.californium.elements.MyLogger.LOG_debug("provided cookie must {} match {}. Send verify request to {}",
 							StringUtil.byteArray2HexString(providedCookie, StringUtil.NO_SEPARATOR, 6),
 							StringUtil.byteArray2HexString(expectedCookie, StringUtil.NO_SEPARATOR, 6),
 							record.getPeerAddress());
@@ -1794,7 +1794,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 				// threshold 0 always use a verify request
 				if (0 < thresholdHandshakesWithoutVerifiedPeer) {
 					int pending = pendingHandshakesWithoutVerifiedPeer.get();
-					LOGGER.trace("pending fast resumptions [{}], threshold [{}]", pending,
+					org.eclipse.californium.elements.MyLogger.LOG_trace("pending fast resumptions [{}], threshold [{}]", pending,
 							thresholdHandshakesWithoutVerifiedPeer);
 					if (pending < thresholdHandshakesWithoutVerifiedPeer) {
 						// use short resumption (without verify request)
@@ -1851,7 +1851,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 	private void resumeExistingSession(ClientHello clientHello, Record record, final AvailableConnections connections)
 			throws HandshakeException {
 		InetSocketAddress peerAddress = record.getPeerAddress();
-		LOGGER.debug("Client [{}] wants to resume session with ID [{}]", peerAddress, clientHello.getSessionId());
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Client [{}] wants to resume session with ID [{}]", peerAddress, clientHello.getSessionId());
 
 		if (connections == null) {
 			throw new NullPointerException("available connections must not be null!");
@@ -1932,7 +1932,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 			// process message
 			handshaker.processMessage(record);
 		} else {
-			LOGGER.debug(
+			org.eclipse.californium.elements.MyLogger.LOG_debug(
 					"Client [{}] tries to resume non-existing session [ID={}], performing full handshake instead ...",
 					peerAddress, clientHello.getSessionId());
 			startNewHandshake(clientHello, record, connection);
@@ -1942,7 +1942,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 	private void sendHelloVerify(ClientHello clientHello, Record record, byte[] expectedCookie) throws GeneralSecurityException {
 		// send CLIENT_HELLO_VERIFY with cookie in order to prevent
 		// DOS attack as described in DTLS 1.2 spec
-		LOGGER.debug("Verifying client IP address [{}] using HELLO_VERIFY_REQUEST", record.getPeerAddress());
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Verifying client IP address [{}] using HELLO_VERIFY_REQUEST", record.getPeerAddress());
 		if (expectedCookie == null) {
 			expectedCookie = cookieGenerator.generateCookie(clientHello);
 		}
@@ -1971,13 +1971,13 @@ public class DTLSConnector implements Connector, RecordLayer {
 		} else {
 			try {
 				boolean useCid = session.getWriteEpoch() > 0;
-				LOGGER.debug("send ALERT {} for peer {}.", alert, session.getPeer());
+				org.eclipse.californium.elements.MyLogger.LOG_debug("send ALERT {} for peer {}.", alert, session.getPeer());
 				sendRecord(new Record(ContentType.ALERT, session.getWriteEpoch(), session.getSequenceNumber(), alert,
 						session, useCid, TLS12_CID_PADDING));
 			} catch (IOException e) {
 				// already logged ...
 			} catch (GeneralSecurityException e) {
-				LOGGER.debug("Cannot create ALERT message for peer [{}]", session.getPeer(), e);
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Cannot create ALERT message for peer [{}]", session.getPeer(), e);
 			}
 		}
 	}
@@ -1994,7 +1994,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 			health.sendingRecord(false);
 		}
 		if (message.isMulticast()) {
-			LOGGER.warn("DTLSConnector drops {} bytes to multicast {}:{}", message.getSize(), message.getAddress(), message.getPort());
+			org.eclipse.californium.elements.MyLogger.LOG_warn("DTLSConnector drops {} bytes to multicast {}:{}", message.getSize(), message.getAddress(), message.getPort());
 			message.onError(new MulticastNotSupportedException("DTLS doesn't support multicast!"));
 			if (health != null) {
 				health.sendingRecord(true);
@@ -2063,7 +2063,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 							}
 						} catch (Exception e) {
 							if (running.get()) {
-								LOGGER.debug("Exception thrown by executor thread [{}]",
+								org.eclipse.californium.elements.MyLogger.LOG_debug("Exception thrown by executor thread [{}]",
 										Thread.currentThread().getName(), e);
 							}
 							if (health != null) {
@@ -2076,7 +2076,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 					}
 				});
 			} catch (RejectedExecutionException e) {
-				LOGGER.debug("Execution rejected while sending application record [peer: {}]",
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Execution rejected while sending application record [peer: {}]",
 						message.getInetSocketAddress(), e);
 				message.onError(new InterruptedIOException("Connector is not running."));
 				if (health != null) {
@@ -2085,7 +2085,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 			}
 		} else {
 			pendingOutboundMessagesCountdown.incrementAndGet();
-			LOGGER.warn("Outbound message overflow! Dropping outbound message to peer [{}]",
+			org.eclipse.californium.elements.MyLogger.LOG_warn("Outbound message overflow! Dropping outbound message to peer [{}]",
 					message.getInetSocketAddress());
 			message.onError(new IllegalStateException("Outbound message overflow!"));
 			if (health != null) {
@@ -2112,7 +2112,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 
 		if (connection.getPeerAddress() == null) {
 			long delay = TimeUnit.NANOSECONDS.toMillis(ClockUtil.nanoRealtime() - nanos);
-			LOGGER.warn("Drop record with {} bytes, connection lost address {}! (shift {}ms)", message.getSize(),
+			org.eclipse.californium.elements.MyLogger.LOG_warn("Drop record with {} bytes, connection lost address {}! (shift {}ms)", message.getSize(),
 					message.getInetSocketAddress(), delay);
 			message.onError(new EndpointUnconnectedException("connection not longer assigned to address!"));
 			if (health != null) {
@@ -2120,7 +2120,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 			}
 			return;
 		}
-		LOGGER.debug("Sending application layer message to [{}]", message.getEndpointContext());
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Sending application layer message to [{}]", message.getEndpointContext());
 
 		Handshaker handshaker = connection.getOngoingHandshake();
 		if (handshaker != null) {
@@ -2281,7 +2281,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 
 	private void sendMessage(final RawData message, final Connection connection, final DTLSSession session) {
 		try {
-			LOGGER.trace("send {}-{} using {}-{}", connection.getConnectionId(), connection.getPeerAddress(),
+			org.eclipse.californium.elements.MyLogger.LOG_trace("send {}-{} using {}-{}", connection.getConnectionId(), connection.getPeerAddress(),
 					session.getSessionIdentifier(), session.getPeer());
 			final EndpointContext ctx = session.getConnectionWriteContext();
 			if (!checkOutboundEndpointContext(message, ctx)) {
@@ -2301,7 +2301,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 		} catch (IOException e) {
 			message.onError(e);
 		} catch (GeneralSecurityException e) {
-			LOGGER.debug("Cannot send APPLICATION record to peer [{}]", message.getInetSocketAddress(), e);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Cannot send APPLICATION record to peer [{}]", message.getInetSocketAddress(), e);
 			message.onError(e);
 		}
 	}
@@ -2321,7 +2321,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 		final EndpointContextMatcher endpointMatcher = getEndpointContextMatcher();
 		if (null != endpointMatcher && !endpointMatcher.isToBeSent(message.getEndpointContext(), connectionContext)) {
 			if (LOGGER.isWarnEnabled()) {
-				LOGGER.warn("DTLSConnector ({}) drops {} bytes, {} != {}", this, message.getSize(),
+				org.eclipse.californium.elements.MyLogger.LOG_warn("DTLSConnector ({}) drops {} bytes, {} != {}", this, message.getSize(),
 						endpointMatcher.toRelevantState(message.getEndpointContext()),
 						endpointMatcher.toRelevantState(connectionContext));
 			}
@@ -2371,12 +2371,12 @@ public class DTLSConnector implements Connector, RecordLayer {
 		for (Record record : flight.getMessages()) {
 			byte[] recordBytes = record.toByteArray();
 			if (recordBytes.length > maxDatagramSize) {
-				LOGGER.info("{} record of {} bytes for peer [{}] exceeds max. datagram size [{}], discarding...",
+				org.eclipse.californium.elements.MyLogger.LOG_info("{} record of {} bytes for peer [{}] exceeds max. datagram size [{}], discarding...",
 						record.getType(), recordBytes.length, record.getPeerAddress(), maxDatagramSize);
 				// TODO: inform application layer, e.g. using error handler
 				continue;
 			}
-			LOGGER.trace("Sending record of {} bytes to peer [{}]:\n{}", recordBytes.length, flight.getPeerAddress(),
+			org.eclipse.californium.elements.MyLogger.LOG_trace("Sending record of {} bytes to peer [{}]:\n{}", recordBytes.length, flight.getPeerAddress(),
 					record);
 
 			if (writer.size() + recordBytes.length > maxDatagramSize) {
@@ -2403,7 +2403,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 		}
 
 		// send it over the UDP socket
-		LOGGER.debug("Sending flight of {} message(s) to peer [{}] using {} datagram(s) of max. {} bytes",
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Sending flight of {} message(s) to peer [{}] using {} datagram(s) of max. {} bytes",
 				flight.getMessages().size(), flight.getPeerAddress(), datagrams.size(), maxDatagramSize);
 		for (DatagramPacket datagramPacket : datagrams) {
 			if (health != null) {
@@ -2427,7 +2427,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 				return;
 			} catch (IOException e) {
 				if (!socket.isClosed()) {
-					LOGGER.warn("Could not send record", e);
+					org.eclipse.californium.elements.MyLogger.LOG_warn("Could not send record", e);
 					throw e;
 				}
 			}
@@ -2436,7 +2436,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 		if (address == null) {
 			address = config.getAddress();
 		}
-		LOGGER.debug("Socket [{}] is closed, discarding packet ...", address);
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Socket [{}] is closed, discarding packet ...", address);
 		throw new IOException("Socket closed.");
 	}
 
@@ -2475,7 +2475,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 							// handshake times out without reaching
 							// the max retransmissions.
 							flight.incrementTries();
-							LOGGER.debug("schedule handshake timeout {}ms after flight {}", flight.getTimeout(),
+							org.eclipse.californium.elements.MyLogger.LOG_debug("schedule handshake timeout {}ms after flight {}", flight.getTimeout(),
 									flight.getFlightNumber());
 							ScheduledFuture<?> f = timer.schedule(new TimeoutPeerTask(connection, flight), flight.getTimeout(),
 									TimeUnit.MILLISECONDS);
@@ -2483,7 +2483,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 							return;
 						}
 
-						LOGGER.debug("Re-transmitting flight for [{}], [{}] retransmissions left",
+						org.eclipse.californium.elements.MyLogger.LOG_debug("Re-transmitting flight for [{}], [{}] retransmissions left",
 								flight.getPeerAddress(), max - tries - 1);
 						try {
 							flight.incrementTries();
@@ -2499,17 +2499,17 @@ public class DTLSConnector implements Connector, RecordLayer {
 							// stop retransmission on IOExceptions
 							cause = e;
 							message = " " + e.getMessage();
-							LOGGER.info("Cannot retransmit flight to peer [{}]", flight.getPeerAddress(), e);
+							org.eclipse.californium.elements.MyLogger.LOG_info("Cannot retransmit flight to peer [{}]", flight.getPeerAddress(), e);
 						} catch (GeneralSecurityException e) {
-							LOGGER.info("Cannot retransmit flight to peer [{}]", flight.getPeerAddress(), e);
+							org.eclipse.californium.elements.MyLogger.LOG_info("Cannot retransmit flight to peer [{}]", flight.getPeerAddress(), e);
 							cause = e;
 							message = " " + e.getMessage();
 						}
 					} else if (tries > max) {
-						LOGGER.debug("Flight for [{}] has reached timeout, discarding ...", flight.getPeerAddress());
+						org.eclipse.californium.elements.MyLogger.LOG_debug("Flight for [{}] has reached timeout, discarding ...", flight.getPeerAddress());
 						message = " Stopped by timeout!";
 					} else {
-						LOGGER.debug(
+						org.eclipse.californium.elements.MyLogger.LOG_debug(
 								"Flight for [{}] has reached maximum no. [{}] of retransmissions, discarding ...",
 								flight.getPeerAddress(), max);
 						message = " Stopped by timeout after " + max + " retransmissions!";
@@ -2529,9 +2529,9 @@ public class DTLSConnector implements Connector, RecordLayer {
 			// schedule retransmission task
 			ScheduledFuture<?> f = timer.schedule(new TimeoutPeerTask(connection, flight), flight.getTimeout(), TimeUnit.MILLISECONDS);
 			flight.setTimeoutTask(f);
-			LOGGER.trace("handshake flight to peer {}, retransmission {} ms.", connection.getPeerAddress(), flight.getTimeout());
+			org.eclipse.californium.elements.MyLogger.LOG_trace("handshake flight to peer {}, retransmission {} ms.", connection.getPeerAddress(), flight.getTimeout());
 		} else {
-			LOGGER.trace("handshake flight to peer {}, no retransmission!", connection.getPeerAddress());
+			org.eclipse.californium.elements.MyLogger.LOG_trace("handshake flight to peer {}, no retransmission!", connection.getPeerAddress());
 		}
 	}
 
@@ -2676,7 +2676,7 @@ public class DTLSConnector implements Connector, RecordLayer {
 			try {
 				serialExecutor.execute(task);
 			} catch (RejectedExecutionException e) {
-				LOGGER.debug("Execution rejected while execute task of peer: {}", connection.getPeerAddress(), e);
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Execution rejected while execute task of peer: {}", connection.getPeerAddress(), e);
 				if (force) {
 					task.run();
 				}
@@ -2715,26 +2715,26 @@ public class DTLSConnector implements Connector, RecordLayer {
 		@Override
 		public void run() {
 			try {
-				LOGGER.info("Starting worker thread [{}]", getName());
+				org.eclipse.californium.elements.MyLogger.LOG_info("Starting worker thread [{}]", getName());
 				while (running.get()) {
 					try {
 						doWork();
 					} catch (InterruptedIOException e) {
 						if (running.get()) {
-							LOGGER.info("Worker thread [{}] has been interrupted", getName());
+							org.eclipse.californium.elements.MyLogger.LOG_info("Worker thread [{}] has been interrupted", getName());
 						}
 					} catch (InterruptedException e) {
 						if (running.get()) {
-							LOGGER.info("Worker thread [{}] has been interrupted", getName());
+							org.eclipse.californium.elements.MyLogger.LOG_info("Worker thread [{}] has been interrupted", getName());
 						}
 					} catch (Exception e) {
 						if (running.get()) {
-							LOGGER.debug("Exception thrown by worker thread [{}]", getName(), e);
+							org.eclipse.californium.elements.MyLogger.LOG_debug("Exception thrown by worker thread [{}]", getName(), e);
 						}
 					}
 				}
 			} finally {
-				LOGGER.info("Worker thread [{}] has terminated", getName());
+				org.eclipse.californium.elements.MyLogger.LOG_info("Worker thread [{}] has terminated", getName());
 			}
 		}
 
@@ -2940,11 +2940,11 @@ public class DTLSConnector implements Connector, RecordLayer {
 		byte[] bytes = record.getFragmentBytes();
 		if (LOGGER.isTraceEnabled()) {
 			String hexString = StringUtil.byteArray2HexString(bytes, StringUtil.NO_SEPARATOR, 64);
-			LOGGER.trace("Discarding {} record (epoch {}, payload: {}) from peer [{}]: ", record.getType(),
+			org.eclipse.californium.elements.MyLogger.LOG_trace("Discarding {} record (epoch {}, payload: {}) from peer [{}]: ", record.getType(),
 					record.getEpoch(), hexString, record.getPeerAddress(), cause);
 		} else if (LOGGER.isDebugEnabled()) {
 			String hexString = StringUtil.byteArray2HexString(bytes, StringUtil.NO_SEPARATOR, 16);
-			LOGGER.debug("Discarding {} record (epoch {}, payload: {}) from peer [{}]: {}", record.getType(),
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Discarding {} record (epoch {}, payload: {}) from peer [{}]: {}", record.getType(),
 					record.getEpoch(), hexString, record.getPeerAddress(), cause.getMessage());
 		}
 	}

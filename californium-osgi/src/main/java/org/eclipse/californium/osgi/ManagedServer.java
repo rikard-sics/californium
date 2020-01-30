@@ -142,7 +142,7 @@ public class ManagedServer implements ManagedService, ServiceTrackerCustomizer<R
 	public void updated(Dictionary<String, ?> properties)
 			throws ConfigurationException {
 
-		LOGGER.debug("Updating configuration of managed server instance");
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Updating configuration of managed server instance");
 
 		if (isRunning()) {
 			stop();
@@ -165,10 +165,10 @@ public class ManagedServer implements ManagedService, ServiceTrackerCustomizer<R
 			Endpoint secureEndpoint = endpointFactory.getSecureEndpoint(
 					networkConfig, new InetSocketAddress((InetAddress) null, securePort));
 			if (secureEndpoint != null) {
-				LOGGER.debug("Adding secure endpoint on address {}", secureEndpoint.getAddress());
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Adding secure endpoint on address {}", secureEndpoint.getAddress());
 				managedServer.addEndpoint(secureEndpoint);
 			} else {
-				LOGGER.warn("Secure endpoint has been configured in server properties but EndpointFactory does not support creation of secure Endpoints");
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Secure endpoint has been configured in server properties but EndpointFactory does not support creation of secure Endpoints");
 			}
 
 		}
@@ -193,7 +193,7 @@ public class ManagedServer implements ManagedService, ServiceTrackerCustomizer<R
 	 */
 	public void stop() {
 		if (managedServer != null) {
-			LOGGER.debug("Destroying managed server instance");
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Destroying managed server instance");
 			if (resourceTracker != null) {
 				// stop tracking Resources
 				resourceTracker.close();
@@ -216,7 +216,7 @@ public class ManagedServer implements ManagedService, ServiceTrackerCustomizer<R
 	@Override
 	public Resource addingService(ServiceReference<Resource> reference) {
 		Resource resource = context.getService(reference);
-		LOGGER.debug("Adding resource [{}]", resource.getName());
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Adding resource [{}]", resource.getName());
 		if (resource != null) {
 			managedServer.add(resource);
 		}
@@ -235,7 +235,7 @@ public class ManagedServer implements ManagedService, ServiceTrackerCustomizer<R
 	@Override
 	public void removedService(ServiceReference<Resource> reference,
 			Resource service) {
-		LOGGER.debug("Removing resource [{}]", service.getName());
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Removing resource [{}]", service.getName());
 		managedServer.remove(service);
 		context.ungetService(reference);
 	}

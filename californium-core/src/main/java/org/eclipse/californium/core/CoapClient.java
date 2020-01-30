@@ -277,7 +277,7 @@ public class CoapClient {
 		executor.execute(new Runnable() {
 
 			public void run() {
-				LOGGER.info("using a SingleThreadExecutor for the CoapClient");
+				org.eclipse.californium.elements.MyLogger.LOG_info("using a SingleThreadExecutor for the CoapClient");
 			};
 		});
 		return this;
@@ -354,9 +354,9 @@ public class CoapClient {
 		if (!endpoint.isStarted()) {
 			try {
 				endpoint.start();
-				LOGGER.info("started set client endpoint {}", endpoint.getAddress());
+				org.eclipse.californium.elements.MyLogger.LOG_info("started set client endpoint {}", endpoint.getAddress());
 			} catch (IOException e) {
-				LOGGER.error("could not set and start client endpoint", e);
+				org.eclipse.californium.elements.MyLogger.LOG_error("could not set and start client endpoint", e);
 			}
 
 		}
@@ -1293,7 +1293,7 @@ public class CoapClient {
 				executor.execute(job);
 			} catch (RejectedExecutionException ex) {
 				if (!executor.isShutdown()) {
-					LOGGER.warn("failed to execute job!");
+					org.eclipse.californium.elements.MyLogger.LOG_warn("failed to execute job!");
 				}
 			}
 		}
@@ -1445,7 +1445,7 @@ public class CoapClient {
 					try {
 						deliver(response);
 					} catch (Throwable t) {
-						LOGGER.warn("exception while handling response", t);
+						org.eclipse.californium.elements.MyLogger.LOG_warn("exception while handling response", t);
 					}
 				}
 			});
@@ -1475,7 +1475,7 @@ public class CoapClient {
 					try {
 						handler.onError();
 					} catch (Throwable t) {
-						LOGGER.warn("exception while handling failure", t);
+						org.eclipse.californium.elements.MyLogger.LOG_warn("exception while handling failure", t);
 					}
 				}
 			});
@@ -1516,7 +1516,7 @@ public class CoapClient {
 				if (relation.onResponse(response)) {
 					handler.onLoad(response);
 				} else {
-					LOGGER.debug("dropping old notification: {}", response.advanced());
+					org.eclipse.californium.elements.MyLogger.LOG_debug("dropping old notification: {}", response.advanced());
 					return;
 				}
 			}

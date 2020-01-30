@@ -253,7 +253,7 @@ public final class DatagramWriter {
 			byteStream.close();
 		} catch (IOException e) {
 			// Using ByteArrayOutputStream should not cause this
-			LOGGER.warn("{}.close() failed!", byteStream.getClass(), e);
+			org.eclipse.californium.elements.MyLogger.LOG_warn("{}.close() failed!", byteStream.getClass(), e);
 		}
 	}
 

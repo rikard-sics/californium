@@ -120,11 +120,11 @@ public class CertPathUtil {
 	public static boolean canBeUsedToVerifySignature(X509Certificate cert) {
 
 		if (cert.getBasicConstraints() < 0) {
-			LOGGER.debug("certificate: {}, not for CA!", cert.getSubjectDN());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("certificate: {}, not for CA!", cert.getSubjectDN());
 			return false;
 		}
 		if ((cert.getKeyUsage() != null && !cert.getKeyUsage()[KEY_USAGE_CERTIFICATE_SIGNING])) {
-			LOGGER.debug("certificate: {}, not for certificate signing!", cert.getSubjectDN());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("certificate: {}, not for certificate signing!", cert.getSubjectDN());
 			return false;
 		}
 		return true;
@@ -150,30 +150,30 @@ public class CertPathUtil {
 		// (For more details see:
 		// https://github.com/eclipse/californium/issues/748)
 		if ((cert.getKeyUsage() != null && !cert.getKeyUsage()[KEY_USAGE_SIGNATURE])) {
-			LOGGER.debug("certificate: {}, not for signing!", cert.getSubjectDN());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("certificate: {}, not for signing!", cert.getSubjectDN());
 			return false;
 		}
 		try {
 			List<String> list = cert.getExtendedKeyUsage();
 			if (list != null && !list.isEmpty()) {
-				LOGGER.trace("certificate: {}", cert.getSubjectDN());
+				org.eclipse.californium.elements.MyLogger.LOG_trace("certificate: {}", cert.getSubjectDN());
 				final String authentication = client ? CLIENT_AUTHENTICATION : SERVER_AUTHENTICATION;
 				boolean foundUsage = false;
 				for (String extension : list) {
-					LOGGER.trace("   extkeyusage {}", extension);
+					org.eclipse.californium.elements.MyLogger.LOG_trace("   extkeyusage {}", extension);
 					if (authentication.equals(extension)) {
 						foundUsage = true;
 					}
 				}
 				if (!foundUsage) {
-					LOGGER.debug("certificate: {}, not for {}!", cert.getSubjectDN(), client ? "client" : "server");
+					org.eclipse.californium.elements.MyLogger.LOG_debug("certificate: {}, not for {}!", cert.getSubjectDN(), client ? "client" : "server");
 					return false;
 				}
 			} else {
-				LOGGER.debug("certificate: {}, no extkeyusage!", cert.getSubjectDN());
+				org.eclipse.californium.elements.MyLogger.LOG_debug("certificate: {}, no extkeyusage!", cert.getSubjectDN());
 			}
 		} catch (CertificateParsingException e) {
-			LOGGER.warn("x509 certificate:", e);
+			org.eclipse.californium.elements.MyLogger.LOG_warn("x509 certificate:", e);
 		}
 		return true;
 	}
@@ -217,13 +217,13 @@ public class CertPathUtil {
 				X500Principal issuer = null;
 				for (int index = 0; index <= last; ++index) {
 					X509Certificate cert = certificateChain.get(index);
-					LOGGER.debug("Current Subject DN: {}", cert.getSubjectX500Principal().getName());
+					org.eclipse.californium.elements.MyLogger.LOG_debug("Current Subject DN: {}", cert.getSubjectX500Principal().getName());
 					if (issuer != null && !issuer.equals(cert.getSubjectX500Principal())) {
-						LOGGER.debug("Actual Issuer DN: {}", cert.getSubjectX500Principal().getName());
+						org.eclipse.californium.elements.MyLogger.LOG_debug("Actual Issuer DN: {}", cert.getSubjectX500Principal().getName());
 						throw new IllegalArgumentException("Given certificates do not form a chain");
 					}
 					issuer = cert.getIssuerX500Principal();
-					LOGGER.debug("Expected Issuer DN: {}", issuer.getName());
+					org.eclipse.californium.elements.MyLogger.LOG_debug("Expected Issuer DN: {}", issuer.getName());
 					if (issuer.equals(cert.getSubjectX500Principal()) && index != last) {
 						// a self-signed certificate, which is not the root
 						throw new IllegalArgumentException(
@@ -371,12 +371,12 @@ public class CertPathUtil {
 		}
 		if (LOGGER.isDebugEnabled()) {
 			List<X509Certificate> validateChain = toX509CertificatesList(verifyCertPath.getCertificates());
-			LOGGER.debug("verify: certificate path {} (orig. {})", validateChain.size(), list.size());
+			org.eclipse.californium.elements.MyLogger.LOG_debug("verify: certificate path {} (orig. {})", validateChain.size(), list.size());
 			for (X509Certificate certificate : validateChain) {
-				LOGGER.debug("   cert: {}", certificate.getSubjectX500Principal());
+				org.eclipse.californium.elements.MyLogger.LOG_debug("   cert: {}", certificate.getSubjectX500Principal());
 			}
 			for (TrustAnchor anchor : trustAnchors) {
-				LOGGER.debug("   trust: {}", anchor.getTrustedCert().getIssuerX500Principal());
+				org.eclipse.californium.elements.MyLogger.LOG_debug("   trust: {}", anchor.getTrustedCert().getIssuerX500Principal());
 			}
 		}
 		CertPathValidator validator = CertPathValidator.getInstance("PKIX");

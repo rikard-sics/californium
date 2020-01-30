@@ -75,7 +75,7 @@ public class CoapThreadsRule extends ThreadsRule {
 	protected void shutdown() {
 		for (Object resource : cleanup) {
 			try {
-				LOGGER.warn("shutdown");
+				org.eclipse.californium.elements.MyLogger.LOG_warn("shutdown");
 				if (resource instanceof Endpoint) {
 					((Endpoint) resource).destroy();
 				} else if (resource instanceof CoapClient) {
@@ -88,7 +88,7 @@ public class CoapThreadsRule extends ThreadsRule {
 					((LockstepEndpoint) resource).destroy();
 				}
 			} catch (RuntimeException ex) {
-				LOGGER.warn("shutdown failed!", ex);
+				org.eclipse.californium.elements.MyLogger.LOG_warn("shutdown failed!", ex);
 			}
 		}
 		EndpointManager.reset();

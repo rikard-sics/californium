@@ -152,7 +152,7 @@ public class ClientInitializer {
 		Arguments arguments = new Arguments(uri, id, secret, rpk, x509, ecdhe, ping, verbose, json, cbor, null, null, leftArgs);
 		CoapEndpoint coapEndpoint = createEndpoint(config, arguments, null, ephemeralPort);
 		coapEndpoint.start();
-		LOGGER.info("endpoint started at {}", coapEndpoint.getAddress());
+		org.eclipse.californium.elements.MyLogger.LOG_info("endpoint started at {}", coapEndpoint.getAddress());
 		EndpointManager.getEndpointManager().setDefaultEndpoint(coapEndpoint);
 
 		return arguments;
@@ -293,13 +293,13 @@ public class ClientInitializer {
 		public PlugPskStore(String id, byte[] secret) {
 			this.identity = id;
 			this.secret = secret == null ? null : SecretUtil.create(secret, "PSK");
-			LOGGER.trace("DTLS-PSK-Identity: {}", identity);
+			org.eclipse.californium.elements.MyLogger.LOG_trace("DTLS-PSK-Identity: {}", identity);
 		}
 
 		public PlugPskStore(String id) {
 			identity = PSK_IDENTITY_PREFIX + id;
 			secret = null;
-			LOGGER.trace("DTLS-PSK-Identity: {} ({} random bytes)", identity, (id.length() / 2));
+			org.eclipse.californium.elements.MyLogger.LOG_trace("DTLS-PSK-Identity: {} ({} random bytes)", identity, (id.length() / 2));
 		}
 
 		@Override

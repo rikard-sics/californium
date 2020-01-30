@@ -192,32 +192,32 @@ public abstract class AbstractLayer implements Layer {
 
 		@Override
 		public void sendRequest(final Exchange exchange, final Request request) {
-			LOGGER.error("No lower layer set for sending request [{}]", request);
+			org.eclipse.californium.elements.MyLogger.LOG_error("No lower layer set for sending request [{}]", request);
 		}
 
 		@Override
 		public void sendResponse(final Exchange exchange, final Response response) {
-			LOGGER.error("No lower layer set for sending response [{}]", response);
+			org.eclipse.californium.elements.MyLogger.LOG_error("No lower layer set for sending response [{}]", response);
 		}
 
 		@Override
 		public void sendEmptyMessage(Exchange exchange, EmptyMessage emptyMessage) {
-			LOGGER.error("No lower layer set for sending empty message [{}]", emptyMessage);
+			org.eclipse.californium.elements.MyLogger.LOG_error("No lower layer set for sending empty message [{}]", emptyMessage);
 		}
 
 		@Override
 		public void receiveRequest(final Exchange exchange, final Request request) {
-			LOGGER.error("No upper layer set for receiving request [{}]", request);
+			org.eclipse.californium.elements.MyLogger.LOG_error("No upper layer set for receiving request [{}]", request);
 		}
 
 		@Override
 		public void receiveResponse(final Exchange exchange, final Response response) {
-			LOGGER.error("No lower layer set for receiving response [{}]", response);
+			org.eclipse.californium.elements.MyLogger.LOG_error("No lower layer set for receiving response [{}]", response);
 		}
 
 		@Override
 		public void receiveEmptyMessage(final Exchange exchange, final EmptyMessage emptyMessage) {
-			LOGGER.error("No lower layer set for receiving empty message [{}]", emptyMessage);
+			org.eclipse.californium.elements.MyLogger.LOG_error("No lower layer set for receiving empty message [{}]", emptyMessage);
 		}
 
 		@Override

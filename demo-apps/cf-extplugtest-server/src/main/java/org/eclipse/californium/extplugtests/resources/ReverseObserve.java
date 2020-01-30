@@ -151,8 +151,8 @@ public class ReverseObserve extends CoapResource implements NotificationListener
 				@Override
 				public void run() {
 					if (overallNotifies.get() > 0) {
-						HEALTH_LOGGER.debug("{} observes, {} by peers", observesByToken.size(), observesByPeer.size());
-						HEALTH_LOGGER.debug("{} notifies overall, {} observes overall", overallNotifies.get(),
+						org.eclipse.californium.elements.MyLogger.LOG_debug("{} observes, {} by peers", observesByToken.size(), observesByPeer.size());
+						org.eclipse.californium.elements.MyLogger.LOG_debug("{} notifies overall, {} observes overall", overallNotifies.get(),
 								overallObserves.get());
 					}
 				}
@@ -189,7 +189,7 @@ public class ReverseObserve extends CoapResource implements NotificationListener
 			ObservationRequest pendingObservation = observesByPeer.putIfAbsent(key,
 					new ObservationRequest(exchange, Token.EMPTY));
 			if (pendingObservation != null && pendingObservation.getObservationToken().equals(Token.EMPTY)) {
-				LOGGER.warn("Too many requests from {} (pending {}, current {})", key,
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Too many requests from {} (pending {}, current {})", key,
 						pendingObservation.getIncomingExchange().getRequest().getMID(), request.getMID());
 				exchange.respond(SERVICE_UNAVAILABLE);
 			} else {
@@ -210,11 +210,11 @@ public class ReverseObserve extends CoapResource implements NotificationListener
 					overallObserves.incrementAndGet();
 				} else {
 					if (pendingObservation != null) {
-						LOGGER.info("Requested cancel observation {}", pendingObservation.getObservationToken());
+						org.eclipse.californium.elements.MyLogger.LOG_info("Requested cancel observation {}", pendingObservation.getObservationToken());
 						endpoint.cancelObservation(pendingObservation.getObservationToken());
 						exchange.respond(CHANGED);
 					} else {
-						LOGGER.info("Requested cancel not established observation for {}", key);
+						org.eclipse.californium.elements.MyLogger.LOG_info("Requested cancel not established observation for {}", key);
 						exchange.respond(CHANGED);
 					}
 				}
@@ -235,9 +235,9 @@ public class ReverseObserve extends CoapResource implements NotificationListener
 		} else {
 			String peer = peersByToken.get(token);
 			if (peer != null) {
-				LOGGER.info("Notification {} from old observe: {}", response, peer);
+				org.eclipse.californium.elements.MyLogger.LOG_info("Notification {} from old observe: {}", response, peer);
 			} else {
-				LOGGER.info("Notification {} from unkown observe", response);
+				org.eclipse.californium.elements.MyLogger.LOG_info("Notification {} from unkown observe", response);
 			}
 		}
 	}
@@ -385,7 +385,7 @@ public class ReverseObserve extends CoapResource implements NotificationListener
 		@Override
 		public void onResponse(final Response response) {
 			if (response.isError()) {
-				LOGGER.info("Observation response error: {}", response.getCode());
+				org.eclipse.californium.elements.MyLogger.LOG_info("Observation response error: {}", response.getCode());
 				remove(response.getCode());
 			} else if (response.isNotification()) {
 				if (registered.compareAndSet(false, true)) {
@@ -396,7 +396,7 @@ public class ReverseObserve extends CoapResource implements NotificationListener
 							new ObservationRequest(incomingExchange, token));
 					if (previous != null && !previous.getObservationToken().equals(Token.EMPTY)
 							&& !token.equals(previous.getObservationToken())) {
-						LOGGER.info("Cancel previous observation {}", token);
+						org.eclipse.californium.elements.MyLogger.LOG_info("Cancel previous observation {}", token);
 						endpoint.cancelObservation(previous.getObservationToken());
 					}
 					peersByToken.put(token, key);
@@ -404,7 +404,7 @@ public class ReverseObserve extends CoapResource implements NotificationListener
 					incomingExchange.respond(CONTENT, token.getBytes(), APPLICATION_OCTET_STREAM);
 				}
 			} else {
-				LOGGER.info("Observation {} not established!", outgoingObserveRequest.getToken());
+				org.eclipse.californium.elements.MyLogger.LOG_info("Observation {} not established!", outgoingObserveRequest.getToken());
 				remove(NOT_ACCEPTABLE);
 			}
 		}
@@ -412,7 +412,7 @@ public class ReverseObserve extends CoapResource implements NotificationListener
 		@Override
 		public void onSendError(Throwable error) {
 			if (error instanceof ConnectorException) {
-				LOGGER.warn("Observe request failed! {}", outgoingObserveRequest.getToken());
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Observe request failed! {}", outgoingObserveRequest.getToken());
 				failureLogged = true;
 			}
 			super.onSendError(error);
@@ -421,7 +421,7 @@ public class ReverseObserve extends CoapResource implements NotificationListener
 		@Override
 		protected void failed() {
 			if (!failureLogged) {
-				LOGGER.debug("Observe request failed! {}", outgoingObserveRequest.getToken());
+				org.eclipse.californium.elements.MyLogger.LOG_debug("Observe request failed! {}", outgoingObserveRequest.getToken());
 			}
 			remove(INTERNAL_SERVER_ERROR);
 		}
@@ -429,7 +429,7 @@ public class ReverseObserve extends CoapResource implements NotificationListener
 		private void remove(ResponseCode code) {
 			String key = incomingExchange.getPeerKey();
 			observesByPeer.remove(key);
-			LOGGER.info("Removed observation for {}", key);
+			org.eclipse.californium.elements.MyLogger.LOG_info("Removed observation for {}", key);
 			incomingExchange.respond(code);
 		}
 	}
@@ -496,11 +496,11 @@ public class ReverseObserve extends CoapResource implements NotificationListener
 
 		private void reregister() {
 			String key = incomingExchange.getPeerKey();
-			LOGGER.info("Cancel observation {} for {}", observationToken, key);
+			org.eclipse.californium.elements.MyLogger.LOG_info("Cancel observation {} for {}", observationToken, key);
 			incomingExchange.getEndpoint().cancelObservation(observationToken);
 			observesByPeer.remove(key);
 			observesByToken.remove(observationToken, this);
-			LOGGER.info("Restart observation for {}", key);
+			org.eclipse.californium.elements.MyLogger.LOG_info("Restart observation for {}", key);
 			processPOST(incomingExchange);
 		}
 	}

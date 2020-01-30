@@ -70,7 +70,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		if (rid != null) {
 			return ridMap.get(new ByteId(rid));
 		} else {
-			LOGGER.error(ErrorDescriptions.BYTE_ARRAY_NULL);
+			org.eclipse.californium.elements.MyLogger.LOG_error(ErrorDescriptions.BYTE_ARRAY_NULL);
 			throw new NullPointerException(ErrorDescriptions.BYTE_ARRAY_NULL);
 		}
 	}
@@ -80,7 +80,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		if (token != null) {
 			return tokenMap.get(token);
 		} else {
-			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
+			org.eclipse.californium.elements.MyLogger.LOG_error(ErrorDescriptions.TOKEN_NULL);
 			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
 		}
 	}
@@ -90,7 +90,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		if (uri != null) {
 			return uriMap.get(normalizeServerUri(uri));
 		} else {
-			LOGGER.error(ErrorDescriptions.STRING_NULL);
+			org.eclipse.californium.elements.MyLogger.LOG_error(ErrorDescriptions.STRING_NULL);
 			throw new NullPointerException(ErrorDescriptions.STRING_NULL);
 		}
 	}
@@ -121,7 +121,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		if (ctx != null) {
 			ridMap.put(new ByteId(ctx.getRecipientId()), ctx);
 		} else {
-			LOGGER.error(ErrorDescriptions.CONTEXT_NULL);
+			org.eclipse.californium.elements.MyLogger.LOG_error(ErrorDescriptions.CONTEXT_NULL);
 			throw new NullPointerException(ErrorDescriptions.CONTEXT_NULL);
 		}
 	}
@@ -131,7 +131,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		if (token != null) {
 			return seqMap.get(token);
 		} else {
-			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
+			org.eclipse.californium.elements.MyLogger.LOG_error(ErrorDescriptions.TOKEN_NULL);
 			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
 		}
 	}
@@ -145,7 +145,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
 		}
 		if (tokenExist(token)) {
-			LOGGER.info("Token exists, but this could be a refresh if not there is a problem");
+			org.eclipse.californium.elements.MyLogger.LOG_info("Token exists, but this could be a refresh if not there is a problem");
 		} else {
 			allTokens.add(token);
 		}
@@ -157,7 +157,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		if (token != null) {
 			return allTokens.contains(token);
 		} else {
-			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
+			org.eclipse.californium.elements.MyLogger.LOG_error(ErrorDescriptions.TOKEN_NULL);
 			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
 		}
 	}
@@ -168,7 +168,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 			seqMap.remove(token);
 			removeTokenIf(token);
 		} else {
-			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
+			org.eclipse.californium.elements.MyLogger.LOG_error(ErrorDescriptions.TOKEN_NULL);
 			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
 		}
 	}
@@ -225,7 +225,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 				}
 
 			} catch (URISyntaxException e2) {
-				LOGGER.error("Error in the request URI: " + uri + " message: " + e.getMessage());
+				org.eclipse.californium.elements.MyLogger.LOG_error("Error in the request URI: " + uri + " message: " + e.getMessage());
 				throw new OSException(e.getMessage());
 			}
 		}
@@ -236,7 +236,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		try {
 			ipv6Addr = InetAddress.getByName(normalized);
 		} catch (UnknownHostException e) {
-			LOGGER.error("Error finding host of request URI: " + uri + " message: " + e.getMessage());
+			org.eclipse.californium.elements.MyLogger.LOG_error("Error finding host of request URI: " + uri + " message: " + e.getMessage());
 		}
 		if (ipv6Addr instanceof Inet6Address) {
 			normalized = ipv6Addr.getHostAddress();

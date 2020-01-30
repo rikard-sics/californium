@@ -124,7 +124,7 @@ public class ProxyHttpServer {
 
 	public void handleRequest(final Request request, final HttpRequestContext context) {
 
-		LOGGER.info("ProxyEndpoint handles request {}", request);
+		org.eclipse.californium.elements.MyLogger.LOG_info("ProxyEndpoint handles request {}", request);
 
 		Exchange exchange = new Exchange(request, Origin.REMOTE, null) {
 
@@ -147,7 +147,7 @@ public class ProxyHttpServer {
 				request.setResponse(response);
 				responseProduced(request, response);
 				context.handleRequestForwarding(response);
-				LOGGER.debug("HTTP returned {}", response);
+				org.eclipse.californium.elements.MyLogger.LOG_debug("HTTP returned {}", response);
 			}
 		};
 
@@ -158,7 +158,7 @@ public class ProxyHttpServer {
 			// get the response from the cache
 			response = cacheResource.getResponse(request);
 
-			LOGGER.debug("Cache returned {}", response);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Cache returned {}", response);
 
 			// update statistics
 			statsResource.updateStatistics(request, response != null);
@@ -231,11 +231,11 @@ public class ProxyHttpServer {
 	protected void responseProduced(Request request, Response response) {
 		// check if the proxy-uri is defined
 		if (request.getOptions().hasProxyUri()) {
-			LOGGER.info("Cache response");
+			org.eclipse.californium.elements.MyLogger.LOG_info("Cache response");
 			// insert the response in the cache
 			cacheResource.cacheResponse(request, response);
 		} else {
-			LOGGER.info("Do not cache response");
+			org.eclipse.californium.elements.MyLogger.LOG_info("Do not cache response");
 		}
 	}
 

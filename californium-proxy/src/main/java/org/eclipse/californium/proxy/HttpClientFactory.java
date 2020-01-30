@@ -72,7 +72,7 @@ public class HttpClientFactory {
 			client.start();
 			return client;
 		} catch (IOReactorException e) {
-			LOGGER.error("create http-client failed!", e);
+			org.eclipse.californium.elements.MyLogger.LOG_error("create http-client failed!", e);
 			return null;
 		}
 	}

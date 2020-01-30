@@ -647,7 +647,7 @@ public final class DTLSSession implements Destroyable {
 		SecretUtil.destroy(this.readState);
 		this.readState = readState;
 		incrementReadEpoch();
-		LOGGER.trace("Setting current read state to{}{}", StringUtil.lineSeparator(), readState);
+		org.eclipse.californium.elements.MyLogger.LOG_trace("Setting current read state to{}{}", StringUtil.lineSeparator(), readState);
 	}
 
 	/**
@@ -703,7 +703,7 @@ public final class DTLSSession implements Destroyable {
 		incrementWriteEpoch();
 		// re-calculate maximum fragment length based on cipher suite from updated write state
 		determineMaxFragmentLength(maxFragmentLength);
-		LOGGER.trace("Setting current write state to{}{}", StringUtil.lineSeparator(), writeState);
+		org.eclipse.californium.elements.MyLogger.LOG_trace("Setting current write state to{}{}", StringUtil.lineSeparator(), writeState);
 	}
 
 	/**
@@ -840,7 +840,7 @@ public final class DTLSSession implements Destroyable {
 		if (mtu < 60) {
 			throw new IllegalArgumentException("MTU must be at least 60 bytes");
 		} else {
-			LOGGER.debug("Setting MTU for peer [{}] to {} bytes", peer, mtu);
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Setting MTU for peer [{}] to {} bytes", peer, mtu);
 			this.maxTransmissionUnit = mtu;
 			// use mtu as fragment length will be detected as too large
 			// and is reduced to the maximum fragment length for this mtu
@@ -855,7 +855,7 @@ public final class DTLSSession implements Destroyable {
 		} else {
 			this.maxFragmentLength = maxTransmissionUnit - HEADER_LENGTH - writeState.getMaxCiphertextExpansion();
 		}
-		LOGGER.debug("Setting maximum fragment length for peer [{}] to {} bytes", peer, this.maxFragmentLength);
+		org.eclipse.californium.elements.MyLogger.LOG_debug("Setting maximum fragment length for peer [{}] to {} bytes", peer, this.maxFragmentLength);
 	}
 
 	/**
@@ -985,7 +985,7 @@ public final class DTLSSession implements Destroyable {
 			// create bit mask for probing the bit representing position "idx" 
 			long bitMask = 1L << idx;
 			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug(
+				org.eclipse.californium.elements.MyLogger.LOG_debug(
 						"Checking sequence no [{}] using bit mask [{}] against received records [{}] with lower boundary [{}]",
 						sequenceNo, Long.toBinaryString(bitMask), Long.toBinaryString(receivedRecordsVector),
 						receiveWindowLowerBoundary);
@@ -1023,7 +1023,7 @@ public final class DTLSSession implements Destroyable {
 			long bitMask = 1L << (sequenceNo - receiveWindowLowerBoundary);
 			// mark sequence number as "received" in receive window
 			receivedRecordsVector |= bitMask;
-			LOGGER.debug("Updated receive window with sequence number [{}]: new upper boundary [{}], new bit vector [{}]",
+			org.eclipse.californium.elements.MyLogger.LOG_debug("Updated receive window with sequence number [{}]: new upper boundary [{}], new bit vector [{}]",
 					sequenceNo, receiveWindowUpperCurrent, Long.toBinaryString(receivedRecordsVector));
 			return newest;
 		} else {

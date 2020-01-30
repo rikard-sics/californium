@@ -94,7 +94,7 @@ public class TestRepeater {
 			try {
 				return Integer.valueOf(value);
 			} catch (NumberFormatException ex) {
-				LOGGER.error("value for ''{}'' := ''{}'' is no number!", name, value);
+				org.eclipse.californium.elements.MyLogger.LOG_error("value for ''{}'' := ''{}'' is no number!", name, value);
 			}
 		}
 		return null;
@@ -108,9 +108,9 @@ public class TestRepeater {
 	 */
 	public void run(final Runner runner, final RunNotifier notifier) {
 		if (0 == maximumRepeats) {
-			LOGGER.info("repeat until error!");
+			org.eclipse.californium.elements.MyLogger.LOG_info("repeat until error!");
 		} else {
-			LOGGER.info("maximum repeats: {}", maximumRepeats);
+			org.eclipse.californium.elements.MyLogger.LOG_info("maximum repeats: {}", maximumRepeats);
 		}
 		// start alive logging
 		Thread alive = startAliveLogging();
@@ -170,8 +170,8 @@ public class TestRepeater {
 	private void logInfo(String tag, String format, Object... parameters) {
 		if (LOGGER.isInfoEnabled()) {
 			Runtime runtime = Runtime.getRuntime();
-			LOGGER.info(tag + ": " + format, parameters);
-			LOGGER.info(tag + ": memory free {} MByte, total {} MByte, max {} MByte", runtime.freeMemory() / MEGA_BYTE,
+			org.eclipse.californium.elements.MyLogger.LOG_info(tag + ": " + format, parameters);
+			org.eclipse.californium.elements.MyLogger.LOG_info(tag + ": memory free {} MByte, total {} MByte, max {} MByte", runtime.freeMemory() / MEGA_BYTE,
 					runtime.totalMemory() / MEGA_BYTE, runtime.maxMemory() / MEGA_BYTE);
 		}
 	}
@@ -185,7 +185,7 @@ public class TestRepeater {
 	private Thread startAliveLogging() {
 		Thread live = null;
 		if (0 < aliveIntervalInMilliseconds && LOGGER.isInfoEnabled()) {
-			LOGGER.info("start alife logging every {}ms!", aliveIntervalInMilliseconds);
+			org.eclipse.californium.elements.MyLogger.LOG_info("start alife logging every {}ms!", aliveIntervalInMilliseconds);
 			live = new Thread(new Runnable() {
 
 				@Override

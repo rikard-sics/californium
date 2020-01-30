@@ -115,7 +115,7 @@ public class CropRotation implements Deduplicator {
 		prev = maps[s].putIfAbsent(key, exchange);
 		if (replace && prev != null) {
 			if (prev.getOrigin() != exchange.getOrigin()) {
-				LOGGER.debug("replace exchange for {}", key);
+				org.eclipse.californium.elements.MyLogger.LOG_debug("replace exchange for {}", key);
 				if (maps[s].replace(key, prev, exchange)) {
 					prev = null;
 				} else {
@@ -175,7 +175,7 @@ public class CropRotation implements Deduplicator {
 			try {
 				rotation();
 			} catch (Throwable t) {
-				LOGGER.warn("Exception in Crop-Rotation algorithm", t);
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Exception in Crop-Rotation algorithm", t);
 			}
 		}
 

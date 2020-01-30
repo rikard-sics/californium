@@ -57,7 +57,7 @@ public class SecretUtil {
 				// Using SecretIvParameterSpec or SecretKey created by this class
 				// should never throw whit. Using other Destroyable implementations
 				// may throw it.
-				LOGGER.warn("Destroy on {} failed!", destroyable.getClass(), e);
+				org.eclipse.californium.elements.MyLogger.LOG_warn("Destroy on {} failed!", destroyable.getClass(), e);
 			}
 		}
 	}

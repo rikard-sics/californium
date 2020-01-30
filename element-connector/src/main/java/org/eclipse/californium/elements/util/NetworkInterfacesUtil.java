@@ -76,7 +76,7 @@ public class NetworkInterfacesUtil {
 					}
 				}
 			} catch (SocketException ex) {
-				LOGGER.warn("discover any interface failed!", ex);
+				org.eclipse.californium.elements.MyLogger.LOG_warn("discover any interface failed!", ex);
 				anyIpv4 = true;
 				anyIpv6 = true;
 			}
@@ -134,7 +134,7 @@ public class NetworkInterfacesUtil {
 				}
 			}
 		} catch (SocketException e) {
-			LOGGER.error("could not fetch all interface addresses", e);
+			org.eclipse.californium.elements.MyLogger.LOG_error("could not fetch all interface addresses", e);
 		}
 		return interfaces;
 	}

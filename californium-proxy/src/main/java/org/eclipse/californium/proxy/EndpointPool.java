@@ -125,7 +125,7 @@ public class EndpointPool {
 				pool.add(createEndpoint());
 			}
 		} catch (IOException ex) {
-			LOGGER.warn("endpoint pool could not be filled!", ex);
+			org.eclipse.californium.elements.MyLogger.LOG_warn("endpoint pool could not be filled!", ex);
 		}
 		return scheme;
 	}
@@ -150,7 +150,7 @@ public class EndpointPool {
 			}
 		}
 
-		LOGGER.warn("Out of endpoints, creating more");
+		org.eclipse.californium.elements.MyLogger.LOG_warn("Out of endpoints, creating more");
 
 		return createEndpoint();
 	}
