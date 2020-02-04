@@ -33,7 +33,6 @@ import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
-import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Request;
@@ -62,9 +61,9 @@ import org.junit.experimental.categories.Category;
  * CoAP options are encrypted.
  * https://tools.ietf.org/html/rfc8613#section-4.1.3.4.1
  * 
- * The tests cover POST, PUT, FETCH & GET methods. It tests Block-Wise requests
- * with Block-Wise responses, Block-Wise requests with normal responses and
- * normal requests with Block-Wise responses.
+ * The tests cover POST, PUT & GET methods. It tests Block-Wise requests with
+ * Block-Wise responses, Block-Wise requests with normal responses and normal
+ * requests with Block-Wise responses.
  *
  */
 @Category(Medium.class)
@@ -123,43 +122,14 @@ public class OSCoreInnerBlockwiseTest {
 	public void testOscoreBlockwiseGet() throws Exception {
 		setClientContext(uri);
 		Request request = Request.newGet().setURI(uri);
-		// request.getOptions().setOscore(Bytes.EMPTY);
+		request.getOptions().setOscore(Bytes.EMPTY);
 
 		CoapClient client = new CoapClient();
 		CoapResponse response = client.advanced(request);
-		System.out.println(Utils.prettyPrint(response));
 		assertNotNull(response);
 		assertEquals(CoAP.ResponseCode.CONTENT, response.getCode());
 		assertTrue(response.getOptions().hasSize2());
 		assertEquals(payload, response.getResponseText());
-		assertEquals(DEFAULT_BLOCK_SIZE * 4, response.advanced().getPayloadSize());
-		assertEquals(1, resource.getCounter());
-		client.shutdown();
-	}
-
-	/**
-	 * Perform FETCH Block-Wise request with Block-Wise response.
-	 * 
-	 * @throws Exception on test failure
-	 */
-	@Test
-	public void testOscoreBlockwiseFetch() throws Exception {
-		setClientContext(uri);
-		String payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
-		Request request = new Request(Code.FETCH);
-		request.setURI(uri);
-		// request.getOptions().setOscore(Bytes.EMPTY);
-		request.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
-		request.setPayload(payload);
-
-		CoapClient client = new CoapClient();
-		CoapResponse response = client.advanced(request);
-		System.out.println(Utils.prettyPrint(response));
-		assertNotNull(response);
-		assertEquals(CoAP.ResponseCode.CONTENT, response.getCode());
-		assertTrue(response.getOptions().hasSize2());
-		assertEquals(this.payload + payload, response.getResponseText());
-		assertEquals(this.payload + payload, resource.currentPayload);
 		assertEquals(1, resource.getCounter());
 		client.shutdown();
 	}
@@ -174,14 +144,13 @@ public class OSCoreInnerBlockwiseTest {
 		setClientContext(uri);
 		String payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
 		Request request = Request.newPost().setURI(uri);
-		// request.getOptions().setOscore(Bytes.EMPTY);
+		request.getOptions().setOscore(Bytes.EMPTY);
 		request.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 		request.getOptions().setAccept(MediaTypeRegistry.TEXT_PLAIN);
 		request.setPayload(payload);
 
 		CoapClient client = new CoapClient();
 		CoapResponse response = client.advanced(request);
-		System.out.println(Utils.prettyPrint(response));
 		assertNotNull(response);
 		assertEquals(response.getCode(), CoAP.ResponseCode.CONTENT);
 		assertTrue(response.getOptions().hasSize2());
@@ -201,14 +170,13 @@ public class OSCoreInnerBlockwiseTest {
 		setClientContext(uri);
 		String payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
 		Request request = Request.newPut().setURI(uri);
-		// //request.getOptions().setOscore(Bytes.EMPTY);
+		request.getOptions().setOscore(Bytes.EMPTY);
 		request.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 		request.getOptions().setAccept(MediaTypeRegistry.TEXT_PLAIN);
 		request.setPayload(payload);
 
 		CoapClient client = new CoapClient();
 		CoapResponse response = client.advanced(request);
-		System.out.println(Utils.prettyPrint(response));
 		assertNotNull(response);
 		assertEquals(response.getCode(), CoAP.ResponseCode.CHANGED);
 		assertTrue(response.getOptions().hasBlock1());
@@ -314,15 +282,6 @@ public class OSCoreInnerBlockwiseTest {
 
 		@Override
 		public void handlePOST(CoapExchange exchange) {
-			counter.incrementAndGet();
-			currentPayload += exchange.getRequestText();
-			Response response = new Response(ResponseCode.CONTENT);
-			response.setPayload(currentPayload);
-			exchange.respond(response);
-		}
-
-		@Override
-		public void handleFETCH(CoapExchange exchange) {
 			counter.incrementAndGet();
 			currentPayload += exchange.getRequestText();
 			Response response = new Response(ResponseCode.CONTENT);
