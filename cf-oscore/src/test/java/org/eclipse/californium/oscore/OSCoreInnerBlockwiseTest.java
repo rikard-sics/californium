@@ -31,7 +31,6 @@ import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.CoapServer;
-import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
@@ -61,7 +60,7 @@ import org.junit.experimental.categories.Category;
  * CoAP options are encrypted.
  * https://tools.ietf.org/html/rfc8613#section-4.1.3.4.1
  * 
- * The tests cover POST, PUT & GET methods. It tests Block-Wise requests with
+ * The tests cover POST, PUT and GET methods. It tests Block-Wise requests with
  * Block-Wise responses, Block-Wise requests with normal responses and normal
  * requests with Block-Wise responses.
  *

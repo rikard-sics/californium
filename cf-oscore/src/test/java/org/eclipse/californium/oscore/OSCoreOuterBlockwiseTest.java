@@ -19,8 +19,9 @@ package org.eclipse.californium.oscore;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
-import java.net.URI;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -30,7 +31,6 @@ import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.CoapServer;
-import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
@@ -52,7 +52,6 @@ import org.eclipse.californium.rule.CoapThreadsRule;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -60,9 +59,11 @@ import org.junit.experimental.categories.Category;
 /**
  * Class for testing OSCORE together with Block-Wise requests and responses.
  * This is for testing the "outer Block-Wise" mode of OSCORE where an OSCORE
- * messages is fragmented into blocks by a proxy. For this test this is
- * simulated by the sending clients fragmenting a prepared OSCORE request.
- * See https://tools.ietf.org/html/rfc8613#section-4.1.3.4.2
+ * messages is fragmented into blocks by a proxy. The test class contains a
+ * server, client and proxy. The client will not be using block-wise with the
+ * proxy, however the proxy will split requests from the server and use
+ * block-wise towards the server. The proxy is also unaware of OSCORE. See
+ * https://tools.ietf.org/html/rfc8613#section-4.1.3.4.2
  * 
  * The tests cover POST, PUT and GET methods. It tests Block-Wise requests with
  * Block-Wise responses, Block-Wise requests with normal responses and normal
@@ -105,11 +106,6 @@ public class OSCoreOuterBlockwiseTest {
 	private String proxyUri;
 	private String payload;
 
-	@BeforeClass
-	public static void setStackFactory() {
-		OSCoreCoapStackFactory.useAsDefault(dbClient);
-	}
-
 	@Before
 	public void startupServer() {
 		payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
@@ -123,68 +119,29 @@ public class OSCoreOuterBlockwiseTest {
 	}
 
 	/**
-	 * Perform GET request with normal response.
-	 * 
-	 * @throws Exception on test failure
-	 */
-	@Test
-	public void testOscoreGet() throws Exception {
-		String responsePayload = "test";
-		resource.setPayload(responsePayload);
-		setClientContext(uri);
-		Request request = Request.newGet().setURI(uri);
-		// request.getOptions().setOscore(Bytes.EMPTY);
-
-		CoapClient client = new CoapClient();
-		CoapResponse response = client.advanced(request);
-		assertNotNull(response);
-		assertEquals(CoAP.ResponseCode.CONTENT, response.getCode());
-		assertEquals(responsePayload, response.getResponseText());
-		assertEquals(1, resource.getCounter());
-		client.shutdown();
-	}
-
-	/**
 	 * Perform GET request with Block-Wise response.
 	 * 
 	 * @throws Exception on test failure
 	 */
-	// @Ignore
 	@Test
 	public void testOscoreBlockwiseGet() throws Exception {
 		setClientContext(uri);
-		Request request = Request.newGet().setURI(uri);
-		// request.getOptions().setOscore(Bytes.EMPTY);
+		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
+		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
+		builder.setCustomCoapStackArgument(dbClient);
+		CoapEndpoint clientEndpoint = builder.build();
+
+		Request request = Request.newGet().setURI(proxyUri);
+		request.getOptions().setOscore(Bytes.EMPTY);
 
 		CoapClient client = new CoapClient();
+		client.setEndpoint(clientEndpoint);
+		cleanup.add(clientEndpoint);
 		CoapResponse response = client.advanced(request);
 		assertNotNull(response);
 		assertEquals(CoAP.ResponseCode.CONTENT, response.getCode());
+		assertTrue(response.getOptions().hasSize2());
 		assertEquals(payload, response.getResponseText());
-		assertEquals(1, resource.getCounter());
-		client.shutdown();
-	}
-
-	/**
-	 * Perform PUT Block-Wise request with Block-Wise response.
-	 * 
-	 * @throws Exception on test failure
-	 */
-	// @Ignore
-	@Test
-	public void testOscoreBlockwisePut() throws Exception {
-		setClientContext(uri);
-		String payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
-		Request request = Request.newPut().setURI(uri);
-		// request.getOptions().setOscore(Bytes.EMPTY);
-		request.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
-		request.setPayload(payload);
-
-		CoapClient client = new CoapClient();
-		CoapResponse response = client.advanced(request);
-		assertNotNull(response);
-		assertEquals(CoAP.ResponseCode.CHANGED, response.getCode());
-		assertEquals(payload, resource.currentPayload);
 		assertEquals(1, resource.getCounter());
 		client.shutdown();
 	}
@@ -194,21 +151,28 @@ public class OSCoreOuterBlockwiseTest {
 	 * 
 	 * @throws Exception on test failure
 	 */
-	// @Ignore
 	@Test
 	public void testOscoreBlockwisePost() throws Exception {
 		setClientContext(uri);
+		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
+		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
+		builder.setCustomCoapStackArgument(dbClient);
+		CoapEndpoint clientEndpoint = builder.build();
+
 		String payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
 		Request request = Request.newPost().setURI(uri);
-		// request.getOptions().setOscore(Bytes.EMPTY);
+		request.getOptions().setOscore(Bytes.EMPTY);
 		request.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 		request.getOptions().setAccept(MediaTypeRegistry.TEXT_PLAIN);
 		request.setPayload(payload);
 
 		CoapClient client = new CoapClient();
+		client.setEndpoint(clientEndpoint);
+		cleanup.add(clientEndpoint);
 		CoapResponse response = client.advanced(request);
 		assertNotNull(response);
 		assertEquals(response.getCode(), CoAP.ResponseCode.CONTENT);
+		assertTrue(response.getOptions().hasSize2());
 		assertEquals(this.payload + payload, response.getResponseText());
 		assertEquals(this.payload + payload, resource.currentPayload);
 		assertEquals(1, resource.getCounter());
@@ -216,29 +180,34 @@ public class OSCoreOuterBlockwiseTest {
 	}
 
 	/**
-	 * Perform FETCH Block-Wise request with normal response.
+	 * Perform PUT Block-Wise request with normal response.
 	 * 
 	 * @throws Exception on test failure
 	 */
-	// @Ignore
 	@Test
-	public void testOscoreBlockwisePostShort() throws Exception {
+	public void testOscoreBlockwisePut() throws Exception {
 		setClientContext(uri);
-		String responsePayload = "test";
-		resource.setPayload(responsePayload);
+		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
+		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
+		builder.setCustomCoapStackArgument(dbClient);
+		CoapEndpoint clientEndpoint = builder.build();
+
 		String payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
-		Request request = Request.newPost().setURI(uri);
-		// request.getOptions().setOscore(Bytes.EMPTY);
+		Request request = Request.newPut().setURI(uri);
+		request.getOptions().setOscore(Bytes.EMPTY);
 		request.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 		request.getOptions().setAccept(MediaTypeRegistry.TEXT_PLAIN);
 		request.setPayload(payload);
 
 		CoapClient client = new CoapClient();
+		client.setEndpoint(clientEndpoint);
+		cleanup.add(clientEndpoint);
 		CoapResponse response = client.advanced(request);
 		assertNotNull(response);
-		assertEquals(response.getCode(), CoAP.ResponseCode.CONTENT);
-		assertEquals(responsePayload + payload, response.getResponseText());
-		assertEquals(responsePayload + payload, resource.currentPayload);
+		assertEquals(response.getCode(), CoAP.ResponseCode.CHANGED);
+		assertTrue(response.getOptions().hasBlock1());
+		assertNull(response.getPayload());
+		assertEquals(payload, resource.currentPayload);
 		assertEquals(1, resource.getCounter());
 		client.shutdown();
 	}
@@ -282,6 +251,7 @@ public class OSCoreOuterBlockwiseTest {
 		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
 		builder.setNetworkConfig(config);
 		builder.setInetSocketAddress(TestTools.LOCALHOST_EPHEMERAL);
+		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
 		builder.setCustomCoapStackArgument(dbServer);
 		CoapEndpoint serverEndpoint = builder.build();
 
@@ -354,6 +324,7 @@ public class OSCoreOuterBlockwiseTest {
 			return counter.get();
 		}
 	}
+
 
 	/// FIXME comment
 	private void createSimpleProxy() {
