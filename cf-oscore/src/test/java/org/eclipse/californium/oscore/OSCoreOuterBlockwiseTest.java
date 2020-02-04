@@ -39,8 +39,10 @@ import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.EndpointContextMatcherFactory.MatcherMode;
 import org.eclipse.californium.core.network.EndpointManager;
+import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
+import org.eclipse.californium.core.server.MessageDeliverer;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
@@ -100,12 +102,13 @@ public class OSCoreOuterBlockwiseTest {
 	private MyResource resource;
 
 	private String uri;
+	private String proxyUri;
 	private String payload;
-	//
-	// @BeforeClass
-	// public static void setStackFactory() {
-	// OSCoreCoapStackFactory.useAsDefault(dbClient);
-	// }
+
+	@BeforeClass
+	public static void setStackFactory() {
+		OSCoreCoapStackFactory.useAsDefault(dbClient);
+	}
 
 	@Before
 	public void startupServer() {
@@ -114,17 +117,44 @@ public class OSCoreOuterBlockwiseTest {
 		resource.setPayload(payload);
 	}
 
+	@Before
+	public void startupProxy() {
+		createSimpleProxy();
+	}
+
+	/**
+	 * Perform GET request with normal response.
+	 * 
+	 * @throws Exception on test failure
+	 */
+	@Test
+	public void testOscoreGet() throws Exception {
+		String responsePayload = "test";
+		resource.setPayload(responsePayload);
+		setClientContext(uri);
+		Request request = Request.newGet().setURI(uri);
+		// request.getOptions().setOscore(Bytes.EMPTY);
+
+		CoapClient client = new CoapClient();
+		CoapResponse response = client.advanced(request);
+		assertNotNull(response);
+		assertEquals(CoAP.ResponseCode.CONTENT, response.getCode());
+		assertEquals(responsePayload, response.getResponseText());
+		assertEquals(1, resource.getCounter());
+		client.shutdown();
+	}
+
 	/**
 	 * Perform GET request with Block-Wise response.
 	 * 
 	 * @throws Exception on test failure
 	 */
-	@Ignore
+	// @Ignore
 	@Test
 	public void testOscoreBlockwiseGet() throws Exception {
 		setClientContext(uri);
 		Request request = Request.newGet().setURI(uri);
-		request.getOptions().setOscore(Bytes.EMPTY);
+		// request.getOptions().setOscore(Bytes.EMPTY);
 
 		CoapClient client = new CoapClient();
 		CoapResponse response = client.advanced(request);
@@ -140,13 +170,13 @@ public class OSCoreOuterBlockwiseTest {
 	 * 
 	 * @throws Exception on test failure
 	 */
-	@Ignore
+	// @Ignore
 	@Test
 	public void testOscoreBlockwisePut() throws Exception {
 		setClientContext(uri);
 		String payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
 		Request request = Request.newPut().setURI(uri);
-		request.getOptions().setOscore(Bytes.EMPTY);
+		// request.getOptions().setOscore(Bytes.EMPTY);
 		request.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 		request.setPayload(payload);
 
@@ -164,53 +194,52 @@ public class OSCoreOuterBlockwiseTest {
 	 * 
 	 * @throws Exception on test failure
 	 */
-	@Ignore
+	// @Ignore
 	@Test
 	public void testOscoreBlockwisePost() throws Exception {
-
-	}
-
-	/**
-	 * Perform POST Block-Wise request with normal response.
-	 * 
-	 * @throws Exception on test failure
-	 */
-	@Test
-	public void testOscoreBlockwisePostShort() throws Exception {
-		// setClientContext(uri);
-
-		String responsePayload = "test";
-		resource.setPayload(responsePayload);
-
-		// Create CoAP request
+		setClientContext(uri);
 		String payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
 		Request request = Request.newPost().setURI(uri);
-		request.getOptions().setOscore(Bytes.EMPTY);
+		// request.getOptions().setOscore(Bytes.EMPTY);
 		request.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 		request.getOptions().setAccept(MediaTypeRegistry.TEXT_PLAIN);
 		request.setPayload(payload);
 
-		// Manually secure the request using OSCORE
-		HashMapCtxDB db = new HashMapCtxDB();
-		byte[] sid = Bytes.EMPTY;
-		byte[] rid = new byte[] { 0x01 };
-		OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, null);
-		db.addContext(request.getURI(), ctx);
-		Request encryptedReq = RequestEncryptor.encrypt(db, request);
-		System.out.println(Utils.prettyPrint(encryptedReq));
+		CoapClient client = new CoapClient();
+		CoapResponse response = client.advanced(request);
+		assertNotNull(response);
+		assertEquals(response.getCode(), CoAP.ResponseCode.CONTENT);
+		assertEquals(this.payload + payload, response.getResponseText());
+		assertEquals(this.payload + payload, resource.currentPayload);
+		assertEquals(1, resource.getCounter());
+		client.shutdown();
+	}
 
-		// Now send the OSCORE request, the block-wise layer will split it
-		URI hostURI = new URI(uri);
-		String hostURIstr = hostURI.getScheme() + "://" + hostURI.getHost() + ":" + hostURI.getPort();
-		System.out.println(hostURIstr);
-		CoapClient client = new CoapClient(hostURIstr);
-		CoapResponse response = client.advanced(encryptedReq);
-		// assertNotNull(response);
-		// assertEquals(response.getCode(), CoAP.ResponseCode.CONTENT);
-		// assertEquals(this.payload + payload, response.getResponseText());
-		// assertEquals(this.payload + payload, resource.currentPayload);
-		// assertEquals(1, resource.getCounter());
-		System.out.println(Utils.prettyPrint(response));
+	/**
+	 * Perform FETCH Block-Wise request with normal response.
+	 * 
+	 * @throws Exception on test failure
+	 */
+	// @Ignore
+	@Test
+	public void testOscoreBlockwisePostShort() throws Exception {
+		setClientContext(uri);
+		String responsePayload = "test";
+		resource.setPayload(responsePayload);
+		String payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
+		Request request = Request.newPost().setURI(uri);
+		// request.getOptions().setOscore(Bytes.EMPTY);
+		request.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
+		request.getOptions().setAccept(MediaTypeRegistry.TEXT_PLAIN);
+		request.setPayload(payload);
+
+		CoapClient client = new CoapClient();
+		CoapResponse response = client.advanced(request);
+		assertNotNull(response);
+		assertEquals(response.getCode(), CoAP.ResponseCode.CONTENT);
+		assertEquals(responsePayload + payload, response.getResponseText());
+		assertEquals(responsePayload + payload, resource.currentPayload);
+		assertEquals(1, resource.getCounter());
 		client.shutdown();
 	}
 
@@ -265,9 +294,9 @@ public class OSCoreOuterBlockwiseTest {
 
 		uri = TestTools.getUri(serverEndpoint, TARGET);
 
-		builder = new CoapEndpoint.Builder();
-		builder.setNetworkConfig(config);
-		EndpointManager.getEndpointManager().setDefaultEndpoint(builder.build());
+		// builder = new CoapEndpoint.Builder();
+		// builder.setNetworkConfig(config);
+		// EndpointManager.getEndpointManager().setDefaultEndpoint(builder.build());
 	}
 
 	private static String createRandomPayload(int size) {
@@ -325,4 +354,35 @@ public class OSCoreOuterBlockwiseTest {
 			return counter.get();
 		}
 	}
+
+	/// FIXME comment
+	private void createSimpleProxy() {
+
+		// Create proxy
+		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
+		builder.setInetSocketAddress(TestTools.LOCALHOST_EPHEMERAL);
+		CoapEndpoint proxyEndpoint = builder.build();
+		CoapServer proxy = new CoapServer();
+		cleanup.add(proxy);
+		proxy.addEndpoint(proxyEndpoint);
+		proxy.setMessageDeliverer(new MessageDeliverer() {
+
+			@Override
+			public void deliverRequest(Exchange exchange) {
+				System.out.println("proxy received request");
+				Response response = new Response(ResponseCode.CONTENT);
+				response.setMID(exchange.getRequest().getMID());
+				response.setConfirmable(false);
+				response.setPayload("BACD");
+				exchange.sendResponse(response);
+			}
+
+			@Override
+			public void deliverResponse(Exchange exchange, Response response) {
+			}
+		});
+		proxy.start();
+		proxyUri = TestTools.getUri(proxyEndpoint, "/");
+	}
+
 }
