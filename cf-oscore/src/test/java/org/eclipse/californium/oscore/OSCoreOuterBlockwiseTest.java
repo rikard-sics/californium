@@ -96,7 +96,7 @@ public class OSCoreOuterBlockwiseTest {
 	static final String TARGET = "resource";
 	static final String IDENITITY = "client1";
 
-	static final boolean USE_OSCORE = false;
+	static final boolean USE_OSCORE = true;
 
 	// OSCORE context information shared between server and client
 	private final static HashMapCtxDB dbClient = new HashMapCtxDB();
@@ -156,8 +156,8 @@ public class OSCoreOuterBlockwiseTest {
 		client.setEndpoint(clientEndpoint);
 		cleanup.add(clientEndpoint);
 		CoapResponse response = client.advanced(request);
-		assertNotNull(response);
 		System.out.println(Utils.prettyPrint(response));
+		assertNotNull(response);
 		assertEquals(CoAP.ResponseCode.CONTENT, response.getCode());
 		assertFalse(response.getOptions().hasSize2());
 		assertFalse(response.getOptions().hasBlock1());
@@ -196,15 +196,16 @@ public class OSCoreOuterBlockwiseTest {
 		System.out.println(Utils.prettyPrint(response));
 		assertNotNull(response);
 		assertEquals(CoAP.ResponseCode.CONTENT, response.getCode());
-		// assertTrue(response.getOptions().hasSize2());
+		assertFalse(response.getOptions().hasSize2());
+		assertFalse(response.getOptions().hasBlock1());
 		assertEquals(payload, response.getResponseText());
 		assertEquals(1, resource.getCounter());
 		client.shutdown();
 	}
 
 	/**
-	 * Perform POST request via proxy with large response payload. The
-	 * proxy->server request will be Block-Wise.
+	 * Perform POST request via proxy with large request and response payload.
+	 * The proxy->server request will be Block-Wise.
 	 * 
 	 * @throws Exception on test failure
 	 */
@@ -236,7 +237,8 @@ public class OSCoreOuterBlockwiseTest {
 		System.out.println(Utils.prettyPrint(response));
 		assertNotNull(response);
 		assertEquals(response.getCode(), CoAP.ResponseCode.CONTENT);
-		// assertTrue(response.getOptions().hasSize2());
+		assertFalse(response.getOptions().hasSize2());
+		assertFalse(response.getOptions().hasBlock1());
 		assertEquals(this.payload + payload, response.getResponseText());
 		assertEquals(this.payload + payload, resource.currentPayload);
 		assertEquals(1, resource.getCounter());
@@ -244,8 +246,8 @@ public class OSCoreOuterBlockwiseTest {
 	}
 
 	/**
-	 * Perform PUT Block-Wise request via proxy with no response payload. The
-	 * proxy->server request will be Block-Wise.
+	 * Perform PUT Block-Wise request via proxy with large request payload and
+	 * no response payload. The proxy->server request will be Block-Wise.
 	 * 
 	 * @throws Exception on test failure
 	 */
@@ -277,7 +279,8 @@ public class OSCoreOuterBlockwiseTest {
 		System.out.println(Utils.prettyPrint(response));
 		assertNotNull(response);
 		assertEquals(response.getCode(), CoAP.ResponseCode.CHANGED);
-		// assertTrue(response.getOptions().hasBlock1());
+		assertFalse(response.getOptions().hasSize2());
+		assertFalse(response.getOptions().hasBlock1());
 		assertNull(response.getPayload());
 		assertEquals(payload, resource.currentPayload);
 		assertEquals(1, resource.getCounter());
@@ -315,14 +318,15 @@ public class OSCoreOuterBlockwiseTest {
 		assertNotNull(response);
 		assertEquals(CoAP.ResponseCode.CONTENT, response.getCode());
 		assertTrue(response.getOptions().hasSize2());
+		assertFalse(response.getOptions().hasBlock1());
 		assertEquals(payload, response.getResponseText());
 		assertEquals(1, resource.getCounter());
 		client.shutdown();
 	}
 
 	/**
-	 * Perform POST request via proxy with large response payload. The
-	 * server->proxy response will be Block-Wise.
+	 * Perform POST request via proxy with large request and response payload.
+	 * The server->proxy response will be Block-Wise.
 	 * 
 	 * @throws Exception on test failure
 	 */
@@ -355,6 +359,7 @@ public class OSCoreOuterBlockwiseTest {
 		assertNotNull(response);
 		assertEquals(response.getCode(), CoAP.ResponseCode.CONTENT);
 		assertTrue(response.getOptions().hasSize2());
+		assertFalse(response.getOptions().hasBlock1());
 		assertEquals(this.payload + payload, response.getResponseText());
 		assertEquals(this.payload + payload, resource.currentPayload);
 		assertEquals(1, resource.getCounter());
@@ -391,15 +396,16 @@ public class OSCoreOuterBlockwiseTest {
 		System.out.println(Utils.prettyPrint(response));
 		assertNotNull(response);
 		assertEquals(CoAP.ResponseCode.CONTENT, response.getCode());
-		// assertTrue(response.getOptions().hasSize2());
+		assertFalse(response.getOptions().hasSize2());
+		assertFalse(response.getOptions().hasBlock1());
 		assertEquals(payload, response.getResponseText());
 		assertEquals(1, resource.getCounter());
 		client.shutdown();
 	}
 
 	/**
-	 * Perform POST request via proxy with large response payload. The
-	 * proxy->client response will be Block-Wise.
+	 * Perform POST request via proxy with large request and response payload.
+	 * The proxy->client response will be Block-Wise.
 	 * 
 	 * @throws Exception on test failure
 	 */
@@ -431,13 +437,117 @@ public class OSCoreOuterBlockwiseTest {
 		System.out.println(Utils.prettyPrint(response));
 		assertNotNull(response);
 		assertEquals(response.getCode(), CoAP.ResponseCode.CONTENT);
-		// assertTrue(response.getOptions().hasSize2());
+		assertFalse(response.getOptions().hasSize2());
+		assertFalse(response.getOptions().hasBlock1());
 		assertEquals(this.payload + payload, response.getResponseText());
 		assertEquals(this.payload + payload, resource.currentPayload);
 		assertEquals(1, resource.getCounter());
 		client.shutdown();
 	}
 
+	/**
+	 * Perform POST request via proxy with large request and response payload.
+	 * The client->proxy request will be Block-Wise.
+	 * 
+	 * @throws Exception on test failure
+	 */
+	@Test
+	public void testOscoreOuterBlockwisePost_ClientProxyBW() throws Exception {
+		startupServer(false);
+		startupProxy(false, false);
+		setClientContext(serverUri);
+
+		// Network config for client endpoint (will use block-wise for large
+		// requests)
+		final NetworkConfig config = network.createTestConfig().setInt(Keys.ACK_TIMEOUT, 200)
+				.setFloat(Keys.ACK_RANDOM_FACTOR, 1f).setFloat(Keys.ACK_TIMEOUT_SCALE, 1f)
+				// set response timeout (indirect) to 10s
+				.setLong(Keys.EXCHANGE_LIFETIME, 10 * 1000L).setInt(Keys.MAX_MESSAGE_SIZE, DEFAULT_BLOCK_SIZE)
+				.setInt(Keys.PREFERRED_BLOCK_SIZE, DEFAULT_BLOCK_SIZE).setString(Keys.RESPONSE_MATCHING, mode.name());
+
+		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
+		builder.setNetworkConfig(config);
+		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
+		builder.setCustomCoapStackArgument(dbClient);
+		CoapEndpoint clientEndpoint = builder.build();
+
+		String payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
+		Request request = Request.newPost().setURI(proxyUri);
+		request.getOptions().setProxyUri(serverUri);
+		if (USE_OSCORE) {
+			request.getOptions().setOscore(Bytes.EMPTY);
+		}
+		request.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
+		request.getOptions().setAccept(MediaTypeRegistry.TEXT_PLAIN);
+		request.setPayload(payload);
+
+		CoapClient client = new CoapClient();
+		client.setEndpoint(clientEndpoint);
+		cleanup.add(clientEndpoint);
+		CoapResponse response = client.advanced(request);
+		System.out.println(Utils.prettyPrint(response));
+		assertNotNull(response);
+		assertEquals(response.getCode(), CoAP.ResponseCode.CONTENT);
+		assertFalse(response.getOptions().hasSize2());
+		assertTrue(response.getOptions().hasBlock1());
+		assertEquals(this.payload + payload, response.getResponseText());
+		assertEquals(this.payload + payload, resource.currentPayload);
+		assertEquals(1, resource.getCounter());
+		client.shutdown();
+	}
+
+	/**
+	 * Perform PUT Block-Wise request via proxy with large request payload and
+	 * no response payload. The client->proxy request will be Block-Wise.
+	 * 
+	 * @throws Exception on test failure
+	 */
+	@Test
+	public void testOscoreOuterBlockwisePut_ClientProxyBW() throws Exception {
+		startupServer(false);
+		startupProxy(false, false);
+		setClientContext(serverUri);
+
+		// Network config for client endpoint (will use block-wise for large
+		// requests)
+		final NetworkConfig config = network.createTestConfig().setInt(Keys.ACK_TIMEOUT, 200)
+				.setFloat(Keys.ACK_RANDOM_FACTOR, 1f).setFloat(Keys.ACK_TIMEOUT_SCALE, 1f)
+				// set response timeout (indirect) to 10s
+				.setLong(Keys.EXCHANGE_LIFETIME, 10 * 1000L).setInt(Keys.MAX_MESSAGE_SIZE, DEFAULT_BLOCK_SIZE)
+				.setInt(Keys.PREFERRED_BLOCK_SIZE, DEFAULT_BLOCK_SIZE).setString(Keys.RESPONSE_MATCHING, mode.name());
+
+		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
+		builder.setNetworkConfig(config);
+		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
+		builder.setCustomCoapStackArgument(dbClient);
+		CoapEndpoint clientEndpoint = builder.build();
+
+		String payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
+		Request request = Request.newPut().setURI(proxyUri);
+		request.getOptions().setProxyUri(serverUri);
+		if (USE_OSCORE) {
+			request.getOptions().setOscore(Bytes.EMPTY);
+		}
+		request.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
+		request.getOptions().setAccept(MediaTypeRegistry.TEXT_PLAIN);
+		request.setPayload(payload);
+
+		CoapClient client = new CoapClient();
+		client.setEndpoint(clientEndpoint);
+		cleanup.add(clientEndpoint);
+		CoapResponse response = client.advanced(request);
+		System.out.println(Utils.prettyPrint(response));
+		assertNotNull(response);
+		assertEquals(response.getCode(), CoAP.ResponseCode.CHANGED);
+		assertFalse(response.getOptions().hasSize2());
+		assertTrue(response.getOptions().hasBlock1());
+		assertNull(response.getPayload());
+		assertEquals(payload, resource.currentPayload);
+		assertEquals(1, resource.getCounter());
+		client.shutdown();
+	}
+
+	
 	public void setClientContext(String serverUri) {
 		// Set up OSCORE context information for request (client)
 		byte[] sid = Bytes.EMPTY;
@@ -606,9 +716,11 @@ public class OSCoreOuterBlockwiseTest {
 					fail();
 				}
 
-				// Clear block options in final response to client (it will not
-				// expect such since its request was not using Block-Wise.)
-				outgoingResponse.getOptions().removeBlock1();
+				// Clear block1 option in final response to client (it will not
+				// expect such if its request was not using Block-Wise.)
+				if (exchange.getRequest().getOptions().hasBlock1() == false) {
+					outgoingResponse.getOptions().removeBlock1();
+				}
 
 				// Send response to client
 				exchange.sendResponse(outgoingResponse);
