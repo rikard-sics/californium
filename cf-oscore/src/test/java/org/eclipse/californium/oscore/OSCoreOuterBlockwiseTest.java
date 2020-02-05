@@ -18,6 +18,7 @@
 package org.eclipse.californium.oscore;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -115,7 +116,39 @@ public class OSCoreOuterBlockwiseTest {
 
 	@Before
 	public void startupProxy() {
-		createSimpleProxy();
+		createSimpleProxy(MatcherMode.STRICT);
+	}
+
+	/**
+	 * Perform GET request with normal response.
+	 * 
+	 * @throws Exception on test failure
+	 */
+	@Test
+	public void testOscoreBlockwiseSimpleGet() throws Exception {
+		setClientContext(uri);
+		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
+		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
+		builder.setCustomCoapStackArgument(dbClient);
+		CoapEndpoint clientEndpoint = builder.build();
+
+		String responsePayload = "test";
+		resource.setPayload(responsePayload);
+
+		Request request = Request.newGet().setURI(uri);
+		request.getOptions().setOscore(Bytes.EMPTY);
+
+		CoapClient client = new CoapClient();
+		client.setEndpoint(clientEndpoint);
+		cleanup.add(clientEndpoint);
+		CoapResponse response = client.advanced(request);
+		assertNotNull(response);
+		assertEquals(CoAP.ResponseCode.CONTENT, response.getCode());
+		assertFalse(response.getOptions().hasSize2());
+		assertFalse(response.getOptions().hasBlock1());
+		assertEquals(responsePayload, response.getResponseText());
+		assertEquals(1, resource.getCounter());
+		client.shutdown();
 	}
 
 	/**
@@ -131,7 +164,7 @@ public class OSCoreOuterBlockwiseTest {
 		builder.setCustomCoapStackArgument(dbClient);
 		CoapEndpoint clientEndpoint = builder.build();
 
-		Request request = Request.newGet().setURI(proxyUri);
+		Request request = Request.newGet().setURI(uri);
 		request.getOptions().setOscore(Bytes.EMPTY);
 
 		CoapClient client = new CoapClient();
@@ -263,10 +296,6 @@ public class OSCoreOuterBlockwiseTest {
 		server.start();
 
 		uri = TestTools.getUri(serverEndpoint, TARGET);
-
-		// builder = new CoapEndpoint.Builder();
-		// builder.setNetworkConfig(config);
-		// EndpointManager.getEndpointManager().setDefaultEndpoint(builder.build());
 	}
 
 	private static String createRandomPayload(int size) {
@@ -327,20 +356,24 @@ public class OSCoreOuterBlockwiseTest {
 
 
 	/// FIXME comment
-	private void createSimpleProxy() {
+	private void createSimpleProxy(MatcherMode mode) {
 
 		// Create proxy
 		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
 		builder.setInetSocketAddress(TestTools.LOCALHOST_EPHEMERAL);
-		CoapEndpoint proxyEndpoint = builder.build();
+		CoapEndpoint proxyServerEndpoint = builder.build();
 		CoapServer proxy = new CoapServer();
 		cleanup.add(proxy);
-		proxy.addEndpoint(proxyEndpoint);
+		proxy.addEndpoint(proxyServerEndpoint);
 		proxy.setMessageDeliverer(new MessageDeliverer() {
 
 			@Override
 			public void deliverRequest(Exchange exchange) {
 				System.out.println("proxy received request");
+
+				// Create and send request to server
+				// CoapTranslator.getRequset
+
 				Response response = new Response(ResponseCode.CONTENT);
 				response.setMID(exchange.getRequest().getMID());
 				response.setConfirmable(false);
@@ -353,7 +386,7 @@ public class OSCoreOuterBlockwiseTest {
 			}
 		});
 		proxy.start();
-		proxyUri = TestTools.getUri(proxyEndpoint, "/");
+		proxyUri = TestTools.getUri(proxyServerEndpoint, "/");
 	}
 
 }

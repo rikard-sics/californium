@@ -18,6 +18,7 @@
 package org.eclipse.californium.oscore;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -128,6 +129,7 @@ public class OSCoreInnerBlockwiseTest {
 		assertNotNull(response);
 		assertEquals(CoAP.ResponseCode.CONTENT, response.getCode());
 		assertTrue(response.getOptions().hasSize2());
+		assertFalse(response.getOptions().hasBlock1());
 		assertEquals(payload, response.getResponseText());
 		assertEquals(1, resource.getCounter());
 		client.shutdown();
@@ -153,6 +155,7 @@ public class OSCoreInnerBlockwiseTest {
 		assertNotNull(response);
 		assertEquals(response.getCode(), CoAP.ResponseCode.CONTENT);
 		assertTrue(response.getOptions().hasSize2());
+		assertFalse(response.getOptions().hasBlock1());
 		assertEquals(this.payload + payload, response.getResponseText());
 		assertEquals(this.payload + payload, resource.currentPayload);
 		assertEquals(1, resource.getCounter());
@@ -178,6 +181,7 @@ public class OSCoreInnerBlockwiseTest {
 		CoapResponse response = client.advanced(request);
 		assertNotNull(response);
 		assertEquals(response.getCode(), CoAP.ResponseCode.CHANGED);
+		assertFalse(response.getOptions().hasSize2());
 		assertTrue(response.getOptions().hasBlock1());
 		assertNull(response.getPayload());
 		assertEquals(payload, resource.currentPayload);
