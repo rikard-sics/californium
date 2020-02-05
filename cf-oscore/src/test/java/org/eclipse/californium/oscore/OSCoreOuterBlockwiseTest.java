@@ -22,7 +22,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -46,8 +48,11 @@ import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
 import org.eclipse.californium.core.server.MessageDeliverer;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.proxy.CoapTranslator;
+import org.eclipse.californium.proxy.TranslationException;
 import org.eclipse.californium.rule.CoapNetworkRule;
 import org.eclipse.californium.rule.CoapThreadsRule;
 import org.junit.Before;
@@ -56,6 +61,8 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+
+import junit.framework.Assert;
 
 /**
  * Class for testing OSCORE together with Block-Wise requests and responses.
@@ -135,7 +142,8 @@ public class OSCoreOuterBlockwiseTest {
 		String responsePayload = "test";
 		resource.setPayload(responsePayload);
 
-		Request request = Request.newGet().setURI(uri);
+		Request request = Request.newGet().setURI(proxyUri);
+		request.getOptions().setProxyUri(uri);
 		request.getOptions().setOscore(Bytes.EMPTY);
 
 		CoapClient client = new CoapClient();
@@ -371,20 +379,33 @@ public class OSCoreOuterBlockwiseTest {
 			public void deliverRequest(Exchange exchange) {
 				System.out.println("proxy received request");
 
-				// Create and send request to server
-				// CoapTranslator.getRequset
+				Response outgoingResponse = null;
+				try {
+					// Create and send request to the server based on the
+					// incoming request from the client
+					Request outgoingRequest = CoapTranslator.getRequest(exchange.getRequest());
+					CoapClient proxyClient = new CoapClient();
 
-				Response response = new Response(ResponseCode.CONTENT);
-				response.setMID(exchange.getRequest().getMID());
-				response.setConfirmable(false);
-				response.setPayload("BACD");
-				exchange.sendResponse(response);
+					// Now receive the response from the server and prepare the
+					// final response to the client
+					CoapResponse incomingResponse = proxyClient.advanced(outgoingRequest);
+					outgoingResponse = CoapTranslator.getResponse(incomingResponse.advanced());
+				} catch (TranslationException | ConnectorException | IOException e) {
+					System.err.println("Processing on proxy failed.");
+					e.printStackTrace();
+					fail();
+				}
+
+				// Send response to client
+				exchange.sendResponse(outgoingResponse);
 			}
 
 			@Override
 			public void deliverResponse(Exchange exchange, Response response) {
+				System.out.println("Proxy: Deliver response called.");
 			}
 		});
+
 		proxy.start();
 		proxyUri = TestTools.getUri(proxyServerEndpoint, "/");
 	}

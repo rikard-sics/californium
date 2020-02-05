@@ -24,10 +24,6 @@
 		</dependency>
 		<dependency>
 			<groupId>org.eclipse.californium</groupId>
-			<artifactId>californium-proxy</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.eclipse.californium</groupId>
 			<artifactId>scandium</artifactId>
 		</dependency>
 		<dependency>
