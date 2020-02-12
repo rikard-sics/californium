@@ -208,6 +208,14 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	@Override
 	public void receiveRequest(Exchange exchange, Request request) {
 		if (isProtected(request)) {
+
+			// For OSCORE-protected requests with the block1-option let them
+			// pass through to be re-assembled by the block-wise layer
+			if (request.getOptions().hasBlock1()) {
+				super.receiveRequest(exchange, request);
+				return;
+			}
+
 			byte[] rid = null;
 			try {
 				request = prepareReceive(ctxDb, request);

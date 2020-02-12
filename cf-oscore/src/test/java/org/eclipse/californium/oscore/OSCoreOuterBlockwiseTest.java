@@ -56,6 +56,7 @@ import org.eclipse.californium.proxy.TranslationException;
 import org.eclipse.californium.rule.CoapNetworkRule;
 import org.eclipse.californium.rule.CoapThreadsRule;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -210,7 +211,7 @@ public class OSCoreOuterBlockwiseTest {
 	 * @throws Exception on test failure
 	 */
 	@Test
-	public void testOscoreOuterBlockwisePost() throws Exception {
+	public void testOscoreOuterBlockwisePost_ProxyServerBW() throws Exception {
 		startupServer(false);
 		startupProxy(true, false);
 		setClientContext(serverUri);
@@ -252,7 +253,7 @@ public class OSCoreOuterBlockwiseTest {
 	 * @throws Exception on test failure
 	 */
 	@Test
-	public void testOscoreOuterBlockwisePut() throws Exception {
+	public void testOscoreOuterBlockwisePut_ProxyServerBW() throws Exception {
 		startupServer(false);
 		startupProxy(true, false);
 		setClientContext(serverUri);
@@ -293,6 +294,7 @@ public class OSCoreOuterBlockwiseTest {
 	 * 
 	 * @throws Exception on test failure
 	 */
+	@Ignore
 	@Test
 	public void testOscoreLargeGet_ServerProxyBW() throws Exception {
 		startupServer(true);
@@ -330,6 +332,7 @@ public class OSCoreOuterBlockwiseTest {
 	 * 
 	 * @throws Exception on test failure
 	 */
+	@Ignore
 	@Test
 	public void testOscoreOuterBlockwisePost_ServerProxyBW() throws Exception {
 		startupServer(true);
@@ -451,6 +454,7 @@ public class OSCoreOuterBlockwiseTest {
 	 * 
 	 * @throws Exception on test failure
 	 */
+	@Ignore
 	@Test
 	public void testOscoreOuterBlockwisePost_ClientProxyBW() throws Exception {
 		startupServer(false);
@@ -502,6 +506,7 @@ public class OSCoreOuterBlockwiseTest {
 	 * 
 	 * @throws Exception on test failure
 	 */
+	@Ignore
 	@Test
 	public void testOscoreOuterBlockwisePut_ClientProxyBW() throws Exception {
 		startupServer(false);
