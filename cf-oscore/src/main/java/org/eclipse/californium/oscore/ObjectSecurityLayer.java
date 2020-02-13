@@ -20,7 +20,7 @@ package org.eclipse.californium.oscore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
@@ -74,14 +74,18 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	 * 
 	 * @param message the message
 	 * @param ctx the OSCore context
-	 * @param newPartialIV boolean to indicate whether to use a new partial IV or not
+	 * @param newPartialIV boolean to indicate whether to use a new partial IV
+	 *            or not
+	 * @param outerBlockwise boolean to indicate whether the block-wise options
+	 *            should be encrypted or not
 	 * 
 	 * @return the encrypted message
 	 * 
 	 * @throws OSException error while encrypting response
 	 */
-	public static Response prepareSend(OSCoreCtxDB ctxDb, Response message, OSCoreCtx ctx, final boolean newPartialIV) throws OSException {
-		return ResponseEncryptor.encrypt(ctxDb, message, ctx, newPartialIV);
+	public static Response prepareSend(OSCoreCtxDB ctxDb, Response message, OSCoreCtx ctx, final boolean newPartialIV,
+			boolean outerBlockwise) throws OSException {
+		return ResponseEncryptor.encrypt(ctxDb, message, ctx, newPartialIV, outerBlockwise);
 	}
 
 	/**
@@ -185,12 +189,39 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		 * A partial IV will also be added if the responsesIncludePartialIV flag is set in the context. */
 		boolean addPartialIV;
 		
+		/*
+		 * If the original request used outer block-wise options so should the
+		 * response. (They are not encrypted but external unprotected options.)
+		 */
+		boolean outerBlockwise;// exchange.getRequest().getOptions().hasBlock1();
+		// exchange.
 		if (shouldProtectResponse(exchange)) {
+
+			// REMOVE
+			System.out.println("Original req1: " + Utils.prettyPrint(exchange.getCurrentRequest()));
+			System.out.println("Original req2: " + Utils.prettyPrint(exchange.getRequest()));
+			// System.out.println("Original req3: " +
+			// Utils.prettyPrint(exchange.getRequest()));
+			System.out.println("Original req4: " + Utils.prettyPrint(response));
+			System.out.println("Test5: " + exchange.getCurrentRequest().equals(exchange.getRequest()));
+			System.out.println("to ack6: " + exchange.getBlock1ToAck());
+			// REMOVE
+
+			// If the current block-request still has a non-empty OSCORE option
+			// it means it was not unprotected by OSCORE as and individual
+			// request, but not processed until re-assembled by the block-wise
+			// layer
+			// System.out.println("Test2: " +
+			// (exchange.getCurrentRequest().getOptions().getOscore().length !=
+			// 0));
+			outerBlockwise = exchange.getCurrentRequest().getOptions().hasOscore()
+					&& exchange.getCurrentRequest().getOptions().getOscore().length != 0;
+
 			try {
 				OSCoreCtx ctx = ctxDb.getContext(exchange.getCryptographicContextID());
 				addPartialIV = ctx.getResponsesIncludePartialIV() || exchange.getRequest().getOptions().hasObserve();
 				
-				response = prepareSend(ctxDb, response, ctx, addPartialIV);
+				response = prepareSend(ctxDb, response, ctx, addPartialIV, outerBlockwise);
 				exchange.setResponse(response);
 			} catch (OSException e) {
 				org.eclipse.californium.elements.MyLogger.LOG_error("Error sending response: " + e.getMessage());
@@ -207,10 +238,19 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	@Override
 	public void receiveRequest(Exchange exchange, Request request) {
+
+		// REMOVE
+		System.out.println("Incoming request payload size: " + request.getPayloadSize());
+		if (request.getPayloadSize() == 149) {
+			System.out.println("Object security layer: FULL MESSAGE!");
+			System.out.println(Utils.prettyPrint(request));
+		}
+		// REMOVE
+
 		if (isProtected(request)) {
 
-			// For OSCORE-protected requests with the block1-option let them
-			// pass through to be re-assembled by the block-wise layer
+			// For OSCORE-protected requests with the outer block1-option let
+			// them pass through to be re-assembled by the block-wise layer
 			if (request.getOptions().hasBlock1()) {
 				super.receiveRequest(exchange, request);
 				return;

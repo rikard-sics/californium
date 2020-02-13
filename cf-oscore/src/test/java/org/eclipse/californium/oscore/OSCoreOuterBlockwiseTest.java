@@ -376,7 +376,7 @@ public class OSCoreOuterBlockwiseTest {
 	 * @throws Exception on test failure
 	 */
 	@Test
-	public void testOscoreLargeGet_ProxyClientBW() throws Exception {
+	public void testOscoreLargeGet_ProxyClientBW_FIXME() throws Exception {
 		startupServer(false);
 		startupProxy(false, true);
 		setClientContext(serverUri);
@@ -413,7 +413,7 @@ public class OSCoreOuterBlockwiseTest {
 	 * @throws Exception on test failure
 	 */
 	@Test
-	public void testOscoreOuterBlockwisePost_ProxyClientBW() throws Exception {
+	public void testOscoreOuterBlockwisePost_ProxyClientBW_FIXME() throws Exception {
 		startupServer(false);
 		startupProxy(false, true);
 		setClientContext(serverUri);

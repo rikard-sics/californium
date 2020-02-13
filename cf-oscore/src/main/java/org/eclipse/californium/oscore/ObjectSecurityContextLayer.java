@@ -20,6 +20,7 @@ package org.eclipse.californium.oscore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
 import org.eclipse.californium.core.coap.OptionNumberRegistry;
 import org.eclipse.californium.core.coap.OptionSet;
@@ -52,9 +53,54 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 		this.ctxDb = ctxDb;
 	}
 
+
+	@Override
+	public void receiveRequest(Exchange exchange, Request request) {
+
+		// Handle incoming OSCORE requests that have been re-assembled by the
+		// block-wise layer (for outer block-wise). If an incoming request has
+		// already been processed by OSCORE the option will be empty.
+
+		// REMOVE
+		System.out.println("Object security context layer: Incoming request payload size: " + request.getPayloadSize());
+		if (isProtected(request) && request.getOptions().getOscore().length != 0) {// request.getPayloadSize()
+																					// ==
+																					// 149)
+																					// {
+			System.out.println("Object security context layer: FULL MESSAGE!");
+			System.out.println("getBlock1ToAck " + exchange.getBlock1ToAck());
+			System.out.println("getOptions().hasBlock1() " + request.getOptions().hasBlock1());
+			// System.out.println("getBlock1ToAck " + exchange.);
+			System.out.println(Utils.prettyPrint(request));
+		}
+		// REMOVE
+
+		if (isProtected(request) && request.getOptions().getOscore().length != 0) {
+			// if (false) {
+			byte[] rid = null;
+			try {
+				request = RequestDecryptor.decrypt(ctxDb, request);
+				rid = request.getOptions().getOscore();
+				request.getOptions().setOscore(Bytes.EMPTY);
+				exchange.setRequest(request);
+			} catch (CoapOSException e) {
+				org.eclipse.californium.elements.MyLogger
+						.LOG_error("Error while receiving OSCore request: " + e.getMessage());
+				Response error;
+				error = CoapOSExceptionHandler.manageError(e, request);
+				if (error != null) {
+					super.sendResponse(exchange, error);
+				}
+				return;
+			}
+			exchange.setCryptographicContextID(rid);
+		}
+		super.receiveRequest(exchange, request);
+	}
+
 	@Override
 	public void sendRequest(final Exchange exchange, final Request request) {
-		if (shouldProtectRequest(request)) {
+		if (isProtected(request)) {
 			try {
 				final String uri = request.getURI();
 
@@ -165,7 +211,7 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 		super.sendRequest(exchange, request);
 	}
 
-	private static boolean shouldProtectRequest(Request request) {
+	private static boolean isProtected(Request request) {
 		OptionSet options = request.getOptions();
 		return options.hasOption(OptionNumberRegistry.OSCORE);
 	}
