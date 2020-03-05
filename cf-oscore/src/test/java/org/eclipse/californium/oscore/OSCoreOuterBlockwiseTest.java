@@ -552,7 +552,6 @@ public class OSCoreOuterBlockwiseTest {
 		client.shutdown();
 	}
 
-	
 	public void setClientContext(String serverUri) {
 		// Set up OSCORE context information for request (client)
 		byte[] sid = Bytes.EMPTY;
@@ -665,7 +664,6 @@ public class OSCoreOuterBlockwiseTest {
 			return counter.get();
 		}
 	}
-
 
 	/// FIXME comment
 	private void createSimpleProxy(MatcherMode mode, final boolean proxyRequestBlockwise,
