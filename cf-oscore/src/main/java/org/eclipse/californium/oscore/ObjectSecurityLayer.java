@@ -223,14 +223,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	@Override
 	public void receiveRequest(Exchange exchange, Request request) {
 
-		// REMOVE
-		System.out.println("Incoming request payload size: " + request.getPayloadSize());
-		if (request.getPayloadSize() == 149) {
-			System.out.println("Object security layer: FULL MESSAGE!");
-			System.out.println(Utils.prettyPrint(request));
-		}
-		// REMOVE
-
 		if (isProtected(request)) {
 
 			// For OSCORE-protected requests with the outer block1-option let

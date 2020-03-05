@@ -59,21 +59,6 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 		// Handle incoming OSCORE requests that have been re-assembled by the
 		// block-wise layer (for outer block-wise). If an incoming request has
 		// already been processed by OSCORE the option will be empty.
-
-		// REMOVE
-		System.out.println("Object security context layer: Incoming request payload size: " + request.getPayloadSize());
-		if (isProtected(request) && request.getOptions().getOscore().length != 0) {// request.getPayloadSize()
-																					// ==
-																					// 149)
-																					// {
-			System.out.println("Object security context layer: FULL MESSAGE!");
-			System.out.println("getBlock1ToAck " + exchange.getBlock1ToAck());
-			System.out.println("getOptions().hasBlock1() " + request.getOptions().hasBlock1());
-			// System.out.println("getBlock1ToAck " + exchange.);
-			System.out.println(Utils.prettyPrint(request));
-		}
-		// REMOVE
-
 		if (isProtected(request) && request.getOptions().getOscore().length != 0) {
 			// if (false) {
 			byte[] rid = null;
