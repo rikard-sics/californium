@@ -195,10 +195,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		boolean outerBlockwise;
 
 		if (shouldProtectResponse(exchange)) {
-			// If the current block-request still has a non-empty OSCORE option
-			// it means it was not unprotected by OSCORE as and individual
-			// request. Rather it was not processed by OSCORE until after being
-			// re-assembled by the block-wise layer
+			// If the current block-request still has a non-empty OSCORE option it
+			// means it was not unprotected by OSCORE as and individual request.
+			// Rather it was not processed by OSCORE until after being re-assembled
+			// by the block-wise layer. Thus the response should use outer block options.
 			outerBlockwise = exchange.getCurrentRequest().getOptions().hasOscore()
 					&& exchange.getCurrentRequest().getOptions().getOscore().length != 0;
 
