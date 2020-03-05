@@ -60,7 +60,6 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 		// block-wise layer (for outer block-wise). If an incoming request has
 		// already been processed by OSCORE the option will be empty.
 		if (isProtected(request) && request.getOptions().getOscore().length != 0) {
-			// if (false) {
 			byte[] rid = null;
 			try {
 				request = RequestDecryptor.decrypt(ctxDb, request);

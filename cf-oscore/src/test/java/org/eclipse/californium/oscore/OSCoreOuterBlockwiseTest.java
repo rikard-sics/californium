@@ -21,7 +21,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
@@ -56,7 +55,6 @@ import org.eclipse.californium.proxy.TranslationException;
 import org.eclipse.californium.rule.CoapNetworkRule;
 import org.eclipse.californium.rule.CoapThreadsRule;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -288,6 +286,7 @@ public class OSCoreOuterBlockwiseTest {
 		client.shutdown();
 	}
 
+	// FIXME: Test below is not actually splitting the response into blocks
 	/**
 	 * Perform GET request via proxy with large response payload. The
 	 * proxy->client response will be Block-Wise.
@@ -325,10 +324,11 @@ public class OSCoreOuterBlockwiseTest {
 		client.shutdown();
 	}
 
+	// FIXME: Test below is not actually splitting the response into blocks
 	/**
 	 * Perform POST request via proxy with large request and response payload.
 	 * The proxy->client response will be Block-Wise.
-	 * 
+	 *
 	 * @throws Exception on test failure
 	 */
 	@Test

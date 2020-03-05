@@ -20,6 +20,7 @@ package org.eclipse.californium.oscore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
@@ -192,12 +193,12 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		 * response. (They are not encrypted but external unprotected options.)
 		 */
 		boolean outerBlockwise;
-		// exchange.
+
 		if (shouldProtectResponse(exchange)) {
 			// If the current block-request still has a non-empty OSCORE option
 			// it means it was not unprotected by OSCORE as and individual
-			// request, but not processed until re-assembled by the block-wise
-			// layer
+			// request. Rather it was not processed by OSCORE until after being
+			// re-assembled by the block-wise layer
 			outerBlockwise = exchange.getCurrentRequest().getOptions().hasOscore()
 					&& exchange.getCurrentRequest().getOptions().getOscore().length != 0;
 
