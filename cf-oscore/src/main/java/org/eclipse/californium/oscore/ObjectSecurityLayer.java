@@ -20,7 +20,6 @@ package org.eclipse.californium.oscore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
@@ -74,8 +73,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	 * 
 	 * @param message the message
 	 * @param ctx the OSCore context
-	 * @param newPartialIV boolean to indicate whether to use a new partial IV
-	 *            or not
+	 * @param newPartialIV boolean to indicate whether to use a new partial IV or not
 	 * @param outerBlockwise boolean to indicate whether the block-wise options
 	 *            should be encrypted or not
 	 * 
@@ -193,27 +191,13 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		 * If the original request used outer block-wise options so should the
 		 * response. (They are not encrypted but external unprotected options.)
 		 */
-		boolean outerBlockwise;// exchange.getRequest().getOptions().hasBlock1();
+		boolean outerBlockwise;
 		// exchange.
 		if (shouldProtectResponse(exchange)) {
-
-			// REMOVE
-			System.out.println("Original req1: " + Utils.prettyPrint(exchange.getCurrentRequest()));
-			System.out.println("Original req2: " + Utils.prettyPrint(exchange.getRequest()));
-			// System.out.println("Original req3: " +
-			// Utils.prettyPrint(exchange.getRequest()));
-			System.out.println("Original req4: " + Utils.prettyPrint(response));
-			System.out.println("Test5: " + exchange.getCurrentRequest().equals(exchange.getRequest()));
-			System.out.println("to ack6: " + exchange.getBlock1ToAck());
-			// REMOVE
-
 			// If the current block-request still has a non-empty OSCORE option
 			// it means it was not unprotected by OSCORE as and individual
 			// request, but not processed until re-assembled by the block-wise
 			// layer
-			// System.out.println("Test2: " +
-			// (exchange.getCurrentRequest().getOptions().getOscore().length !=
-			// 0));
 			outerBlockwise = exchange.getCurrentRequest().getOptions().hasOscore()
 					&& exchange.getCurrentRequest().getOptions().getOscore().length != 0;
 
@@ -281,7 +265,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	public void receiveResponse(Exchange exchange, Response response) {
 		Request request = exchange.getCurrentRequest();
 		if (request == null) {
-			org.eclipse.californium.elements.MyLogger.LOG_error("No request tied to this response");
+			LOGGER.error("No request tied to this response");
 			return;
 		}
 		try {
