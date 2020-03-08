@@ -77,7 +77,7 @@ import org.junit.experimental.categories.Category;
  * FIXME: The tests do not work when running all JUnit tests, only when running
  * this test class in isolation.
  */
-// @Category(Medium.class)
+@Category(Medium.class)
 public class OSCoreOuterBlockwiseTest {
 
 	@ClassRule
@@ -496,6 +496,7 @@ public class OSCoreOuterBlockwiseTest {
 
 		// Create proxy
 		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
+		builder.setCoapStackFactory(CoapEndpoint.STANDARD_COAP_STACK_FACTORY);
 		builder.setInetSocketAddress(TestTools.LOCALHOST_EPHEMERAL);
 		CoapEndpoint proxyServerEndpoint = builder.build();
 		if (proxyResponseBlockwiseEnabled) {
@@ -519,6 +520,7 @@ public class OSCoreOuterBlockwiseTest {
 
 					// Create endpoint for proxy client side
 					CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
+					builder.setCoapStackFactory(CoapEndpoint.STANDARD_COAP_STACK_FACTORY);
 					if (proxyRequestBlockwise) {
 						builder.setNetworkConfig(config);
 					}
