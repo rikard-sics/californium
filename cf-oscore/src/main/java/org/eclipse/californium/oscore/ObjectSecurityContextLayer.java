@@ -193,6 +193,7 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 		super.sendRequest(exchange, request);
 	}
 
+	// FIXME: Rename?
 	private static boolean isProtected(Request request) {
 		OptionSet options = request.getOptions();
 		return options.hasOption(OptionNumberRegistry.OSCORE);

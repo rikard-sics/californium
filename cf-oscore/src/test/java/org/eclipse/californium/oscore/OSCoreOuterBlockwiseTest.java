@@ -97,7 +97,7 @@ public class OSCoreOuterBlockwiseTest {
 	static final int TIMEOUT_IN_MILLIS = 5000;
 	static final String TARGET = "resource";
 
-	static final boolean USE_OSCORE = true;
+	static final boolean USE_OSCORE = false;
 
 	// OSCORE context information shared between server and client
 	private final static HashMapCtxDB dbClient = new HashMapCtxDB();
