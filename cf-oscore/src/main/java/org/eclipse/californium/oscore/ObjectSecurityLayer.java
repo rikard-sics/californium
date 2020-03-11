@@ -128,7 +128,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				}
 				boolean outerBlockwise = false;
 				// System.out.println("!!!! a1 == null " + (a1 == null));
-
+				// FIXME: Skip OSCORe to proxy all together???
 				if (a2 != null && request.getOptions().hasBlock2() && exchange.getCurrentResponse() != null
 						&& exchange.getCurrentResponse().getOptions().hasOscore()) {
 					// Now this only happens for outer bw tests with FIXME
@@ -171,7 +171,15 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					System.out.println("!!!! a1 == null " + (a1 == null));
 					// Assert.fail("alal");
 
+					// Skip except for last response?
+					// MAKE SURE LAST RESPONSE IS DECRYPTED BY OSCORE
+
+					// NOW ADD DECRYpTION in ObjectSecurityContxtLayer!
+
+					exchange.setCryptographicContextID(a1.getRecipientId()); // NEEDED????
 					outerBlockwise = true;
+					super.sendRequest(exchange, req);
+					return;
 				}
 
 				String uri = request.getURI();
