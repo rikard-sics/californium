@@ -494,14 +494,16 @@ public class OSCoreOuterBlockwiseTest {
 				.setLong(Keys.EXCHANGE_LIFETIME, 10 * 1000L).setInt(Keys.MAX_MESSAGE_SIZE, DEFAULT_BLOCK_SIZE)
 				.setInt(Keys.PREFERRED_BLOCK_SIZE, DEFAULT_BLOCK_SIZE).setString(Keys.RESPONSE_MATCHING, mode.name());
 
-		// Create proxy
+		// Create endpoint for proxy server side
 		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
 		builder.setCoapStackFactory(CoapEndpoint.STANDARD_COAP_STACK_FACTORY);
 		builder.setInetSocketAddress(TestTools.LOCALHOST_EPHEMERAL);
-		CoapEndpoint proxyServerEndpoint = builder.build();
 		if (proxyResponseBlockwiseEnabled) {
 			builder.setNetworkConfig(config);
 		}
+		CoapEndpoint proxyServerEndpoint = builder.build();
+
+		// Create proxy
 		CoapServer proxy = new CoapServer();
 		cleanup.add(proxy);
 		proxy.addEndpoint(proxyServerEndpoint);
