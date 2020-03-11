@@ -20,7 +20,7 @@ package org.eclipse.californium.oscore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
@@ -268,6 +268,15 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				LOGGER.warn("Incoming response is NOT OSCORE protected!");
 			} else if (isProtected(response)) {
 				LOGGER.info("Incoming response is OSCORE protected");
+			}
+
+			// For OSCORE-protected response with the outer block2-option let
+			// them pass through to be re-assembled by the block-wise layer
+			if (response.getOptions().hasBlock2()) {
+				// System.out.println("HELLO123213213213");
+				// System.out.println(Utils.prettyPrint(response));
+				super.receiveResponse(exchange, response);
+				return;
 			}
 
 			//If response is protected with OSCORE parse it first with prepareReceive
