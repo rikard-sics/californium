@@ -20,6 +20,8 @@ package org.eclipse.californium.oscore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.eclipse.californium.core.Utils;
+import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
 import org.eclipse.californium.core.coap.OptionNumberRegistry;
 import org.eclipse.californium.core.coap.OptionSet;
@@ -30,6 +32,7 @@ import org.eclipse.californium.core.network.Exchange.Origin;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ContextRederivation.PHASE;
+import org.junit.Assert;
 
 /**
  * 
@@ -193,9 +196,48 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 		super.sendRequest(exchange, request);
 	}
 
+	// FIXME: Decrypt bw responses here!
+	@Override
+	public void receiveResponse(Exchange exchange, Response response) {
+
+		// FIXME: Find better way to determine when! (NOW DONE!)
+		// Now breaks inner bw tests (WORKS NOW)
+
+		OSCoreCtx a2 = null;
+		if (exchange.getCurrentResponse() != null) {
+			a2 = ctxDb.getContextByToken(exchange.getCurrentResponse().getToken());
+		}
+
+		// Handle incoming OSCORE responses that have been re-assembled by the
+		// block-wise layer (for outer block-wise). If an incoming response has
+		// already been processed by OSCORE the option will be empty.
+		if (isProtected(response) /*
+									 * &&
+									 * response.getOptions().getOscore().length
+									 * != 0
+									 */
+				&& exchange.getCryptographicContextID() != null && exchange.getCurrentResponse() != null
+				&& exchange.getCurrentResponse().getOptions().hasBlock2() && a2 != null) {
+			System.out.println("ABC123");
+			System.out.println("RESP1 " + Utils.prettyPrint(response));
+
+			System.out.println("RESP1 " + Utils.prettyPrint(exchange.getCurrentResponse()));
+			System.out.println("RESP1 " + Utils.prettyPrint(exchange.getCurrentRequest()));
+
+			System.out.println("RESP1 " + Utils.prettyPrint(exchange.getRequest()));
+
+
+			System.out.println("A2 null: " + (a2 == null));
+
+			Assert.fail("alal");
+		}
+
+		super.receiveResponse(exchange, response);
+	}
+
 	// FIXME: Rename?
-	private static boolean isProtected(Request request) {
-		OptionSet options = request.getOptions();
+	private static boolean isProtected(Message message) {
+		OptionSet options = message.getOptions();
 		return options.hasOption(OptionNumberRegistry.OSCORE);
 	}
 }

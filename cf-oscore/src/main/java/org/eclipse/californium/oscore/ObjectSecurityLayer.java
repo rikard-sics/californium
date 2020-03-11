@@ -122,6 +122,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			try {
 				// FIXME: Check
 
+
 				OSCoreCtx a2 = null;
 				if (exchange.getCurrentResponse() != null) {
 					a2 = ctxDb.getContextByToken(exchange.getCurrentResponse().getToken());
@@ -175,6 +176,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					// MAKE SURE LAST RESPONSE IS DECRYPTED BY OSCORE
 
 					// NOW ADD DECRYpTION in ObjectSecurityContxtLayer!
+
+					// Shoud lit really skip protecting here? What if post data?
+					// Just put external option?
 
 					exchange.setCryptographicContextID(a1.getRecipientId()); // NEEDED????
 					outerBlockwise = true;
@@ -264,6 +268,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			// by the block-wise layer. Thus the response should use outer block options.
 			outerBlockwise = exchange.getCurrentRequest().getOptions().hasOscore()
 					&& exchange.getCurrentRequest().getOptions().getOscore().length != 0;
+			// FIXME: Should it skip protecting the response? (probably not)
 
 			try {
 				OSCoreCtx ctx = ctxDb.getContext(exchange.getCryptographicContextID());
@@ -275,7 +280,12 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				LOGGER.error("Error sending response: " + e.getMessage());
 				return;
 			}
+			// Debug from server
+			if (true) {
+				System.out.println("RESPONSE SERVER: " + Utils.prettyPrint(response));
+			}
 		}
+
 		super.sendResponse(exchange, response);
 	}
 
