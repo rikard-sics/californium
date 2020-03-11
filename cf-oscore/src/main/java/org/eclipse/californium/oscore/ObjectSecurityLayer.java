@@ -33,6 +33,7 @@ import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ContextRederivation.PHASE;
+import org.junit.Assert;
 
 /**
  * 
@@ -119,6 +120,54 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		Request req = request;
 		if (shouldProtectRequest(request)) {
 			try {
+				// FIXME: Check
+
+				OSCoreCtx a2 = null;
+				if (exchange.getCurrentResponse() != null) {
+					a2 = ctxDb.getContextByToken(exchange.getCurrentResponse().getToken());
+				}
+				boolean outerBlockwise = false;
+				// System.out.println("!!!! a1 == null " + (a1 == null));
+
+				if (a2 != null && request.getOptions().hasBlock2() && exchange.getCurrentResponse() != null
+						&& exchange.getCurrentResponse().getOptions().hasOscore()) {
+					// Now this only happens for outer bw tests with FIXME
+					System.out.println("Hello123 " + request.getMID());
+					System.out.println("Hello123 " + exchange.getRequest().getMID());
+
+					System.out.println("Hello123 " + exchange.getCurrentRequest().getMID());
+					System.out.println("Hello123 " + exchange.getCurrentResponse().getMID());
+					System.out.println("exchange.getCurrentResponse().getOptions().hasOscore()"
+							+ (exchange.getCurrentResponse().getOptions().hasOscore()));
+					System.out.println("exchange.getCurrentResponse().getOptions().getOscore().length != 0: "
+							+ (exchange.getCurrentResponse().getOptions().getOscore().length != 0));
+
+					System.out.println("Equality: " + exchange.getCurrentRequest().equals(exchange.getRequest()));
+					
+					System.out.println("Response curr: " + Utils.prettyPrint(exchange.getCurrentResponse()));
+					if (exchange.getResponse() != null) {
+						System.out.println("Response: " + Utils.prettyPrint(exchange.getResponse()));
+					}
+
+					System.out.println("Request curr: " + Utils.prettyPrint(exchange.getCurrentRequest()));
+					if (exchange.getRequest() != null) {
+						System.out.println("Request: " + Utils.prettyPrint(exchange.getRequest()));
+					}
+					System.out.println("exchange.getBlock1ToAck();" + exchange.getBlock1ToAck());
+
+					System.out.println("exchange.getCryptographicContextID()"
+							+ Utils.toHexString(exchange.getCryptographicContextID()));
+
+					OSCoreCtx ll = ctxDb.getContext(request.getURI());
+					System.out.println("ctx.getSenderSeq() " + ll.getSenderSeq());
+					// Was originall skipped if no context for this Token
+					OSCoreCtx a1 = ctxDb.getContextByToken(exchange.getCurrentResponse().getToken());
+					System.out.println("!!!! a1 == null " + (a1 == null));
+					// Assert.fail("alal");
+
+					outerBlockwise = true;
+				}
+
 				String uri = request.getURI();
 
 				if (uri == null) {
