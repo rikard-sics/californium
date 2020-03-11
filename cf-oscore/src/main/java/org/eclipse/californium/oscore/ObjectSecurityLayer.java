@@ -160,7 +160,13 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 					OSCoreCtx ll = ctxDb.getContext(request.getURI());
 					System.out.println("ctx.getSenderSeq() " + ll.getSenderSeq());
+
 					// Was originall skipped if no context for this Token
+					// has block2 means its a requst with b2 for getting more
+					// data. In such caes block2 should be outer!
+
+					// exchange.getCurrentRequest().getToken()) or
+					// exchange.getRequest().getToken()) instead?
 					OSCoreCtx a1 = ctxDb.getContextByToken(exchange.getCurrentResponse().getToken());
 					System.out.println("!!!! a1 == null " + (a1 == null));
 					// Assert.fail("alal");
