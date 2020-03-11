@@ -21,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
@@ -76,6 +77,8 @@ import org.junit.experimental.categories.Category;
  *
  * FIXME: The tests do not work when running all JUnit tests, only when running
  * this test class in isolation.
+ * 
+ * FIXME: Add asserts for hasBlock2 ?
  */
 @Category(Medium.class)
 public class OSCoreOuterBlockwiseTest {
@@ -91,13 +94,10 @@ public class OSCoreOuterBlockwiseTest {
 	public TestNameLoggerRule name = new TestNameLoggerRule();
 
 	private static final int DEFAULT_BLOCK_SIZE = 32;
-
 	static final int TIMEOUT_IN_MILLIS = 5000;
-	static final int REPEATS = 3;
 	static final String TARGET = "resource";
-	static final String IDENITITY = "client1";
 
-	static final boolean USE_OSCORE = false;
+	static final boolean USE_OSCORE = true;
 
 	// OSCORE context information shared between server and client
 	private final static HashMapCtxDB dbClient = new HashMapCtxDB();
@@ -319,7 +319,7 @@ public class OSCoreOuterBlockwiseTest {
 		System.out.println(Utils.prettyPrint(response));
 		assertNotNull(response);
 		assertEquals(CoAP.ResponseCode.CONTENT, response.getCode());
-		// assertFalse(response.getOptions().hasSize2());
+		assertTrue(response.getOptions().hasSize2());
 		assertFalse(response.getOptions().hasBlock1());
 		assertEquals(payload, response.getResponseText());
 		assertEquals(1, resource.getCounter());
@@ -361,7 +361,7 @@ public class OSCoreOuterBlockwiseTest {
 		System.out.println(Utils.prettyPrint(response));
 		assertNotNull(response);
 		assertEquals(response.getCode(), CoAP.ResponseCode.CONTENT);
-		// assertFalse(response.getOptions().hasSize2());
+		assertTrue(response.getOptions().hasSize2());
 		assertFalse(response.getOptions().hasBlock1());
 		assertEquals(this.payload + payload, response.getResponseText());
 		assertEquals(this.payload + payload, resource.currentPayload);
