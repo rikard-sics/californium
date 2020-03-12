@@ -21,6 +21,7 @@ package org.eclipse.californium.oscore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.eclipse.californium.core.Utils;
+import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
 import org.eclipse.californium.core.coap.OptionNumberRegistry;
@@ -229,7 +230,58 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 
 			System.out.println("A2 null: " + (a2 == null));
 
-			Assert.fail("alal");
+			// Assert.fail("alal");
+
+			// ___
+
+			Request request = exchange.getCurrentRequest();
+			if (request == null) {
+				LOGGER.error("No request tied to this response");
+				return;
+			}
+			try {
+				// Printing of status information.
+				// Warns when expecting OSCORE response but unprotected response
+				// is received
+				if (!isProtected(response) && responseShouldBeProtected(exchange, response)) {
+					LOGGER.warn("Incoming response is NOT OSCORE protected!");
+				} else if (isProtected(response)) {
+					LOGGER.info("Incoming response is OSCORE protected");
+				}
+
+				// For OSCORE-protected response with the outer block2-option
+				// let
+				// them pass through to be re-assembled by the block-wise layer
+				if (response.getOptions().hasBlock2()) {
+					// System.out.println("HELLO123213213213");
+					// System.out.println(Utils.prettyPrint(response));
+					super.receiveResponse(exchange, response);
+					return;
+				}
+
+				// If response is protected with OSCORE parse it first with
+				// prepareReceive
+				if (isProtected(response)) {
+					response = ObjectSecurityLayer.prepareReceive(ctxDb, response);
+				}
+			} catch (OSException e) {
+				LOGGER.error("Error while receiving OSCore response: " + e.getMessage());
+				EmptyMessage error = CoapOSExceptionHandler.manageError(e, response);
+				if (error != null) {
+					sendEmptyMessage(exchange, error);
+				}
+				return;
+			}
+
+			// Remove token if this is a response to a Observe cancellation
+			// request
+			if (exchange.getRequest().isObserveCancel()) {
+				ctxDb.removeToken(response.getToken());
+			}
+
+			super.receiveResponse(exchange, response);
+
+			// ___
 		}
 
 		super.receiveResponse(exchange, response);
@@ -239,5 +291,30 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 	private static boolean isProtected(Message message) {
 		OptionSet options = message.getOptions();
 		return options.hasOption(OptionNumberRegistry.OSCORE);
+	}
+
+	// TODO: FIXME: REMOVE
+	// Method that checks if a response is expected to be protected with OSCORE
+	private boolean responseShouldBeProtected(Exchange exchange, Response response) throws OSException {
+		Request request = exchange.getCurrentRequest();
+		OptionSet options = request.getOptions();
+		if (exchange.getCryptographicContextID() == null) {
+			if (response.getOptions().hasObserve() && request.getOptions().hasObserve()) {
+
+				// Since the exchange object has been re-created the
+				// cryptographic id doesn't exist
+				if (options.hasOscore()) {
+					String uri = request.getURI();
+					try {
+						OSCoreCtx ctx = ctxDb.getContext(uri);
+						exchange.setCryptographicContextID(ctx.getRecipientId());
+					} catch (OSException e) {
+						LOGGER.error("Error when re-creating exchange at OSCORE level");
+						throw new OSException("Error when re-creating exchange at OSCORE level");
+					}
+				}
+			}
+		}
+		return exchange.getCryptographicContextID() != null;
 	}
 }
