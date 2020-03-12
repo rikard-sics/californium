@@ -319,7 +319,8 @@ public class OSCoreOuterBlockwiseTest {
 		System.out.println(Utils.prettyPrint(response));
 		assertNotNull(response);
 		assertEquals(CoAP.ResponseCode.CONTENT, response.getCode());
-		// FIXME //assertTrue(response.getOptions().hasSize2());
+		// FIXME (why difference with no oscore?)
+		// //assertTrue(response.getOptions().hasSize2());
 		assertFalse(response.getOptions().hasBlock1());
 		assertEquals(payload, response.getResponseText());
 		assertEquals(1, resource.getCounter());
@@ -361,7 +362,8 @@ public class OSCoreOuterBlockwiseTest {
 		System.out.println(Utils.prettyPrint(response));
 		assertNotNull(response);
 		assertEquals(response.getCode(), CoAP.ResponseCode.CONTENT);
-		// FIXME //assertTrue(response.getOptions().hasSize2());
+		// FIXME(why difference with no oscore?)
+		// assertTrue(response.getOptions().hasSize2());
 		assertFalse(response.getOptions().hasBlock1());
 		assertEquals(this.payload + payload, response.getResponseText());
 		assertEquals(this.payload + payload, resource.currentPayload);
