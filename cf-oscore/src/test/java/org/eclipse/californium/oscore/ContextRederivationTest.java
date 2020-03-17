@@ -107,7 +107,9 @@ public class ContextRederivationTest {
 	}
 
 	/**
-	 * Test context re-derivation followed by a normal message exchange.
+	 * Test context re-derivation followed by a normal message exchange. This
+	 * test simulates a client losing context information explicitly initiating
+	 * the context re-derivation procedure.
 	 * 
 	 * @throws OSException
 	 * @throws ConnectorException
@@ -115,14 +117,87 @@ public class ContextRederivationTest {
 	 * @throws CoseException
 	 */
 	@Test
-	public void rederivationTest() throws OSException, ConnectorException, IOException, CoseException {
+	public void testClientInitiatedRederivation() throws OSException, ConnectorException, IOException, CoseException {
 		
 		OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, null);
 		String serverUri = serverEndpoint.getUri().toASCIIString();
 		dbClient.addContext(serverUri, ctx);
 
 		// Set the context to be in the initiate phase
+		ctx.setContextRederivationEnabled(true);
 		ctx.setContextRederivationPhase(PHASE.CLIENT_INITIATE);
+
+		CoapClient c = new CoapClient(serverUri + hello1);
+		Request r = new Request(Code.GET);
+		r.getOptions().setOscore(Bytes.EMPTY);
+		RequestTestObserver requestTestObserver = new RequestTestObserver();
+		r.addMessageObserver(requestTestObserver);
+		CoapResponse resp = c.advanced(r);
+
+		System.out.println((Utils.prettyPrint(resp)));
+
+		OSCoreCtx currCtx = dbClient.getContext(serverUri);
+		assertEquals(ContextRederivation.PHASE.INACTIVE, currCtx.getContextRederivationPhase()); // Phase
+		assertFalse(currCtx.getIncludeContextId()); // Do not include Context ID
+
+		// Length of Context ID in context
+		int contextIdLen = currCtx.getIdContext().length;
+		assertEquals(3 * SEGMENT_LENGTH, contextIdLen);
+		// Check length of Context ID in the request
+		assertEquals(3 * SEGMENT_LENGTH, requestTestObserver.requestIdContext.length);
+
+		// Check R2 value derived by server using its key with received one
+		// The R2 value is composed of S2 || HMAC(K_HMAC, S2).
+		OSCoreCtx serverCtx = dbServer.getContext(sid);
+		byte[] srvContextRederivationKey = serverCtx.getContextRederivationKey();
+		byte[] contextS2 = Arrays.copyOfRange(currCtx.getIdContext(), 0, SEGMENT_LENGTH);
+		byte[] hmacOutput = OSCoreCtx.deriveKey(srvContextRederivationKey, srvContextRederivationKey, SEGMENT_LENGTH,
+				"SHA256", contextS2);
+		byte[] messageHmacValue = Arrays.copyOfRange(currCtx.getIdContext(), SEGMENT_LENGTH, SEGMENT_LENGTH * 2);
+		assertArrayEquals(hmacOutput, messageHmacValue);
+
+		// Empty OSCORE option in response
+		assertArrayEquals(Bytes.EMPTY, resp.getOptions().getOscore());
+
+		assertEquals(ResponseCode.CONTENT, resp.getCode());
+		assertEquals(SERVER_RESPONSE, resp.getResponseText());
+
+		// 2nd request for testing
+		r = new Request(Code.GET);
+		r.getOptions().setOscore(Bytes.EMPTY);
+		resp = c.advanced(r);
+		System.out.println((Utils.prettyPrint(resp)));
+
+		assertEquals(ResponseCode.CONTENT, resp.getCode());
+		assertEquals(SERVER_RESPONSE, resp.getResponseText());
+
+		resp = c.advanced(r);
+		System.out.println((Utils.prettyPrint(resp)));
+
+		c.shutdown();
+	}
+
+	/**
+	 * Test context re-derivation followed by a normal message exchange. This
+	 * test simulates a server losing context information. When a request from
+	 * the client arrives this will initiate the context re-derivation
+	 * procedure. Note that the client does not explicitly initiate the
+	 * procedure before the request as it still has the context information.
+	 * 
+	 * @throws OSException
+	 * @throws ConnectorException
+	 * @throws IOException
+	 * @throws CoseException
+	 */
+	@Test
+	public void testServerInitiatedRederivation() throws OSException, ConnectorException, IOException, CoseException {
+
+		// Remove all contexts from the server context db
+		dbServer.purge();
+
+		OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, null);
+		String serverUri = serverEndpoint.getUri().toASCIIString();
+		dbClient.addContext(serverUri, ctx);
 
 		CoapClient c = new CoapClient(serverUri + hello1);
 		Request r = new Request(Code.GET);
@@ -206,6 +281,7 @@ public class ContextRederivationTest {
 		byte[] sid = new byte[] { 0x01 };
 		byte[] rid = new byte[0];
 		OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, null);
+		ctx.setContextRederivationEnabled(true);
 		String clientUri = "coap://" + TestTools.LOCALHOST_EPHEMERAL.getAddress().getHostAddress();
 		dbServer.addContext(clientUri, ctx);
 

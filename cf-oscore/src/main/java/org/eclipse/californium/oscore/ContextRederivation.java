@@ -97,6 +97,12 @@ public class ContextRederivation {
 		// Retrieve the context for the target URI
 		OSCoreCtx ctx = db.getContext(uri);
 
+		// Check that context rederivation is enabled for this context
+		if (ctx.getContextRederivationEnabled() == false) {
+			LOGGER.error("Context rederivation is not enabled for this context.");
+			throw new IllegalStateException("Context rederivation is not enabled for this context.");
+		}
+
 		printStateLogging(ctx);
 
 		// Generate a random Context ID (ID1)
@@ -211,6 +217,12 @@ public class ContextRederivation {
 	 * @throws OSException if context re-derivation fails
 	 */
 	static OSCoreCtx incomingRequest(OSCoreCtxDB db, OSCoreCtx ctx, byte[] contextID) throws OSException {
+
+		 // Check if context re-derivation is enabled for this context
+		 if (ctx.getContextRederivationEnabled() == false) {
+			LOGGER.debug("Context re-derivation not initiated due to it being disabled for this context");
+			return ctx;
+		 }
 
 		// Handle server phase 2 operations
 		if (ctx.getContextRederivationPhase() == PHASE.SERVER_PHASE_2) {
@@ -359,6 +371,7 @@ public class ContextRederivation {
 		OSCoreCtx newCtx = new OSCoreCtx(ctx.getMasterSecret(), true, ctx.getAlg(), ctx.getSenderId(),
 				ctx.getRecipientId(), ctx.getKdf(), ctx.getRecipientReplaySize(), ctx.getSalt(), contextID);
 		newCtx.setContextRederivationKey(ctx.getContextRederivationKey());
+		newCtx.setContextRederivationEnabled(ctx.getContextRederivationEnabled());
 		return newCtx;
 	}
 
