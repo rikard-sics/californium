@@ -229,6 +229,7 @@ public class ContextRederivationTest {
 		String serverUri = serverEndpoint.getUri().toASCIIString();
 		dbClient.addContext(serverUri, ctx);
 
+		// Create first request (for request #1 and response #1 exchange)
 		CoapClient c = new CoapClient(serverUri + hello1);
 		Request r = new Request(Code.GET);
 		r.getOptions().setOscore(Bytes.EMPTY);
@@ -256,32 +257,51 @@ public class ContextRederivationTest {
 		byte[] hmacOutput = OSCoreCtx.deriveKey(srvContextRederivationKey, srvContextRederivationKey, SEGMENT_LENGTH,
 				"SHA256", contextS2);
 		byte[] messageHmacValue = Arrays.copyOfRange(currCtx.getIdContext(), SEGMENT_LENGTH, SEGMENT_LENGTH * 2);
-		// assertArrayEquals(hmacOutput, messageHmacValue);
 
-		byte[] contextS1 = ctx.getIdContext();
+		// The OSCORE option in the response should include the correct R2 value
+		byte[] contextR2 = Bytes.concatenate(contextS2, hmacOutput);
+		byte[] oscoreOption = resp.getOptions().getOscore();
+		byte[] oscoreOptionR2 = Arrays.copyOfRange(oscoreOption, oscoreOption.length - 2 * SEGMENT_LENGTH,
+				oscoreOption.length);
+		assertArrayEquals(contextR2, oscoreOptionR2);
+		assertArrayEquals(hmacOutput, messageHmacValue);
 
-		System.out.println(Utils.toHexString(contextS2));
-		System.out.println(Utils.toHexString(hmacOutput));
-		System.out.println(Utils.toHexString(messageHmacValue));
-		System.out.println(Utils.toHexString(contextS1));
+		assertEquals(ResponseCode.CONTENT, resp.getCode());
+		assertEquals(SERVER_RESPONSE, resp.getResponseText());
+
+		// 2nd request (for request #2 and response #2 exchange)
+		r = new Request(Code.GET);
+		r.getOptions().setOscore(Bytes.EMPTY);
+		requestTestObserver = new RequestTestObserver();
+		r.addMessageObserver(requestTestObserver);
+		resp = c.advanced(r);
+		System.out.println((Utils.prettyPrint(resp)));
+
+		currCtx = dbClient.getContext(serverUri);
+		assertEquals(ContextRederivation.PHASE.INACTIVE, currCtx.getContextRederivationPhase()); // Phase
+		assertFalse(currCtx.getIncludeContextId()); // Stop including Context ID
+
+		// Length of Context ID in context (R2 || R3)
+		contextIdLen = currCtx.getIdContext().length;
+		assertEquals(3 * SEGMENT_LENGTH, contextIdLen);
+		// Check length of Context ID in the request (R2 || R3)
+		assertEquals(3 * SEGMENT_LENGTH, requestTestObserver.requestIdContext.length);
+
+		// Check R2 value derived by server using its key with received one
+		// The R2 value is composed of S2 || HMAC(K_HMAC, S2).
+		serverCtx = dbServer.getContext(sid);
+		srvContextRederivationKey = serverCtx.getContextRederivationKey();
+		contextS2 = Arrays.copyOfRange(currCtx.getIdContext(), 0, SEGMENT_LENGTH);
+		hmacOutput = OSCoreCtx.deriveKey(srvContextRederivationKey, srvContextRederivationKey, SEGMENT_LENGTH, "SHA256",
+				contextS2);
+		messageHmacValue = Arrays.copyOfRange(currCtx.getIdContext(), SEGMENT_LENGTH, SEGMENT_LENGTH * 2);
+		assertArrayEquals(hmacOutput, messageHmacValue);
 
 		// Empty OSCORE option in response
 		assertArrayEquals(Bytes.EMPTY, resp.getOptions().getOscore());
 
 		assertEquals(ResponseCode.CONTENT, resp.getCode());
 		assertEquals(SERVER_RESPONSE, resp.getResponseText());
-
-		// 2nd request for testing
-		r = new Request(Code.GET);
-		r.getOptions().setOscore(Bytes.EMPTY);
-		resp = c.advanced(r);
-		System.out.println((Utils.prettyPrint(resp)));
-
-		assertEquals(ResponseCode.CONTENT, resp.getCode());
-		assertEquals(SERVER_RESPONSE, resp.getResponseText());
-
-		resp = c.advanced(r);
-		System.out.println((Utils.prettyPrint(resp)));
 
 		c.shutdown();
 	}

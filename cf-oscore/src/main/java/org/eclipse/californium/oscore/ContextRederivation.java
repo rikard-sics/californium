@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.elements.exception.ConnectorException;
@@ -126,6 +127,12 @@ public class ContextRederivation {
 	 */
 	static OSCoreCtx incomingResponse(OSCoreCtxDB db, OSCoreCtx ctx, byte[] contextID) throws OSException {
 
+		// Check if context re-derivation is enabled for this context
+		if (ctx.getContextRederivationEnabled() == false) {
+			LOGGER.debug("Context re-derivation not considered due to it being disabled for this context");
+			return ctx;
+		}
+
 		// Handle client phase 3 operations
 		if (ctx.getContextRederivationPhase() == PHASE.CLIENT_PHASE_3) {
 
@@ -165,8 +172,11 @@ public class ContextRederivation {
 			// enabled on the client, it should check if the response is in fact
 			// part of a context re-derivation procedure initiated by the
 			// server.
-			if (ctx.getContextRederivationEnabled() == false) {
-				LOGGER.debug("Context re-derivation not considered due to it being disabled for this context");
+
+			// For this to be a valid response #1 from the server it must have a
+			// contextID set and not match the one used in the client's context
+			// (ID1 is different from R2)
+			if (contextID == null || Arrays.equals(ctx.getIdContext(), contextID) == true) {
 				return ctx;
 			}
 
