@@ -75,7 +75,6 @@ import org.junit.experimental.categories.Category;
  * Block-Wise responses, Block-Wise requests with normal responses and normal
  * requests with Block-Wise responses.
  * 
- * FIXME: Add asserts for hasBlock2 ?
  */
 @Category(Medium.class)
 public class OSCoreOuterBlockwiseTest {
@@ -118,17 +117,17 @@ public class OSCoreOuterBlockwiseTest {
 
 	public void startupServer(boolean serverResponseBlockwiseEnabled) {
 		payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
-		createOscoreServer(mode, serverResponseBlockwiseEnabled);
+		createOscoreServer(serverResponseBlockwiseEnabled);
 		resource.setPayload(payload);
 	}
 
 	public void startupProxy(boolean proxyRequestBlockwiseEnabled, boolean proxyResponseBlockwiseEnabled) {
-		createSimpleProxy(mode, proxyRequestBlockwiseEnabled, proxyResponseBlockwiseEnabled);
+		createSimpleProxy(proxyRequestBlockwiseEnabled, proxyResponseBlockwiseEnabled);
 	}
 
 	/**
 	 * Create network config to apply when building endpoints to enable
-	 * block-wise transfers
+	 * block-wise transfers (for messages exceeding DEFAULT_BLOCK_SIZE)
 	 */
 	@BeforeClass
 	public static void createBlockwiseConfig() {
@@ -146,7 +145,7 @@ public class OSCoreOuterBlockwiseTest {
 	 * @throws Exception on test failure
 	 */
 	@Test
-	public void testOscoreSimpleGet() throws Exception {
+	public void testProxySmallGet() throws Exception {
 		startupServer(false);
 		startupProxy(false, false);
 		setClientContext(serverUri);
@@ -186,7 +185,7 @@ public class OSCoreOuterBlockwiseTest {
 	 * @throws Exception on test failure
 	 */
 	@Test
-	public void testOscoreLargeGet() throws Exception {
+	public void testProxyLargeGet() throws Exception {
 		startupServer(false);
 		startupProxy(false, false);
 		setClientContext(serverUri);
@@ -223,7 +222,7 @@ public class OSCoreOuterBlockwiseTest {
 	 * @throws Exception on test failure
 	 */
 	@Test
-	public void testOscoreOuterBlockwisePost_ProxyServerBW() throws Exception {
+	public void testOuterBlockwisePostProxyServerBW() throws Exception {
 		startupServer(false);
 		startupProxy(true, false);
 		setClientContext(serverUri);
@@ -265,7 +264,7 @@ public class OSCoreOuterBlockwiseTest {
 	 * @throws Exception on test failure
 	 */
 	@Test
-	public void testOscoreOuterBlockwisePut_ProxyServerBW() throws Exception {
+	public void testOuterBlockwisePutProxyServerBW() throws Exception {
 		startupServer(false);
 		startupProxy(true, false);
 		setClientContext(serverUri);
@@ -300,7 +299,6 @@ public class OSCoreOuterBlockwiseTest {
 		client.shutdown();
 	}
 
-	// FIXME: Test below is not actually splitting the response into blocks
 	/**
 	 * Perform GET request via proxy with large response payload. The
 	 * proxy->client response will be Block-Wise.
@@ -308,7 +306,7 @@ public class OSCoreOuterBlockwiseTest {
 	 * @throws Exception on test failure
 	 */
 	@Test
-	public void testOscoreLargeGet_ProxyClientBW_FIXME() throws Exception {
+	public void testOuterBlockwiseGetProxyClientBW() throws Exception {
 		startupServer(false);
 		startupProxy(false, true);
 		setClientContext(serverUri);
@@ -332,12 +330,12 @@ public class OSCoreOuterBlockwiseTest {
 		assertNotNull(response);
 		assertEquals(CoAP.ResponseCode.CONTENT, response.getCode());
 		assertFalse(response.getOptions().hasBlock1());
+		assertFalse(response.getOptions().hasBlock2());
 		assertEquals(payload, response.getResponseText());
 		assertEquals(1, resource.getCounter());
 		client.shutdown();
 	}
 
-	// FIXME: Test below is not actually splitting the response into blocks
 	/**
 	 * Perform POST request via proxy with large request and response payload.
 	 * The proxy->client response will be Block-Wise.
@@ -345,7 +343,7 @@ public class OSCoreOuterBlockwiseTest {
 	 * @throws Exception on test failure
 	 */
 	@Test
-	public void testOscoreOuterBlockwisePost_ProxyClientBW_FIXME() throws Exception {
+	public void testOuterBlockwisePostProxyClientBW() throws Exception {
 		startupServer(false);
 		startupProxy(false, true);
 		setClientContext(serverUri);
@@ -373,6 +371,7 @@ public class OSCoreOuterBlockwiseTest {
 		assertNotNull(response);
 		assertEquals(response.getCode(), CoAP.ResponseCode.CONTENT);
 		assertFalse(response.getOptions().hasBlock1());
+		assertFalse(response.getOptions().hasBlock2());
 		assertEquals(this.payload + payload, response.getResponseText());
 		assertEquals(this.payload + payload, resource.currentPayload);
 		assertEquals(1, resource.getCounter());
@@ -405,7 +404,12 @@ public class OSCoreOuterBlockwiseTest {
 		}
 	}
 
-	private void createOscoreServer(MatcherMode mode, boolean serverResponseBlockwise) {
+	/**
+	 * Create a simple OSCORE server that supports block-wise.
+	 * 
+	 * @param serverResponseBlockwise the server responds with block-wise
+	 */
+	private void createOscoreServer(boolean serverResponseBlockwise) {
 
 		setServerContext();
 
@@ -484,9 +488,13 @@ public class OSCoreOuterBlockwiseTest {
 		}
 	}
 
-	/// FIXME comment
-	private void createSimpleProxy(MatcherMode mode, final boolean proxyRequestBlockwise,
-			final boolean proxyResponseBlockwiseEnabled) {
+	/**
+	 * Create simple non-OSCORE proxy.
+	 * 
+	 * @param proxyRequestBlockwise the proxy sends requests with block-wise
+	 * @param proxyResponseBlockwiseEnabled the proxy responds with block-wise
+	 */
+	private void createSimpleProxy(final boolean proxyRequestBlockwise, final boolean proxyResponseBlockwiseEnabled) {
 
 		// Create endpoint for proxy server side
 		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
@@ -506,7 +514,6 @@ public class OSCoreOuterBlockwiseTest {
 
 			@Override
 			public void deliverRequest(Exchange exchange) {
-				System.out.println("proxy received request");
 
 				Response outgoingResponse = null;
 				try {

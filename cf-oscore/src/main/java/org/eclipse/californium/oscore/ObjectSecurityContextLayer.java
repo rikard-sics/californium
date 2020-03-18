@@ -197,7 +197,6 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 		super.sendRequest(exchange, request);
 	}
 
-	// COMMENT
 	@Override
 	public void receiveResponse(Exchange exchange, Response response) {
 
@@ -209,12 +208,8 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 		// Handle incoming OSCORE responses that have been re-assembled by the
 		// block-wise layer (for outer block-wise). If an incoming response has
 		// already been processed by OSCORE the option will be empty.
-		if (isProtected(response) /*
-									 * &&
-									 * response.getOptions().getOscore().length
-									 * != 0
-									 */
-				&& exchange.getCryptographicContextID() != null && exchange.getCurrentResponse() != null
+		if (isProtected(response) && exchange.getCryptographicContextID() != null
+				&& exchange.getCurrentResponse() != null
 				&& exchange.getCurrentResponse().getOptions().hasBlock2() && a2 != null) {
 
 			Request request = exchange.getCurrentRequest();
@@ -258,7 +253,6 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 		super.receiveResponse(exchange, response);
 	}
 
-	// FIXME: Rename?
 	private static boolean isProtected(Message message) {
 		OptionSet options = message.getOptions();
 		return options.hasOption(OptionNumberRegistry.OSCORE);

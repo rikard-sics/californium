@@ -20,7 +20,6 @@ package org.eclipse.californium.oscore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
@@ -33,7 +32,6 @@ import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ContextRederivation.PHASE;
-import org.junit.Assert;
 
 /**
  * 
@@ -135,19 +133,19 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					// Now this only happens for outer bw tests with FIXME
 
 
-					OSCoreCtx ll = ctxDb.getContext(request.getURI());
-
 
 					// Was originall skipped if no context for this Token
 					// has block2 means its a requst with b2 for getting more
 
-					OSCoreCtx a1 = ctxDb.getContextByToken(exchange.getCurrentResponse().getToken());
+					// OSCoreCtx a1 =
+					// ctxDb.getContextByToken(exchange.getCurrentResponse().getToken());
 
 
 					// Shoud lit really skip protecting here? What if post data?
 					// Just put external option?
 
-					exchange.setCryptographicContextID(a1.getRecipientId()); // NEEDED????
+					// exchange.setCryptographicContextID(a1.getRecipientId());
+					// // NEEDED????
 					// outerBlockwise = true;
 					super.sendRequest(exchange, req);
 					return;
@@ -235,7 +233,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			// by the block-wise layer. Thus the response should use outer block options.
 			outerBlockwise = exchange.getCurrentRequest().getOptions().hasOscore()
 					&& exchange.getCurrentRequest().getOptions().getOscore().length != 0;
-			// FIXME: Should it skip protecting the response? (probably not)
 
 			try {
 				OSCoreCtx ctx = ctxDb.getContext(exchange.getCryptographicContextID());
