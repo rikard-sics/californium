@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
-import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.elements.exception.ConnectorException;

@@ -156,7 +156,7 @@ public class ContextRederivationTest {
 
 		OSCoreCtx currCtx = dbClient.getContext(serverUri);
 		assertEquals(ContextRederivation.PHASE.INACTIVE, currCtx.getContextRederivationPhase()); // Phase
-		assertFalse(currCtx.getIncludeContextId()); // Stop including Context ID
+		assertFalse(currCtx.getIncludeContextId()); // Do not include Context ID
 
 		// Length of Context ID in context (R2 || R3)
 		int contextIdLen = currCtx.getIdContext().length;
@@ -279,7 +279,7 @@ public class ContextRederivationTest {
 
 		currCtx = dbClient.getContext(serverUri);
 		assertEquals(ContextRederivation.PHASE.INACTIVE, currCtx.getContextRederivationPhase()); // Phase
-		assertFalse(currCtx.getIncludeContextId()); // Stop including Context ID
+		assertFalse(currCtx.getIncludeContextId()); // Do not include Context ID
 
 		// Length of Context ID in context (R2 || R3)
 		contextIdLen = currCtx.getIdContext().length;
