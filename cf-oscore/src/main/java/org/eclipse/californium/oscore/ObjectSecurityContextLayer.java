@@ -197,12 +197,9 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 		super.sendRequest(exchange, request);
 	}
 
-	// FIXME: Decrypt bw responses here!
+	// COMMENT
 	@Override
 	public void receiveResponse(Exchange exchange, Response response) {
-
-		// FIXME: Find better way to determine when! (NOW DONE!)
-		// Now breaks inner bw tests (WORKS NOW)
 
 		OSCoreCtx a2 = null;
 		if (exchange.getCurrentResponse() != null) {
@@ -219,20 +216,6 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 									 */
 				&& exchange.getCryptographicContextID() != null && exchange.getCurrentResponse() != null
 				&& exchange.getCurrentResponse().getOptions().hasBlock2() && a2 != null) {
-			System.out.println("ABC123");
-			System.out.println("RESP1 " + Utils.prettyPrint(response));
-
-			System.out.println("RESP1 " + Utils.prettyPrint(exchange.getCurrentResponse()));
-			System.out.println("RESP1 " + Utils.prettyPrint(exchange.getCurrentRequest()));
-
-			System.out.println("RESP1 " + Utils.prettyPrint(exchange.getRequest()));
-
-
-			System.out.println("A2 null: " + (a2 == null));
-
-			// Assert.fail("alal");
-
-			// ___
 
 			Request request = exchange.getCurrentRequest();
 			if (request == null) {
@@ -247,16 +230,6 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 					LOGGER.warn("Incoming response is NOT OSCORE protected!");
 				} else if (isProtected(response)) {
 					LOGGER.info("Incoming response is OSCORE protected");
-				}
-
-				// For OSCORE-protected response with the outer block2-option
-				// let
-				// them pass through to be re-assembled by the block-wise layer
-				if (response.getOptions().hasBlock2()) {
-					// System.out.println("HELLO123213213213");
-					// System.out.println(Utils.prettyPrint(response));
-					super.receiveResponse(exchange, response);
-					return;
 				}
 
 				// If response is protected with OSCORE parse it first with
@@ -280,8 +253,6 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 			}
 
 			super.receiveResponse(exchange, response);
-
-			// ___
 		}
 
 		super.receiveResponse(exchange, response);

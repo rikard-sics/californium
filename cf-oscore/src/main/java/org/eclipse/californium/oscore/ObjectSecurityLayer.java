@@ -127,61 +127,28 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				if (exchange.getCurrentResponse() != null) {
 					a2 = ctxDb.getContextByToken(exchange.getCurrentResponse().getToken());
 				}
-				boolean outerBlockwise = false;
-				// System.out.println("!!!! a1 == null " + (a1 == null));
+
+				// //System.out.println("!!!! a1 == null " + (a1 == null));
 				// FIXME: Skip OSCORe to proxy all together???
 				if (a2 != null && request.getOptions().hasBlock2() && exchange.getCurrentResponse() != null
 						&& exchange.getCurrentResponse().getOptions().hasOscore()) {
 					// Now this only happens for outer bw tests with FIXME
-					System.out.println("Hello123 " + request.getMID());
-					System.out.println("Hello123 " + exchange.getRequest().getMID());
 
-					System.out.println("Hello123 " + exchange.getCurrentRequest().getMID());
-					System.out.println("Hello123 " + exchange.getCurrentResponse().getMID());
-					System.out.println("exchange.getCurrentResponse().getOptions().hasOscore()"
-							+ (exchange.getCurrentResponse().getOptions().hasOscore()));
-					System.out.println("exchange.getCurrentResponse().getOptions().getOscore().length != 0: "
-							+ (exchange.getCurrentResponse().getOptions().getOscore().length != 0));
-
-					System.out.println("Equality: " + exchange.getCurrentRequest().equals(exchange.getRequest()));
-					
-					System.out.println("Response curr: " + Utils.prettyPrint(exchange.getCurrentResponse()));
-					if (exchange.getResponse() != null) {
-						System.out.println("Response: " + Utils.prettyPrint(exchange.getResponse()));
-					}
-
-					System.out.println("Request curr: " + Utils.prettyPrint(exchange.getCurrentRequest()));
-					if (exchange.getRequest() != null) {
-						System.out.println("Request: " + Utils.prettyPrint(exchange.getRequest()));
-					}
-					System.out.println("exchange.getBlock1ToAck();" + exchange.getBlock1ToAck());
-
-					System.out.println("exchange.getCryptographicContextID()"
-							+ Utils.toHexString(exchange.getCryptographicContextID()));
 
 					OSCoreCtx ll = ctxDb.getContext(request.getURI());
-					System.out.println("ctx.getSenderSeq() " + ll.getSenderSeq());
+
 
 					// Was originall skipped if no context for this Token
 					// has block2 means its a requst with b2 for getting more
-					// data. In such caes block2 should be outer!
 
-					// exchange.getCurrentRequest().getToken()) or
-					// exchange.getRequest().getToken()) instead?
 					OSCoreCtx a1 = ctxDb.getContextByToken(exchange.getCurrentResponse().getToken());
-					System.out.println("!!!! a1 == null " + (a1 == null));
-					// Assert.fail("alal");
 
-					// Skip except for last response?
-					// MAKE SURE LAST RESPONSE IS DECRYPTED BY OSCORE
-
-					// NOW ADD DECRYpTION in ObjectSecurityContxtLayer!
 
 					// Shoud lit really skip protecting here? What if post data?
 					// Just put external option?
 
 					exchange.setCryptographicContextID(a1.getRecipientId()); // NEEDED????
-					outerBlockwise = true;
+					// outerBlockwise = true;
 					super.sendRequest(exchange, req);
 					return;
 				}
@@ -280,10 +247,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				LOGGER.error("Error sending response: " + e.getMessage());
 				return;
 			}
-			// Debug from server
-			if (true) {
-				System.out.println("RESPONSE SERVER: " + Utils.prettyPrint(response));
-			}
 		}
 
 		super.sendResponse(exchange, response);
@@ -346,8 +309,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			// For OSCORE-protected response with the outer block2-option let
 			// them pass through to be re-assembled by the block-wise layer
 			if (response.getOptions().hasBlock2()) {
-				// System.out.println("HELLO123213213213");
-				// System.out.println(Utils.prettyPrint(response));
 				super.receiveResponse(exchange, response);
 				return;
 			}
