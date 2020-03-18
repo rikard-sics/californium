@@ -21,7 +21,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
@@ -55,6 +54,7 @@ import org.eclipse.californium.proxy.CoapTranslator;
 import org.eclipse.californium.proxy.TranslationException;
 import org.eclipse.californium.rule.CoapNetworkRule;
 import org.eclipse.californium.rule.CoapThreadsRule;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -74,9 +74,6 @@ import org.junit.experimental.categories.Category;
  * The tests cover POST, PUT and GET methods. It tests Block-Wise requests with
  * Block-Wise responses, Block-Wise requests with normal responses and normal
  * requests with Block-Wise responses.
- *
- * FIXME: The tests do not work when running all JUnit tests, only when running
- * this test class in isolation.
  * 
  * FIXME: Add asserts for hasBlock2 ?
  */
@@ -117,6 +114,8 @@ public class OSCoreOuterBlockwiseTest {
 
 	private static MatcherMode mode = MatcherMode.STRICT;
 
+	private static NetworkConfig blockwiseConfig;
+
 	public void startupServer(boolean serverResponseBlockwiseEnabled) {
 		payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
 		createOscoreServer(mode, serverResponseBlockwiseEnabled);
@@ -125,6 +124,19 @@ public class OSCoreOuterBlockwiseTest {
 
 	public void startupProxy(boolean proxyRequestBlockwiseEnabled, boolean proxyResponseBlockwiseEnabled) {
 		createSimpleProxy(mode, proxyRequestBlockwiseEnabled, proxyResponseBlockwiseEnabled);
+	}
+
+	/**
+	 * Create network config to apply when building endpoints to enable
+	 * block-wise transfers
+	 */
+	@BeforeClass
+	public static void createBlockwiseConfig() {
+		blockwiseConfig = network.createTestConfig().setInt(Keys.ACK_TIMEOUT, 200).setFloat(Keys.ACK_RANDOM_FACTOR, 1f)
+				.setFloat(Keys.ACK_TIMEOUT_SCALE, 1f)
+				// set response timeout (indirect) to 10s
+				.setLong(Keys.EXCHANGE_LIFETIME, 10 * 1000L).setInt(Keys.MAX_MESSAGE_SIZE, DEFAULT_BLOCK_SIZE)
+				.setInt(Keys.PREFERRED_BLOCK_SIZE, DEFAULT_BLOCK_SIZE).setString(Keys.RESPONSE_MATCHING, mode.name());
 	}
 
 	/**
@@ -319,8 +331,6 @@ public class OSCoreOuterBlockwiseTest {
 		System.out.println(Utils.prettyPrint(response));
 		assertNotNull(response);
 		assertEquals(CoAP.ResponseCode.CONTENT, response.getCode());
-		// FIXME (why difference with no oscore?)
-		// //assertTrue(response.getOptions().hasSize2());
 		assertFalse(response.getOptions().hasBlock1());
 		assertEquals(payload, response.getResponseText());
 		assertEquals(1, resource.getCounter());
@@ -362,8 +372,6 @@ public class OSCoreOuterBlockwiseTest {
 		System.out.println(Utils.prettyPrint(response));
 		assertNotNull(response);
 		assertEquals(response.getCode(), CoAP.ResponseCode.CONTENT);
-		// FIXME(why difference with no oscore?)
-		// assertTrue(response.getOptions().hasSize2());
 		assertFalse(response.getOptions().hasBlock1());
 		assertEquals(this.payload + payload, response.getResponseText());
 		assertEquals(this.payload + payload, resource.currentPayload);
@@ -401,17 +409,9 @@ public class OSCoreOuterBlockwiseTest {
 
 		setServerContext();
 
-		// Network config for server endpoint (will use block-wise for large
-		// responses when enabled)
-		final NetworkConfig config = network.createTestConfig().setInt(Keys.ACK_TIMEOUT, 200)
-				.setFloat(Keys.ACK_RANDOM_FACTOR, 1f).setFloat(Keys.ACK_TIMEOUT_SCALE, 1f)
-				// set response timeout (indirect) to 10s
-				.setLong(Keys.EXCHANGE_LIFETIME, 10 * 1000L).setInt(Keys.MAX_MESSAGE_SIZE, DEFAULT_BLOCK_SIZE)
-				.setInt(Keys.PREFERRED_BLOCK_SIZE, DEFAULT_BLOCK_SIZE).setString(Keys.RESPONSE_MATCHING, mode.name());
-
 		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
 		if (serverResponseBlockwise) {
-			builder.setNetworkConfig(config);
+			builder.setNetworkConfig(blockwiseConfig);
 		}
 		builder.setInetSocketAddress(TestTools.LOCALHOST_EPHEMERAL);
 		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
@@ -488,20 +488,12 @@ public class OSCoreOuterBlockwiseTest {
 	private void createSimpleProxy(MatcherMode mode, final boolean proxyRequestBlockwise,
 			final boolean proxyResponseBlockwiseEnabled) {
 
-		// Network config for proxy client endpoint (will use block-wise for
-		// large requests)
-		final NetworkConfig config = network.createTestConfig().setInt(Keys.ACK_TIMEOUT, 200)
-				.setFloat(Keys.ACK_RANDOM_FACTOR, 1f).setFloat(Keys.ACK_TIMEOUT_SCALE, 1f)
-				// set response timeout (indirect) to 10s
-				.setLong(Keys.EXCHANGE_LIFETIME, 10 * 1000L).setInt(Keys.MAX_MESSAGE_SIZE, DEFAULT_BLOCK_SIZE)
-				.setInt(Keys.PREFERRED_BLOCK_SIZE, DEFAULT_BLOCK_SIZE).setString(Keys.RESPONSE_MATCHING, mode.name());
-
 		// Create endpoint for proxy server side
 		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
 		builder.setCoapStackFactory(CoapEndpoint.STANDARD_COAP_STACK_FACTORY);
 		builder.setInetSocketAddress(TestTools.LOCALHOST_EPHEMERAL);
 		if (proxyResponseBlockwiseEnabled) {
-			builder.setNetworkConfig(config);
+			builder.setNetworkConfig(blockwiseConfig);
 		}
 
 		CoapEndpoint proxyServerEndpoint = builder.build();
@@ -527,7 +519,7 @@ public class OSCoreOuterBlockwiseTest {
 					CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
 					builder.setCoapStackFactory(CoapEndpoint.STANDARD_COAP_STACK_FACTORY);
 					if (proxyRequestBlockwise) {
-						builder.setNetworkConfig(config);
+						builder.setNetworkConfig(blockwiseConfig);
 					}
 					CoapEndpoint proxyClientEndpoint = builder.build();
 					proxyClient.setEndpoint(proxyClientEndpoint);
