@@ -542,12 +542,6 @@ public class OSCoreOuterBlockwiseTest {
 					fail();
 				}
 
-				// Clear block1 option in final response to client (it will not
-				// expect such if its request was not using Block-Wise.)
-				if (exchange.getRequest().getOptions().hasBlock1() == false) {
-					outgoingResponse.getOptions().removeBlock1();
-				}
-
 				// Send response to client
 				exchange.sendResponse(outgoingResponse);
 			}
