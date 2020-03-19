@@ -118,35 +118,12 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		Request req = request;
 		if (shouldProtectRequest(request)) {
 			try {
-				// FIXME: Check
-
-
-				OSCoreCtx a2 = null;
-				if (exchange.getCurrentResponse() != null) {
-					a2 = ctxDb.getContextByToken(exchange.getCurrentResponse().getToken());
-				}
-
-				// //System.out.println("!!!! a1 == null " + (a1 == null));
-				// FIXME: Skip OSCORe to proxy all together???
-				if (a2 != null && request.getOptions().hasBlock2() && exchange.getCurrentResponse() != null
-						&& exchange.getCurrentResponse().getOptions().hasOscore()) {
-					// Now this only happens for outer bw tests with FIXME
-
-
-
-					// Was originall skipped if no context for this Token
-					// has block2 means its a requst with b2 for getting more
-
-					// OSCoreCtx a1 =
-					// ctxDb.getContextByToken(exchange.getCurrentResponse().getToken());
-
-
-					// Shoud lit really skip protecting here? What if post data?
-					// Just put external option?
-
-					// exchange.setCryptographicContextID(a1.getRecipientId());
-					// // NEEDED????
-					// outerBlockwise = true;
+				// Handle outgoing requests for more data from a responder that
+				// is responding with outer block-wise. These requests should
+				// not be processed with OSCORE.
+				boolean outerBlockwise = request.getOptions().hasBlock2() && exchange.getCurrentResponse() != null
+						&& ctxDb.getContextByToken(exchange.getCurrentResponse().getToken()) != null;
+				if (outerBlockwise) {
 					super.sendRequest(exchange, req);
 					return;
 				}

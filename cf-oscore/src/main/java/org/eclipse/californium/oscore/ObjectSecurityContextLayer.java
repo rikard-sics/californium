@@ -33,11 +33,14 @@ import org.eclipse.californium.core.network.Exchange.Origin;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ContextRederivation.PHASE;
-import org.junit.Assert;
 
 /**
  * 
  * Applies OSCORE mechanics at stack layer.
+ * 
+ * Handles functionality for context re-derivation and outer block-wise.
+ * https://tools.ietf.org/html/rfc8613#appendix-B.2
+ * https://tools.ietf.org/html/rfc8613#section-4.1.3.4.2
  *
  */
 public class ObjectSecurityContextLayer extends AbstractLayer {
@@ -62,8 +65,11 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 
 		// Handle incoming OSCORE requests that have been re-assembled by the
 		// block-wise layer (for outer block-wise). If an incoming request has
-		// already been processed by OSCORE the option will be empty.
-		if (isProtected(request) && request.getOptions().getOscore().length != 0) {
+		// already been processed by OSCORE the option will be empty. If not it
+		// is a re-assembled request to be processed here.
+		boolean outerBlockwise = request.getOptions().getOscore().length != 0 && exchange.getCurrentRequest() != null
+				&& exchange.getCurrentRequest().getOptions().hasBlock1();
+		if (isProtected(request) && outerBlockwise) {
 			byte[] rid = null;
 			try {
 				request = RequestDecryptor.decrypt(ctxDb, request);
@@ -200,17 +206,13 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 	@Override
 	public void receiveResponse(Exchange exchange, Response response) {
 
-		OSCoreCtx a2 = null;
-		if (exchange.getCurrentResponse() != null) {
-			a2 = ctxDb.getContextByToken(exchange.getCurrentResponse().getToken());
-		}
-
 		// Handle incoming OSCORE responses that have been re-assembled by the
-		// block-wise layer (for outer block-wise). If an incoming response has
-		// already been processed by OSCORE the option will be empty.
-		if (isProtected(response) && exchange.getCryptographicContextID() != null
-				&& exchange.getCurrentResponse() != null
-				&& exchange.getCurrentResponse().getOptions().hasBlock2() && a2 != null) {
+		// block-wise layer (for outer block-wise). If a response was not
+		// processed by OSCORE in the ObjectSecurityLayer it will happen here.
+		boolean outerBlockwise = exchange.getCurrentResponse() != null
+				&& exchange.getCurrentResponse().getOptions().hasBlock2()
+				&& ctxDb.getContextByToken(exchange.getCurrentResponse().getToken()) != null;
+		if (outerBlockwise) {
 
 			Request request = exchange.getCurrentRequest();
 			if (request == null) {
@@ -218,15 +220,6 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 				return;
 			}
 			try {
-				// Printing of status information.
-				// Warns when expecting OSCORE response but unprotected response
-				// is received
-				if (!isProtected(response) && responseShouldBeProtected(exchange, response)) {
-					LOGGER.warn("Incoming response is NOT OSCORE protected!");
-				} else if (isProtected(response)) {
-					LOGGER.info("Incoming response is OSCORE protected");
-				}
-
 				// If response is protected with OSCORE parse it first with
 				// prepareReceive
 				if (isProtected(response)) {
@@ -258,28 +251,4 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 		return options.hasOption(OptionNumberRegistry.OSCORE);
 	}
 
-	// TODO: FIXME: REMOVE
-	// Method that checks if a response is expected to be protected with OSCORE
-	private boolean responseShouldBeProtected(Exchange exchange, Response response) throws OSException {
-		Request request = exchange.getCurrentRequest();
-		OptionSet options = request.getOptions();
-		if (exchange.getCryptographicContextID() == null) {
-			if (response.getOptions().hasObserve() && request.getOptions().hasObserve()) {
-
-				// Since the exchange object has been re-created the
-				// cryptographic id doesn't exist
-				if (options.hasOscore()) {
-					String uri = request.getURI();
-					try {
-						OSCoreCtx ctx = ctxDb.getContext(uri);
-						exchange.setCryptographicContextID(ctx.getRecipientId());
-					} catch (OSException e) {
-						LOGGER.error("Error when re-creating exchange at OSCORE level");
-						throw new OSException("Error when re-creating exchange at OSCORE level");
-					}
-				}
-			}
-		}
-		return exchange.getCryptographicContextID() != null;
-	}
 }
