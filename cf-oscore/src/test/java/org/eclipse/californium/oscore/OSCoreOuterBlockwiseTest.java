@@ -24,6 +24,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -50,8 +54,10 @@ import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
 import org.eclipse.californium.elements.util.Bytes;
-import org.eclipse.californium.proxy.CoapTranslator;
-import org.eclipse.californium.proxy.TranslationException;
+import org.eclipse.californium.elements.util.StringUtil;
+import org.eclipse.californium.proxy2.Coap2CoapTranslator;
+import org.eclipse.californium.proxy2.CoapUriTranslator;
+import org.eclipse.californium.proxy2.TranslationException;
 import org.eclipse.californium.rule.CoapNetworkRule;
 import org.eclipse.californium.rule.CoapThreadsRule;
 import org.junit.BeforeClass;
@@ -159,7 +165,7 @@ public class OSCoreOuterBlockwiseTest {
 		resource.setPayload(responsePayload);
 
 		Request request = Request.newGet().setURI(proxyUri);
-		request.getOptions().setProxyUri(serverUri);
+		setRequestProxyOptions(request, serverUri);
 		if (USE_OSCORE) {
 			request.getOptions().setOscore(Bytes.EMPTY);
 		}
@@ -196,7 +202,7 @@ public class OSCoreOuterBlockwiseTest {
 		CoapEndpoint clientEndpoint = builder.build();
 
 		Request request = Request.newGet().setURI(proxyUri);
-		request.getOptions().setProxyUri(serverUri);
+		setRequestProxyOptions(request, serverUri);
 		if (USE_OSCORE) {
 			request.getOptions().setOscore(Bytes.EMPTY);
 		}
@@ -234,7 +240,7 @@ public class OSCoreOuterBlockwiseTest {
 
 		String payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
 		Request request = Request.newPost().setURI(proxyUri);
-		request.getOptions().setProxyUri(serverUri);
+		setRequestProxyOptions(request, serverUri);
 		if (USE_OSCORE) {
 			request.getOptions().setOscore(Bytes.EMPTY);
 		}
@@ -276,7 +282,7 @@ public class OSCoreOuterBlockwiseTest {
 
 		String payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
 		Request request = Request.newPut().setURI(proxyUri);
-		request.getOptions().setProxyUri(serverUri);
+		setRequestProxyOptions(request, serverUri);
 		if (USE_OSCORE) {
 			request.getOptions().setOscore(Bytes.EMPTY);
 		}
@@ -317,7 +323,7 @@ public class OSCoreOuterBlockwiseTest {
 		CoapEndpoint clientEndpoint = builder.build();
 
 		Request request = Request.newGet().setURI(proxyUri);
-		request.getOptions().setProxyUri(serverUri);
+		setRequestProxyOptions(request, serverUri);
 		if (USE_OSCORE) {
 			request.getOptions().setOscore(Bytes.EMPTY);
 		}
@@ -355,7 +361,7 @@ public class OSCoreOuterBlockwiseTest {
 
 		String payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
 		Request request = Request.newPost().setURI(proxyUri);
-		request.getOptions().setProxyUri(serverUri);
+		setRequestProxyOptions(request, serverUri);
 		if (USE_OSCORE) {
 			request.getOptions().setOscore(Bytes.EMPTY);
 		}
@@ -401,6 +407,47 @@ public class OSCoreOuterBlockwiseTest {
 			dbServer.addContext(ctx_B);
 		} catch (OSException e) {
 			System.err.println("Failed to set server OSCORE Context information!");
+		}
+	}
+
+	/**
+	 * Set the appropriate Proxy-Scheme and Uri-* options for a request
+	 * 
+	 * @param request the request
+	 * @param proxyUriString the Proxy-Uri to split into separate options
+	 */
+	private static void setRequestProxyOptions(Request request, String proxyUriString) {
+		URI proxyUri = null;
+		try {
+			proxyUri = new URI(proxyUriString);
+		} catch (URISyntaxException e) {
+			System.err.println("Failed to decode proxy URI string");
+			e.printStackTrace();
+		}
+
+		String scheme = proxyUri.getScheme();
+		if (scheme != null) {
+			request.getOptions().setProxyScheme(scheme);
+		}
+
+		String host = proxyUri.getHost();
+		if (host != null) {
+			request.getOptions().setUriHost(host);
+		}
+
+		int port = proxyUri.getPort();
+		if (port != -1) {
+			request.getOptions().setUriPort(port);
+		}
+
+		String query = proxyUri.getQuery();
+		if (query != null) {
+			request.getOptions().setUriQuery(query);
+		}
+
+		String path = proxyUri.getPath();
+		if (path != null) {
+		request.getOptions().setUriPath(path);
 		}
 	}
 
@@ -496,6 +543,9 @@ public class OSCoreOuterBlockwiseTest {
 	 */
 	private void createSimpleProxy(final boolean proxyRequestBlockwise, final boolean proxyResponseBlockwiseEnabled) {
 
+		final Coap2CoapTranslator coapTranslator = new Coap2CoapTranslator();
+		final CoapUriTranslator uriTranslator = new CoapUriTranslator();
+
 		// Create endpoint for proxy server side
 		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
 		builder.setCoapStackFactory(CoapEndpoint.STANDARD_COAP_STACK_FACTORY);
@@ -519,7 +569,11 @@ public class OSCoreOuterBlockwiseTest {
 				try {
 					// Create and send request to the server based on the
 					// incoming request from the client
-					Request outgoingRequest = CoapTranslator.getRequest(exchange.getRequest());
+					Request incomingRequest = exchange.getRequest();
+					URI finalDestinationUri = uriTranslator.getDestinationURI(incomingRequest,
+							uriTranslator.getExposedInterface(incomingRequest));
+					Request outgoingRequest = coapTranslator.getRequest(finalDestinationUri, incomingRequest);
+
 					CoapClient proxyClient = new CoapClient();
 
 					// Create endpoint for proxy client side
@@ -535,8 +589,8 @@ public class OSCoreOuterBlockwiseTest {
 					// Now receive the response from the server and prepare the
 					// final response to the client
 					CoapResponse incomingResponse = proxyClient.advanced(outgoingRequest);
-					outgoingResponse = CoapTranslator.getResponse(incomingResponse.advanced());
-				} catch (TranslationException | ConnectorException | IOException e) {
+					outgoingResponse = coapTranslator.getResponse(incomingResponse.advanced());
+				} catch (org.eclipse.californium.proxy2.TranslationException | ConnectorException | IOException e) {
 					System.err.println("Processing on proxy failed.");
 					e.printStackTrace();
 					fail();
