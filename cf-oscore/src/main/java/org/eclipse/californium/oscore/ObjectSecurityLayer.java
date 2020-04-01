@@ -142,6 +142,13 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					throw new OSException(ErrorDescriptions.CTX_NULL);
 				}
 
+				// Make sure size is not exceeding MAX_UNFRAGMENTED_SIZE if this
+				// is a request not using block-wise
+				if (request.getPayloadSize() > ctx.getMaxUnfragmentedSize()
+						&& request.getOptions().hasBlock1() == false) {
+					throw new IllegalStateException("request is exceeding the MAX_UNFRAGMENTED_SIZE!");
+				}
+
 				// Initiate context re-derivation procedure if flag is set
 				if (ctx.getContextRederivationPhase() == PHASE.CLIENT_INITIATE) {
 					throw new IllegalStateException("must be handled in ObjectSecurityContextLayer!");
