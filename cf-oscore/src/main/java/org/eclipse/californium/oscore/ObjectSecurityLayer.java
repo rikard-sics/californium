@@ -142,11 +142,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					throw new OSException(ErrorDescriptions.CTX_NULL);
 				}
 
-				// Make sure size is not exceeding MAX_UNFRAGMENTED_SIZE if this
-				// is a request not using block-wise
-				if (request.getPayloadSize() > ctx.getMaxUnfragmentedSize()
-						&& request.getOptions().hasBlock1() == false) {
-					throw new IllegalStateException("request is exceeding the MAX_UNFRAGMENTED_SIZE!");
+				if (exceedsMaxUnfragmentedMessageSize(request, ctx)) {
+					throw new IllegalStateException("outgoing request is exceeding the MAX_UNFRAGMENTED_SIZE!");
 				}
 
 				// Initiate context re-derivation procedure if flag is set
@@ -223,6 +220,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				OSCoreCtx ctx = ctxDb.getContext(exchange.getCryptographicContextID());
 				addPartialIV = ctx.getResponsesIncludePartialIV() || exchange.getRequest().getOptions().hasObserve();
 				
+				if (exceedsMaxUnfragmentedMessageSize(response, ctx)) {
+					throw new IllegalStateException("outgoing response is exceeding the MAX_UNFRAGMENTED_SIZE!");
+				}
+
 				response = prepareSend(ctxDb, response, ctx, addPartialIV, outerBlockwise);
 				exchange.setResponse(response);
 			} catch (OSException e) {
@@ -355,5 +356,22 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	private static boolean isProtected(Message message) {
 		return message.getOptions().getOscore() != null;
+	}
+
+	/**
+	 * Check if a message exceeds the MAX_UNFRAGMENTED_SIZE and not using block-wise
+	 * 
+	 * @param ctx the OSCORE context used
+	 * @param message the CoAP message
+	 * @return if the message exceeds the MAX_UNFRAGMENTED_SIZE
+	 */
+	private static boolean exceedsMaxUnfragmentedMessageSize(Message message, OSCoreCtx ctx) {
+		if (message.getPayloadSize() > ctx.getMaxUnfragmentedSize()
+				&& message.getOptions().hasBlock1() == false && message.getOptions().hasBlock2() == false) {
+			return true;
+		} else {
+			return false;
+		}
+
 	}
 }
