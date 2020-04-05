@@ -207,7 +207,8 @@ public class OSCoreInnerBlockwiseTest {
 	@Test
 	public void testOscoreExceedMaxUnfragmentedSize() throws Exception {
 		exceptionRule.expect(IOException.class);
-		exceptionRule.expectMessage("java.lang.IllegalStateException: request is exceeding the MAX_UNFRAGMENTED_SIZE!");
+		exceptionRule.expectMessage(
+				"java.lang.IllegalStateException: outgoing request is exceeding the MAX_UNFRAGMENTED_SIZE!");
 
 		setClientContext(uri);
 		OSCoreCtx ctx = dbClient.getContext(uri);

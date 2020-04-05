@@ -20,7 +20,7 @@ package org.eclipse.californium.oscore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
@@ -142,7 +142,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					throw new OSException(ErrorDescriptions.CTX_NULL);
 				}
 
-				if (exceedsMaxUnfragmentedMessageSize(request, ctx)) {
+				if (exceedsMaxUnfragmentedSize(request, outerBlockwise, ctx.getMaxUnfragmentedSize())) {
 					throw new IllegalStateException("outgoing request is exceeding the MAX_UNFRAGMENTED_SIZE!");
 				}
 
@@ -220,7 +220,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				OSCoreCtx ctx = ctxDb.getContext(exchange.getCryptographicContextID());
 				addPartialIV = ctx.getResponsesIncludePartialIV() || exchange.getRequest().getOptions().hasObserve();
 				
-				if (exceedsMaxUnfragmentedMessageSize(response, ctx)) {
+				if (exceedsMaxUnfragmentedSize(response, outerBlockwise, ctx.getMaxUnfragmentedSize())) {
 					throw new IllegalStateException("outgoing response is exceeding the MAX_UNFRAGMENTED_SIZE!");
 				}
 
@@ -290,6 +290,13 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			// For OSCORE-protected response with the outer block2-option let
 			// them pass through to be re-assembled by the block-wise layer
 			if (response.getOptions().hasBlock2()) {
+				// System.out.println("A " +
+				// exchange.getCurrentResponse().getPayloadSize());
+				// System.out.println("B " + FIXME
+				// exchange.getResponse().getPayloadSize());
+				// .
+				System.out.println("C " + response.getPayloadSize());
+				System.out.println("D " + Utils.prettyPrint(exchange.getCurrentRequest()));
 				super.receiveResponse(exchange, response);
 				return;
 			}
@@ -359,15 +366,19 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	}
 
 	/**
-	 * Check if a message exceeds the MAX_UNFRAGMENTED_SIZE and not using block-wise
+	 * Check if a message exceeds the MAX_UNFRAGMENTED_SIZE and is not using
+	 * inner block-wise
 	 * 
 	 * @param ctx the OSCORE context used
 	 * @param message the CoAP message
 	 * @return if the message exceeds the MAX_UNFRAGMENTED_SIZE
 	 */
-	private static boolean exceedsMaxUnfragmentedMessageSize(Message message, OSCoreCtx ctx) {
-		if (message.getPayloadSize() > ctx.getMaxUnfragmentedSize()
-				&& message.getOptions().hasBlock1() == false && message.getOptions().hasBlock2() == false) {
+	private static boolean exceedsMaxUnfragmentedSize(Message message, boolean outerBlockwise, int maxUnfragmentedSize) {
+
+		boolean usesInnerBlockwise = (message.getOptions().hasBlock1() == true
+				|| message.getOptions().hasBlock2() == true) && outerBlockwise == false;
+
+		if (message.getPayloadSize() > maxUnfragmentedSize && usesInnerBlockwise == false) {
 			return true;
 		} else {
 			return false;
