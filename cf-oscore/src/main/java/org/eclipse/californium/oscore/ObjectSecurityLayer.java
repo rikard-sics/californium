@@ -220,6 +220,66 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		boolean outerBlockwise;
 
 		if (shouldProtectResponse(exchange)) {
+
+			//
+			if (exchange.getCurrentRequest().getSourceContext() != null) {
+				System.out.println("ENDP con :" + exchange.getCurrentRequest().getSourceContext() + " "
+						+ exchange.getCurrentRequest().getSourceContext().hashCode() + " "
+						+ exchange.getCurrentRequest().getSourceContext().getClass());
+				//
+				// List<String> attributes = new ArrayList<String>();
+				// add(attributes, Integer.toString(rand.nextInt(10100)),
+				// Integer.toString(rand.nextInt(10010)));
+				// add(attributes, Integer.toString(rand.nextInt(20000)) +
+				// "XPAYLOAD",
+				// Integer.toString(request.getPayloadSize()));
+				// MapBasedEndpointContext test;
+				//
+				// //
+				// ((UdpEndpointContext)exchange.getRequest().getSourceContext()).addEntries(exchange.getRequest().getSourceContext(),
+				// // attributes);
+				// test =
+				// MapBasedEndpointContext.addEntries(exchange.getRequest().getSourceContext(),
+				// attributes.toArray(new String[attributes.size()]));
+				// exchange.getRequest().setSourceContext(test);
+
+				Map<String, String> aaa = exchange.getCurrentRequest().getSourceContext().entries();
+				for (Entry<String, String> e : aaa.entrySet()) {
+					System.out.println("C333 " + e.getKey() + " " + e.getValue());
+				}
+			}
+
+			//
+			if (exchange.getRequest().getSourceContext() != null) { // FIXME:
+																	// USE
+				System.out.println("ENDP con :" + exchange.getRequest().getSourceContext() + " "
+						+ exchange.getRequest().getSourceContext().hashCode() + " "
+						+ exchange.getRequest().getSourceContext().getClass());
+				//
+				// List<String> attributes = new ArrayList<String>();
+				// add(attributes, Integer.toString(rand.nextInt(10100)),
+				// Integer.toString(rand.nextInt(10010)));
+				// add(attributes, Integer.toString(rand.nextInt(20000)) +
+				// "XPAYLOAD",
+				// Integer.toString(request.getPayloadSize()));
+				// MapBasedEndpointContext test;
+				//
+				// //
+				// ((UdpEndpointContext)exchange.getRequest().getSourceContext()).addEntries(exchange.getRequest().getSourceContext(),
+				// // attributes);
+				// test =
+				// MapBasedEndpointContext.addEntries(exchange.getRequest().getSourceContext(),
+				// attributes.toArray(new String[attributes.size()]));
+				// exchange.getRequest().setSourceContext(test);
+
+				Map<String, String> aaa = exchange.getRequest().getSourceContext().entries();
+				for (Entry<String, String> e : aaa.entrySet()) {
+					System.out.println("C444 " + e.getKey() + " " + e.getValue());
+				}
+			}
+
+			//
+
 			// If the current block-request still has a non-empty OSCORE option it
 			// means it was not unprotected by OSCORE as and individual request.
 			// Rather it was not processed by OSCORE until after being re-assembled
@@ -266,6 +326,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		}
 	}
 
+	Random rand = new Random();
+
 	@Override
 	public void receiveRequest(final Exchange exchange, final Request request) {
 		if (isProtected(request)) {
@@ -273,6 +335,247 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			// For OSCORE-protected requests with the outer block1-option let
 			// them pass through to be re-assembled by the block-wise layer
 			if (request.getOptions().hasBlock1()) {
+
+				//
+				// System.out.println("yeet onContextEstablished");
+
+				if (exchange.getEndpointContext() != null) {
+					System.out.println("ENDP con :" + exchange.getEndpointContext() + " "
+							+ exchange.getEndpointContext().hashCode() + " "
+							+ exchange.getEndpointContext().getClass());
+
+					List<String> attributes = new ArrayList<String>();
+					add(attributes, Integer.toString(rand.nextInt(10100)), Integer.toString(rand.nextInt(10010)));
+					add(attributes, Integer.toString(rand.nextInt(20000)) + "XPAYLOAD",
+							Integer.toString(request.getPayloadSize()));
+					MapBasedEndpointContext test;
+
+					// ((UdpEndpointContext)exchange.getEndpointContext()).addEntries(exchange.getEndpointContext(),
+					// attributes);
+					test = MapBasedEndpointContext.addEntries(exchange.getEndpointContext(),
+							attributes.toArray(new String[attributes.size()]));
+					exchange.setEndpointContext(test);
+
+					Map<String, String> aaa = exchange.getEndpointContext().entries();
+					for (Entry<String, String> e : aaa.entrySet()) {
+						System.out.println("A1 " + e.getKey() + " " + e.getValue());
+					}
+				}
+
+				if (exchange.getRequest().getDestinationContext() != null) {
+					System.out.println("ENDP con :" + exchange.getRequest().getDestinationContext() + " "
+							+ exchange.getRequest().getDestinationContext().hashCode() + " "
+							+ exchange.getRequest().getDestinationContext().getClass());
+
+					List<String> attributes = new ArrayList<String>();
+					add(attributes, Integer.toString(rand.nextInt(10100)), Integer.toString(rand.nextInt(10010)));
+					add(attributes, Integer.toString(rand.nextInt(20000)) + "XPAYLOAD",
+							Integer.toString(request.getPayloadSize()));
+					MapBasedEndpointContext test;
+
+					// ((UdpEndpointContext)exchange.getRequest().getDestinationContext()).addEntries(exchange.getRequest().getDestinationContext(),
+					// attributes);
+					test = MapBasedEndpointContext.addEntries(exchange.getRequest().getDestinationContext(),
+							attributes.toArray(new String[attributes.size()]));
+					exchange.getRequest().setDestinationContext(test);
+
+					Map<String, String> aaa = exchange.getRequest().getDestinationContext().entries();
+					for (Entry<String, String> e : aaa.entrySet()) {
+						System.out.println("B1 " + e.getKey() + " " + e.getValue());
+					}
+				}
+
+				if (exchange.getRequest().getSourceContext() != null) {
+					System.out.println("ENDP con :" + exchange.getRequest().getSourceContext() + " "
+							+ exchange.getRequest().getSourceContext().hashCode() + " "
+							+ exchange.getRequest().getSourceContext().getClass());
+
+					List<String> attributes = new ArrayList<String>();
+					add(attributes, Integer.toString(rand.nextInt(10100)), Integer.toString(rand.nextInt(10010)));
+					add(attributes, Integer.toString(rand.nextInt(20000)) + "XPAYLOAD",
+							Integer.toString(request.getPayloadSize()));
+					MapBasedEndpointContext test;
+
+					// ((UdpEndpointContext)exchange.getRequest().getSourceContext()).addEntries(exchange.getRequest().getSourceContext(),
+					// attributes);
+					test = MapBasedEndpointContext.addEntries(exchange.getRequest().getSourceContext(),
+							attributes.toArray(new String[attributes.size()]));
+					exchange.getRequest().setSourceContext(test);
+
+					Map<String, String> aaa = exchange.getRequest().getSourceContext().entries();
+					for (Entry<String, String> e : aaa.entrySet()) {
+						System.out.println("C1 " + e.getKey() + " " + e.getValue());
+					}
+				}
+
+				if (request.getSourceContext() != null) {
+					System.out.println("ENDP con :" + request.getSourceContext() + " "
+							+ request.getSourceContext().hashCode() + " " + request.getSourceContext().getClass());
+
+					List<String> attributes = new ArrayList<String>();
+					add(attributes, Integer.toString(rand.nextInt(10100)), Integer.toString(rand.nextInt(10010)));
+					add(attributes, Integer.toString(rand.nextInt(20000)) + "XXXPAYLOAD",
+							Integer.toString(request.getPayloadSize()));
+					MapBasedEndpointContext test;
+
+					// ((UdpEndpointContext)exchange.getRequest().getSourceContext()).addEntries(exchange.getRequest().getSourceContext(),
+					// attributes);
+					test = MapBasedEndpointContext.addEntries(request.getSourceContext(),
+							attributes.toArray(new String[attributes.size()]));
+					request.setSourceContext(test);
+
+					Map<String, String> aaa = request.getSourceContext().entries();
+					for (Entry<String, String> e : aaa.entrySet()) {
+						System.out.println("C100 " + e.getKey() + " " + e.getValue());
+					}
+				}
+
+				//
+
+				if (exchange.getCurrentRequest().getDestinationContext() != null) {
+					System.out.println("ENDP con :" + exchange.getCurrentRequest().getDestinationContext() + " "
+							+ exchange.getCurrentRequest().getDestinationContext().hashCode() + " "
+							+ exchange.getCurrentRequest().getDestinationContext().getClass());
+
+					List<String> attributes = new ArrayList<String>();
+					add(attributes, Integer.toString(rand.nextInt(10100)), Integer.toString(rand.nextInt(10010)));
+					add(attributes, Integer.toString(rand.nextInt(20000)) + "XPAYLOAD",
+							Integer.toString(request.getPayloadSize()));
+					MapBasedEndpointContext test;
+
+					// ((UdpEndpointContext)exchange.getCurrentRequest().getDestinationContext()).addEntries(exchange.getCurrentRequest().getDestinationContext(),
+					// attributes);
+					test = MapBasedEndpointContext.addEntries(exchange.getCurrentRequest().getDestinationContext(),
+							attributes.toArray(new String[attributes.size()]));
+					exchange.getCurrentRequest().setDestinationContext(test);
+
+					Map<String, String> aaa = exchange.getCurrentRequest().getDestinationContext().entries();
+					for (Entry<String, String> e : aaa.entrySet()) {
+						System.out.println("D1 " + e.getKey() + " " + e.getValue());
+					}
+				}
+
+				if (exchange.getCurrentRequest().getSourceContext() != null) {
+					System.out.println("ENDP con :" + exchange.getCurrentRequest().getSourceContext() + " "
+							+ exchange.getCurrentRequest().getSourceContext().hashCode() + " "
+							+ exchange.getCurrentRequest().getSourceContext().getClass());
+
+					List<String> attributes = new ArrayList<String>();
+					add(attributes, Integer.toString(rand.nextInt(10100)), Integer.toString(rand.nextInt(10010)));
+					add(attributes, Integer.toString(rand.nextInt(20000)) + "XPAYLOAD",
+							Integer.toString(request.getPayloadSize()));
+					MapBasedEndpointContext test;
+
+					// ((UdpEndpointContext)exchange.getCurrentRequest().getSourceContext()).addEntries(exchange.getCurrentRequest().getSourceContext(),
+					// attributes);
+					test = MapBasedEndpointContext.addEntries(exchange.getCurrentRequest().getSourceContext(),
+							attributes.toArray(new String[attributes.size()]));
+					exchange.getCurrentRequest().setSourceContext(test);
+
+					Map<String, String> aaa = exchange.getCurrentRequest().getSourceContext().entries();
+					for (Entry<String, String> e : aaa.entrySet()) {
+						System.out.println("E1 " + e.getKey() + " " + e.getValue());
+					}
+				}
+
+				//
+
+				if (exchange.getResponse() != null && exchange.getResponse().getDestinationContext() != null) {
+					System.out.println("ENDP con :" + exchange.getResponse().getDestinationContext() + " "
+							+ exchange.getResponse().getDestinationContext().hashCode() + " "
+							+ exchange.getResponse().getDestinationContext().getClass());
+
+					List<String> attributes = new ArrayList<String>();
+					add(attributes, Integer.toString(rand.nextInt(10100)), Integer.toString(rand.nextInt(10010)));
+					add(attributes, Integer.toString(rand.nextInt(20000)) + "XPAYLOAD",
+							Integer.toString(request.getPayloadSize()));
+					MapBasedEndpointContext test;
+
+					// ((UdpEndpointContext)exchange.getResponse().getDestinationContext()).addEntries(exchange.getResponse().getDestinationContext(),
+					// attributes);
+					test = MapBasedEndpointContext.addEntries(exchange.getResponse().getDestinationContext(),
+							attributes.toArray(new String[attributes.size()]));
+					exchange.getResponse().setDestinationContext(test);
+
+					Map<String, String> aaa = exchange.getResponse().getDestinationContext().entries();
+					for (Entry<String, String> e : aaa.entrySet()) {
+						System.out.println("F1 " + e.getKey() + " " + e.getValue());
+					}
+				}
+
+				if (exchange.getResponse() != null && exchange.getResponse().getSourceContext() != null) {
+					System.out.println("ENDP con :" + exchange.getResponse().getSourceContext() + " "
+							+ exchange.getResponse().getSourceContext().hashCode() + " "
+							+ exchange.getResponse().getSourceContext().getClass());
+
+					List<String> attributes = new ArrayList<String>();
+					add(attributes, Integer.toString(rand.nextInt(10100)), Integer.toString(rand.nextInt(10010)));
+					add(attributes, Integer.toString(rand.nextInt(20000)) + "XPAYLOAD",
+							Integer.toString(request.getPayloadSize()));
+					MapBasedEndpointContext test;
+
+					// ((UdpEndpointContext)exchange.getResponse().getSourceContext()).addEntries(exchange.getResponse().getSourceContext(),
+					// attributes);
+					test = MapBasedEndpointContext.addEntries(exchange.getResponse().getSourceContext(),
+							attributes.toArray(new String[attributes.size()]));
+					exchange.getResponse().setSourceContext(test);
+
+					Map<String, String> aaa = exchange.getResponse().getSourceContext().entries();
+					for (Entry<String, String> e : aaa.entrySet()) {
+						System.out.println("G1 " + e.getKey() + " " + e.getValue());
+					}
+				}
+
+				//
+
+				if (exchange.getCurrentResponse() != null
+						&& exchange.getCurrentResponse().getDestinationContext() != null) {
+					System.out.println("ENDP con :" + exchange.getCurrentResponse().getDestinationContext() + " "
+							+ exchange.getCurrentResponse().getDestinationContext().hashCode() + " "
+							+ exchange.getCurrentResponse().getDestinationContext().getClass());
+
+					List<String> attributes = new ArrayList<String>();
+					add(attributes, Integer.toString(rand.nextInt(10100)), Integer.toString(rand.nextInt(10010)));
+					add(attributes, Integer.toString(rand.nextInt(20000)) + "XPAYLOAD",
+							Integer.toString(request.getPayloadSize()));
+					MapBasedEndpointContext test;
+
+					// ((UdpEndpointContext)exchange.getCurrentResponse().getDestinationContext()).addEntries(exchange.getCurrentResponse().getDestinationContext(),
+					// attributes);
+					test = MapBasedEndpointContext.addEntries(exchange.getCurrentResponse().getDestinationContext(),
+							attributes.toArray(new String[attributes.size()]));
+					exchange.getCurrentResponse().setDestinationContext(test);
+
+					Map<String, String> aaa = exchange.getCurrentResponse().getDestinationContext().entries();
+					for (Entry<String, String> e : aaa.entrySet()) {
+						System.out.println("H1 " + e.getKey() + " " + e.getValue());
+					}
+				}
+
+				if (exchange.getCurrentResponse() != null && exchange.getCurrentResponse().getSourceContext() != null) {
+					System.out.println("ENDP con :" + exchange.getCurrentResponse().getSourceContext() + " "
+							+ exchange.getCurrentResponse().getSourceContext().hashCode() + " "
+							+ exchange.getCurrentResponse().getSourceContext().getClass());
+
+					List<String> attributes = new ArrayList<String>();
+					add(attributes, Integer.toString(rand.nextInt(10100)), Integer.toString(rand.nextInt(10010)));
+					add(attributes, Integer.toString(rand.nextInt(20000)) + "XPAYLOAD",
+							Integer.toString(request.getPayloadSize()));
+					MapBasedEndpointContext test;
+
+					// ((UdpEndpointContext)exchange.getCurrentResponse().getSourceContext()).addEntries(exchange.getCurrentResponse().getSourceContext(),
+					// attributes);
+					test = MapBasedEndpointContext.addEntries(exchange.getCurrentResponse().getSourceContext(),
+							attributes.toArray(new String[attributes.size()]));
+					exchange.getCurrentResponse().setSourceContext(test);
+
+					Map<String, String> aaa = exchange.getCurrentResponse().getSourceContext().entries();
+					for (Entry<String, String> e : aaa.entrySet()) {
+						System.out.println("I1 " + e.getKey() + " " + e.getValue());
+					}
+				}
+				//
+
 				//
 				// if (exchange.getRequest() != null) {
 				// System.out.println("a getRequest not null " +
@@ -338,6 +641,233 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					@Override
 					public void onAcknowledgement() {
 						System.out.println("yeet onAcknowledgement");
+
+						if (exchange.getEndpointContext() != null) {
+							System.out.println("ENDP con :" + exchange.getEndpointContext() + " "
+									+ exchange.getEndpointContext().hashCode() + " "
+									+ exchange.getEndpointContext().getClass());
+
+							List<String> attributes = new ArrayList<String>();
+							add(attributes, Integer.toString(rand.nextInt(10100)),
+									Integer.toString(rand.nextInt(10010)));
+							add(attributes, Integer.toString(rand.nextInt(20000)) + "YPAYLOAD",
+									Integer.toString(request.getPayloadSize()));
+							MapBasedEndpointContext test;
+
+							// ((UdpEndpointContext)exchange.getEndpointContext()).addEntries(exchange.getEndpointContext(),
+							// attributes);
+							test = MapBasedEndpointContext.addEntries(exchange.getEndpointContext(),
+									attributes.toArray(new String[attributes.size()]));
+							exchange.setEndpointContext(test);
+
+							Map<String, String> aaa = exchange.getEndpointContext().entries();
+							for (Entry<String, String> e : aaa.entrySet()) {
+								System.out.println("A " + e.getKey() + " " + e.getValue());
+							}
+						}
+
+						if (exchange.getRequest().getDestinationContext() != null) {
+							System.out.println("ENDP con :" + exchange.getRequest().getDestinationContext() + " "
+									+ exchange.getRequest().getDestinationContext().hashCode() + " "
+									+ exchange.getRequest().getDestinationContext().getClass());
+
+							List<String> attributes = new ArrayList<String>();
+							add(attributes, Integer.toString(rand.nextInt(10100)),
+									Integer.toString(rand.nextInt(10010)));
+							add(attributes, Integer.toString(rand.nextInt(20000)) + "YPAYLOAD",
+									Integer.toString(request.getPayloadSize()));
+							MapBasedEndpointContext test;
+
+							// ((UdpEndpointContext)exchange.getRequest().getDestinationContext()).addEntries(exchange.getRequest().getDestinationContext(),
+							// attributes);
+							test = MapBasedEndpointContext.addEntries(exchange.getRequest().getDestinationContext(),
+									attributes.toArray(new String[attributes.size()]));
+							exchange.getRequest().setDestinationContext(test);
+
+							Map<String, String> aaa = exchange.getRequest().getDestinationContext().entries();
+							for (Entry<String, String> e : aaa.entrySet()) {
+								System.out.println("B " + e.getKey() + " " + e.getValue());
+							}
+						}
+
+						if (exchange.getRequest().getSourceContext() != null) {
+							System.out.println("ENDP con :" + exchange.getRequest().getSourceContext() + " "
+									+ exchange.getRequest().getSourceContext().hashCode() + " "
+									+ exchange.getRequest().getSourceContext().getClass());
+
+							List<String> attributes = new ArrayList<String>();
+							add(attributes, Integer.toString(rand.nextInt(10100)),
+									Integer.toString(rand.nextInt(10010)));
+							add(attributes, Integer.toString(rand.nextInt(20000)) + "YPAYLOAD",
+									Integer.toString(request.getPayloadSize()));
+							MapBasedEndpointContext test;
+
+							// ((UdpEndpointContext)exchange.getRequest().getSourceContext()).addEntries(exchange.getRequest().getSourceContext(),
+							// attributes);
+							test = MapBasedEndpointContext.addEntries(exchange.getRequest().getSourceContext(),
+									attributes.toArray(new String[attributes.size()]));
+							exchange.getRequest().setSourceContext(test);
+
+							Map<String, String> aaa = exchange.getRequest().getSourceContext().entries();
+							for (Entry<String, String> e : aaa.entrySet()) {
+								System.out.println("C " + e.getKey() + " " + e.getValue());
+							}
+						}
+
+						//
+
+						if (exchange.getCurrentRequest().getDestinationContext() != null) {
+							System.out.println("ENDP con :" + exchange.getCurrentRequest().getDestinationContext() + " "
+									+ exchange.getCurrentRequest().getDestinationContext().hashCode() + " "
+									+ exchange.getCurrentRequest().getDestinationContext().getClass());
+
+							List<String> attributes = new ArrayList<String>();
+							add(attributes, Integer.toString(rand.nextInt(10100)),
+									Integer.toString(rand.nextInt(10010)));
+							add(attributes, Integer.toString(rand.nextInt(20000)) + "YPAYLOAD",
+									Integer.toString(request.getPayloadSize()));
+							MapBasedEndpointContext test;
+
+							// ((UdpEndpointContext)exchange.getCurrentRequest().getDestinationContext()).addEntries(exchange.getCurrentRequest().getDestinationContext(),
+							// attributes);
+							test = MapBasedEndpointContext.addEntries(
+									exchange.getCurrentRequest().getDestinationContext(),
+									attributes.toArray(new String[attributes.size()]));
+							exchange.getCurrentRequest().setDestinationContext(test);
+
+							Map<String, String> aaa = exchange.getCurrentRequest().getDestinationContext().entries();
+							for (Entry<String, String> e : aaa.entrySet()) {
+								System.out.println("D " + e.getKey() + " " + e.getValue());
+							}
+						}
+
+						if (exchange.getCurrentRequest().getSourceContext() != null) {
+							System.out.println("ENDP con :" + exchange.getCurrentRequest().getSourceContext() + " "
+									+ exchange.getCurrentRequest().getSourceContext().hashCode() + " "
+									+ exchange.getCurrentRequest().getSourceContext().getClass());
+
+							List<String> attributes = new ArrayList<String>();
+							add(attributes, Integer.toString(rand.nextInt(10100)),
+									Integer.toString(rand.nextInt(10010)));
+							add(attributes, Integer.toString(rand.nextInt(20000)) + "YPAYLOAD",
+									Integer.toString(request.getPayloadSize()));
+							MapBasedEndpointContext test;
+
+							// ((UdpEndpointContext)exchange.getCurrentRequest().getSourceContext()).addEntries(exchange.getCurrentRequest().getSourceContext(),
+							// attributes);
+							test = MapBasedEndpointContext.addEntries(exchange.getCurrentRequest().getSourceContext(),
+									attributes.toArray(new String[attributes.size()]));
+							exchange.getCurrentRequest().setSourceContext(test);
+
+							Map<String, String> aaa = exchange.getCurrentRequest().getSourceContext().entries();
+							for (Entry<String, String> e : aaa.entrySet()) {
+								System.out.println("E " + e.getKey() + " " + e.getValue());
+							}
+						}
+
+						//
+
+						if (exchange.getResponse() != null && exchange.getResponse().getDestinationContext() != null) {
+							System.out.println("ENDP con :" + exchange.getResponse().getDestinationContext() + " "
+									+ exchange.getResponse().getDestinationContext().hashCode() + " "
+									+ exchange.getResponse().getDestinationContext().getClass());
+
+							List<String> attributes = new ArrayList<String>();
+							add(attributes, Integer.toString(rand.nextInt(10100)),
+									Integer.toString(rand.nextInt(10010)));
+							add(attributes, Integer.toString(rand.nextInt(20000)) + "YPAYLOAD",
+									Integer.toString(request.getPayloadSize()));
+							MapBasedEndpointContext test;
+
+							// ((UdpEndpointContext)exchange.getResponse().getDestinationContext()).addEntries(exchange.getResponse().getDestinationContext(),
+							// attributes);
+							test = MapBasedEndpointContext.addEntries(exchange.getResponse().getDestinationContext(),
+									attributes.toArray(new String[attributes.size()]));
+							exchange.getResponse().setDestinationContext(test);
+
+							Map<String, String> aaa = exchange.getResponse().getDestinationContext().entries();
+							for (Entry<String, String> e : aaa.entrySet()) {
+								System.out.println("F " + e.getKey() + " " + e.getValue());
+							}
+						}
+
+						if (exchange.getResponse() != null && exchange.getResponse().getSourceContext() != null) {
+							System.out.println("ENDP con :" + exchange.getResponse().getSourceContext() + " "
+									+ exchange.getResponse().getSourceContext().hashCode() + " "
+									+ exchange.getResponse().getSourceContext().getClass());
+
+							List<String> attributes = new ArrayList<String>();
+							add(attributes, Integer.toString(rand.nextInt(10100)),
+									Integer.toString(rand.nextInt(10010)));
+							add(attributes, Integer.toString(rand.nextInt(20000)) + "YPAYLOAD",
+									Integer.toString(request.getPayloadSize()));
+							MapBasedEndpointContext test;
+
+							// ((UdpEndpointContext)exchange.getResponse().getSourceContext()).addEntries(exchange.getResponse().getSourceContext(),
+							// attributes);
+							test = MapBasedEndpointContext.addEntries(exchange.getResponse().getSourceContext(),
+									attributes.toArray(new String[attributes.size()]));
+							exchange.getResponse().setSourceContext(test);
+
+							Map<String, String> aaa = exchange.getResponse().getSourceContext().entries();
+							for (Entry<String, String> e : aaa.entrySet()) {
+								System.out.println("G " + e.getKey() + " " + e.getValue());
+							}
+						}
+
+						//
+
+						if (exchange.getCurrentResponse().getDestinationContext() != null) {
+							System.out.println("ENDP con :" + exchange.getCurrentResponse().getDestinationContext()
+									+ " " + exchange.getCurrentResponse().getDestinationContext().hashCode() + " "
+									+ exchange.getCurrentResponse().getDestinationContext().getClass());
+
+							List<String> attributes = new ArrayList<String>();
+							add(attributes, Integer.toString(rand.nextInt(10100)),
+									Integer.toString(rand.nextInt(10010)));
+							add(attributes, Integer.toString(rand.nextInt(20000)) + "YPAYLOAD",
+									Integer.toString(request.getPayloadSize()));
+							MapBasedEndpointContext test;
+
+							// ((UdpEndpointContext)exchange.getCurrentResponse().getDestinationContext()).addEntries(exchange.getCurrentResponse().getDestinationContext(),
+							// attributes);
+							test = MapBasedEndpointContext.addEntries(
+									exchange.getCurrentResponse().getDestinationContext(),
+									attributes.toArray(new String[attributes.size()]));
+							exchange.getCurrentResponse().setDestinationContext(test);
+
+							Map<String, String> aaa = exchange.getCurrentResponse().getDestinationContext().entries();
+							for (Entry<String, String> e : aaa.entrySet()) {
+								System.out.println("H " + e.getKey() + " " + e.getValue());
+							}
+						}
+
+						if (exchange.getCurrentResponse().getSourceContext() != null) {
+							System.out.println("ENDP con :" + exchange.getCurrentResponse().getSourceContext() + " "
+									+ exchange.getCurrentResponse().getSourceContext().hashCode() + " "
+									+ exchange.getCurrentResponse().getSourceContext().getClass());
+
+							List<String> attributes = new ArrayList<String>();
+							add(attributes, Integer.toString(rand.nextInt(10100)),
+									Integer.toString(rand.nextInt(10010)));
+							add(attributes, Integer.toString(rand.nextInt(20000)) + "YPAYLOAD",
+									Integer.toString(request.getPayloadSize()));
+							MapBasedEndpointContext test;
+
+							// ((UdpEndpointContext)exchange.getCurrentResponse().getSourceContext()).addEntries(exchange.getCurrentResponse().getSourceContext(),
+							// attributes);
+							test = MapBasedEndpointContext.addEntries(exchange.getCurrentResponse().getSourceContext(),
+									attributes.toArray(new String[attributes.size()]));
+							exchange.getCurrentResponse().setSourceContext(test);
+
+							Map<String, String> aaa = exchange.getCurrentResponse().getSourceContext().entries();
+							for (Entry<String, String> e : aaa.entrySet()) {
+								System.out.println("I " + e.getKey() + " " + e.getValue());
+							}
+						}
+
+						//
+
 						//
 						// if (exchange.getEndpointContext() != null) {
 						// System.out.println("ENDP con :" +
@@ -346,7 +876,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						// + exchange.getEndpointContext().getClass());
 						//
 						// List<String> attributes = new ArrayList<String>();
-						// add(attributes, Integer.toString(rand.nextInt(2000) +"PAYLOAD"),
+						// add(attributes, Integer.toString(rand.nextInt(20000)
+						// +"PAYLOAD"),
 						// Integer.toString(rand.nextInt(1000)));
 						// MapBasedEndpointContext test =
 						// (MapBasedEndpointContext)
@@ -395,8 +926,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						}
 					}
 
-					Random rand = new Random();
-
 					@Override
 					public void onContextEstablished(EndpointContext endpointContext) {
 						System.out.println("yeet onContextEstablished");
@@ -407,8 +936,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 									+ exchange.getEndpointContext().getClass());
 
 							List<String> attributes = new ArrayList<String>();
-							add(attributes, Integer.toString(rand.nextInt(101)), Integer.toString(rand.nextInt(1001)));
-							add(attributes, Integer.toString(rand.nextInt(2000)) + "PAYLOAD",
+							add(attributes, Integer.toString(rand.nextInt(10100)),
+									Integer.toString(rand.nextInt(10010)));
+							add(attributes, Integer.toString(rand.nextInt(20000)) + "PAYLOAD",
 									Integer.toString(request.getPayloadSize()));
 							MapBasedEndpointContext test;
 
@@ -430,8 +960,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 									+ exchange.getRequest().getDestinationContext().getClass());
 
 							List<String> attributes = new ArrayList<String>();
-							add(attributes, Integer.toString(rand.nextInt(101)), Integer.toString(rand.nextInt(1001)));
-							add(attributes, Integer.toString(rand.nextInt(2000)) + "PAYLOAD",
+							add(attributes, Integer.toString(rand.nextInt(10100)),
+									Integer.toString(rand.nextInt(10010)));
+							add(attributes, Integer.toString(rand.nextInt(20000)) + "PAYLOAD",
 									Integer.toString(request.getPayloadSize()));
 							MapBasedEndpointContext test;
 
@@ -453,8 +984,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 									+ exchange.getRequest().getSourceContext().getClass());
 
 							List<String> attributes = new ArrayList<String>();
-							add(attributes, Integer.toString(rand.nextInt(101)), Integer.toString(rand.nextInt(1001)));
-							add(attributes, Integer.toString(rand.nextInt(2000)) + "PAYLOAD",
+							add(attributes, Integer.toString(rand.nextInt(10100)),
+									Integer.toString(rand.nextInt(10010)));
+							add(attributes, Integer.toString(rand.nextInt(20000)) + "PAYLOAD",
 									Integer.toString(request.getPayloadSize()));
 							MapBasedEndpointContext test;
 
@@ -478,8 +1010,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 									+ exchange.getCurrentRequest().getDestinationContext().getClass());
 
 							List<String> attributes = new ArrayList<String>();
-							add(attributes, Integer.toString(rand.nextInt(101)), Integer.toString(rand.nextInt(1001)));
-							add(attributes, Integer.toString(rand.nextInt(2000)) + "PAYLOAD",
+							add(attributes, Integer.toString(rand.nextInt(10100)),
+									Integer.toString(rand.nextInt(10010)));
+							add(attributes, Integer.toString(rand.nextInt(20000)) + "PAYLOAD",
 									Integer.toString(request.getPayloadSize()));
 							MapBasedEndpointContext test;
 
@@ -502,8 +1035,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 									+ exchange.getCurrentRequest().getSourceContext().getClass());
 
 							List<String> attributes = new ArrayList<String>();
-							add(attributes, Integer.toString(rand.nextInt(101)), Integer.toString(rand.nextInt(1001)));
-							add(attributes, Integer.toString(rand.nextInt(2000)) + "PAYLOAD",
+							add(attributes, Integer.toString(rand.nextInt(10100)),
+									Integer.toString(rand.nextInt(10010)));
+							add(attributes, Integer.toString(rand.nextInt(20000)) + "PAYLOAD",
 									Integer.toString(request.getPayloadSize()));
 							MapBasedEndpointContext test;
 
@@ -527,8 +1061,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 									+ exchange.getResponse().getDestinationContext().getClass());
 
 							List<String> attributes = new ArrayList<String>();
-							add(attributes, Integer.toString(rand.nextInt(101)), Integer.toString(rand.nextInt(1001)));
-							add(attributes, Integer.toString(rand.nextInt(2000)) + "PAYLOAD",
+							add(attributes, Integer.toString(rand.nextInt(10100)),
+									Integer.toString(rand.nextInt(10010)));
+							add(attributes, Integer.toString(rand.nextInt(20000)) + "PAYLOAD",
 									Integer.toString(request.getPayloadSize()));
 							MapBasedEndpointContext test;
 
@@ -550,8 +1085,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 									+ exchange.getResponse().getSourceContext().getClass());
 
 							List<String> attributes = new ArrayList<String>();
-							add(attributes, Integer.toString(rand.nextInt(101)), Integer.toString(rand.nextInt(1001)));
-							add(attributes, Integer.toString(rand.nextInt(2000)) + "PAYLOAD",
+							add(attributes, Integer.toString(rand.nextInt(10100)),
+									Integer.toString(rand.nextInt(10010)));
+							add(attributes, Integer.toString(rand.nextInt(20000)) + "PAYLOAD",
 									Integer.toString(request.getPayloadSize()));
 							MapBasedEndpointContext test;
 
@@ -575,8 +1111,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 									+ exchange.getCurrentResponse().getDestinationContext().getClass());
 
 							List<String> attributes = new ArrayList<String>();
-							add(attributes, Integer.toString(rand.nextInt(101)), Integer.toString(rand.nextInt(1001)));
-							add(attributes, Integer.toString(rand.nextInt(2000)) + "PAYLOAD",
+							add(attributes, Integer.toString(rand.nextInt(10100)),
+									Integer.toString(rand.nextInt(10010)));
+							add(attributes, Integer.toString(rand.nextInt(20000)) + "PAYLOAD",
 									Integer.toString(request.getPayloadSize()));
 							MapBasedEndpointContext test;
 
@@ -599,8 +1136,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 									+ exchange.getCurrentResponse().getSourceContext().getClass());
 
 							List<String> attributes = new ArrayList<String>();
-							add(attributes, Integer.toString(rand.nextInt(101)), Integer.toString(rand.nextInt(1001)));
-							add(attributes, Integer.toString(rand.nextInt(2000)) + "PAYLOAD",
+							add(attributes, Integer.toString(rand.nextInt(10100)),
+									Integer.toString(rand.nextInt(10010)));
+							add(attributes, Integer.toString(rand.nextInt(20000)) + "PAYLOAD",
 									Integer.toString(request.getPayloadSize()));
 							MapBasedEndpointContext test;
 
@@ -724,6 +1262,227 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				});
 
 				// test
+
+				//
+
+				//
+				// System.out.println("yeet onContextEstablished");
+
+				if (exchange.getEndpointContext() != null) {
+					System.out.println("ENDP con :" + exchange.getEndpointContext() + " "
+							+ exchange.getEndpointContext().hashCode() + " "
+							+ exchange.getEndpointContext().getClass());
+
+					List<String> attributes = new ArrayList<String>();
+					add(attributes, Integer.toString(rand.nextInt(10100)), Integer.toString(rand.nextInt(10010)));
+					add(attributes, Integer.toString(rand.nextInt(20000)) + "WPAYLOAD",
+							Integer.toString(request.getPayloadSize()));
+					MapBasedEndpointContext test;
+
+					// ((UdpEndpointContext)exchange.getEndpointContext()).addEntries(exchange.getEndpointContext(),
+					// attributes);
+					test = MapBasedEndpointContext.addEntries(exchange.getEndpointContext(),
+							attributes.toArray(new String[attributes.size()]));
+					exchange.setEndpointContext(test);
+
+					Map<String, String> aaa = exchange.getEndpointContext().entries();
+					for (Entry<String, String> e : aaa.entrySet()) {
+						System.out.println("A2 " + e.getKey() + " " + e.getValue());
+					}
+				}
+
+				if (exchange.getRequest().getDestinationContext() != null) {
+					System.out.println("ENDP con :" + exchange.getRequest().getDestinationContext() + " "
+							+ exchange.getRequest().getDestinationContext().hashCode() + " "
+							+ exchange.getRequest().getDestinationContext().getClass());
+
+					List<String> attributes = new ArrayList<String>();
+					add(attributes, Integer.toString(rand.nextInt(10100)), Integer.toString(rand.nextInt(10010)));
+					add(attributes, Integer.toString(rand.nextInt(20000)) + "WPAYLOAD",
+							Integer.toString(request.getPayloadSize()));
+					MapBasedEndpointContext test;
+
+					// ((UdpEndpointContext)exchange.getRequest().getDestinationContext()).addEntries(exchange.getRequest().getDestinationContext(),
+					// attributes);
+					test = MapBasedEndpointContext.addEntries(exchange.getRequest().getDestinationContext(),
+							attributes.toArray(new String[attributes.size()]));
+					exchange.getRequest().setDestinationContext(test);
+
+					Map<String, String> aaa = exchange.getRequest().getDestinationContext().entries();
+					for (Entry<String, String> e : aaa.entrySet()) {
+						System.out.println("B2 " + e.getKey() + " " + e.getValue());
+					}
+				}
+
+				if (exchange.getRequest().getSourceContext() != null) {
+					System.out.println("ENDP con :" + exchange.getRequest().getSourceContext() + " "
+							+ exchange.getRequest().getSourceContext().hashCode() + " "
+							+ exchange.getRequest().getSourceContext().getClass());
+
+					List<String> attributes = new ArrayList<String>();
+					add(attributes, Integer.toString(rand.nextInt(10100)), Integer.toString(rand.nextInt(10010)));
+					add(attributes, Integer.toString(rand.nextInt(20000)) + "WPAYLOAD",
+							Integer.toString(request.getPayloadSize()));
+					MapBasedEndpointContext test;
+
+					// ((UdpEndpointContext)exchange.getRequest().getSourceContext()).addEntries(exchange.getRequest().getSourceContext(),
+					// attributes);
+					test = MapBasedEndpointContext.addEntries(exchange.getRequest().getSourceContext(),
+							attributes.toArray(new String[attributes.size()]));
+					exchange.getRequest().setSourceContext(test);
+
+					Map<String, String> aaa = exchange.getRequest().getSourceContext().entries();
+					for (Entry<String, String> e : aaa.entrySet()) {
+						System.out.println("C2 " + e.getKey() + " " + e.getValue());
+					}
+				}
+
+				//
+
+				if (exchange.getCurrentRequest().getDestinationContext() != null) {
+					System.out.println("ENDP con :" + exchange.getCurrentRequest().getDestinationContext() + " "
+							+ exchange.getCurrentRequest().getDestinationContext().hashCode() + " "
+							+ exchange.getCurrentRequest().getDestinationContext().getClass());
+
+					List<String> attributes = new ArrayList<String>();
+					add(attributes, Integer.toString(rand.nextInt(10100)), Integer.toString(rand.nextInt(10010)));
+					add(attributes, Integer.toString(rand.nextInt(20000)) + "WPAYLOAD",
+							Integer.toString(request.getPayloadSize()));
+					MapBasedEndpointContext test;
+
+					// ((UdpEndpointContext)exchange.getCurrentRequest().getDestinationContext()).addEntries(exchange.getCurrentRequest().getDestinationContext(),
+					// attributes);
+					test = MapBasedEndpointContext.addEntries(exchange.getCurrentRequest().getDestinationContext(),
+							attributes.toArray(new String[attributes.size()]));
+					exchange.getCurrentRequest().setDestinationContext(test);
+
+					Map<String, String> aaa = exchange.getCurrentRequest().getDestinationContext().entries();
+					for (Entry<String, String> e : aaa.entrySet()) {
+						System.out.println("D2 " + e.getKey() + " " + e.getValue());
+					}
+				}
+
+				if (exchange.getCurrentRequest().getSourceContext() != null) {
+					System.out.println("ENDP con :" + exchange.getCurrentRequest().getSourceContext() + " "
+							+ exchange.getCurrentRequest().getSourceContext().hashCode() + " "
+							+ exchange.getCurrentRequest().getSourceContext().getClass());
+
+					List<String> attributes = new ArrayList<String>();
+					add(attributes, Integer.toString(rand.nextInt(10100)), Integer.toString(rand.nextInt(10010)));
+					add(attributes, Integer.toString(rand.nextInt(20000)) + "WPAYLOAD",
+							Integer.toString(request.getPayloadSize()));
+					MapBasedEndpointContext test;
+
+					// ((UdpEndpointContext)exchange.getCurrentRequest().getSourceContext()).addEntries(exchange.getCurrentRequest().getSourceContext(),
+					// attributes);
+					test = MapBasedEndpointContext.addEntries(exchange.getCurrentRequest().getSourceContext(),
+							attributes.toArray(new String[attributes.size()]));
+					exchange.getCurrentRequest().setSourceContext(test);
+
+					Map<String, String> aaa = exchange.getCurrentRequest().getSourceContext().entries();
+					for (Entry<String, String> e : aaa.entrySet()) {
+						System.out.println("E2 " + e.getKey() + " " + e.getValue());
+					}
+				}
+
+				//
+
+				if (exchange.getResponse() != null && exchange.getResponse().getDestinationContext() != null) {
+					System.out.println("ENDP con :" + exchange.getResponse().getDestinationContext() + " "
+							+ exchange.getResponse().getDestinationContext().hashCode() + " "
+							+ exchange.getResponse().getDestinationContext().getClass());
+
+					List<String> attributes = new ArrayList<String>();
+					add(attributes, Integer.toString(rand.nextInt(10100)), Integer.toString(rand.nextInt(10010)));
+					add(attributes, Integer.toString(rand.nextInt(20000)) + "WPAYLOAD",
+							Integer.toString(request.getPayloadSize()));
+					MapBasedEndpointContext test;
+
+					// ((UdpEndpointContext)exchange.getResponse().getDestinationContext()).addEntries(exchange.getResponse().getDestinationContext(),
+					// attributes);
+					test = MapBasedEndpointContext.addEntries(exchange.getResponse().getDestinationContext(),
+							attributes.toArray(new String[attributes.size()]));
+					exchange.getResponse().setDestinationContext(test);
+
+					Map<String, String> aaa = exchange.getResponse().getDestinationContext().entries();
+					for (Entry<String, String> e : aaa.entrySet()) {
+						System.out.println("F2 " + e.getKey() + " " + e.getValue());
+					}
+				}
+
+				if (exchange.getResponse() != null && exchange.getResponse().getSourceContext() != null) {
+					System.out.println("ENDP con :" + exchange.getResponse().getSourceContext() + " "
+							+ exchange.getResponse().getSourceContext().hashCode() + " "
+							+ exchange.getResponse().getSourceContext().getClass());
+
+					List<String> attributes = new ArrayList<String>();
+					add(attributes, Integer.toString(rand.nextInt(10100)), Integer.toString(rand.nextInt(10010)));
+					add(attributes, Integer.toString(rand.nextInt(20000)) + "WPAYLOAD",
+							Integer.toString(request.getPayloadSize()));
+					MapBasedEndpointContext test;
+
+					// ((UdpEndpointContext)exchange.getResponse().getSourceContext()).addEntries(exchange.getResponse().getSourceContext(),
+					// attributes);
+					test = MapBasedEndpointContext.addEntries(exchange.getResponse().getSourceContext(),
+							attributes.toArray(new String[attributes.size()]));
+					exchange.getResponse().setSourceContext(test);
+
+					Map<String, String> aaa = exchange.getResponse().getSourceContext().entries();
+					for (Entry<String, String> e : aaa.entrySet()) {
+						System.out.println("G2 " + e.getKey() + " " + e.getValue());
+					}
+				}
+
+				//
+
+				if (exchange.getCurrentResponse() != null
+						&& exchange.getCurrentResponse().getDestinationContext() != null) {
+					System.out.println("ENDP con :" + exchange.getCurrentResponse().getDestinationContext() + " "
+							+ exchange.getCurrentResponse().getDestinationContext().hashCode() + " "
+							+ exchange.getCurrentResponse().getDestinationContext().getClass());
+
+					List<String> attributes = new ArrayList<String>();
+					add(attributes, Integer.toString(rand.nextInt(10100)), Integer.toString(rand.nextInt(10010)));
+					add(attributes, Integer.toString(rand.nextInt(20000)) + "WPAYLOAD",
+							Integer.toString(request.getPayloadSize()));
+					MapBasedEndpointContext test;
+
+					// ((UdpEndpointContext)exchange.getCurrentResponse().getDestinationContext()).addEntries(exchange.getCurrentResponse().getDestinationContext(),
+					// attributes);
+					test = MapBasedEndpointContext.addEntries(exchange.getCurrentResponse().getDestinationContext(),
+							attributes.toArray(new String[attributes.size()]));
+					exchange.getCurrentResponse().setDestinationContext(test);
+
+					Map<String, String> aaa = exchange.getCurrentResponse().getDestinationContext().entries();
+					for (Entry<String, String> e : aaa.entrySet()) {
+						System.out.println("H2 " + e.getKey() + " " + e.getValue());
+					}
+				}
+
+				if (exchange.getCurrentResponse() != null && exchange.getCurrentResponse().getSourceContext() != null) {
+					System.out.println("ENDP con :" + exchange.getCurrentResponse().getSourceContext() + " "
+							+ exchange.getCurrentResponse().getSourceContext().hashCode() + " "
+							+ exchange.getCurrentResponse().getSourceContext().getClass());
+
+					List<String> attributes = new ArrayList<String>();
+					add(attributes, Integer.toString(rand.nextInt(10100)), Integer.toString(rand.nextInt(10010)));
+					add(attributes, Integer.toString(rand.nextInt(20000)) + "WPAYLOAD",
+							Integer.toString(request.getPayloadSize()));
+					MapBasedEndpointContext test;
+
+					// ((UdpEndpointContext)exchange.getCurrentResponse().getSourceContext()).addEntries(exchange.getCurrentResponse().getSourceContext(),
+					// attributes);
+					test = MapBasedEndpointContext.addEntries(exchange.getCurrentResponse().getSourceContext(),
+							attributes.toArray(new String[attributes.size()]));
+					exchange.getCurrentResponse().setSourceContext(test);
+
+					Map<String, String> aaa = exchange.getCurrentResponse().getSourceContext().entries();
+					for (Entry<String, String> e : aaa.entrySet()) {
+						System.out.println("I2 " + e.getKey() + " " + e.getValue());
+					}
+				}
+				//
+				//
 
 				super.receiveRequest(exchange, request);
 				return;
