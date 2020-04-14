@@ -143,7 +143,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					throw new OSException(ErrorDescriptions.CTX_NULL);
 				}
 
-				if (exceedsMaxUnfragmentedSize(request, outerBlockwise, ctx.getMaxUnfragmentedSize())) {
+				if (outgoingExceedsMaxUnfragSize(request, outerBlockwise, ctx.getMaxUnfragmentedSize())) {
 					throw new IllegalStateException("outgoing request is exceeding the MAX_UNFRAGMENTED_SIZE!");
 				}
 
@@ -221,7 +221,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				OSCoreCtx ctx = ctxDb.getContext(exchange.getCryptographicContextID());
 				addPartialIV = ctx.getResponsesIncludePartialIV() || exchange.getRequest().getOptions().hasObserve();
 				
-				if (exceedsMaxUnfragmentedSize(response, outerBlockwise, ctx.getMaxUnfragmentedSize())) {
+				if (outgoingExceedsMaxUnfragSize(response, outerBlockwise, ctx.getMaxUnfragmentedSize())) {
 					super.sendResponse(exchange,
 							Response.createResponse(exchange.getCurrentRequest(), ResponseCode.INTERNAL_SERVER_ERROR));
 					throw new IllegalStateException("outgoing response is exceeding the MAX_UNFRAGMENTED_SIZE!");
@@ -298,6 +298,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				// System.out.println("B " + FIXME
 				// exchange.getResponse().getPayloadSize());
 				// .
+				// response.getDestinationContext();
 				System.out.println("C " + response.getPayloadSize());
 				System.out.println("D " + Utils.prettyPrint(exchange.getCurrentRequest()));
 				super.receiveResponse(exchange, response);
@@ -370,13 +371,14 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	/**
 	 * Check if a message exceeds the MAX_UNFRAGMENTED_SIZE and is not using
-	 * inner block-wise
+	 * inner block-wise. If so it should not be sent.
 	 * 
 	 * @param ctx the OSCORE context used
 	 * @param message the CoAP message
 	 * @return if the message exceeds the MAX_UNFRAGMENTED_SIZE
 	 */
-	private static boolean exceedsMaxUnfragmentedSize(Message message, boolean outerBlockwise, int maxUnfragmentedSize) {
+	private static boolean outgoingExceedsMaxUnfragSize(Message message, boolean outerBlockwise,
+			int maxUnfragmentedSize) {
 
 		boolean usesInnerBlockwise = (message.getOptions().hasBlock1() == true
 				|| message.getOptions().hasBlock2() == true) && outerBlockwise == false;
