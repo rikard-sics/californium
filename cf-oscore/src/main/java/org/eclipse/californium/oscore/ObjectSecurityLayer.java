@@ -20,6 +20,13 @@ package org.eclipse.californium.oscore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Random;
+
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Message;
@@ -32,6 +39,9 @@ import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
+import org.eclipse.californium.elements.EndpointContext;
+import org.eclipse.californium.elements.MapBasedEndpointContext;
+import org.eclipse.californium.elements.UdpEndpointContext;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ContextRederivation.PHASE;
 
@@ -242,23 +252,489 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		super.sendEmptyMessage(exchange, message);
 	}
 
+	/**
+	 * Add values and keys to a list if the value provided is not null.
+	 *
+	 * @param attributes the list to add values and keys to
+	 * @param key the key to add
+	 * @param value the value to add
+	 */
+	private static void add(List<String> attributes, String key, String value) {
+		if (value != null) {
+			attributes.add(key);
+			attributes.add(value);
+		}
+	}
+
 	@Override
-	public void receiveRequest(Exchange exchange, Request request) {
+	public void receiveRequest(final Exchange exchange, final Request request) {
 		if (isProtected(request)) {
 
 			// For OSCORE-protected requests with the outer block1-option let
 			// them pass through to be re-assembled by the block-wise layer
 			if (request.getOptions().hasBlock1()) {
+				//
+				// if (exchange.getRequest() != null) {
+				// System.out.println("a getRequest not null " +
+				// exchange.getRequest().getPayloadSize());
+				// System.out.println(Utils.prettyPrint(exchange.getRequest()));
+				//
+				// }
+				//
+				// if (exchange.getCurrentRequest() != null) {
+				// System.out.println(
+				// "b getCurrentRequest not null " +
+				// exchange.getCurrentRequest().getPayloadSize());
+				// System.out.println(Utils.prettyPrint(exchange.getCurrentRequest()));
+				//
+				// }
+				//
+				// if (exchange.getResponse() != null) {
+				// System.out.println("c getResponse not null " +
+				// exchange.getResponse().getPayloadSize());
+				// System.out.println(Utils.prettyPrint(exchange.getResponse()));
+				//
+				// }
+				//
+				// if (exchange.getCurrentResponse() != null) {
+				// System.out.println(
+				// "d getCurrentResponse not null " +
+				// exchange.getCurrentResponse().getPayloadSize());
+				// System.out.println(Utils.prettyPrint(exchange.getCurrentResponse()));
+				// }
+				//
+				// int totalSize = 0;
+				//
+				// totalSize = request.getOptions().getBlock1().getSize()
+				// * (request.getOptions().getBlock1().getNum() + 1);
+				//
+				// System.out.println("Total size: " + totalSize);
+				// System.out.println("Total size2: " +
+				// request.getOptions().getBlock1().getOffset());
+				// // request.getOptions().getBlock2().
+				//
+				// if (request.getOptions().getBlock1().isM() == false) {
+				// totalSize += request.getPayloadSize() -
+				// request.getOptions().getBlock1().getSize();
+				// }
+				// System.out.println("Total size3: " + totalSize);
+				//
+				// if (exchange.getEndpointContext() != null) {
+				// System.out.println("CONT: " +
+				// exchange.getEndpointContext().toString());
+				// }
+				// System.out.println("HASH: " + exchange.hashCode());
+
+				// test
+
+				if (exchange.getEndpointContext() != null) {
+					System.out.println("ENDP con (pre) :" + exchange.getEndpointContext() + " "
+							+ exchange.getEndpointContext().hashCode());
+				}
+
+				// FIXME: Try but outside observer!!!
+				request.addMessageObserver(new MessageObserverAdapter() {
+
+					@Override
+					public void onAcknowledgement() {
+						System.out.println("yeet onAcknowledgement");
+						//
+						// if (exchange.getEndpointContext() != null) {
+						// System.out.println("ENDP con :" +
+						// exchange.getEndpointContext() + " "
+						// + exchange.getEndpointContext().hashCode() + " "
+						// + exchange.getEndpointContext().getClass());
+						//
+						// List<String> attributes = new ArrayList<String>();
+						// add(attributes, Integer.toString(rand.nextInt(2000) +"PAYLOAD"),
+						// Integer.toString(rand.nextInt(1000)));
+						// MapBasedEndpointContext test =
+						// (MapBasedEndpointContext)
+						// exchange.getEndpointContext();
+						//
+						// //
+						// ((UdpEndpointContext)exchange.getEndpointContext()).addEntries(exchange.getEndpointContext(),
+						// // attributes);
+						// test =
+						// MapBasedEndpointContext.addEntries(exchange.getEndpointContext(),
+						// attributes.toArray(new String[attributes.size()]));
+						// exchange.setEndpointContext(test);
+						//
+						// Map<String, String> aaa =
+						// exchange.getEndpointContext().entries();
+						// for (Entry<String, String> e : aaa.entrySet()) {
+						// System.out.println("A " + e.getKey() + " " +
+						// e.getValue());
+						// }
+						// }
+
+						if (exchange.getRequest() != null) {
+							System.out.println("getRequest not null " + exchange.getRequest().getPayloadSize());
+							System.out.println(Utils.prettyPrint(exchange.getRequest()));
+
+						}
+
+						if (exchange.getCurrentRequest() != null) {
+							System.out.println(
+									"getCurrentRequest not null " + exchange.getCurrentRequest().getPayloadSize());
+							System.out.println(Utils.prettyPrint(exchange.getCurrentRequest()));
+
+						}
+
+						if (exchange.getResponse() != null) {
+							System.out.println("getResponse not null " + exchange.getResponse().getPayloadSize());
+							System.out.println(Utils.prettyPrint(exchange.getResponse()));
+
+						}
+
+						if (exchange.getCurrentResponse() != null) {
+							System.out.println(
+									"getCurrentResponse not null " + exchange.getCurrentResponse().getPayloadSize());
+							System.out.println(Utils.prettyPrint(exchange.getCurrentResponse()));
+
+						}
+					}
+
+					Random rand = new Random();
+
+					@Override
+					public void onContextEstablished(EndpointContext endpointContext) {
+						System.out.println("yeet onContextEstablished");
+
+						if (exchange.getEndpointContext() != null) {
+							System.out.println("ENDP con :" + exchange.getEndpointContext() + " "
+									+ exchange.getEndpointContext().hashCode() + " "
+									+ exchange.getEndpointContext().getClass());
+
+							List<String> attributes = new ArrayList<String>();
+							add(attributes, Integer.toString(rand.nextInt(101)), Integer.toString(rand.nextInt(1001)));
+							add(attributes, Integer.toString(rand.nextInt(2000)) + "PAYLOAD",
+									Integer.toString(request.getPayloadSize()));
+							MapBasedEndpointContext test;
+
+							// ((UdpEndpointContext)exchange.getEndpointContext()).addEntries(exchange.getEndpointContext(),
+							// attributes);
+							test = MapBasedEndpointContext.addEntries(exchange.getEndpointContext(),
+									attributes.toArray(new String[attributes.size()]));
+							exchange.setEndpointContext(test);
+
+							Map<String, String> aaa = exchange.getEndpointContext().entries();
+							for (Entry<String, String> e : aaa.entrySet()) {
+								System.out.println("A " + e.getKey() + " " + e.getValue());
+							}
+						}
+
+						if (exchange.getRequest().getDestinationContext() != null) {
+							System.out.println("ENDP con :" + exchange.getRequest().getDestinationContext() + " "
+									+ exchange.getRequest().getDestinationContext().hashCode() + " "
+									+ exchange.getRequest().getDestinationContext().getClass());
+
+							List<String> attributes = new ArrayList<String>();
+							add(attributes, Integer.toString(rand.nextInt(101)), Integer.toString(rand.nextInt(1001)));
+							add(attributes, Integer.toString(rand.nextInt(2000)) + "PAYLOAD",
+									Integer.toString(request.getPayloadSize()));
+							MapBasedEndpointContext test;
+
+							// ((UdpEndpointContext)exchange.getRequest().getDestinationContext()).addEntries(exchange.getRequest().getDestinationContext(),
+							// attributes);
+							test = MapBasedEndpointContext.addEntries(exchange.getRequest().getDestinationContext(),
+									attributes.toArray(new String[attributes.size()]));
+							exchange.getRequest().setDestinationContext(test);
+
+							Map<String, String> aaa = exchange.getRequest().getDestinationContext().entries();
+							for (Entry<String, String> e : aaa.entrySet()) {
+								System.out.println("B " + e.getKey() + " " + e.getValue());
+							}
+						}
+
+						if (exchange.getRequest().getSourceContext() != null) {
+							System.out.println("ENDP con :" + exchange.getRequest().getSourceContext() + " "
+									+ exchange.getRequest().getSourceContext().hashCode() + " "
+									+ exchange.getRequest().getSourceContext().getClass());
+
+							List<String> attributes = new ArrayList<String>();
+							add(attributes, Integer.toString(rand.nextInt(101)), Integer.toString(rand.nextInt(1001)));
+							add(attributes, Integer.toString(rand.nextInt(2000)) + "PAYLOAD",
+									Integer.toString(request.getPayloadSize()));
+							MapBasedEndpointContext test;
+
+							// ((UdpEndpointContext)exchange.getRequest().getSourceContext()).addEntries(exchange.getRequest().getSourceContext(),
+							// attributes);
+							test = MapBasedEndpointContext.addEntries(exchange.getRequest().getSourceContext(),
+									attributes.toArray(new String[attributes.size()]));
+							exchange.getRequest().setSourceContext(test);
+
+							Map<String, String> aaa = exchange.getRequest().getSourceContext().entries();
+							for (Entry<String, String> e : aaa.entrySet()) {
+								System.out.println("C " + e.getKey() + " " + e.getValue());
+							}
+						}
+
+						//
+
+						if (exchange.getCurrentRequest().getDestinationContext() != null) {
+							System.out.println("ENDP con :" + exchange.getCurrentRequest().getDestinationContext() + " "
+									+ exchange.getCurrentRequest().getDestinationContext().hashCode() + " "
+									+ exchange.getCurrentRequest().getDestinationContext().getClass());
+
+							List<String> attributes = new ArrayList<String>();
+							add(attributes, Integer.toString(rand.nextInt(101)), Integer.toString(rand.nextInt(1001)));
+							add(attributes, Integer.toString(rand.nextInt(2000)) + "PAYLOAD",
+									Integer.toString(request.getPayloadSize()));
+							MapBasedEndpointContext test;
+
+							// ((UdpEndpointContext)exchange.getCurrentRequest().getDestinationContext()).addEntries(exchange.getCurrentRequest().getDestinationContext(),
+							// attributes);
+							test = MapBasedEndpointContext.addEntries(
+									exchange.getCurrentRequest().getDestinationContext(),
+									attributes.toArray(new String[attributes.size()]));
+							exchange.getCurrentRequest().setDestinationContext(test);
+
+							Map<String, String> aaa = exchange.getCurrentRequest().getDestinationContext().entries();
+							for (Entry<String, String> e : aaa.entrySet()) {
+								System.out.println("D " + e.getKey() + " " + e.getValue());
+							}
+						}
+
+						if (exchange.getCurrentRequest().getSourceContext() != null) {
+							System.out.println("ENDP con :" + exchange.getCurrentRequest().getSourceContext() + " "
+									+ exchange.getCurrentRequest().getSourceContext().hashCode() + " "
+									+ exchange.getCurrentRequest().getSourceContext().getClass());
+
+							List<String> attributes = new ArrayList<String>();
+							add(attributes, Integer.toString(rand.nextInt(101)), Integer.toString(rand.nextInt(1001)));
+							add(attributes, Integer.toString(rand.nextInt(2000)) + "PAYLOAD",
+									Integer.toString(request.getPayloadSize()));
+							MapBasedEndpointContext test;
+
+							// ((UdpEndpointContext)exchange.getCurrentRequest().getSourceContext()).addEntries(exchange.getCurrentRequest().getSourceContext(),
+							// attributes);
+							test = MapBasedEndpointContext.addEntries(exchange.getCurrentRequest().getSourceContext(),
+									attributes.toArray(new String[attributes.size()]));
+							exchange.getCurrentRequest().setSourceContext(test);
+
+							Map<String, String> aaa = exchange.getCurrentRequest().getSourceContext().entries();
+							for (Entry<String, String> e : aaa.entrySet()) {
+								System.out.println("E " + e.getKey() + " " + e.getValue());
+							}
+						}
+
+						//
+
+						if (exchange.getResponse() != null && exchange.getResponse().getDestinationContext() != null) {
+							System.out.println("ENDP con :" + exchange.getResponse().getDestinationContext() + " "
+									+ exchange.getResponse().getDestinationContext().hashCode() + " "
+									+ exchange.getResponse().getDestinationContext().getClass());
+
+							List<String> attributes = new ArrayList<String>();
+							add(attributes, Integer.toString(rand.nextInt(101)), Integer.toString(rand.nextInt(1001)));
+							add(attributes, Integer.toString(rand.nextInt(2000)) + "PAYLOAD",
+									Integer.toString(request.getPayloadSize()));
+							MapBasedEndpointContext test;
+
+							// ((UdpEndpointContext)exchange.getResponse().getDestinationContext()).addEntries(exchange.getResponse().getDestinationContext(),
+							// attributes);
+							test = MapBasedEndpointContext.addEntries(exchange.getResponse().getDestinationContext(),
+									attributes.toArray(new String[attributes.size()]));
+							exchange.getResponse().setDestinationContext(test);
+
+							Map<String, String> aaa = exchange.getResponse().getDestinationContext().entries();
+							for (Entry<String, String> e : aaa.entrySet()) {
+								System.out.println("F " + e.getKey() + " " + e.getValue());
+							}
+						}
+
+						if (exchange.getResponse() != null && exchange.getResponse().getSourceContext() != null) {
+							System.out.println("ENDP con :" + exchange.getResponse().getSourceContext() + " "
+									+ exchange.getResponse().getSourceContext().hashCode() + " "
+									+ exchange.getResponse().getSourceContext().getClass());
+
+							List<String> attributes = new ArrayList<String>();
+							add(attributes, Integer.toString(rand.nextInt(101)), Integer.toString(rand.nextInt(1001)));
+							add(attributes, Integer.toString(rand.nextInt(2000)) + "PAYLOAD",
+									Integer.toString(request.getPayloadSize()));
+							MapBasedEndpointContext test;
+
+							// ((UdpEndpointContext)exchange.getResponse().getSourceContext()).addEntries(exchange.getResponse().getSourceContext(),
+							// attributes);
+							test = MapBasedEndpointContext.addEntries(exchange.getResponse().getSourceContext(),
+									attributes.toArray(new String[attributes.size()]));
+							exchange.getResponse().setSourceContext(test);
+
+							Map<String, String> aaa = exchange.getResponse().getSourceContext().entries();
+							for (Entry<String, String> e : aaa.entrySet()) {
+								System.out.println("G " + e.getKey() + " " + e.getValue());
+							}
+						}
+
+						//
+
+						if (exchange.getCurrentResponse().getDestinationContext() != null) {
+							System.out.println("ENDP con :" + exchange.getCurrentResponse().getDestinationContext()
+									+ " " + exchange.getCurrentResponse().getDestinationContext().hashCode() + " "
+									+ exchange.getCurrentResponse().getDestinationContext().getClass());
+
+							List<String> attributes = new ArrayList<String>();
+							add(attributes, Integer.toString(rand.nextInt(101)), Integer.toString(rand.nextInt(1001)));
+							add(attributes, Integer.toString(rand.nextInt(2000)) + "PAYLOAD",
+									Integer.toString(request.getPayloadSize()));
+							MapBasedEndpointContext test;
+
+							// ((UdpEndpointContext)exchange.getCurrentResponse().getDestinationContext()).addEntries(exchange.getCurrentResponse().getDestinationContext(),
+							// attributes);
+							test = MapBasedEndpointContext.addEntries(
+									exchange.getCurrentResponse().getDestinationContext(),
+									attributes.toArray(new String[attributes.size()]));
+							exchange.getCurrentResponse().setDestinationContext(test);
+
+							Map<String, String> aaa = exchange.getCurrentResponse().getDestinationContext().entries();
+							for (Entry<String, String> e : aaa.entrySet()) {
+								System.out.println("H " + e.getKey() + " " + e.getValue());
+							}
+						}
+
+						if (exchange.getCurrentResponse().getSourceContext() != null) {
+							System.out.println("ENDP con :" + exchange.getCurrentResponse().getSourceContext() + " "
+									+ exchange.getCurrentResponse().getSourceContext().hashCode() + " "
+									+ exchange.getCurrentResponse().getSourceContext().getClass());
+
+							List<String> attributes = new ArrayList<String>();
+							add(attributes, Integer.toString(rand.nextInt(101)), Integer.toString(rand.nextInt(1001)));
+							add(attributes, Integer.toString(rand.nextInt(2000)) + "PAYLOAD",
+									Integer.toString(request.getPayloadSize()));
+							MapBasedEndpointContext test;
+
+							// ((UdpEndpointContext)exchange.getCurrentResponse().getSourceContext()).addEntries(exchange.getCurrentResponse().getSourceContext(),
+							// attributes);
+							test = MapBasedEndpointContext.addEntries(exchange.getCurrentResponse().getSourceContext(),
+									attributes.toArray(new String[attributes.size()]));
+							exchange.getCurrentResponse().setSourceContext(test);
+
+							Map<String, String> aaa = exchange.getCurrentResponse().getSourceContext().entries();
+							for (Entry<String, String> e : aaa.entrySet()) {
+								System.out.println("I " + e.getKey() + " " + e.getValue());
+							}
+						}
+
+						//
+
+
+						if (exchange.getRequest() != null) {
+							System.out.println("getRequest not null " + exchange.getRequest().getPayloadSize());
+							System.out.println(Utils.prettyPrint(exchange.getRequest()));
+
+
+						}
+
+						if (exchange.getCurrentRequest() != null) {
+							System.out.println(
+									"getCurrentRequest not null " + exchange.getCurrentRequest().getPayloadSize());
+							System.out.println(Utils.prettyPrint(exchange.getCurrentRequest()));
+
+						}
+
+						if (exchange.getResponse() != null) {
+							System.out.println("getResponse not null " + exchange.getResponse().getPayloadSize());
+							System.out.println(Utils.prettyPrint(exchange.getResponse()));
+
+						}
+
+						if (exchange.getCurrentResponse() != null) {
+							System.out.println(
+									"getCurrentResponse not null " + exchange.getCurrentResponse().getPayloadSize());
+							System.out.println(Utils.prettyPrint(exchange.getCurrentResponse()));
+
+						}
+					}
+
+					//
+
+					@Override
+					public void onReadyToSend() {
+						System.out.println("yeet onReadyToSend");
+
+						if (exchange.getRequest() != null) {
+							System.out.println("not null");
+						}
+					}
+
+					@Override
+					public void onRetransmission() {
+						System.out.println("yeet onRetransmission");
+						if (exchange.getRequest() != null) {
+							System.out.println("not null");
+						}
+					}
+
+					@Override
+					public void onResponse(Response response) {
+						System.out.println("yeet onResponse");
+						if (exchange.getRequest() != null) {
+							System.out.println("not null");
+						}
+					}
+
+					@Override
+					public void onReject() {
+						System.out.println("yeet onReject");
+						if (exchange.getRequest() != null) {
+							System.out.println("not null");
+						}
+					}
+
+					@Override
+					public void onCancel() {
+						System.out.println("yeet onCancel");
+						if (exchange.getRequest() != null) {
+							System.out.println("not null");
+						}
+					}
+
+					@Override
+					public void onTimeout() {
+						System.out.println("yeet onTimeout");
+						if (exchange.getRequest() != null) {
+							System.out.println("not null");
+						}
+					}
+
+					@Override
+					public void onSent(boolean retransmission) {
+						System.out.println("yeet onSent");
+						if (exchange.getRequest() != null) {
+							System.out.println("not null");
+						}
+					}
+
+					@Override
+					public void onSendError(Throwable error) {
+						System.out.println("yeet onSendError");
+						if (exchange.getRequest() != null) {
+							System.out.println("not null");
+						}
+					}
+
+					@Override
+					public void onComplete() {
+						System.out.println("yeet onComplete");
+						if (exchange.getRequest() != null) {
+							System.out.println("not null");
+						}
+					}
+				});
+
+				// test
+
 				super.receiveRequest(exchange, request);
 				return;
 			}
 
 			byte[] rid = null;
 			try {
-				request = prepareReceive(ctxDb, request);
-				rid = request.getOptions().getOscore();
-				request.getOptions().setOscore(Bytes.EMPTY);
-				exchange.setRequest(request);
+				Request requestX = prepareReceive(ctxDb, request);
+				rid = requestX.getOptions().getOscore();
+				requestX.getOptions().setOscore(Bytes.EMPTY);
+				exchange.setRequest(requestX);
 			} catch (CoapOSException e) {
 				LOGGER.error("Error while receiving OSCore request: " + e.getMessage());
 				Response error;
@@ -275,7 +751,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	//Always accepts unprotected responses, which is needed for reception of error messages
 	@Override
-	public void receiveResponse(Exchange exchange, Response response) {
+	public void receiveResponse(final Exchange exchange, Response response) {
 		Request request = exchange.getCurrentRequest();
 		if (request == null) {
 			LOGGER.error("No request tied to this response");
@@ -301,6 +777,160 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				// response.getDestinationContext();
 				System.out.println("C " + response.getPayloadSize());
 				System.out.println("D " + Utils.prettyPrint(exchange.getCurrentRequest()));
+
+				// test
+				//
+				// request.addMessageObserver(new MessageObserverAdapter() {
+				//
+				// @Override
+				// public void onAcknowledgement() {
+				// System.out.println("yeet onAcknowledgement");
+				//
+				// if (exchange.getRequest() != null) {
+				// System.out.println("getRequest not null " +
+				// exchange.getRequest().getPayloadSize());
+				// System.out.println(Utils.prettyPrint(exchange.getRequest()));
+				//
+				// }
+				//
+				// if (exchange.getCurrentRequest() != null) {
+				// System.out.println(
+				// "getCurrentRequest not null " +
+				// exchange.getCurrentRequest().getPayloadSize());
+				// System.out.println(Utils.prettyPrint(exchange.getCurrentRequest()));
+				//
+				// }
+				//
+				// if (exchange.getResponse() != null) {
+				// System.out.println("getResponse not null " +
+				// exchange.getResponse().getPayloadSize());
+				// System.out.println(Utils.prettyPrint(exchange.getResponse()));
+				//
+				// }
+				//
+				// if (exchange.getCurrentResponse() != null) {
+				// System.out.println(
+				// "getCurrentResponse not null " +
+				// exchange.getCurrentResponse().getPayloadSize());
+				// System.out.println(Utils.prettyPrint(exchange.getCurrentResponse()));
+				//
+				// }
+				// }
+				//
+				// @Override
+				// public void onContextEstablished(EndpointContext
+				// endpointContext) {
+				// System.out.println("yeet onContextEstablished");
+				//
+				// if (exchange.getRequest() != null) {
+				// System.out.println("getRequest not null " +
+				// exchange.getRequest().getPayloadSize());
+				// System.out.println(Utils.prettyPrint(exchange.getRequest()));
+				//
+				// }
+				//
+				// if (exchange.getCurrentRequest() != null) {
+				// System.out.println(
+				// "getCurrentRequest not null " +
+				// exchange.getCurrentRequest().getPayloadSize());
+				// System.out.println(Utils.prettyPrint(exchange.getCurrentRequest()));
+				//
+				// }
+				//
+				// if (exchange.getResponse() != null) {
+				// System.out.println("getResponse not null " +
+				// exchange.getResponse().getPayloadSize());
+				// System.out.println(Utils.prettyPrint(exchange.getResponse()));
+				//
+				// }
+				//
+				// if (exchange.getCurrentResponse() != null) {
+				// System.out.println(
+				// "getCurrentResponse not null " +
+				// exchange.getCurrentResponse().getPayloadSize());
+				// System.out.println(Utils.prettyPrint(exchange.getCurrentResponse()));
+				//
+				// }
+				// }
+				//
+				// //
+				//
+				// @Override
+				// public void onReadyToSend() {
+				// System.out.println("yeet onReadyToSend");
+				//
+				// if (exchange.getRequest() != null) {
+				// System.out.println("not null");
+				// }
+				// }
+				//
+				// @Override
+				// public void onRetransmission() {
+				// System.out.println("yeet onRetransmission");
+				// if (exchange.getRequest() != null) {
+				// System.out.println("not null");
+				// }
+				// }
+				//
+				// @Override
+				// public void onResponse(Response response) {
+				// System.out.println("yeet onResponse");
+				// if (exchange.getRequest() != null) {
+				// System.out.println("not null");
+				// }
+				// }
+				//
+				// @Override
+				// public void onReject() {
+				// System.out.println("yeet onReject");
+				// if (exchange.getRequest() != null) {
+				// System.out.println("not null");
+				// }
+				// }
+				//
+				// @Override
+				// public void onCancel() {
+				// System.out.println("yeet onCancel");
+				// if (exchange.getRequest() != null) {
+				// System.out.println("not null");
+				// }
+				// }
+				//
+				// @Override
+				// public void onTimeout() {
+				// System.out.println("yeet onTimeout");
+				// if (exchange.getRequest() != null) {
+				// System.out.println("not null");
+				// }
+				// }
+				//
+				// @Override
+				// public void onSent(boolean retransmission) {
+				// System.out.println("yeet onSent");
+				// if (exchange.getRequest() != null) {
+				// System.out.println("not null");
+				// }
+				// }
+				//
+				// @Override
+				// public void onSendError(Throwable error) {
+				// System.out.println("yeet onSendError");
+				// if (exchange.getRequest() != null) {
+				// System.out.println("not null");
+				// }
+				// }
+				//
+				// @Override
+				// public void onComplete() {
+				// System.out.println("yeet onComplete");
+				// if (exchange.getRequest() != null) {
+				// System.out.println("not null");
+				// }
+				// }
+				// });
+
+				// test
+
 				super.receiveResponse(exchange, response);
 				return;
 			}

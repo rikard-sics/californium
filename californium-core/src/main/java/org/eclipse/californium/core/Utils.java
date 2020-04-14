@@ -133,11 +133,15 @@ public final class Utils {
 	 */
 	public static String prettyPrint(Response r) {
 		StringBuilder sb = new StringBuilder();
-
+		if (r == null) {
+			return "";
+		}
 		sb.append("==[ CoAP Response ]============================================").append(StringUtil.lineSeparator());
 		sb.append(String.format("MID    : %d", r.getMID())).append(StringUtil.lineSeparator());
 		sb.append(String.format("Token  : %s", r.getTokenString())).append(StringUtil.lineSeparator());
-		sb.append(String.format("Type   : %s", r.getType().toString())).append(StringUtil.lineSeparator());
+		if (r.getType() != null) {
+			sb.append(String.format("Type   : %s", r.getType().toString())).append(StringUtil.lineSeparator());
+		}
 		sb.append(String.format("Status : %s - %s", r.getCode().toString(), r.getCode().name())).append(StringUtil.lineSeparator());
 		if (r.getOffloadMode() != null) {
 			if (r.getRTT() != null) {
