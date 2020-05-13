@@ -155,7 +155,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				 */
 				OSCoreEndpointContextInfo.sendingRequest(ctx, exchange);
 
-				exchange.setCryptographicContextID(ctx.getIdentifier());
+				exchange.setCryptographicContextID(ctx.getUniqueIdentifier());
 				final int seqByToken = ctx.getSenderSeq();
 
 				final Request preparedRequest = prepareSend(ctxDb, request);
@@ -319,12 +319,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				// Since the exchange object has been re-created the
 				// cryptographic id doesn't exist
-				// FIXME: Doesn't work?, FIXED!, order was wrong above
 				if (options.hasOscore()) {
 					String uri = request.getURI();
 					try {
 						OSCoreCtx ctx = ctxDb.getContext(uri);
-						exchange.setCryptographicContextID(ctx.getIdentifier());
+						exchange.setCryptographicContextID(ctx.getUniqueIdentifier());
 					} catch (OSException e) {
 						LOGGER.error("Error when re-creating exchange at OSCORE level");
 						throw new OSException("Error when re-creating exchange at OSCORE level");

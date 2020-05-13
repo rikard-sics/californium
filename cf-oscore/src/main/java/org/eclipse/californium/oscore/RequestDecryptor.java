@@ -95,7 +95,7 @@ public class RequestDecryptor extends Decryptor {
 		}
 
 		if (exchange != null) {
-			exchange.setCryptographicContextID(ctx.getIdentifier());
+			exchange.setCryptographicContextID(ctx.getUniqueIdentifier());
 		}
 
 		// Perform context re-derivation procedure if triggered or ongoing

@@ -133,7 +133,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	public synchronized void addContext(OSCoreCtx ctx) {
 		if (ctx != null) {
 			ridMap.put(new ByteId(ctx.getRecipientId()), ctx);
-			idMap.put(new ByteId(ctx.getIdentifier()), ctx);
+			idMap.put(new ByteId(ctx.getUniqueIdentifier()), ctx);
 		} else {
 			LOGGER.error(ErrorDescriptions.CONTEXT_NULL);
 			throw new NullPointerException(ErrorDescriptions.CONTEXT_NULL);
