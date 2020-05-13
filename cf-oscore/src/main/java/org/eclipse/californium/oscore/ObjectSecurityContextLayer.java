@@ -72,7 +72,7 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 			LOGGER.debug("Incoming OSCORE request uses outer block-wise");
 			byte[] rid = null;
 			try {
-				request = RequestDecryptor.decrypt(ctxDb, request);
+				request = RequestDecryptor.decrypt(ctxDb, request, exchange);
 				rid = request.getOptions().getOscore();
 				request.getOptions().setOscore(Bytes.EMPTY);
 				exchange.setRequest(request);
@@ -85,8 +85,6 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 				}
 				return;
 			}
-			OSCoreCtx ctx = ctxDb.getContext(rid);
-			exchange.setCryptographicContextID(ctx.getIdentifier());
 		}
 		super.receiveRequest(exchange, request);
 	}

@@ -97,8 +97,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	 * 
 	 * @throws CoapOSException error while decrypting request
 	 */
-	public static Request prepareReceive(OSCoreCtxDB ctxDb, Request request) throws CoapOSException {
-		return RequestDecryptor.decrypt(ctxDb, request);
+	public static Request prepareReceive(OSCoreCtxDB ctxDb, Request request, Exchange exchange) throws CoapOSException {
+		return RequestDecryptor.decrypt(ctxDb, request, exchange);
 	}
 
 	/**
@@ -195,10 +195,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	@Override
 	public void sendResponse(Exchange exchange, Response response) {
-		/* If the request contained the Observe option always add a partial IV to the response.
-		 * A partial IV will also be added if the responsesIncludePartialIV flag is set in the context. */
-		boolean addPartialIV;
-		
 		/*
 		 * If the original request used outer block-wise options so should the
 		 * response. (They are not encrypted but external unprotected options.)
@@ -242,10 +238,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				return;
 			}
 
-			byte[] rid = null;
 			try {
-				request = prepareReceive(ctxDb, request);
-				rid = request.getOptions().getOscore();
+				request = prepareReceive(ctxDb, request, exchange);
 				request.getOptions().setOscore(Bytes.EMPTY);
 				exchange.setRequest(request);
 			} catch (CoapOSException e) {
@@ -257,9 +251,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				}
 				return;
 			}
-
-			OSCoreCtx ctx = ctxDb.getContext(rid);
-			exchange.setCryptographicContextID(ctx.getIdentifier());
 		}
 		super.receiveRequest(exchange, request);
 	}
@@ -290,7 +281,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 			//If response is protected with OSCORE parse it first with prepareReceive
 			if (isProtected(response)) {
-				OSCoreCtx ctx = null;
 				byte[] contextIdentifier = exchange.getCryptographicContextID();
 				response = prepareReceive(ctxDb, response, contextIdentifier);
 			}

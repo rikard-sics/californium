@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
+import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.serialization.DataParser;
 import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.core.coap.CoAP;
@@ -58,7 +59,7 @@ public class RequestDecryptor extends Decryptor {
 	 * 
 	 * @throws CoapOSException if decryption fails
 	 */
-	public static Request decrypt(OSCoreCtxDB db, Request request) throws CoapOSException {
+	public static Request decrypt(OSCoreCtxDB db, Request request, Exchange exchange) throws CoapOSException {
 		
 		LOGGER.info("Removes E options from outer options which are not allowed there");
 		discardEOptions(request);
@@ -88,10 +89,13 @@ public class RequestDecryptor extends Decryptor {
 		}
 		
 		OSCoreCtx ctx = db.getContext(rid);
-
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CONTEXT_NOT_FOUND);
 			throw new CoapOSException(ErrorDescriptions.CONTEXT_NOT_FOUND, ResponseCode.UNAUTHORIZED);
+		}
+
+		if (exchange != null) {
+			exchange.setCryptographicContextID(ctx.getIdentifier());
 		}
 
 		// Perform context re-derivation procedure if triggered or ongoing
@@ -131,9 +135,6 @@ public class RequestDecryptor extends Decryptor {
 		OptionSet eOptions = request.getOptions();
 		eOptions = OptionJuggle.merge(eOptions, uOptions);	
 		request.setOptions(eOptions);
-
-		// We need the kid value on layer level
-		request.getOptions().setOscore(rid);
 
 		//Set information about the OSCORE context used in the endpoint context of this request
 		OSCoreEndpointContextInfo.receivingRequest(ctx, request);
