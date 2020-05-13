@@ -64,7 +64,6 @@ import org.junit.experimental.categories.Category;
  * https://ericssonresearch.github.io/OSCOAP/test-spec5.html
  * 
  */
-// FIXME: Check that PIV is in response
 @Category(Large.class)
 public class OSCoreObserveTest {
 	@ClassRule
