@@ -70,10 +70,8 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 				&& exchange.getCurrentRequest() != null && exchange.getCurrentRequest().getOptions().hasBlock1();
 		if (isProtected(request) && outerBlockwise) {
 			LOGGER.debug("Incoming OSCORE request uses outer block-wise");
-			byte[] rid = null;
 			try {
 				request = RequestDecryptor.decrypt(ctxDb, request, exchange);
-				rid = request.getOptions().getOscore();
 				request.getOptions().setOscore(Bytes.EMPTY);
 				exchange.setRequest(request);
 			} catch (CoapOSException e) {
