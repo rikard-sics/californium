@@ -20,9 +20,10 @@
 package org.eclipse.californium.oscore;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +51,8 @@ public class OSCoreCtx {
 	 */
 	private static final Logger LOGGER = LoggerFactory.getLogger(OSCoreCtx.class);
 
+	byte[] id; // FIXME
+	
 	private AlgorithmID common_alg;
 	private byte[] common_master_secret;
 	private byte[] common_master_salt;
@@ -184,6 +187,12 @@ public class OSCoreCtx {
 		} else {
 			this.common_alg = alg;
 		}
+
+		UUID idd = UUID.randomUUID(); // FIXME
+		ByteBuffer bb = ByteBuffer.wrap(new byte[16]);
+		bb.putLong(idd.getMostSignificantBits());
+		bb.putLong(idd.getLeastSignificantBits());
+		id = bb.array();
 
 		setLengths();
 
@@ -355,8 +364,29 @@ public class OSCoreCtx {
 		// int hash = test.array().hashCode();
 		// byte[] ret =
 		// ByteBuffer.allocate(4).order(ByteOrder.nativeOrder()).putInt(hash).array();
+		//
+		// int lol = 0;
+		// if (common_master_secret != null) {
+		// lol += 997 * common_master_secret.hashCode();
+		// }
+		// if (common_master_salt != null) {
+		// lol += 991 * common_master_salt.hashCode();
+		// }
+		// if (recipient_id != null) {
+		// lol += 983 * recipient_id.hashCode();
+		// }
+		// if (sender_id != null) {
+		// lol += 983 * sender_id.hashCode();
+		// }
 
-		return test.array();
+		// return test.array();
+		// return
+		// ByteBuffer.allocate(4).order(ByteOrder.nativeOrder()).putInt(lol).array();
+		// return
+		// ByteBuffer.allocate(4).order(ByteOrder.nativeOrder()).putInt(count).array();
+
+		return id;
+
 	}
 
 	/**

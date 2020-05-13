@@ -29,6 +29,7 @@ import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.serialization.DataParser;
 import org.eclipse.californium.cose.Encrypt0Message;
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
@@ -94,8 +95,9 @@ public class RequestDecryptor extends Decryptor {
 			throw new CoapOSException(ErrorDescriptions.CONTEXT_NOT_FOUND, ResponseCode.UNAUTHORIZED);
 		}
 
-		if (exchange != null) {
+		if (exchange != null) { // FIXME: MOVE to layer?
 			exchange.setCryptographicContextID(ctx.getUniqueIdentifier());
+			System.out.println("ID2 " + Utils.toHexString(ctx.getUniqueIdentifier()));
 		}
 
 		// Perform context re-derivation procedure if triggered or ongoing
