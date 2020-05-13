@@ -552,22 +552,24 @@ public class OSCoreTest {
 		dbClient.addSeqByToken(token, seq);
 	}
 
-	private static Response sendResponse(String responsePayload, OSCoreCtx tid, Token token) throws OSException {
-
-		Response response = null;
-
-		if (responsePayload == null || responsePayload.length() <= 0) {
-			response = new Response(CoAP.ResponseCode.VALID);
-		} else {
-			response = new Response(CoAP.ResponseCode.CONTENT);
-			response.setPayload(responsePayload);
-			response.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
-		}
-		response.getOptions().addOption(new Option(OptionNumberRegistry.OSCORE));
-		response.setToken(token);
-
-		return ObjectSecurityLayer.prepareSend(null, response, tid, false, false);
-	}
+	// private static Response sendResponse(String responsePayload, OSCoreCtx
+	// tid, Token token) throws OSException {
+	//
+	// Response response = null;
+	//
+	// if (responsePayload == null || responsePayload.length() <= 0) {
+	// response = new Response(CoAP.ResponseCode.VALID);
+	// } else {
+	// response = new Response(CoAP.ResponseCode.CONTENT);
+	// response.setPayload(responsePayload);
+	// response.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
+	// }
+	// response.getOptions().addOption(new Option(OptionNumberRegistry.OSCORE));
+	// response.setToken(token);
+	//
+	// return ObjectSecurityLayer.prepareSend(null, response, tid, false,
+	// false);
+	// }
 
 	public Token generateToken() {
 		Token token;

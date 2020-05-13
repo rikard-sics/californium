@@ -48,8 +48,9 @@ public class ResponseEncryptor extends Encryptor {
 	 * 
 	 * @throws OSException when encryption fails
 	 */
-	public static Response encrypt(OSCoreCtxDB db, Response response, OSCoreCtx ctx, final boolean newPartialIV,
-			boolean outerBlockwise) throws OSException {
+	public static Response encrypt(OSCoreCtxDB db, Response response, byte[] contextIdentifier, boolean outerBlockwise)
+			throws OSException {
+		OSCoreCtx ctx = db.getContextByIdentifier(contextIdentifier);
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CTX_NULL);
 			throw new OSException(ErrorDescriptions.CTX_NULL);
@@ -77,6 +78,7 @@ public class ResponseEncryptor extends Encryptor {
 
 		byte[] confidential = OSSerializer.serializeConfidentialData(options, response.getPayload(), realCode);
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
+		boolean newPartialIV = ctx.getResponsesIncludePartialIV() || response.getOptions().hasObserve();
 		byte[] cipherText = encryptAndEncode(enc, ctx, response, newPartialIV);
 		compression(ctx, cipherText, response, newPartialIV);
 

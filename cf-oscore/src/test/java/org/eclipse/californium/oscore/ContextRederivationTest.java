@@ -41,12 +41,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.californium.core.network.EndpointManager;
+import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
@@ -131,6 +133,10 @@ public class ContextRederivationTest {
 	public void testClientInitiatedRederivation()
 			throws OSException, ConnectorException, IOException, CoseException, InterruptedException {
 		
+		// FIXME: Fix better
+		NetworkConfig config = NetworkConfig.getStandard();
+		config.setInt(NetworkConfig.Keys.MAX_RETRANSMIT, 0); // Don't retransmit
+
 		// Create a server that will not initiate the context re-derivation
 		// procedure. (But perform the procedure if the client initiates.)
 		createServer(false);
@@ -218,6 +224,10 @@ public class ContextRederivationTest {
 	@Test
 	public void testServerInitiatedRederivation()
 			throws OSException, ConnectorException, IOException, CoseException, InterruptedException {
+
+		// FIXME: Fix better
+		NetworkConfig config = NetworkConfig.getStandard();
+		config.setInt(NetworkConfig.Keys.MAX_RETRANSMIT, 0); // Don't retransmit
 
 		// Create a server that will initiate the context re-derivation (on
 		// reception of a request)

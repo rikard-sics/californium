@@ -51,6 +51,8 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	private HashMap<String, OSCoreCtx> uriMap;
 	private HashMap<Token, Integer> seqMap;
 
+	private HashMap<ByteId, OSCoreCtx> idMap;
+
 	private ArrayList<Token> allTokens;
 
 	/**
@@ -62,6 +64,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		this.ridMap = new HashMap<>();
 		this.uriMap = new HashMap<>();
 		this.seqMap = new HashMap<>();
+		this.idMap = new HashMap<>();
 		this.allTokens = new ArrayList<Token>();
 	}
 
@@ -82,6 +85,16 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		} else {
 			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
 			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
+		}
+	}
+
+	// @Override FIXME
+	public synchronized OSCoreCtx getContextByIdentifier(byte[] contextIdentifier) {
+		if (contextIdentifier != null) {
+			return idMap.get(new ByteId(contextIdentifier));
+		} else {
+			LOGGER.error(ErrorDescriptions.BYTE_ARRAY_NULL);
+			throw new NullPointerException(ErrorDescriptions.BYTE_ARRAY_NULL);
 		}
 	}
 
@@ -120,6 +133,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	public synchronized void addContext(OSCoreCtx ctx) {
 		if (ctx != null) {
 			ridMap.put(new ByteId(ctx.getRecipientId()), ctx);
+			idMap.put(new ByteId(ctx.getIdentifier()), ctx);
 		} else {
 			LOGGER.error(ErrorDescriptions.CONTEXT_NULL);
 			throw new NullPointerException(ErrorDescriptions.CONTEXT_NULL);

@@ -101,66 +101,78 @@ public class EncryptorTest {
 		assertArrayEquals(predictedOSCoreBytes, encryptedBytes);
 		
 	}
-	
-	/**
-	 * Tests encryption of a CoAP Response with partial IV.
-	 * Test vector is from OSCORE draft. (Test Vector 8)
-	 *
-	 * @throws OSException if encryption fails
-	 */
-	@Test
-	public void testResponseEncryptor() throws OSException {
-		//Set up OSCORE context
-		// test vector OSCORE draft Appendix C.1.2
-		byte[] master_salt = new byte[] { (byte) 0x9e, 0x7c, (byte) 0xa9, 0x22, 0x23, 0x78, 0x63, 0x40 };
-		byte[] sid = new byte[] { 0x01 };
-		byte[] rid = new byte[0];
-		
-		ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, null);
-		ctx.setSenderSeq(0);
-		ctx.setReceiverSeq(seq);
-
-		//Create response message from raw byte array
-		byte[] responseBytes = new byte[] { 0x64, 0x45, 0x5d, 0x1f, 0x00, 0x00, 0x39, 0x74,
-				(byte) 0xff, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x21 };
-		
-		UdpDataParser parser = new UdpDataParser();
-		Message mess = parser.parseMessage(responseBytes);
-		
-		Response r = null;
-		if(mess instanceof Response) {
-			r = (Response)mess;
-		}
-
-		//Encrypt the response message
-		boolean newPartialIV = true;
-		Response encrypted = ResponseEncryptor.encrypt(null, r, ctx, newPartialIV, false);
-		
-		//Check the OSCORE option value
-		byte[] predictedOSCoreOption = { 0x01, 0x00 };
-		
-		assertArrayEquals(predictedOSCoreOption, encrypted.getOptions().getOscore());
-		
-		//Check the OSCORE response payload (ciphertext)
-		byte[] predictedOSCorePayload = { 0x4d, 0x4c, 0x13, 0x66, (byte) 0x93, (byte) 0x84, (byte) 0xb6, 0x73,
-				0x54, (byte) 0xb2, (byte) 0xb6, 0x17, 0x5f, (byte) 0xf4, (byte) 0xb8, 0x65, (byte) 0x8c, 0x66,
-				0x6a, 0x6c, (byte) 0xf8, (byte) 0x8e };
-		
-		assertArrayEquals(predictedOSCorePayload, encrypted.getPayload());
-
-		//Serialize the response message to byte array
-		UdpDataSerializer serializer = new UdpDataSerializer();
-		byte[] encryptedBytes = serializer.getByteArray(encrypted);
-
-		//Check the whole OSCORE response
-		byte[] predictedOSCoreBytes = { 0x64, 0x44, 0x5d, 0x1f, 0x00, 0x00, 0x39, 0x74,
-				(byte) 0x92, 0x01, 0x00, (byte) 0xff, 0x4d, 0x4c, 0x13, 0x66, (byte) 0x93,
-				(byte) 0x84, (byte) 0xb6, 0x73, 0x54, (byte) 0xb2, (byte)0xb6, 0x17, 0x5f,
-				(byte) 0xf4, (byte) 0xb8, 0x65, (byte) 0x8c, 0x66, 0x6a, 0x6c, (byte) 0xf8,
-				(byte) 0x8e  };
-		
-		assertArrayEquals(predictedOSCoreBytes, encryptedBytes);
-		
-	}
+	//
+	// /**
+	// * Tests encryption of a CoAP Response with partial IV.
+	// * Test vector is from OSCORE draft. (Test Vector 8)
+	// *
+	// * @throws OSException if encryption fails
+	// */
+	// @Test
+	// public void testResponseEncryptor() throws OSException {
+	// //Set up OSCORE context
+	// // test vector OSCORE draft Appendix C.1.2
+	// byte[] master_salt = new byte[] { (byte) 0x9e, 0x7c, (byte) 0xa9, 0x22,
+	// 0x23, 0x78, 0x63, 0x40 };
+	// byte[] sid = new byte[] { 0x01 };
+	// byte[] rid = new byte[0];
+	//
+	// ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32,
+	// master_salt, null);
+	// ctx.setSenderSeq(0);
+	// ctx.setReceiverSeq(seq);
+	//
+	// //Create response message from raw byte array
+	// byte[] responseBytes = new byte[] { 0x64, 0x45, 0x5d, 0x1f, 0x00, 0x00,
+	// 0x39, 0x74,
+	// (byte) 0xff, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x57, 0x6f, 0x72, 0x6c,
+	// 0x64, 0x21 };
+	//
+	// UdpDataParser parser = new UdpDataParser();
+	// Message mess = parser.parseMessage(responseBytes);
+	//
+	// Response r = null;
+	// if(mess instanceof Response) {
+	// r = (Response)mess;
+	// }
+	//
+	// //Encrypt the response message
+	// boolean newPartialIV = true;
+	// Response encrypted = ResponseEncryptor.encrypt(null, r, ctx,
+	// newPartialIV, false);
+	//
+	// //Check the OSCORE option value
+	// byte[] predictedOSCoreOption = { 0x01, 0x00 };
+	//
+	// assertArrayEquals(predictedOSCoreOption,
+	// encrypted.getOptions().getOscore());
+	//
+	// //Check the OSCORE response payload (ciphertext)
+	// byte[] predictedOSCorePayload = { 0x4d, 0x4c, 0x13, 0x66, (byte) 0x93,
+	// (byte) 0x84, (byte) 0xb6, 0x73,
+	// 0x54, (byte) 0xb2, (byte) 0xb6, 0x17, 0x5f, (byte) 0xf4, (byte) 0xb8,
+	// 0x65, (byte) 0x8c, 0x66,
+	// 0x6a, 0x6c, (byte) 0xf8, (byte) 0x8e };
+	//
+	// assertArrayEquals(predictedOSCorePayload, encrypted.getPayload());
+	//
+	// //Serialize the response message to byte array
+	// UdpDataSerializer serializer = new UdpDataSerializer();
+	// byte[] encryptedBytes = serializer.getByteArray(encrypted);
+	//
+	// //Check the whole OSCORE response
+	// byte[] predictedOSCoreBytes = { 0x64, 0x44, 0x5d, 0x1f, 0x00, 0x00, 0x39,
+	// 0x74,
+	// (byte) 0x92, 0x01, 0x00, (byte) 0xff, 0x4d, 0x4c, 0x13, 0x66, (byte)
+	// 0x93,
+	// (byte) 0x84, (byte) 0xb6, 0x73, 0x54, (byte) 0xb2, (byte)0xb6, 0x17,
+	// 0x5f,
+	// (byte) 0xf4, (byte) 0xb8, 0x65, (byte) 0x8c, 0x66, 0x6a, 0x6c, (byte)
+	// 0xf8,
+	// (byte) 0x8e };
+	//
+	// assertArrayEquals(predictedOSCoreBytes, encryptedBytes);
+	//
+	// }
 
 }

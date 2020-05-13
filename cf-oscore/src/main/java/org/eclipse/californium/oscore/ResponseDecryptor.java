@@ -56,7 +56,7 @@ public class ResponseDecryptor extends Decryptor {
 	 * @throws OSException when decryption fails
 	 * 
 	 */
-	public static Response decrypt(OSCoreCtxDB db, Response response, OSCoreCtx ctx) throws OSException {
+	public static Response decrypt(OSCoreCtxDB db, Response response, byte[] contextIdentifier) throws OSException {
 
 		LOGGER.info("Removes E options from outer options which are not allowed there");
 		discardEOptions(response);
@@ -66,6 +66,7 @@ public class ResponseDecryptor extends Decryptor {
 		Token token = response.getToken();
 		OptionSet uOptions = response.getOptions();
 
+		OSCoreCtx ctx = db.getContextByIdentifier(contextIdentifier);
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CONTEXT_NOT_FOUND); // FIXME: null?
 			throw new OSException(ErrorDescriptions.CONTEXT_NOT_FOUND);
