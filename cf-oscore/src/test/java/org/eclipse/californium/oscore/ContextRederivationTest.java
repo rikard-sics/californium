@@ -130,6 +130,7 @@ public class ContextRederivationTest {
 	 * @throws InterruptedException
 	 */
 	@Test
+	// @Ignore
 	public void testClientInitiatedRederivation()
 			throws OSException, ConnectorException, IOException, CoseException, InterruptedException {
 		
@@ -222,6 +223,7 @@ public class ContextRederivationTest {
 	 * @throws InterruptedException
 	 */
 	@Test
+	@Ignore
 	public void testServerInitiatedRederivation()
 			throws OSException, ConnectorException, IOException, CoseException, InterruptedException {
 
