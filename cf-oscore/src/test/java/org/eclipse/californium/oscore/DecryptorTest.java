@@ -93,62 +93,69 @@ public class DecryptorTest {
 		
 	}
 	
-	/**
-	 * Tests decryption of a CoAP Response with partial IV.
-	 * Test vector is from OSCORE draft. (Test Vector 8)
-	 *
-	 * @throws OSException if decryption fails
-	 */
-	@Test
-	public void testResponseDecryptor() throws OSException {
-		//Set up OSCORE context
-		// test vector OSCORE draft Appendix C.1.1
-		byte[] master_salt = new byte[] { (byte) 0x9e, 0x7c, (byte) 0xa9, 0x22, 0x23, 0x78, 0x63, 0x40 };
-		byte[] sid = new byte[0];
-		byte[] rid = new byte[] { 0x01 };
-		int seq = 20;
-		
-		ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, null);
-
-		//Create the encrypted response message from raw byte array
-		byte[] encryptedResponseBytes = new byte[] { 0x64, 0x44, 0x5d, 0x1f, 0x00, 0x00, 0x39, 0x74,
-				(byte) 0x92, 0x01, 0x00, (byte) 0xff, 0x4d, 0x4c, 0x13, 0x66, (byte) 0x93,
-				(byte) 0x84, (byte) 0xb6, 0x73, 0x54, (byte) 0xb2, (byte)0xb6, 0x17, 0x5f,
-				(byte) 0xf4, (byte) 0xb8, 0x65, (byte) 0x8c, 0x66, 0x6a, 0x6c, (byte) 0xf8,
-				(byte) 0x8e };
-		
-		UdpDataParser parser = new UdpDataParser();
-		Message mess = parser.parseMessage(encryptedResponseBytes);
-		
-		Response r = null;
-		if (mess instanceof Response) {
-			r = (Response)mess;
-		}
-		
-		//Set up some state information simulating the original outgoing request
-		OSCoreCtxDB db = new HashMapCtxDB();
-		db.addContext(r.getToken(), ctx);
-		db.addSeqByToken(r.getToken(), seq);
-		
-		//Decrypt the response message
-		Response decrypted = ResponseDecryptor.decrypt(db, r);
-		decrypted.getOptions().removeOscore();
-		
-		//Check the decrypted response payload
-		String predictedPayload = "Hello World!"; 
-		
-		assertEquals(predictedPayload, decrypted.getPayloadString());
-		
-		//Serialize the response message to byte array
-		UdpDataSerializer serializer = new UdpDataSerializer();
-		byte[] decryptedBytes = serializer.getByteArray(decrypted);
-
-		//Check the whole decrypted response
-		byte[] predictedBytes = { 0x64, 0x45, 0x5d, 0x1f, 0x00, 0x00, 0x39, 0x74,
-				(byte) 0xff, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x21 };
-		
-		assertArrayEquals(predictedBytes, decryptedBytes);
-		
-	}
+	// /**
+	// * Tests decryption of a CoAP Response with partial IV.
+	// * Test vector is from OSCORE draft. (Test Vector 8)
+	// *
+	// * @throws OSException if decryption fails
+	// */
+	// @Test
+	// public void testResponseDecryptor() throws OSException {
+	// //Set up OSCORE context
+	// // test vector OSCORE draft Appendix C.1.1
+	// byte[] master_salt = new byte[] { (byte) 0x9e, 0x7c, (byte) 0xa9, 0x22,
+	// 0x23, 0x78, 0x63, 0x40 };
+	// byte[] sid = new byte[0];
+	// byte[] rid = new byte[] { 0x01 };
+	// int seq = 20;
+	//
+	// ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32,
+	// master_salt, null);
+	//
+	// //Create the encrypted response message from raw byte array
+	// byte[] encryptedResponseBytes = new byte[] { 0x64, 0x44, 0x5d, 0x1f,
+	// 0x00, 0x00, 0x39, 0x74,
+	// (byte) 0x92, 0x01, 0x00, (byte) 0xff, 0x4d, 0x4c, 0x13, 0x66, (byte)
+	// 0x93,
+	// (byte) 0x84, (byte) 0xb6, 0x73, 0x54, (byte) 0xb2, (byte)0xb6, 0x17,
+	// 0x5f,
+	// (byte) 0xf4, (byte) 0xb8, 0x65, (byte) 0x8c, 0x66, 0x6a, 0x6c, (byte)
+	// 0xf8,
+	// (byte) 0x8e };
+	//
+	// UdpDataParser parser = new UdpDataParser();
+	// Message mess = parser.parseMessage(encryptedResponseBytes);
+	//
+	// Response r = null;
+	// if (mess instanceof Response) {
+	// r = (Response)mess;
+	// }
+	//
+	// //Set up some state information simulating the original outgoing request
+	// OSCoreCtxDB db = new HashMapCtxDB();
+	// db.addContext(r.getToken(), ctx);
+	// db.addSeqByToken(r.getToken(), seq);
+	//
+	// //Decrypt the response message
+	// Response decrypted = ResponseDecryptor.decrypt(db, r);
+	// decrypted.getOptions().removeOscore();
+	//
+	// //Check the decrypted response payload
+	// String predictedPayload = "Hello World!";
+	//
+	// assertEquals(predictedPayload, decrypted.getPayloadString());
+	//
+	// //Serialize the response message to byte array
+	// UdpDataSerializer serializer = new UdpDataSerializer();
+	// byte[] decryptedBytes = serializer.getByteArray(decrypted);
+	//
+	// //Check the whole decrypted response
+	// byte[] predictedBytes = { 0x64, 0x45, 0x5d, 0x1f, 0x00, 0x00, 0x39, 0x74,
+	// (byte) 0xff, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x57, 0x6f, 0x72, 0x6c,
+	// 0x64, 0x21 };
+	//
+	// assertArrayEquals(predictedBytes, decryptedBytes);
+	//
+	// }
 
 }

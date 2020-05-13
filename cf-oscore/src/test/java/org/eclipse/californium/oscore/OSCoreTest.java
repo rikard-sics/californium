@@ -69,28 +69,29 @@ public class OSCoreTest {
 	@After
 	public void tearDown() throws Exception {
 	}
-
-	@Test
-	public void testSimple() throws OSException {
-		Request request = null;
-		Token token = generateToken();
-		try {
-			request = sendRequest(uriFull, dbClient, token);
-		} catch (OSException e) {
-			e.printStackTrace();
-			assertTrue(false);
-		}
-		try {
-			int seq = dbClient.getSeqByToken(token);
-			dbClientToServer();
-			ObjectSecurityLayer.prepareReceive(dbClient, request);
-			Response response = sendResponse("it is thursday, citizen", serverCtx, token);
-			dbServerToClient(token, seq);
-			ObjectSecurityLayer.prepareReceive(dbClient, response);
-		} catch (OSException e) {
-			e.printStackTrace();
-		}
-	}
+	//
+	// @Test
+	// public void testSimple() throws OSException {
+	// Request request = null;
+	// Token token = generateToken();
+	// try {
+	// request = sendRequest(uriFull, dbClient, token);
+	// } catch (OSException e) {
+	// e.printStackTrace();
+	// assertTrue(false);
+	// }
+	// try {
+	// int seq = dbClient.getSeqByToken(token);
+	// dbClientToServer();
+	// ObjectSecurityLayer.prepareReceive(dbClient, request);
+	// Response response = sendResponse("it is thursday, citizen", serverCtx,
+	// token);
+	// dbServerToClient(token, seq);
+	// ObjectSecurityLayer.prepareReceive(dbClient, response);
+	// } catch (OSException e) {
+	// e.printStackTrace();
+	// }
+	// }
 
 	@Test
 	public void testEndcodingObjectSecurityValueCompression() {
@@ -371,101 +372,102 @@ public class OSCoreTest {
 		assertTrue("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA".equals(request.getPayloadString()));
 	}
 
-	@Test
-	public void testSequenceNumbers() throws OSException {
-		Request request1 = null;
-		Token tokReq1 = generateToken();
-		Token tokReq2 = generateToken();
-		try {
-			request1 = sendRequest("coap://localhost", dbClient, tokReq1);
-			sendRequest("coap://localhost", dbClient, tokReq2);
-		} catch (OSException e) {
-			e.printStackTrace();
-			assertTrue(false);
-		}
-		assertTrue("seq no:s incorrect", assertCtxState(clientCtx, 2, -1));
+	// @Test
+	// public void testSequenceNumbers() throws OSException {
+	// Request request1 = null;
+	// Token tokReq1 = generateToken();
+	// Token tokReq2 = generateToken();
+	// try {
+	// request1 = sendRequest("coap://localhost", dbClient, tokReq1);
+	// sendRequest("coap://localhost", dbClient, tokReq2);
+	// } catch (OSException e) {
+	// e.printStackTrace();
+	// assertTrue(false);
+	// }
+	// assertTrue("seq no:s incorrect", assertCtxState(clientCtx, 2, -1));
+	//
+	// Integer sentSeq = dbClient.getSeqByToken(tokReq1);
+	//
+	// dbClientToServer();
+	//
+	// try {
+	// ObjectSecurityLayer.prepareReceive(dbClient, request1);
+	// assertTrue("seq no:s incorrect", assertCtxState(serverCtx, 0, 0));
+	// Response response1 = sendResponse("it is thursday, citizen", serverCtx,
+	// tokReq1);
+	// assertTrue("seq no:s incorrect", assertCtxState(serverCtx, 0, 0));
+	//
+	// dbServerToClient(tokReq1, sentSeq);
+	//
+	// ObjectSecurityLayer.prepareReceive(dbClient, response1);
+	// assertTrue("seq no:s incorrect", assertCtxState(clientCtx, 2, -1));
+	//
+	// } catch (OSException e) {
+	// e.printStackTrace();
+	// assertTrue(false);
+	// }
+	// }
 
-		Integer sentSeq = dbClient.getSeqByToken(tokReq1);
-
-		dbClientToServer();
-
-		try {
-			ObjectSecurityLayer.prepareReceive(dbClient, request1);
-			assertTrue("seq no:s incorrect", assertCtxState(serverCtx, 0, 0));
-			Response response1 = sendResponse("it is thursday, citizen", serverCtx, tokReq1);
-			assertTrue("seq no:s incorrect", assertCtxState(serverCtx, 0, 0));
-
-			dbServerToClient(tokReq1, sentSeq);
-
-			ObjectSecurityLayer.prepareReceive(dbClient, response1);
-			assertTrue("seq no:s incorrect", assertCtxState(clientCtx, 2, -1));
-
-		} catch (OSException e) {
-			e.printStackTrace();
-			assertTrue(false);
-		}
-	}
-
-	@Test
-	public void testSequenceNumbersReplayReject() throws Exception {
-		// Test Receive replay of request
-		Request request = Request.newPost().setURI("coap://localhost:5683");
-		Request request2 = Request.newPost().setURI("coap://localhost:5683");
-		request.setMID(99);
-		Token t1 = generateToken();
-		request.setToken(t1);
-		dbClient.addSeqByToken(t1, 0);
-		Token t2 = generateToken();
-		dbClient.addSeqByToken(t2, 0);
-		request2.setToken(t2);
-		try {
-			// sending seq 0
-			request = ObjectSecurityLayer.prepareSend(dbClient, request);
-			dbClient.getContext("coap://localhost:5683").setSenderSeq(0);
-			request2 = ObjectSecurityLayer.prepareSend(dbClient, request2);
-		} catch (OSException e) {
-			e.printStackTrace();
-			fail();
-		}
-
-		dbClientToServer();
-
-		// receiving seq 0 twice
-		try {
-			ObjectSecurityLayer.prepareReceive(dbClient, request);
-			ObjectSecurityLayer.prepareReceive(dbClient, request2);
-			fail("duplicate seq 0 not detected!");
-		} catch (OSException e) {
-		}
-
-		// Test receive replay of response
-		setUp();// reset sequence number counters
-		Response response1 = null;
-		Response response2 = null;
-		try {
-			serverCtx.setReceiverSeq(0);
-			response1 = sendResponse("response", serverCtx, t1);
-			response1.setType(CoAP.Type.ACK);
-			response1.setMID(34);
-			serverCtx.setReceiverSeq(0);
-			response2 = sendResponse("response", serverCtx, t1);
-			response2.setType(CoAP.Type.ACK);
-			response2.setMID(34);
-		} catch (OSException e) {
-			e.printStackTrace();
-			fail();
-		}
-		try {
-			dbClient.addContext(t1, clientCtx);
-			dbClient.getContext("coap://localhost:5683").setSenderSeq(0);
-			dbClient.addSeqByToken(t1, 0);
-			ObjectSecurityLayer.prepareReceive(dbClient, response1);
-			ObjectSecurityLayer.prepareReceive(dbClient, response2);
-			fail("invalid token not detected!");
-		} catch (OSException e) {
-			assertEquals(ErrorDescriptions.TOKEN_INVALID, e.getMessage());
-		}
-	}
+	// @Test
+	// public void testSequenceNumbersReplayReject() throws Exception {
+	// // Test Receive replay of request
+	// Request request = Request.newPost().setURI("coap://localhost:5683");
+	// Request request2 = Request.newPost().setURI("coap://localhost:5683");
+	// request.setMID(99);
+	// Token t1 = generateToken();
+	// request.setToken(t1);
+	// dbClient.addSeqByToken(t1, 0);
+	// Token t2 = generateToken();
+	// dbClient.addSeqByToken(t2, 0);
+	// request2.setToken(t2);
+	// try {
+	// // sending seq 0
+	// request = ObjectSecurityLayer.prepareSend(dbClient, request);
+	// dbClient.getContext("coap://localhost:5683").setSenderSeq(0);
+	// request2 = ObjectSecurityLayer.prepareSend(dbClient, request2);
+	// } catch (OSException e) {
+	// e.printStackTrace();
+	// fail();
+	// }
+	//
+	// dbClientToServer();
+	//
+	// // receiving seq 0 twice
+	// try {
+	// ObjectSecurityLayer.prepareReceive(dbClient, request);
+	// ObjectSecurityLayer.prepareReceive(dbClient, request2);
+	// fail("duplicate seq 0 not detected!");
+	// } catch (OSException e) {
+	// }
+	//
+	// // Test receive replay of response
+	// setUp();// reset sequence number counters
+	// Response response1 = null;
+	// Response response2 = null;
+	// try {
+	// serverCtx.setReceiverSeq(0);
+	// response1 = sendResponse("response", serverCtx, t1);
+	// response1.setType(CoAP.Type.ACK);
+	// response1.setMID(34);
+	// serverCtx.setReceiverSeq(0);
+	// response2 = sendResponse("response", serverCtx, t1);
+	// response2.setType(CoAP.Type.ACK);
+	// response2.setMID(34);
+	// } catch (OSException e) {
+	// e.printStackTrace();
+	// fail();
+	// }
+	// try {
+	// dbClient.addContext(t1, clientCtx);
+	// dbClient.getContext("coap://localhost:5683").setSenderSeq(0);
+	// dbClient.addSeqByToken(t1, 0);
+	// ObjectSecurityLayer.prepareReceive(dbClient, response1);
+	// ObjectSecurityLayer.prepareReceive(dbClient, response2);
+	// fail("invalid token not detected!");
+	// } catch (OSException e) {
+	// assertEquals(ErrorDescriptions.TOKEN_INVALID, e.getMessage());
+	// }
+	// }
 
 	@Test
 	public void testSendSequenceNumberWrap() throws OSException {

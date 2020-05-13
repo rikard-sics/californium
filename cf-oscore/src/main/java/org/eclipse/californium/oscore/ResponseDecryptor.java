@@ -56,7 +56,7 @@ public class ResponseDecryptor extends Decryptor {
 	 * @throws OSException when decryption fails
 	 * 
 	 */
-	public static Response decrypt(OSCoreCtxDB db, Response response) throws OSException {
+	public static Response decrypt(OSCoreCtxDB db, Response response, OSCoreCtx ctx) throws OSException {
 
 		LOGGER.info("Removes E options from outer options which are not allowed there");
 		discardEOptions(response);
@@ -64,20 +64,13 @@ public class ResponseDecryptor extends Decryptor {
 		byte[] protectedData = response.getPayload();
 		Encrypt0Message enc = null;
 		Token token = response.getToken();
-		OSCoreCtx ctx = null;
 		OptionSet uOptions = response.getOptions();
 
-		if (token != null) {
-			ctx = db.getContextByToken(token);
-			if (ctx == null) {
-				LOGGER.error(ErrorDescriptions.TOKEN_INVALID);
-				throw new OSException(ErrorDescriptions.TOKEN_INVALID);
-			}
-			enc = decompression(protectedData, response);
-		} else {
-			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
-			throw new OSException(ErrorDescriptions.TOKEN_NULL);
+		if (ctx == null) {
+			LOGGER.error(ErrorDescriptions.CONTEXT_NOT_FOUND); // FIXME: null?
+			throw new OSException(ErrorDescriptions.CONTEXT_NOT_FOUND);
 		}
+		enc = decompression(protectedData, response);
 
 		// Retrieve Context ID (kid context)
 		CBORObject kidContext = enc.findAttribute(CBORObject.FromObject(10));

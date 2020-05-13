@@ -110,8 +110,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	 * 
 	 * @throws OSException error while decrypting response
 	 */
-	public static Response prepareReceive(OSCoreCtxDB ctxDb, Response response) throws OSException {
-		return ResponseDecryptor.decrypt(ctxDb, response);
+	public static Response prepareReceive(OSCoreCtxDB ctxDb, Response response, OSCoreCtx ctx) throws OSException {
+		return ResponseDecryptor.decrypt(ctxDb, response, ctx);
 	}
 
 	@Override
@@ -288,7 +288,15 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 			//If response is protected with OSCORE parse it first with prepareReceive
 			if (isProtected(response)) {
-				response = prepareReceive(ctxDb, response);
+				OSCoreCtx ctx = null;
+
+				if (response.getOptions().hasObserve()) {
+					ctx = ctxDb.getContextByToken(response.getToken());
+				} else {
+					ctx = ctxDb.getContext(exchange.getCryptographicContextID());
+				}
+
+				response = prepareReceive(ctxDb, response, ctx);
 			}
 		} catch (OSException e) {
 			LOGGER.error("Error while receiving OSCore response: " + e.getMessage());
@@ -325,6 +333,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				// Since the exchange object has been re-created the
 				// cryptographic id doesn't exist
+				// FIXME: Doesn't work?
 				if (options.hasOscore()) {
 					String uri = request.getURI();
 					try {
