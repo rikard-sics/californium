@@ -82,9 +82,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	 * 
 	 * @throws OSException error while encrypting response
 	 */
-	public static Response prepareSend(OSCoreCtxDB ctxDb, Response message, OSCoreCtx ctx, final boolean newPartialIV,
+	public static Response prepareSend(OSCoreCtxDB ctxDb, Response message, byte[] contextIdentifier,
 			boolean outerBlockwise) throws OSException {
-		return ResponseEncryptor.encrypt(ctxDb, message, ctx, newPartialIV, outerBlockwise);
+		return ResponseEncryptor.encrypt(ctxDb, message, contextIdentifier, outerBlockwise);
 	}
 
 	/**
@@ -110,8 +110,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	 * 
 	 * @throws OSException error while decrypting response
 	 */
-	public static Response prepareReceive(OSCoreCtxDB ctxDb, Response response, OSCoreCtx ctx) throws OSException {
-		return ResponseDecryptor.decrypt(ctxDb, response, ctx);
+	public static Response prepareReceive(OSCoreCtxDB ctxDb, Response response, byte[] contextIdentifier)
+			throws OSException {
+		return ResponseDecryptor.decrypt(ctxDb, response, contextIdentifier);
 	}
 
 	@Override
@@ -154,7 +155,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				 */
 				OSCoreEndpointContextInfo.sendingRequest(ctx, exchange);
 
-				exchange.setCryptographicContextID(ctx.getRecipientId());
+				exchange.setCryptographicContextID(ctx.getIdentifier());
 				final int seqByToken = ctx.getSenderSeq();
 
 				final Request preparedRequest = prepareSend(ctxDb, request);
@@ -213,10 +214,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					&& exchange.getCurrentRequest().getOptions().getOscore().length != 0;
 
 			try {
-				OSCoreCtx ctx = ctxDb.getContext(exchange.getCryptographicContextID());
-				addPartialIV = ctx.getResponsesIncludePartialIV() || exchange.getRequest().getOptions().hasObserve();
+				byte[] contextIdentifier = exchange.getCryptographicContextID();
 				
-				response = prepareSend(ctxDb, response, ctx, addPartialIV, outerBlockwise);
+				response = prepareSend(ctxDb, response, contextIdentifier, outerBlockwise);
 				exchange.setResponse(response);
 			} catch (OSException e) {
 				LOGGER.error("Error sending response: " + e.getMessage());
@@ -257,7 +257,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				}
 				return;
 			}
-			exchange.setCryptographicContextID(rid);
+
+			OSCoreCtx ctx = ctxDb.getContext(rid);
+			exchange.setCryptographicContextID(ctx.getIdentifier());
 		}
 		super.receiveRequest(exchange, request);
 	}
@@ -289,18 +291,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			//If response is protected with OSCORE parse it first with prepareReceive
 			if (isProtected(response)) {
 				OSCoreCtx ctx = null;
-				ctx = ctxDb.getContext(exchange.getCryptographicContextID()); // FIXME:
-																				// Move
-																				// to
-																				// inside
-																				// preparereceive
-				// if (response.getOptions().hasObserve()) {
-				// ctx = ctxDb.getContextByToken(response.getToken());
-				// } else {
-				// ctx = ctxDb.getContext(exchange.getCryptographicContextID());
-				// }
-
-				response = prepareReceive(ctxDb, response, ctx);
+				byte[] contextIdentifier = exchange.getCryptographicContextID();
+				response = prepareReceive(ctxDb, response, contextIdentifier);
 			}
 		} catch (OSException e) {
 			LOGGER.error("Error while receiving OSCore response: " + e.getMessage());
@@ -342,7 +334,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					String uri = request.getURI();
 					try {
 						OSCoreCtx ctx = ctxDb.getContext(uri);
-						exchange.setCryptographicContextID(ctx.getRecipientId());
+						exchange.setCryptographicContextID(ctx.getIdentifier());
 					} catch (OSException e) {
 						LOGGER.error("Error when re-creating exchange at OSCORE level");
 						throw new OSException("Error when re-creating exchange at OSCORE level");

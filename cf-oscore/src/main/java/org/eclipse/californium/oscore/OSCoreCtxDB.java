@@ -38,6 +38,9 @@ public interface OSCoreCtxDB {
 	 */
 	public OSCoreCtx getContextByToken(Token token);
 
+	// FIXME: COmment
+	public OSCoreCtx getContextByIdentifier(byte[] contextIdentifier);
+
 	/**
 	 * @param token the token of the request
 	 * @param ctx the OSCore context

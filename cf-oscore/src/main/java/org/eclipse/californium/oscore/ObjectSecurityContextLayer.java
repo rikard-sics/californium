@@ -85,7 +85,8 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 				}
 				return;
 			}
-			exchange.setCryptographicContextID(rid);
+			OSCoreCtx ctx = ctxDb.getContext(rid);
+			exchange.setCryptographicContextID(ctx.getIdentifier());
 		}
 		super.receiveRequest(exchange, request);
 	}
@@ -225,7 +226,8 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 				// If response is protected with OSCORE parse it first with
 				// prepareReceive
 				if (isProtected(response)) {
-					response = ObjectSecurityLayer.prepareReceive(ctxDb, response, ctxDb.getContext(exchange.getCryptographicContextID()));
+					byte[] contextIdentifier = exchange.getCryptographicContextID();
+					response = ObjectSecurityLayer.prepareReceive(ctxDb, response, contextIdentifier);
 				}
 			} catch (OSException e) {
 				LOGGER.error("Error while receiving OSCore response: " + e.getMessage());

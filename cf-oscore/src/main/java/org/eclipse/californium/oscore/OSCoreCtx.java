@@ -336,6 +336,21 @@ public class OSCoreCtx {
 		return ByteBuffer.wrap(c).hashCode();
 	}
 
+	// FIXME: COMMENT
+	public byte[] getIdentifier() {
+		ByteBuffer test = ByteBuffer.allocate(60); // FIXME
+		if (sender_id != null) {
+			test.put(sender_id);
+		}
+		if (recipient_id != null) {
+			test.put(recipient_id);
+		}
+		if (common_master_secret != null) {
+			test.put(common_master_secret); // FIXME
+		}
+		return test.array();
+	}
+
 	/**
 	 * Overrides equals to provide a functional implementation for this class.
 	 */
