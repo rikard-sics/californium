@@ -26,9 +26,9 @@ import org.junit.runners.Suite.SuiteClasses;
  *
  */
 @RunWith(Suite.class)
-@SuiteClasses({ ByteIdTest.class, HashMapCtxDBTest.class, OptionJuggleTest.class, OSCoreCtxTest.class, OSCoreTest.class,
+@SuiteClasses({ ByteIdTest.class, HashMapCtxDBTest.class, OptionJuggleTest.class, OSCoreCtxTest.class,
 		OSSerializerTest.class, OSCoreServerClientTest.class, OSCoreObserveTest.class, EncryptorTest.class,
-		EndpointContextInfoTest.class, ContextRederivationTest.class,
+		DecryptorTest.class, EndpointContextInfoTest.class, ContextRederivationTest.class,
 		OSCoreInnerBlockwiseTest.class, OSCoreOuterBlockwiseTest.class })
 public class AllJUnitTests {
 
