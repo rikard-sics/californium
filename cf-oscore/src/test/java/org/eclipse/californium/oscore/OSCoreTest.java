@@ -314,63 +314,64 @@ public class OSCoreTest {
 		}
 	}
 
-	/**
-	 * Tests that protected options are encrypted and moved to OSOption-value
-	 * after encryption and restored after decryption.
-	 * 
-	 * @throws OSException if encryption or decryption fails
-	 */
-	@Test
-	public void testEncryptDecryptOptions() throws OSException {
-		Request request = Request.newGet().setURI("coap://localhost:5683");
-		request.getOptions().setLocationPath("/test/path");
-		request.getOptions().addOption(new Option(OptionNumberRegistry.OSCORE));
-		assertEquals(2, request.getOptions().getLocationPathCount());
-		try {
-			request = ObjectSecurityLayer.prepareSend(dbClient, request);
-		} catch (OSException e) {
-			e.printStackTrace();
-			assertTrue(false);
-		}
-		assertEquals(0, request.getOptions().getLocationPathCount());
-
-		dbClientToServer();
-
-		try {
-			request = ObjectSecurityLayer.prepareReceive(dbClient, request);
-		} catch (OSException e) {
-			e.printStackTrace();
-			assertTrue(false);
-		}
-		assertEquals(2, request.getOptions().getLocationPathCount());
-	}
-
-	@Test
-	public void testsEncryptDecryptPayloadInPayload() throws OSException {
-		Request request = Request.newPost().setURI("coap://localhost:5683");
-		request.setPayload("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-		assertTrue("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA".equals(request.getPayloadString()));
-		try {
-			request = ObjectSecurityLayer.prepareSend(dbClient, request);
-		} catch (OSException e) {
-			e.printStackTrace();
-			assertTrue(false);
-		}
-		assertFalse("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA".equals(request.getPayloadString()));
-		assertEquals("should be only 2 options (Object Security, Uri-host)", 2,
-				request.getOptions().asSortedList().size());
-		assertEquals("option payload not moved to message", 3, request.getOptions().getOscore().length);
-
-		dbClientToServer();
-
-		try {
-			ObjectSecurityLayer.prepareReceive(dbClient, request);
-		} catch (OSException e) {
-			e.printStackTrace();
-			assertTrue(false);
-		}
-		assertTrue("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA".equals(request.getPayloadString()));
-	}
+	// /**
+	// * Tests that protected options are encrypted and moved to OSOption-value
+	// * after encryption and restored after decryption.
+	// *
+	// * @throws OSException if encryption or decryption fails
+	// */
+	// @Test
+	// public void testEncryptDecryptOptions() throws OSException {
+	// Request request = Request.newGet().setURI("coap://localhost:5683");
+	// request.getOptions().setLocationPath("/test/path");
+	// request.getOptions().addOption(new Option(OptionNumberRegistry.OSCORE));
+	// assertEquals(2, request.getOptions().getLocationPathCount());
+	// try {
+	// request = ObjectSecurityLayer.prepareSend(dbClient, request);
+	// } catch (OSException e) {
+	// e.printStackTrace();
+	// assertTrue(false);
+	// }
+	// assertEquals(0, request.getOptions().getLocationPathCount());
+	//
+	// dbClientToServer();
+	//
+	// try {
+	// request = ObjectSecurityLayer.prepareReceive(dbClient, request);
+	// } catch (OSException e) {
+	// e.printStackTrace();
+	// assertTrue(false);
+	// }
+	// assertEquals(2, request.getOptions().getLocationPathCount());
+	// }
+	//
+	// @Test
+	// public void testsEncryptDecryptPayloadInPayload() throws OSException {
+	// Request request = Request.newPost().setURI("coap://localhost:5683");
+	// request.setPayload("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+	// assertTrue("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA".equals(request.getPayloadString()));
+	// try {
+	// request = ObjectSecurityLayer.prepareSend(dbClient, request);
+	// } catch (OSException e) {
+	// e.printStackTrace();
+	// assertTrue(false);
+	// }
+	// assertFalse("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA".equals(request.getPayloadString()));
+	// assertEquals("should be only 2 options (Object Security, Uri-host)", 2,
+	// request.getOptions().asSortedList().size());
+	// assertEquals("option payload not moved to message", 3,
+	// request.getOptions().getOscore().length);
+	//
+	// dbClientToServer();
+	//
+	// try {
+	// ObjectSecurityLayer.prepareReceive(dbClient, request);
+	// } catch (OSException e) {
+	// e.printStackTrace();
+	// assertTrue(false);
+	// }
+	// assertTrue("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA".equals(request.getPayloadString()));
+	// }
 
 	// @Test
 	// public void testSequenceNumbers() throws OSException {
@@ -488,30 +489,30 @@ public class OSCoreTest {
 		} catch (OSException e) {
 		}
 	}
-
-	@Test
-	public void testReceiveSequenceNumberWrap() throws OSException {
-
-		Token t1 = generateToken();
-		Token t2 = generateToken();
-		Token t3 = generateToken();
-
-		sendRequest(uriFull, dbClient, t1);
-		sendRequest(uriFull, dbClient, t2);
-		Request req = sendRequest(uriFull, dbClient, t3);
-
-		dbClientToServer();
-		serverCtx.setSeqMax(2);
-
-		// Test receive
-		boolean detectWrap = false;
-		try {
-			ObjectSecurityLayer.prepareReceive(dbClient, req);
-		} catch (OSException e) {
-			detectWrap = true;
-		}
-		assertTrue(detectWrap);
-	}
+	//
+	// @Test
+	// public void testReceiveSequenceNumberWrap() throws OSException {
+	//
+	// Token t1 = generateToken();
+	// Token t2 = generateToken();
+	// Token t3 = generateToken();
+	//
+	// sendRequest(uriFull, dbClient, t1);
+	// sendRequest(uriFull, dbClient, t2);
+	// Request req = sendRequest(uriFull, dbClient, t3);
+	//
+	// dbClientToServer();
+	// serverCtx.setSeqMax(2);
+	//
+	// // Test receive
+	// boolean detectWrap = false;
+	// try {
+	// ObjectSecurityLayer.prepareReceive(dbClient, req);
+	// } catch (OSException e) {
+	// detectWrap = true;
+	// }
+	// assertTrue(detectWrap);
+	// }
 
 	@Test
 	public void testFakeCode() throws OSException {
