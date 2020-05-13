@@ -294,7 +294,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		try {
 			//Printing of status information.
 			//Warns when expecting OSCORE response but unprotected response is received
-			if (!isProtected(response) && responseShouldBeProtected(exchange, response)) {
+			if (responseShouldBeProtected(exchange, response) && !isProtected(response)) {
 				LOGGER.warn("Incoming response is NOT OSCORE protected!");
 			} else if (isProtected(response)) {
 				LOGGER.info("Incoming response is OSCORE protected");
@@ -316,12 +316,12 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			//If response is protected with OSCORE parse it first with prepareReceive
 			if (isProtected(response)) {
 				OSCoreCtx ctx = null;
-
-				if (response.getOptions().hasObserve()) {
-					ctx = ctxDb.getContextByToken(response.getToken());
-				} else {
-					ctx = ctxDb.getContext(exchange.getCryptographicContextID());
-				}
+				ctx = ctxDb.getContext(exchange.getCryptographicContextID());
+				// if (response.getOptions().hasObserve()) {
+				// ctx = ctxDb.getContextByToken(response.getToken());
+				// } else {
+				// ctx = ctxDb.getContext(exchange.getCryptographicContextID());
+				// }
 
 				response = prepareReceive(ctxDb, response, ctx);
 			}
@@ -360,7 +360,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				// Since the exchange object has been re-created the
 				// cryptographic id doesn't exist
-				// FIXME: Doesn't work?
+				// FIXME: Doesn't work?, FIXED!, order was wrong above
 				if (options.hasOscore()) {
 					String uri = request.getURI();
 					try {
