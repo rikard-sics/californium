@@ -225,7 +225,7 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 				// If response is protected with OSCORE parse it first with
 				// prepareReceive
 				if (isProtected(response)) {
-					response = ObjectSecurityLayer.prepareReceive(ctxDb, response);
+					response = ObjectSecurityLayer.prepareReceive(ctxDb, response, ctxDb.getContext(exchange.getCryptographicContextID()));
 				}
 			} catch (OSException e) {
 				LOGGER.error("Error while receiving OSCore response: " + e.getMessage());
