@@ -50,7 +50,6 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	private HashMap<Token, OSCoreCtx> tokenMap;
 	private HashMap<String, OSCoreCtx> uriMap;
 	private HashMap<Token, Integer> seqMap;
-
 	private HashMap<ByteId, OSCoreCtx> idMap;
 
 	private ArrayList<Token> allTokens;
@@ -88,7 +87,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		}
 	}
 
-	// @Override FIXME
+	@Override
 	public synchronized OSCoreCtx getContextByIdentifier(byte[] contextIdentifier) {
 		if (contextIdentifier != null) {
 			return idMap.get(new ByteId(contextIdentifier));
