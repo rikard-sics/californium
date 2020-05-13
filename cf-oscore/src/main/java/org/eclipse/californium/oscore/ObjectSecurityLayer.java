@@ -289,7 +289,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			//If response is protected with OSCORE parse it first with prepareReceive
 			if (isProtected(response)) {
 				OSCoreCtx ctx = null;
-				ctx = ctxDb.getContext(exchange.getCryptographicContextID());
+				ctx = ctxDb.getContext(exchange.getCryptographicContextID()); // FIXME:
+																				// Move
+																				// to
+																				// inside
+																				// preparereceive
 				// if (response.getOptions().hasObserve()) {
 				// ctx = ctxDb.getContextByToken(response.getToken());
 				// } else {
