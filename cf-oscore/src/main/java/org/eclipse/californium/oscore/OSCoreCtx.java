@@ -21,6 +21,7 @@ package org.eclipse.californium.oscore;
 
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
+import java.nio.ByteOrder;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import org.slf4j.Logger;
@@ -359,17 +360,24 @@ public class OSCoreCtx {
 	}
 
 	// FIXME: COMMENT
-	public byte[] getIdentifier() {
-		ByteBuffer test = ByteBuffer.allocate(60); // FIXME
+	public byte[] getUniqueIdentifier() {
+		ByteBuffer test = ByteBuffer.allocate(90); // FIXME
 		if (sender_id != null) {
 			test.put(sender_id);
+		}
+		if (common_master_secret != null) {
+			test.put(common_master_secret);
+		}
+		if (common_master_salt != null) {
+			test.put(common_master_salt);
 		}
 		if (recipient_id != null) {
 			test.put(recipient_id);
 		}
-		if (common_master_secret != null) {
-			test.put(common_master_secret); // FIXME
-		}
+		// int hash = test.array().hashCode();
+		// byte[] ret =
+		// ByteBuffer.allocate(4).order(ByteOrder.nativeOrder()).putInt(hash).array();
+
 		return test.array();
 	}
 
