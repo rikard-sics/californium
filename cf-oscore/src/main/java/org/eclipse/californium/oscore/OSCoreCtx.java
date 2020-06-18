@@ -19,6 +19,7 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
+import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;

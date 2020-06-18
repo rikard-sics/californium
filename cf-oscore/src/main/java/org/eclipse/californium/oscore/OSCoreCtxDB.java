@@ -118,6 +118,7 @@ public interface OSCoreCtxDB {
 	 */
 	void addContext(String uri, GroupCtx ctx) throws OSException;
 
+
 	/**
 	 * Get a context based on its ID Context
 	 * 

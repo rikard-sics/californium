@@ -168,6 +168,7 @@ public class GroupOSCoreServerClientTest {
 
 	/* --- Client tests follow --- */
 
+
 	/**
 	 * Tests working OSCORE non-confirmable request and response.
 	 * 
