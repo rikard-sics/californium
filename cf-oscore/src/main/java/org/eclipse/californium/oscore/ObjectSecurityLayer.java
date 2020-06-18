@@ -78,14 +78,15 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	 * @param newPartialIV boolean to indicate whether to use a new partial IV or not
 	 * @param outerBlockwise boolean to indicate whether the block-wise options
 	 *            should be encrypted or not
+	 * @param requestOption the OSCORE option of the corresponding request
 	 * 
 	 * @return the encrypted message
 	 * 
 	 * @throws OSException error while encrypting response
 	 */
 	public static Response prepareSend(OSCoreCtxDB ctxDb, Response message, OSCoreCtx ctx, final boolean newPartialIV,
-			boolean outerBlockwise) throws OSException {
-		return ResponseEncryptor.encrypt(ctxDb, message, ctx, newPartialIV, outerBlockwise);
+			boolean outerBlockwise, byte[] requestOption) throws OSException {
+		return ResponseEncryptor.encrypt(ctxDb, message, ctx, newPartialIV, outerBlockwise, requestOption);
 	}
 
 	/**
@@ -156,17 +157,20 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				 */
 				OSCoreEndpointContextInfo.sendingRequest(ctx, exchange);
 
-				exchange.setCryptographicContextID(ctx.getRecipientId());
 				final int seqByToken = ctx.getSenderSeq();
 
 				final Request preparedRequest = prepareSend(ctxDb, request);
 				final OSCoreCtx finalCtx = ctxDb.getContext(uri);
+
+				exchange.setCryptographicContextID(preparedRequest.getOptions().getOscore());
 
 				if (outgoingExceedsMaxUnfragSize(preparedRequest, outerBlockwise, ctx.getMaxUnfragmentedSize())) {
 					throw new IllegalStateException("outgoing request is exceeding the MAX_UNFRAGMENTED_SIZE!");
 				}
 
 				preparedRequest.addMessageObserver(0, new MessageObserverAdapter() {
+
+					// TODO: New observer for more Token handling?
 
 					@Override
 					public void onReadyToSend() {
@@ -222,7 +226,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				OSCoreCtx ctx = ctxDb.getContextByToken(exchange.getCurrentRequest().getToken());
 				addPartialIV = ctx.getResponsesIncludePartialIV() || exchange.getRequest().getOptions().hasObserve();
 
-				Response preparedResponse = prepareSend(ctxDb, response, ctx, addPartialIV, outerBlockwise);
+				byte[] requestOption = exchange.getCryptographicContextID();
+				Response preparedResponse = prepareSend(ctxDb, response, ctx, addPartialIV, outerBlockwise,
+						requestOption);
 
 				if (outgoingExceedsMaxUnfragSize(preparedResponse, outerBlockwise, ctx.getMaxUnfragmentedSize())) {
 					super.sendResponse(exchange,
@@ -286,9 +292,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				return;
 			}
 
+			byte[] oscoreOption = null;
 			try {
 				request = prepareReceive(ctxDb, request, ctx);
-				rid = request.getOptions().getOscore();
+				oscoreOption = request.getOptions().getOscore();
 				request.getOptions().setOscore(Bytes.EMPTY);
 				exchange.setRequest(request);
 			} catch (CoapOSException e) {
@@ -300,7 +307,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				}
 				return;
 			}
-			exchange.setCryptographicContextID(rid);
+			exchange.setCryptographicContextID(oscoreOption);
 		}
 		super.receiveRequest(exchange, request);
 	}
