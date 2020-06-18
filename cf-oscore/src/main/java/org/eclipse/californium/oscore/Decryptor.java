@@ -33,7 +33,10 @@ import com.upokecenter.cbor.CBORObject;
 
 import org.eclipse.californium.cose.Attribute;
 import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.CounterSign1;
 import org.eclipse.californium.cose.HeaderKeys;
+import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 
 /**
  * 
@@ -92,6 +95,9 @@ public abstract class Decryptor {
 				
 				//Note that the code below can throw an OSException when replays are detected
 				ctx.checkIncomingSeq(seq);
+				if (ctx.isGroupContext()) {
+					assert ctx instanceof GroupRecipientCtx;
+				}
 
 				nonce = OSSerializer.nonceGeneration(partialIV, ctx.getRecipientId(), ctx.getCommonIV(),
 						ctx.getIVLength());
@@ -116,13 +122,13 @@ public abstract class Decryptor {
 						ctx.getIVLength());
 			} else {
 				//Since the response contains a partial IV use it for nonce calculation
-				
+
 				partialIV = piv.GetByteString();
 				partialIV = expandToIntSize(partialIV);
 				nonce = OSSerializer.nonceGeneration(partialIV, ctx.getRecipientId(), ctx.getCommonIV(),
 						ctx.getIVLength());
 			}
-			
+
 			//Nonce calculation uses partial IV in response (if present).
 			//AAD calculation always uses partial IV (seq. nr.) of original request.  
 			aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), seq, ctx.getSenderId(), message.getOptions());
@@ -131,10 +137,33 @@ public abstract class Decryptor {
 		byte[] plaintext = null;
 		byte[] key = ctx.getRecipientKey();
 
+		CounterSign1 sign = null;
+		// FIXME: Enough with 1?
+		boolean pairwiseResponse = OptionJuggle.getGroupModeBit(message.getOptions().getOscore()) == false && !isRequest;
+		// boolean pairwiseRequest =
+		// OptionJuggle.getGroupModeBit(message.getOptions().getOscore()) ==
+		// false && isRequest;
+		// boolean pairwise = pairwiseRequest || pairwiseResponse;
+		if (ctx.isGroupContext()) {
+			LOGGER.debug("Decrypting incoming message using Group OSCORE. Pairwise mode: " + pairwiseResponse);
+			// Check if this is a pairwise response, if so use the pairwise key
+			if (pairwiseResponse) {
+				key = ((GroupRecipientCtx) ctx).getPairwiseRecipientKey();
+			} else if (false) {
+				// System.out.println("RECEIVING PAIRWISE
+				// REQUEST");
+			} else {
+				// If group mode is used prepare the signature checking
+				aad = OSSerializer.updateAADForGroupEnc(ctx, aad);
+				sign = prepareCheckSignature(enc, ctx, aad, message);
+			}
+
+		}
+
 		enc.setExternal(aad);
 			
 		try {
-
+			// TODO: Get and set Recipient ID (KID) here too?
 			enc.addAttribute(HeaderKeys.Algorithm, ctx.getAlg().AsCBOR(), Attribute.DO_NOT_SEND);
 			enc.addAttribute(HeaderKeys.IV, CBORObject.FromObject(nonce), Attribute.DO_NOT_SEND);
 			plaintext = enc.decrypt(key);
@@ -143,6 +172,11 @@ public abstract class Decryptor {
 			String details = ErrorDescriptions.DECRYPTION_FAILED + " " + e.getMessage();
 			LOGGER.error(details);
 			throw new OSException(details);
+		}
+
+		if (ctx.isGroupContext() && !pairwiseResponse) {
+			boolean signatureCorrect = checkSignature(enc, sign);
+			LOGGER.debug("Signature verification succeeded: " + signatureCorrect);
 		}
 
 		return plaintext;
@@ -278,5 +312,63 @@ public abstract class Decryptor {
 	protected static void discardEOptions(Message message) {
 		OptionSet newOptions = OptionJuggle.discardEOptions(message.getOptions());
 		message.setOptions(newOptions);
+	}
+
+	// TODO: Remove unneeded lines
+	private static boolean checkSignature(Encrypt0Message enc, CounterSign1 sign) throws OSException {
+
+		boolean countersignatureValid = false;
+
+		try {
+			countersignatureValid = enc.validate(sign);
+		} catch (CoseException e) {
+			LOGGER.error("Countersignature checking procedure failed.");
+			e.printStackTrace();
+		}
+
+		if (countersignatureValid == false) {
+			LOGGER.error(ErrorDescriptions.COUNTERSIGNATURE_CHECK_FAILED);
+			throw new OSException(ErrorDescriptions.COUNTERSIGNATURE_CHECK_FAILED);
+		}
+
+		return countersignatureValid;
+	}
+
+	// TODO: Remove unneeded lines
+	private static CounterSign1 prepareCheckSignature(Encrypt0Message enc, OSCoreCtx ctx, byte[] aad, Message message) {
+
+		CounterSign1 sign = null;
+		GroupRecipientCtx recipientCtx = (GroupRecipientCtx) ctx;
+
+		// First remove the countersignature from the payload
+		byte[] full_payload = null;
+		try {
+			full_payload = enc.getEncryptedContent();
+
+			// Set new truncated ciphertext
+			int countersignatureLength = recipientCtx.getCountersignatureLen();
+			byte[] countersignatureBytes = Arrays.copyOfRange(full_payload,
+					full_payload.length - countersignatureLength, full_payload.length);
+			byte[] ciphertext = Arrays.copyOfRange(full_payload, 0, full_payload.length - countersignatureLength);
+			enc.setEncryptedContent(ciphertext);
+
+			// Now actually prepare to check the countersignature
+			OneKey recipientPublicKey = recipientCtx.getPublicKey();
+			// countersignatureBytes[3] = (byte) 0xff; // Corrupt
+			// countersignature
+			sign = new CounterSign1(countersignatureBytes);
+			sign.setKey(recipientPublicKey);
+
+			CBORObject signAlg = recipientCtx.getAlgCountersign().AsCBOR();
+			sign.addAttribute(HeaderKeys.Algorithm, signAlg, Attribute.DO_NOT_SEND);
+			byte[] signAad = OSSerializer.updateAADForGroupSign(ctx, aad, message);
+
+			sign.setExternal(signAad);
+		} catch (Exception e) {
+			LOGGER.error("Countersignature verification procedure failed.");
+			e.printStackTrace();
+		}
+
+		return sign;
 	}
 }
