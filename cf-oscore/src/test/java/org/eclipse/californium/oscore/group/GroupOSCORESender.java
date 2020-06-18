@@ -46,6 +46,16 @@ import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider
 
 /**
  * Test sender configured to support multicast requests. Rebased.
+=======
+import com.upokecenter.cbor.CBORObject;
+
+import net.i2p.crypto.eddsa.EdDSASecurityProvider;
+
+import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
+
+/**
+ * Test sender configured to support multicast requests.
+>>>>>>> 6cf51e7a0 (Initial commit of Group OSCORE code)
  */
 public class GroupOSCORESender {
 

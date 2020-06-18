@@ -69,7 +69,6 @@ public class ResponseEncryptor extends Encryptor {
 			// Update this parameter from the now retrieved sender context
 			newPartialIV |= ctx.getResponsesIncludePartialIV();
 			assert (ctx instanceof GroupSenderCtx);
-
 		}
 
 		if (ctx == null) {

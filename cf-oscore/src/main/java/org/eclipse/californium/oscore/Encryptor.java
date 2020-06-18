@@ -105,7 +105,6 @@ public abstract class Encryptor {
 				if (ctx.isGroupContext() == false) {
 					recipientId = ctx.getRecipientId();
 					requestSeq = requestSequenceNr;
-
 				} else if (ctx.isGroupContext()) {
 					// For Group OSCORE use RID and seq from request
 					recipientId = OptionJuggle.getRid(correspondingReqOption);
