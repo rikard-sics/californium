@@ -114,7 +114,11 @@ public class KeyRemappingTest {
 	/**
 	 * Testing starting with a COSE Key
 	 * 
+<<<<<<< HEAD
 	 * @throws CoseException on error in operations with COSE keys
+=======
+	 * @throws CoseException
+>>>>>>> 5cbd596e9 (Initial commit of Group OSCORE code)
 	 */
 	@Test
 	public void testRemappingWithCOSEKey() throws CoseException {

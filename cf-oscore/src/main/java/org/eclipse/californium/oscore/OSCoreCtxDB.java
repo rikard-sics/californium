@@ -121,8 +121,13 @@ public interface OSCoreCtxDB {
 	/**
 	 * Get a context based on its ID Context
 	 * 
+<<<<<<< HEAD
 	 * @param IDContext the ID context
 	 * @return the retrieved context
+=======
+	 * @param IDContext
+	 * @return
+>>>>>>> 5cbd596e9 (Initial commit of Group OSCORE code)
 	 */
 	OSCoreCtx getContextByIDContext(byte[] IDContext);
 }
