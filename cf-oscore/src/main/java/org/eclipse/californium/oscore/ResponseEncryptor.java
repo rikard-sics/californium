@@ -25,6 +25,7 @@ import org.eclipse.californium.core.coap.BlockOption;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.cose.Encrypt0Message;
+import org.eclipse.californium.oscore.group.GroupSenderCtx;
 
 /**
  * 
@@ -48,13 +49,24 @@ public class ResponseEncryptor extends Encryptor {
 	 *            should be encrypted or not
 	 * @param requestSequenceNr sequence number (Partial IV) from the request
 	 *            (if encrypting a response)
+	 * @param requestOption the OSCORE option of the corresponding request
 	 * 
 	 * @return the response with the encrypted OSCore option
 	 * 
 	 * @throws OSException when encryption fails
 	 */
 	public static Response encrypt(OSCoreCtxDB db, Response response, OSCoreCtx ctx, final boolean newPartialIV,
-			boolean outerBlockwise, int requestSequenceNr) throws OSException {
+			boolean outerBlockwise, int requestSequenceNr, byte[] requestOption) throws OSException {
+
+		/*
+		 * For a Group OSCORE context, get the specific Sender Context
+		 * associated to this Recipient Context.
+		 */
+		if (ctx != null && ctx.isGroupContext()) {
+			ctx = ctx.getSenderCtx();
+			assert (ctx instanceof GroupSenderCtx);
+		}
+
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CTX_NULL);
 			throw new OSException(ErrorDescriptions.CTX_NULL);
@@ -82,7 +94,8 @@ public class ResponseEncryptor extends Encryptor {
 
 		byte[] confidential = OSSerializer.serializeConfidentialData(options, response.getPayload(), realCode);
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
-		byte[] cipherText = encryptAndEncode(enc, ctx, response, newPartialIV, requestSequenceNr);
+		byte[] cipherText = encryptAndEncode(enc, ctx, response, newPartialIV, requestSequenceNr, requestOption);
+
 		compression(ctx, cipherText, response, newPartialIV);
 
 		options = response.getOptions();
@@ -97,6 +110,10 @@ public class ResponseEncryptor extends Encryptor {
 			ctx.increaseSenderSeq();
 		}
 		
+		if (ctx.isGroupContext()) {
+			assert (ctx instanceof GroupSenderCtx);
+		}
+
 		return response;
 	}
 }

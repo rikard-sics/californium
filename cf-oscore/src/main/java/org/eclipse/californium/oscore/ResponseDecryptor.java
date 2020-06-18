@@ -32,6 +32,7 @@ import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.core.network.serialization.UdpDataParser;
 import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.elements.util.DatagramReader;
+import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 
 /**
  * 
@@ -70,6 +71,21 @@ public class ResponseDecryptor extends Decryptor {
 
 		if (token != null) {
 			ctx = db.getContextByToken(token);
+
+			/*
+			 * For a Group OSCORE context, get the specific Recipient Context.
+			 * The KID (Recipient ID) is included in the message and the ID
+			 * Context retrieved from the sender context
+			 */
+			if (ctx != null && ctx.isGroupContext()) {
+				byte[] rid = OptionJuggle.getRid(uOptions.getOscore());
+				byte[] idContext = ctx.getIdContext();
+
+				ctx = db.getContext(rid, idContext);
+
+				assert (ctx instanceof GroupRecipientCtx);
+			}
+			
 			if (ctx == null) {
 				LOGGER.error(ErrorDescriptions.TOKEN_INVALID);
 				throw new OSException(ErrorDescriptions.TOKEN_INVALID);
@@ -80,7 +96,7 @@ public class ResponseDecryptor extends Decryptor {
 			throw new OSException(ErrorDescriptions.TOKEN_NULL);
 		}
 
-		// Retrieve Context ID (kid context)
+		// Retrieve Context ID (kid context) from the actual message
 		CBORObject kidContext = enc.findAttribute(CBORObject.FromObject(10));
 		byte[] contextID = null;
 		if (kidContext != null) {
@@ -118,9 +134,12 @@ public class ResponseDecryptor extends Decryptor {
 		eOptions = OptionJuggle.merge(eOptions, uOptions);
 		response.setOptions(eOptions);
 
-		//Remove token after response is received, unless it has Observe
-		//If it has Observe it will be removed after cancellation elsewhere
-		if (response.getOptions().hasObserve() == false) {
+		/*
+		 * Remove token after response is received, unless it has Observe or is
+		 * using Group OSCORE. If it has Observe it will be removed after
+		 * cancellation elsewhere.
+		 */
+		if (response.getOptions().hasObserve() == false && ctx.isGroupContext() == false) {
 			db.removeToken(token);
 		}
 
