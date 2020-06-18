@@ -18,6 +18,7 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -265,7 +266,6 @@ public class OptionJuggle {
 		Map<String, String> userContext = request.getUserContext();
 
 		Request newRequest = new Request(code);
-
 		newRequest.setOptions(options);
 		newRequest.setPayload(payload);
 		newRequest.setToken(token);
@@ -298,7 +298,6 @@ public class OptionJuggle {
 		Long rtt = response.getApplicationRttNanos();
 
 		Response newResponse = new Response(code);
-
 		newResponse.setOptions(options);
 		newResponse.setPayload(payload);
 		newResponse.setToken(token);
@@ -400,6 +399,61 @@ public class OptionJuggle {
 		}
 
 		return kidContext;
+	}
+
+	/**
+	 * Retrieve Partial IV (sequence nr.) value from an OSCORE option.
+	 * 
+	 * @param oscoreOption the OSCORE option
+	 * @return the Partial IV value
+	 */
+	static int getPartialIV(byte[] oscoreOption) {
+		if (oscoreOption.length == 0) {
+			return -1;
+		}
+
+		// Parse the flag byte
+		byte flagByte = oscoreOption[0];
+		int n = flagByte & 0x07;
+
+		byte[] partialIV = null;
+		int index = 1;
+
+		// Parsing Partial IV
+		if (n > 0) {
+				partialIV = Arrays.copyOfRange(oscoreOption, index, index + n);
+		} else {
+			return -1;
+		}
+
+		// TODO: Avoid using BigInteger
+		BigInteger partialIVBi = new BigInteger(partialIV);
+		int ret = partialIVBi.intValue();
+
+		return ret;
+	}
+
+	/**
+	 * Check the group mode bit value from an OSCORE option.
+	 * 
+	 * @param oscoreOption the OSCORE option
+	 * @return if the group mode bit is set
+	 */
+	static boolean getGroupModeBit(byte[] oscoreOption) {
+		if (oscoreOption.length == 0) {
+			return false;
+		}
+
+		// Parse the flag byte
+		byte flagByte = oscoreOption[0];
+		int g = flagByte & 0x20;
+
+		if (g != 0) {
+			return true;
+		} else {
+			return false;
+		}
+
 	}
 
 }
