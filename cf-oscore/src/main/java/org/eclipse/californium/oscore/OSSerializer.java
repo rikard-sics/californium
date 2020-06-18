@@ -355,7 +355,7 @@ public class OSSerializer {
 			} else {
 				boolean newPartialIV = ctx.getResponsesIncludePartialIV() ||
 									   message.getOptions().hasObserve() ||
-									   message.getOptions().hasRequestHash(); // DET_REQ (this method should take newPartialIV as parameter
+									   message.getOptions().hasRequestHash(); // DET_REQ (this method should take newPartialIV as parameter)
 				
 				oscoreOption = Encryptor.encodeOSCoreResponse(ctx, newPartialIV);
 			}
@@ -405,5 +405,5 @@ public class OSSerializer {
 		return groupAadEnc.EncodeToBytes();
 		
 	}
-	
+
 }
