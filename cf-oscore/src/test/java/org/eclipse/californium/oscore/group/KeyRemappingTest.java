@@ -111,6 +111,7 @@ public class KeyRemappingTest {
 
 	}
 
+
 	/**
 	 * Testing starting with a COSE Key
 	 * 
