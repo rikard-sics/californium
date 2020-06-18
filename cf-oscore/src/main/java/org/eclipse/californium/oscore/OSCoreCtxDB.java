@@ -18,6 +18,7 @@
 package org.eclipse.californium.oscore;
 
 import org.eclipse.californium.core.coap.Token;
+import org.eclipse.californium.oscore.group.GroupCtx;
 
 /**
  * 
@@ -129,4 +130,20 @@ public interface OSCoreCtxDB {
 	 * @param token
 	 */
 	public void removeToken(Token token);
+
+	/**
+	 * Print information about all stored contexts.
+	 */
+	void printAllContexts();
+
+	// TODO:
+	void addContext(String uri, GroupCtx ctx) throws OSException;
+
+	/**
+	 * Get a context based on its ID Context
+	 * 
+	 * @param IDContext
+	 * @return
+	 */
+	OSCoreCtx getContextByIDContext(byte[] IDContext);
 }
