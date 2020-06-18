@@ -136,8 +136,8 @@ public class EncryptorTest {
 
 		//Encrypt the response message
 		boolean newPartialIV = true;
-		Response encrypted = ResponseEncryptor.encrypt(null, r, ctx, newPartialIV, false, seq);
-		
+		Response encrypted = ResponseEncryptor.encrypt(null, r, ctx, newPartialIV, false, seq, null);
+
 		//Check the OSCORE option value
 		byte[] predictedOSCoreOption = { 0x01, 0x00 };
 		
