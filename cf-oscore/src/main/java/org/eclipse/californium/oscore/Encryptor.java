@@ -22,7 +22,6 @@ package org.eclipse.californium.oscore;
 import java.io.ByteArrayOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
@@ -33,7 +32,11 @@ import com.upokecenter.cbor.CBORObject;
 
 import org.eclipse.californium.cose.Attribute;
 import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.CounterSign1;
 import org.eclipse.californium.cose.HeaderKeys;
+import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.oscore.group.GroupSenderCtx;
 
 /**
  * 
@@ -48,6 +51,10 @@ public abstract class Encryptor {
 	 */
 	private static final Logger LOGGER = LoggerFactory.getLogger(Encryptor.class);
 
+	protected static byte[] encryptAndEncode(Encrypt0Message enc, OSCoreCtx ctx, Message message,
+			boolean newPartialIV) throws OSException {
+		return encryptAndEncode(enc, ctx, message, newPartialIV, null);
+	}
 	/**
 	 * Encrypt the COSE message using the OSCore context.
 	 * 
@@ -57,13 +64,14 @@ public abstract class Encryptor {
 	 * @param newPartialIV if response contains partialIV
 	 * @param requestSequenceNr the sequence number (Partial IV) from the
 	 *            request (when encrypting a response or null otherwise)
+	 * @param correspondingReqOption the OSCORE option of the corresponding request
 	 *
 	 * @return the COSE message
 	 * 
 	 * @throws OSException if encryption or encoding fails
 	 */
 	protected static byte[] encryptAndEncode(Encrypt0Message enc, OSCoreCtx ctx, Message message, boolean newPartialIV,
-			Integer requestSequenceNr)
+			Integer requestSequenceNr, byte[] correspondingReqOption)
 			throws OSException {
 		boolean isRequest = message instanceof Request;
 
@@ -82,6 +90,21 @@ public abstract class Encryptor {
 				enc.addAttribute(HeaderKeys.KID, CBORObject.FromObject(ctx.getSenderId()), Attribute.UNPROTECTED);
 			} else {
 
+				// TODO: Include KID for responses here too?
+
+				byte[] recipientId = null;
+				int requestSeq = 0;
+
+				if (ctx.isGroupContext() == false) {
+					recipientId = ctx.getRecipientId();
+					requestSeq = ctx.getReceiverSeq();
+
+				} else if (ctx.isGroupContext()) {
+					// For Group OSCORE use RID and seq from request
+					recipientId = OptionJuggle.getRid(correspondingReqOption);
+					requestSeq = OptionJuggle.getPartialIV(correspondingReqOption);
+				}
+
 				if (!newPartialIV) {
 					// use nonce from request
 					partialIV = OSSerializer.processPartialIV(requestSequenceNr);
@@ -96,13 +119,44 @@ public abstract class Encryptor {
 
 				aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), requestSequenceNr, ctx.getRecipientId(),
 						message.getOptions());
+
+			}
+
+			// FIXME: Enough with 1?
+			boolean pairwiseResponse = true;
+			// boolean pairwiseRequest = true;
+			if (ctx.isGroupContext()) {
+
+				pairwiseResponse = ((GroupSenderCtx) ctx).getPairwiseModeResponses() && !isRequest;
+				// pairwiseRequest = ((GroupSenderCtx)
+				// ctx).getPairwiseModeRequests() && isRequest;
+
+				LOGGER.debug("Encrypting outgoing message using Group OSCORE. Pairwise mode: " + pairwiseResponse);
+
+				// Check this is a pairwise response. if so use the pairwise key
+				if (pairwiseResponse) {
+					key = ((GroupSenderCtx) ctx).getPairwiseSenderKey(OptionJuggle.getRid(correspondingReqOption));
+				} else if (false) {
+					// System.out.println("SENDING PAIRWISE
+					// REQUEST");
+				} else {
+					// If group mode is used prepare adding the signature
+					aad = OSSerializer.updateAADForGroupEnc(ctx, aad);
+					prepareSignature(enc, ctx, aad, message);
+				}
+
 			}
 
 			enc.setExternal(aad);
 			
 			enc.addAttribute(HeaderKeys.IV, CBORObject.FromObject(nonce), Attribute.DO_NOT_SEND);
 			enc.addAttribute(HeaderKeys.Algorithm, ctx.getAlg().AsCBOR(), Attribute.DO_NOT_SEND);
+
 			enc.encrypt(key);
+
+			if (ctx.isGroupContext() && !pairwiseResponse) {
+				appendSignature(enc);
+			}
 
 			return enc.getEncryptedContent();
 		} catch (CoseException e) {
@@ -153,6 +207,7 @@ public abstract class Encryptor {
 		return bRes.toByteArray();
 	}
 
+	
 	/**
 	 * Encodes the Object-Security value for a Request.
 	 * 
@@ -160,7 +215,7 @@ public abstract class Encryptor {
 	 * @return the Object-Security value as byte array
 	 */
 	public static byte[] encodeOSCoreRequest(OSCoreCtx ctx) {
-
+//FIXME: Include ID Context for Group OSCORE + the flag bit
 		OscoreOptionEncoder optionEncoder = new OscoreOptionEncoder();
 		if (ctx.getIncludeContextId()) {
 			optionEncoder.setIdContext(ctx.getMessageIdContext());
@@ -190,5 +245,51 @@ public abstract class Encryptor {
 		}
 
 		return optionEncoder.getBytes();
+	}
+	private static void prepareSignature(Encrypt0Message enc, OSCoreCtx ctx, byte[] aad, Message message) {
+		GroupSenderCtx senderCtx = (GroupSenderCtx) ctx;
+		
+		OneKey senderPrivateKey = senderCtx.getPrivateKey();
+		CounterSign1 sign = new CounterSign1(senderPrivateKey);
+
+		CBORObject signAlg = senderCtx.getAlgCountersign().AsCBOR();
+		try {
+			sign.addAttribute(HeaderKeys.Algorithm, signAlg, Attribute.DO_NOT_SEND);
+		} catch (CoseException e) {
+			LOGGER.error("Failed to prepare the Countersignature.");
+			e.printStackTrace();
+		}
+
+		enc.setCountersign1(sign);
+
+		byte[] signAad = OSSerializer.updateAADForGroupSign(ctx, aad, message);
+		sign.setExternal(signAad); // Set external AAD for signing
+
+	}
+
+	private static void appendSignature(Encrypt0Message enc) {
+		CBORObject mySignature = enc.getUnprotectedAttributes().get(HeaderKeys.CounterSignature0.AsCBOR());
+		byte[] countersignBytes = mySignature.GetByteString();
+
+		byte[] ciphertext = null;
+		try {
+			ciphertext = enc.getEncryptedContent();
+		} catch (CoseException e) {
+			LOGGER.error("Failed to append the Countersignature.");
+			e.printStackTrace();
+		}
+
+		ByteArrayOutputStream os = new ByteArrayOutputStream();
+		try {
+			os.write(ciphertext);
+			os.write(countersignBytes);
+		} catch (IOException e) {
+			LOGGER.error("Failed to append the Countersignature.");
+			e.printStackTrace();
+		}
+
+		byte[] fullPayload = os.toByteArray();
+
+		enc.setEncryptedContent(fullPayload);
 	}
 }
