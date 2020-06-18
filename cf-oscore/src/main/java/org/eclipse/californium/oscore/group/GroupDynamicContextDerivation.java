@@ -32,7 +32,6 @@ public class GroupDynamicContextDerivation {
 	
 		// Abort the procedure for non Group OSCORE sender contexts
 		if (ctx == null || ctx instanceof GroupSenderCtx == false) {
-			System.out.println("ABORTING1");
 			return null;
 		}
 
