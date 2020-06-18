@@ -144,7 +144,7 @@ public class GroupSenderCtx extends OSCoreCtx {
 	 * Get the length of the countersignature depending on the countersignature
 	 * algorithm currently used.
 	 * 
-	 * @return the length of the countersiganture
+	 * @return the length of the countersignature
 	 */
 	public int getCountersignatureLen() {
 		return commonCtx.getCountersignatureLen();
