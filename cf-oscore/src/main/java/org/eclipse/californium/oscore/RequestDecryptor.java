@@ -32,6 +32,7 @@ import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.elements.util.DatagramReader;
+import org.eclipse.californium.oscore.group.GroupDynamicContextDerivation;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
@@ -95,6 +96,11 @@ public class RequestDecryptor extends Decryptor {
 			throw new CoapOSException(ErrorDescriptions.CONTEXT_REGENERATION_FAILED, ResponseCode.BAD_REQUEST);
 		}
 
+		// Attempt Group OSCORE dynamic context generation
+		if (ctx == null) {
+			ctx = GroupDynamicContextDerivation.derive(db, rid, contextID);
+		}
+
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CONTEXT_NOT_FOUND);
 			throw new CoapOSException(ErrorDescriptions.CONTEXT_NOT_FOUND, ResponseCode.UNAUTHORIZED);
@@ -108,7 +114,12 @@ public class RequestDecryptor extends Decryptor {
 			if (e.getMessage().equals(ErrorDescriptions.REPLAY_DETECT)) { 
 				LOGGER.error(ErrorDescriptions.REPLAY_DETECT);
 				throw new CoapOSException(ErrorDescriptions.REPLAY_DETECT, ResponseCode.UNAUTHORIZED);
+			} else if (e.getMessage().equals(ErrorDescriptions.COUNTERSIGNATURE_CHECK_FAILED)) { 
+				//Check for countersignature verification failure
+				LOGGER.error(ErrorDescriptions.COUNTERSIGNATURE_CHECK_FAILED);
+				throw new CoapOSException(ErrorDescriptions.COUNTERSIGNATURE_CHECK_FAILED, ResponseCode.BAD_REQUEST);
 			}
+
 			//Otherwise return generic error message
 			LOGGER.error(ErrorDescriptions.DECRYPTION_FAILED);
 			throw new CoapOSException(ErrorDescriptions.DECRYPTION_FAILED, ResponseCode.BAD_REQUEST);
@@ -129,9 +140,6 @@ public class RequestDecryptor extends Decryptor {
 		OptionSet eOptions = request.getOptions();
 		eOptions = OptionJuggle.merge(eOptions, uOptions);	
 		request.setOptions(eOptions);
-
-		// We need the kid value on layer level
-		request.getOptions().setOscore(rid);
 
 		// Associate the Token with the context used
 		db.addContext(request.getToken(), ctx);

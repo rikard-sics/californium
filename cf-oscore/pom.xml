@@ -38,6 +38,12 @@
 			<groupId>com.upokecenter</groupId>
 			<artifactId>cbor</artifactId>
 		</dependency>
+	        <dependency> <!-- Rikard: Added this as Jim did in his pom -->
+	            <groupId>net.i2p.crypto</groupId>
+	            <artifactId>eddsa</artifactId>
+	            <version>0.2.0</version>
+	            <type>jar</type>
+        	</dependency>
 		<!-- test dependencies -->
 		<dependency>
 			<groupId>junit</groupId>
