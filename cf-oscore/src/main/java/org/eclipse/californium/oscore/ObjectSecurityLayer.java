@@ -78,6 +78,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	 * @param outerBlockwise whether the block-wise options should be encrypted
 	 * @param requestSequenceNr sequence number (Partial IV) from the request
 	 *            (if encrypting a response)
+	 * @param requestOption the OSCORE option of the corresponding request
 	 * 
 	 * @return the encrypted message
 	 * 
@@ -85,7 +86,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	 */
 	public static Response prepareSend(OSCoreCtxDB ctxDb, Response message, OSCoreCtx ctx, final boolean newPartialIV,
 			boolean outerBlockwise, int requestSequenceNr) throws OSException {
-		return ResponseEncryptor.encrypt(ctxDb, message, ctx, newPartialIV, outerBlockwise, requestSequenceNr);
+		return ResponseEncryptor.encrypt(ctxDb, message, ctx, newPartialIV, outerBlockwise, requestSequenceNr, requestOption);
 	}
 
 	/**
@@ -174,14 +175,20 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				 */
 				OSCoreEndpointContextInfo.sendingRequest(ctx, exchange);
 
+				final int seqByToken = ctx.getSenderSeq();
+
 				final Request preparedRequest = prepareSend(ctxDb, request);
 				final OSCoreCtx finalCtx = ctxDb.getContext(uri);
 
-				if (outgoingExceedsMaxUnfragSize(preparedRequest, false, ctx.getMaxUnfragmentedSize())) {
+				exchange.setCryptographicContextID(preparedRequest.getOptions().getOscore());
+
+				if (outgoingExceedsMaxUnfragSize(preparedRequest, outerBlockwise, ctx.getMaxUnfragmentedSize())) {
 					throw new IllegalStateException("outgoing request is exceeding the MAX_UNFRAGMENTED_SIZE!");
 				}
 
 				preparedRequest.addMessageObserver(0, new MessageObserverAdapter() {
+
+					// TODO: New observer for more Token handling?
 
 					@Override
 					public void onReadyToSend() {
@@ -243,11 +250,12 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				addPartialIV = (ctx !=null && ctx.getResponsesIncludePartialIV()) || exchange.getRequest().getOptions().hasObserve();
 
 				// Parse the OSCORE option from the corresponding request
-				OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
+				byte[] requestOption = exchange.getCryptographicContextID();
+				OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(requestOption);
 				int requestSequenceNumber = optionDecoder.getSequenceNumber();
 
 				Response preparedResponse = prepareSend(ctxDb, response, ctx, addPartialIV, outerBlockwise,
-						requestSequenceNumber);
+						requestSequenceNumber, requestOption);
 
 				if (outgoingExceedsMaxUnfragSize(preparedResponse, outerBlockwise, ctx.getMaxUnfragmentedSize())) {
 					Response error = new Response(ResponseCode.INTERNAL_SERVER_ERROR, true);
@@ -329,6 +337,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				}
 				return;
 			}
+
 			exchange.setCryptographicContextID(requestOscoreOption);
 		}
 		super.receiveRequest(exchange, request);

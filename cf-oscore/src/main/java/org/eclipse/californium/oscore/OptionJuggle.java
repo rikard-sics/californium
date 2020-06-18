@@ -19,6 +19,7 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -251,7 +252,6 @@ public class OptionJuggle {
 	 * @return request with new code.
 	 */
 	private static Request requestWithNewCode(Request request, Code code) {
-
 		Request newRequest = new Request(code);
 		copy(newRequest, request);
 		newRequest.setUserContext(request.getUserContext());
@@ -308,5 +308,129 @@ public class OptionJuggle {
 			}
 		}
 		return eOptions;
+	}
+
+	/**
+	 * Retrieve RID value from an OSCORE option.
+	 * 
+	 * @param oscoreOption the OSCORE option
+	 * @return the RID value
+	 */
+	static byte[] getRid(byte[] oscoreOption) {
+		if (oscoreOption.length == 0) {
+			return null;
+		}
+	
+		// Parse the flag byte
+		byte flagByte = oscoreOption[0];
+		int n = flagByte & 0x07;
+		int k = flagByte & 0x08;
+		int h = flagByte & 0x10;
+	
+		byte[] kid = null;
+		int index = 1;
+	
+		// Partial IV
+		index += n;
+	
+		// KID Context
+		if (h != 0) {
+			int s = oscoreOption[index];
+			index += s + 1;
+		}
+	
+		// KID
+		if (k != 0) {
+			kid = Arrays.copyOfRange(oscoreOption, index, oscoreOption.length);
+		}
+	
+		return kid;
+	}
+
+	/**
+	 * Retrieve ID Context value from an OSCORE option.
+	 * 
+	 * @param oscoreOption the OSCORE option
+	 * @return the ID Context value
+	 */
+	static byte[] getIDContext(byte[] oscoreOption) {
+		if (oscoreOption.length == 0) {
+			return null;
+		}
+
+		// Parse the flag byte
+		byte flagByte = oscoreOption[0];
+		int n = flagByte & 0x07;
+		int h = flagByte & 0x10;
+
+		byte[] kidContext = null;
+		int index = 1;
+
+		// Partial IV
+		index += n;
+
+		// KID Context
+		if (h != 0) {
+			int s = oscoreOption[index];
+			kidContext = Arrays.copyOfRange(oscoreOption, index + 1, index + 1 + s);
+			index += s + 1;
+		}
+
+		return kidContext;
+	}
+
+	/**
+	 * Retrieve Partial IV (sequence nr.) value from an OSCORE option.
+	 * 
+	 * @param oscoreOption the OSCORE option
+	 * @return the Partial IV value
+	 */
+	static int getPartialIV(byte[] oscoreOption) {
+		if (oscoreOption.length == 0) {
+			return -1;
+		}
+
+		// Parse the flag byte
+		byte flagByte = oscoreOption[0];
+		int n = flagByte & 0x07;
+
+		byte[] partialIV = null;
+		int index = 1;
+
+		// Parsing Partial IV
+		if (n > 0) {
+				partialIV = Arrays.copyOfRange(oscoreOption, index, index + n);
+		} else {
+			return -1;
+		}
+
+		// TODO: Avoid using BigInteger
+		BigInteger partialIVBi = new BigInteger(partialIV);
+		int ret = partialIVBi.intValue();
+
+		return ret;
+	}
+
+	/**
+	 * Check the group mode bit value from an OSCORE option.
+	 * 
+	 * @param oscoreOption the OSCORE option
+	 * @return if the group mode bit is set
+	 */
+	static boolean getGroupModeBit(byte[] oscoreOption) {
+		if (oscoreOption.length == 0) {
+			return false;
+		}
+
+		// Parse the flag byte
+		byte flagByte = oscoreOption[0];
+		int g = flagByte & 0x20;
+
+		if (g != 0) {
+			return true;
+		} else {
+			return false;
+		}
+
 	}
 }

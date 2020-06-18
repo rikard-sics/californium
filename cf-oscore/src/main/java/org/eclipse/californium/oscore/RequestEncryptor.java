@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.cose.Encrypt0Message;
+import org.eclipse.californium.oscore.group.GroupSenderCtx;
 
 /**
  * 
@@ -80,6 +81,9 @@ public class RequestEncryptor extends Encryptor {
 		request.setOptions(OptionJuggle.prepareUoptions(request.getOptions()));
 
 		ctx.increaseSenderSeq();
+		if (ctx.isGroupContext()) {
+			assert (ctx instanceof GroupSenderCtx);
+		}
 		return request;
 	}
 
