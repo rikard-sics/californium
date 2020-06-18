@@ -19,6 +19,9 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
+import java.nio.ByteBuffer;
+import java.security.GeneralSecurityException;
+>>>>>>> fa4b0e2dc (Initial commit of Group OSCORE code)
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import javax.crypto.Mac;
@@ -36,6 +39,9 @@ import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.elements.config.UdpConfig;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.StringUtil;
+import org.eclipse.californium.oscore.group.GroupRecipientCtx;
+import org.eclipse.californium.oscore.group.GroupSenderCtx;
+import org.eclipse.californium.scandium.dtls.cipher.CCMBlockCipher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,9 +74,9 @@ public class OSCoreCtx {
 	private byte[] common_iv;
 	private byte[] context_id;
 
-	private byte[] sender_id;
-	private byte[] sender_key;
-	private int sender_seq;
+	protected byte[] sender_id;
+	protected byte[] sender_key;
+	protected int sender_seq;
 
 	private byte[] recipient_id;
 	private byte[] recipient_key;
@@ -820,7 +826,7 @@ public class OSCoreCtx {
 		recipient_replay_window |= 1 << (seq - lowest_recipient_seq);
 	}
 
-	protected static byte[] deriveKey(byte[] secret, byte[] salt, int cbitKey, String digest, byte[] rgbContext)
+	public static byte[] deriveKey(byte[] secret, byte[] salt, int cbitKey, String digest, byte[] rgbContext)
 			throws CoseException {
 
 		final String HMAC_ALG_NAME = "Hmac" + digest;
@@ -950,6 +956,20 @@ public class OSCoreCtx {
 	 */
 	protected byte[] getNonceHandover() {
 		return nonceHandover;
+	}
+
+	/**
+	 * Provides a method to check if this context is used for Group OSCORE.
+	 * 
+	 * @return if this is a group (Group OSCORE) context
+	 */
+	public boolean isGroupContext() {
+		return this instanceof GroupSenderCtx || this instanceof GroupRecipientCtx;
+	}
+
+	// TODO: Remove?
+	protected GroupSenderCtx getSenderCtx() {
+		return null;
 	}
 
 }

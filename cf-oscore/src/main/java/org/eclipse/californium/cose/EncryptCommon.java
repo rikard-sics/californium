@@ -138,9 +138,25 @@ public abstract class EncryptCommon extends Message {
 		case CHACHA20_POLY1305:
 			ChaCha20_Poly1305_Encrypt(alg, rgbKey);
 			break;
+		case CHACHA20:
+			ChaCha20_Encrypt(alg, rgbKey);
+			break;
+		case A128CTR:
+		case A192CTR:
+		case A256CTR:
+			AES_CTR_Encrypt(alg, rgbKey);
+			break;
+		case A128CBC:
+		case A192CBC:
+		case A256CBC:
+			AES_CBC_Encrypt(alg, rgbKey);
+			break;
 		default:
 			break;
 		}
+
+		ProcessCounterSignatures();
+
 	}
 
 	//Method taken from EncryptCommon in COSE. This will provide the full AAD / Encrypt0-structure.
@@ -314,6 +330,36 @@ public abstract class EncryptCommon extends Message {
 	 */
 	public void setEncryptedContent(byte[] rgb) {
 		rgbEncrypt = rgb;
+	}
+
+	protected void ProcessCounterSignatures() throws CoseException {
+		if (!counterSignList.isEmpty()) {
+			if (counterSignList.size() == 1) {
+				counterSignList.get(0).sign(rgbProtected, rgbEncrypt);
+				addAttribute(HeaderKeys.CounterSignature, counterSignList.get(0).EncodeToCBORObject(),
+						Attribute.UNPROTECTED);
+			} else {
+				CBORObject list = CBORObject.NewArray();
+				for (CounterSign sig : counterSignList) {
+					sig.sign(rgbProtected, rgbEncrypt);
+					list.Add(sig.EncodeToCBORObject());
+				}
+				addAttribute(HeaderKeys.CounterSignature, list, Attribute.UNPROTECTED);
+			}
+		}
+
+		if (counterSign1 != null) {
+			counterSign1.sign(rgbProtected, rgbEncrypt);
+			addAttribute(HeaderKeys.CounterSignature0, counterSign1.EncodeToCBORObject(), Attribute.UNPROTECTED);
+		}
+	}
+
+	public boolean validate(CounterSign1 countersignature) throws CoseException {
+		return countersignature.validate(rgbProtected, rgbEncrypt);
+	}
+
+	public boolean validate(CounterSign countersignature) throws CoseException {
+		return countersignature.validate(rgbProtected, rgbEncrypt);
 	}
 
 	/**

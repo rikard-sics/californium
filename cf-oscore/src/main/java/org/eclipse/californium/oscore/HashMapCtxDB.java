@@ -25,8 +25,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,6 +38,8 @@ import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.oscore.group.GroupCtx;
+import org.eclipse.californium.oscore.group.GroupSenderCtx;
 
 /**
  * 
@@ -134,6 +138,20 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		}
 	}
 
+	// TODO: Update
+	@Override
+	public synchronized OSCoreCtx getContextByIDContext(byte[] IDContext) {
+		for (Entry<String, OSCoreCtx> entry : uriMap.entrySet()) {
+			OSCoreCtx ctx = entry.getValue();
+
+			if (Arrays.equals(IDContext, ctx.getIdContext())) {
+				return ctx;
+			}
+
+		}
+		return null;
+	}
+
 	@Override
 	public synchronized OSCoreCtx getContext(String uri) throws OSException {
 		if (uri != null) {
@@ -166,9 +184,20 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	}
 
 	@Override
+	public synchronized void addContext(String uri, GroupCtx ctx) throws OSException {
+		ctx.addToDb(uri, this);
+	}
+
+	@Override
 	public synchronized void addContext(OSCoreCtx ctx) {
 		if (ctx != null) {
 			
+			// Don't add Group OSCORE sender contexts as they have no RID
+			// TODO: Is there some other way?
+			if (ctx instanceof GroupSenderCtx) {
+				return;
+			}
+
 			ByteId rid = new ByteId(ctx.getRecipientId());
 			HashMap<ByteId, OSCoreCtx> ridMap = contextMap.get(rid);
 
@@ -329,5 +358,14 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		tokenMap.clear();
 		uriMap.clear();
 		allTokens = new ArrayList<Token>();
+	}
+
+	@Override
+	public void printAllContexts() {
+		for (ByteId name : contextMap.keySet()) {
+			String key = name.toString();
+			String value = contextMap.get(name).toString();
+			System.out.println(key + " " + value);
+		}
 	}
 }
