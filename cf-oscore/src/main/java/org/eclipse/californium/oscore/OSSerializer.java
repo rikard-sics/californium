@@ -25,11 +25,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.eclipse.californium.core.coap.CoAP;
+import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
+import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.network.serialization.DataSerializer;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.DatagramWriter;
+import org.eclipse.californium.oscore.group.GroupRecipientCtx;
+import org.eclipse.californium.oscore.group.GroupSenderCtx;
 
 import com.upokecenter.cbor.CBORObject;
 
@@ -259,5 +263,61 @@ public class OSSerializer {
 			LOGGER.error(ErrorDescriptions.BYTE_ARRAY_NULL);
 			throw new NullPointerException(ErrorDescriptions.BYTE_ARRAY_NULL);
 		}
+	}
+
+	public static byte[] updateAADForGroupEnc(OSCoreCtx ctx, byte[] aadBytes) {
+
+		CBORObject algCountersign;
+		CBORObject parCountersign;
+		CBORObject parCountersignKey;
+
+		if (ctx instanceof GroupRecipientCtx) {
+			GroupRecipientCtx recipientCtx = (GroupRecipientCtx) ctx;
+			algCountersign = recipientCtx.getAlgCountersign().AsCBOR();
+			parCountersign = CBORObject.FromObject(recipientCtx.getParCountersign());
+			parCountersignKey = CBORObject.FromObject(recipientCtx.getParCountersignKey());
+		} else {
+			GroupSenderCtx senderCtx = (GroupSenderCtx) ctx;
+			algCountersign = senderCtx.getAlgCountersign().AsCBOR();
+			parCountersign = CBORObject.FromObject(senderCtx.getParCountersign());
+			parCountersignKey = CBORObject.FromObject(senderCtx.getParCountersignKey());
+		}
+
+		CBORObject groupAadEnc = CBORObject.DecodeFromBytes(aadBytes);
+
+		// Update index 1 which holds the algorithms array
+		CBORObject algorithms = groupAadEnc.get(1);
+		algorithms.Add(algCountersign);
+		algorithms.Add(parCountersign);
+		algorithms.Add(parCountersignKey);
+		// Add update algorithms array to external AAD (used for encryption)
+		groupAadEnc.set(1, algorithms);
+
+		return groupAadEnc.EncodeToBytes();
+	}
+
+	public static byte[] updateAADForGroupSign(OSCoreCtx ctx, byte[] aadBytes, Message message) {
+
+		CBORObject groupAadSign = CBORObject.DecodeFromBytes(aadBytes);
+
+		byte[] oscoreOption = message.getOptions().getOscore();
+
+		// Build the option for outgoing messages (they do not have it)
+		boolean outgoing = oscoreOption == null || oscoreOption.length == 0;
+		// boolean outgoing = ctx instanceof GroupSenderCtx;
+		if (outgoing) {
+
+			if (message instanceof Request) {
+				oscoreOption = Encryptor.encodeOSCoreRequest(ctx);
+			} else {
+				boolean newPartialIV = ctx.getResponsesIncludePartialIV() || message.getOptions().hasObserve();
+				oscoreOption = Encryptor.encodeOSCoreResponse(ctx, newPartialIV);
+			}
+		}
+
+		// Add OSCORE option to external AAD (used for signing)
+		groupAadSign.Add(oscoreOption);
+
+		return groupAadSign.EncodeToBytes();
 	}
 }

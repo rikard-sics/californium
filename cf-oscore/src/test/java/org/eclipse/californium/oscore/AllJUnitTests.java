@@ -17,6 +17,9 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
+import org.eclipse.californium.oscore.group.GroupOSCoreServerClientTest;
+import org.eclipse.californium.oscore.group.KeyRemappingTest;
+import org.eclipse.californium.oscore.group.SharedSecretCalculationTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -30,7 +33,8 @@ import org.junit.runners.Suite.SuiteClasses;
 		OSSerializerTest.class, OSCoreServerClientTest.class, OSCoreObserveTest.class, EncryptorTest.class,
 		DecryptorTest.class, EndpointContextInfoTest.class, ContextRederivationTest.class,
 		OSCoreInnerBlockwiseTest.class, OSCoreOuterBlockwiseTest.class, OSCoreAlgorithmsTest.class,
-		OscoreOptionTest.class })
+		OscoreOptionTest.class, GroupOSCoreServerClientTest.class, KeyRemappingTest.class, SharedSecretCalculationTest.class })
+
 public class AllJUnitTests {
 
 }
