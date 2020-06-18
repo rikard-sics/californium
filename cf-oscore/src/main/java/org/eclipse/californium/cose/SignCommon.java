@@ -13,7 +13,6 @@ import java.util.Arrays;
 
 import org.eclipse.californium.core.Utils;
 
-
 /**
  *
  * @author jimsch

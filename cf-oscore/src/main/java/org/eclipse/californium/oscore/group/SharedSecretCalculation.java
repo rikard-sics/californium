@@ -21,8 +21,6 @@ import java.security.Provider;
 import java.security.Security;
 import java.util.Arrays;
 
-
-
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.OneKey;
@@ -330,7 +328,6 @@ public class SharedSecretCalculation {
 		System.out.println("Second test vector works: " + Arrays.equals(myResult, outputUCoordinate));
 
 		// Third X25519 test vector (iterations)
-
 		inputScalar = StringUtil.hex2ByteArray("0900000000000000000000000000000000000000000000000000000000000000");
 		inputUCoordinate = StringUtil.hex2ByteArray("0900000000000000000000000000000000000000000000000000000000000000");
 		byte[] resultIteration1 = StringUtil
