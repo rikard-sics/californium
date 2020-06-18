@@ -1,3 +1,5 @@
+**Modified version of Californium with additions for Group OSCORE**
+
 ![Californium logo](cf_64.png)
 
 # Californium (Cf) - CoAP for Java
