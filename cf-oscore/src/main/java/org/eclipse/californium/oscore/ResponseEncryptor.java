@@ -106,6 +106,7 @@ public class ResponseEncryptor extends Encryptor {
 			ctx = ctx.getSenderCtx();
 			
 			assert (ctx instanceof GroupSenderCtx);
+
 		}
 
 		if (ctx == null) {
