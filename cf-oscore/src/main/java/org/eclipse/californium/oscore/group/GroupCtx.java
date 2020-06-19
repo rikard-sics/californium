@@ -137,11 +137,6 @@ public class GroupCtx {
 	}
 
 	public void setResponsesIncludePartialIV(boolean b) {
-		// Why do I need to set it in both?
-		for (Entry<ByteId, GroupRecipientCtx> entry : recipientCtxMap.entrySet()) {
-			GroupRecipientCtx recipientCtx = entry.getValue();
-			recipientCtx.setResponsesIncludePartialIV(b);
-		}
 		senderCtx.setResponsesIncludePartialIV(b);
 	}
 
