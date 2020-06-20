@@ -246,12 +246,6 @@ public abstract class Encryptor {
 				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with nonce "
 						+ Utils.toHexString(nonce));
 
-				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with AAD "
-						+ Utils.toHexString(aad));
-
-				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with nonce "
-						+ Utils.toHexString(nonce));
-
 				// If this is a pairwise response/request use the pairwise key
 				if (pairwiseResponse) {
 					key = ((GroupSenderCtx) ctx).getPairwiseSenderKey(OptionJuggle.getRid(correspondingReqOption));
