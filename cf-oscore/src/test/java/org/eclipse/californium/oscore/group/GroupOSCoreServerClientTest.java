@@ -161,6 +161,8 @@ public class GroupOSCoreServerClientTest {
 
 	/**
 	 * Tests working OSCORE non-confirmable request and response.
+	 * 
+	 * @throws Exception on test failure
 	 */
 	@Test
 	public void testNonConfirmable() throws Exception {
@@ -211,6 +213,8 @@ public class GroupOSCoreServerClientTest {
 	/**
 	 * Tests OSCORE non-confirmable request where the decryption fails and the
 	 * response indicates this.
+	 * 
+	 * @throws Exception on test failure
 	 */
 	@Test
 	public void testDecryptionFail() throws Exception {
@@ -263,6 +267,8 @@ public class GroupOSCoreServerClientTest {
 	/**
 	 * Tests OSCORE non-confirmable request where the signature verification
 	 * fails and the response indicates this.
+	 * 
+	 * @throws Exception on test failure
 	 */
 	@Test
 	public void testSignatureVerificationFail() throws Exception {
@@ -315,6 +321,8 @@ public class GroupOSCoreServerClientTest {
 	/**
 	 * Tests working OSCORE non-confirmable request where the recipient does not
 	 * yet have a recipient context for that RID and dynamically generates it.
+	 * 
+	 * @throws Exception on test failure
 	 */
 	@Test
 	public void testDynamicContextDerivation() throws Exception {
@@ -392,6 +400,8 @@ public class GroupOSCoreServerClientTest {
 
 	/**
 	 * Tests working OSCORE non-confirmable request and pairwise response.
+	 * 
+	 * @throws Exception on test failure
 	 */
 	@Test
 	public void testPairwiseResponse() throws Exception {
@@ -440,6 +450,8 @@ public class GroupOSCoreServerClientTest {
 
 	/**
 	 * Tests working OSCORE non-confirmable pairwise request and group response.
+	 * 
+	 * @throws Exception on test failure
 	 */
 	@Test
 	public void testPairwiseRequest() throws Exception {
@@ -490,6 +502,8 @@ public class GroupOSCoreServerClientTest {
 
 	/**
 	 * Tests OSCORE request replayed message.
+	 * 
+	 * @throws Exception on test failure
 	 */
 	@Test
 	public void testRequestReplay() throws Exception {
@@ -549,6 +563,8 @@ public class GroupOSCoreServerClientTest {
 	/**
 	 * Tests working OSCORE non-confirmable request and response. The server
 	 * includes PIV in responses.
+	 * 
+	 * @throws Exception on test failure
 	 */
 	@Test
 	public void testResponsePIV() throws Exception {
@@ -604,6 +620,8 @@ public class GroupOSCoreServerClientTest {
 
 	/**
 	 * Tests working multiple OSCORE non-confirmable request and response.
+	 * 
+	 * @throws Exception on test failure
 	 */
 	@Test
 	public void testMultipleNonConfirmable() throws Exception {
@@ -651,15 +669,13 @@ public class GroupOSCoreServerClientTest {
 		assertEquals(sendCount, responseCount);
 	}
 
-
-
 	/* --- End of client tests --- */
 
 	/**
 	 * Set OSCORE context information for clients
 	 * 
-	 * @throws OSException
-	 * @throws CoseException
+	 * @throws OSException on failure to create the contexts
+	 * @throws CoseException on failure to create the contexts
 	 */
 	@Before
 	public void setClientContext() throws OSException, CoseException {
@@ -687,8 +703,11 @@ public class GroupOSCoreServerClientTest {
 	/**
 	 * (Re)sets the OSCORE context information for the server
 	 * 
-	 * @throws OSException
-	 * @throws CoseException
+	 * @param responsePartialIV if responses should include a Partial IV
+	 * @param pairwiseResponse if responses should be in pairwise mode
+	 * 
+	 * @throws OSException on failure to create the contexts
+	 * @throws CoseException on failure to create the contexts
 	 */
 	public void setServerContext(boolean responsePartialIV, boolean pairwiseResponse)
 			throws OSException, CoseException {
@@ -720,9 +739,12 @@ public class GroupOSCoreServerClientTest {
 	/**
 	 * Creates server with resources to test Group OSCORE functionality
 	 * 
+	 * @param responsePartialIV if responses should include a Partial IV
+	 * @param pairwiseResponse if responses should be in pairwise mode
+	 * 
 	 * @throws InterruptedException if resource update task fails
-	 * @throws OSException
-	 * @throws CoseException
+	 * @throws OSException on test failure
+	 * @throws CoseException on test failure
 	 */
 	public void createServer(boolean responsePartialIV, boolean pairwiseResponse)
 			throws InterruptedException, OSException, CoseException {
