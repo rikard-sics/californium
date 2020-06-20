@@ -76,6 +76,7 @@ public class GroupSenderCtx extends OSCoreCtx {
 	}
 
 	// TODO: Implement elsewhere to avoid cast?
+	@Deprecated
 	public boolean getPairwiseModeRequests() {
 		return commonCtx.pairwiseModeRequests;
 	}
@@ -104,6 +105,11 @@ public class GroupSenderCtx extends OSCoreCtx {
 		return ownPrivateKey;
 	}
 
+	@Override
+	protected GroupSenderCtx getSenderCtx() {
+		return this;
+	}
+
 	/** ------- TODO: Remove methods below ------- */
 
 	public OneKey getPublicKey() {
@@ -128,12 +134,6 @@ public class GroupSenderCtx extends OSCoreCtx {
 
 	}
 
-	@Override
-	protected GroupSenderCtx getSenderCtx() {
-		System.out.println("---------- error -- bad call");
-		Assert.fail();
-		return null;
-	}
 
 	/**
 	 * @return size of recipient replay window
