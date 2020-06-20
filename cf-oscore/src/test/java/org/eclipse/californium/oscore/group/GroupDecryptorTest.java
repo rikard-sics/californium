@@ -318,7 +318,7 @@ public class GroupDecryptorTest {
 	/**
 	 *
 	 * @throws OSException if encryption fails
-	 * @throws CoseException
+	 * @throws CoseException on test failure
 	 */
 	@Test
 	public void testRequestDecryptorPairwiseMode() throws OSException, CoseException {
@@ -393,7 +393,7 @@ public class GroupDecryptorTest {
 	 * Wrong par countersign key
 	 * 
 	 * @throws OSException if encryption fails
-	 * @throws CoseException
+	 * @throws CoseException on test failure
 	 */
 	@Test
 	public void testRequestDecryptorPairwiseModeFail() throws OSException, CoseException {
