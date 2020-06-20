@@ -26,6 +26,7 @@ import javax.crypto.KeyAgreement;
 
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.oscore.ByteId;
 import org.eclipse.californium.oscore.HashMapCtxDB;
@@ -61,7 +62,7 @@ public class GroupCtx {
 	boolean pairwiseModeRequests = false;
 
 	public GroupCtx(byte[] masterSecret, byte[] masterSalt, AlgorithmID aeadAlg, AlgorithmID hkdfAlg, byte[] idContext,
-			AlgorithmID algCountersign, int[][] parCountersign, int[] parCountersignKey) {
+			AlgorithmID algCountersign) {
 
 		this.masterSecret = masterSecret;
 		this.masterSalt = masterSalt;
@@ -69,11 +70,15 @@ public class GroupCtx {
 		this.hkdfAlg = hkdfAlg;
 		this.idContext = idContext;
 		this.algCountersign = algCountersign;
-		this.parCountersign = parCountersign;
-		this.parCountersignKey = parCountersignKey;
 
 		recipientCtxMap = new HashMap<ByteId, GroupRecipientCtx>();
 		publicKeysMap = new HashMap<ByteId, OneKey>();
+
+		// Set the par countersign and par countersign key values
+		int[] countersign_alg_capab = getCountersignAlgCapab(algCountersign);
+		int[] countersign_key_type_capab = getCountersignKeyTypeCapab(algCountersign);
+		this.parCountersign = new int[][] { countersign_alg_capab, countersign_key_type_capab };
+		this.parCountersignKey = countersign_key_type_capab;
 	}
 
 	public void addRecipientCtx(byte[] recipientId, int replayWindow, OneKey otherEndpointPubKey) throws OSException {
@@ -100,9 +105,57 @@ public class GroupCtx {
 		case EDDSA:
 		case ECDSA_256:
 			return 64;
+		case ECDSA_384:
+			return 96;
+		case ECDSA_512:
+			return 128;
 		default:
 			return -1;
 
+		}
+	}
+
+	/**
+	 * Get the countersign_alg_capab array for an algorithm.
+	 * 
+	 * See Draft section 4.3.1 & Appendix H.
+	 * 
+	 * @param alg the countersignature algorithm
+	 * @return the array countersign_alg_capab
+	 */
+	private int[] getCountersignAlgCapab(AlgorithmID alg) {
+		switch (alg) {
+		case EDDSA:
+			return new int[] { KeyKeys.KeyType_OKP.AsInt32() };
+		case ECDSA_256:
+		case ECDSA_384:
+		case ECDSA_512:
+			return new int[] { KeyKeys.KeyType_EC2.AsInt32() };
+		default:
+			return null;
+		}
+	}
+
+	/**
+	 * Get the countersign_key_type_capab array for an algorithm.
+	 * 
+	 * See Draft section 4.3.1 & Appendix H.
+	 * 
+	 * @param alg the countersignature algorithm
+	 * @return the array countersign_key_type_capab
+	 */
+	private int[] getCountersignKeyTypeCapab(AlgorithmID alg) {
+		switch (alg) {
+		case EDDSA:
+			return new int[] { KeyKeys.KeyType_OKP.AsInt32(), KeyKeys.OKP_Ed25519.AsInt32() };
+		case ECDSA_256:
+			return new int[] { KeyKeys.KeyType_EC2.AsInt32(), KeyKeys.EC2_P256.AsInt32() };
+		case ECDSA_384:
+			return new int[] { KeyKeys.KeyType_EC2.AsInt32(), KeyKeys.EC2_P384.AsInt32() };
+		case ECDSA_512:
+			return new int[] { KeyKeys.KeyType_EC2.AsInt32(), KeyKeys.EC2_P512.AsInt32() };
+		default:
+			return null;
 		}
 	}
 
