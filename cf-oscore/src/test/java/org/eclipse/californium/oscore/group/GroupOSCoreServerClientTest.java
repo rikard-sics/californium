@@ -807,7 +807,7 @@ public class GroupOSCoreServerClientTest {
 		byte[] requestIdContext = null;
 		EndpointContext endpointContext = request.getSourceContext();
 		if (endpointContext instanceof MapBasedEndpointContext) {
-			EndpointContext mapEndpointContext = (MapBasedEndpointContext) endpointContext;
+			EndpointContext mapEndpointContext = endpointContext;
 			requestIdContext = StringUtil
 					.hex2ByteArray(mapEndpointContext.get(OSCoreEndpointContextInfo.OSCORE_CONTEXT_ID));
 		}
