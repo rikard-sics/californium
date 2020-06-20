@@ -36,7 +36,6 @@ import org.eclipse.californium.core.network.serialization.UdpDataParser;
 import org.eclipse.californium.core.network.serialization.UdpDataSerializer;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
-import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
 import org.eclipse.californium.oscore.HashMapCtxDB;
@@ -78,11 +77,6 @@ public class GroupEncryptorTest {
 
 	// Group OSCORE specific values for the countersignature (ECDSA 256)
 	private final static AlgorithmID algCountersign = AlgorithmID.ECDSA_256;
-	private final static int[] countersign_key_type_capab = new int[] { KeyKeys.KeyType_EC2.AsInt32(),
-			KeyKeys.EC2_P256.AsInt32() };
-	private final static int[] countersign_alg_capab = new int[] { KeyKeys.KeyType_EC2.AsInt32() };
-	private final static int[][] parCountersign = new int[][] { countersign_alg_capab, countersign_key_type_capab };
-	private final static int[] parCountersignKey = countersign_key_type_capab;
 
 	// Keys for client and server (ECDSA full private and public keys)
 	private static String clientKeyString = "pgECI1gg2qPzgLjNqAaJWnjh9trtVjX2Gp2mbzyAQLSJt9LD2j8iWCDe8qCLkQ59ZOIwmFVk2oGtfoz4epMe/Fg2nvKQwkQ+XiFYIKb0PXRXX/6hU45EpcXUAQPufU03fkYA+W6gPoiZ+d0YIAEDJg==";
@@ -120,8 +114,7 @@ public class GroupEncryptorTest {
 		int seq = 20;
 
 		// Create client context
-		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
-				parCountersign, parCountersignKey);
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign);
 		OneKey clientFullKey = new OneKey(
 				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(clientKeyString)));
 		commonCtx.addSenderCtx(sid, clientFullKey);
@@ -199,8 +192,7 @@ public class GroupEncryptorTest {
 		int seq = 20;
 
 		// Create client context
-		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
-				parCountersign, parCountersignKey);
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign);
 		OneKey clientFullKey = new OneKey(
 				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(clientKeyString)));
 		commonCtx.addSenderCtx(sid, clientFullKey);
@@ -273,8 +265,7 @@ public class GroupEncryptorTest {
 		int seq = 20;
 
 		// Create server context
-		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
-				parCountersign, parCountersignKey);
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign);
 		OneKey serverFullKey = new OneKey(
 				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(serverKeyString)));
 		commonCtx.addSenderCtx(sid, serverFullKey);
@@ -350,8 +341,7 @@ public class GroupEncryptorTest {
 		int seq = 20;
 
 		// Create server context
-		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
-				parCountersign, parCountersignKey);
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign);
 		OneKey serverFullKey = new OneKey(
 				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(serverKeyString)));
 		commonCtx.addSenderCtx(sid, serverFullKey);

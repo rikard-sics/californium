@@ -71,7 +71,7 @@ public class OneKey {
                 keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
                 if (Arrays.equals(oid, ASN1.Oid_secp256r1)) keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P256);
                 else if (Arrays.equals(oid, ASN1.Oid_secp384r1)) keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P384);
-                else if (Arrays.equals(oid, ASN1.Oid_secp521r1)) keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P521);
+                else if (Arrays.equals(oid, ASN1.Oid_secp521r1)) keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P512);
                 else throw new CoseException("Unsupported curve");
 
                 byte[] keyData = (byte[]) spki.get(1).value;
@@ -105,7 +105,7 @@ public class OneKey {
                     keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
                     if (Arrays.equals(oid, ASN1.Oid_secp256r1)) keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P256);
                     else if (Arrays.equals(oid, ASN1.Oid_secp384r1)) keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P384);
-                    else if (Arrays.equals(oid, ASN1.Oid_secp521r1)) keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P521);
+                    else if (Arrays.equals(oid, ASN1.Oid_secp521r1)) keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P512);
                     else throw new CoseException("Unsupported curve");
                 }
                 else {
@@ -276,7 +276,7 @@ public class OneKey {
         else if (cn == KeyKeys.EC2_P384) {
             oid = ASN1.Oid_secp384r1;
         }
-        else if (cn == KeyKeys.EC2_P521) {
+        else if (cn == KeyKeys.EC2_P512) {
             oid = ASN1.Oid_secp521r1;
         }
         else {
@@ -411,7 +411,7 @@ public class OneKey {
         
         if (cnCurve == KeyKeys.EC2_P256) return new ECGenParameterSpec("secp256r1");
         if (cnCurve == KeyKeys.EC2_P384) return new ECGenParameterSpec("secp384r1");
-        if (cnCurve == KeyKeys.EC2_P521) return new ECGenParameterSpec("secp521r1");
+        if (cnCurve == KeyKeys.EC2_P512) return new ECGenParameterSpec("secp521r1");
         throw new CoseException("Unsupported curve " + cnCurve);        
     }
     
@@ -428,7 +428,7 @@ public class OneKey {
                 break;
                 
             case ECDSA_512:
-                returnThis = generateECDSAKey("P-521", KeyKeys.EC2_P521);
+                returnThis = generateECDSAKey("P-521", KeyKeys.EC2_P512);
                 break;
                 
             case EDDSA:
