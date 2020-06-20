@@ -301,7 +301,7 @@ public class GroupDecryptorTest {
 		db.addContext("", commonCtx);
 		r.setSourceContext(new UdpEndpointContext(new InetSocketAddress(0)));
 
-		// Decrypt the response message
+		// Decrypt the response messag
 		Response decrypted = ResponseDecryptor.decrypt(db, r, seq);
 		decrypted.getOptions().removeOscore();
 
