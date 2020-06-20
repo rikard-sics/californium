@@ -66,7 +66,6 @@ import org.eclipse.californium.rule.CoapThreadsRule;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -449,17 +448,12 @@ public class GroupOSCoreServerClientTest {
 	 * Tests working OSCORE non-confirmable pairwise request and group response.
 	 */
 	@Test
-	@Ignore
 	public void testPairwiseRequest() throws Exception {
 
 		createServer(false, false); // No PIV, no pairwise resp.
 
 		// Set up OSCORE context information for request (client)
 		setClientContext();
-
-		// Enable pairwise requests
-		GroupSenderCtx clientCtx = (GroupSenderCtx) dbClient.getContext(uri);
-		clientCtx.commonCtx.setPairwiseModeRequests(true);
 
 		// Create client endpoint with OSCORE context DB
 		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
@@ -479,7 +473,9 @@ public class GroupOSCoreServerClientTest {
 		request.setType(Type.NON);
 		byte[] token = Bytes.createBytes(rand, 8);
 		request.setToken(token);
-		request.getOptions().setOscore(new byte[] { 0x20 });
+
+		// Enable pairwise requests by setting the OSCORE option
+		request.getOptions().setOscore(OptionEncoder.set(true, uri, new byte[] { 0x77 }));
 
 		// send a request
 		CoapResponse response = client.advanced(request);
@@ -661,6 +657,8 @@ public class GroupOSCoreServerClientTest {
 		assertEquals(sendCount, responseCount);
 	}
 
+
+
 	/* --- End of client tests --- */
 
 	/**
@@ -717,13 +715,8 @@ public class GroupOSCoreServerClientTest {
 				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(clientKeyString))).PublicKey();
 		commonCtx.addRecipientCtx(rid, REPLAY_WINDOW, clientPublicKey);
 
-		if (responsePartialIV) {
-			commonCtx.setResponsesIncludePartialIV(true);
-		}
-
-		if (pairwiseResponse) {
-			commonCtx.setPairwiseModeResponses(true);
-		}
+		commonCtx.setResponsesIncludePartialIV(responsePartialIV);
+		commonCtx.setPairwiseModeResponses(pairwiseResponse);
 
 		dbServer.addContext(clientHostAdd, commonCtx);
 	}
