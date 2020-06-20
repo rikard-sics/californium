@@ -35,6 +35,11 @@ import org.eclipse.californium.oscore.OSException;
 
 import com.upokecenter.cbor.CBORObject;
 
+/**
+ * Class implementing a Group OSCORE context. It has one sender context and
+ * multiple recipient contexts.
+ *
+ */
 public class GroupCtx {
 
 	// Parameters in common context
@@ -61,6 +66,16 @@ public class GroupCtx {
 	boolean pairwiseModeResponses = false;
 	boolean pairwiseModeRequests = false;
 
+	/**
+	 * Construct a Group OSCORE context.
+	 * 
+	 * @param masterSecret
+	 * @param masterSalt
+	 * @param aeadAlg
+	 * @param hkdfAlg
+	 * @param idContext
+	 * @param algCountersign
+	 */
 	public GroupCtx(byte[] masterSecret, byte[] masterSalt, AlgorithmID aeadAlg, AlgorithmID hkdfAlg, byte[] idContext,
 			AlgorithmID algCountersign) {
 
@@ -81,6 +96,14 @@ public class GroupCtx {
 		this.parCountersignKey = countersign_key_type_capab;
 	}
 
+	/**
+	 * Add a recipient context.
+	 * 
+	 * @param recipientId
+	 * @param replayWindow
+	 * @param otherEndpointPubKey
+	 * @throws OSException
+	 */
 	public void addRecipientCtx(byte[] recipientId, int replayWindow, OneKey otherEndpointPubKey) throws OSException {
 		GroupRecipientCtx recipientCtx = new GroupRecipientCtx(masterSecret, false, aeadAlg, null, recipientId, hkdfAlg,
 				replayWindow, masterSalt, idContext, otherEndpointPubKey, this);
@@ -89,6 +112,13 @@ public class GroupCtx {
 
 	}
 
+	/**
+	 * Add a sender context.
+	 * 
+	 * @param senderId
+	 * @param ownPrivateKey
+	 * @throws OSException
+	 */
 	public void addSenderCtx(byte[] senderId, OneKey ownPrivateKey) throws OSException {
 
 		if (senderCtx != null) {
@@ -179,7 +209,12 @@ public class GroupCtx {
 		return publicKeysMap.get(new ByteId(rid));
 	}
 
-	// TODO: Implement elsewhere to avoid cast?
+	/**
+	 * Enable or disable using pairwise responses. TODO: Implement elsewhere to
+	 * avoid cast?
+	 * 
+	 * @param b Whether pairwise responses should be used
+	 */
 	public void setPairwiseModeResponses(boolean b) {
 		this.pairwiseModeResponses = b;
 	}
@@ -189,11 +224,24 @@ public class GroupCtx {
 		this.pairwiseModeRequests = b;
 	}
 
+	/**
+	 * Enable or disable using including a Partial IV in responses.
+	 * 
+	 * @param b Whether responses should include a PIV
+	 */
 	public void setResponsesIncludePartialIV(boolean b) {
 		senderCtx.setResponsesIncludePartialIV(b);
 	}
 
-	// TODO: Move to HashMapCtxDB?
+	/**
+	 * Add this Group context to the context database. In essence it will its
+	 * sender context and all its recipient context to the database. // TODO:
+	 * Move to HashMapCtxDB?
+	 * 
+	 * @param uri
+	 * @param db
+	 * @throws OSException
+	 */
 	public void addToDb(String uri, HashMapCtxDB db) throws OSException {
 
 		// Add the sender context and derive its pairwise keys

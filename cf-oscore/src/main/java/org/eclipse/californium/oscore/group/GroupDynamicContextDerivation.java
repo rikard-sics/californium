@@ -9,6 +9,12 @@ import org.eclipse.californium.oscore.OSException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Class implementing functionality for Group OSCORE dynamic context derivation.
+ * If a request is received where there is no matching recipient context one may
+ * be derived dynamically.
+ *
+ */
 public class GroupDynamicContextDerivation {
 
 	/**
