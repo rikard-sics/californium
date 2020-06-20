@@ -131,7 +131,7 @@ public class GroupCtx {
 		this.pairwiseModeResponses = b;
 	}
 
-	// TODO: Implement elsewhere to avoid cast?
+	@Deprecated
 	void setPairwiseModeRequests(boolean b) {
 		this.pairwiseModeRequests = b;
 	}
@@ -239,7 +239,6 @@ public class GroupCtx {
 
 		return pairwiseRecipientKey;
 	}
-
 
 	/**
 	 * Generate a shared secret when using ECDSA.
