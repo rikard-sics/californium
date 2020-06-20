@@ -109,7 +109,13 @@ public interface OSCoreCtxDB {
 	 */
 	void printAllContexts();
 
-	// TODO:
+	/**
+	 * Add a Group OSCORE context to the database.
+	 * 
+	 * @param uri the URI to associate this context with
+	 * @param ctx the context
+	 * @throws OSException if adding the context fails
+	 */
 	void addContext(String uri, GroupCtx ctx) throws OSException;
 
 	/**
