@@ -42,7 +42,7 @@ import com.upokecenter.cbor.CBORObject;
  */
 public class OptionEncoder {
 
-	
+
 	/**
 	 * Generate an OSCORE option using parameters from the application.
 	 * 
