@@ -38,6 +38,7 @@ import org.eclipse.californium.oscore.ContextRederivation.PHASE;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 
 /**
  * 
@@ -123,26 +124,30 @@ public abstract class Encryptor {
 
 			}
 
-			// FIXME: Enough with 1?
-			boolean pairwiseResponse = true;
-			// boolean pairwiseRequest = true;
+			// Handle Group OSCORE messages
+			boolean groupModeMessage = false;
 			if (ctx.isGroupContext()) {
 
-				pairwiseResponse = ((GroupSenderCtx) ctx).getPairwiseModeResponses() && !isRequest;
-				// pairwiseRequest = ((GroupSenderCtx)
-				// ctx).getPairwiseModeRequests() && isRequest;
+				boolean pairwiseResponse = ((GroupSenderCtx) ctx).getPairwiseModeResponses() && !isRequest;
+				boolean pairwiseRequest = OptionEncoder.getPairwiseMode(message.getOptions().getOscore()) && isRequest;
+				groupModeMessage = pairwiseResponse || pairwiseRequest;
+				groupModeMessage = !groupModeMessage;
 
-				LOGGER.debug("Encrypting outgoing message using Group OSCORE. Pairwise mode: " + pairwiseResponse);
+				LOGGER.debug("Encrypting outgoing " + message.getClass().getSimpleName()
+						+ " using Group OSCORE. Pairwise mode: " + !groupModeMessage);
 
-				// Check this is a pairwise response. if so use the pairwise key
+				// Update external AAD value for Group OSCORE
+				aad = OSSerializer.updateAADForGroupEnc(ctx, aad);
+
+				// If this is a pairwise response/request use the pairwise key
 				if (pairwiseResponse) {
 					key = ((GroupSenderCtx) ctx).getPairwiseSenderKey(OptionJuggle.getRid(correspondingReqOption));
-				} else if (false) {
-					// System.out.println("SENDING PAIRWISE
-					// REQUEST");
+				} else if (pairwiseRequest) {
+					// Get RID of intended recipient encoded in option
+					byte[] recipientRID = OptionEncoder.getRID(message.getOptions().getOscore());
+					key = ((GroupSenderCtx) ctx).getPairwiseSenderKey(recipientRID);
 				} else {
 					// If group mode is used prepare adding the signature
-					aad = OSSerializer.updateAADForGroupEnc(ctx, aad);
 					prepareSignature(enc, ctx, aad, message);
 				}
 
@@ -162,7 +167,7 @@ public abstract class Encryptor {
 
 			enc.encrypt(key);
 
-			if (ctx.isGroupContext() && !pairwiseResponse) {
+			if (groupModeMessage) {
 				appendSignature(enc);
 			}
 
@@ -200,10 +205,12 @@ public abstract class Encryptor {
 		boolean request = message instanceof Request;
 		ByteArrayOutputStream bRes = new ByteArrayOutputStream();
 		OptionSet options = message.getOptions();
+		boolean groupModeRequest = !(OptionEncoder.getPairwiseMode(options.getOscore())
+				&& message.getSourceContext() == null) && ctx.isGroupContext();
 		options.removeOscore();
 
 		if (request) {
-			message.getOptions().setOscore(encodeOSCoreRequest(ctx));
+			message.getOptions().setOscore(encodeOSCoreRequest(ctx, groupModeRequest));
 		} else {
 			message.getOptions().setOscore(encodeOSCoreResponse(ctx, newPartialIV));
 		}
@@ -215,7 +222,12 @@ public abstract class Encryptor {
 		return bRes.toByteArray();
 	}
 
-	
+	// TODO: Remove?
+	public static byte[] encodeOSCoreRequest(OSCoreCtx ctx) {
+		return encodeOSCoreRequest(ctx, false);
+	}
+
+
 	/**
 	 * Encodes the Object-Security value for a Request.
 	 * 
@@ -223,7 +235,7 @@ public abstract class Encryptor {
 	 * @return the Object-Security value as byte array
 	 */
 	public static byte[] encodeOSCoreRequest(OSCoreCtx ctx) {
-//FIXME: Include ID Context for Group OSCORE + the flag bit
+
 		OscoreOptionEncoder optionEncoder = new OscoreOptionEncoder();
 		if (ctx.getIncludeContextId()) {
 			optionEncoder.setIdContext(ctx.getMessageIdContext());
@@ -254,6 +266,7 @@ public abstract class Encryptor {
 
 		return optionEncoder.getBytes();
 	}
+
 	private static void prepareSignature(Encrypt0Message enc, OSCoreCtx ctx, byte[] aad, Message message) {
 		GroupSenderCtx senderCtx = (GroupSenderCtx) ctx;
 		

@@ -20,6 +20,7 @@ package org.eclipse.californium.oscore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
@@ -27,11 +28,13 @@ import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.Token;
+
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ContextRederivation.PHASE;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 
 /**
  * 
@@ -151,6 +154,12 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				} else {
 					uri = request.getURI();
 				}
+				
+				// Check if parameters in the option was set by the application
+				if (request.getOptions().getOscore().length != 0) {
+					// Use the URI from the option to find the correct context
+					uri = OptionEncoder.getContextUri(request.getOptions().getOscore());
+				}
 
 				if (uri == null) {
 					LOGGER.error(ErrorDescriptions.URI_NULL);
@@ -158,6 +167,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				}
 
 				OSCoreCtx ctx = ctxDb.getContext(uri);
+
 				if (ctx == null) {
 					LOGGER.error(ErrorDescriptions.CTX_NULL);
 					throw new OSException(ErrorDescriptions.CTX_NULL);
