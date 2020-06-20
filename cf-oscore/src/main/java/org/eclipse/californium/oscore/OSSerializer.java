@@ -265,6 +265,14 @@ public class OSSerializer {
 		}
 	}
 
+	/**
+	 * Update the external AAD for Group OSCORE encryption by adding further
+	 * parameters to the algorithms array.
+	 * 
+	 * @param ctx the context used
+	 * @param aadBytes the current external AAD value
+	 * @return the updated external AAD
+	 */
 	public static byte[] updateAADForGroupEnc(OSCoreCtx ctx, byte[] aadBytes) {
 
 		CBORObject algCountersign;
@@ -296,6 +304,15 @@ public class OSSerializer {
 		return groupAadEnc.EncodeToBytes();
 	}
 
+	/**
+	 * Update the external AAD for Group OSCORE signing by adding the value of
+	 * the OSCORE option.
+	 * 
+	 * @param ctx the context used
+	 * @param aadBytes the current external AAD value
+	 * @param message the CoAP message being processed
+	 * @return the updated external AAD
+	 */
 	public static byte[] updateAADForGroupSign(OSCoreCtx ctx, byte[] aadBytes, Message message) {
 
 		CBORObject groupAadSign = CBORObject.DecodeFromBytes(aadBytes);
