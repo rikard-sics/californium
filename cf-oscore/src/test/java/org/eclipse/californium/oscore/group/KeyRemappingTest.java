@@ -69,7 +69,7 @@ public class KeyRemappingTest {
 	/**
 	 * Test from values in RFC7748.
 	 * 
-	 * @throws CoseException
+	 * @throws CoseException on error in operations with COSE keys
 	 */
 	@Test
 	public void testRfcVectors() throws CoseException {
@@ -116,7 +116,7 @@ public class KeyRemappingTest {
 	/**
 	 * Testing starting with a COSE Key
 	 * 
-	 * @throws CoseException
+	 * @throws CoseException on error in operations with COSE keys
 	 */
 	@Test
 	public void testRemappingWithCOSEKey() throws CoseException {
