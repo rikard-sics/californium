@@ -105,7 +105,7 @@ public class GroupEncryptorTest {
 
 	/**
 	 * @throws OSException if encryption fails
-	 * @throws CoseException
+	 * @throws CoseException on test failure
 	 */
 	@Test
 	public void testRequestEncryptorGroupMode() throws OSException, CoseException {
@@ -182,7 +182,7 @@ public class GroupEncryptorTest {
 	/**
 	 *
 	 * @throws OSException if encryption fails
-	 * @throws CoseException
+	 * @throws CoseException on test failure
 	 */
 	@Test
 	public void testRequestEncryptorPairwiseMode() throws OSException, CoseException {
