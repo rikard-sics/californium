@@ -35,6 +35,11 @@ import net.i2p.crypto.eddsa.math.FieldElement;
 import net.i2p.crypto.eddsa.math.bigint.BigIntegerFieldElement;
 import net.i2p.crypto.eddsa.math.bigint.BigIntegerLittleEndianEncoding;
 
+/**
+ * Class implementing the X25519 function, supporting functionality, tests and
+ * shared secret calculation.
+ *
+ */
 public class SharedSecretCalculation {
 
 	/*
@@ -58,6 +63,11 @@ public class SharedSecretCalculation {
 			Utils.hexToBytes("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
 			new BigIntegerLittleEndianEncoding());
 
+	/**
+	 * Run a number of tests on the code.
+	 * 
+	 * @throws Exception on failure in one of the tests
+	 */
 	public static void runTests() throws Exception {
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 0);
@@ -494,6 +504,16 @@ public class SharedSecretCalculation {
 
 	}
 
+	/**
+	 * Calculate the shared secret from a COSE OneKey using EdDSA. It is first
+	 * converted to Montgomery coordinates and after that the X25519 function is
+	 * used to perform the shared secret calculation.
+	 * 
+	 * @param publicKey the public key (of the other party)
+	 * @param privateKey the private key (your own)
+	 * @return the shared secret calculated
+	 * @throws CoseException on failure
+	 */
 	public static byte[] calculateSharedSecret(OneKey publicKey, OneKey privateKey) throws CoseException {
 
 		/* Calculate u coordinate from public key */

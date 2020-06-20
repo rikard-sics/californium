@@ -29,6 +29,10 @@ import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSException;
 import org.junit.Assert;
 
+/**
+ * Class implementing a Group OSCORE sender context.
+ *
+ */
 public class GroupSenderCtx extends OSCoreCtx {
 
 	GroupCtx commonCtx;
@@ -36,7 +40,7 @@ public class GroupSenderCtx extends OSCoreCtx {
 
 	HashMap<ByteId, byte[]> pairwiseSenderKeys;
 
-	public GroupSenderCtx(byte[] master_secret, boolean client, AlgorithmID alg, byte[] sender_id, byte[] recipient_id,
+	GroupSenderCtx(byte[] master_secret, boolean client, AlgorithmID alg, byte[] sender_id, byte[] recipient_id,
 			AlgorithmID kdf, Integer replay_size, byte[] master_salt, byte[] contextId, OneKey ownPrivateKey,
 			GroupCtx commonCtx) throws OSException {
 		super(master_secret, client, alg, sender_id, recipient_id, kdf, replay_size, master_salt, contextId);
@@ -70,7 +74,12 @@ public class GroupSenderCtx extends OSCoreCtx {
 		}
 	}
 
-	// TODO: Implement elsewhere to avoid cast?
+	/**
+	 * Get if responses should use pairwise mode. // TODO: Implement elsewhere
+	 * to avoid cast?
+	 * 
+	 * @return if responses should use pairwise mode
+	 */
 	public boolean getPairwiseModeResponses() {
 		return commonCtx.pairwiseModeResponses;
 	}
@@ -81,26 +90,60 @@ public class GroupSenderCtx extends OSCoreCtx {
 		return commonCtx.pairwiseModeRequests;
 	}
 
+	/**
+	 * Get the pairwise sender key for this context for a specific other
+	 * recipient.
+	 * 
+	 * @param recipientId the recipient ID of the other party
+	 * @return the pairwise sender key to recipient
+	 */
 	public byte[] getPairwiseSenderKey(byte[] recipientId) {
 		return pairwiseSenderKeys.get(new ByteId(recipientId));
 	}
 
+	/**
+	 * Get the alg countersign value.
+	 * 
+	 * @return the alg countersign value
+	 */
 	public AlgorithmID getAlgCountersign() {
 		return commonCtx.algCountersign;
 	}
 
+	/**
+	 * Get the length of the countersignature depending on the countersignature
+	 * algorithm currently used.
+	 * 
+	 * @return the length of the countersiganture
+	 */
 	public int getCountersignatureLen() {
 		return commonCtx.getCountersignatureLen();
 	}
 
+	/**
+	 * Get the par countersign value.
+	 * 
+	 * @return the par countersign value
+	 */
 	public int[][] getParCountersign() {
 		return commonCtx.parCountersign;
 	}
 
+	/**
+	 * Get the alg countersign key value.
+	 * 
+	 * @return the alg countersign key value
+	 */
 	public int[] getParCountersignKey() {
 		return commonCtx.parCountersignKey;
 	}
 
+	/**
+	 * Get the private key associated to this sender context, meaning your own
+	 * private key.
+	 * 
+	 * @return the private key
+	 */
 	public OneKey getPrivateKey() {
 		return ownPrivateKey;
 	}
