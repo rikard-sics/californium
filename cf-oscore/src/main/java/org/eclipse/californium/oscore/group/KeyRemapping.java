@@ -34,6 +34,11 @@ import net.i2p.crypto.eddsa.math.FieldElement;
 import net.i2p.crypto.eddsa.math.bigint.BigIntegerFieldElement;
 import net.i2p.crypto.eddsa.math.bigint.BigIntegerLittleEndianEncoding;
 
+/**
+ * Class implementing functionality for key remapping from Edwards coordinates
+ * to Montgomery coordinates.
+ *
+ */
 public class KeyRemapping {
 
 	/*
@@ -55,6 +60,12 @@ public class KeyRemapping {
 	private static BigIntegerFieldElement root = new BigIntegerFieldElement(ed25519Field,
 			new BigInteger("51042569399160536130206135233146329284152202253034631822681833788666877215207"));
 
+	/**
+	 * Main method running a number of tests on the code.
+	 * 
+	 * @param args command line arguments
+	 * @throws Exception on failure in some of the tests
+	 */
 	public static void main(String args[]) throws Exception {
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 0);
