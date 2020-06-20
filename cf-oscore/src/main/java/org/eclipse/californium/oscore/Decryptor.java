@@ -113,10 +113,10 @@ public abstract class Decryptor {
 		
 			//Sequence number taken from original request
 			seq = seqByToken;
-			
+
 			if (piv == null) {
 				//Use the partialIV that arrived in the original request (response has no partial IV)
-				
+
 				partialIV = ByteBuffer.allocate(INTEGER_BYTES).putInt(seq).array();
 				nonce = OSSerializer.nonceGeneration(partialIV,	ctx.getSenderId(), ctx.getCommonIV(), 
 						ctx.getIVLength());
@@ -137,27 +137,23 @@ public abstract class Decryptor {
 		byte[] plaintext = null;
 		byte[] key = ctx.getRecipientKey();
 
+		// Handle Group OSCORE messages
 		CounterSign1 sign = null;
-		// FIXME: Enough with 1?
-		boolean pairwiseResponse = OptionJuggle.getGroupModeBit(message.getOptions().getOscore()) == false && !isRequest;
-		// boolean pairwiseRequest =
-		// OptionJuggle.getGroupModeBit(message.getOptions().getOscore()) ==
-		// false && isRequest;
-		// boolean pairwise = pairwiseRequest || pairwiseResponse;
+		boolean groupModeMessage = OptionJuggle.getGroupModeBit(message.getOptions().getOscore());
 		if (ctx.isGroupContext()) {
-			LOGGER.debug("Decrypting incoming message using Group OSCORE. Pairwise mode: " + pairwiseResponse);
-			// Check if this is a pairwise response, if so use the pairwise key
-			if (pairwiseResponse) {
-				key = ((GroupRecipientCtx) ctx).getPairwiseRecipientKey();
-			} else if (false) {
-				// System.out.println("RECEIVING PAIRWISE
-				// REQUEST");
-			} else {
-				// If group mode is used prepare the signature checking
-				aad = OSSerializer.updateAADForGroupEnc(ctx, aad);
-				sign = prepareCheckSignature(enc, ctx, aad, message);
-			}
+			LOGGER.debug("Decrypting incoming " + message.getClass().getSimpleName()
+					+ " using Group OSCORE. Pairwise mode: " + !groupModeMessage);
 
+			// Update external AAD value for Group OSCORE
+			aad = OSSerializer.updateAADForGroupEnc(ctx, aad);
+
+			// If group mode is used prepare the signature checking
+			if (groupModeMessage) {
+				sign = prepareCheckSignature(enc, ctx, aad, message);
+			} else {
+				// If this is a pairwise response use the pairwise key
+				key = ((GroupRecipientCtx) ctx).getPairwiseRecipientKey();
+			}
 		}
 
 		enc.setExternal(aad);
@@ -174,7 +170,7 @@ public abstract class Decryptor {
 			throw new OSException(details);
 		}
 
-		if (ctx.isGroupContext() && !pairwiseResponse) {
+		if (groupModeMessage) {
 			boolean signatureCorrect = checkSignature(enc, sign);
 			LOGGER.debug("Signature verification succeeded: " + signatureCorrect);
 		}
