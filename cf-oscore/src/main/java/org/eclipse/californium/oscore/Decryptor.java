@@ -315,7 +315,7 @@ public abstract class Decryptor {
 					LOGGER.error("Received a response protected in pairwise mode as reply to a deterministic request");
 					throw new OSException("Received a response protected in pairwise mode as reply to a deterministic request");
 				}
-				
+
 			}
 		}
 
