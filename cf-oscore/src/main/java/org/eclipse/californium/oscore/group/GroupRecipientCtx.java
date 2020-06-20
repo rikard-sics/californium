@@ -22,6 +22,10 @@ import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSException;
 import org.junit.Assert;
 
+/**
+ * Class implementing a Group OSCORE Recipient context.
+ *
+ */
 public class GroupRecipientCtx extends OSCoreCtx {
 
 	GroupCtx commonCtx;
@@ -29,7 +33,7 @@ public class GroupRecipientCtx extends OSCoreCtx {
 
 	byte[] pairwiseRecipientKey;
 
-	public GroupRecipientCtx(byte[] master_secret, boolean client, AlgorithmID alg, byte[] sender_id,
+	GroupRecipientCtx(byte[] master_secret, boolean client, AlgorithmID alg, byte[] sender_id,
 			byte[] recipient_id, AlgorithmID kdf, Integer replay_size, byte[] master_salt, byte[] contextId,
 			OneKey otherEndpointPubKey, GroupCtx commonCtx) throws OSException {
 		super(master_secret, client, alg, sender_id, recipient_id, kdf, replay_size, master_salt, contextId);
@@ -39,26 +43,58 @@ public class GroupRecipientCtx extends OSCoreCtx {
 
 	}
 
+	/**
+	 * Get the public key associated to this recipient context, meaning the
+	 * public key of the other endpoint.
+	 * 
+	 * @return the public key of the other endpoint
+	 */
 	public OneKey getPublicKey() {
 		return otherEndpointPubKey;
 	}
 
+	/**
+	 * Get the pairwise recipient key for this context.
+	 * 
+	 * @return the pairwise recipient key
+	 */
 	public byte[] getPairwiseRecipientKey() {
 		return pairwiseRecipientKey;
 	}
 
+	/**
+	 * Get the alg countersign value.
+	 * 
+	 * @return the alg countersign value
+	 */
 	public AlgorithmID getAlgCountersign() {
 		return commonCtx.algCountersign;
 	}
 
+	/**
+	 * Get the length of the countersignature depending on the countersignature
+	 * algorithm currently used.
+	 * 
+	 * @return the length of the countersiganture
+	 */
 	public int getCountersignatureLen() {
 		return commonCtx.getCountersignatureLen();
 	}
 
+	/**
+	 * Get the par countersign value
+	 * 
+	 * @return the par countersign value
+	 */
 	public int[][] getParCountersign() {
 		return commonCtx.parCountersign;
 	}
 
+	/**
+	 * Get the par countersign key value
+	 * 
+	 * @return the par countersign key value
+	 */
 	public int[] getParCountersignKey() {
 		return commonCtx.parCountersignKey;
 	}
