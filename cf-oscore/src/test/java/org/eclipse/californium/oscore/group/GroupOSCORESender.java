@@ -236,8 +236,9 @@ public class GroupOSCORESender {
 
 		// sends a multicast request
 		client.advanced(handler, multicastRequest);
-		while (handler.waitOn(HANDLER_TIMEOUT))
-			;
+		while (handler.waitOn(HANDLER_TIMEOUT)) {
+			// Wait for responses
+		}
 
 	}
 
@@ -278,5 +279,5 @@ public class GroupOSCORESender {
 		public void onError() {
 			System.err.println("error");
 		}
-	};
+	}
 }
