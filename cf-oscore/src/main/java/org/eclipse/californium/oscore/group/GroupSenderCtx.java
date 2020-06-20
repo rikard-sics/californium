@@ -110,7 +110,7 @@ public class GroupSenderCtx extends OSCoreCtx {
 		return this;
 	}
 
-	/** ------- TODO: Remove methods below ------- */
+	// ------- TODO: Remove methods below -------
 
 	public OneKey getPublicKey() {
 		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
