@@ -37,7 +37,6 @@ import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
 import org.eclipse.californium.cose.AlgorithmID;
-import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.HashMapCtxDB;
@@ -120,11 +119,6 @@ public class GroupOSCORESender {
 
 	// Group OSCORE specific values for the countersignature (EdDSA)
 	private final static AlgorithmID algCountersign = AlgorithmID.EDDSA;
-	private final static int[] countersign_key_type_capab = new int[] { KeyKeys.KeyType_OKP.AsInt32(),
-			KeyKeys.OKP_Ed25519.AsInt32() };
-	private final static int[] countersign_alg_capab = new int[] { KeyKeys.KeyType_OKP.AsInt32() };
-	private final static int[][] parCountersign = new int[][] { countersign_alg_capab, countersign_key_type_capab };
-	private final static int[] parCountersignKey = countersign_key_type_capab;
 
 	// test vector OSCORE draft Appendix C.1.1
 	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
@@ -187,8 +181,7 @@ public class GroupOSCORESender {
 		// If OSCORE is being used set the context information
 		if (useOSCORE) {
 
-			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign,
-					parCountersign, parCountersignKey);
+			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign);
 
 			commonCtx.addSenderCtx(sid, sid_private_key);
 
