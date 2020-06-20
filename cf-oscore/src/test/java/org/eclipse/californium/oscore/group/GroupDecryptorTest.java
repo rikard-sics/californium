@@ -22,8 +22,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.net.InetSocketAddress;
-import java.security.Provider;
-import java.security.Security;
 import java.util.Random;
 
 import javax.xml.bind.DatatypeConverter;
@@ -57,8 +55,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.upokecenter.cbor.CBORObject;
-
-import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 public class GroupDecryptorTest {
 
@@ -101,10 +97,6 @@ public class GroupDecryptorTest {
 	public static void setStackFactory() {
 		OSCoreCoapStackFactory.useAsDefault(null); // TODO: Better way?
 		rand = new Random();
-
-		// Install cryptographic providers
-		Provider EdDSA = new EdDSASecurityProvider();
-		Security.insertProviderAt(EdDSA, 0);
 	}
 
 	@Test
@@ -211,7 +203,7 @@ public class GroupDecryptorTest {
 		// Check that the group bit is not set
 		byte flagByte = r.getOptions().getOscore()[0];
 		int groupModeBit = flagByte & 0x20;
-		assertTrue(groupModeBit == 0);
+		assertEquals(0, groupModeBit);
 
 		// Set up some state information simulating the original outgoing
 		// request
@@ -359,7 +351,7 @@ public class GroupDecryptorTest {
 		// Check that the group bit is not set
 		byte flagByte = r.getOptions().getOscore()[0];
 		int groupModeBit = flagByte & 0x20;
-		assertTrue(groupModeBit == 0);
+		assertEquals(0, groupModeBit);
 
 		// Set the context in the context database
 		HashMapCtxDB db = new HashMapCtxDB();
