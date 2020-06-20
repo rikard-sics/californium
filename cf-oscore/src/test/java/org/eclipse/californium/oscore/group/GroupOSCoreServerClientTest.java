@@ -720,6 +720,8 @@ public class GroupOSCoreServerClientTest {
 		assertEquals(sendCount, responseCount);
 	}
 
+
+
 	/* --- End of client tests --- */
 
 	/**

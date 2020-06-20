@@ -90,7 +90,7 @@ public class OptionEncoder {
 	public static byte[] set(boolean pairwiseMode, String contextUri) {
 		return set(pairwiseMode, contextUri, null);
 	}
-	
+
 	/**
 	 * Get the pairwise mode boolean value from the option.
 	 * 
