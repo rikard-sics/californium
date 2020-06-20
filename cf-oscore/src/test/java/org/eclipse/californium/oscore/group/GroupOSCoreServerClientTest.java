@@ -24,8 +24,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.security.Provider;
-import java.security.Security;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -69,8 +67,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import com.upokecenter.cbor.CBORObject;
-
-import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 /**
  * Performs tests of Group OSCORE message exchanges between a Group OSCORE
@@ -151,10 +147,6 @@ public class GroupOSCoreServerClientTest {
 	public static void setStackFactory() {
 		OSCoreCoapStackFactory.useAsDefault(null); // TODO: Better way?
 		rand = new Random();
-
-		// Install cryptographic providers
-		Provider EdDSA = new EdDSASecurityProvider();
-		Security.insertProviderAt(EdDSA, 0);
 	}
 
 	/* --- Client tests follow --- */
@@ -677,7 +669,6 @@ public class GroupOSCoreServerClientTest {
 	 * @throws OSException on failure to create the contexts
 	 * @throws CoseException on failure to create the contexts
 	 */
-	@Before
 	public void setClientContext() throws OSException, CoseException {
 		// Set up OSCORE context information for request (client)
 		byte[] sid = new byte[] { 0x25 };
