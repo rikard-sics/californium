@@ -86,7 +86,7 @@ public class ResponseDecryptor extends Decryptor {
 
 				assert (ctx instanceof GroupRecipientCtx);
 			}
-			
+
 			if (ctx == null) {
 				LOGGER.error(ErrorDescriptions.TOKEN_INVALID);
 				throw new OSException(ErrorDescriptions.TOKEN_INVALID);
