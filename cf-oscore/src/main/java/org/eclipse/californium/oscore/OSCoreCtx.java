@@ -19,7 +19,6 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
-import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 >>>>>>> fa4b0e2dc (Initial commit of Group OSCORE code)
 import java.security.NoSuchAlgorithmException;
