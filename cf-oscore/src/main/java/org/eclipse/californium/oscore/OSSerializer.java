@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
@@ -34,6 +33,7 @@ import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.DatagramWriter;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 
 import com.upokecenter.cbor.CBORObject;
 
@@ -302,13 +302,14 @@ public class OSSerializer {
 
 		byte[] oscoreOption = message.getOptions().getOscore();
 
-		// Build the option for outgoing messages (they do not have it)
-		boolean outgoing = oscoreOption == null || oscoreOption.length == 0;
-		// boolean outgoing = ctx instanceof GroupSenderCtx;
+		// Check if this is an outgoing message //TODO: Check with option null?
+		boolean outgoing = message.getSourceContext() == null;
+
 		if (outgoing) {
 
 			if (message instanceof Request) {
-				oscoreOption = Encryptor.encodeOSCoreRequest(ctx);
+				boolean groupModeRequest = OptionEncoder.getPairwiseMode(oscoreOption) == false;
+				oscoreOption = Encryptor.encodeOSCoreRequest(ctx, groupModeRequest);
 			} else {
 				boolean newPartialIV = ctx.getResponsesIncludePartialIV() || message.getOptions().hasObserve();
 				oscoreOption = Encryptor.encodeOSCoreResponse(ctx, newPartialIV);
