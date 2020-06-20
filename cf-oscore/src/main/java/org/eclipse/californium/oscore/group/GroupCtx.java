@@ -138,9 +138,9 @@ public class GroupCtx {
 		case ECDSA_384:
 			return 96;
 		case ECDSA_512:
-			return 128;
+			return 132; // Why 132 and not 128?
 		default:
-			return -1;
+			throw new RuntimeException("Unsupported countersignature algorithm!");
 
 		}
 	}
@@ -183,7 +183,7 @@ public class GroupCtx {
 		case ECDSA_384:
 			return new int[] { KeyKeys.KeyType_EC2.AsInt32(), KeyKeys.EC2_P384.AsInt32() };
 		case ECDSA_512:
-			return new int[] { KeyKeys.KeyType_EC2.AsInt32(), KeyKeys.EC2_P512.AsInt32() };
+			return new int[] { KeyKeys.KeyType_EC2.AsInt32(), KeyKeys.EC2_P521.AsInt32() };
 		default:
 			return null;
 		}
@@ -274,7 +274,8 @@ public class GroupCtx {
 
 		if (this.algCountersign == AlgorithmID.EDDSA) {
 			sharedSecret = generateSharedSecretEdDSA(senderCtx.getPrivateKey(), recipientPublicKey);
-		} else if (this.algCountersign == AlgorithmID.ECDSA_256) {
+		} else if (this.algCountersign == AlgorithmID.ECDSA_256 || this.algCountersign == AlgorithmID.ECDSA_384
+				|| this.algCountersign == AlgorithmID.ECDSA_512) {
 			sharedSecret = generateSharedSecretECDSA(senderCtx.getPrivateKey(), recipientPublicKey);
 		} else {
 			System.err.println("Error: Unknown countersignature!");
@@ -324,7 +325,8 @@ public class GroupCtx {
 
 		if (this.algCountersign == AlgorithmID.EDDSA) {
 			sharedSecret = generateSharedSecretEdDSA(senderCtx.getPrivateKey(), recipientPublicKey);
-		} else if (this.algCountersign == AlgorithmID.ECDSA_256) {
+		} else if (this.algCountersign == AlgorithmID.ECDSA_256 || this.algCountersign == AlgorithmID.ECDSA_384
+				|| this.algCountersign == AlgorithmID.ECDSA_512) {
 			sharedSecret = generateSharedSecretECDSA(senderCtx.getPrivateKey(), recipientPublicKey);
 		} else {
 			System.err.println("Error: Unknown countersignature!");
