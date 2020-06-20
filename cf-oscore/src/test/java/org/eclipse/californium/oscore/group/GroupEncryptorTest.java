@@ -21,8 +21,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.security.Provider;
-import java.security.Security;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -52,8 +50,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import com.upokecenter.cbor.CBORObject;
-
-import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 public class GroupEncryptorTest {
 
@@ -97,10 +93,6 @@ public class GroupEncryptorTest {
 	public static void setStackFactory() {
 		OSCoreCoapStackFactory.useAsDefault(null); // TODO: Better way?
 		rand = new Random();
-
-		// Install cryptographic providers
-		Provider EdDSA = new EdDSASecurityProvider();
-		Security.insertProviderAt(EdDSA, 0);
 	}
 
 	/**
@@ -235,7 +227,7 @@ public class GroupEncryptorTest {
 		// Check that the group bit is not set
 		byte flagByte = encrypted.getOptions().getOscore()[0];
 		int groupModeBit = flagByte & 0x20;
-		assertTrue(groupModeBit == 0);
+		assertEquals(0, groupModeBit);
 
 		// Check the OSCORE request payload (no signature is included)
 		byte[] predictedOSCorePayload = { (byte) 0xA8, (byte) 0xB9, (byte) 0xED, (byte) 0x2B, (byte) 0xBD, (byte) 0xD3,
@@ -388,7 +380,7 @@ public class GroupEncryptorTest {
 		// Check that the group bit is not set
 		byte flagByte = encrypted.getOptions().getOscore()[0];
 		int groupModeBit = flagByte & 0x20;
-		assertTrue(groupModeBit == 0);
+		assertEquals(0, groupModeBit);
 
 		// Check the OSCORE response payload (no signature)
 		byte[] predictedOSCorePayload = new byte[] { (byte) 0x90, (byte) 0x51, (byte) 0xE4, (byte) 0x9A, (byte) 0xE0,
