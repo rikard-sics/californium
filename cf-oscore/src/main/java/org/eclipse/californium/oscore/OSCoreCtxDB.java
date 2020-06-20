@@ -115,8 +115,8 @@ public interface OSCoreCtxDB {
 	/**
 	 * Get a context based on its ID Context
 	 * 
-	 * @param IDContext
-	 * @return
+	 * @param IDContext the ID context
+	 * @return the retrieved context
 	 */
 	OSCoreCtx getContextByIDContext(byte[] IDContext);
 }

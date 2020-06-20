@@ -19,10 +19,10 @@ public class GroupDynamicContextDerivation {
 	/**
 	 * Perform dynamic context derivation for Group OSCORE.
 	 * 
-	 * @param db
-	 * @param request
-	 * @param rid
-	 * @param kidContext
+	 * @param db the context database used
+	 * @param rid the RID of the sender of the request
+	 * @param contextID the context ID in the request
+	 * @return a newly derived recipient context
 	 */
 	public static OSCoreCtx derive(OSCoreCtxDB db, byte[] rid, byte[] contextID) {
 		// Check if we have a public key for this RID
