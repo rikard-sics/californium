@@ -97,6 +97,37 @@ public class GroupCtx {
 	}
 
 	/**
+	 * Construct a Group OSCORE context allowing to explicitly set the
+	 * parCountersign and parCountersignKey.
+	 * 
+	 * @param masterSecret
+	 * @param masterSalt
+	 * @param aeadAlg
+	 * @param hkdfAlg
+	 * @param idContext
+	 * @param algCountersign
+	 * @param parCountersign
+	 * @param parCountersignKey
+	 */
+	public GroupCtx(byte[] masterSecret, byte[] masterSalt, AlgorithmID aeadAlg, AlgorithmID hkdfAlg, byte[] idContext,
+			AlgorithmID algCountersign, int[][] parCountersign, int[] parCountersignKey) {
+
+		this.masterSecret = masterSecret;
+		this.masterSalt = masterSalt;
+		this.aeadAlg = aeadAlg;
+		this.hkdfAlg = hkdfAlg;
+		this.idContext = idContext;
+		this.algCountersign = algCountersign;
+		this.parCountersign = parCountersign;
+		this.parCountersignKey = parCountersignKey;
+
+		recipientCtxMap = new HashMap<ByteId, GroupRecipientCtx>();
+		publicKeysMap = new HashMap<ByteId, OneKey>();
+
+	}
+
+
+	/**
 	 * Add a recipient context.
 	 * 
 	 * @param recipientId
