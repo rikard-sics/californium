@@ -129,7 +129,8 @@ public class GroupModesTestAlt {
 	private Endpoint serverEndpoint;
 
 	private static final String TARGET = "hello";
-	private static String SERVER_RESPONSE = "Hello World!";
+	private static String SERVER_RESPONSE_PAIRWISE_REQUEST = "Pairwise request received!";
+	private static String SERVER_RESPONSE_GROUP_REQUEST = "Group mode request received!";
 
 	// OSCORE context information shared between server and client
 	private final static HashMapCtxDB dbClient = new HashMapCtxDB();
@@ -214,7 +215,7 @@ public class GroupModesTestAlt {
 
 		assertNotNull("Client received no response", response);
 		System.out.println("client received response");
-		assertEquals(SERVER_RESPONSE, response.advanced().getPayloadString());
+		assertEquals(SERVER_RESPONSE_GROUP_REQUEST, response.advanced().getPayloadString());
 
 		// Parse the flag byte group bit (expect zero value)
 		byte flagByte = response.getOptions().getOscore()[0];
@@ -266,7 +267,7 @@ public class GroupModesTestAlt {
 
 		assertNotNull("Client received no response", response);
 		System.out.println("client received response");
-		assertEquals(SERVER_RESPONSE, response.advanced().getPayloadString());
+		assertEquals(SERVER_RESPONSE_PAIRWISE_REQUEST, response.advanced().getPayloadString());
 
 		// Parse the flag byte group bit (expect zero value)
 		byte flagByte = response.getOptions().getOscore()[0];
@@ -310,7 +311,7 @@ public class GroupModesTestAlt {
 
 		assertNotNull("Client received no response", response);
 		System.out.println("client received response");
-		assertEquals(SERVER_RESPONSE, response.advanced().getPayloadString());
+		assertEquals(SERVER_RESPONSE_PAIRWISE_REQUEST, response.advanced().getPayloadString());
 
 		// Parse the flag byte group bit (expect zero value)
 		byte flagByte = response.getOptions().getOscore()[0];
@@ -354,7 +355,7 @@ public class GroupModesTestAlt {
 
 		assertNotNull("Client received no response", response);
 		System.out.println("client received response");
-		assertEquals(SERVER_RESPONSE, response.advanced().getPayloadString());
+		assertEquals(SERVER_RESPONSE_GROUP_REQUEST, response.advanced().getPayloadString());
 
 		// Parse the flag byte group bit (expect zero value)
 		byte flagByte = response.getOptions().getOscore()[0];
@@ -512,11 +513,18 @@ public class GroupModesTestAlt {
 				System.out.println("Accessing hello/1 resource");
 				Response r = new Response(ResponseCode.CONTENT);
 
+				// Determine if the request used group or pairwise mode. The
+				// cryptographic context ID contains the OSCORE option value.
+				byte[] requestOscoreOption = exchange.advanced().getCryptographicContextID();
+				boolean requestUsedPairwise = (requestOscoreOption[0] & 0x20) == 0;
+
 				Request request = exchange.advanced().getRequest();
-				if (serverChecksCorrect(request)) {
-					r.setPayload(SERVER_RESPONSE);
-				} else {
+				if (!serverChecksCorrect(request)) {
 					r.setPayload("error: incorrect message from client!");
+				} else if (requestUsedPairwise) {
+					r.setPayload(SERVER_RESPONSE_PAIRWISE_REQUEST);
+				} else {
+					r.setPayload(SERVER_RESPONSE_GROUP_REQUEST);
 				}
 
 				exchange.respond(r);
