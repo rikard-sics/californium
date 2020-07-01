@@ -25,6 +25,7 @@ import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 
 /**
  * 
@@ -54,6 +55,14 @@ public class RequestEncryptor extends Encryptor {
 		} else {
 			uri = request.getURI();
 		}
+
+		// TODO: Do I need this both here and in the ObjectSecurityLayer?
+		// Check if parameters in the option was set by the application
+		if (request.getOptions().getOscore() != null && request.getOptions().getOscore().length != 0) {
+			// Use the URI from the option to find the correct context
+			uri = OptionEncoder.getContextUri(request.getOptions().getOscore());
+		}
+
 		OSCoreCtx ctx = db.getContext(uri);
 
 		if (ctx == null) {

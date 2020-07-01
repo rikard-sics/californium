@@ -60,6 +60,18 @@ public class OptionEncoder {
 	}
 
 	/**
+	 * Generate an OSCORE option using parameters from the application. Skips
+	 * setting the rid in case it is a group mode request.
+	 * 
+	 * @param pairwiseMode if pairwise mode is used
+	 * @param contextUri the uri associated with the sender context to use
+	 * @return the encode option value
+	 */
+	static byte[] set(boolean pairwiseMode, String contextUri) {
+		return set(pairwiseMode, contextUri, null);
+	}
+
+	/**
 	 * Get the pairwise mode boolean value from the option.
 	 * 
 	 * @param optionBytes the option
