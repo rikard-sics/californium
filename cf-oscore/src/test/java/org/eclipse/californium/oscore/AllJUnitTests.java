@@ -20,6 +20,8 @@ package org.eclipse.californium.oscore;
 import org.eclipse.californium.oscore.group.CountersignAlgorithmsTest;
 import org.eclipse.californium.oscore.group.GroupDecryptorTest;
 import org.eclipse.californium.oscore.group.GroupEncryptorTest;
+import org.eclipse.californium.oscore.group.GroupModesTest;
+import org.eclipse.californium.oscore.group.GroupModesTestAlt;
 import org.eclipse.californium.oscore.group.GroupOSCoreServerClientTest;
 import org.eclipse.californium.oscore.group.KeyRemappingTest;
 import org.eclipse.californium.oscore.group.SharedSecretCalculationTest;
@@ -37,7 +39,8 @@ import org.junit.runners.Suite.SuiteClasses;
 		DecryptorTest.class, EndpointContextInfoTest.class, ContextRederivationTest.class,
 		OSCoreInnerBlockwiseTest.class, OSCoreOuterBlockwiseTest.class, OSCoreAlgorithmsTest.class,
 		OscoreOptionTest.class, GroupOSCoreServerClientTest.class, KeyRemappingTest.class, SharedSecretCalculationTest.class })
-		GroupEncryptorTest.class, GroupDecryptorTest.class, CountersignAlgorithmsTest.class })
+		GroupEncryptorTest.class, GroupDecryptorTest.class, CountersignAlgorithmsTest.class, GroupModesTest.class,
+		GroupModesTestAlt.class })
 public class AllJUnitTests {
 
 }
