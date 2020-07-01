@@ -165,13 +165,7 @@ public class GroupOSCoreServerClientTest {
 		setClientContext();
 
 		// Create client endpoint with OSCORE context DB
-		// TODO: Move to method (same for other tests)
-		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
-		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
-		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
-		builder.setCustomCoapStackArgument(dbClient);
-		builder.setNetworkConfig(config);
-		CoapEndpoint clientEndpoint = builder.build();
+		CoapEndpoint clientEndpoint = createClientEndpoint();
 		cleanup.add(clientEndpoint);
 
 		// create request
@@ -217,13 +211,7 @@ public class GroupOSCoreServerClientTest {
 		setClientContext();
 
 		// Create client endpoint with OSCORE context DB
-		// TODO: Move to method (same for other tests)
-		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
-		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
-		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
-		builder.setCustomCoapStackArgument(dbClient);
-		builder.setNetworkConfig(config);
-		CoapEndpoint clientEndpoint = builder.build();
+		CoapEndpoint clientEndpoint = createClientEndpoint();
 		cleanup.add(clientEndpoint);
 
 		// Modify sender key to be incorrect
@@ -271,13 +259,7 @@ public class GroupOSCoreServerClientTest {
 		setClientContext();
 
 		// Create client endpoint with OSCORE context DB
-		// TODO: Move to method (same for other tests)
-		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
-		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
-		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
-		builder.setCustomCoapStackArgument(dbClient);
-		builder.setNetworkConfig(config);
-		CoapEndpoint clientEndpoint = builder.build();
+		CoapEndpoint clientEndpoint = createClientEndpoint();
 		cleanup.add(clientEndpoint);
 
 		// Modify sender private key to be incorrect
@@ -330,13 +312,7 @@ public class GroupOSCoreServerClientTest {
 		dbServer.removeContext(serverRecipientCtx);
 
 		// Create client endpoint with OSCORE context DB
-		// TODO: Move to method (same for other tests)
-		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
-		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
-		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
-		builder.setCustomCoapStackArgument(dbClient);
-		builder.setNetworkConfig(config);
-		CoapEndpoint clientEndpoint = builder.build();
+		CoapEndpoint clientEndpoint = createClientEndpoint();
 		cleanup.add(clientEndpoint);
 
 		// create request
@@ -404,12 +380,7 @@ public class GroupOSCoreServerClientTest {
 		setClientContext();
 
 		// Create client endpoint with OSCORE context DB
-		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
-		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
-		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
-		builder.setCustomCoapStackArgument(dbClient);
-		builder.setNetworkConfig(config);
-		CoapEndpoint clientEndpoint = builder.build();
+		CoapEndpoint clientEndpoint = createClientEndpoint();
 		cleanup.add(clientEndpoint);
 
 		// create request
@@ -454,12 +425,7 @@ public class GroupOSCoreServerClientTest {
 		setClientContext();
 
 		// Create client endpoint with OSCORE context DB
-		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
-		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
-		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
-		builder.setCustomCoapStackArgument(dbClient);
-		builder.setNetworkConfig(config);
-		CoapEndpoint clientEndpoint = builder.build();
+		CoapEndpoint clientEndpoint = createClientEndpoint();
 		cleanup.add(clientEndpoint);
 
 		// create request
@@ -506,12 +472,7 @@ public class GroupOSCoreServerClientTest {
 		setClientContext();
 
 		// Create client endpoint with OSCORE context DB
-		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
-		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
-		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
-		builder.setCustomCoapStackArgument(dbClient);
-		builder.setNetworkConfig(config);
-		CoapEndpoint clientEndpoint = builder.build();
+		CoapEndpoint clientEndpoint = createClientEndpoint();
 		cleanup.add(clientEndpoint);
 
 		// create request
@@ -567,12 +528,7 @@ public class GroupOSCoreServerClientTest {
 		setClientContext();
 
 		// Create client endpoint with OSCORE context DB
-		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
-		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
-		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
-		builder.setCustomCoapStackArgument(dbClient);
-		builder.setNetworkConfig(config);
-		CoapEndpoint clientEndpoint = builder.build();
+		CoapEndpoint clientEndpoint = createClientEndpoint();
 		cleanup.add(clientEndpoint);
 
 		int responseCount = 0;
@@ -624,12 +580,7 @@ public class GroupOSCoreServerClientTest {
 		setClientContext();
 
 		// Create client endpoint with OSCORE context DB
-		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
-		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
-		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
-		builder.setCustomCoapStackArgument(dbClient);
-		builder.setNetworkConfig(config);
-		CoapEndpoint clientEndpoint = builder.build();
+		CoapEndpoint clientEndpoint = createClientEndpoint();
 		cleanup.add(clientEndpoint);
 
 		int responseCount = 0;
@@ -662,6 +613,22 @@ public class GroupOSCoreServerClientTest {
 	}
 
 	/* --- End of client tests --- */
+
+	/**
+	 * Creates an endpoint for a client. This endpoint will have the OSCORE CoAP
+	 * stack factory enabled.
+	 * 
+	 * @return an endpoint for a client
+	 */
+	private CoapEndpoint createClientEndpoint() {
+		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
+		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
+		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
+		builder.setCustomCoapStackArgument(dbClient);
+		builder.setNetworkConfig(config);
+		CoapEndpoint clientEndpoint = builder.build();
+		return clientEndpoint;
+	}
 
 	/**
 	 * Set OSCORE context information for clients
