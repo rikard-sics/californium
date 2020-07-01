@@ -130,7 +130,6 @@ public class GroupCtx {
 	 * @param gmPublicKey
 	 * @param algSignEnc
 	 * @param algKeyAgreement
-	 * @param gmPublicKey
 	 */
 	public GroupCtx(byte[] masterSecret, byte[] masterSalt, AlgorithmID aeadAlg, AlgorithmID hkdfAlg, byte[] idContext,
 			AlgorithmID algSign, AlgorithmID algSignEnc, AlgorithmID algKeyAgreement, byte[] gmPublicKey) {
