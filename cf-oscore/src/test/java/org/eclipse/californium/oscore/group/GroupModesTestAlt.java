@@ -81,7 +81,6 @@ import com.upokecenter.cbor.CBORObject;
  * 
  * 
  */
-// @Deprecated
 public class GroupModesTestAlt {
 
 	/**
