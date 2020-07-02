@@ -647,7 +647,7 @@ public class OneKey {
 
         for (CBORObject obj : keyMap.getKeys()) {
             val = keyMap.get(obj);
-			if (obj.getType() == CBORType.Number) {
+			if (obj.getType() == CBORType.Integer) {
                 if (obj.AsInt32() > 0) {
                     newKey.add(obj, val);
                 }
