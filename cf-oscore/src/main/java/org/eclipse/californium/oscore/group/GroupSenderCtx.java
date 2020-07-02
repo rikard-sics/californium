@@ -166,12 +166,14 @@ public class GroupSenderCtx extends OSCoreCtx {
 		OneKey myKey = OneKey.generateKey(alg);
 
 		// Print base64 encoded version with both public & private keys
-		byte[] keyObjectBytes = myKey.AsCBOR().EncodeToBytes();
+		byte[] keyObjectBytes = myKey.EncodeToBytes();
 		String base64_encoded = DatatypeConverter.printBase64Binary(keyObjectBytes);
 		System.out.println("Public & Private: " + base64_encoded);
 
 		// Print base64 encoded version with only public keys
-		keyObjectBytes = myKey.PublicKey().AsCBOR().EncodeToBytes();
+		OneKey publicKey = myKey.PublicKey();
+
+		keyObjectBytes = publicKey.EncodeToBytes();
 		base64_encoded = DatatypeConverter.printBase64Binary(keyObjectBytes);
 		System.out.println("Public only: " + base64_encoded);
 
