@@ -37,6 +37,7 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
+import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSException;
 import org.junit.BeforeClass;
@@ -46,6 +47,7 @@ import org.junit.Test;
 import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
+import net.i2p.crypto.eddsa.Utils;
 
 /**
  * Tests key derivation for Group OSCORE for both ECDSA_256 and EdDSA
@@ -70,16 +72,14 @@ public class GroupKeyDerivationTest {
 	private static String groupEcdsa = "groupEcdsa";
 	private static String groupEddsa = "groupEddsa";
 
-	// Define context information
-	static byte[] sid = new byte[] { 0x25 };
-	static byte[] rid1 = new byte[] { 0x77 };
-	static byte[] rid2 = new byte[] { 0x66 };
+	// Define context information (based on OSCORE RFC section C.3.2. Server)
+	static byte[] sid = new byte[] { 0x01 };
+	static byte[] rid1 = Bytes.EMPTY;
+	static byte[] rid2 = new byte[] { (byte) 0xAA };
 
-	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
-			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
-	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
-			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
-	private final static byte[] context_id = { 0x74, 0x65, 0x73, 0x74, 0x74, 0x65, 0x73, 0x74 };
+	private final static byte[] master_secret = Utils.hexToBytes("0102030405060708090a0b0c0d0e0f10");
+	private final static byte[] master_salt = Utils.hexToBytes("9e7ca92223786340");
+	private final static byte[] context_id = Utils.hexToBytes("37cbf3210017a2d3");
 
 	// Keys for sender and recipients
 	private static String senderFullKeyEcdsa256 = "pgECI1gglNzgRMuHlfN2GkwWR4NdyWHxtOLRb2MS91r01cs9U40iWCAZbxTFset0hvgSSr5uXDkA8XW1yDxdTu73tsjbHZZwIiFYIPK3Cfi/BEfAQ4AflFK1LHPTDDAjAGZliQ0TJsQWcDbAIAEDJg==";
@@ -182,6 +182,8 @@ public class GroupKeyDerivationTest {
 		assertArrayEquals(senderCtxEcdsa.getSenderKey(), senderCtxEddsa.getSenderKey());
 
 		// Check that they match expected value
+		byte[] expectedSenderKey = Utils.hexToBytes("e39a0c7c77b43f03b4b39ab9a268699f");
+		assertArrayEquals(expectedSenderKey, senderCtxEcdsa.getSenderKey());
 	}
 
 	@Test
@@ -191,6 +193,11 @@ public class GroupKeyDerivationTest {
 		assertArrayEquals(recipient2CtxEcdsa.getRecipientKey(), recipient2CtxEddsa.getRecipientKey());
 
 		// Check that they match expected value
+		byte[] expectedRecipient1Key = Utils.hexToBytes("af2a1300a5e95788b356336eeecd2b92");
+		assertArrayEquals(expectedRecipient1Key, recipient1CtxEcdsa.getRecipientKey());
+
+		byte[] expectedRecipient2Key = Utils.hexToBytes("4d9eabdba0f97f044fc0ee5313b1ebc6");
+		assertArrayEquals(expectedRecipient2Key, recipient2CtxEcdsa.getRecipientKey());
 	}
 
 	@Test
@@ -210,6 +217,12 @@ public class GroupKeyDerivationTest {
 		assertFalse(Arrays.equals(recipient1EddsaPairwiseKey, recipient2EddsaPairwiseKey));
 
 		// Check that they match expected value
+		assertArrayEquals(Utils.hexToBytes("47f5d0e5b5f960d32d71ee84251b5b1f"), recipient1EcdsaPairwiseKey);
+		assertArrayEquals(Utils.hexToBytes("062497fcf47ea88ac39891892641bc87"), recipient2EcdsaPairwiseKey);
+
+		assertArrayEquals(Utils.hexToBytes("951c4800a1d0cb9af8877dea5b3199b4"), recipient1EddsaPairwiseKey);
+		assertArrayEquals(Utils.hexToBytes("81f67a9c7d618c1799b888f7cdf5da94"), recipient2EddsaPairwiseKey);
+
 	}
 
 	@Test
@@ -229,6 +242,12 @@ public class GroupKeyDerivationTest {
 		assertFalse(Arrays.equals(senderEddsaPairwiseKey1, senderEddsaPairwiseKey2));
 
 		// Check that they match expected value
+		assertArrayEquals(Utils.hexToBytes("6df92ed2d895a01d7d3d7e9c630db854"), senderEcdsaPairwiseKey1);
+		assertArrayEquals(Utils.hexToBytes("9c860e8c416dfd32b6ffc2e17a668a2d"), senderEcdsaPairwiseKey2);
+
+		assertArrayEquals(Utils.hexToBytes("77a2c9e704800930c1b2f5a80cb271d8"), senderEddsaPairwiseKey1);
+		assertArrayEquals(Utils.hexToBytes("c7e00b6631bbed519e359bc6a441c82d"), senderEddsaPairwiseKey2);
+
 	}
 
 	@Test
@@ -239,10 +258,14 @@ public class GroupKeyDerivationTest {
 		byte[] sharedSecret2 = SharedSecretCalculation.calculateSharedSecret(recipient2CtxEddsa.getPublicKey(),
 				senderCtxEddsa.getPrivateKey());
 
-		// Check that they do not match
+		// Check that they do not match each other
 		assertFalse(Arrays.equals(sharedSecret1, sharedSecret2));
 
 		// Check that they match expected value
+		assertArrayEquals(Utils.hexToBytes("fc299b3abaa8e013d3958a3ecc64522c0ba1bfa0979309d9b962280206e5a65d"),
+				sharedSecret1);
+		assertArrayEquals(Utils.hexToBytes("c59c68a927ac138d4b02fa3974da972e42aa2992ba2f74ab7832962d0923d050"),
+				sharedSecret2);
 	}
 
 	@Test
@@ -263,10 +286,14 @@ public class GroupKeyDerivationTest {
 		keyAgreement.doPhase(recipientPubKey, true);
 		byte[] sharedSecret2 = keyAgreement.generateSecret();
 
-		// Check that they do not match
+		// Check that they do not match each other
 		assertFalse(Arrays.equals(sharedSecret1, sharedSecret2));
 
 		// Check that they match expected value
+		assertArrayEquals(Utils.hexToBytes("86b62ef1516335e1c317c3b66d01228499b2ac3b8f4ec43f5b3139f72c910663"),
+				sharedSecret1);
+		assertArrayEquals(Utils.hexToBytes("71b47902d696fc825cd809282c42529689ab1c9028a11c5a5f989f14e4a2688c"),
+				sharedSecret2);
 	}
 
 	/* --- End of tests --- */
@@ -304,7 +331,7 @@ public class GroupKeyDerivationTest {
 		recipient2CtxEcdsa = (GroupRecipientCtx) db.getContext(rid2, context_id);
 
 		// Clear existing contexts
-		db.purge();
+		// db.purge();
 
 		// Create context using EdDSA
 
