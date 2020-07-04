@@ -225,13 +225,13 @@ public class OneKey {
             result = (thisObj == null);
         } else {
             result = false;
-			if (thisObj.getType() == CBORType.Number) {
+			if (thisObj.getType() == CBORType.Integer) {
                 if (thisObj.AsInt32() == that) {
                     result = true;
                 }
             } else if (thisObj.getType() == CBORType.Array) {
                 for (int i = 0; i < thisObj.size(); i++) {
-					if ((thisObj.get(i).getType() == CBORType.Number) && (thisObj.get(i).AsInt32() == that)) {
+					if ((thisObj.get(i).getType() == CBORType.Integer) && (thisObj.get(i).AsInt32() == that)) {
                         result = true;
                         break;
                     }
