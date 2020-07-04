@@ -306,28 +306,30 @@ public class GroupKeyDerivationInteropTest {
 		OneKey ecdsaKey = parseDiagnosticOneKeyAlt(
 				"{1: 2, -1: 1, -2: h’E2A7DC0C5D23831A4F52FBFF759EF01A6B3A7D58694774D6E8505B31A351D6C4’, -3: h’F8CA44FEDC6C322D0946FC69AE7482CD066AD11F34AA5F5C63F4EADB320FD941’, -4: h’469C76F26B8D9F286449F42566AB8B8BA1B3A8DC6E711A1E2A6B548DBE2A1578’}");
 
-		// Algorithm
+		// Check Algorithm, Key type & Curve
 		assertEquals(AlgorithmID.ECDSA_256.AsCBOR(), ecdsaKey.get(KeyKeys.Algorithm));
-
-		// Key type
 		assertEquals(KeyKeys.KeyType_EC2, ecdsaKey.get(KeyKeys.KeyType));
-
-		// Curve
 		assertEquals(KeyKeys.EC2_P256, ecdsaKey.get(KeyKeys.EC2_Curve));
 
 		// EDDSA
 		OneKey eddsaKey = parseDiagnosticOneKeyAlt(
 				"{1: 1, -1: 6, -2: h’2A279191227491C92E9C5AEDCF72F5C73E78E19C7E77172B4FEFCE09018AEFD4’, -4: h’D744189028C8F2652EBBF3576B4CB740926B25DA087043E978AE570AAD333495’}");
 
-		// Algorithm
+		// Check Algorithm, Key type & Curve
 		assertEquals(AlgorithmID.EDDSA.AsCBOR(), eddsaKey.get(KeyKeys.Algorithm));
-
-		// Key type
 		assertEquals(KeyKeys.KeyType_OKP, eddsaKey.get(KeyKeys.KeyType));
-
-		// Curve
 		assertEquals(KeyKeys.OKP_Ed25519, eddsaKey.get(KeyKeys.OKP_Curve));
 
+		System.out.println("xxx " + eddsaKey.PublicKey().AsCBOR());
+
+		OneKey publicOnly = parseDiagnosticOneKeyAlt(
+				"{1: 1, -2: h'2A279191227491C92E9C5AEDCF72F5C73E78E19C7E77172B4FEFCE09018AEFD4', -1: 6, 3: -8}");
+
+
+		// Check Algorithm, Key type & Curve
+		assertEquals(AlgorithmID.EDDSA.AsCBOR(), publicOnly.get(KeyKeys.Algorithm));
+		assertEquals(KeyKeys.KeyType_OKP, publicOnly.get(KeyKeys.KeyType));
+		assertEquals(KeyKeys.OKP_Ed25519, publicOnly.get(KeyKeys.OKP_Curve));
 
 	}
 
@@ -417,6 +419,9 @@ public class GroupKeyDerivationInteropTest {
 		CBORObject test3 = CBORObject.FromJSONString(test.AsCBOR().ToJSONString());
 		System.out.println(test3.ToJSONString());
 
+		//Change alternative version of single quotes
+		keyString = keyString.replace("’", "'");
+		
 		// Convert to lower case
 		keyString = keyString.toLowerCase();
 
@@ -442,8 +447,8 @@ public class GroupKeyDerivationInteropTest {
 			String value = segments[i + 1];
 
 			// Handle byte array values
-			if (value.length() >= 2 && value.substring(0, 2).equals("h’")) {
-				String arrayString = value.replace("h’", "").replace("’", "");
+			if (value.length() >= 2 && value.substring(0, 2).equals("h'")) {
+				String arrayString = value.replace("h'", "").replace("'", "");
 				byte[] array = Utils.hexToBytes(arrayString);
 				keyCbor.Add(key, array);
 			} else {
@@ -502,6 +507,8 @@ public class GroupKeyDerivationInteropTest {
 		System.out.println("KeyType " + key.get(KeyKeys.KeyType));
 		System.out.println("Algorithm " + key.get(KeyKeys.Algorithm));
 		
+		System.out.println("WWWW5 " + Utils.bytesToHex(key.AsCBOR().EncodeToBytes()));
+
 		return key;
 	}
 
