@@ -302,8 +302,31 @@ public class GroupKeyDerivationInteropTest {
 	@Test
 	public void testDiagnosticKeyDecoding() {
 
-			parseDiagnosticOneKey(
-					"{1: 1, -1: 6, -2: h’4C5E5A898AFC77D9C90773D9B4F5E7B378605753F9BA9E8A62488C64E1A524B0’, -4: h’C9AFCF6610BAB69A7E72B78B6D364BE86F12CF293523DA51433B09A799FF0F62’}");
+		// ECDSA_256
+		OneKey ecdsaKey = parseDiagnosticOneKeyAlt(
+				"{1: 2, -1: 1, -2: h’E2A7DC0C5D23831A4F52FBFF759EF01A6B3A7D58694774D6E8505B31A351D6C4’, -3: h’F8CA44FEDC6C322D0946FC69AE7482CD066AD11F34AA5F5C63F4EADB320FD941’, -4: h’469C76F26B8D9F286449F42566AB8B8BA1B3A8DC6E711A1E2A6B548DBE2A1578’}");
+
+		// Algorithm
+		assertEquals(AlgorithmID.ECDSA_256.AsCBOR(), ecdsaKey.get(KeyKeys.Algorithm));
+
+		// Key type
+		assertEquals(KeyKeys.KeyType_EC2, ecdsaKey.get(KeyKeys.KeyType));
+
+		// Curve
+		assertEquals(KeyKeys.EC2_P256, ecdsaKey.get(KeyKeys.EC2_Curve));
+
+		// EDDSA
+		OneKey eddsaKey = parseDiagnosticOneKeyAlt(
+				"{1: 1, -1: 6, -2: h’2A279191227491C92E9C5AEDCF72F5C73E78E19C7E77172B4FEFCE09018AEFD4’, -4: h’D744189028C8F2652EBBF3576B4CB740926B25DA087043E978AE570AAD333495’}");
+
+		// Algorithm
+		assertEquals(AlgorithmID.EDDSA.AsCBOR(), eddsaKey.get(KeyKeys.Algorithm));
+
+		// Key type
+		assertEquals(KeyKeys.KeyType_OKP, eddsaKey.get(KeyKeys.KeyType));
+
+		// Curve
+		assertEquals(KeyKeys.OKP_Ed25519, eddsaKey.get(KeyKeys.OKP_Curve));
 
 
 	}
@@ -375,6 +398,115 @@ public class GroupKeyDerivationInteropTest {
 
 	/**
 	 * Parse a string representing a COSE OneKey in diagnostic notation. This
+	 * method first builds a CBOR Object from the values in the string. A COSE
+	 * OneKey is then created from that CBOR Object.
+	 * 
+	 * @param keyString string representing a OneKey in diagnostic notation
+	 * @return a OneKey object built from the string
+	 */
+	public static OneKey parseDiagnosticOneKeyAlt(String keyString) {
+		OneKey test = null;
+		try {
+			test = OneKey.generateKey(AlgorithmID.EDDSA);
+		} catch (CoseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		System.out.println(test.AsCBOR().ToJSONString());
+		CBORObject test2;
+		CBORObject test3 = CBORObject.FromJSONString(test.AsCBOR().ToJSONString());
+		System.out.println(test3.ToJSONString());
+
+		// Convert to lower case
+		keyString = keyString.toLowerCase();
+
+		// Remove { and } characters
+		keyString = keyString.replace("{", "");
+		keyString = keyString.replace("}", "");
+		// Remove spaces
+		keyString = keyString.replace(" ", "");
+
+		// Split the string into sections at the , and : character
+		String[] segments = keyString.split("[,:]");
+
+		//
+		for (int i = 0; i < segments.length; i++) {
+			System.out.println(segments[i]);
+		}
+
+		// Build CBOR Object from the segments
+		CBORObject keyCbor = CBORObject.NewMap();
+
+		for (int i = 0; i < segments.length; i += 2) {
+			int key = Integer.parseInt(segments[i]);
+			String value = segments[i + 1];
+
+			// Handle byte array values
+			if (value.length() >= 2 && value.substring(0, 2).equals("h’")) {
+				String arrayString = value.replace("h’", "").replace("’", "");
+				byte[] array = Utils.hexToBytes(arrayString);
+				keyCbor.Add(key, array);
+			} else {
+				// Handle integer values
+				int valueInt = Integer.parseInt(value);
+				keyCbor.Add(key, valueInt);
+			}
+		}
+
+		// {1: 1, -1: 6, -2:
+		// h’4C5E5A898AFC77D9C90773D9B4F5E7B378605753F9BA9E8A62488C64E1A524B0’,
+		// -4:
+		// h’C9AFCF6610BAB69A7E72B78B6D364BE86F12CF293523DA51433B09A799FF0F62’}</li>
+
+		System.out.println("WWWW " + keyCbor.ToJSONString());
+		System.out.println("WWWW2 " + keyCbor);
+		System.out.println(
+				"{1: 1, -1: 6, -2: h’4C5E5A898AFC77D9C90773D9B4F5E7B378605753F9BA9E8A62488C64E1A524B0’, -4: h’C9AFCF6610BAB69A7E72B78B6D364BE86F12CF293523DA51433B09A799FF0F62’}</li>");
+
+		// Set the algorithm if missing (which it sometimes is) TODO: Needed?
+		boolean addAlgorithm = true;
+		if (addAlgorithm && keyCbor.get(KeyKeys.Algorithm.AsCBOR()) == null) {
+			
+			System.out.println("AlgorithmID in diagnostic string is null, setting it.");
+
+			CBORObject ec2Curve = keyCbor.get(KeyKeys.EC2_Curve.AsCBOR());
+			CBORObject okpCurve = keyCbor.get(KeyKeys.OKP_Curve.AsCBOR());
+
+			// Checks and sets the algorithm by looking at the curve used
+			if (ec2Curve == KeyKeys.EC2_P256) {
+				// ECDSA 256
+				keyCbor.set(KeyKeys.Algorithm.AsCBOR(), AlgorithmID.ECDSA_256.AsCBOR());
+			} else if (ec2Curve == KeyKeys.EC2_P256) {
+				// ECDSA 384
+				keyCbor.set(KeyKeys.Algorithm.AsCBOR(), AlgorithmID.ECDSA_384.AsCBOR());
+			} else if (ec2Curve == KeyKeys.EC2_P256) {
+				// ECDSA 512
+				keyCbor.set(KeyKeys.Algorithm.AsCBOR(), AlgorithmID.ECDSA_512.AsCBOR());
+			} else if (okpCurve == KeyKeys.OKP_Ed25519) {
+				// EDDSA
+				keyCbor.set(KeyKeys.Algorithm.AsCBOR(), AlgorithmID.EDDSA.AsCBOR());
+			}
+		}
+
+		// Create a COSE key from CBOR Object
+		OneKey key = null;
+		try {
+			key = new OneKey(keyCbor);
+		} catch (CoseException e) {
+			System.err.println("Error: Failed to decode COSE OneKey from diagnostic notation.");
+			e.printStackTrace();
+		}
+
+		System.out.println("WWWW3 " + key.AsCBOR().ToJSONString());
+		System.out.println("WWWW4 " + key.AsCBOR());
+		System.out.println("KeyType " + key.get(KeyKeys.KeyType));
+		System.out.println("Algorithm " + key.get(KeyKeys.Algorithm));
+		
+		return key;
+	}
+
+	/**
+	 * Parse a string representing a COSE OneKey in diagnostic notation. This
 	 * method first converts it to a JSON string and then decodes it to a CBOR
 	 * Object using built in methods. A COSE OneKey is then created from that
 	 * CBOR Object.
@@ -382,6 +514,7 @@ public class GroupKeyDerivationInteropTest {
 	 * @param keyString string representing a OneKey in diagnostic notation
 	 * @return a OneKey object built from the string
 	 */
+	@Deprecated
 	private OneKey parseDiagnosticOneKey(String keyString) {
 		// OneKey test = OneKey.generateKey(AlgorithmID.EDDSA);
 		// System.out.println(test.AsCBOR().ToJSONString());
@@ -446,6 +579,10 @@ public class GroupKeyDerivationInteropTest {
 		// Parse the JSON string into a CBOR Object
 		CBORObject keyCbor = CBORObject.FromJSONString(jsonString.toString());
 		System.out.println("TPYE" + keyCbor.getType());
+
+		System.out.println("WWWW " + keyCbor.ToJSONString());
+		System.out.println("WWWW2 " + keyCbor);
+
 		// Set the key type if missing (which it sometimes is)
 		if (keyCbor.get(KeyKeys.KeyType.AsCBOR()) == null) {
 			// Checks and sets the key type for ECDSA
@@ -466,7 +603,7 @@ public class GroupKeyDerivationInteropTest {
 			}
 		}
 
-		System.out.println("WWWW " + keyCbor.ToJSONString());
+
 
 		// Create a COSE key from CBOR Object
 		OneKey key = null;
