@@ -38,6 +38,7 @@ public class GroupDynamicContextDerivation {
 	
 		// Abort the procedure for non Group OSCORE sender contexts
 		if (ctx == null || ctx instanceof GroupSenderCtx == false) {
+			LOGGER.error("Dynamic context derivation failed: No context found for ID Context");
 			return null;
 		}
 
@@ -48,6 +49,7 @@ public class GroupDynamicContextDerivation {
 		GroupSenderCtx senderCtx = (GroupSenderCtx) ctx;
 		OneKey publicKey = senderCtx.commonCtx.getPublicKeyForRID(rid);
 		if (publicKey == null) {
+			LOGGER.error("Dynamic context derivation failed: No public key found for RID");
 			return null;
 		}
 	
@@ -55,8 +57,7 @@ public class GroupDynamicContextDerivation {
 		try {
 			senderCtx.commonCtx.addRecipientCtx(rid, 32, publicKey);
 		} catch (OSException e) {
-			LOGGER.error("Dynamic context derivation failed!");
-			e.printStackTrace();
+			LOGGER.error("Dynamic context derivation failed: Failed to add generated context");
 		}
 		GroupRecipientCtx recipientCtx = senderCtx.commonCtx.recipientCtxMap.get(new ByteId(rid));
 		db.addContext(recipientCtx);
