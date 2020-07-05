@@ -130,8 +130,7 @@ public abstract class Encryptor {
 
 				boolean pairwiseResponse = ((GroupSenderCtx) ctx).getPairwiseModeResponses() && !isRequest;
 				boolean pairwiseRequest = OptionEncoder.getPairwiseMode(message.getOptions().getOscore()) && isRequest;
-				groupModeMessage = pairwiseResponse || pairwiseRequest;
-				groupModeMessage = !groupModeMessage;
+				groupModeMessage = !pairwiseResponse && !pairwiseRequest;
 
 				LOGGER.debug("Encrypting outgoing " + message.getClass().getSimpleName()
 						+ " using Group OSCORE. Pairwise mode: " + !groupModeMessage);
