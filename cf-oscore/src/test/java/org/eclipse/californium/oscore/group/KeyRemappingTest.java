@@ -59,9 +59,9 @@ public class KeyRemappingTest {
 			Utils.hexToBytes("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
 			new BigIntegerLittleEndianEncoding());
 
-	// Use the OSCORE stack factory with the client context DB
+	// Install crypto provider for EdDSA
 	@BeforeClass
-	public static void setStackFactory() {
+	public static void installCryptoProvider() {
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 0);
 	}
