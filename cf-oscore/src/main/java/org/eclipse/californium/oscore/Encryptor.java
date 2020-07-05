@@ -177,7 +177,7 @@ public abstract class Encryptor {
 					pairwiseResponse = false;
 					groupModeMessage = true;
 				}
-				
+
 				LOGGER.debug("Encrypting outgoing " + message.getClass().getSimpleName()
 						+ " using Group OSCORE. Pairwise mode: " + !groupModeMessage);
 				
