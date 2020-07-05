@@ -21,6 +21,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -293,13 +294,14 @@ public class GroupOSCoreServerClientTest {
 	}
 
 	/**
-	 * Tests working OSCORE non-confirmable request where the recipient does not
-	 * yet have a recipient context for that RID and dynamically generates it.
+	 * Tests working OSCORE non-confirmable request where the recipient server
+	 * does not yet have a recipient context for that RID and dynamically
+	 * generates it.
 	 * 
 	 * @throws Exception on test failure
 	 */
 	@Test
-	public void testDynamicContextDerivation() throws Exception {
+	public void testDynamicContextDerivationRequest() throws Exception {
 
 		createServer(false); // No PIV in responses
 
@@ -359,6 +361,90 @@ public class GroupOSCoreServerClientTest {
 		System.out.println("client received response");
 		assertEquals(SERVER_RESPONSE, response.advanced().getPayloadString());
 		assertArrayEquals(token, response.advanced().getTokenBytes());
+
+		// Parse the flag byte group bit (expect non-zero value)
+		byte flagByte = response.getOptions().getOscore()[0];
+		int groupModeBit = flagByte & 0x20;
+		assertTrue(groupModeBit != 0);
+	}
+
+	/**
+	 * Tests working OSCORE non-confirmable request where the client does not
+	 * have a recipient context for the RID in the response and dynamically
+	 * generates it.
+	 * 
+	 * @throws Exception on test failure
+	 */
+	@Test
+	public void testDynamicContextDerivationResponse() throws Exception {
+
+		createServer(false); // No PIV in responses
+
+		// Set up OSCORE context information for request (client)
+		setClientContext();
+
+		// Create client endpoint with OSCORE context DB
+		CoapEndpoint clientEndpoint = createClientEndpoint();
+		cleanup.add(clientEndpoint);
+
+		// Remove all client recipient contexts
+		GroupRecipientCtx clientRecipientCtx1 = (GroupRecipientCtx) dbClient.getContext(new byte[] { 0x77 },
+				context_id);
+		GroupRecipientCtx clientRecipientCtx2 = (GroupRecipientCtx) dbClient.getContext(new byte[] { 0x66 },
+				context_id);
+		GroupCtx commonCtx = clientRecipientCtx1.commonCtx;
+		dbClient.removeContext(clientRecipientCtx1);
+		dbClient.removeContext(clientRecipientCtx2);
+
+		// create request
+		CoapClient client = new CoapClient();
+		client.setEndpoint(clientEndpoint);
+		// Reduce timeout and disable retransmissions since the first request
+		// will not get a response
+		client.setTimeout((long) 250);
+		clientEndpoint.getConfig().setInt(NetworkConfig.Keys.MAX_RETRANSMIT, 0);
+
+		client.setURI(uri);
+		Request request = Request.newGet();
+		request.setType(Type.NON);
+		byte[] token = Bytes.createBytes(rand, 8);
+		request.setToken(token);
+		request.getOptions().setOscore(Bytes.EMPTY);
+
+		// First send a request without adding the public key of the server to
+		// the client group context
+
+		// send a request
+		System.out.println("client will now send request");
+		CoapResponse response = client.advanced(request);
+		System.out.println("client sent request");
+
+		// no response will be received for the first request
+		assertNull(response);
+
+		// Send a second request first adding the public key of the server to
+		// the client group context. Now it should work successfully.
+
+		OneKey serverPublicKey = new OneKey(
+				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(serverKeyString))).PublicKey();
+		commonCtx.addPublicKeyForRID(new byte[] { 0x77 }, serverPublicKey);
+
+		// create request
+		request = Request.newGet();
+		request.setType(Type.NON);
+		token = Bytes.createBytes(rand, 8);
+		request.setToken(token);
+		request.getOptions().setOscore(Bytes.EMPTY);
+
+		response = client.advanced(request);
+		System.out.println("client sent request");
+		System.out.println(Utils.prettyPrint(response));
+
+		// receive response and check
+		assertNotNull("Client received no response", response);
+		System.out.println("client received response");
+		assertEquals(SERVER_RESPONSE, response.advanced().getPayloadString());
+		// assertArrayEquals(token, response.advanced().getTokenBytes());
 
 		// Parse the flag byte group bit (expect non-zero value)
 		byte flagByte = response.getOptions().getOscore()[0];
@@ -690,7 +776,7 @@ public class GroupOSCoreServerClientTest {
 		dbServer.addContext(clientHostAdd, commonCtx);
 	}
 
-	public void createServer(boolean responsePartialIV) throws InterruptedException, OSException, CoseException {
+	public void createServer(boolean responsePartialIV) throws OSException, CoseException {
 		createServer(responsePartialIV, false);
 	}
 
@@ -700,12 +786,10 @@ public class GroupOSCoreServerClientTest {
 	 * @param responsePartialIV if responses should include a Partial IV
 	 * @param pairwiseResponse if responses should be in pairwise mode
 	 * 
-	 * @throws InterruptedException if resource update task fails
 	 * @throws OSException on test failure
 	 * @throws CoseException on test failure
 	 */
-	public void createServer(boolean responsePartialIV, boolean pairwiseResponse)
-			throws InterruptedException, OSException, CoseException {
+	public void createServer(boolean responsePartialIV, boolean pairwiseResponse) throws OSException, CoseException {
 		// Do not create server if it is already running
 		if (serverEndpoint != null) {
 			// TODO: Check if this ever happens
@@ -755,7 +839,6 @@ public class GroupOSCoreServerClientTest {
 	}
 
 	private boolean serverChecksCorrect(Request request) {
-
 		// Check that request is non-confirmable
 		if (request.isConfirmable() == true) {
 			return false;
