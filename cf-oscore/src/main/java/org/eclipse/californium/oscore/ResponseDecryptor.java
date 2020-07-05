@@ -30,8 +30,10 @@ import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.core.network.serialization.UdpDataParser;
+import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.elements.util.DatagramReader;
+import org.eclipse.californium.oscore.group.GroupDynamicContextDerivation;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 
 /**
@@ -81,9 +83,18 @@ public class ResponseDecryptor extends Decryptor {
 				byte[] rid = OptionJuggle.getRid(uOptions.getOscore());
 				byte[] idContext = ctx.getIdContext();
 
+				// Retrieve the context
 				ctx = db.getContext(rid, idContext);
 
-				assert (ctx instanceof GroupRecipientCtx);
+				// If context is not found attempt dynamic context generation
+				if (ctx == null) {
+					ctx = GroupDynamicContextDerivation.derive(db, rid, idContext);
+				}
+
+				// If a context is found it should be a GroupRecipientCtx
+				if (ctx != null) {
+					assert (ctx instanceof GroupRecipientCtx);
+				}
 			}
 
 			if (ctx == null) {
