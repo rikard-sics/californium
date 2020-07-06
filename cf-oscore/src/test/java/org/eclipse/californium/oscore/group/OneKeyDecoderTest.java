@@ -32,7 +32,7 @@ import net.i2p.crypto.eddsa.Utils;
  */
 public class OneKeyDecoderTest {
 
-	static Random rand;
+	static Random rand = new Random();
 
 	/**
 	 * Install crypto provider for EdDSA
@@ -41,8 +41,6 @@ public class OneKeyDecoderTest {
 	public static void installCryptoProvider() {
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 0);
-
-		rand = new Random();
 	}
 
 	/**
