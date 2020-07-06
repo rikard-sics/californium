@@ -1,4 +1,4 @@
-package org.eclipse.californium.oscore.group;
+package org.eclipse.californium.oscore.group.interop;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -17,6 +17,7 @@ import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.oscore.group.OneKeyDecoder;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
