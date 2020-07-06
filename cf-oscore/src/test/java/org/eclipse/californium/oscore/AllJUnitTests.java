@@ -27,6 +27,7 @@ import org.eclipse.californium.oscore.group.GroupOSCoreServerClientTest;
 import org.eclipse.californium.oscore.group.KeyRemappingTest;
 import org.eclipse.californium.oscore.group.OneKeyDecoderTest;
 import org.eclipse.californium.oscore.group.SharedSecretCalculationTest;
+import org.eclipse.californium.oscore.group.interop.GroupKeyDerivationInteropTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;

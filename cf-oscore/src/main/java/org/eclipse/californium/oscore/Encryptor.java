@@ -21,6 +21,11 @@ package org.eclipse.californium.oscore;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+<<<<<<< HEAD
+=======
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+>>>>>>> bff1856b3 (Further updates with code in preparation for IETF 108 Hackathon tests)
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
@@ -146,6 +151,12 @@ public abstract class Encryptor {
 
 				// Update external AAD value for Group OSCORE
 				aad = OSSerializer.updateAADForGroup(ctx, aad, message);
+
+				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with AAD "
+						+ Utils.toHexString(aad));
+
+				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with nonce "
+						+ Utils.toHexString(nonce));
 
 				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with AAD "
 						+ Utils.toHexString(aad));
