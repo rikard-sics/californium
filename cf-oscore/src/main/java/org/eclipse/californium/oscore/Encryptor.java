@@ -27,6 +27,7 @@ import java.security.NoSuchAlgorithmException;
 import org.eclipse.californium.core.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
@@ -244,6 +245,12 @@ public abstract class Encryptor {
 					aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
 				}
 				
+				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with AAD "
+						+ Utils.toHexString(aad));
+
+				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with nonce "
+						+ Utils.toHexString(nonce));
+
 				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with AAD "
 						+ Utils.toHexString(aad));
 
