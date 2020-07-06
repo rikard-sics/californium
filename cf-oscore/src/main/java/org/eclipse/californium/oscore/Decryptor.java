@@ -154,6 +154,12 @@ public abstract class Decryptor {
 			// Update external AAD value for Group OSCORE
 			aad = OSSerializer.updateAADForGroupEnc(ctx, aad);
 
+			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + " with AAD "
+					+ Utils.toHexString(aad));
+
+			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + " with nonce "
+					+ Utils.toHexString(nonce));
+
 			// If group mode is used prepare the signature checking
 			if (groupModeMessage) {
 				sign = prepareCheckSignature(enc, ctx, aad, message);
@@ -367,6 +373,9 @@ public abstract class Decryptor {
 			byte[] signAad = OSSerializer.updateAADForGroupSign(ctx, aad, message);
 
 			sign.setExternal(signAad);
+
+			System.out.println("Checking signature for incoming " + message.getClass().getSimpleName()
+					+ " with sign AAD " + Utils.toHexString(signAad));
 		} catch (Exception e) {
 			LOGGER.error("Countersignature verification procedure failed.");
 			e.printStackTrace();
