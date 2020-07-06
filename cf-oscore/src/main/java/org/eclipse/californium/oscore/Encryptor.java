@@ -22,6 +22,7 @@ package org.eclipse.californium.oscore;
 import java.io.ByteArrayOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
@@ -137,6 +138,12 @@ public abstract class Encryptor {
 
 				// Update external AAD value for Group OSCORE
 				aad = OSSerializer.updateAADForGroupEnc(ctx, aad);
+
+				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with AAD "
+						+ Utils.toHexString(aad));
+
+				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with nonce "
+						+ Utils.toHexString(nonce));
 
 				// If this is a pairwise response/request use the pairwise key
 				if (pairwiseResponse) {
@@ -284,6 +291,9 @@ public abstract class Encryptor {
 
 		byte[] signAad = OSSerializer.updateAADForGroupSign(ctx, aad, message);
 		sign.setExternal(signAad); // Set external AAD for signing
+
+		System.out.println("Signing outgoing " + message.getClass().getSimpleName() + " with sign AAD "
+				+ Utils.toHexString(signAad));
 
 	}
 
