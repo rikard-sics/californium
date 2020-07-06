@@ -169,6 +169,12 @@ public abstract class Decryptor {
 			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + " with nonce "
 					+ Utils.toHexString(nonce));
 
+			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + " with AAD "
+					+ Utils.toHexString(aad));
+
+			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + " with nonce "
+					+ Utils.toHexString(nonce));
+
 			// If group mode is used prepare the signature checking
 			if (groupModeMessage) {
 				// Decrypt the signature.
