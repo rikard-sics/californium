@@ -44,6 +44,7 @@ import org.eclipse.californium.oscore.group.GroupSenderCtx;
 import org.eclipse.californium.oscore.group.OneKeyDecoder;
 import org.eclipse.californium.oscore.group.SharedSecretCalculation;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -63,6 +64,7 @@ import net.i2p.crypto.eddsa.Utils;
  * FIXME: WIP, old out of date
  * 
  */
+@Ignore
 public class GroupKeyDerivationInterop108EcdsaTest {
 
 	@Rule
