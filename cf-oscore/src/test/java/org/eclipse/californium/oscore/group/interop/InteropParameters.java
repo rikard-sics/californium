@@ -1,10 +1,12 @@
-package org.eclipse.californium.oscore.group;
+package org.eclipse.californium.oscore.group.interop;
 
 import org.eclipse.californium.elements.util.Bytes;
 
 import net.i2p.crypto.eddsa.Utils;
 
 public class InteropParameters {
+
+	// FIXME: Update
 
 	/* Public / private keys */
 
@@ -31,7 +33,7 @@ public class InteropParameters {
 	public static final byte[] RIKARD_ENTITY_2_KID = Utils.hexToBytes("A200");
 	public static final byte[] RIKARD_ENTITY_3_KID = Utils.hexToBytes("A203");
 
-	public static final byte[] JIM_ENTITY_1_KID = Utils.hexToBytes("0001");
+	public static final byte[] JIM_ENTITY_1_KID = Utils.hexToBytes("E1"); // ?
 	public static final byte[] JIM_ENTITY_2_KID = Utils.hexToBytes("0200");
 	public static final byte[] JIM_ENTITY_3_KID = Utils.hexToBytes("0203");
 
@@ -44,6 +46,6 @@ public class InteropParameters {
 	public static final byte[] MASTER_SALT_ECDSA = Utils.hexToBytes("9e7ca92223786340");
 
 	public static final byte[] GROUP_ID_EDDSA = Bytes.EMPTY;
-	public static final byte[] GROUP_ID_ECDSA = Utils.hexToBytes("EDDA");
+	public static final byte[] GROUP_ID_ECDSA = Utils.hexToBytes("0A0B0C");
 
 }
