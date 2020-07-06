@@ -50,7 +50,6 @@ import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
 import org.eclipse.californium.oscore.group.OneKeyDecoder;
-import org.eclipse.californium.oscore.group.OneKeyDecoderTest;
 import org.eclipse.californium.oscore.group.SharedSecretCalculation;
 import org.junit.BeforeClass;
 import org.junit.Rule;
