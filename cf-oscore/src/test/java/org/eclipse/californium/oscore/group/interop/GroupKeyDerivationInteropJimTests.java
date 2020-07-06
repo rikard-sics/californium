@@ -60,6 +60,7 @@ import org.eclipse.californium.oscore.group.GroupSenderCtx;
 import org.eclipse.californium.oscore.group.OneKeyDecoder;
 import org.eclipse.californium.oscore.group.SharedSecretCalculation;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -215,6 +216,7 @@ public class GroupKeyDerivationInteropJimTests {
 	}
 
 	@Test
+	@Ignore
 	public void testMessageReception() throws OSException {
 
 		int seq = 1;
@@ -258,6 +260,7 @@ public class GroupKeyDerivationInteropJimTests {
 	}
 
 	@Test
+	@Ignore
 	public void testECDSA256Keys() throws Exception {
 		deriveContexts();
 
@@ -302,6 +305,7 @@ public class GroupKeyDerivationInteropJimTests {
 	}
 
 	@Test
+	@Ignore
 	public void testSenderKeys() throws OSException, CoseException {
 
 		deriveContexts();
@@ -315,6 +319,7 @@ public class GroupKeyDerivationInteropJimTests {
 	}
 
 	@Test
+	@Ignore
 	public void testRecipientKeys() throws OSException, CoseException {
 
 		deriveContexts();
@@ -332,6 +337,7 @@ public class GroupKeyDerivationInteropJimTests {
 	}
 
 	@Test
+	@Ignore
 	public void testPairwiseRecipientKeys() throws OSException, CoseException {
 
 		deriveContexts();
@@ -360,6 +366,7 @@ public class GroupKeyDerivationInteropJimTests {
 	}
 
 	@Test
+	@Ignore
 	public void testPairwiseSenderKeys() throws OSException, CoseException {
 
 		deriveContexts();
@@ -388,6 +395,7 @@ public class GroupKeyDerivationInteropJimTests {
 	}
 
 	@Test
+	@Ignore
 	public void testSharedSecretsEddsa() throws CoseException, OSException {
 
 		deriveContexts();
@@ -409,6 +417,7 @@ public class GroupKeyDerivationInteropJimTests {
 	}
 
 	@Test
+	@Ignore
 	public void testSharedSecretsEcdsa()
 			throws CoseException, NoSuchAlgorithmException, InvalidKeyException, IllegalStateException, OSException {
 
