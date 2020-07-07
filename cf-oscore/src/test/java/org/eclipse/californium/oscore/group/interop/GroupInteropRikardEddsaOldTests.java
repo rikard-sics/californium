@@ -58,6 +58,7 @@ import org.eclipse.californium.oscore.group.GroupSenderCtx;
 import org.eclipse.californium.oscore.group.OneKeyDecoder;
 import org.eclipse.californium.oscore.group.SharedSecretCalculation;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -73,7 +74,7 @@ import net.i2p.crypto.eddsa.Utils;
  * 
  * 
  */
-public class GroupKeyDerivationInteropRikardTests {
+public class GroupInteropRikardEddsaOldTests {
 
 	@Rule
 	public TestNameLoggerRule name = new TestNameLoggerRule();
@@ -100,10 +101,6 @@ public class GroupKeyDerivationInteropRikardTests {
 
 	// Keys for sender and recipients
 	// For the public keys only the public part will be added to the context
-	private static String senderFullKeyEcdsa256 = "{1: 2, 2: h'01', -4: h'FEA2190084748436543C5EC8E329D2AFBD7068054F595CA1F987B9E43E2205E6', -3: h'64CE3DD128CC4EFA6DE209BE8ABD111C7272F612C2DB654057B6EC00FBFB0684', -2: h'1ADB2AB6AF48F17C9877CF77DB4FA39DC0923FBE215E576FE6F790B1FF2CBC96', -1: 1}";
-	private static String recipient1PublicKeyEcdsa256 = "{1: 2, 2: h'', -4: h'DA2593A6E0BCC81A5941069CB76303487816A2F4E6C0F21737B56A7C90381597', -3: h'1897A28666FE1CC4FACEF79CC7BDECDC271F2A619A00844FCD553A12DD679A4F', -2: h'0EB313B4D314A1001244776D321F2DD88A5A31DF06A6EEAE0A79832D39408BC1', -1: 1}";
-	private static String recipient2PublicKeyEcdsa256 = "{1: 2, 2: h'AA', -4: h'BF31D3F9670A7D1342259E700F48DD9983A5F9DF80D58994C667B6EBFD23270E', -3: h'5694315AD17A4DA5E3F69CA02F83E9C3D594712137ED8AFB748A70491598F9CD', -2: h'FAD4312A45F45A3212810905B223800F6CED4BC8D5BACBC8D33BB60C45FC98DD', -1: 1}";
-
 	private static String senderFullKeyEddsa = "{1: 1, 2: h'01', -4: h'397CEB5A8D21D74A9258C20C33FC45AB152B02CF479B2E3081285F77454CF347', -2: h'CE616F28426EF24EDB51DBCEF7A23305F886F657959D4DF889DDFC0255042159', -1: 6}";
 	private static String recipient1PublicKeyEddsa = "{1: 1, 2: h'', -4: h'70559B9EECDC578D5FC2CA37F9969630029F1592AFF3306392AB15546C6A184A', -2: h'2668BA6CA302F14E952228DA1250A890C143FDBA4DAED27246188B9E42C94B6D', -1: 6}";
 	private static String recipient2PublicKeyEddsa = "{1: 1, 2: h'AA', -4: h'E550CD532B881D52AD75CE7B91171063E568F2531FBDFB32EE01D1910BCF810F', -2: h'5394E43633CDAC96F05120EA9F21307C9355A1B66B60A834B53E9BF60B1FB7DF', -1: 6}";
@@ -111,11 +108,7 @@ public class GroupKeyDerivationInteropRikardTests {
 	private static final int REPLAY_WINDOW = 32;
 
 	// The contexts generated for use in the tests
-	private static GroupSenderCtx senderCtxEcdsa;
 	private static GroupSenderCtx senderCtxEddsa;
-
-	private static GroupRecipientCtx recipient1CtxEcdsa;
-	private static GroupRecipientCtx recipient2CtxEcdsa;
 
 	private static GroupRecipientCtx recipient1CtxEddsa;
 	private static GroupRecipientCtx recipient2CtxEddsa;
@@ -164,50 +157,8 @@ public class GroupKeyDerivationInteropRikardTests {
 	}
 
 	@Test
-	public void testECDSA256Keys() throws Exception {
-
-		OneKey senderKey = OneKeyDecoder.parseDiagnostic(senderFullKeyEcdsa256);
-		OneKey recipient1Key = OneKeyDecoder.parseDiagnostic(recipient1PublicKeyEcdsa256);
-		OneKey recipient2Key = OneKeyDecoder.parseDiagnostic(recipient2PublicKeyEcdsa256);
-
-		// Check the properties of the decoded keys
-
-		// Key ID is set
-		assertNotNull(senderKey.get(KeyKeys.KeyId));
-		assertNotNull(recipient1Key.get(KeyKeys.KeyId));
-		assertNotNull(recipient2Key.get(KeyKeys.KeyId));
-
-		// Check that Key IDs are correct
-		assertArrayEquals(sid, senderKey.get(KeyKeys.KeyId).GetByteString());
-		assertArrayEquals(rid1, recipient1Key.get(KeyKeys.KeyId).GetByteString());
-		assertArrayEquals(rid2, recipient2Key.get(KeyKeys.KeyId).GetByteString());
-
-		// Key type
-		assertEquals(KeyKeys.KeyType_EC2, senderKey.get(KeyKeys.KeyType));
-		assertEquals(KeyKeys.KeyType_EC2, recipient1Key.get(KeyKeys.KeyType));
-		assertEquals(KeyKeys.KeyType_EC2, recipient2Key.get(KeyKeys.KeyType));
-
-		// Curve
-		assertEquals(KeyKeys.EC2_P256, senderKey.get(KeyKeys.EC2_Curve));
-		assertEquals(KeyKeys.EC2_P256, recipient1Key.get(KeyKeys.EC2_Curve));
-		assertEquals(KeyKeys.EC2_P256, recipient2Key.get(KeyKeys.EC2_Curve));
-
-		// Attempt to sign using the keys to see that it works
-		byte[] signatureBytes = OneKeyDecoderTest.doCountersign(senderKey);
-		assertEquals(64, signatureBytes.length);
-		signatureBytes = OneKeyDecoderTest.doCountersign(recipient1Key);
-		assertEquals(64, signatureBytes.length);
-		signatureBytes = OneKeyDecoderTest.doCountersign(recipient2Key);
-		assertEquals(64, signatureBytes.length);
-	}
-
-	@Test
 	public void testContextsAlgCountersign() throws OSException {
 		// Check that the contexts use the correct countersignature algorithms
-
-		assertEquals(AlgorithmID.ECDSA_256, senderCtxEcdsa.getAlgCountersign());
-		assertEquals(AlgorithmID.ECDSA_256, recipient1CtxEcdsa.getAlgCountersign());
-		assertEquals(AlgorithmID.ECDSA_256, recipient2CtxEcdsa.getAlgCountersign());
 
 		assertEquals(AlgorithmID.EDDSA, senderCtxEddsa.getAlgCountersign());
 		assertEquals(AlgorithmID.EDDSA, recipient1CtxEddsa.getAlgCountersign());
@@ -216,53 +167,32 @@ public class GroupKeyDerivationInteropRikardTests {
 
 	@Test
 	public void testSenderKeys() throws OSException {
-		// Check that sender keys match in both contexts
-		assertArrayEquals(senderCtxEcdsa.getSenderKey(), senderCtxEddsa.getSenderKey());
-
 		// Check that they match expected value
 		byte[] expectedSenderKey = Utils.hexToBytes("e39a0c7c77b43f03b4b39ab9a268699f");
-		assertArrayEquals(expectedSenderKey, senderCtxEcdsa.getSenderKey());
+		assertArrayEquals(expectedSenderKey, senderCtxEddsa.getSenderKey());
 	}
 
 	@Test
 	public void testRecipientKeys() throws OSException {
-		// Check that recipient keys match in both contexts
-		assertArrayEquals(recipient1CtxEcdsa.getRecipientKey(), recipient1CtxEddsa.getRecipientKey());
-		assertArrayEquals(recipient2CtxEcdsa.getRecipientKey(), recipient2CtxEddsa.getRecipientKey());
-
 		// Check that they match expected value
 		byte[] expectedRecipient1Key = Utils.hexToBytes("af2a1300a5e95788b356336eeecd2b92");
-		assertArrayEquals(expectedRecipient1Key, recipient1CtxEcdsa.getRecipientKey());
+		assertArrayEquals(expectedRecipient1Key, recipient1CtxEddsa.getRecipientKey());
 
-		byte[] expectedRecipient2Key = Utils.hexToBytes("4d9eabdba0f97f044fc0ee5313b1ebc6");
-		assertArrayEquals(expectedRecipient2Key, recipient2CtxEcdsa.getRecipientKey());
 	}
 
 	@Test
 	public void testPairwiseRecipientKeys() throws OSException {
-		byte[] recipient1EcdsaPairwiseKey = recipient1CtxEcdsa.getPairwiseRecipientKey();
-		byte[] recipient2EcdsaPairwiseKey = recipient2CtxEcdsa.getPairwiseRecipientKey();
 
 		byte[] recipient1EddsaPairwiseKey = recipient1CtxEddsa.getPairwiseRecipientKey();
 		byte[] recipient2EddsaPairwiseKey = recipient2CtxEddsa.getPairwiseRecipientKey();
 
-		// Pairwise recipient keys are different depending on algorithm
-		assertFalse(Arrays.equals(recipient1EcdsaPairwiseKey, recipient1EddsaPairwiseKey));
-		assertFalse(Arrays.equals(recipient2EcdsaPairwiseKey, recipient2EddsaPairwiseKey));
-
 		// And different from each other for the same algorithm
-		assertFalse(Arrays.equals(recipient1EcdsaPairwiseKey, recipient2EcdsaPairwiseKey));
 		assertFalse(Arrays.equals(recipient1EddsaPairwiseKey, recipient2EddsaPairwiseKey));
-
-		System.out.println("ECDSA: Recipient 1 Pairwise Key: " + Utils.bytesToHex(recipient1EcdsaPairwiseKey));
-		System.out.println("ECDSA: Recipient 2 Pairwise Key: " + Utils.bytesToHex(recipient2EcdsaPairwiseKey));
 
 		System.out.println("EdDSA: Recipient 1 Pairwise Key: " + Utils.bytesToHex(recipient1EddsaPairwiseKey));
 		System.out.println("EdDSA: Recipient 2 Pairwise Key: " + Utils.bytesToHex(recipient2EddsaPairwiseKey));
 
 		// Check that they match expected value
-		assertArrayEquals(Utils.hexToBytes("a5d7fc4a84675d4a1ef9bf6ed6ce0cae"), recipient1EcdsaPairwiseKey);
-		assertArrayEquals(Utils.hexToBytes("874fc9f08cd0ccc2930b856e4e8a8dc1"), recipient2EcdsaPairwiseKey);
 
 		assertArrayEquals(Utils.hexToBytes("049154ec9927087377b8e3be7ebf710e"), recipient1EddsaPairwiseKey);
 		assertArrayEquals(Utils.hexToBytes("5bbe1ed6e9d35d92b29dc0d4d1fe7b0b"), recipient2EddsaPairwiseKey);
@@ -271,29 +201,16 @@ public class GroupKeyDerivationInteropRikardTests {
 
 	@Test
 	public void testPairwiseSenderKeys() throws OSException {
-		byte[] senderEcdsaPairwiseKey1 = senderCtxEcdsa.getPairwiseSenderKey(rid1);
-		byte[] senderEcdsaPairwiseKey2 = senderCtxEcdsa.getPairwiseSenderKey(rid2);
-
 		byte[] senderEddsaPairwiseKey1 = senderCtxEddsa.getPairwiseSenderKey(rid1);
 		byte[] senderEddsaPairwiseKey2 = senderCtxEddsa.getPairwiseSenderKey(rid2);
 
-		// Pairwise sender keys are different depending on algorithm
-		assertFalse(Arrays.equals(senderEcdsaPairwiseKey1, senderEddsaPairwiseKey1));
-		assertFalse(Arrays.equals(senderEcdsaPairwiseKey2, senderEddsaPairwiseKey2));
-
 		// And different from each other for the same algorithm
-		assertFalse(Arrays.equals(senderEcdsaPairwiseKey1, senderEcdsaPairwiseKey2));
 		assertFalse(Arrays.equals(senderEddsaPairwiseKey1, senderEddsaPairwiseKey2));
-
-		System.out.println("ECDSA: Sender Pairwise Key 1: " + Utils.bytesToHex(senderEcdsaPairwiseKey1));
-		System.out.println("ECDSA: Sender Pairwise Key 2: " + Utils.bytesToHex(senderEcdsaPairwiseKey2));
 
 		System.out.println("EdDSA: Sender Pairwise Key 1: " + Utils.bytesToHex(senderEddsaPairwiseKey1));
 		System.out.println("EdDSA: Sender Pairwise Key 2: " + Utils.bytesToHex(senderEddsaPairwiseKey2));
 
 		// Check that they match expected value
-		assertArrayEquals(Utils.hexToBytes("286fb4560cc4219594a1d341e2620265"), senderEcdsaPairwiseKey1);
-		assertArrayEquals(Utils.hexToBytes("b8cf3bd127678a63d0bd1abfe80e6362"), senderEcdsaPairwiseKey2);
 
 		assertArrayEquals(Utils.hexToBytes("c0132010f7b66d7fce3a61f3927b269f"), senderEddsaPairwiseKey1);
 		assertArrayEquals(Utils.hexToBytes("400b2d95a2d3ac49dd618b291d15b6ea"), senderEddsaPairwiseKey2);
@@ -322,38 +239,8 @@ public class GroupKeyDerivationInteropRikardTests {
 	}
 
 	@Test
-	public void testSharedSecretsEcdsa()
-			throws CoseException, NoSuchAlgorithmException, InvalidKeyException, IllegalStateException {
-
-		ECPublicKey recipientPubKey = (ECPublicKey) recipient1CtxEcdsa.getPublicKey().AsPublicKey();
-		ECPrivateKey senderPrivKey = (ECPrivateKey) senderCtxEcdsa.getPrivateKey().AsPrivateKey();
-		KeyAgreement keyAgreement = KeyAgreement.getInstance("ECDH");
-		keyAgreement.init(senderPrivKey);
-		keyAgreement.doPhase(recipientPubKey, true);
-		byte[] sharedSecret1 = keyAgreement.generateSecret();
-
-		recipientPubKey = (ECPublicKey) recipient2CtxEcdsa.getPublicKey().AsPublicKey();
-		senderPrivKey = (ECPrivateKey) senderCtxEcdsa.getPrivateKey().AsPrivateKey();
-		keyAgreement = KeyAgreement.getInstance("ECDH");
-		keyAgreement.init(senderPrivKey);
-		keyAgreement.doPhase(recipientPubKey, true);
-		byte[] sharedSecret2 = keyAgreement.generateSecret();
-
-		// Check that they do not match each other
-		assertFalse(Arrays.equals(sharedSecret1, sharedSecret2));
-
-		System.out.println("ECDSA: Shared secret 1 " + Utils.bytesToHex(sharedSecret1));
-		System.out.println("ECDSA: Shared secret 2 " + Utils.bytesToHex(sharedSecret2));
-
-		// Check that they match expected value
-		assertArrayEquals(Utils.hexToBytes("56ede6c59e919031cfc8afa3e74a7b7615c2e7a08494cf3638c78757293adc80"),
-				sharedSecret1);
-		assertArrayEquals(Utils.hexToBytes("f568ec5f7df45db137fc79a27595eba737b62e8ee385c7309e316dd409de6953"),
-				sharedSecret2);
-	}
-
-	@Test
-	public void testMessageReception() throws OSException {
+	@Ignore
+	public void testMessage2Reception() throws OSException {
 
 		db.purge();
 
@@ -367,7 +254,7 @@ public class GroupKeyDerivationInteropRikardTests {
 		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParameters.JIM_ENTITY_1_KEY_ECDSA);
 		groupCtxRikard.addSenderCtx(new byte[] { 0x11, 0x22 }, senderFullKey);
 
-		groupCtxRikard.addRecipientCtx(sid, REPLAY_WINDOW, OneKeyDecoder.parseDiagnostic(senderFullKeyEcdsa256));
+		groupCtxRikard.addRecipientCtx(sid, REPLAY_WINDOW, OneKeyDecoder.parseDiagnostic(senderFullKeyEddsa));
 		db.addContext(destinationUri, groupCtxRikard);
 		GroupRecipientCtx recipientCtx = (GroupRecipientCtx) db.getContext(sid,
 				context_id);
@@ -404,8 +291,9 @@ public class GroupKeyDerivationInteropRikardTests {
 	}
 
 	@Test
-	public void generateMessage() throws OSException {
-		senderCtxEcdsa.setSenderSeq(0);
+	@Ignore
+	public void testMessage2Generation() throws OSException {
+		senderCtxEddsa.setSenderSeq(0);
 
 		Request request = Request.newGet();
 		request.setType(Type.NON);
@@ -419,8 +307,8 @@ public class GroupKeyDerivationInteropRikardTests {
 
 		System.out.println(encrypted);
 
-		System.out.println("Common IV: " + hexPrintDash(senderCtxEcdsa.getCommonIV()));
-		System.out.println("Sender Key: " + hexPrintDash(senderCtxEcdsa.getSenderKey()));
+		System.out.println("Common IV: " + hexPrintDash(senderCtxEddsa.getCommonIV()));
+		System.out.println("Sender Key: " + hexPrintDash(senderCtxEddsa.getSenderKey()));
 
 		System.out.println("Payload: " + hexPrintDash(encrypted.getPayload()));
 
@@ -451,29 +339,6 @@ public class GroupKeyDerivationInteropRikardTests {
 	@BeforeClass
 	public static void deriveContexts() throws OSException, CoseException {
 
-		// Create context using ECDSA_256
-
-		GroupCtx groupCtxEcdsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256);
-
-		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(senderFullKeyEcdsa256);
-		groupCtxEcdsa.addSenderCtx(sid, senderFullKey);
-
-		OneKey recipient1PublicKey = OneKeyDecoder.parseDiagnostic(recipient1PublicKeyEcdsa256).PublicKey();
-		OneKey recipient2PublicKey = OneKeyDecoder.parseDiagnostic(recipient2PublicKeyEcdsa256).PublicKey();
-		groupCtxEcdsa.addRecipientCtx(rid1, REPLAY_WINDOW, recipient1PublicKey);
-		groupCtxEcdsa.addRecipientCtx(rid2, REPLAY_WINDOW, recipient2PublicKey);
-
-		db.addContext(groupEcdsa, groupCtxEcdsa);
-
-		// Save the generated sender and recipient contexts
-
-		senderCtxEcdsa = (GroupSenderCtx) db.getContext(groupEcdsa);
-		recipient1CtxEcdsa = (GroupRecipientCtx) db.getContext(rid1, context_id);
-		recipient2CtxEcdsa = (GroupRecipientCtx) db.getContext(rid2, context_id);
-
-		// Clear existing contexts
-		// db.purge();
-
 		// Create context using EdDSA
 
 		// Install EdDSA cryptographic provider
@@ -482,11 +347,11 @@ public class GroupKeyDerivationInteropRikardTests {
 
 		GroupCtx groupCtxEddsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.EDDSA);
 
-		senderFullKey = OneKeyDecoder.parseDiagnostic(senderFullKeyEddsa);
+		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(senderFullKeyEddsa);
 		groupCtxEddsa.addSenderCtx(sid, senderFullKey);
 
-		recipient1PublicKey = OneKeyDecoder.parseDiagnostic(recipient1PublicKeyEddsa).PublicKey();
-		recipient2PublicKey = OneKeyDecoder.parseDiagnostic(recipient2PublicKeyEddsa).PublicKey();
+		OneKey recipient1PublicKey = OneKeyDecoder.parseDiagnostic(recipient1PublicKeyEddsa).PublicKey();
+		OneKey recipient2PublicKey = OneKeyDecoder.parseDiagnostic(recipient2PublicKeyEddsa).PublicKey();
 		groupCtxEddsa.addRecipientCtx(rid1, REPLAY_WINDOW, recipient1PublicKey);
 		groupCtxEddsa.addRecipientCtx(rid2, REPLAY_WINDOW, recipient2PublicKey);
 
