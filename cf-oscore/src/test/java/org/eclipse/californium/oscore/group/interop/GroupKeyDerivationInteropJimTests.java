@@ -181,7 +181,7 @@ public class GroupKeyDerivationInteropJimTests {
 	 * @throws ConnectorException
 	 */
 	@Test
-	public void testMessageCreation() throws OSException, ConnectorException, IOException {
+	public void testMessage1Creation() throws OSException, ConnectorException, IOException {
 		String destinationUri = "coap://127.0.0.1/test";
 
 		GroupCtx groupCtxJim = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256);
@@ -223,7 +223,7 @@ public class GroupKeyDerivationInteropJimTests {
 	 * @throws ConnectorException
 	 */
 	@Test
-	public void testMessageCreation2() throws OSException, ConnectorException, IOException {
+	public void testMessage1CreationAlt() throws OSException, ConnectorException, IOException {
 		String destinationUri = "coap://127.0.0.1/test";
 
 		GroupCtx groupCtxJim = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256);
@@ -273,7 +273,7 @@ public class GroupKeyDerivationInteropJimTests {
 	}
 
 	@Test
-	public void testMessageReception() throws OSException {
+	public void testMessage1Reception() throws OSException {
 
 		int seq = 1;
 
