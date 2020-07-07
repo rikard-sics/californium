@@ -11,6 +11,8 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.util.Arrays;
 
+import org.eclipse.californium.core.Utils;
+
 
 /**
  *
@@ -65,8 +67,7 @@ public abstract class SignCommon extends Message {
             sig.initSign(privKey);
             sig.update(rgbToBeSigned);
             
-			// System.out.println("COSE: To be signed: " +
-			// Utils.toHexString(rgbToBeSigned));
+			System.out.println("COSE: To be signed: " + Utils.toHexString(rgbToBeSigned));
             
             result = sig.sign();
             if (sigLen > 0) {
@@ -170,8 +171,7 @@ public abstract class SignCommon extends Message {
             sig.initVerify(pubKey);
             sig.update(rgbToBeSigned);
             
-			// System.out.println("COSE: To be signed (checked): " +
-			// Utils.toHexString(rgbToBeSigned));
+			System.out.println("COSE: To be signed (checked): " + Utils.toHexString(rgbToBeSigned));
 
             if (convert) {
                 rgbSignature = convertConcatToDer(rgbSignature);
