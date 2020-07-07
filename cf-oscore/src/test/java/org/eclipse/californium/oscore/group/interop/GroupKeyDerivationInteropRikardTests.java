@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
+import java.net.InetSocketAddress;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
@@ -35,16 +36,21 @@ import javax.xml.bind.DatatypeConverter;
 
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.CoAP;
+import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.CoAP.Type;
+import org.eclipse.californium.core.network.serialization.UdpDataParser;
 import org.eclipse.californium.core.network.serialization.UdpDataSerializer;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.UdpEndpointContext;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.HashMapCtxDB;
+import org.eclipse.californium.oscore.OSCoreCtxDB;
 import org.eclipse.californium.oscore.OSException;
+import org.eclipse.californium.oscore.RequestDecryptor;
 import org.eclipse.californium.oscore.RequestEncryptor;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
@@ -344,6 +350,57 @@ public class GroupKeyDerivationInteropRikardTests {
 				sharedSecret1);
 		assertArrayEquals(Utils.hexToBytes("f568ec5f7df45db137fc79a27595eba737b62e8ee385c7309e316dd409de6953"),
 				sharedSecret2);
+	}
+
+	@Test
+	public void testMessageReception() throws OSException {
+
+		db.purge();
+
+		int seq = 0;
+
+		// --- Try decryption ---
+		String destinationUri = "coap://127.0.0.1/test";
+
+		GroupCtx groupCtxRikard = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256);
+		// Dummy values for pretend sender
+		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParameters.JIM_ENTITY_1_KEY_ECDSA);
+		groupCtxRikard.addSenderCtx(new byte[] { 0x11, 0x22 }, senderFullKey);
+
+		groupCtxRikard.addRecipientCtx(sid, REPLAY_WINDOW, OneKeyDecoder.parseDiagnostic(senderFullKeyEcdsa256));
+		db.addContext(destinationUri, groupCtxRikard);
+		GroupRecipientCtx recipientCtx = (GroupRecipientCtx) db.getContext(sid,
+				context_id);
+
+		// Create request message from raw byte array
+		byte[] requestBytes = Utils.hexToBytes(
+				"5402FFFF347312119C39000837CBF3210017A2D301FF963FFA3CDF9ED8FAC09E33E6FF8291CD3CCA52383B7E24B1474EAC7C63D32C8C30EADB5D9870A91D679E9F148297F70B62D94B3B192C4C067187208646D27D26099482C043D4F9AD00");
+
+		UdpDataParser parser = new UdpDataParser();
+		Message mess = parser.parseMessage(requestBytes);
+
+		Request r = null;
+		if (mess instanceof Request) {
+			r = (Request) mess;
+		}
+
+		// Set up some state information simulating an incoming request
+		OSCoreCtxDB db = new HashMapCtxDB();
+		recipientCtx.setReceiverSeq(seq - 1);
+		db.addContext(recipientCtx);
+		r.setSourceContext(new UdpEndpointContext(new InetSocketAddress(0)));
+
+		System.out.println("Common IV: " + Utils.bytesToHex(recipientCtx.getCommonIV()));
+		System.out.println("Recipient Key: " + Utils.bytesToHex(recipientCtx.getRecipientKey()));
+
+		// Decrypt the request message
+		Request decrypted = RequestDecryptor.decrypt(db, r, recipientCtx);
+		decrypted.getOptions().removeOscore();
+
+		UdpDataSerializer serializer = new UdpDataSerializer();
+		byte[] encryptedBytes = serializer.getByteArray(decrypted);
+
+		System.out.println("Decrypted: " + Utils.bytesToHex(encryptedBytes));
 	}
 
 	@Test
