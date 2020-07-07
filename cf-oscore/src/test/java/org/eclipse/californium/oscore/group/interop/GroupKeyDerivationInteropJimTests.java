@@ -40,6 +40,7 @@ import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.network.serialization.UdpDataParser;
+import org.eclipse.californium.core.network.serialization.UdpDataSerializer;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
@@ -196,8 +197,6 @@ public class GroupKeyDerivationInteropJimTests {
 		GroupSenderCtx senderCtxJim = (GroupSenderCtx) db.getContext(destinationUri);
 		senderCtxJim.setSenderSeq(1);
 
-
-
 		Request request = Request.newGet();
 		request.setType(Type.NON);
 		request.getOptions().setOscore(Bytes.EMPTY);
@@ -205,6 +204,64 @@ public class GroupKeyDerivationInteropJimTests {
 
 		// encrypt
 		Request encrypted = RequestEncryptor.encrypt(db, request);
+
+		System.out.println(encrypted);
+
+		System.out.println("Common IV: " + Utils.bytesToHex(senderCtxJim.getCommonIV()));
+		System.out.println("Sender Key: " + Utils.bytesToHex(senderCtxJim.getSenderKey()));
+
+		System.out.println("Payload: " + Utils.bytesToHex(encrypted.getPayload()));
+
+	}
+
+	/**
+	 * Create a message based on Jim Test 1 Entity 1 data. From Jims message
+	 * bytes
+	 * 
+	 * @throws OSException
+	 * @throws IOException
+	 * @throws ConnectorException
+	 */
+	@Test
+	public void testMessageCreation2() throws OSException, ConnectorException, IOException {
+		String destinationUri = "coap://127.0.0.1/test";
+
+		GroupCtx groupCtxJim = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256);
+		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParameters.JIM_ENTITY_1_KEY_ECDSA);
+		groupCtxJim.addSenderCtx(InteropParameters.JIM_ENTITY_1_KID, senderFullKey);
+
+
+		// Jim message bytes:
+		// 4001ffffb1610162
+
+		// create request
+		// CoapClient client = new CoapClient();
+		// client.setTimeout((long) 250);
+		// client.setURI(destinationUri);
+
+
+		UdpDataParser parser = new UdpDataParser();
+		Message mess = parser.parseMessage(Utils.hexToBytes("4001ffffb1610162"));
+
+		Request r = null;
+		if (mess instanceof Request) {
+			r = (Request) mess;
+		}
+		r.getOptions().setOscore(Bytes.EMPTY);
+
+		db.addContext(r.getURI(), groupCtxJim);
+		GroupSenderCtx senderCtxJim = (GroupSenderCtx) db.getContext(r.getURI());
+		senderCtxJim.setSenderSeq(1);
+
+		// Request request = Request.newGet();
+		// request.setType(Type.NON);
+		// request.getOptions().setOscore(Bytes.EMPTY);
+		// request.setURI(destinationUri);
+
+
+
+		// encrypt
+		Request encrypted = RequestEncryptor.encrypt(db, r);
 
 		System.out.println(encrypted);
 		
@@ -216,7 +273,6 @@ public class GroupKeyDerivationInteropJimTests {
 	}
 
 	@Test
-	@Ignore
 	public void testMessageReception() throws OSException {
 
 		int seq = 1;
@@ -257,6 +313,11 @@ public class GroupKeyDerivationInteropJimTests {
 		// Decrypt the request message
 		Request decrypted = RequestDecryptor.decrypt(db, r, recipientCtx);
 		decrypted.getOptions().removeOscore();
+
+		UdpDataSerializer serializer = new UdpDataSerializer();
+		byte[] encryptedBytes = serializer.getByteArray(decrypted);
+
+		System.out.println("Decrypted: " + Utils.bytesToHex(encryptedBytes));
 	}
 
 	@Test
