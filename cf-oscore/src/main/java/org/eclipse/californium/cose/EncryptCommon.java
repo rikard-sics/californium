@@ -145,8 +145,8 @@ public abstract class EncryptCommon extends Message {
 		ProcessCounterSignatures();
 	}
 
-	//Method taken from EncryptCommon in COSE. This will provide the full AAD / Encrypt0-structure.
-    private byte[] getAADBytes() {
+	// FIXME: Remove
+	private byte[] getAADBytesBAD() {
         CBORObject obj = CBORObject.NewArray();
         
         obj.Add(context);
@@ -157,10 +157,29 @@ public abstract class EncryptCommon extends Message {
         	obj.Add(objProtected.EncodeToBytes());
         }
         
+
         obj.Add(CBORObject.FromObject(externalData));
         
         return obj.EncodeToBytes();
     }
+
+	// Method taken from EncryptCommon in COSE. This will provide the full AAD /
+	// Encrypt0-structure.
+	private byte[] getAADBytes() {
+		CBORObject obj = CBORObject.NewArray();
+
+		obj.Add(context);
+		if (objProtected.size() == 0)
+			rgbProtected = new byte[0];
+		else
+			rgbProtected = objProtected.EncodeToBytes();
+
+		obj.Add(rgbProtected);
+		obj.Add(CBORObject.FromObject(externalData));
+
+		// System.out.println("HELLO prot" + Utils.toHexString(rgbProtected));
+		return obj.EncodeToBytes();
+	}
 
 	private void AES_CCM_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException {
 		CBORObject iv = findAttribute(HeaderKeys.IV);
