@@ -248,7 +248,7 @@ public class GroupInteropRikardEddsaTests {
 	}
 
 	@Test
-	public void testMessageXReception() throws OSException {
+	public void testMessage3Reception() throws OSException {
 
 		db.purge();
 
@@ -268,8 +268,9 @@ public class GroupInteropRikardEddsaTests {
 				context_id);
 
 		// Create request message from raw byte array
-		byte[] requestBytes = Utils.hexToBytes(
-				"5802FFFF1184AF7282CE23BA96390102DD110AFF424171ABDF184050297942022C7A85E17517246B31DBB10C5078730E9D0857E3EA0A630FAFD1B22423647EC09A5D60C74F1A45B295DB10D5569D6DA09F443E792D6A72BFBC72E32C0D");
+		String requestString = "58-02-FF-FF-11-84-AF-72-82-CE-23-BA-96-39-01-02-DD-11-0A-FF-42-41-71-AB-DF-18-40-50-29-79-42-02-2C-7A-85-E1-75-17-24-6B-31-DB-B1-0C-50-78-73-0E-9D-08-57-E3-EA-0A-63-0F-AF-D1-B2-24-23-64-7E-C0-9A-5D-60-C7-4F-1A-45-B2-95-DB-10-D5-56-9D-6D-A0-9F-44-3E-79-2D-6A-72-BF-BC-72-E3-2C-0D";
+		requestString = requestString.replace("-", "");
+		byte[] requestBytes = Utils.hexToBytes(requestString);
 
 		UdpDataParser parser = new UdpDataParser();
 		Message mess = parser.parseMessage(requestBytes);
@@ -299,7 +300,7 @@ public class GroupInteropRikardEddsaTests {
 	}
 
 	@Test
-	public void testMessageXGeneration() throws OSException {
+	public void testMessage3Generation() throws OSException {
 		senderCtxEddsa.setSenderSeq(1);
 
 		Request request = Request.newGet();
