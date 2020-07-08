@@ -29,6 +29,7 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
@@ -156,6 +157,73 @@ public class KeyRemappingTest {
 
 		System.out.println(u1);
 		System.out.println(u2);
+
+	}
+
+	/* Methods for Weierstrass conversions below */
+	// https://tools.ietf.org/html/draft-ietf-lwig-curve-representations-10#appendix-E.2
+
+	/**
+	 * Test converting a Curve25519 u coordinate to a Wei25519 X coordinate.
+	 */
+	@Test
+	public void testCurve25519toWei25519() {
+		// u value (input)
+		BigIntegerFieldElement u = new BigIntegerFieldElement(ed25519Field, new BigInteger("9"));
+
+		// The expected correct X value
+		BigIntegerFieldElement expectedX = new BigIntegerFieldElement(ed25519Field,
+				new BigInteger("19298681539552699237261830834781317975544997444273427339909597334652188435546"));
+
+		// Calculate the X value (output)
+		FieldElement resultX = KeyRemapping.curve25519toWei25519(u);
+
+		System.out.println("Correct " + Utils.bytesToHex(expectedX.toByteArray()));
+		System.out.println("Result " + Utils.bytesToHex(resultX.toByteArray()));
+
+		assertArrayEquals(expectedX.toByteArray(), resultX.toByteArray());
+	}
+
+	/**
+	 * Test converting a Wei25519 X coordinate to a Curve25519 u coordinate.
+	 */
+	@Test
+	public void testWei25519toCurve25519() {
+		// X value (input)
+		BigIntegerFieldElement X = new BigIntegerFieldElement(ed25519Field,
+				new BigInteger("19298681539552699237261830834781317975544997444273427339909597334652188435546"));
+
+		// The expected correct u value
+		BigIntegerFieldElement expectedU = new BigIntegerFieldElement(ed25519Field, new BigInteger("9"));
+
+		// Calculate the u value (output)
+		FieldElement resultU = KeyRemapping.wei25519toCurve25519(X);
+
+		System.out.println("Correct " + Utils.bytesToHex(expectedU.toByteArray()));
+		System.out.println("Result " + Utils.bytesToHex(resultU.toByteArray()));
+
+		assertArrayEquals(expectedU.toByteArray(), resultU.toByteArray());
+	}
+
+	/**
+	 * Test converting a Edwards25519 y coordinate to a Wei25519 X coordinate
+	 */
+	@Test
+	public void testEdwards25519toWei25519() {
+		// y value (input)
+		BigIntegerFieldElement y = new BigIntegerFieldElement(ed25519Field,
+				new BigInteger("46316835694926478169428394003475163141307993866256225615783033603165251855960"));
+
+		// The expected correct X value
+		BigIntegerFieldElement expectedX = new BigIntegerFieldElement(ed25519Field,
+				new BigInteger("19298681539552699237261830834781317975544997444273427339909597334652188435546"));
+
+		FieldElement calculatedX = KeyRemapping.edwards25519toWei25519(y);
+
+		System.out.println("Correct " + Utils.bytesToHex(expectedX.toByteArray()));
+		System.out.println("Result " + Utils.bytesToHex(calculatedX.toByteArray()));
+
+		assertArrayEquals(expectedX.toByteArray(), calculatedX.toByteArray());
 
 	}
 
