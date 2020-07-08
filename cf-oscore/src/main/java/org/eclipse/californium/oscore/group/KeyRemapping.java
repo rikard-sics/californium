@@ -129,12 +129,12 @@ public class KeyRemapping {
 		} else {
 			System.out.println("y from key value is INCORRECT!");
 		}
-		
+
 		/**/
 		System.out.println();
 		System.out.println();
 		/**/
-		
+
 		FieldElement x_fromKey = extractCOSE_x(myKey);
 		System.out.println("x from COSE key: " + x_fromKey);
 
@@ -249,7 +249,7 @@ public class KeyRemapping {
 		// The array must be reversed to have correct byte order
 		// BigInteger wants Big Endian but it is in Little Endian
 		byte[] y_array_inv = invertArray(y_array);
-		
+
 		// Create field element for y from updated X value
 		FieldElement y = new BigIntegerFieldElement(ed25519Field, new BigInteger(y_array_inv));
 
@@ -285,11 +285,77 @@ public class KeyRemapping {
 	 * @param input the input byte array
 	 * @return the inverted byte array
 	 */
-	private static byte[] invertArray(byte[] input) {
+	public static byte[] invertArray(byte[] input) {
 		byte[] output = input.clone();
 		for (int i = 0; i < input.length; i++) {
 			output[i] = input[input.length - i - 1];
 		}
 		return output;
+	}
+
+	/* Methods for Weierstrass conversions below */
+	// https://tools.ietf.org/html/draft-ietf-lwig-curve-representations-10#appendix-E.2
+
+	/**
+	 * Remap a Curve25519 u coordinate to a Wei25519 X coordinate.
+	 * 
+	 * @param u the Curve25519 u coordinate
+	 * 
+	 * @return the Wei25519 X coordinate
+	 */
+	public static FieldElement curve25519toWei25519(FieldElement u) {
+		BigIntegerFieldElement A = new BigIntegerFieldElement(ed25519Field, new BigInteger("486662"));
+		BigIntegerFieldElement three = new BigIntegerFieldElement(ed25519Field, new BigInteger("3"));
+
+		// X = u + A/3
+		FieldElement AoverThree = A.multiply(three.invert());
+
+		FieldElement X = u.add(AoverThree);
+
+		return X;
+
+	}
+
+	/**
+	 * Remap a Wei25519 X coordinate to a Curve25519 u coordinate.
+	 * 
+	 * @param X the Wei25519 X coordinate
+	 * 
+	 * @return the Curve25519 u coordinate
+	 */
+	public static FieldElement wei25519toCurve25519(FieldElement X) {
+		BigIntegerFieldElement A = new BigIntegerFieldElement(ed25519Field, new BigInteger("486662"));
+		BigIntegerFieldElement three = new BigIntegerFieldElement(ed25519Field, new BigInteger("3"));
+
+		// u = X - A/3
+		FieldElement AoverThree = A.multiply(three.invert());
+
+		FieldElement u = X.subtract(AoverThree);
+
+		return u;
+	}
+
+	/**
+	 * Remap a Edwards25519 y coordinate to a Wei25519 X coordinate
+	 * 
+	 * @param y the Edwards25519 y coordinate
+	 * @return the Wei25519 X coordinate
+	 */
+	public static FieldElement edwards25519toWei25519(FieldElement y) {
+		// X = ((1+y)/(1-y)+A/3
+
+		BigIntegerFieldElement A = new BigIntegerFieldElement(ed25519Field, new BigInteger("486662"));
+		BigIntegerFieldElement three = new BigIntegerFieldElement(ed25519Field, new BigInteger("3"));
+		BigIntegerFieldElement one = new BigIntegerFieldElement(ed25519Field, new BigInteger("1"));
+		FieldElement AoverThree = A.multiply(three.invert());
+
+		FieldElement onePlusY = one.add(y);
+		FieldElement oneMinusY = one.subtract(y);
+
+		FieldElement divided = onePlusY.multiply(oneMinusY.invert());
+
+		FieldElement X = divided.add(AoverThree);
+
+		return X;
 	}
 }
