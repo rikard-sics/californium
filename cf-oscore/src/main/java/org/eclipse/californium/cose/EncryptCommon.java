@@ -124,7 +124,6 @@ public abstract class EncryptCommon extends Message {
 		obj.Add(rgbProtected);
 		obj.Add(CBORObject.FromObject(externalData));
 
-		// System.out.println("HELLO prot" + Utils.toHexString(rgbProtected));
 		return obj.EncodeToBytes();
 	}
 
