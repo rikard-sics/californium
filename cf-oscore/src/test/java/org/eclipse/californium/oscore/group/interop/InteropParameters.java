@@ -33,9 +33,9 @@ public class InteropParameters {
 	public static final byte[] RIKARD_ENTITY_2_KID = Utils.hexToBytes("A200");
 	public static final byte[] RIKARD_ENTITY_3_KID = Utils.hexToBytes("A203");
 
-	public static final byte[] JIM_ENTITY_1_KID = Utils.hexToBytes("E1"); // ?
-	public static final byte[] JIM_ENTITY_2_KID = Utils.hexToBytes("0200");
-	public static final byte[] JIM_ENTITY_3_KID = Utils.hexToBytes("0203");
+	public static final byte[] JIM_ENTITY_1_KID = Utils.hexToBytes("E1");
+	public static final byte[] JIM_ENTITY_2_KID = Utils.hexToBytes("E2");
+	public static final byte[] JIM_ENTITY_3_KID = Utils.hexToBytes("E3");
 
 	/* General context settings */
 
