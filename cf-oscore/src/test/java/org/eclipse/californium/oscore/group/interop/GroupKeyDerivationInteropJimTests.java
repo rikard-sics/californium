@@ -321,6 +321,55 @@ public class GroupKeyDerivationInteropJimTests {
 	}
 
 	@Test
+	public void testSharedSecretECDSA()
+			throws OSException, CoseException, NoSuchAlgorithmException, InvalidKeyException {
+
+		GroupCtx groupCtxJim = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256);
+
+		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParameters.JIM_ENTITY_1_KEY_ECDSA);
+		groupCtxJim.addSenderCtx(InteropParameters.JIM_ENTITY_1_KID, senderFullKey);
+
+		groupCtxJim.addRecipientCtx(InteropParameters.JIM_ENTITY_2_KID, REPLAY_WINDOW,
+				OneKeyDecoder.parseDiagnostic(InteropParameters.JIM_ENTITY_2_KEY_ECDSA).PublicKey());
+
+		OneKey recipient2PublicKey = OneKeyDecoder.parseDiagnostic(InteropParameters.JIM_ENTITY_3_KEY_ECDSA).PublicKey();
+		groupCtxJim.addRecipientCtx(InteropParameters.JIM_ENTITY_3_KID, REPLAY_WINDOW,
+				recipient2PublicKey);
+
+		db.addContext(groupEcdsa, groupCtxJim);
+
+		GroupSenderCtx senderCtx = (GroupSenderCtx) db.getContext(groupEcdsa);
+		GroupRecipientCtx recipientCtx = (GroupRecipientCtx) db.getContext(InteropParameters.JIM_ENTITY_3_KID,
+				context_id);
+
+		assertNotNull(senderCtx);
+		assertNotNull(recipientCtx);
+
+		System.out.println("Sender Key 1->3: " + hexPrintDash(senderCtx.getSenderKey()));
+		System.out.println("Recipient Key 1->3: " + hexPrintDash(recipientCtx.getRecipientKey()));
+
+		byte[] pairwiseSenderKey = senderCtx.getPairwiseSenderKey(InteropParameters.JIM_ENTITY_3_KID);
+		byte[] pairwiseRecipientKey = recipientCtx.getPairwiseRecipientKey();
+
+		assertNotNull(pairwiseSenderKey);
+		assertNotNull(pairwiseRecipientKey);
+
+		System.out.println("Pairwise Sender Key 1->3: " + hexPrintDash(pairwiseSenderKey));
+		System.out.println("Pairwise Recipient Key 1->3: " + hexPrintDash(pairwiseRecipientKey));
+
+		// Shared secret
+		ECPublicKey recipientPubKey = (ECPublicKey) recipient2PublicKey.AsPublicKey();
+		ECPrivateKey senderPrivKey = (ECPrivateKey) senderFullKey.AsPrivateKey();
+		KeyAgreement keyAgreement = KeyAgreement.getInstance("ECDH");
+		keyAgreement.init(senderPrivKey);
+		keyAgreement.doPhase(recipientPubKey, true);
+		byte[] sharedSecret = keyAgreement.generateSecret();
+
+		System.out.println("Shared Secret 1->3: " + hexPrintDash(sharedSecret).toUpperCase());
+
+	}
+
+	@Test
 	@Ignore
 	public void testECDSA256Keys() throws Exception {
 		deriveContexts();
@@ -569,4 +618,11 @@ public class GroupKeyDerivationInteropJimTests {
 
 	}
 
+	private static String hexPrintDash(byte[] bytes) {
+		StringBuilder sb = new StringBuilder();
+		for (byte b : bytes) {
+			sb.append(String.format("%02X-", b));
+		}
+		return sb.toString();
+	}
 }
