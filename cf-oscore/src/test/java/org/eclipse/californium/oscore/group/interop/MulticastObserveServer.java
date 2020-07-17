@@ -17,11 +17,16 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore.group.interop;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.security.Provider;
+import java.security.Security;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import javax.xml.bind.DatatypeConverter;
 
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
@@ -29,16 +34,116 @@ import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.config.NetworkConfig;
-import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
 import org.eclipse.californium.core.server.resources.CoapExchange;
+import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.Connector;
 import org.eclipse.californium.elements.UdpMulticastConnector;
+import org.eclipse.californium.oscore.HashMapCtxDB;
+import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
+import org.eclipse.californium.oscore.OSException;
+import org.eclipse.californium.oscore.group.GroupCtx;
+
+import com.upokecenter.cbor.CBORObject;
+
+import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 public class MulticastObserveServer {
 
+	static boolean useOSCORE = true;
+
+	/* --- OSCORE Security Context information (receiver) --- */
+	private final static HashMapCtxDB db = new HashMapCtxDB();
+	private final static String uriLocal = "coap://localhost";
+	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
+	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
+
+	// Group OSCORE specific values for the countersignature (EdDSA)
+	private final static AlgorithmID algCountersign = AlgorithmID.EDDSA;
+
+	// test vector OSCORE draft Appendix C.1.2
+	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
+	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
+			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
+
+	private static final int REPLAY_WINDOW = 32;
+
+	/*
+	 * Rikard: Note regarding countersignature keys. The sid_private_key
+	 * contains both the public and private keys. The rid*_public_key contains
+	 * only the public key. For information on the keys see the Countersign_Keys
+	 * file.
+	 */
+
+	private static byte[] sid = new byte[] { 0x52 };
+	private static String sid_private_key_string = "pQMnAQEgBiFYIHfsNYwdNE5B7g6HuDg9I6IJms05vfmJzkW1Loh0YzibI1gghX62HT9tcKJ4o2dA0TLAmfYogO1Jfie9/UaF+howTyY=";
+	private static OneKey sid_private_key;
+
+	private final static byte[] rid1 = new byte[] { 0x25 };
+	private final static String rid1_public_key_string = "pAMnAQEgBiFYIAaekSuDljrMWUG2NUaGfewQbluQUfLuFPO8XMlhrNQ6";
+	private static OneKey rid1_public_key;
+
+	private final static byte[] group_identifier = new byte[] { 0x44, 0x61, 0x6c }; // GID
+
+	/* --- OSCORE Security Context information --- */
+
+	/**
+	 * Multicast address to send to (use the first line to set a custom one).
+	 */
+	// static final InetAddress multicastIP = new
+	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
+	static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
+
+	/**
+	 * Port to listen on.
+	 */
+	private static final int listenPort = CoAP.DEFAULT_COAP_PORT;
+
 	private static CoapServer server;
 
-	public static void main(String[] args) throws InterruptedException, UnknownHostException {
+	public static void main(String[] args)
+			throws InterruptedException, UnknownHostException, CoseException, OSException {
+
+		// If OSCORE is being used
+		if (useOSCORE) {
+
+			// Install cryptographic providers
+			Provider EdDSA = new EdDSASecurityProvider();
+			Security.insertProviderAt(EdDSA, 0);
+
+			// Set sender & receiver keys for countersignatures
+			sid_private_key = new OneKey(
+					CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(sid_private_key_string)));
+			rid1_public_key = new OneKey(
+					CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(rid1_public_key_string)));
+
+			// Check command line arguments (flag to use different sid and sid
+			// key)
+			if (args.length != 0) {
+				System.out.println("Starting with alternative sid 0x77.");
+				sid = new byte[] { 0x77 };
+				sid_private_key_string = "pQMnAQEgBiFYIBBbjGqMiAGb8MNUWSk0EwuqgAc5nMKsO+hFiEYT1bouI1gge/Yvdn7Rz0xgkR/En9/Mub1HzH6fr0HLZjadXIUIsjk=";
+				sid_private_key = new OneKey(
+						CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(sid_private_key_string)));
+			} else {
+				System.out.println("Starting with sid 0x52.");
+			}
+
+			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign);
+
+			commonCtx.addSenderCtx(sid, sid_private_key);
+
+			commonCtx.addRecipientCtx(rid1, REPLAY_WINDOW, rid1_public_key);
+
+			commonCtx.setResponsesIncludePartialIV(true);
+
+			db.addContext(uriLocal, commonCtx);
+
+			OSCoreCoapStackFactory.useAsDefault(db);
+		}
+
 		createServer();
 	}
 
@@ -127,13 +232,13 @@ public class MulticastObserveServer {
 	}
 
 	private static CoapEndpoint createEndpoints(NetworkConfig config) throws UnknownHostException {
-		int port = config.getInt(Keys.COAP_PORT);
+		int port = listenPort;
 
 		InetSocketAddress localAddress;
 		// Set the wildcard address (0.0.0.0)
 		localAddress = new InetSocketAddress(port);
 
-		Connector connector = new UdpMulticastConnector(localAddress, CoAP.MULTICAST_IPV4);
+		Connector connector = new UdpMulticastConnector(localAddress, multicastIP);
 		return new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(connector).build();
 	}
 
