@@ -31,6 +31,7 @@ import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
+import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.network.CoapEndpoint;
@@ -44,6 +45,8 @@ import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
+import org.eclipse.californium.oscore.group.OptionEncoder;
+
 import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
@@ -101,7 +104,13 @@ public class GroupOSCOREInteropClient {
 	/**
 	 * Resource to perform request against.
 	 */
-	static final String requestResource = "/helloWorld";
+	// static final String requestResource = "/helloWorld";
+	static final String requestResource = "/oscore/hello/1";
+
+	/**
+	 * The method to use for the request.
+	 */
+	static final CoAP.Code requestMethod = CoAP.Code.GET;
 
 	/* --- OSCORE Security Context information (sender) --- */
 	private final static HashMapCtxDB db = new HashMapCtxDB();
@@ -225,8 +234,14 @@ public class GroupOSCOREInteropClient {
 		client.setEndpoint(endpoint);
 
 		client.setURI(requestURI);
-		Request multicastRequest = Request.newPost();
-		multicastRequest.setPayload(requestPayload);
+
+		Request multicastRequest = null;
+		if (requestMethod == Code.POST) {
+			multicastRequest = Request.newPost();
+			multicastRequest.setPayload(requestPayload);
+		} else if (requestMethod == Code.GET) {
+			multicastRequest = Request.newGet();
+		}
 		multicastRequest.setType(Type.NON);
 		if (useOSCORE) {
 			multicastRequest.getOptions().setOscore(Bytes.EMPTY);
