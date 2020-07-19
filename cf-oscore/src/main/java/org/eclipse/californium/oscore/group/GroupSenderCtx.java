@@ -101,6 +101,11 @@ public class GroupSenderCtx extends OSCoreCtx {
 		return pairwiseSenderKeys.get(new ByteId(recipientId));
 	}
 
+	// Just for interop tests
+	public void setAsymmetricSenderKey(OneKey key) {
+		ownPrivateKey = key;
+	}
+
 	/**
 	 * Get the alg countersign value.
 	 * 
