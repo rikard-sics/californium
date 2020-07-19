@@ -953,6 +953,12 @@ public class CoapEndpoint implements Endpoint, MessagePostProcessInterceptors, M
 		}
 	}
 
+	boolean sendDuplicateResponse = false;
+
+	public void setDuplicateResponse(boolean b) {
+		sendDuplicateResponse = b;
+	}
+
 	/**
 	 * The stack of layers uses this Outbox to send messages. The OutboxImpl
 	 * will then give them to the matcher, the interceptors, and finally send
@@ -1044,6 +1050,11 @@ public class CoapEndpoint implements Endpoint, MessagePostProcessInterceptors, M
 						});
 
 				connector.send(data);
+
+				// Interop case 9 duplicate response
+				if (sendDuplicateResponse) {
+					connector.send(data);
+				}
 			}
 		}
 

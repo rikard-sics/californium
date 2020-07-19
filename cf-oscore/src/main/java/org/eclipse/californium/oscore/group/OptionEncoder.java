@@ -50,7 +50,7 @@ public class OptionEncoder {
 	 * @param rid the RID (KID) of the receiver
 	 * @return the encode option value
 	 */
-	static byte[] set(boolean pairwiseMode, String contextUri, byte[] rid) {
+	public static byte[] set(boolean pairwiseMode, String contextUri, byte[] rid) {
 		CBORObject option = CBORObject.NewMap();
 		option.Add(1, pairwiseMode);
 		option.Add(2, contextUri);
@@ -67,7 +67,7 @@ public class OptionEncoder {
 	 * @param contextUri the uri associated with the sender context to use
 	 * @return the encode option value
 	 */
-	static byte[] set(boolean pairwiseMode, String contextUri) {
+	public static byte[] set(boolean pairwiseMode, String contextUri) {
 		return set(pairwiseMode, contextUri, null);
 	}
 
