@@ -828,6 +828,12 @@ public class CoapEndpoint implements Endpoint, Executor {
 		}
 	}
 
+	boolean sendDuplicateResponse = false;
+
+	public void setDuplicateResponse(boolean b) {
+		sendDuplicateResponse = b;
+	}
+
 	/**
 	 * Check, if provided mid is in multicast range.
 	 * 
@@ -940,6 +946,11 @@ public class CoapEndpoint implements Endpoint, Executor {
 					exchange.startTransmissionRtt();
 				}
 				connector.send(data);
+
+				// Interop case 9 duplicate response
+				if (sendDuplicateResponse) {
+					connector.send(data);
+				}
 			}
 		}
 
