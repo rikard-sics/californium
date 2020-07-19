@@ -44,6 +44,7 @@ import org.eclipse.californium.elements.UDPConnector;
 import org.eclipse.californium.elements.UdpMulticastConnector;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
+import org.eclipse.californium.oscore.OSCoreResource;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
@@ -206,7 +207,17 @@ public class GroupOSCOREInteropServer {
 
 		CoapServer server = new CoapServer(config);
 		server.addEndpoint(endpoint);
-		server.add(new HelloWorldResource());
+		server.add(new OtherOscoreResource());
+
+		// Build resource hierarchy
+		CoapResource oscore = new CoapResource("oscore", true);
+		CoapResource oscore_hello = new CoapResource("hello", true);
+
+		oscore_hello.add(new CoapHelloWorldResource());
+		oscore_hello.add(new OscoreHelloWorldResource());
+
+		oscore.add(oscore_hello);
+		server.add(oscore);
 
 		// Information about the receiver
 		System.out.println("==================");
@@ -253,12 +264,48 @@ public class GroupOSCOREInteropServer {
 		return new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(connector).build();
 	}
 
-	private static class HelloWorldResource extends CoapResource {
+	private static class CoapHelloWorldResource extends CoapResource {
+
+		private CoapHelloWorldResource() {
+			// set resource identifier
+			super("coap");
+
+			// set display name
+			getAttributes().setTitle("CoAP Hello-World Resource");
+
+		}
+
+		// Handling GET
+		@Override
+		public void handleGET(CoapExchange exchange) {
+			exchange.respond(ResponseCode.CONTENT, "Hello World!", MediaTypeRegistry.TEXT_PLAIN);
+		}
+	}
+	
+	private static class OscoreHelloWorldResource extends OSCoreResource {
+
+		private OscoreHelloWorldResource() {
+			// set resource identifier
+			super("1", true);
+
+			// set display name
+			getAttributes().setTitle("OSCORE Hello-World Resource");
+
+		}
+
+		// Handling GET
+		@Override
+		public void handleGET(CoapExchange exchange) {
+			exchange.respond(ResponseCode.CONTENT, "Hello World!", MediaTypeRegistry.TEXT_PLAIN);
+		}
+	}
+
+	private static class OtherOscoreResource extends CoapResource {
 
 		private String id;
 		private int count = 0;
 
-		private HelloWorldResource() {
+		private OtherOscoreResource() {
 			// set resource identifier
 			super("helloWorld"); // Changed
 
