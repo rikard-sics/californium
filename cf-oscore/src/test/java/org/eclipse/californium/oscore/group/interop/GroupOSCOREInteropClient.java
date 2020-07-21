@@ -24,8 +24,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Provider;
 import java.security.Security;
-import javax.xml.bind.DatatypeConverter;
-
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapResponse;
@@ -45,9 +43,8 @@ import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
+import org.eclipse.californium.oscore.group.OneKeyDecoder;
 import org.eclipse.californium.oscore.group.OptionEncoder;
-
-import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
@@ -93,8 +90,9 @@ public class GroupOSCOREInteropClient {
 	 */
 	// static final InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	// static final InetAddress destinationIP = CoAP.MULTICAST_IPV4;
-	static final InetAddress destinationIP = new InetSocketAddress("127.0.0.1", 0).getAddress();
+	static final InetAddress destinationIP = CoAP.MULTICAST_IPV4;
+	// static final InetAddress destinationIP = new
+	// InetSocketAddress("127.0.0.1", 0).getAddress();
 
 	/**
 	 * Port to send to.
@@ -117,14 +115,12 @@ public class GroupOSCOREInteropClient {
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
 	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
 
-	// Group OSCORE specific values for the countersignature (EdDSA)
-	private final static AlgorithmID algCountersign = AlgorithmID.EDDSA;
+	// Group OSCORE specific values for the countersignature
+	private final static AlgorithmID algCountersign = AlgorithmID.ECDSA_256;
 
 	// test vector OSCORE draft Appendix C.1.1
-	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
-			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
-	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
-			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
+	private final static byte[] master_secret = InteropParametersNew.RIKARD_MASTER_SECRET_ECDSA;
+	private final static byte[] master_salt = InteropParametersNew.RIKARD_MASTER_SALT_ECDSA;
 
 	private static final int REPLAY_WINDOW = 32;
 
@@ -135,21 +131,18 @@ public class GroupOSCOREInteropClient {
 	 * file.
 	 */
 
-	private final static byte[] sid = new byte[] { 0x25 };
-	private final static String sid_private_key_string = "pQMnAQEgBiFYIAaekSuDljrMWUG2NUaGfewQbluQUfLuFPO8XMlhrNQ6I1ggZHFNQaJAth2NgjUCcXqwiMn0r2/JhEVT5K1MQsxzUjk=";
+	private final static byte[] sid = InteropParametersNew.RIKARD_ENTITY_1_KID_ECDSA;
 	private static OneKey sid_private_key;
 
-	private final static byte[] rid1 = new byte[] { 0x52 }; // Recipient 1
-	private final static String rid1_public_key_string = "pAMnAQEgBiFYIHfsNYwdNE5B7g6HuDg9I6IJms05vfmJzkW1Loh0Yzib";
+	private final static byte[] rid1 = InteropParametersNew.RIKARD_ENTITY_2_KID_ECDSA;
 	private static OneKey rid1_public_key;
 
-	private final static byte[] rid2 = new byte[] { 0x77 }; // Recipient 2
-	private final static String rid2_public_key_string = "pAMnAQEgBiFYIBBbjGqMiAGb8MNUWSk0EwuqgAc5nMKsO+hFiEYT1bou";
+	private final static byte[] rid2 = InteropParametersNew.RIKARD_ENTITY_3_KID_ECDSA;
 	private static OneKey rid2_public_key;
 
 	private final static byte[] rid0 = new byte[] { (byte) 0xCC }; // Dummy
 
-	private final static byte[] group_identifier = new byte[] { 0x44, 0x61, 0x6c }; // GID
+	private final static byte[] group_identifier = InteropParametersNew.RIKARD_GROUP_ID_ECDSA;
 
 	/* --- OSCORE Security Context information --- */
 
@@ -176,12 +169,9 @@ public class GroupOSCOREInteropClient {
 		// InstallCryptoProviders.generateCounterSignKey();
 
 		// Add private & public keys for sender & receiver(s)
-		sid_private_key = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary((sid_private_key_string))));
-		rid1_public_key = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary((rid1_public_key_string))));
-		rid2_public_key = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary((rid2_public_key_string))));
+		sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_1_KEY_ECDSA);
+		rid1_public_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_2_KEY_ECDSA);
+		rid2_public_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_3_KEY_ECDSA);
 
 		// If OSCORE is being used set the context information
 		@SuppressWarnings("unused")
@@ -246,8 +236,9 @@ public class GroupOSCOREInteropClient {
 		if (useOSCORE) {
 			multicastRequest.getOptions().setOscore(Bytes.EMPTY);
 			// For pairwise request:
-			// multicastRequest.getOptions().setOscore(OptionEncoder.set(true,
-			// requestURI, rid1));
+			// multicastRequest.getOptions()
+			// .setOscore(OptionEncoder.set(true, requestURI,
+			// InteropParametersNew.RIKARD_ENTITY_2_KID_ECDSA));
 		}
 
 		// Information about the sender
