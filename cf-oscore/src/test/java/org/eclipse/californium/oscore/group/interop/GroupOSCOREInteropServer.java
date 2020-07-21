@@ -23,8 +23,6 @@ import java.security.Provider;
 import java.security.Security;
 import java.util.Random;
 
-import javax.xml.bind.DatatypeConverter;
-
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.Utils;
@@ -48,8 +46,7 @@ import org.eclipse.californium.oscore.OSCoreResource;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
-
-import com.upokecenter.cbor.CBORObject;
+import org.eclipse.californium.oscore.group.OneKeyDecoder;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
@@ -84,8 +81,9 @@ public class GroupOSCOREInteropServer {
 	 */
 	// static final InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	// static final InetAddress listenIP = CoAP.MULTICAST_IPV4;
-	static final InetAddress listenIP = new InetSocketAddress("0.0.0.0", 0).getAddress();
+	static final InetAddress listenIP = CoAP.MULTICAST_IPV4;
+	// static final InetAddress listenIP = new InetSocketAddress("0.0.0.0",
+	// 0).getAddress();
 
 	/**
 	 * Build endpoint to listen on multicast IP.
@@ -103,14 +101,12 @@ public class GroupOSCOREInteropServer {
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
 	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
 
-	// Group OSCORE specific values for the countersignature (EdDSA)
-	private final static AlgorithmID algCountersign = AlgorithmID.EDDSA;
+	// Group OSCORE specific values for the countersignature
+	private final static AlgorithmID algCountersign = AlgorithmID.ECDSA_256;
 
 	// test vector OSCORE draft Appendix C.1.2
-	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
-			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
-	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
-			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
+	private final static byte[] master_secret = InteropParametersNew.RIKARD_MASTER_SECRET_ECDSA;
+	private final static byte[] master_salt = InteropParametersNew.RIKARD_MASTER_SALT_ECDSA;
 
 	private static final int REPLAY_WINDOW = 32;
 
@@ -121,41 +117,35 @@ public class GroupOSCOREInteropServer {
 	 * file.
 	 */
 
-	private static byte[] sid = new byte[] { 0x52 };
-	private static String sid_private_key_string = "pQMnAQEgBiFYIHfsNYwdNE5B7g6HuDg9I6IJms05vfmJzkW1Loh0YzibI1gghX62HT9tcKJ4o2dA0TLAmfYogO1Jfie9/UaF+howTyY=";
+	private static byte[] sid = InteropParametersNew.RIKARD_ENTITY_2_KID_ECDSA;
 	private static OneKey sid_private_key;
 
-	private final static byte[] rid1 = new byte[] { 0x25 };
-	private final static String rid1_public_key_string = "pAMnAQEgBiFYIAaekSuDljrMWUG2NUaGfewQbluQUfLuFPO8XMlhrNQ6";
+	private final static byte[] rid1 = InteropParametersNew.RIKARD_ENTITY_1_KID_ECDSA;
 	private static OneKey rid1_public_key;
 
-	private final static byte[] group_identifier = new byte[] { 0x44, 0x61, 0x6c }; // GID
+	private final static byte[] group_identifier = InteropParametersNew.RIKARD_GROUP_ID_ECDSA;
 
 	/* --- OSCORE Security Context information --- */
 
 	private static Random random;
 
 	public static void main(String[] args) throws Exception {
-		
+
 		// Install cryptographic providers
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 0);
 
 		// Set sender & receiver keys for countersignatures
-		sid_private_key = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(sid_private_key_string)));
-		rid1_public_key = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(rid1_public_key_string)));
+		sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_2_KEY_ECDSA);
+		rid1_public_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_1_KEY_ECDSA);
 
 		// Check command line arguments (flag to use different sid and sid key)
 		if (args.length != 0) {
-			System.out.println("Starting with alternative sid 0x77.");
-			sid = new byte[] { 0x77 };
-			sid_private_key_string = "pQMnAQEgBiFYIBBbjGqMiAGb8MNUWSk0EwuqgAc5nMKsO+hFiEYT1bouI1gge/Yvdn7Rz0xgkR/En9/Mub1HzH6fr0HLZjadXIUIsjk=";
-			sid_private_key = new OneKey(
-					CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(sid_private_key_string)));
+			sid = InteropParametersNew.RIKARD_ENTITY_3_KID_ECDSA;
+			System.out.println("Starting with alternative sid " + Utils.toHexString(sid));
+			sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_3_KEY_ECDSA);
 		} else {
-			System.out.println("Starting with sid 0x52.");
+			System.out.println("Starting with sid " + Utils.toHexString(sid));
 		}
 
 		// If OSCORE is being used set the context information
@@ -278,10 +268,34 @@ public class GroupOSCOREInteropServer {
 		// Handling GET
 		@Override
 		public void handleGET(CoapExchange exchange) {
-			exchange.respond(ResponseCode.CONTENT, "Hello World!", MediaTypeRegistry.TEXT_PLAIN);
+			System.out.println("Receiving to: " + exchange.advanced().getEndpoint().getAddress());
+			System.out.println("Receiving from: " + exchange.getSourceAddress() + ":" + exchange.getSourcePort());
+
+			System.out.println(Utils.prettyPrint(exchange.advanced().getRequest()));
+
+			boolean isConfirmable = exchange.advanced().getRequest().isConfirmable();
+
+			if (isConfirmable || replyToNonConfirmable) {
+				Response r = Response.createResponse(exchange.advanced().getRequest(), ResponseCode.CONTENT);
+				r.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
+				r.setPayload("Hello World!");
+
+				if (isConfirmable) {
+					r.setType(Type.ACK);
+				} else {
+					r.setType(Type.NON);
+				}
+
+				System.out.println();
+				System.out.println("Sending to: " + r.getDestinationContext().getPeerAddress());
+				System.out.println("Sending from: " + exchange.advanced().getEndpoint().getAddress());
+				System.out.println(Utils.prettyPrint(r));
+
+				exchange.respond(r);
+			}
 		}
 	}
-	
+
 	private static class OscoreHelloWorldResource extends OSCoreResource {
 
 		private OscoreHelloWorldResource() {
@@ -296,7 +310,33 @@ public class GroupOSCOREInteropServer {
 		// Handling GET
 		@Override
 		public void handleGET(CoapExchange exchange) {
-			exchange.respond(ResponseCode.CONTENT, "Hello World!", MediaTypeRegistry.TEXT_PLAIN);
+
+			System.out.println("Receiving to: " + exchange.advanced().getEndpoint().getAddress());
+			System.out.println("Receiving from: " + exchange.getSourceAddress() + ":" + exchange.getSourcePort());
+
+			System.out.println(Utils.prettyPrint(exchange.advanced().getRequest()));
+
+			boolean isConfirmable = exchange.advanced().getRequest().isConfirmable();
+
+			if (isConfirmable || replyToNonConfirmable) {
+				Response r = Response.createResponse(exchange.advanced().getRequest(), ResponseCode.CONTENT);
+				r.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
+				r.setPayload("Hello World!");
+
+				if (isConfirmable) {
+					r.setType(Type.ACK);
+				} else {
+					r.setType(Type.NON);
+				}
+
+				System.out.println();
+				System.out.println("Sending to: " + r.getDestinationContext().getPeerAddress());
+				System.out.println("Sending from: " + exchange.advanced().getEndpoint().getAddress());
+				System.out.println(Utils.prettyPrint(r));
+
+				exchange.respond(r);
+
+			}
 		}
 	}
 
@@ -345,7 +385,7 @@ public class GroupOSCOREInteropServer {
 				Response r = Response.createResponse(exchange.advanced().getRequest(), ResponseCode.CONTENT);
 				r.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 				String requestPayload = exchange.getRequestText().toUpperCase();
-				if(requestPayload == null || requestPayload.length() == 0) {
+				if (requestPayload == null || requestPayload.length() == 0) {
 					r.setPayload("Response from: " + id);
 				} else {
 					r.setPayload(requestPayload.toUpperCase() + ". Response from: " + id);
