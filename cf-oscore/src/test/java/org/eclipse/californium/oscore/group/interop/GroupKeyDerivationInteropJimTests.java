@@ -221,7 +221,6 @@ public class GroupKeyDerivationInteropJimTests {
 		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParametersOld.JIM_ENTITY_1_KEY_ECDSA);
 		groupCtxJim.addSenderCtx(InteropParametersOld.JIM_ENTITY_1_KID, senderFullKey);
 
-
 		// Jim message bytes:
 		// 4001ffffb1610162
 
