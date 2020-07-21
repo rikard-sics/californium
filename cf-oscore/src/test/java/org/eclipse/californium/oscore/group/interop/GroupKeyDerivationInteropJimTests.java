@@ -98,24 +98,24 @@ public class GroupKeyDerivationInteropJimTests {
 	/* --- Context parameters for ECDSA 256 --- */
 
 	// My entity #1
-	static byte[] sid = InteropParameters.RIKARD_ENTITY_1_KID;
+	static byte[] sid = InteropParametersOld.RIKARD_ENTITY_1_KID;
 	// Jim entity #2
-	static byte[] rid1 = InteropParameters.JIM_ENTITY_2_KID;
+	static byte[] rid1 = InteropParametersOld.JIM_ENTITY_2_KID;
 	// Jim entity #3
-	static byte[] rid2 = InteropParameters.JIM_ENTITY_3_KID;
+	static byte[] rid2 = InteropParametersOld.JIM_ENTITY_3_KID;
 
-	private final static byte[] master_secret = InteropParameters.MASTER_SECRET_ECDSA;
-	private final static byte[] master_salt = InteropParameters.MASTER_SALT_ECDSA;
-	private final static byte[] context_id = InteropParameters.GROUP_ID_ECDSA;
+	private final static byte[] master_secret = InteropParametersOld.MASTER_SECRET_ECDSA;
+	private final static byte[] master_salt = InteropParametersOld.MASTER_SALT_ECDSA;
+	private final static byte[] context_id = InteropParametersOld.GROUP_ID_ECDSA;
 
 	// My entity #1
-	private static String senderFullKeyEcdsa256 = InteropParameters.RIKARD_ENTITY_1_KEY_ECDSA;
+	private static String senderFullKeyEcdsa256 = InteropParametersOld.RIKARD_ENTITY_1_KEY_ECDSA;
 
 	// Jim entity #2 (only public part is added to context)
-	private static String recipient1PublicKeyEcdsa256 = InteropParameters.JIM_ENTITY_2_KEY_ECDSA;
+	private static String recipient1PublicKeyEcdsa256 = InteropParametersOld.JIM_ENTITY_2_KEY_ECDSA;
 
 	// Jim entity #3 (only public part is added to context)
-	private static String recipient2PublicKeyEcdsa256 = InteropParameters.JIM_ENTITY_3_KEY_ECDSA;
+	private static String recipient2PublicKeyEcdsa256 = InteropParametersOld.JIM_ENTITY_3_KEY_ECDSA;
 
 	/* --- End Context parameters for ECDSA 256 --- */
 
@@ -185,8 +185,8 @@ public class GroupKeyDerivationInteropJimTests {
 		String destinationUri = "coap://127.0.0.1/test";
 
 		GroupCtx groupCtxJim = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256);
-		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParameters.JIM_ENTITY_1_KEY_ECDSA);
-		groupCtxJim.addSenderCtx(InteropParameters.JIM_ENTITY_1_KID, senderFullKey);
+		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParametersOld.JIM_ENTITY_1_KEY_ECDSA);
+		groupCtxJim.addSenderCtx(InteropParametersOld.JIM_ENTITY_1_KID, senderFullKey);
 		db.addContext(destinationUri, groupCtxJim);
 
 		// create request
@@ -227,8 +227,8 @@ public class GroupKeyDerivationInteropJimTests {
 		String destinationUri = "coap://127.0.0.1/test";
 
 		GroupCtx groupCtxJim = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256);
-		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParameters.JIM_ENTITY_1_KEY_ECDSA);
-		groupCtxJim.addSenderCtx(InteropParameters.JIM_ENTITY_1_KID, senderFullKey);
+		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParametersOld.JIM_ENTITY_1_KEY_ECDSA);
+		groupCtxJim.addSenderCtx(InteropParametersOld.JIM_ENTITY_1_KID, senderFullKey);
 
 
 		// Jim message bytes:
@@ -281,12 +281,12 @@ public class GroupKeyDerivationInteropJimTests {
 		String destinationUri = "coap://127.0.0.1/test";
 
 		GroupCtx groupCtxJim = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256);
-		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParameters.RIKARD_ENTITY_2_KEY_ECDSA);
-		groupCtxJim.addSenderCtx(InteropParameters.RIKARD_ENTITY_2_KID, senderFullKey);
-		groupCtxJim.addRecipientCtx(InteropParameters.JIM_ENTITY_1_KID, REPLAY_WINDOW,
-				OneKeyDecoder.parseDiagnostic(InteropParameters.JIM_ENTITY_1_KEY_ECDSA).PublicKey());
+		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParametersOld.RIKARD_ENTITY_2_KEY_ECDSA);
+		groupCtxJim.addSenderCtx(InteropParametersOld.RIKARD_ENTITY_2_KID, senderFullKey);
+		groupCtxJim.addRecipientCtx(InteropParametersOld.JIM_ENTITY_1_KID, REPLAY_WINDOW,
+				OneKeyDecoder.parseDiagnostic(InteropParametersOld.JIM_ENTITY_1_KEY_ECDSA).PublicKey());
 		db.addContext(destinationUri, groupCtxJim);
-		GroupRecipientCtx recipientCtx = (GroupRecipientCtx) db.getContext(InteropParameters.JIM_ENTITY_1_KID,
+		GroupRecipientCtx recipientCtx = (GroupRecipientCtx) db.getContext(InteropParametersOld.JIM_ENTITY_1_KID,
 				context_id);
 
 		// Create request message from raw byte array
@@ -326,20 +326,20 @@ public class GroupKeyDerivationInteropJimTests {
 
 		GroupCtx groupCtxJim = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256);
 
-		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParameters.JIM_ENTITY_1_KEY_ECDSA);
-		groupCtxJim.addSenderCtx(InteropParameters.JIM_ENTITY_1_KID, senderFullKey);
+		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParametersOld.JIM_ENTITY_1_KEY_ECDSA);
+		groupCtxJim.addSenderCtx(InteropParametersOld.JIM_ENTITY_1_KID, senderFullKey);
 
-		groupCtxJim.addRecipientCtx(InteropParameters.JIM_ENTITY_2_KID, REPLAY_WINDOW,
-				OneKeyDecoder.parseDiagnostic(InteropParameters.JIM_ENTITY_2_KEY_ECDSA).PublicKey());
+		groupCtxJim.addRecipientCtx(InteropParametersOld.JIM_ENTITY_2_KID, REPLAY_WINDOW,
+				OneKeyDecoder.parseDiagnostic(InteropParametersOld.JIM_ENTITY_2_KEY_ECDSA).PublicKey());
 
-		OneKey recipient2PublicKey = OneKeyDecoder.parseDiagnostic(InteropParameters.JIM_ENTITY_3_KEY_ECDSA).PublicKey();
-		groupCtxJim.addRecipientCtx(InteropParameters.JIM_ENTITY_3_KID, REPLAY_WINDOW,
+		OneKey recipient2PublicKey = OneKeyDecoder.parseDiagnostic(InteropParametersOld.JIM_ENTITY_3_KEY_ECDSA).PublicKey();
+		groupCtxJim.addRecipientCtx(InteropParametersOld.JIM_ENTITY_3_KID, REPLAY_WINDOW,
 				recipient2PublicKey);
 
 		db.addContext(groupEcdsa, groupCtxJim);
 
 		GroupSenderCtx senderCtx = (GroupSenderCtx) db.getContext(groupEcdsa);
-		GroupRecipientCtx recipientCtx = (GroupRecipientCtx) db.getContext(InteropParameters.JIM_ENTITY_3_KID,
+		GroupRecipientCtx recipientCtx = (GroupRecipientCtx) db.getContext(InteropParametersOld.JIM_ENTITY_3_KID,
 				context_id);
 
 		assertNotNull(senderCtx);
@@ -348,7 +348,7 @@ public class GroupKeyDerivationInteropJimTests {
 		System.out.println("Sender Key 1->3: " + hexPrintDash(senderCtx.getSenderKey()));
 		System.out.println("Recipient Key 1->3: " + hexPrintDash(recipientCtx.getRecipientKey()));
 
-		byte[] pairwiseSenderKey = senderCtx.getPairwiseSenderKey(InteropParameters.JIM_ENTITY_3_KID);
+		byte[] pairwiseSenderKey = senderCtx.getPairwiseSenderKey(InteropParametersOld.JIM_ENTITY_3_KID);
 		byte[] pairwiseRecipientKey = recipientCtx.getPairwiseRecipientKey();
 
 		assertNotNull(pairwiseSenderKey);
