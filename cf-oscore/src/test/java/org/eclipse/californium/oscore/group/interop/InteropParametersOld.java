@@ -4,7 +4,7 @@ import org.eclipse.californium.elements.util.Bytes;
 
 import net.i2p.crypto.eddsa.Utils;
 
-public class InteropParameters {
+public class InteropParametersOld {
 
 	// FIXME: Update
 
