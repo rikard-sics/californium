@@ -99,9 +99,8 @@ public class GroupOSCOREInteropClient {
 	 */
 	// static final InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	static final InetAddress destinationIP = CoAP.MULTICAST_IPV4;
-	// static final InetAddress destinationIP = new
-	// InetSocketAddress("127.0.0.1", 0).getAddress();
+	// static final InetAddress destinationIP = CoAP.MULTICAST_IPV4;
+	static final InetAddress destinationIP = new InetSocketAddress("127.0.0.1", 0).getAddress();
 
 	/**
 	 * Port to send to.
