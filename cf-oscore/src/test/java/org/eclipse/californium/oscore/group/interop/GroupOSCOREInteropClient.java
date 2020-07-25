@@ -86,15 +86,16 @@ public class GroupOSCOREInteropClient {
 	/**
 	 * Whether to use OSCORE or not. (Case 1)
 	 */
-	static final boolean useOSCORE = false;
+	static final boolean useOSCORE = true;
 
 	/**
 	 * Multicast address to send to (use the first line to set a custom one).
 	 */
 	// static final InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	// static final InetAddress destinationIP = CoAP.MULTICAST_IPV4;
-	static final InetAddress destinationIP = new InetSocketAddress("127.0.0.1", 0).getAddress();
+	static final InetAddress destinationIP = CoAP.MULTICAST_IPV4;
+	// static final InetAddress destinationIP = new
+	// InetSocketAddress("127.0.0.1", 0).getAddress();
 
 	/**
 	 * Port to send to.
@@ -105,7 +106,7 @@ public class GroupOSCOREInteropClient {
 	 * Resource to perform request against.
 	 */
 	// static final String requestResource = "/helloWorld";
-	static final String requestResource = "/oscore/hello/bw2";
+	static final String requestResource = "/oscore/hello/observe";
 
 	/**
 	 * The method to use for the request.
@@ -271,7 +272,12 @@ public class GroupOSCOREInteropClient {
 		}
 		System.out.println("Sending from: " + client.getEndpoint().getAddress());
 		System.out.println(Utils.prettyPrint(multicastRequest));
-
+		
+		//If observe is to be used
+		if (requestURI.endsWith("observe")) {
+			multicastRequest.setObserve();
+		}
+		
 		// sends a multicast request
 		client.advanced(handler, multicastRequest);
 		while (handler.waitOn(HANDLER_TIMEOUT)) {
@@ -288,6 +294,47 @@ public class GroupOSCOREInteropClient {
 		// while (handler.waitOn(HANDLER_TIMEOUT)) {
 		// // Wait for responses
 		// }
+
+		// // Start observation with an ObserveHandler:
+		//
+		// class ObserveHandler implements CoapHandler {
+		//
+		// int count = 1;
+		// int abort = 0;
+		//
+		// // Triggered when a Observe response is received
+		// @Override
+		// public void onLoad(CoapResponse response) {
+		// abort++;
+		//
+		// String content = response.getResponseText();
+		// System.out.println("NOTIFICATION (#" + count + "): " + content);
+		//
+		// count++;
+		// }
+		//
+		// @Override
+		// public void onError() {
+		// System.err.println("Observing failed");
+		// }
+		// }
+		//
+		// int cancelAfterMessages = 10;
+		// multicastRequest.setObserve();
+		// ObserveHandler handler = new ObserveHandler();
+		// client.advanced(handler, multicastRequest);
+		//
+		// // Wait until a certain number of messages have been received
+		// while (handler.count <= cancelAfterMessages) {
+		// Thread.sleep(550);
+		//
+		// // Failsafe to abort test if needed
+		// if (handler.abort > cancelAfterMessages + 10) {
+		// System.exit(0);
+		// break;
+		// }
+		// }
+
 	}
 
 	private static final MultiCoapHandler handler = new MultiCoapHandler();
