@@ -768,6 +768,9 @@ public class OSCoreCtx {
 		sender_seq++;
 	}
 
+	// TODO: For interop testing
+	public static boolean DISABLE_REPLAY_CHECKS = false;
+
 	/**
 	 * Checks and sets the sequence number for incoming messages.
 	 * 
@@ -776,6 +779,7 @@ public class OSCoreCtx {
 	 * @throws OSException if the sequence number wraps or if for a replay
 	 */
 	public synchronized void checkIncomingSeq(int seq) throws OSException {
+
 		if (seq >= seqMax) {
 			LOGGER.error("Sequence number wrapped, get new OSCore context");
 			throw new OSException(ErrorDescriptions.REPLAY_DETECT);
@@ -787,11 +791,11 @@ public class OSCoreCtx {
 			int shift = seq - recipient_seq;
 			recipient_replay_window = recipient_replay_window << shift;
 			recipient_seq = seq;
-		} else if (seq == recipient_seq) {
+		} else if (seq == recipient_seq && DISABLE_REPLAY_CHECKS == false) {
 			LOGGER.error("Sequence number is replay");
 			throw new OSException(ErrorDescriptions.REPLAY_DETECT);
 		} else { // seq < recipient_seq
-			if (seq + recipient_replay_window_size < recipient_seq) {
+			if (seq + recipient_replay_window_size < recipient_seq && DISABLE_REPLAY_CHECKS == false) {
 				LOGGER.error("Message too old");
 				throw new OSException(ErrorDescriptions.REPLAY_DETECT);
 			}
@@ -800,7 +804,7 @@ public class OSCoreCtx {
 			int pattern = 1 << shift;
 			int verifier = recipient_replay_window & pattern;
 			verifier = verifier >> shift;
-			if (verifier == 1) {
+			if (verifier == 1 && DISABLE_REPLAY_CHECKS == false) {
 				throw new OSException(ErrorDescriptions.REPLAY_DETECT);
 			}
 			recipient_replay_window = recipient_replay_window | pattern;
