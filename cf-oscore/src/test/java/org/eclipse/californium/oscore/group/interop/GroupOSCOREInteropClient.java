@@ -124,13 +124,7 @@ public class GroupOSCOREInteropClient {
 
 	private static final int REPLAY_WINDOW = 32;
 
-	/*
-	 * Rikard: Note regarding countersignature keys. The sid_private_key
-	 * contains both the public and private keys. The rid*_public_key contains
-	 * only the public key. For information on the keys see the Countersign_Keys
-	 * file.
-	 */
-
+	// Public and private keys for group members
 	private final static byte[] sid = InteropParametersNew.RIKARD_ENTITY_1_KID_ECDSA;
 	private static OneKey sid_private_key;
 
@@ -232,13 +226,19 @@ public class GroupOSCOREInteropClient {
 		} else if (requestMethod == Code.GET) {
 			multicastRequest = Request.newGet();
 		}
-		multicastRequest.setType(Type.NON);
+
+		// Use non-confirmable for multicast requests
+		if (destinationIP.isMulticastAddress()) {
+			multicastRequest.setType(Type.NON);
+		} else {
+			multicastRequest.setType(Type.CON);
+		}
+
 		if (useOSCORE) {
 			multicastRequest.getOptions().setOscore(Bytes.EMPTY);
 			// For pairwise request:
-			// multicastRequest.getOptions()
-			// .setOscore(OptionEncoder.set(true, requestURI,
-			// InteropParametersNew.RIKARD_ENTITY_2_KID_ECDSA));
+			// multicastRequest.getOptions().setOscore(OptionEncoder.set(true,
+			// requestURI, rid2));
 		}
 
 		// Information about the sender
