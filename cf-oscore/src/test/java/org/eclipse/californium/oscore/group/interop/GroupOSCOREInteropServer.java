@@ -110,12 +110,7 @@ public class GroupOSCOREInteropServer {
 
 	private static final int REPLAY_WINDOW = 32;
 
-	/*
-	 * Rikard: Note regarding countersignature keys. The sid_private_key
-	 * contains both the public and private keys. The rid*_public_key contains
-	 * only the public key. For information on the keys see the Countersign_Keys
-	 * file.
-	 */
+	// Public and private keys for group members
 
 	private static byte[] sid = InteropParametersNew.RIKARD_ENTITY_2_KID_ECDSA;
 	private static OneKey sid_private_key;
