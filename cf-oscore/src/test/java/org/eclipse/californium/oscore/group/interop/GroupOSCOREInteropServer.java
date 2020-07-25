@@ -24,6 +24,7 @@ import java.net.UnknownHostException;
 import java.security.Provider;
 import java.security.Security;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
@@ -34,7 +35,9 @@ import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.network.CoapEndpoint;
+import org.eclipse.californium.core.network.EndpointContextMatcherFactory.MatcherMode;
 import org.eclipse.californium.core.network.config.NetworkConfig;
+import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.core.server.resources.Resource;
 import org.eclipse.californium.cose.AlgorithmID;
@@ -71,7 +74,7 @@ public class GroupOSCOREInteropServer {
 	/**
 	 * Whether to use OSCORE or not. (Case 1)
 	 */
-	static final boolean useOSCORE = true;
+	static final boolean useOSCORE = false;
 
 	/**
 	 * Give the receiver a random unicast IP (from the loopback 127.0.0.0/8
@@ -84,9 +87,8 @@ public class GroupOSCOREInteropServer {
 	 */
 	// static final InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	static final InetAddress listenIP = CoAP.MULTICAST_IPV4;
-	// static final InetAddress listenIP = new InetSocketAddress("0.0.0.0",
-	// 0).getAddress();
+	// static final InetAddress listenIP = CoAP.MULTICAST_IPV4;
+	static final InetAddress listenIP = new InetSocketAddress("127.0.0.1", 0).getAddress();
 
 	/**
 	 * Build endpoint to listen on multicast IP.
@@ -126,6 +128,8 @@ public class GroupOSCOREInteropServer {
 	/* --- OSCORE Security Context information --- */
 
 	private static Random random;
+
+	private static int DEFAULT_BLOCK_SIZE = 512;
 
 	public static void main(String[] args) throws Exception {
 
@@ -193,6 +197,18 @@ public class GroupOSCOREInteropServer {
 		random = new Random();
 
 		NetworkConfig config = NetworkConfig.getStandard();
+
+		// For BW (needed? Seems not)
+		// MatcherMode mode = MatcherMode.STRICT;
+		// config = config.setInt(Keys.ACK_TIMEOUT,
+		// 200).setFloat(Keys.ACK_RANDOM_FACTOR, 1f)
+		// .setFloat(Keys.ACK_TIMEOUT_SCALE, 1f)
+		// // set response timeout (indirect) to 10s
+		// .setLong(Keys.EXCHANGE_LIFETIME, 10 *
+		// 1000L).setInt(Keys.MAX_MESSAGE_SIZE, DEFAULT_BLOCK_SIZE)
+		// .setInt(Keys.PREFERRED_BLOCK_SIZE,
+		// DEFAULT_BLOCK_SIZE).setString(Keys.RESPONSE_MATCHING, mode.name());
+
 		CoapEndpoint endpoint = createEndpoints(config);
 
 		// Case 9: Duplicate server response
@@ -208,6 +224,8 @@ public class GroupOSCOREInteropServer {
 
 		oscore_hello.add(new CoapHelloWorldResource());
 		oscore_hello.add(new OscoreHelloWorldResource());
+		oscore_hello.add(new BlockWiseResource());
+		oscore_hello.add(new BlockWiseResource2());
 
 		oscore.add(oscore_hello);
 		server.add(oscore);
@@ -343,6 +361,86 @@ public class GroupOSCOREInteropServer {
 		}
 	}
 
+	private static class BlockWiseResource2 extends CoapResource {
+
+		/**
+		 * Request counter. Ensure, that transparent blockwise is not accidently
+		 * split into "intermediary block" requests.
+		 */
+		private final AtomicInteger counter = new AtomicInteger();
+		private volatile String currentPayload = bwPayload.substring(0, DEFAULT_BLOCK_SIZE * 5 - 6).concat(" (END)");
+
+		public BlockWiseResource2() {
+			super("bw2");
+		}
+
+		@Override
+		public void handleGET(CoapExchange exchange) {
+			counter.incrementAndGet();
+			Response response = new Response(ResponseCode.CONTENT);
+			response.setPayload(currentPayload);
+			exchange.respond(response);
+		}
+
+		@Override
+		public void handlePUT(CoapExchange exchange) {
+			counter.incrementAndGet();
+			currentPayload = exchange.getRequestText();
+			Response response = new Response(ResponseCode.CHANGED);
+			exchange.respond(response);
+		}
+
+		@Override
+		public void handlePOST(CoapExchange exchange) {
+			counter.incrementAndGet();
+			currentPayload += exchange.getRequestText();
+			Response response = new Response(ResponseCode.CONTENT);
+			response.setPayload(currentPayload);
+			exchange.respond(response);
+		}
+	}
+
+	private static class BlockWiseResource extends CoapResource {
+
+		private BlockWiseResource() {
+			// set resource identifier
+			super("bw");
+
+			// set display name
+			getAttributes().setTitle("CoAP Block-Wise Resource");
+		}
+
+		// Handling GET
+		@Override
+		public void handleGET(CoapExchange exchange) {
+			System.out.println("Receiving to: " + exchange.advanced().getEndpoint().getAddress());
+			System.out.println("Receiving from: " + exchange.getSourceAddress() + ":" + exchange.getSourcePort());
+
+			System.out.println(Utils.prettyPrint(exchange.advanced().getRequest()));
+
+			boolean isConfirmable = exchange.advanced().getRequest().isConfirmable();
+
+			if (isConfirmable || replyToNonConfirmable) {
+				Response r = Response.createResponse(exchange.advanced().getRequest(), ResponseCode.CONTENT);
+				r.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
+				r.setPayload(bwPayload);
+
+				if (isConfirmable) {
+					r.setType(Type.ACK);
+				} else {
+					r.setType(Type.NON);
+				}
+
+				System.out.println();
+				System.out.println("Sending to: " + r.getDestinationContext().getPeerAddress());
+				System.out.println("Sending from: " + exchange.advanced().getEndpoint().getAddress());
+				System.out.println(Utils.prettyPrint(r));
+
+				exchange.respond(r);
+			}
+		}
+	}
+
 	private static class OtherOscoreResource extends CoapResource {
 
 		private String id;
@@ -411,4 +509,76 @@ public class GroupOSCOREInteropServer {
 		}
 
 	}
+
+	private final static String bwPayload = "   The work on Constrained RESTful Environments (CoRE) aims at realizing\n"
+			+ "   the Representational State Transfer (REST) architecture in a suitable\n"
+			+ "   form for the most constrained nodes (such as microcontrollers with\n"
+			+ "   limited RAM and ROM [RFC7228]) and networks (such as IPv6 over Low-\n"
+			+ "   Power Wireless Personal Area Networks (6LoWPANs) [RFC4944])\n"
+			+ "   [RFC7252].  The CoAP protocol is intended to provide RESTful [REST]\n"
+			+ "   services not unlike HTTP [RFC7230], while reducing the complexity of\n"
+			+ "   implementation as well as the size of packets exchanged in order to\n"
+			+ "   make these services useful in a highly constrained network of highly\n" + "   constrained nodes.\n"
+			+ "\n" + "   This objective requires restraint in a number of sometimes\n" + "   conflicting ways:\n" + "\n"
+			+ "   o  reducing implementation complexity in order to minimize code size,\n" + "\n"
+			+ "   o  reducing message sizes in order to minimize the number of\n"
+			+ "      fragments needed for each message (to maximize the probability of\n"
+			+ "      delivery of the message), the amount of transmission power needed,\n"
+			+ "      and the loading of the limited-bandwidth channel,\n" + "\n"
+			+ "   o  reducing requirements on the environment such as stable storage,\n"
+			+ "      good sources of randomness, or user-interaction capabilities.\n" + "\n"
+			+ "   Because CoAP is based on datagram transports such as UDP or Datagram\n"
+			+ "   Transport Layer Security (DTLS), the maximum size of resource\n"
+			+ "   representations that can be transferred without too much\n"
+			+ "   fragmentation is limited.  In addition, not all resource\n"
+			+ "   representations will fit into a single link-layer packet of a\n"
+			+ "   constrained network, which may cause adaptation layer fragmentation\n"
+			+ "   even if IP-layer fragmentation is not required.  Using fragmentation\n"
+			+ "   (either at the adaptation layer or at the IP layer) for the transport\n"
+			+ "   of larger representations would be possible up to the maximum size of\n"
+			+ "   the underlying datagram protocol (such as UDP), but the\n"
+			+ "   fragmentation/reassembly process burdens the lower layers with\n"
+			+ "   conversation state that is better managed in the application layer.\n" + "\n"
+			+ "   The present specification defines a pair of CoAP options to enable\n"
+			+ "   block-wise access to resource representations.  The Block options\n"
+			+ "   provide a minimal way to transfer larger resource representations in\n"
+			+ "   a block-wise fashion.  The overriding objective is to avoid the need\n"
+			+ "   for creating conversation state at the server for block-wise GET\n"
+			+ "   requests.  (It is impossible to fully avoid creating conversation\n"
+			+ "   state for POST/PUT, if the creation/replacement of resources is to be\n"
+			+ "   atomic; where that property is not needed, there is no need to create\n"
+			+ "   server conversation state in this case, either.)\n" + "\n"
+			+ "   Block-wise transfers are realized as combinations of exchanges, each\n"
+			+ "   of which is performed according to the CoAP base protocol [RFC7252].\n"
+			+ "   Each exchange in such a combination is governed by the specifications\n"
+			+ "   in [RFC7252], including the congestion control specifications\n"
+			+ "   (Section 4.7 of [RFC7252]) and the security considerations\n"
+			+ "   (Section 11 of [RFC7252]; additional security considerations then\n"
+			+ "   apply to the transfers as a whole, see Section 7).  The present\n"
+			+ "   specification minimizes the constraints it adds to those base\n"
+			+ "   exchanges; however, not all variants of using CoAP are very useful\n"
+			+ "   inside a block-wise transfer (e.g., using Non-confirmable requests\n"
+			+ "   within block-wise transfers outside the use case of Section 2.8 would\n"
+			+ "   escalate the overall non-delivery probability).  To be perfectly\n"
+			+ "   clear, the present specification also does not remove any of the\n"
+			+ "   constraints posed by the base specification it is strictly layered on\n"
+			+ "   top of.  For example, back-to-back packets are limited by the\n"
+			+ "   congestion control described in Section 4.7 of [RFC7252] (NSTART as a\n"
+			+ "   limit for initiating exchanges, PROBING_RATE as a limit for sending\n"
+			+ "   with no response); block-wise transfers cannot send/solicit more\n"
+			+ "   traffic than a client could be sending to / soliciting from the same\n"
+			+ "   server without the block-wise mode.\n" + "\n"
+			+ "   In some cases, the present specification will RECOMMEND that a client\n"
+			+ "   perform a sequence of block-wise transfers \"without undue delay\".\n"
+			+ "   This cannot be phrased as an interoperability requirement, but is an\n"
+			+ "   expectation on implementation quality.  Conversely, the expectation\n"
+			+ "   is that servers will not have to go out of their way to accommodate\n"
+			+ "   clients that take considerable time to finish a block-wise transfer.\n"
+			+ "   For example, for a block-wise GET, if the resource changes while this\n"
+			+ "   proceeds, the entity-tag (ETag) for a further block obtained may be\n"
+			+ "   different.  To avoid this happening all the time for a fast-changing\n"
+			+ "   resource, a server MAY try to keep a cache around for a specific\n"
+			+ "   client for a short amount of time.  The expectation here is that the\n"
+			+ "   lifetime for such a cache can be kept short, on the order of a few\n"
+			+ "   expected round-trip times, counting from the previous block\n" + "   transferred.";
 }
