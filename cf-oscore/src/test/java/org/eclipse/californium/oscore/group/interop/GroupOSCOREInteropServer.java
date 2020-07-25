@@ -50,6 +50,7 @@ import org.eclipse.californium.elements.UDPConnector;
 import org.eclipse.californium.elements.UdpMulticastConnector;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
+import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSCoreResource;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
@@ -89,9 +90,8 @@ public class GroupOSCOREInteropServer {
 	 */
 	// static final InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	static final InetAddress listenIP = CoAP.MULTICAST_IPV4;
-	// static final InetAddress listenIP = new InetSocketAddress("127.0.0.1",
-	// 0).getAddress();
+	// static final InetAddress listenIP = CoAP.MULTICAST_IPV4;
+	static final InetAddress listenIP = new InetSocketAddress("127.0.0.1", 0).getAddress();
 
 	/**
 	 * Build endpoint to listen on multicast IP.
@@ -135,6 +135,9 @@ public class GroupOSCOREInteropServer {
 	private static int DEFAULT_BLOCK_SIZE = 512;
 
 	public static void main(String[] args) throws Exception {
+
+		// Disable replay detection
+		OSCoreCtx.DISABLE_REPLAY_CHECKS = true;
 
 		// Install cryptographic providers
 		Provider EdDSA = new EdDSASecurityProvider();
@@ -316,10 +319,12 @@ public class GroupOSCOREInteropServer {
 
 			@Override
 			public void run() {
-				if (firstRequestReceived && counter == 10) {
-					// Stop after 10 requests
-					firstRequestReceived = false;
+				if (firstRequestReceived && (counter + 1) % 10 == 0) {
+					// Stop after every 10 requests
+					counter++;
+					changed(); // notify all observers
 					clearObserveRelations(); // Clear observers
+					firstRequestReceived = false;
 				} else if (firstRequestReceived) {
 					counter++;
 					changed(); // notify all observers

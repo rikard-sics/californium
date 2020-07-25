@@ -784,6 +784,9 @@ public class OSCoreCtx {
 		sender_seq++;
 	}
 
+	// TODO: For interop testing
+	public static boolean DISABLE_REPLAY_CHECKS = false;
+
 	/**
 	 * Checks and validates the sequence number for incoming messages.
 	 * 
@@ -810,7 +813,7 @@ public class OSCoreCtx {
 		} else {
 			valid = ((recipient_replay_window >> (seq - lowest_recipient_seq)) & 1) == 0;
 		}
-		if (!valid) {
+		if (!valid && DISABLE_REPLAY_CHECKS == false) {
 			LOGGER.error("Replayed message detected");
 			throw new OSException(ErrorDescriptions.REPLAY_DETECT);
 		}
