@@ -43,6 +43,8 @@ import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
+import org.eclipse.californium.oscore.OSCoreCtx;
+import org.eclipse.californium.oscore.OSException;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
@@ -89,6 +91,11 @@ public class GroupOSCOREInteropClient {
 	static final boolean useOSCORE = true;
 
 	/**
+	 * Whether to use Group OSCORE or normal OSCORE.
+	 */
+	static final boolean GroupOSCORE = true;
+
+	/**
 	 * Multicast address to send to (use the first line to set a custom one).
 	 */
 	// static final InetAddress multicastIP = new
@@ -105,7 +112,7 @@ public class GroupOSCOREInteropClient {
 	 * Resource to perform request against.
 	 */
 	// static final String requestResource = "/helloWorld";
-	static final String requestResource = "/oscore/hello/bw2";
+	static final String requestResource = "/oscore/hello/bw";
 
 	/**
 	 * The method to use for the request.
@@ -195,14 +202,23 @@ public class GroupOSCOREInteropClient {
 			// commonCtx.setResponsesIncludePartialIV(true);
 			// commonCtx.setResponsesIncludePartialIV(true);
 
-			db.addContext(requestURI, commonCtx);
+			if (GroupOSCORE) {
+				System.out.println("Using Group OSCORE!");
+				db.addContext(requestURI, commonCtx);
+			} else {
+				// Add instead a normal OSCORE context
+				System.out.println("Using standard OSCORE!");
+				addOSCOREContext(requestURI);
+			}
 
 			OSCoreCoapStackFactory.useAsDefault(db);
 
 			// Retrieve the sender and recipient contexts
-			senderCtx = (GroupSenderCtx) db.getContext(requestURI);
-			recipient1Ctx = (GroupRecipientCtx) db.getContext(rid1, group_identifier);
-			recipient2Ctx = (GroupRecipientCtx) db.getContext(rid2, group_identifier);
+			if (GroupOSCORE) {
+				senderCtx = (GroupSenderCtx) db.getContext(requestURI);
+				recipient1Ctx = (GroupRecipientCtx) db.getContext(rid1, group_identifier);
+				recipient2Ctx = (GroupRecipientCtx) db.getContext(rid2, group_identifier);
+			}
 
 			// --- Test cases ---
 			// Case 3: Add key for the recipient for dynamic derivation
@@ -372,6 +388,28 @@ public class GroupOSCOREInteropClient {
 		@Override
 		public void onError() {
 			System.err.println("error");
+		}
+	}
+
+	/**
+	 * Add an OSCORE Context to the DB
+	 */
+	private static void addOSCOREContext(String requestURI) {
+		byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
+				0x0F, 0x10 };
+		byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23, (byte) 0x78,
+				(byte) 0x63, (byte) 0x40 };
+		byte[] sid = new byte[] { 0x11, 0x11 };
+		byte[] rid = new byte[] { 0x22, 0x22 };
+		byte[] id_context = new byte[] { (byte) 0xAA, (byte) 0xBB, (byte) 0xCC };
+
+		OSCoreCtx ctx;
+		try {
+			ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, id_context);
+			db.addContext(requestURI, ctx);
+		} catch (OSException e) {
+			System.err.println("Failed to add OSCORE context!");
+			e.printStackTrace();
 		}
 	}
 }
