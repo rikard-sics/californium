@@ -86,16 +86,15 @@ public class GroupOSCOREInteropClient {
 	/**
 	 * Whether to use OSCORE or not. (Case 1)
 	 */
-	static final boolean useOSCORE = true;
+	static final boolean useOSCORE = false;
 
 	/**
 	 * Multicast address to send to (use the first line to set a custom one).
 	 */
 	// static final InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	static final InetAddress destinationIP = CoAP.MULTICAST_IPV4;
-	// static final InetAddress destinationIP = new
-	// InetSocketAddress("127.0.0.1", 0).getAddress();
+	// static final InetAddress destinationIP = CoAP.MULTICAST_IPV4;
+	static final InetAddress destinationIP = new InetSocketAddress("127.0.0.1", 0).getAddress();
 
 	/**
 	 * Port to send to.
@@ -106,7 +105,7 @@ public class GroupOSCOREInteropClient {
 	 * Resource to perform request against.
 	 */
 	// static final String requestResource = "/helloWorld";
-	static final String requestResource = "/oscore/hello/1";
+	static final String requestResource = "/oscore/hello/bw2";
 
 	/**
 	 * The method to use for the request.
