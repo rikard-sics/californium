@@ -188,12 +188,6 @@ public class GroupOSCOREInteropClient {
 		assertArrayEquals(rid1, rid1_public_key.get(KeyKeys.KeyId).GetByteString());
 		assertArrayEquals(rid2, rid2_public_key.get(KeyKeys.KeyId).GetByteString());
 
-		// Check that KIDs in public/private keys match corresponding
-		// recipient/sender ID (just to double check configuration)
-		assertArrayEquals(sid, sid_private_key.get(KeyKeys.KeyId).GetByteString());
-		assertArrayEquals(rid1, rid1_public_key.get(KeyKeys.KeyId).GetByteString());
-		assertArrayEquals(rid2, rid2_public_key.get(KeyKeys.KeyId).GetByteString());
-
 		// If OSCORE is being used set the context information
 		@SuppressWarnings("unused")
 		GroupSenderCtx senderCtx;
