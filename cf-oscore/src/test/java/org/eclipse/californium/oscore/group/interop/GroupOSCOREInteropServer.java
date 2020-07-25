@@ -16,6 +16,8 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore.group.interop;
 
+import static org.junit.Assert.assertArrayEquals;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -36,6 +38,7 @@ import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.core.server.resources.Resource;
 import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.Connector;
 import org.eclipse.californium.elements.UDPConnector;
@@ -142,6 +145,11 @@ public class GroupOSCOREInteropServer {
 		} else {
 			System.out.println("Starting with sid " + Utils.toHexString(sid));
 		}
+
+		// Check that KIDs in public/private keys match corresponding
+		// recipient/sender ID (just to double check configuration)
+		assertArrayEquals(sid, sid_private_key.get(KeyKeys.KeyId).GetByteString());
+		assertArrayEquals(rid1, rid1_public_key.get(KeyKeys.KeyId).GetByteString());
 
 		// If OSCORE is being used set the context information
 		@SuppressWarnings("unused")
