@@ -24,6 +24,8 @@ import java.net.UnknownHostException;
 import java.security.Provider;
 import java.security.Security;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.californium.core.CoapResource;
@@ -74,7 +76,7 @@ public class GroupOSCOREInteropServer {
 	/**
 	 * Whether to use OSCORE or not. (Case 1)
 	 */
-	static final boolean useOSCORE = false;
+	static final boolean useOSCORE = true;
 
 	/**
 	 * Give the receiver a random unicast IP (from the loopback 127.0.0.0/8
@@ -87,8 +89,9 @@ public class GroupOSCOREInteropServer {
 	 */
 	// static final InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	// static final InetAddress listenIP = CoAP.MULTICAST_IPV4;
-	static final InetAddress listenIP = new InetSocketAddress("127.0.0.1", 0).getAddress();
+	static final InetAddress listenIP = CoAP.MULTICAST_IPV4;
+	// static final InetAddress listenIP = new InetSocketAddress("127.0.0.1",
+	// 0).getAddress();
 
 	/**
 	 * Build endpoint to listen on multicast IP.
@@ -226,6 +229,7 @@ public class GroupOSCOREInteropServer {
 		oscore_hello.add(new OscoreHelloWorldResource());
 		oscore_hello.add(new BlockWiseResource());
 		oscore_hello.add(new BlockWiseResource2());
+		oscore_hello.add(new ObserveResource("observe", true));
 
 		oscore.add(oscore_hello);
 		server.add(oscore);
@@ -273,6 +277,55 @@ public class GroupOSCOREInteropServer {
 			connector = new UDPConnector(unicastAddress);
 		}
 		return new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(connector).build();
+	}
+
+	// == Define resources ===
+
+	/**
+	 * The resource for testing Observe support
+	 * 
+	 */
+	private static class ObserveResource extends CoapResource
+	{
+
+		int counter = 0;
+		private boolean firstRequestReceived = false;
+
+		public ObserveResource(String name, boolean visible) {
+			super(name, visible);
+
+			this.setObservable(true);
+			this.setObserveType(Type.NON);
+			this.getAttributes().setObservable();
+
+			Timer timer = new Timer();
+			timer.schedule(new UpdateTask(), 0, 1500);
+		}
+
+		@Override
+		public void handleGET(CoapExchange exchange) {
+			firstRequestReceived = true;
+			String response = "Server Name: " + Utils.toHexString(sid) + ". Value: " + counter;
+			System.out.println(response);
+			exchange.respond(response);
+		}
+
+		// Update the resource value when timer triggers (if 1st request is
+		// received)
+		class UpdateTask extends TimerTask {
+
+			@Override
+			public void run() {
+				if (firstRequestReceived && counter == 10) {
+					// Stop after 10 requests
+					firstRequestReceived = false;
+					clearObserveRelations(); // Clear observers
+				} else if (firstRequestReceived) {
+					counter++;
+					changed(); // notify all observers
+				}
+			}
+		}
 	}
 
 	private static class CoapHelloWorldResource extends CoapResource {
