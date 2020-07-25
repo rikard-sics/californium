@@ -107,9 +107,8 @@ public class GroupOSCOREInteropServer {
 	 */
 	// static final InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	static final InetAddress listenIP = CoAP.MULTICAST_IPV4;
-	// static final InetAddress listenIP = new InetSocketAddress("127.0.0.1",
-	// 0).getAddress();
+	// static final InetAddress listenIP = CoAP.MULTICAST_IPV4;
+	static final InetAddress listenIP = new InetSocketAddress("127.0.0.1", 0).getAddress();
 
 	// Use IPv4
 	private static boolean ipv4 = true;
