@@ -16,6 +16,8 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore.group.interop;
 
+import static org.junit.Assert.assertArrayEquals;
+
 import java.io.File;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -36,6 +38,7 @@ import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
 import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.HashMapCtxDB;
@@ -166,6 +169,12 @@ public class GroupOSCOREInteropClient {
 		sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_1_KEY_ECDSA);
 		rid1_public_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_2_KEY_ECDSA);
 		rid2_public_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_3_KEY_ECDSA);
+
+		// Check that KIDs in public/private keys match corresponding
+		// recipient/sender ID (just to double check configuration)
+		assertArrayEquals(sid, sid_private_key.get(KeyKeys.KeyId).GetByteString());
+		assertArrayEquals(rid1, rid1_public_key.get(KeyKeys.KeyId).GetByteString());
+		assertArrayEquals(rid2, rid2_public_key.get(KeyKeys.KeyId).GetByteString());
 
 		// If OSCORE is being used set the context information
 		@SuppressWarnings("unused")
