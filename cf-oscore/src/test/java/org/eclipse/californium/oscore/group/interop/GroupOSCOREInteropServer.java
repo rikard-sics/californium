@@ -46,12 +46,16 @@ import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.Connector;
+import org.eclipse.californium.elements.EndpointContext;
+import org.eclipse.californium.elements.MapBasedEndpointContext;
 import org.eclipse.californium.elements.UDPConnector;
 import org.eclipse.californium.elements.UdpMulticastConnector;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 import org.eclipse.californium.oscore.OSCoreCtx;
+import org.eclipse.californium.oscore.OSCoreEndpointContextInfo;
 import org.eclipse.californium.oscore.OSCoreResource;
+import org.eclipse.californium.oscore.OSException;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
@@ -90,8 +94,9 @@ public class GroupOSCOREInteropServer {
 	 */
 	// static final InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	// static final InetAddress listenIP = CoAP.MULTICAST_IPV4;
-	static final InetAddress listenIP = new InetSocketAddress("127.0.0.1", 0).getAddress();
+	static final InetAddress listenIP = CoAP.MULTICAST_IPV4;
+	// static final InetAddress listenIP = new InetSocketAddress("127.0.0.1",
+	// 0).getAddress();
 
 	/**
 	 * Build endpoint to listen on multicast IP.
@@ -177,6 +182,9 @@ public class GroupOSCOREInteropServer {
 			// commonCtx.setResponsesIncludePartialIV(true);
 
 			db.addContext(uriLocal, commonCtx);
+
+			// Also add a normal OSCORE context (defined in that method)
+			addOSCOREContext();
 
 			OSCoreCoapStackFactory.useAsDefault(db);
 
@@ -282,14 +290,35 @@ public class GroupOSCOREInteropServer {
 		return new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(connector).build();
 	}
 
+	/**
+	 * Add an OSCORE Context to the DB
+	 */
+	private static void addOSCOREContext() {
+		byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
+				0x0F, 0x10 };
+		byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23, (byte) 0x78,
+				(byte) 0x63, (byte) 0x40 };
+		byte[] rid = new byte[] { 0x11, 0x11 };
+		byte[] sid = new byte[] { 0x22, 0x22 };
+		byte[] id_context = new byte[] { (byte) 0xAA, (byte) 0xBB, (byte) 0xCC };
+
+		OSCoreCtx ctx;
+		try {
+			ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, id_context);
+			db.addContext(ctx);
+		} catch (OSException e) {
+			System.err.println("Failed to add OSCORE context!");
+			e.printStackTrace();
+		}
+	}
+
 	// == Define resources ===
 
 	/**
 	 * The resource for testing Observe support
 	 * 
 	 */
-	private static class ObserveResource extends CoapResource
-	{
+	private static class ObserveResource extends CoapResource {
 
 		int counter = 0;
 		private boolean firstRequestReceived = false;
@@ -544,8 +573,24 @@ public class GroupOSCOREInteropServer {
 				Response r = Response.createResponse(exchange.advanced().getRequest(), ResponseCode.CONTENT);
 				r.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 				String requestPayload = exchange.getRequestText().toUpperCase();
+
+				// Get the SID on my end (Group OSCORE doesn't support this yet
+				// so some tricks are needed)
+				EndpointContext ctx = exchange.advanced().getRequest().getSourceContext();
+				MapBasedEndpointContext mapCtx = (MapBasedEndpointContext) ctx;
+				String reqIdContext = mapCtx.get(OSCoreEndpointContextInfo.OSCORE_CONTEXT_ID);
+				String groupIdContext = Utils.toHexString(group_identifier).replace("[", "").replace("]", "");
+				String mySID;
+				if (groupIdContext.equals(reqIdContext)) {
+					// Group OSCORE
+					mySID = id;
+				} else {
+					// OSCORE
+					mySID = mapCtx.get(OSCoreEndpointContextInfo.OSCORE_SENDER_ID);
+				}
+
 				if (requestPayload == null || requestPayload.length() == 0) {
-					r.setPayload("Response from: " + id);
+					r.setPayload("Response from: " + mySID);
 				} else {
 					r.setPayload(requestPayload.toUpperCase() + ". Response from: " + id);
 				}
