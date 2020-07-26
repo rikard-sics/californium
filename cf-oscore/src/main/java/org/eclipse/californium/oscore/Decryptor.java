@@ -141,6 +141,12 @@ public abstract class Decryptor {
 			nonce = ctx.getNonceHandover();
 		}
 
+		System.out.println("Decrypting incoming " + message.getClass().getSimpleName());
+		System.out.println("Key " + Utils.toHexString(ctx.getRecipientKey()));
+		System.out.println("PartialIV " + Utils.toHexString(partialIV));
+		System.out.println("Nonce " + Utils.toHexString(nonce));
+		System.out.println("AAD " + Utils.toHexString(aad));
+		
 		byte[] plaintext = null;
 		byte[] key = ctx.getRecipientKey();
 

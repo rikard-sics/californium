@@ -293,6 +293,7 @@ public class GroupOSCOREInteropServer {
 	/**
 	 * Add an OSCORE Context to the DB
 	 */
+	static OSCoreCtx oscoreCtx;
 	private static void addOSCOREContext() {
 		byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
 				0x0F, 0x10 };
@@ -302,10 +303,10 @@ public class GroupOSCOREInteropServer {
 		byte[] sid = new byte[] { 0x22, 0x22 };
 		byte[] id_context = new byte[] { (byte) 0xAA, (byte) 0xBB, (byte) 0xCC };
 
-		OSCoreCtx ctx;
 		try {
-			ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, id_context);
-			db.addContext(ctx);
+			oscoreCtx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, id_context);
+			// oscoreCtx.setResponsesIncludePartialIV(true);
+			db.addContext(oscoreCtx);
 		} catch (OSException e) {
 			System.err.println("Failed to add OSCORE context!");
 			e.printStackTrace();
@@ -463,10 +464,18 @@ public class GroupOSCOREInteropServer {
 
 		@Override
 		public void handleGET(CoapExchange exchange) {
+			// db.removeContext(oscoreCtx);
+			// addOSCOREContext();
+			// System.out.println("CLEAR CTX");
+
 			counter.incrementAndGet();
 			Response response = new Response(ResponseCode.CONTENT);
 			response.setPayload(currentPayload);
 			exchange.respond(response);
+			//
+			// db.removeContext(oscoreCtx);
+			// addOSCOREContext();
+			// System.out.println("CLEAR CTX");
 		}
 
 		@Override
@@ -580,19 +589,23 @@ public class GroupOSCOREInteropServer {
 				MapBasedEndpointContext mapCtx = (MapBasedEndpointContext) ctx;
 				String reqIdContext = mapCtx.get(OSCoreEndpointContextInfo.OSCORE_CONTEXT_ID);
 				String groupIdContext = Utils.toHexString(group_identifier).replace("[", "").replace("]", "");
-				String mySID;
-				if (groupIdContext.equals(reqIdContext)) {
+				String responsePayload = "";
+				if (!exchange.advanced().getRequest().getOptions().hasOscore()) {
+					// CoAP
+					responsePayload = "Response with CoAP.";
+				} else if (groupIdContext.equals(reqIdContext)) {
 					// Group OSCORE
-					mySID = id;
+					responsePayload = "Response from ID " + id + " with Group OSCORE.";
 				} else {
 					// OSCORE
-					mySID = mapCtx.get(OSCoreEndpointContextInfo.OSCORE_SENDER_ID);
+					String mySID = mapCtx.get(OSCoreEndpointContextInfo.OSCORE_SENDER_ID);
+					responsePayload = "Response from ID " + mySID + " with OSCORE.";
 				}
 
 				if (requestPayload == null || requestPayload.length() == 0) {
-					r.setPayload("Response from: " + mySID);
+					r.setPayload(responsePayload);
 				} else {
-					r.setPayload(requestPayload.toUpperCase() + ". Response from: " + id);
+					r.setPayload(requestPayload.toUpperCase() + ". " + responsePayload);
 				}
 
 				if (isConfirmable) {
