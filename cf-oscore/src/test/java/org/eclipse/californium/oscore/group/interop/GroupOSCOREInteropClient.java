@@ -100,8 +100,9 @@ public class GroupOSCOREInteropClient {
 	 */
 	// static final InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	// static final InetAddress destinationIP = CoAP.MULTICAST_IPV4;
-	static final InetAddress destinationIP = new InetSocketAddress("127.0.0.1", 0).getAddress();
+	static final InetAddress destinationIP = CoAP.MULTICAST_IPV4;
+	// static final InetAddress destinationIP = new
+	// InetSocketAddress("127.0.0.1", 0).getAddress();
 
 	/**
 	 * Port to send to.
@@ -112,7 +113,7 @@ public class GroupOSCOREInteropClient {
 	 * Resource to perform request against.
 	 */
 	// static final String requestResource = "/helloWorld";
-	static final String requestResource = "/oscore/hello/bw";
+	static final String requestResource = "/oscore/hello/observe";
 
 	/**
 	 * The method to use for the request.
@@ -155,6 +156,10 @@ public class GroupOSCOREInteropClient {
 	static final String requestPayload = "Post from " + Utils.toHexString(sid);
 
 	public static void main(String args[]) throws Exception {
+
+		// Disable replay detection
+		OSCoreCtx.DISABLE_REPLAY_CHECKS = true;
+
 		/**
 		 * URI to perform request against. Need to check for IPv6 to surround it
 		 * with []
