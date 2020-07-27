@@ -125,10 +125,10 @@ public class GroupOSCOREInteropServer {
 
 	// Public and private keys for group members
 
-	private static byte[] sid = InteropParametersNew.RIKARD_ENTITY_2_KID_ECDSA;
+	private static byte[] sid = InteropParametersNew.RIKARD_ENTITY_1_KID_ECDSA;
 	private static OneKey sid_private_key;
 
-	private final static byte[] rid1 = InteropParametersNew.RIKARD_ENTITY_1_KID_ECDSA;
+	private final static byte[] rid1 = InteropParametersNew.RIKARD_ENTITY_3_KID_ECDSA;
 	private static OneKey rid1_public_key;
 
 	private final static byte[] group_identifier = InteropParametersNew.RIKARD_GROUP_ID_ECDSA;
@@ -149,14 +149,14 @@ public class GroupOSCOREInteropServer {
 		Security.insertProviderAt(EdDSA, 0);
 
 		// Set sender & receiver keys for countersignatures
-		sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_2_KEY_ECDSA);
-		rid1_public_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_1_KEY_ECDSA);
+		sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_1_KEY_ECDSA);
+		rid1_public_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_3_KEY_ECDSA);
 
 		// Check command line arguments (flag to use different sid and sid key)
 		if (args.length != 0) {
-			sid = InteropParametersNew.RIKARD_ENTITY_3_KID_ECDSA;
+			sid = InteropParametersNew.RIKARD_ENTITY_2_KID_ECDSA;
 			System.out.println("Starting with alternative sid " + Utils.toHexString(sid));
-			sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_3_KEY_ECDSA);
+			sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_2_KEY_ECDSA);
 		} else {
 			System.out.println("Starting with sid " + Utils.toHexString(sid));
 		}
@@ -291,17 +291,16 @@ public class GroupOSCOREInteropServer {
 	}
 
 	/**
-	 * Add an OSCORE Context to the DB
+	 * Add an OSCORE Context to the DB (OSCORE RFC C.2.2.)
 	 */
 	static OSCoreCtx oscoreCtx;
 	private static void addOSCOREContext() {
-		byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
-				0x0F, 0x10 };
-		byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23, (byte) 0x78,
-				(byte) 0x63, (byte) 0x40 };
-		byte[] rid = new byte[] { 0x11, 0x11 };
-		byte[] sid = new byte[] { 0x22, 0x22 };
-		byte[] id_context = new byte[] { (byte) 0xAA, (byte) 0xBB, (byte) 0xCC };
+		byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e,
+				0x0f, 0x10 };
+		byte[] master_salt = null;
+		byte[] sid = new byte[] { 0x01 };
+		byte[] rid = new byte[] { 0x00 };
+		byte[] id_context = null;
 
 		try {
 			oscoreCtx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, id_context);
@@ -544,7 +543,7 @@ public class GroupOSCOREInteropServer {
 
 		private OtherOscoreResource() {
 			// set resource identifier
-			super("helloWorld"); // Changed
+			super("test"); // Changed
 
 			// set display name
 			getAttributes().setTitle("Hello-World Resource");
@@ -590,16 +589,20 @@ public class GroupOSCOREInteropServer {
 				String reqIdContext = mapCtx.get(OSCoreEndpointContextInfo.OSCORE_CONTEXT_ID);
 				String groupIdContext = Utils.toHexString(group_identifier).replace("[", "").replace("]", "");
 				String responsePayload = "";
+
+				// Get other party KID
+				String yourKID = mapCtx.get(OSCoreEndpointContextInfo.OSCORE_RECIPIENT_ID);
+
 				if (!exchange.advanced().getRequest().getOptions().hasOscore()) {
 					// CoAP
 					responsePayload = "Response with CoAP.";
 				} else if (groupIdContext.equals(reqIdContext)) {
 					// Group OSCORE
-					responsePayload = "Response from ID " + id + " with Group OSCORE.";
+					responsePayload = "Response from ID " + id + " with Group OSCORE. You are ID " + yourKID;
 				} else {
 					// OSCORE
 					String mySID = mapCtx.get(OSCoreEndpointContextInfo.OSCORE_SENDER_ID);
-					responsePayload = "Response from ID " + mySID + " with OSCORE.";
+					responsePayload = "Response from ID " + mySID + " with OSCORE. You are ID " + yourKID;
 				}
 
 				if (requestPayload == null || requestPayload.length() == 0) {
