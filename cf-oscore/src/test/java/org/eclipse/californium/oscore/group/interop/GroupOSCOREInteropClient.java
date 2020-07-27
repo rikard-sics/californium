@@ -112,8 +112,8 @@ public class GroupOSCOREInteropClient {
 	/**
 	 * Resource to perform request against.
 	 */
-	// static final String requestResource = "/helloWorld";
-	static final String requestResource = "/oscore/hello/observe";
+	// static final String requestResource = "/test";
+	static final String requestResource = "/oscore/hello/1";
 
 	/**
 	 * The method to use for the request.
@@ -135,13 +135,13 @@ public class GroupOSCOREInteropClient {
 	private static final int REPLAY_WINDOW = 32;
 
 	// Public and private keys for group members
-	private final static byte[] sid = InteropParametersNew.RIKARD_ENTITY_1_KID_ECDSA;
+	private final static byte[] sid = InteropParametersNew.RIKARD_ENTITY_3_KID_ECDSA;
 	private static OneKey sid_private_key;
 
-	private final static byte[] rid1 = InteropParametersNew.RIKARD_ENTITY_2_KID_ECDSA;
+	private final static byte[] rid1 = InteropParametersNew.RIKARD_ENTITY_1_KID_ECDSA;
 	private static OneKey rid1_public_key;
 
-	private final static byte[] rid2 = InteropParametersNew.RIKARD_ENTITY_3_KID_ECDSA;
+	private final static byte[] rid2 = InteropParametersNew.RIKARD_ENTITY_2_KID_ECDSA;
 	private static OneKey rid2_public_key;
 
 	private final static byte[] rid0 = new byte[] { (byte) 0xCC }; // Dummy
@@ -177,9 +177,9 @@ public class GroupOSCOREInteropClient {
 		// InstallCryptoProviders.generateCounterSignKey();
 
 		// Add private & public keys for sender & receiver(s)
-		sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_1_KEY_ECDSA);
-		rid1_public_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_2_KEY_ECDSA);
-		rid2_public_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_3_KEY_ECDSA);
+		sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_3_KEY_ECDSA);
+		rid1_public_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_1_KEY_ECDSA);
+		rid2_public_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_2_KEY_ECDSA);
 
 		// Check that KIDs in public/private keys match corresponding
 		// recipient/sender ID (just to double check configuration)
@@ -397,21 +397,21 @@ public class GroupOSCOREInteropClient {
 	}
 
 	/**
-	 * Add an OSCORE Context to the DB
+	 * Add an OSCORE Context to the DB (OSCORE RFC C.2.2.)
 	 */
+	static OSCoreCtx oscoreCtx;
 	private static void addOSCOREContext(String requestURI) {
-		byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
-				0x0F, 0x10 };
-		byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23, (byte) 0x78,
-				(byte) 0x63, (byte) 0x40 };
-		byte[] sid = new byte[] { 0x11, 0x11 };
-		byte[] rid = new byte[] { 0x22, 0x22 };
-		byte[] id_context = new byte[] { (byte) 0xAA, (byte) 0xBB, (byte) 0xCC };
+		byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e,
+				0x0f, 0x10 };
+		byte[] master_salt = null;
+		byte[] rid = new byte[] { 0x01 };
+		byte[] sid = new byte[] { 0x00 };
+		byte[] id_context = null;
 
-		OSCoreCtx ctx;
 		try {
-			ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, id_context);
-			db.addContext(requestURI, ctx);
+			oscoreCtx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, id_context);
+			// oscoreCtx.setResponsesIncludePartialIV(true);
+			db.addContext(requestURI, oscoreCtx);
 		} catch (OSException e) {
 			System.err.println("Failed to add OSCORE context!");
 			e.printStackTrace();
