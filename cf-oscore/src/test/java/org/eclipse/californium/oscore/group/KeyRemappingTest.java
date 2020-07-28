@@ -167,7 +167,7 @@ public class KeyRemappingTest {
 	 * Test converting a Curve25519 u coordinate to a Wei25519 X coordinate.
 	 */
 	@Test
-	public void testCurve25519toWei25519() {
+	public void testCurve25519uToWei25519X() {
 		// u value (input)
 		BigIntegerFieldElement u = new BigIntegerFieldElement(ed25519Field, new BigInteger("9"));
 
@@ -176,7 +176,7 @@ public class KeyRemappingTest {
 				new BigInteger("19298681539552699237261830834781317975544997444273427339909597334652188435546"));
 
 		// Calculate the X value (output)
-		FieldElement resultX = KeyRemapping.curve25519toWei25519(u);
+		FieldElement resultX = KeyRemapping.curve25519uToWei25519X(u);
 
 		System.out.println("Correct " + Utils.bytesToHex(expectedX.toByteArray()));
 		System.out.println("Result " + Utils.bytesToHex(resultX.toByteArray()));
@@ -185,10 +185,32 @@ public class KeyRemappingTest {
 	}
 
 	/**
+	 * Test converting a Curve25519 v coordinate to a Wei25519 Y coordinate.
+	 */
+	@Test
+	public void testCurve25519vToWei25519Y() {
+		// v value (input)
+		BigIntegerFieldElement v = new BigIntegerFieldElement(ed25519Field,
+				new BigInteger("14781619447589544791020593568409986887264606134616475288964881837755586237401"));
+
+		// The expected correct Y value
+		BigIntegerFieldElement expectedY = new BigIntegerFieldElement(ed25519Field,
+				new BigInteger("14781619447589544791020593568409986887264606134616475288964881837755586237401"));
+
+		// Calculate the Y value (output)
+		FieldElement resultY = KeyRemapping.curve25519vToWei25519Y(v);
+
+		System.out.println("Correct " + Utils.bytesToHex(expectedY.toByteArray()));
+		System.out.println("Result " + Utils.bytesToHex(resultY.toByteArray()));
+
+		assertArrayEquals(expectedY.toByteArray(), resultY.toByteArray());
+	}
+
+	/**
 	 * Test converting a Wei25519 X coordinate to a Curve25519 u coordinate.
 	 */
 	@Test
-	public void testWei25519toCurve25519() {
+	public void testWei25519XToCurve25519u() {
 		// X value (input)
 		BigIntegerFieldElement X = new BigIntegerFieldElement(ed25519Field,
 				new BigInteger("19298681539552699237261830834781317975544997444273427339909597334652188435546"));
@@ -197,7 +219,7 @@ public class KeyRemappingTest {
 		BigIntegerFieldElement expectedU = new BigIntegerFieldElement(ed25519Field, new BigInteger("9"));
 
 		// Calculate the u value (output)
-		FieldElement resultU = KeyRemapping.wei25519toCurve25519(X);
+		FieldElement resultU = KeyRemapping.wei25519XToCurve25519u(X);
 
 		System.out.println("Correct " + Utils.bytesToHex(expectedU.toByteArray()));
 		System.out.println("Result " + Utils.bytesToHex(resultU.toByteArray()));
@@ -206,10 +228,32 @@ public class KeyRemappingTest {
 	}
 
 	/**
+	 * Test converting a Wei25519 Y coordinate to a Curve25519 v coordinate.
+	 */
+	@Test
+	public void testWei25519YToCurve25519v() {
+		// Y value (input)
+		BigIntegerFieldElement Y = new BigIntegerFieldElement(ed25519Field,
+				new BigInteger("14781619447589544791020593568409986887264606134616475288964881837755586237401"));
+
+		// The expected correct v value
+		BigIntegerFieldElement expectedV = new BigIntegerFieldElement(ed25519Field,
+				new BigInteger("14781619447589544791020593568409986887264606134616475288964881837755586237401"));
+
+		// Calculate the v value (output)
+		FieldElement resultV = KeyRemapping.wei25519YToCurve25519v(Y);
+
+		System.out.println("Correct " + Utils.bytesToHex(expectedV.toByteArray()));
+		System.out.println("Result " + Utils.bytesToHex(resultV.toByteArray()));
+
+		assertArrayEquals(expectedV.toByteArray(), resultV.toByteArray());
+	}
+
+	/**
 	 * Test converting a Edwards25519 y coordinate to a Wei25519 X coordinate
 	 */
 	@Test
-	public void testEdwards25519toWei25519() {
+	public void testEdwards25519yToWei25519X() {
 		// y value (input)
 		BigIntegerFieldElement y = new BigIntegerFieldElement(ed25519Field,
 				new BigInteger("46316835694926478169428394003475163141307993866256225615783033603165251855960"));
@@ -218,7 +262,81 @@ public class KeyRemappingTest {
 		BigIntegerFieldElement expectedX = new BigIntegerFieldElement(ed25519Field,
 				new BigInteger("19298681539552699237261830834781317975544997444273427339909597334652188435546"));
 
-		FieldElement calculatedX = KeyRemapping.edwards25519toWei25519(y);
+		FieldElement calculatedX = KeyRemapping.edwards25519yToWei25519X(y);
+
+		System.out.println("Correct " + Utils.bytesToHex(expectedX.toByteArray()));
+		System.out.println("Result " + Utils.bytesToHex(calculatedX.toByteArray()));
+
+		assertArrayEquals(expectedX.toByteArray(), calculatedX.toByteArray());
+
+	}
+
+	/**
+	 * Test converting a Edwards25519 x (& y) coordinate to a Wei25519 Y
+	 * coordinate
+	 */
+	@Test
+	public void testEdwards25519xToWei25519Y() {
+		// y value (input)
+		BigIntegerFieldElement y = new BigIntegerFieldElement(ed25519Field,
+				new BigInteger("46316835694926478169428394003475163141307993866256225615783033603165251855960"));
+		// x value (input)
+		BigIntegerFieldElement x = new BigIntegerFieldElement(ed25519Field,
+				new BigInteger("15112221349535400772501151409588531511454012693041857206046113283949847762202"));
+
+		// The expected correct Y value
+		BigIntegerFieldElement expectedY = new BigIntegerFieldElement(ed25519Field,
+				new BigInteger("14781619447589544791020593568409986887264606134616475288964881837755586237401"));
+
+		FieldElement calculatedY = KeyRemapping.edwards25519xToWei25519Y(x, y);
+
+		System.out.println("Correct " + Utils.bytesToHex(expectedY.toByteArray()));
+		System.out.println("Result " + Utils.bytesToHex(calculatedY.toByteArray()));
+
+		assertArrayEquals(expectedY.toByteArray(), calculatedY.toByteArray());
+
+	}
+
+	/**
+	 * Test converting a Wei25519 X coordinate to an Edwards25519 y coordinate
+	 */
+	@Test
+	public void testWei25519XToEdwards25519y() {
+		// X value (input)
+		BigIntegerFieldElement X = new BigIntegerFieldElement(ed25519Field,
+				new BigInteger("19298681539552699237261830834781317975544997444273427339909597334652188435546"));
+
+		// The expected correct y value
+		BigIntegerFieldElement expectedY = new BigIntegerFieldElement(ed25519Field,
+				new BigInteger("46316835694926478169428394003475163141307993866256225615783033603165251855960"));
+
+		FieldElement calculatedY = KeyRemapping.wei25519XToEdwards25519y(X);
+
+		System.out.println("Correct " + Utils.bytesToHex(expectedY.toByteArray()));
+		System.out.println("Result " + Utils.bytesToHex(calculatedY.toByteArray()));
+
+		assertArrayEquals(expectedY.toByteArray(), calculatedY.toByteArray());
+
+	}
+
+	/**
+	 * Test converting a Wei25519 Y (& X) coordinate to an Edwards25519 x
+	 * coordinate
+	 */
+	@Test
+	public void Wei25519YToEdwards25519x() {
+		// Y value (input)
+		BigIntegerFieldElement Y = new BigIntegerFieldElement(ed25519Field,
+				new BigInteger("14781619447589544791020593568409986887264606134616475288964881837755586237401"));
+		// X value (input)
+		BigIntegerFieldElement X = new BigIntegerFieldElement(ed25519Field,
+				new BigInteger("19298681539552699237261830834781317975544997444273427339909597334652188435546"));
+
+		// The expected correct x value
+		BigIntegerFieldElement expectedX = new BigIntegerFieldElement(ed25519Field,
+				new BigInteger("15112221349535400772501151409588531511454012693041857206046113283949847762202"));
+
+		FieldElement calculatedX = KeyRemapping.wei25519YToEdwards25519x(Y, X);
 
 		System.out.println("Correct " + Utils.bytesToHex(expectedX.toByteArray()));
 		System.out.println("Result " + Utils.bytesToHex(calculatedX.toByteArray()));

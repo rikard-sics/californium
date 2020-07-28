@@ -303,7 +303,7 @@ public class KeyRemapping {
 	 * 
 	 * @return the Wei25519 X coordinate
 	 */
-	public static FieldElement curve25519toWei25519(FieldElement u) {
+	public static FieldElement curve25519uToWei25519X(FieldElement u) {
 		BigIntegerFieldElement A = new BigIntegerFieldElement(ed25519Field, new BigInteger("486662"));
 		BigIntegerFieldElement three = new BigIntegerFieldElement(ed25519Field, new BigInteger("3"));
 
@@ -317,13 +317,27 @@ public class KeyRemapping {
 	}
 
 	/**
+	 * Remap a Curve25519 v coordinate to a Wei25519 Y coordinate.
+	 * 
+	 * @param v the Curve25519 v coordinate
+	 * 
+	 * @return the Wei25519 Y coordinate
+	 */
+	public static FieldElement curve25519vToWei25519Y(FieldElement v) {
+		// Y = v
+		FieldElement Y = v;
+
+		return Y;
+	}
+
+	/**
 	 * Remap a Wei25519 X coordinate to a Curve25519 u coordinate.
 	 * 
 	 * @param X the Wei25519 X coordinate
 	 * 
 	 * @return the Curve25519 u coordinate
 	 */
-	public static FieldElement wei25519toCurve25519(FieldElement X) {
+	public static FieldElement wei25519XToCurve25519u(FieldElement X) {
 		BigIntegerFieldElement A = new BigIntegerFieldElement(ed25519Field, new BigInteger("486662"));
 		BigIntegerFieldElement three = new BigIntegerFieldElement(ed25519Field, new BigInteger("3"));
 
@@ -336,12 +350,27 @@ public class KeyRemapping {
 	}
 
 	/**
+	 * Remap a Wei25519 Y coordinate to a Curve25519 v coordinate.
+	 * 
+	 * @param Y the Wei25519 Y coordinate
+	 * 
+	 * @return the Curve25519 v coordinate
+	 */
+	public static FieldElement wei25519YToCurve25519v(FieldElement Y) {
+		// v = Y
+		FieldElement v = Y;
+
+		return v;
+
+	}
+
+	/**
 	 * Remap a Edwards25519 y coordinate to a Wei25519 X coordinate
 	 * 
 	 * @param y the Edwards25519 y coordinate
 	 * @return the Wei25519 X coordinate
 	 */
-	public static FieldElement edwards25519toWei25519(FieldElement y) {
+	public static FieldElement edwards25519yToWei25519X(FieldElement y) {
 		// X = ((1+y)/(1-y)+A/3
 
 		BigIntegerFieldElement A = new BigIntegerFieldElement(ed25519Field, new BigInteger("486662"));
@@ -358,4 +387,79 @@ public class KeyRemapping {
 
 		return X;
 	}
+
+	/**
+	 * Remap a Edwards25519 x (& y) coordinate to a Wei25519 Y coordinate
+	 * 
+	 * @param x the Edwards25519 x coordinate
+	 * @param y the Edwards25519 y coordinate
+	 * @return the Wei25519 Y coordinate
+	 */
+	public static FieldElement edwards25519xToWei25519Y(FieldElement x, FieldElement y) {
+		// Y = c*(1+y)/((1-y)*x)
+
+		BigIntegerFieldElement c = new BigIntegerFieldElement(ed25519Field,
+				new BigInteger("51042569399160536130206135233146329284152202253034631822681833788666877215207"));
+		BigIntegerFieldElement one = new BigIntegerFieldElement(ed25519Field, new BigInteger("1"));
+
+		FieldElement onePlusY = one.add(y);
+		FieldElement oneMinusY = one.subtract(y);
+
+		FieldElement onePlusYmultC = c.multiply(onePlusY);
+		FieldElement oneMinusYmultX = oneMinusY.multiply(x);
+
+		FieldElement Y = onePlusYmultC.multiply((oneMinusYmultX.invert()));
+
+		return Y;
+	}
+
+	/**
+	 * Remap a Weierstrass X coordinate to a Edwards25519 y coordinate
+	 * 
+	 * @param X the Weierstrass X coordinate
+	 * @return the Edwards25519 y coordinate
+	 */
+	public static FieldElement wei25519XToEdwards25519y(FieldElement X) {
+		// y = (X-A/3-1)/(X-A/3+1)
+
+		BigIntegerFieldElement A = new BigIntegerFieldElement(ed25519Field, new BigInteger("486662"));
+		BigIntegerFieldElement three = new BigIntegerFieldElement(ed25519Field, new BigInteger("3"));
+		BigIntegerFieldElement one = new BigIntegerFieldElement(ed25519Field, new BigInteger("1"));
+		FieldElement AoverThree = A.multiply(three.invert());
+
+		FieldElement numerator = X.subtract(AoverThree).subtract(one);
+		FieldElement denominator = X.subtract(AoverThree).add(one);
+
+		FieldElement y = numerator.multiply(denominator.invert());
+
+		return y;
+	}
+
+	/**
+	 * Remap a Weierstrass Y (& X) coordinate to an Edwards25519 x coordinate
+	 * 
+	 * @param Y the Weierstrass Y coordinate
+	 * @param X the Weierstrass X coordinate
+	 * @return the Edwards25519 x coordinate
+	 */
+	public static FieldElement wei25519YToEdwards25519x(FieldElement Y, FieldElement X) {
+		// x = (c*(X-A/3)/Y
+
+		BigIntegerFieldElement c = new BigIntegerFieldElement(ed25519Field,
+				new BigInteger("51042569399160536130206135233146329284152202253034631822681833788666877215207"));
+
+		BigIntegerFieldElement A = new BigIntegerFieldElement(ed25519Field, new BigInteger("486662"));
+		BigIntegerFieldElement three = new BigIntegerFieldElement(ed25519Field, new BigInteger("3"));
+		FieldElement AoverThree = A.multiply(three.invert());
+
+		FieldElement XminusAoverThree = X.subtract(AoverThree);
+
+		FieldElement numerator = XminusAoverThree.multiply(c);
+		FieldElement denominator = Y;
+
+		FieldElement x = numerator.multiply(denominator.invert());
+
+		return x;
+	}
+
 }
