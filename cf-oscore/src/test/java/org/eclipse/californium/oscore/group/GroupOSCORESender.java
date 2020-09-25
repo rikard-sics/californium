@@ -50,6 +50,7 @@ import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
 
 /**
  * Test sender configured to support multicast requests.
+ * Rebased.
  */
 public class GroupOSCORESender {
 
