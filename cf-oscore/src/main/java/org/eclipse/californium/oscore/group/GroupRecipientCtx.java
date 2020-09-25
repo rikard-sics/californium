@@ -81,7 +81,6 @@ public class GroupRecipientCtx extends OSCoreCtx {
 	}
 
 	/**
-<<<<<<< HEAD
 	 * Get the alg sign value.
 	 * 
 	 * @return the alg sign value
@@ -119,11 +118,7 @@ public class GroupRecipientCtx extends OSCoreCtx {
 	}
 
 	/**
-<<<<<<< HEAD
 	 * Get the par countersign value for the external aad.
-=======
-	 * Get the par countersign value
->>>>>>> f4cabdfe7 (Added more comments describing more detail on multiple methods)
 	 * 
 	 * @return the par countersign value
 	 */
@@ -132,11 +127,7 @@ public class GroupRecipientCtx extends OSCoreCtx {
 	}
 
 	/**
-<<<<<<< HEAD
 	 * Get the par countersign key value for the external aad.
-=======
-	 * Get the par countersign key value
->>>>>>> f4cabdfe7 (Added more comments describing more detail on multiple methods)
 	 * 
 	 * @return the par countersign key value
 	 */
