@@ -45,6 +45,9 @@ import java.nio.charset.StandardCharsets;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * The Message class provides a common class that all of the COSE message classes
  * inherit from.  It provides the function used for decoding all of the known
@@ -220,4 +223,53 @@ public abstract class Message extends Attribute {
     public void SetContent(String strData) {
         rgbContent = strData.getBytes(StandardCharsets.UTF_8);
     }
+
+	List<CounterSign> counterSignList = new ArrayList<CounterSign>();
+	CounterSign1 counterSign1;
+
+	public void addCountersignature(CounterSign countersignature) {
+		counterSignList.add(countersignature);
+	}
+
+	public List<CounterSign> getCountersignerList() {
+		return counterSignList;
+	}
+
+	public CounterSign1 getCountersign1() {
+		return counterSign1;
+	}
+
+	public void setCountersign1(CounterSign1 value) {
+		counterSign1 = value;
+	}
+
+	protected void ProcessCounterSignatures() throws CoseException {
+		if (!counterSignList.isEmpty()) {
+			if (counterSignList.size() == 1) {
+				counterSignList.get(0).sign(rgbProtected, rgbContent);
+				addAttribute(HeaderKeys.CounterSignature, counterSignList.get(0).EncodeToCBORObject(),
+						Attribute.UNPROTECTED);
+			} else {
+				CBORObject list = CBORObject.NewArray();
+				for (CounterSign sig : counterSignList) {
+					sig.sign(rgbProtected, rgbContent);
+					list.Add(sig.EncodeToCBORObject());
+				}
+				addAttribute(HeaderKeys.CounterSignature, list, Attribute.UNPROTECTED);
+			}
+		}
+
+		if (counterSign1 != null) {
+			counterSign1.sign(rgbProtected, rgbContent);
+			addAttribute(HeaderKeys.CounterSignature0, counterSign1.EncodeToCBORObject(), Attribute.UNPROTECTED);
+		}
+	}
+
+	public boolean validate(CounterSign1 countersignature) throws CoseException {
+		return countersignature.validate(rgbProtected, rgbContent);
+	}
+
+	public boolean validate(CounterSign countersignature) throws CoseException {
+		return countersignature.validate(rgbProtected, rgbContent);
+	}
 }
