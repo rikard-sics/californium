@@ -88,10 +88,12 @@ public abstract class EncryptCommon extends Message {
 		}
 
 		AES_CCM_Encrypt(alg, rgbKey);
+		
+		ProcessCounterSignatures();
 	}
 
-	//Method taken from EncryptCommon in COSE. This will provide the full AAD / Encrypt0-structure.
-    private byte[] getAADBytes() {
+	// FIXME: Remove
+	private byte[] getAADBytesBAD() {
         CBORObject obj = CBORObject.NewArray();
         
         obj.Add(context);
@@ -102,10 +104,28 @@ public abstract class EncryptCommon extends Message {
         	obj.Add(objProtected.EncodeToBytes());
         }
         
+
         obj.Add(CBORObject.FromObject(externalData));
         
         return obj.EncodeToBytes();
     }
+
+	// Method taken from EncryptCommon in COSE. This will provide the full AAD /
+	// Encrypt0-structure.
+	private byte[] getAADBytes() {
+		CBORObject obj = CBORObject.NewArray();
+
+		obj.Add(context);
+		if (objProtected.size() == 0)
+			rgbProtected = new byte[0];
+		else
+			rgbProtected = objProtected.EncodeToBytes();
+
+		obj.Add(rgbProtected);
+		obj.Add(CBORObject.FromObject(externalData));
+
+		return obj.EncodeToBytes();
+	}
 
 	private void AES_CCM_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException {
 		// validate key
@@ -206,6 +226,36 @@ public abstract class EncryptCommon extends Message {
 	 */
 	public void setEncryptedContent(byte[] rgb) {
 		rgbEncrypt = rgb;
+	}
+
+	protected void ProcessCounterSignatures() throws CoseException {
+		if (!counterSignList.isEmpty()) {
+			if (counterSignList.size() == 1) {
+				counterSignList.get(0).sign(rgbProtected, rgbEncrypt);
+				addAttribute(HeaderKeys.CounterSignature, counterSignList.get(0).EncodeToCBORObject(),
+						Attribute.UNPROTECTED);
+			} else {
+				CBORObject list = CBORObject.NewArray();
+				for (CounterSign sig : counterSignList) {
+					sig.sign(rgbProtected, rgbEncrypt);
+					list.Add(sig.EncodeToCBORObject());
+				}
+				addAttribute(HeaderKeys.CounterSignature, list, Attribute.UNPROTECTED);
+			}
+		}
+
+		if (counterSign1 != null) {
+			counterSign1.sign(rgbProtected, rgbEncrypt);
+			addAttribute(HeaderKeys.CounterSignature0, counterSign1.EncodeToCBORObject(), Attribute.UNPROTECTED);
+		}
+	}
+
+	public boolean validate(CounterSign1 countersignature) throws CoseException {
+		return countersignature.validate(rgbProtected, rgbEncrypt);
+	}
+
+	public boolean validate(CounterSign countersignature) throws CoseException {
+		return countersignature.validate(rgbProtected, rgbEncrypt);
 	}
 
 	/**
