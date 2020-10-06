@@ -163,6 +163,7 @@
 		<module>demo-certs</module>
 		<module>cf-oscore</module>
 		<module>cf-pubsub</module>
+		<module>cf-edhoc</module>
 	</modules>
 
 	<build>
