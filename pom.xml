@@ -183,6 +183,7 @@
 		<module>californium-osgi</module>
 		<module>demo-certs</module>
 		<module>demo-apps</module>
+		<module>cf-edhoc</module>
 	</modules>
 
 	<build>

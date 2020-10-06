@@ -76,6 +76,11 @@
 				<artifactId>cf-nat</artifactId>
 				<version>${project.version}</version>
 			</dependency>
+			<dependency> <!-- Rikard: Added this dependency -->
+				<groupId>${project.groupId}</groupId>
+				<artifactId>cf-oscore</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 			<dependency>
 				<groupId>${project.groupId}</groupId>
 				<artifactId>cf-oscore</artifactId>
