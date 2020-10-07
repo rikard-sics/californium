@@ -8,8 +8,11 @@ import org.junit.Assert;
 import org.junit.Test;
 
 /**
+ * Tests both a standalone HKDF-Extract-and-Expand method, and individual
+ * HKDF-Extract / HKDF-Expand methods.
+ * 
  * Using test vectors from: https://tools.ietf.org/html/rfc5869#appendix-A
- *
+ * 
  */
 public class HkdfTest {
 
@@ -23,6 +26,15 @@ public class HkdfTest {
 				(byte) 0xf6, (byte) 0xf7, (byte) 0xf8, (byte) 0xf9 };
 		int L = 42;
 
+		byte[] correctPrk = new byte[] { (byte) 0x07, (byte) 0x77, (byte) 0x09, (byte) 0x36, (byte) 0x2c, (byte) 0x2e,
+				(byte) 0x32, (byte) 0xdf, (byte) 0x0d, (byte) 0xdc, (byte) 0x3f, (byte) 0x0d, (byte) 0xc4, (byte) 0x7b,
+				(byte) 0xba, (byte) 0x63, (byte) 0x90, (byte) 0xb6, (byte) 0xc7, (byte) 0x3b, (byte) 0xb5, (byte) 0x0f,
+				(byte) 0x9c, (byte) 0x31, (byte) 0x22, (byte) 0xec, (byte) 0x84, (byte) 0x4a, (byte) 0xd7, (byte) 0xc2,
+				(byte) 0xb3, (byte) 0xe5 };
+
+		byte[] calculatedPrk = Hkdf.extract(salt, ikm);
+		Assert.assertArrayEquals(correctPrk, calculatedPrk);
+
 		byte[] correctOkm = new byte[] { (byte) 0x3c, (byte) 0xb2, (byte) 0x5f, (byte) 0x25, (byte) 0xfa, (byte) 0xac,
 				(byte) 0xd5, (byte) 0x7a, (byte) 0x90, (byte) 0x43, (byte) 0x4f, (byte) 0x64, (byte) 0xd0, (byte) 0x36,
 				(byte) 0x2f, (byte) 0x2a, (byte) 0x2d, (byte) 0x2d, (byte) 0x0a, (byte) 0x90, (byte) 0xcf, (byte) 0x1a,
@@ -30,9 +42,11 @@ public class HkdfTest {
 				(byte) 0xc5, (byte) 0xbf, (byte) 0x34, (byte) 0x00, (byte) 0x72, (byte) 0x08, (byte) 0xd5, (byte) 0xb8,
 				(byte) 0x87, (byte) 0x18, (byte) 0x58, (byte) 0x65 };
 
-		byte[] calculatedOkm = Hkdf.extractExpand(salt, ikm, info, L);
+		byte[] calculatedOkm1 = Hkdf.expand(correctPrk, info, L);
+		Assert.assertArrayEquals(correctOkm, calculatedOkm1);
 
-		Assert.assertArrayEquals(correctOkm, calculatedOkm);
+		byte[] calculatedOkm2 = Hkdf.extractExpand(salt, ikm, info, L);
+		Assert.assertArrayEquals(correctOkm, calculatedOkm2);
 	}
 
 	@Test
@@ -72,6 +86,15 @@ public class HkdfTest {
 				(byte) 0xfe, (byte) 0xff };
 		int L = 82;
 
+		byte[] correctPrk = new byte[] { (byte) 0x06, (byte) 0xa6, (byte) 0xb8, (byte) 0x8c, (byte) 0x58, (byte) 0x53,
+				(byte) 0x36, (byte) 0x1a, (byte) 0x06, (byte) 0x10, (byte) 0x4c, (byte) 0x9c, (byte) 0xeb, (byte) 0x35,
+				(byte) 0xb4, (byte) 0x5c, (byte) 0xef, (byte) 0x76, (byte) 0x00, (byte) 0x14, (byte) 0x90, (byte) 0x46,
+				(byte) 0x71, (byte) 0x01, (byte) 0x4a, (byte) 0x19, (byte) 0x3f, (byte) 0x40, (byte) 0xc1, (byte) 0x5f,
+				(byte) 0xc2, (byte) 0x44 };
+
+		byte[] calculatedPrk = Hkdf.extract(salt, ikm);
+		Assert.assertArrayEquals(correctPrk, calculatedPrk);
+
 		byte[] correctOkm = new byte[] { (byte) 0xb1, (byte) 0x1e, (byte) 0x39, (byte) 0x8d, (byte) 0xc8, (byte) 0x03,
 				(byte) 0x27, (byte) 0xa1, (byte) 0xc8, (byte) 0xe7, (byte) 0xf7, (byte) 0x8c, (byte) 0x59, (byte) 0x6a,
 				(byte) 0x49, (byte) 0x34, (byte) 0x4f, (byte) 0x01, (byte) 0x2e, (byte) 0xda, (byte) 0x2d, (byte) 0x4e,
@@ -84,9 +107,12 @@ public class HkdfTest {
 				(byte) 0x3e, (byte) 0x87, (byte) 0xc1, (byte) 0x4c, (byte) 0x01, (byte) 0xd5, (byte) 0xc1, (byte) 0xf3,
 				(byte) 0x43, (byte) 0x4f, (byte) 0x1d, (byte) 0x87 };
 
-		byte[] calculatedOkm = Hkdf.extractExpand(salt, ikm, info, L);
+		byte[] calculatedOkm1 = Hkdf.expand(correctPrk, info, L);
+		Assert.assertArrayEquals(correctOkm, calculatedOkm1);
 
-		Assert.assertArrayEquals(correctOkm, calculatedOkm);
+		byte[] calculatedOkm2 = Hkdf.extractExpand(salt, ikm, info, L);
+		Assert.assertArrayEquals(correctOkm, calculatedOkm2);
+
 	}
 
 	@Test
@@ -99,6 +125,15 @@ public class HkdfTest {
 		byte[] info = Bytes.EMPTY;
 		int L = 42;
 
+		byte[] correctPrk = new byte[] { (byte) 0x19, (byte) 0xef, (byte) 0x24, (byte) 0xa3, (byte) 0x2c, (byte) 0x71,
+				(byte) 0x7b, (byte) 0x16, (byte) 0x7f, (byte) 0x33, (byte) 0xa9, (byte) 0x1d, (byte) 0x6f, (byte) 0x64,
+				(byte) 0x8b, (byte) 0xdf, (byte) 0x96, (byte) 0x59, (byte) 0x67, (byte) 0x76, (byte) 0xaf, (byte) 0xdb,
+				(byte) 0x63, (byte) 0x77, (byte) 0xac, (byte) 0x43, (byte) 0x4c, (byte) 0x1c, (byte) 0x29, (byte) 0x3c,
+				(byte) 0xcb, (byte) 0x04 };
+
+		byte[] calculatedPrk = Hkdf.extract(salt, ikm);
+		Assert.assertArrayEquals(correctPrk, calculatedPrk);
+
 		byte[] correctOkm = new byte[] { (byte) 0x8d, (byte) 0xa4, (byte) 0xe7, (byte) 0x75, (byte) 0xa5, (byte) 0x63,
 				(byte) 0xc1, (byte) 0x8f, (byte) 0x71, (byte) 0x5f, (byte) 0x80, (byte) 0x2a, (byte) 0x06, (byte) 0x3c,
 				(byte) 0x5a, (byte) 0x31, (byte) 0xb8, (byte) 0xa1, (byte) 0x1f, (byte) 0x5c, (byte) 0x5e, (byte) 0xe1,
@@ -106,9 +141,12 @@ public class HkdfTest {
 				(byte) 0x8d, (byte) 0x2d, (byte) 0x9d, (byte) 0x20, (byte) 0x13, (byte) 0x95, (byte) 0xfa, (byte) 0xa4,
 				(byte) 0xb6, (byte) 0x1a, (byte) 0x96, (byte) 0xc8 };
 
-		byte[] calculatedOkm = Hkdf.extractExpand(salt, ikm, info, L);
+		byte[] calculatedOkm1 = Hkdf.expand(correctPrk, info, L);
+		Assert.assertArrayEquals(correctOkm, calculatedOkm1);
 
-		Assert.assertArrayEquals(correctOkm, calculatedOkm);
+		byte[] calculatedOkm2 = Hkdf.extractExpand(salt, ikm, info, L);
+		Assert.assertArrayEquals(correctOkm, calculatedOkm2);
+
 	}
 
 }
