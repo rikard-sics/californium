@@ -289,7 +289,7 @@ public class BlockwiseLayer extends AbstractLayer {
 
 		Request requestToSend = request;
 
-		if (isTransparentBlockwiseHandlingEnabled() && !request.isMulticast()) {
+        if (isTransparentBlockwiseHandlingEnabled()) {
 
 			BlockOption block2 = request.getOptions().getBlock2();
 			if (block2 != null && block2.getNum() > 0) {
@@ -637,7 +637,7 @@ public class BlockwiseLayer extends AbstractLayer {
 	@Override
 	public void receiveResponse(final Exchange exchange, final Response response) {
 
-		if (isTransparentBlockwiseHandlingEnabled() && !exchange.getRequest().isMulticast()) {
+        if (isTransparentBlockwiseHandlingEnabled()) {
 			if (response.isError()) {
 				// handle blockwise specific error codes
 				switch(response.getCode()) {

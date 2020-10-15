@@ -23,6 +23,8 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.security.Provider;
 import java.security.Security;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -42,6 +44,7 @@ import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.core.server.resources.Resource;
+import org.eclipse.californium.cose.ASN1;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
@@ -139,14 +142,132 @@ public class GroupOSCOREInteropServer {
 
 	private static int DEFAULT_BLOCK_SIZE = 512;
 
+    static Random rand;
+    static int myId;
+
 	public static void main(String[] args) throws Exception {
+
+        // final Provider PROVIDER = new BouncyCastleProvider();
+        final Provider EdDSA = new EdDSASecurityProvider();
+        // Security.insertProviderAt(PROVIDER, 1);
+        Security.insertProviderAt(EdDSA, 0);
+		//
+		// OneKey mykey = OneKey.generateKey(AlgorithmID.EDDSA);
+		//
+		// ArrayList<ASN1.TagValue> spki =
+		// ASN1.DecodeSubjectPublicKeyInfo(mykey.AsPublicKey().getEncoded());
+		// ArrayList<ASN1.TagValue> alg = spki.get(0).list;
+		//
+		// // System.out.println("Value0: " +
+		// // Utils.toHexString(spki.get(0).value));
+		// // System.out.println("List0: " + (spki.get(0).list));
+		// //
+		// // System.out.println("Value1: " +
+		// // Utils.toHexString(spki.get(1).value));
+		// // System.out.println("List1: " + (spki.get(1).list));
+		// //
+		// // System.out.println("Value2: " +
+		// // Utils.toHexString(spki.get(2).value));
+		// // System.out.println("List2: " + (spki.get(2).list));
+		//
+		// System.out.println("alg0 " + Utils.toHexString(alg.get(0).value));
+		// // System.out.println("alg1 " + Utils.toHexString(alg.get(1).value));
+		// // System.out.println("alg3 " + Utils.toHexString(alg.get(2).value));
+		// // System.out.println("alg4 " + Utils.toHexString(alg.get(3).value));
+		//
+		// System.out.println("SPKI: ");
+		// for (int i = 0; i < spki.size(); i++) {
+		// ArrayList<ASN1.TagValue> spkiCurrentList = spki.get(i).list;
+		// byte[] spkiCurrentValue = spki.get(i).value;
+		//
+		// System.out.println("i " + i + " spki current value " +
+		// Utils.toHexString(spkiCurrentValue));
+		//
+		// if (spkiCurrentList == null || spkiCurrentList == null) {
+		// continue;
+		// }
+		//
+		// for (int n = 0; n < spkiCurrentList.size(); n++) {
+		//
+		// ArrayList<ASN1.TagValue> aaa = spkiCurrentList.get(n).list;
+		// byte[] aaa2 = spkiCurrentList.get(n).value;
+		//
+		// if (aaa == null) {
+		// continue;
+		// }
+		//
+		// System.out.print("i " + i + " n " + n);
+		// System.out.println(" val " + Utils.toHexString(aaa2));
+		//
+		// // ArrayList<ASN1.TagValue> inner = spkiCurrent.get(n).list;
+		// // System.out.println("inner " +
+		// // Utils.toHexString(inner.get(0).value));
+		// }
+		//
+		// }
+		//
+		// System.out.println("OUR X : " +
+		// Utils.toHexString(mykey.PublicKey().get(KeyKeys.OKP_X).GetByteString()));
+		//
+		//
+		//
+		// byte[] oid = (byte[]) alg.get(0).value;
+		// byte[] keyData = (byte[]) spki.get(1).value;
+		//
+		// // OneKey mykey2 = new OneKey(mykey.AsPublicKey(),
+		// // mykey.AsPrivateKey());
+		// OneKey mykey2 = new OneKey(mykey.AsPublicKey(), null);
+		// System.out.println("OUR NEW X : " +
+		// Utils.toHexString(mykey2.PublicKey().get(KeyKeys.OKP_X).GetByteString()));
+		//
+		// System.out.println("END");
+		//
+		// if (mykey.PublicKey().equals(mykey2)) {
+		// System.out.println("SAME");
+		// } else {
+		// System.out.println("NOT THE SAME");
+		// }
+		//
+		// System.out.println("mykey public " +
+		// mykey.PublicKey().AsCBOR().toString());
+		// System.out.println("mykey2 " + mykey2.AsCBOR().toString());
+		//
+		//
+		//
+		//
+		//
+		//
+		// byte[] mykeyPublicBytes = mykey.PublicKey().AsCBOR().EncodeToBytes();
+		// byte[] mykey2Bytes = mykey2.AsCBOR().EncodeToBytes();
+		//
+		// if(Arrays.equals(mykeyPublicBytes, mykey2Bytes)) {
+		// System.out.println("SAME bytes");
+		// } else {
+		// System.out.println("NOT THE SAME bytes");
+		// }
+		//
+		//
+		//
+		// System.out.println("Part 1");
+		//
+		// System.out.println("OUR D : " +
+		// Utils.toHexString(mykey.get(KeyKeys.OKP_D).GetByteString()));
+		//
+		// // OneKey mykeyECDSA = OneKey.generateKey(AlgorithmID.ECDSA_256);
+
+		OneKey mykey = OneKey.generateKey(AlgorithmID.EDDSA);
+		System.out.println("OUR D : " + Utils.toHexString(mykey.get(KeyKeys.OKP_D).GetByteString()));
+		OneKey mykeyFull = new OneKey(mykey.AsPublicKey(), mykey.AsPrivateKey());
+
+		// RFC8410, RFC8419
+
+        rand = new Random();
+        myId = rand.nextInt(1000);
+
+        System.out.println("ID: " + myId);
 
 		// Disable replay detection
 		OSCoreCtx.DISABLE_REPLAY_CHECKS = true;
-
-		// Install cryptographic providers
-		Provider EdDSA = new EdDSASecurityProvider();
-		Security.insertProviderAt(EdDSA, 0);
 
 		// Set sender & receiver keys for countersignatures
 		sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_1_KEY_ECDSA);
@@ -173,7 +294,7 @@ public class GroupOSCOREInteropServer {
 		GroupRecipientCtx recipientCtx;
 		if (useOSCORE) {
 
-			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign);
+			GroupCtx commonCtx = null;
 
 			commonCtx.addSenderCtx(sid, sid_private_key);
 
@@ -280,9 +401,20 @@ public class GroupOSCOREInteropServer {
 			localAddress = new InetSocketAddress(listenPort);
 		}
 
+        // localAddress = new InetSocketAddress(InetAddress.getByName("0.0.0.0"), listenPort);
+
 		Connector connector = null;
 		if (useMulticast) {
-			connector = new UdpMulticastConnector(localAddress, listenIP);
+            // connector = new UdpMulticastConnector(localAddress, listenIP);
+            UdpMulticastConnector.Builder builder = new UdpMulticastConnector.Builder();
+            builder.setLocalAddress(localAddress);
+            builder.addMulticastGroup(listenIP);
+            builder.setOutgoingMulticastInterface(InetAddress.getByName("172.17.0.1"));
+            // NetworkInterface if = new NetworkInterface();
+            // builder.setOutgoingMulticastInterface(if);
+            // builder.set
+            connector = builder.build();
+
 		} else {
 			InetSocketAddress unicastAddress = new InetSocketAddress(listenIP, listenPort);
 			connector = new UDPConnector(unicastAddress);
@@ -455,7 +587,8 @@ public class GroupOSCOREInteropServer {
 		 * split into "intermediary block" requests.
 		 */
 		private final AtomicInteger counter = new AtomicInteger();
-		private volatile String currentPayload = bwPayload.substring(0, DEFAULT_BLOCK_SIZE * 5 - 6).concat(" (END)");
+        private volatile String currentPayload = myId + " "
+                + bwPayload.substring(0, DEFAULT_BLOCK_SIZE * 5 - 6).concat(" (END)");
 
 		public BlockWiseResource2() {
 			super("bw2");

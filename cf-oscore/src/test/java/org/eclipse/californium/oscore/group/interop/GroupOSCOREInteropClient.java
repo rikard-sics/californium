@@ -88,12 +88,12 @@ public class GroupOSCOREInteropClient {
 	/**
 	 * Whether to use OSCORE or not. (Case 1)
 	 */
-	static final boolean useOSCORE = true;
+    static final boolean useOSCORE = false;
 
 	/**
 	 * Whether to use Group OSCORE or normal OSCORE.
 	 */
-	static final boolean GroupOSCORE = true;
+    static final boolean GroupOSCORE = false;
 
 	/**
 	 * Multicast address to send to (use the first line to set a custom one).
@@ -113,7 +113,7 @@ public class GroupOSCOREInteropClient {
 	 * Resource to perform request against.
 	 */
 	// static final String requestResource = "/test";
-	static final String requestResource = "/oscore/hello/1";
+    static final String requestResource = "/oscore/hello/bw2";
 
 	/**
 	 * The method to use for the request.

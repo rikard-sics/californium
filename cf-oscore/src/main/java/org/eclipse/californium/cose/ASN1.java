@@ -8,6 +8,8 @@ package org.eclipse.californium.cose;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import net.i2p.crypto.eddsa.Utils;
+
 /**
  *
  * @author Jim
@@ -179,7 +181,10 @@ public class ASN1 {
         
         //  We only decode objects which are compound objects.  That means that this bit must be set
         
-        if ((encoding[offset] & 0x20) != 0x20) throw new CoseException("Invalid structure");
+		System.out.println("Our byte " + encoding[offset]);
+
+		if ((encoding[offset] & 0x20) != 0x20)
+			throw new CoseException("Invalid structure");
         int[] l = DecodeLength(offset+1, encoding);
         int sequenceLength = l[1];
         if (offset + sequenceLength > encoding.length) throw new CoseException("Invalid sequence");
@@ -279,6 +284,20 @@ public class ASN1 {
         if (retValue.get(1).list.get(0).tag != 6) throw new CoseException("Invalid PKCS8 structure");
         //  Dont check the next item as it is an ANY
         
+		byte[] algorithm = retValue.get(1).list.get(0).value;
+		short alg;
+		if (Arrays.equals(algorithm, ASN1.oid_ecPublicKey)) {
+			alg = 0;
+		} else {
+			alg = 1;
+		}
+
+		// System.out.println("val1 " +
+		// Utils.bytesToHex(retValue.get(1).list.get(0).value));
+		// System.out.println("val2 " + retValue.get(1).list.get(1).value);
+		// System.out.println("val3 " + retValue.get(1).list.get(2).value);
+		System.out.println("Our algorithm int: " + alg);
+
         if (retValue.get(2).tag != 4) throw new CoseException("Invalid PKCS8 structure");
         
         // This is attributes, but we are not going to check for correctness.
@@ -289,7 +308,8 @@ public class ASN1 {
         //  Decode the contents of the octet string PrivateKey
         
         byte[] pk = (byte[]) retValue.get(2).value;
-        TagValue pkd = DecodeCompound(0, pk);
+		System.out.println("PK " + Utils.bytesToHex(pk));
+		TagValue pkd = DecodeCompound(0, pk);
         ArrayList<TagValue> pkdl = pkd.list;
         if (pkd.tag != 0x30) throw new CoseException("Invalid ECPrivateKey");
         if (pkdl.size() < 2 || pkdl.size() > 4) throw new CoseException("Invalid ECPrivateKey");
