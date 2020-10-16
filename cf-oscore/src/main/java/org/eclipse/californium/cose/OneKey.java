@@ -98,31 +98,37 @@ public class OneKey {
 			if (pkl.get(0).tag != 2)
 				throw new CoseException("Invalid PKCS8 structure");
 			ArrayList<ASN1.TagValue> alg = pkl.get(1).list;
-			if (Arrays.equals(alg.get(0).value, ASN1.oid_ecPublicKey)) {
-				byte[] oid = (byte[]) alg.get(1).value;
+			if (Arrays.equals(alg.get(0).value, ASN1.Oid_Ed25519) || Arrays.equals(alg.get(0).value, ASN1.Oid_Ed448)
+					|| Arrays.equals(alg.get(0).value, ASN1.Oid_X25519)
+					|| Arrays.equals(alg.get(0).value, ASN1.Oid_X448)) {
+				byte[] oid = (byte[]) alg.get(0).value;
 				if (oid == null)
 					throw new CoseException("Invalid PKCS8 structure");
-				// EC2 Key
+				// OKP Key
 				if (!keyMap.ContainsKey(KeyKeys.KeyType.AsCBOR())) {
-					keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
-					if (Arrays.equals(oid, ASN1.Oid_secp256r1))
-						keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P256);
-					else if (Arrays.equals(oid, ASN1.Oid_secp384r1))
-						keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P384);
-					else if (Arrays.equals(oid, ASN1.Oid_secp521r1))
-						keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P521);
+
+					keyMap.Add(KeyKeys.Algorithm.AsCBOR(), AlgorithmID.EDDSA.AsCBOR());
+					if (Arrays.equals(oid, ASN1.Oid_X25519))
+						keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_X25519);
+					else if (Arrays.equals(oid, ASN1.Oid_X448))
+						keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_X448);
+					else if (Arrays.equals(oid, ASN1.Oid_Ed25519))
+						keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_Ed25519);
+					else if (Arrays.equals(oid, ASN1.Oid_Ed448))
+						keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_Ed448);
 					else
 						throw new CoseException("Unsupported curve");
+
 				} else {
-					if (!this.get(KeyKeys.KeyType).equals(KeyKeys.KeyType_EC2)) {
+					if (!this.get(KeyKeys.KeyType).equals(KeyKeys.KeyType_OKP)) {
 						throw new CoseException("Public/Private key don't match");
 					}
 				}
 
-				if (pkl.get(2).list.get(1).tag != 4)
+				if (pkl.get(2).list.get(0).tag != 4)
 					throw new CoseException("Invalid PKCS8 structure");
-				byte[] keyData = (byte[]) (pkl.get(2).list).get(1).value;
-				keyMap.Add(KeyKeys.EC2_D.AsCBOR(), keyData);
+				byte[] keyData = (byte[]) (pkl.get(2).list).get(0).value;
+				keyMap.Add(KeyKeys.OKP_D.AsCBOR(), keyData);
 			} else {
 				throw new CoseException("Unsupported Algorithm");
 			}

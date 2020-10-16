@@ -257,132 +257,156 @@ public class GroupOSCOREInteropServer {
 
 		OneKey mykey = OneKey.generateKey(AlgorithmID.EDDSA);
 		System.out.println("OUR D : " + Utils.toHexString(mykey.get(KeyKeys.OKP_D).GetByteString()));
+		System.out.println("First generated key: " + mykey.AsCBOR().toString());
+
 		OneKey mykeyFull = new OneKey(mykey.AsPublicKey(), mykey.AsPrivateKey());
+		System.out.println("OUR mykeyFull D : " + Utils.toHexString(mykeyFull.get(KeyKeys.OKP_D).GetByteString()));
+		System.out.println("New rebuilt key:     " + mykeyFull.AsCBOR().toString());
+
+		System.out.println("Private encoded: " + Utils.toHexString(mykey.AsPrivateKey().getEncoded()));
+		System.out.println("Public encoded: " + Utils.toHexString(mykey.AsPublicKey().getEncoded()));
+
+		OneKey fromCBOR = new OneKey(mykey.AsCBOR());
+		System.out.println("CBOR Private encoded: " + Utils.toHexString(fromCBOR.AsPrivateKey().getEncoded()));
+		System.out.println("CBOR Public encoded: " + Utils.toHexString(fromCBOR.AsPublicKey().getEncoded()));
 
 		// RFC8410, RFC8419
 
-        rand = new Random();
-        myId = rand.nextInt(1000);
-
-        System.out.println("ID: " + myId);
-
-		// Disable replay detection
-		OSCoreCtx.DISABLE_REPLAY_CHECKS = true;
-
-		// Set sender & receiver keys for countersignatures
-		sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_1_KEY_ECDSA);
-		rid1_public_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_3_KEY_ECDSA);
-
-		// Check command line arguments (flag to use different sid and sid key)
-		if (args.length != 0) {
-			sid = InteropParametersNew.RIKARD_ENTITY_2_KID_ECDSA;
-			System.out.println("Starting with alternative sid " + Utils.toHexString(sid));
-			sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_2_KEY_ECDSA);
-		} else {
-			System.out.println("Starting with sid " + Utils.toHexString(sid));
-		}
-
-		// Check that KIDs in public/private keys match corresponding
-		// recipient/sender ID (just to double check configuration)
-		assertArrayEquals(sid, sid_private_key.get(KeyKeys.KeyId).GetByteString());
-		assertArrayEquals(rid1, rid1_public_key.get(KeyKeys.KeyId).GetByteString());
-
-		// If OSCORE is being used set the context information
-		@SuppressWarnings("unused")
-		GroupSenderCtx senderCtx;
-		@SuppressWarnings("unused")
-		GroupRecipientCtx recipientCtx;
-		if (useOSCORE) {
-
-			GroupCtx commonCtx = null;
-
-			commonCtx.addSenderCtx(sid, sid_private_key);
-
-			commonCtx.addRecipientCtx(rid1, REPLAY_WINDOW, rid1_public_key);
-
-			// commonCtx.setResponsesIncludePartialIV(true);
-
-			db.addContext(uriLocal, commonCtx);
-
-			// Also add a normal OSCORE context (defined in that method)
-			addOSCOREContext();
-
-			OSCoreCoapStackFactory.useAsDefault(db);
-
-			// Retrieve the sender and recipient contexts
-			senderCtx = (GroupSenderCtx) db.getContext(uriLocal);
-			recipientCtx = (GroupRecipientCtx) db.getContext(rid1, group_identifier);
-
-			// --- Test cases ---
-			// Case 4: Add key for the recipient for dynamic derivation
-			// // Comment out context addition above
-			// commonCtx.addPublicKeyForRID(rid1, rid1_public_key);
-
-			// Case 5: Client response decryption failure
-			// senderCtx.setSenderKey(new byte[16]);
-
-			// Case 7: Client response signature failure
-			// senderCtx.setAsymmetricSenderKey(OneKey.generateKey(algCountersign));
-
-			// For pairwise responses:
-			// commonCtx.setPairwiseModeResponses(true);
-		}
-
-		// Initialize random number generator
-		random = new Random();
-
-		NetworkConfig config = NetworkConfig.getStandard();
-
-		// For BW (needed? Seems not)
-		// MatcherMode mode = MatcherMode.STRICT;
-		// config = config.setInt(Keys.ACK_TIMEOUT,
-		// 200).setFloat(Keys.ACK_RANDOM_FACTOR, 1f)
-		// .setFloat(Keys.ACK_TIMEOUT_SCALE, 1f)
-		// // set response timeout (indirect) to 10s
-		// .setLong(Keys.EXCHANGE_LIFETIME, 10 *
-		// 1000L).setInt(Keys.MAX_MESSAGE_SIZE, DEFAULT_BLOCK_SIZE)
-		// .setInt(Keys.PREFERRED_BLOCK_SIZE,
-		// DEFAULT_BLOCK_SIZE).setString(Keys.RESPONSE_MATCHING, mode.name());
-
-		CoapEndpoint endpoint = createEndpoints(config);
-
-		// Case 9: Duplicate server response
-		// endpoint.setDuplicateResponse(true);
-
-		CoapServer server = new CoapServer(config);
-		server.addEndpoint(endpoint);
-		server.add(new OtherOscoreResource());
-
-		// Build resource hierarchy
-		CoapResource oscore = new CoapResource("oscore", true);
-		CoapResource oscore_hello = new CoapResource("hello", true);
-
-		oscore_hello.add(new CoapHelloWorldResource());
-		oscore_hello.add(new OscoreHelloWorldResource());
-		oscore_hello.add(new BlockWiseResource());
-		oscore_hello.add(new BlockWiseResource2());
-		oscore_hello.add(new ObserveResource("observe", true));
-
-		oscore.add(oscore_hello);
-		server.add(oscore);
-
-		// Information about the receiver
-		System.out.println("==================");
-		System.out.println("*Interop receiver");
-		System.out.println("Uses OSCORE: " + useOSCORE);
-		System.out.println("Respond to non-confirmable messages: " + replyToNonConfirmable);
-		System.out.println("Listening to IP: " + listenIP.getHostAddress());
-		System.out.println("Using multicast: " + useMulticast);
-		System.out.println("Unicast IP: " + endpoint.getAddress().getHostString());
-		System.out.println("Incoming port: " + endpoint.getAddress().getPort());
-		System.out.print("CoAP resources: ");
-		for (Resource res : server.getRoot().getChildren()) {
-			System.out.print(res.getURI() + " ");
-		}
-		System.out.println("");
-		System.out.println("==================");
-
-		server.start();
+		// rand = new Random();
+		// myId = rand.nextInt(1000);
+		//
+		// System.out.println("ID: " + myId);
+		//
+		// // Disable replay detection
+		// OSCoreCtx.DISABLE_REPLAY_CHECKS = true;
+		//
+		// // Set sender & receiver keys for countersignatures
+		// sid_private_key =
+		// OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_1_KEY_ECDSA);
+		// rid1_public_key =
+		// OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_3_KEY_ECDSA);
+		//
+		// // Check command line arguments (flag to use different sid and sid
+		// key)
+		// if (args.length != 0) {
+		// sid = InteropParametersNew.RIKARD_ENTITY_2_KID_ECDSA;
+		// System.out.println("Starting with alternative sid " +
+		// Utils.toHexString(sid));
+		// sid_private_key =
+		// OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_2_KEY_ECDSA);
+		// } else {
+		// System.out.println("Starting with sid " + Utils.toHexString(sid));
+		// }
+		//
+		// // Check that KIDs in public/private keys match corresponding
+		// // recipient/sender ID (just to double check configuration)
+		// assertArrayEquals(sid,
+		// sid_private_key.get(KeyKeys.KeyId).GetByteString());
+		// assertArrayEquals(rid1,
+		// rid1_public_key.get(KeyKeys.KeyId).GetByteString());
+		//
+		// // If OSCORE is being used set the context information
+		// @SuppressWarnings("unused")
+		// GroupSenderCtx senderCtx;
+		// @SuppressWarnings("unused")
+		// GroupRecipientCtx recipientCtx;
+		// if (useOSCORE) {
+		//
+		// GroupCtx commonCtx = null;
+		//
+		// commonCtx.addSenderCtx(sid, sid_private_key);
+		//
+		// commonCtx.addRecipientCtx(rid1, REPLAY_WINDOW, rid1_public_key);
+		//
+		// // commonCtx.setResponsesIncludePartialIV(true);
+		//
+		// db.addContext(uriLocal, commonCtx);
+		//
+		// // Also add a normal OSCORE context (defined in that method)
+		// addOSCOREContext();
+		//
+		// OSCoreCoapStackFactory.useAsDefault(db);
+		//
+		// // Retrieve the sender and recipient contexts
+		// senderCtx = (GroupSenderCtx) db.getContext(uriLocal);
+		// recipientCtx = (GroupRecipientCtx) db.getContext(rid1,
+		// group_identifier);
+		//
+		// // --- Test cases ---
+		// // Case 4: Add key for the recipient for dynamic derivation
+		// // // Comment out context addition above
+		// // commonCtx.addPublicKeyForRID(rid1, rid1_public_key);
+		//
+		// // Case 5: Client response decryption failure
+		// // senderCtx.setSenderKey(new byte[16]);
+		//
+		// // Case 7: Client response signature failure
+		// //
+		// senderCtx.setAsymmetricSenderKey(OneKey.generateKey(algCountersign));
+		//
+		// // For pairwise responses:
+		// // commonCtx.setPairwiseModeResponses(true);
+		// }
+		//
+		// // Initialize random number generator
+		// random = new Random();
+		//
+		// NetworkConfig config = NetworkConfig.getStandard();
+		//
+		// // For BW (needed? Seems not)
+		// // MatcherMode mode = MatcherMode.STRICT;
+		// // config = config.setInt(Keys.ACK_TIMEOUT,
+		// // 200).setFloat(Keys.ACK_RANDOM_FACTOR, 1f)
+		// // .setFloat(Keys.ACK_TIMEOUT_SCALE, 1f)
+		// // // set response timeout (indirect) to 10s
+		// // .setLong(Keys.EXCHANGE_LIFETIME, 10 *
+		// // 1000L).setInt(Keys.MAX_MESSAGE_SIZE, DEFAULT_BLOCK_SIZE)
+		// // .setInt(Keys.PREFERRED_BLOCK_SIZE,
+		// // DEFAULT_BLOCK_SIZE).setString(Keys.RESPONSE_MATCHING,
+		// mode.name());
+		//
+		// CoapEndpoint endpoint = createEndpoints(config);
+		//
+		// // Case 9: Duplicate server response
+		// // endpoint.setDuplicateResponse(true);
+		//
+		// CoapServer server = new CoapServer(config);
+		// server.addEndpoint(endpoint);
+		// server.add(new OtherOscoreResource());
+		//
+		// // Build resource hierarchy
+		// CoapResource oscore = new CoapResource("oscore", true);
+		// CoapResource oscore_hello = new CoapResource("hello", true);
+		//
+		// oscore_hello.add(new CoapHelloWorldResource());
+		// oscore_hello.add(new OscoreHelloWorldResource());
+		// oscore_hello.add(new BlockWiseResource());
+		// oscore_hello.add(new BlockWiseResource2());
+		// oscore_hello.add(new ObserveResource("observe", true));
+		//
+		// oscore.add(oscore_hello);
+		// server.add(oscore);
+		//
+		// // Information about the receiver
+		// System.out.println("==================");
+		// System.out.println("*Interop receiver");
+		// System.out.println("Uses OSCORE: " + useOSCORE);
+		// System.out.println("Respond to non-confirmable messages: " +
+		// replyToNonConfirmable);
+		// System.out.println("Listening to IP: " + listenIP.getHostAddress());
+		// System.out.println("Using multicast: " + useMulticast);
+		// System.out.println("Unicast IP: " +
+		// endpoint.getAddress().getHostString());
+		// System.out.println("Incoming port: " +
+		// endpoint.getAddress().getPort());
+		// System.out.print("CoAP resources: ");
+		// for (Resource res : server.getRoot().getChildren()) {
+		// System.out.print(res.getURI() + " ");
+		// }
+		// System.out.println("");
+		// System.out.println("==================");
+		//
+		// server.start();
 	}
 
 	private static CoapEndpoint createEndpoints(NetworkConfig config) throws UnknownHostException {

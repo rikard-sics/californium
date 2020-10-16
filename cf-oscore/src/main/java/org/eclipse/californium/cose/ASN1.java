@@ -15,6 +15,9 @@ import net.i2p.crypto.eddsa.Utils;
  * @author Jim
  */
 public class ASN1 {
+
+	static short ECDSA = 0;
+	static short EdDSA = 1;
     
     /**
      * This class is used internal to the ASN.1 decoding functions.
@@ -157,6 +160,57 @@ public class ASN1 {
         return tvl;
     }
     
+	// Decode EDDSA private keys
+	public static TagValue DecodeSimple(int offset, byte[] encoding) throws CoseException {
+		ArrayList<TagValue> result = new ArrayList<TagValue>();
+		int retTag = encoding[offset];
+
+		// We only decode objects which are compound objects. That means that
+		// this bit must be set
+
+		System.out.println("Our byte " + encoding[offset]);
+
+		if (encoding[offset] != 0x04)
+			throw new CoseException("Invalid structure");
+		int[] l = DecodeLength(offset + 1, encoding);
+
+		int sequenceLength = l[1];
+		if (offset + 2 + sequenceLength != encoding.length)
+			throw new CoseException("Invalid sequence");
+
+		int tag = encoding[offset];
+		offset += 1 + l[0];
+		result.add(new TagValue(tag, Arrays.copyOfRange(encoding, offset, offset + l[1])));
+
+		//
+		// while (sequenceLength > 0) {
+		// int tag = encoding[offset];
+		// l = DecodeLength(offset + 1, encoding);
+		// if (l[1] > sequenceLength)
+		// throw new CoseException("Invalid sequence");
+		//
+		// if ((tag & 0x20) != 0) {
+		// result.add(DecodeCompound(offset, encoding));
+		// offset += 1 + l[0] + l[1];
+		// sequenceLength -= 1 + l[0] + l[1];
+		// } else {
+		// // At some point we might want to fix this.
+		// if (tag == 6) {
+		// result.add(new TagValue(tag, Arrays.copyOfRange(encoding, offset,
+		// offset + l[1] + l[0] + 1)));
+		// } else {
+		// result.add(new TagValue(tag,
+		// Arrays.copyOfRange(encoding, offset + l[0] + 1, offset + 1 + l[0] +
+		// l[1])));
+		// }
+		// offset += 1 + l[0] + l[1];
+		// sequenceLength -= 1 + l[0] + l[1];
+		// }
+		// }
+
+		return new TagValue(retTag, result);
+	}
+
     /**
      * Decode an array of bytes which is supposed to be an ASN.1 encoded structure.
      * This code does the decoding w/o any reference to a schema for what is being
@@ -180,8 +234,6 @@ public class ASN1 {
         int retTag = encoding[offset];
         
         //  We only decode objects which are compound objects.  That means that this bit must be set
-        
-		System.out.println("Our byte " + encoding[offset]);
 
 		if ((encoding[offset] & 0x20) != 0x20)
 			throw new CoseException("Invalid structure");
@@ -287,9 +339,9 @@ public class ASN1 {
 		byte[] algorithm = retValue.get(1).list.get(0).value;
 		short alg;
 		if (Arrays.equals(algorithm, ASN1.oid_ecPublicKey)) {
-			alg = 0;
+			alg = ECDSA;
 		} else {
-			alg = 1;
+			alg = EdDSA;
 		}
 
 		// System.out.println("val1 " +
@@ -309,17 +361,32 @@ public class ASN1 {
         
         byte[] pk = (byte[]) retValue.get(2).value;
 		System.out.println("PK " + Utils.bytesToHex(pk));
-		TagValue pkd = DecodeCompound(0, pk);
-        ArrayList<TagValue> pkdl = pkd.list;
-        if (pkd.tag != 0x30) throw new CoseException("Invalid ECPrivateKey");
-        if (pkdl.size() < 2 || pkdl.size() > 4) throw new CoseException("Invalid ECPrivateKey");
-        
-        if (pkdl.get(0).tag != 2 && ((byte[]) retValue.get(0).value)[0] != 1) {
-            throw new CoseException("Invalid ECPrivateKey");
-        }
-        
-        if (pkdl.get(1).tag != 4) throw new CoseException("Invalid ECPrivateKey");
-        
+		TagValue pkd;
+		if (alg == ECDSA) {
+			pkd = DecodeCompound(0, pk); // ECDSA
+		} else {
+			pkd = DecodeSimple(0, pk); // EdDSA
+		}
+		ArrayList<TagValue> pkdl = pkd.list;
+
+		if (alg == 0) {
+			if (pkd.tag != 0x30)
+				throw new CoseException("Invalid ECPrivateKey");
+			if (pkdl.size() < 2 || pkdl.size() > 4)
+				throw new CoseException("Invalid ECPrivateKey");
+			if (pkdl.get(0).tag != 2 && ((byte[]) retValue.get(0).value)[0] != 1)
+				throw new CoseException("Invalid ECPrivateKey");
+			if (pkdl.get(1).tag != 4)
+				throw new CoseException("Invalid ECPrivateKey");
+		} else {
+			if (pkd.tag != 0x04)
+				throw new CoseException("Invalid EdDSAPrivateKey");
+			if (pkdl.size() != 1)
+				throw new CoseException("Invalid EdDSAPrivateKey");
+			if (pkdl.get(0).tag != 4 && ((byte[]) retValue.get(0).value)[0] != 0)
+				throw new CoseException("Invalid EdDSAPrivateKey");
+		}
+
         if (pkdl.size() > 2) {
             if ((pkdl.get(2).tag & 0xff) != 0xA0) {
                 if (pkdl.size() != 3 || (pkdl.get(2).tag & 0xff) != 0xa1) {
@@ -332,7 +399,11 @@ public class ASN1 {
         
         retValue.get(2).list = pkdl;
         retValue.get(2).value = null;
+		if (alg == ECDSA) {
         retValue.get(2).tag = 0x30;
+		} else {
+			retValue.get(2).tag = 0x04;
+		}
         
         return retValue;
     }
