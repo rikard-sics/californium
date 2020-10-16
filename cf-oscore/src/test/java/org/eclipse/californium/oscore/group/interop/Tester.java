@@ -19,7 +19,11 @@ package org.eclipse.californium.oscore.group.interop;
 import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.security.PrivateKey;
+import java.security.Provider;
 import java.security.PublicKey;
+import java.security.Security;
+
+import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.Utils;
@@ -36,12 +40,13 @@ import org.eclipse.californium.scandium.dtls.cipher.ThreadLocalKeyPairGenerator;
 
 import com.upokecenter.cbor.CBORObject;
 
+
 public class Tester {
 
 	public static void main(String[] args) throws Exception {
 		
-		// Provider EdDSAX = new EdDSASecurityProvider();
-		// Security.insertProviderAt(EdDSAX, 0);
+		Provider EdDSAX = new EdDSASecurityProvider();
+		Security.insertProviderAt(EdDSAX, 0);
 
 		KeyPair keyPair = new ThreadLocalKeyPairGenerator("Ed25519").current().generateKeyPair();
 		OneKey coseVersion = new OneKey(keyPair.getPublic(), keyPair.getPrivate());
