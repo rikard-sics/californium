@@ -126,7 +126,7 @@ public class GroupSenderCtx extends OSCoreCtx {
 	}
 
 	/**
-	 * Get the par countersign value.
+	 * Get the par countersign value for the external aad.
 	 * 
 	 * @return the par countersign value
 	 */
@@ -135,12 +135,12 @@ public class GroupSenderCtx extends OSCoreCtx {
 	}
 
 	/**
-	 * Get the alg countersign key value.
+	 * Get the alg countersign key value for the external aad.
 	 * 
 	 * @return the alg countersign key value
 	 */
 	public int[] getParCountersignKey() {
-		return commonCtx.parCountersignKey;
+		return commonCtx.parCountersign[1];
 	}
 
 	/**
