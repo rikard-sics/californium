@@ -431,8 +431,9 @@ public class GroupDecryptorTest {
 		HashMapCtxDB db = new HashMapCtxDB();
 		db.addContext(uri, commonCtx);
 
-		// Set an incorrect par countersign key
-		commonCtx.parCountersignKey = new int[] { 10 };
+		// Set an incorrect par countersign key for the external aad
+		// (2nd element in par countersign)
+		commonCtx.parCountersign[1] = new int[] { 10 };
 
 		// Decrypt the request message
 		RequestDecryptor.decrypt(db, r, recipientCtx);
