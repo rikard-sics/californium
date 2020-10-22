@@ -50,7 +50,6 @@ public class GroupCtx {
 	byte[] idContext;
 	AlgorithmID algCountersign;
 	int[][] parCountersign;
-	int[] parCountersignKey;
 
 	// Reference to the associated sender context
 	GroupSenderCtx senderCtx;
@@ -93,7 +92,6 @@ public class GroupCtx {
 		int[] countersign_alg_capab = getCountersignAlgCapab(algCountersign);
 		int[] countersign_key_type_capab = getCountersignKeyTypeCapab(algCountersign);
 		this.parCountersign = new int[][] { countersign_alg_capab, countersign_key_type_capab };
-		this.parCountersignKey = countersign_key_type_capab;
 	}
 
 	/**
@@ -119,7 +117,6 @@ public class GroupCtx {
 		this.idContext = idContext;
 		this.algCountersign = algCountersign;
 		this.parCountersign = parCountersign;
-		this.parCountersignKey = parCountersignKey;
 
 		recipientCtxMap = new HashMap<ByteId, GroupRecipientCtx>();
 		publicKeysMap = new HashMap<ByteId, OneKey>();
