@@ -293,6 +293,13 @@ public class OSSerializer {
 
 		CBORObject groupAadEnc = CBORObject.DecodeFromBytes(aadBytes);
 
+		// Add request_kid_context and move I-class options to next index in
+		// the CBOR array
+		CBORObject options = groupAadEnc.get(4);
+		groupAadEnc.Add(options);
+		CBORObject requestKidContext = CBORObject.FromObject(ctx.getIdContext());
+		groupAadEnc.set(4, requestKidContext);
+
 		// Update index 1 which holds the algorithms array
 		CBORObject algorithms = groupAadEnc.get(1);
 		algorithms.Add(algCountersign);
