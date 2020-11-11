@@ -21,8 +21,11 @@ package org.eclipse.californium.oscore;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+<<<<<<< HEAD
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+=======
+>>>>>>> 8a2849e4f (Updates during IETF 109 Hackathon)
 
 import org.eclipse.californium.core.Utils;
 import org.slf4j.Logger;
