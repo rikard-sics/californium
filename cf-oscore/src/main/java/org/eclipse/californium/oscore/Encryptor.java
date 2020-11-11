@@ -20,25 +20,25 @@
 package org.eclipse.californium.oscore;
 
 import java.io.ByteArrayOutputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.io.IOException;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
-import org.eclipse.californium.cose.Encrypt0Message;
-
-import com.upokecenter.cbor.CBORObject;
-
 import org.eclipse.californium.cose.Attribute;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.CounterSign1;
+import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
 import org.eclipse.californium.oscore.group.OptionEncoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.upokecenter.cbor.CBORObject;
 
 /**
  * 
@@ -191,6 +191,7 @@ public abstract class Encryptor {
 	 */
 	protected static Encrypt0Message prepareCOSEStructure(byte[] confidential) {
 		Encrypt0Message enc = new Encrypt0Message(false, true);
+		// System.out.println()
 		enc.SetContent(confidential);
 		return enc;
 	}
@@ -318,6 +319,8 @@ public abstract class Encryptor {
 
 		byte[] fullPayload = os.toByteArray();
 
+		System.out.println("countersignBytes len: " + countersignBytes.length);
+		System.out.println("ciphertext len: " + ciphertext.length);
 		enc.setEncryptedContent(fullPayload);
 	}
 }
