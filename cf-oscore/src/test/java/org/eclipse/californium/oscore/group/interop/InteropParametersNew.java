@@ -59,4 +59,6 @@ public class InteropParametersNew {
 	public static final byte[] RIKARD_MASTER_SALT_EDDSA = Utils.hexToBytes("1F2E3D4C5B6A7081");
 	public static final byte[] RIKARD_GROUP_ID_EDDSA = Utils.hexToBytes("DD11");
 
+	public static final String PETER_PUBLIC_KEY_EDDSA = "{1: 1, 2: h'0A', -2: h'f10c06d527ecefdcf1511710186a3bccf94c2a4eb4719a3748afdcef43f319c4', -1: 6}";
+
 }
