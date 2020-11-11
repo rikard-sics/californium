@@ -21,8 +21,6 @@ package org.eclipse.californium.oscore;
 
 import java.nio.ByteBuffer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
@@ -34,6 +32,8 @@ import org.eclipse.californium.elements.util.DatagramWriter;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
 import org.eclipse.californium.oscore.group.OptionEncoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
@@ -301,9 +301,13 @@ public class OSSerializer {
 		// Add update algorithms array to external AAD (used for encryption)
 		groupAadEnc.set(1, algorithms);
 
-		// Add request_kid_context
+		// Add request_kid_context //FIXED
 		CBORObject requestKidContext = CBORObject.FromObject(ctx.getIdContext());
-		groupAadEnc.Add(requestKidContext);
+		if (ctx.getIdContext() == null || ctx.getIdContext().length == 0) {
+			groupAadEnc.Add(CBORObject.FromObject(Bytes.EMPTY));
+		} else {
+			groupAadEnc.Add(requestKidContext);
+		}
 
 		return groupAadEnc.EncodeToBytes();
 	}
