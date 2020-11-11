@@ -21,11 +21,6 @@ package org.eclipse.californium.oscore;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-<<<<<<< HEAD
-=======
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
->>>>>>> bff1856b3 (Further updates with code in preparation for IETF 108 Hackathon tests)
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
@@ -221,6 +216,7 @@ public abstract class Encryptor {
 	 */
 	protected static Encrypt0Message prepareCOSEStructure(byte[] confidential) {
 		Encrypt0Message enc = new Encrypt0Message(false, true);
+		// System.out.println()
 		enc.SetContent(confidential);
 		return enc;
 	}

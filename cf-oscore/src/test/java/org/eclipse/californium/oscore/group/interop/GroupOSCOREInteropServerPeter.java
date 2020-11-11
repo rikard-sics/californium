@@ -161,6 +161,7 @@ public class GroupOSCOREInteropServerPeter {
 
 	private static int DEFAULT_BLOCK_SIZE = 256;
 
+
 	public static void main(String[] args) throws Exception {
 
 		// Disable replay detection
