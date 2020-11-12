@@ -38,7 +38,8 @@ public class GroupDynamicContextDerivation {
 	
 		// Abort the procedure for non Group OSCORE sender contexts
 		if (ctx == null || ctx instanceof GroupSenderCtx == false) {
-			LOGGER.error("Dynamic context derivation failed: No context found for ID Context");
+			LOGGER.error("Dynamic context derivation failed: No context found for ID Context"
+					+ Utils.toHexString(contextID));
 			return null;
 		}
 
@@ -49,7 +50,7 @@ public class GroupDynamicContextDerivation {
 		GroupSenderCtx senderCtx = (GroupSenderCtx) ctx;
 		OneKey publicKey = senderCtx.commonCtx.getPublicKeyForRID(rid);
 		if (publicKey == null) {
-			LOGGER.error("Dynamic context derivation failed: No public key found for RID");
+			LOGGER.error("Dynamic context derivation failed: No public key found for RID " + Utils.toHexString(rid));
 			return null;
 		}
 	
