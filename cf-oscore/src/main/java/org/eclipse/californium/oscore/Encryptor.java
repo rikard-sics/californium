@@ -361,7 +361,6 @@ public abstract class Encryptor {
 	 */
 	protected static Encrypt0Message prepareCOSEStructure(byte[] confidential) {
 		Encrypt0Message enc = new Encrypt0Message(false, true);
-		// System.out.println()
 		enc.SetContent(confidential);
 		return enc;
 	}
