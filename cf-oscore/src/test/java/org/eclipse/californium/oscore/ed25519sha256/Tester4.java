@@ -30,7 +30,7 @@ import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
 import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
 
-public class Tester3 {
+public class Tester4 {
 
 	public static void main(String[] args) throws InvalidAlgorithmParameterException, InvalidKeyException,
 			NoSuchAlgorithmException, SignatureException {
@@ -64,7 +64,7 @@ public class Tester3 {
 
 		final String ED_25519 = "Ed25519";
 
-		EdDSANamedCurveSpec ED_25519_SHA256_CURVE_SPEC = new EdDSANamedCurveSpec(ED_25519, ed25519curve, hash, // H
+		EdDSANamedCurveSpec ED_25519_TESTING_CURVE_SPEC = new EdDSANamedCurveSpec(ED_25519, ed25519curve, hash, // H
 				new Ed25519ScalarOps(), // l
 				ed25519curve.createPoint( // B
 						Utils.hexToBytes("5866666666666666666666666666666666666666666666666666666666666666"), true)); // Precompute
@@ -74,7 +74,12 @@ public class Tester3 {
 				ed25519curve.createPoint( // B
 						Utils.hexToBytes("5866666666666666666666666666666666666666666666666666666666666666"), true)); // Precompute
 
-		EdDSANamedCurveSpec spec = ED_25519_SHA256_CURVE_SPEC;
+		EdDSANamedCurveSpec ED_25519_SHA256_CURVE_SPEC = new EdDSANamedCurveSpec(ED_25519, ed25519curve, "Sha256Double", // H
+				new Ed25519ScalarOps(), // l
+				ed25519curve.createPoint( // B
+						Utils.hexToBytes("5866666666666666666666666666666666666666666666666666666666666666"), true)); // Precompute
+
+		EdDSANamedCurveSpec spec = ED_25519_TESTING_CURVE_SPEC;
 		generator.initialize(spec, secRand);
 
 		// === Take keys from test vectors with SHA512 ===
@@ -134,7 +139,7 @@ public class Tester3 {
 				"92a009a9f0d4cab8720e820b5f642540a2b27b5416503f8fb3762223ebdb69da085ac1e43e15996e458f3613d0f11d8c387b2eaeb4302aeeb00d291612bb0c00");
 		Assert.assertArrayEquals(correct, res);
 
-		// === Generate keys ===
+		// === Generate keys w. my testing hash ===
 
 		System.out.println();
 		System.out.println("Doing signature with " + myDigest.getAlgorithm());
@@ -161,7 +166,47 @@ public class Tester3 {
 		System.out.println("Resulting signature: " + Utils.bytesToHex(signature));
 
 		// == Testing my hash that is 2 x SHA256 ===
-		MessageDigest sha256Double = MessageDigest.getInstance("Sha256Double");
+		// https://www.di-mgt.com.au/sha_testvectors.html
 
+		System.out.println();
+		System.out.println("Testing Sha256 double hash");
+
+		MessageDigest sha256Double = MessageDigest.getInstance("Sha256Double");
+		byte[] input = new byte[] { 0x61, 0x62, 0x63 };
+		byte[] resSha256Double = sha256Double.digest(input);
+		System.out.println("Sha-256-double: " + Utils.bytesToHex(resSha256Double));
+
+		correct = Utils.hexToBytes(
+				"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015adba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+		Assert.assertArrayEquals(correct, resSha256Double);
+
+		// === Generate keys with 2 x SHA256 hash ===
+
+		System.out.println();
+		System.out.println("Doing signature with " + sha256Double.getAlgorithm());
+
+		EdDSANamedCurveSpec specSha256 = ED_25519_SHA256_CURVE_SPEC;
+		generator.initialize(specSha256, secRand);
+
+		keyPair = generator.generateKeyPair();
+		publicKey = keyPair.getPublic();
+		privateKey = keyPair.getPrivate();
+
+		// === Cast to format from library ===
+		privKey = (EdDSAPrivateKey) privateKey;
+		pubKey = (EdDSAPublicKey) publicKey;
+
+		System.out.println("Public key hash algo: " + pubKey.getParams().getHashAlgorithm());
+		System.out.println("Private key hash algo: " + privKey.getParams().getHashAlgorithm());
+
+		// === Signing with 2 x SHA256 hash ===
+
+		data = new byte[] { 0x72 };
+		sig = new EdDSAEngine(sha256Double);
+		sig.initSign(privKey);
+		sig.update(data);
+
+		signature = sig.sign();
+		System.out.println("Resulting signature: " + Utils.bytesToHex(signature));
 	}
 }
