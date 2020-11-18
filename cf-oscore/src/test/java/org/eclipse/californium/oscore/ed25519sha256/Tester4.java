@@ -126,6 +126,9 @@ public class Tester4 {
 
 		System.out.println("Public key hash algo: " + priv.getParams().getHashAlgorithm());
 		System.out.println("Private key hash algo: " + pub.getParams().getHashAlgorithm());
+		System.out.println("Priv private scalar: " + Utils.bytesToHex(priv.getH()));
+		System.out.println("Priv seed: " + Utils.bytesToHex(priv.getSeed()));
+		System.out.println("Priv a: " + Utils.bytesToHex(priv.geta()));
 
 		MessageDigest digest = MessageDigest.getInstance("Sha512Own");
 		message = new byte[] { 0x72 };
@@ -208,5 +211,13 @@ public class Tester4 {
 
 		signature = sig.sign();
 		System.out.println("Resulting signature: " + Utils.bytesToHex(signature));
+
+		// === Now check that signature ===
+		sig = new EdDSAEngine(sha256Double);
+		sig.initVerify(pubKey);
+		sig.update(data);
+		boolean signatureCorrect = sig.verify(signature);
+		System.out.println("Signature correct: " + signatureCorrect);
+
 	}
 }
