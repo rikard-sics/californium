@@ -11,6 +11,7 @@ public class XYZProvider extends Provider {
 
 	public XYZProvider() {
 		super("XYZ", 1.0, "XYZ Security Provider v1.0");
+		put("MessageDigest.Sha512Own", "org.eclipse.californium.oscore.ed25519sha256.Sha512OwnMessageDigest");
 		put("MessageDigest.XYZ", "org.eclipse.californium.oscore.ed25519sha256.XYZMessageDigest");
 	}
 }

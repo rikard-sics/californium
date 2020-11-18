@@ -3,13 +3,12 @@ package org.eclipse.californium.oscore.ed25519sha256;
 import java.security.MessageDigest;
 
 //https://docstore.mik.ua/orelly/java-ent/security/ch09_03.htm
-public class XYZMessageDigest extends MessageDigest implements Cloneable {
-
+public class OldXYZMessageDigestOld extends MessageDigest implements Cloneable {
 	private int hash;
 	private int store;
 	private int nBytes;
 
-	public XYZMessageDigest() {
+	public OldXYZMessageDigestOld() {
 		super("XYZ");
 		engineReset();
 	}
@@ -59,13 +58,13 @@ public class XYZMessageDigest extends MessageDigest implements Cloneable {
 		b[2] = (byte) (hash >>> 8);
 		b[3] = (byte) (hash >>> 0);
 		engineReset();
-
+		
 		byte[] myoutput = new byte[64];
 		myoutput[0] = b[0];
 		myoutput[1] = b[1];
 		myoutput[2] = b[2];
 		myoutput[3] = b[3];
-
+		
 		return myoutput;
 	}
 }
