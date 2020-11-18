@@ -32,13 +32,12 @@ import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
 
 public class Tester3 {
 
-	public static void main(String[] args)
-			throws InvalidAlgorithmParameterException, InvalidKeyException, NoSuchAlgorithmException,
-			SignatureException {
- 
+	public static void main(String[] args) throws InvalidAlgorithmParameterException, InvalidKeyException,
+			NoSuchAlgorithmException, SignatureException {
+
 		// Need to add own provider!
 		Security.addProvider(new XYZProvider());
-		
+
 		// Install cryptographic provider for EDDSA itself
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 0);
@@ -54,37 +53,26 @@ public class Tester3 {
 		KeyPairGenerator generator = new KeyPairGenerator();
 		SecureRandom secRand = new SecureRandom();
 
-		Field ed25519field = new Field(
-				256, // b
+		Field ed25519field = new Field(256, // b
 				Utils.hexToBytes("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q
 				new Ed25519LittleEndianEncoding());
 
 		Curve ed25519curve = new Curve(ed25519field,
 				Utils.hexToBytes("a3785913ca4deb75abd841414d0a700098e879777940c78c73fe6f2bee6c0352"), // d
-				ed25519field.fromByteArray(Utils.hexToBytes("b0a00e4a271beec478e42fad0618432fa7d7fb3d99004d2b0bdfc14f8024832b"))); // I
+				ed25519field.fromByteArray(
+						Utils.hexToBytes("b0a00e4a271beec478e42fad0618432fa7d7fb3d99004d2b0bdfc14f8024832b"))); // I
 
 		final String ED_25519 = "Ed25519";
 
-		EdDSANamedCurveSpec ED_25519_SHA256_CURVE_SPEC = new EdDSANamedCurveSpec(
-				ED_25519,
-				ed25519curve,
-				hash, // H - Hash to use
-				new Ed25519ScalarOps(), // l
-				ed25519curve.createPoint( // B
-						Utils.hexToBytes("5866666666666666666666666666666666666666666666666666666666666666"),
-						true)); // Precompute tables for B
-
-		EdDSANamedCurveSpec ED_25519_SHA512OWN_CURVE_SPEC = new EdDSANamedCurveSpec(ED_25519, ed25519curve, "Sha512Own", // H
-																															// -
-																															// Hash
-																															// to
-																															// use
+		EdDSANamedCurveSpec ED_25519_SHA256_CURVE_SPEC = new EdDSANamedCurveSpec(ED_25519, ed25519curve, hash, // H
 				new Ed25519ScalarOps(), // l
 				ed25519curve.createPoint( // B
 						Utils.hexToBytes("5866666666666666666666666666666666666666666666666666666666666666"), true)); // Precompute
-																														// tables
-																														// for
-																														// B
+
+		EdDSANamedCurveSpec ED_25519_SHA512OWN_CURVE_SPEC = new EdDSANamedCurveSpec(ED_25519, ed25519curve, "Sha512Own", // H
+				new Ed25519ScalarOps(), // l
+				ed25519curve.createPoint( // B
+						Utils.hexToBytes("5866666666666666666666666666666666666666666666666666666666666666"), true)); // Precompute
 
 		EdDSANamedCurveSpec spec = ED_25519_SHA256_CURVE_SPEC;
 		generator.initialize(spec, secRand);
