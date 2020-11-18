@@ -58,7 +58,6 @@ public class XYZMessageDigest extends MessageDigest implements Cloneable {
 		b[1] = (byte) (hash >>> 16);
 		b[2] = (byte) (hash >>> 8);
 		b[3] = (byte) (hash >>> 0);
-		engineReset();
 
 		byte[] myoutput = new byte[64];
 		myoutput[0] = b[0];
@@ -66,6 +65,7 @@ public class XYZMessageDigest extends MessageDigest implements Cloneable {
 		myoutput[2] = b[2];
 		myoutput[3] = b[3];
 
+		engineReset();
 		return myoutput;
 	}
 }

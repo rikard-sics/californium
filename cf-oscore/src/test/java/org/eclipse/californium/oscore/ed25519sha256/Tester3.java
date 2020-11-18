@@ -150,7 +150,7 @@ public class Tester3 {
 		System.out.println("Public key hash algo: " + pubKey.getParams().getHashAlgorithm());
 		System.out.println("Private key hash algo: " + privKey.getParams().getHashAlgorithm());
 
-		// === Signing w. my hash ===
+		// === Signing w. my testing hash ===
 
 		byte[] data = new byte[] { 0x72 };
 		Signature sig = new EdDSAEngine(myDigest);
