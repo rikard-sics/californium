@@ -13,6 +13,8 @@ import java.security.Security;
 import java.security.Signature;
 import java.security.SignatureException;
 
+import org.junit.Assert;
+
 import net.i2p.crypto.eddsa.EdDSAEngine;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
@@ -24,13 +26,15 @@ import net.i2p.crypto.eddsa.math.Field;
 import net.i2p.crypto.eddsa.math.ed25519.Ed25519LittleEndianEncoding;
 import net.i2p.crypto.eddsa.math.ed25519.Ed25519ScalarOps;
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveSpec;
+import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
+import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
+import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
 
-public class Tester {
+public class Tester2 {
 
 	public static void main(String[] args)
 			throws InvalidAlgorithmParameterException, InvalidKeyException, NoSuchAlgorithmException,
 			SignatureException {
-		// System.out.println("HELLO");
  
 		// Need to add own provider!
 		Security.addProvider(new XYZProvider());
@@ -39,26 +43,13 @@ public class Tester {
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 0);
 
-		// Provider[] mine = Security.getProviders();
-		// for(int i = 0 ; i < mine.length ; i++) {
-		// System.out.println(mine[i].toString());
-		// }
-		//
-		// MessageDigest myhash = null;
-		// try {
-		// myhash = MessageDigest.getInstance("XYZ");
-		// } catch (NoSuchAlgorithmException e) {
-		// // TODO Auto-generated catch block
-		// e.printStackTrace();
-		// }
-		//
-		// System.out.println("LEN: " + myhash.getDigestLength());
-
 		// === Key generation preparation ===
 
-		// String hash = "sha-512";
+		// String hash = "SHA-512";
 		String hash = "XYZ";
 		MessageDigest myDigest = MessageDigest.getInstance(hash);
+
+		MessageDigest sha512Digest = MessageDigest.getInstance("SHA-512");
 
 		KeyPairGenerator generator = new KeyPairGenerator();
 		SecureRandom secRand = new SecureRandom();
@@ -86,11 +77,43 @@ public class Tester {
 		EdDSANamedCurveSpec spec = ED_25519_SHA256_CURVE_SPEC;
 		generator.initialize(spec, secRand);
 
+		// === Take keys from test vectors with SHA512 ===
+		// https://tools.ietf.org/html/rfc8032#section-7.1 : Test 2
+
+		System.out.println();
+		System.out.println("Doing signature with Ed25519-SHA512 from test vectors:");
+
+		byte[] privKeyBytes = Utils.hexToBytes("4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb");
+		EdDSAPrivateKeySpec privSpec = new EdDSAPrivateKeySpec(privKeyBytes, EdDSANamedCurveTable.getByName(ED_25519));
+		EdDSAPrivateKey priv = new EdDSAPrivateKey(privSpec);
+
+		byte[] pubKeyBytes = Utils.hexToBytes("3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c");
+		EdDSAPublicKeySpec pubSpec = new EdDSAPublicKeySpec(pubKeyBytes, EdDSANamedCurveTable.getByName(ED_25519));
+		EdDSAPublicKey pub = new EdDSAPublicKey(pubSpec);
+
+		System.out.println("Public key hash algo: " + priv.getParams().getHashAlgorithm());
+		System.out.println("Private key hash algo: " + pub.getParams().getHashAlgorithm());
+
+		byte[] message = new byte[] { 0x72 };
+		Signature sigSha512 = new EdDSAEngine(sha512Digest);
+		sigSha512.initSign(priv);
+		sigSha512.update(message);
+		byte[] res = sigSha512.sign();
+		System.out.println("Resulting signature w. SHA512: " + Utils.bytesToHex(res));
+
+		byte[] correct = Utils.hexToBytes(
+				"92a009a9f0d4cab8720e820b5f642540a2b27b5416503f8fb3762223ebdb69da085ac1e43e15996e458f3613d0f11d8c387b2eaeb4302aeeb00d291612bb0c00");
+		Assert.assertArrayEquals(correct, res);
+
 		// === Generate keys ===
+
+		System.out.println();
+		System.out.println("Doing signature with " + myDigest.getAlgorithm());
+
 		KeyPair keyPair = generator.generateKeyPair();
 		PublicKey publicKey = keyPair.getPublic();
 		PrivateKey privateKey = keyPair.getPrivate();
-		
+
 		// === Cast to format from library ===
 		EdDSAPrivateKey privKey = (EdDSAPrivateKey) privateKey;
 		EdDSAPublicKey pubKey = (EdDSAPublicKey) publicKey;
@@ -98,20 +121,9 @@ public class Tester {
 		System.out.println("Public key hash algo: " + pubKey.getParams().getHashAlgorithm());
 		System.out.println("Private key hash algo: " + privKey.getParams().getHashAlgorithm());
 
-		// === One way of signing ===
+		// === Signing w. my hash ===
 
-		// byte[] data = new byte[] { 0x11, 0x22, 0x33, 0x44 };
-		// Signature sig = Signature.getInstance("NonewithEdDSA");
-		// sig.initSign(privKey);
-		// sig.update(data);
-		//
-		// byte[] signature = sig.sign();
-		// System.out.println("Resulting signature: " +
-		// Utils.bytesToHex(signature));
-
-		// === Other way of signing ===
-
-		byte[] data = new byte[] { 0x11, 0x22, 0x33, 0x44 };
+		byte[] data = new byte[] { 0x72 };
 		Signature sig = new EdDSAEngine(myDigest);
 		sig.initSign(privKey);
 		sig.update(data);
