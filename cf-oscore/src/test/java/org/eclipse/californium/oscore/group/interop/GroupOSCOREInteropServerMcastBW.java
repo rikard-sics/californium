@@ -21,6 +21,7 @@ import static org.junit.Assert.assertArrayEquals;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
@@ -111,9 +112,9 @@ public class GroupOSCOREInteropServerMcastBW {
 	// static final boolean useMulticast = listenIP.isMulticastAddress();
 
 	/**
-	 * Port to listen to.
+	 * Ports to use.
 	 */
-	static final int unicastPort = 4683;
+	static int unicastPort = 4683;
 	static final int multicastPort = 5683;
 
 	/* --- OSCORE Security Context information (receiver) --- */
@@ -149,7 +150,10 @@ public class GroupOSCOREInteropServerMcastBW {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GroupOSCOREInteropServerMcastBW.class);
 
-	private static final boolean LOOPBACK = false; // FIXME
+	private static final boolean LOOPBACK = false; // FIXME?
+
+	// Use IPv4 or IPv6 (IPv6 doesn't work currently)
+	static boolean ipv4 = true;
 
 	public static void main(String[] args) throws Exception {
 
@@ -167,6 +171,9 @@ public class GroupOSCOREInteropServerMcastBW {
 		// Check command line arguments (flag to use different sid and sid key)
 		if (args.length != 0) {
 			sid = InteropParametersNew.RIKARD_ENTITY_2_KID_ECDSA;
+			int unicastPort2 = 3683;
+			System.out.println("Starting with alternative port for unicast: " + unicastPort2);
+			unicastPort = unicastPort2;
 			System.out.println("Starting with alternative sid " + Utils.toHexString(sid));
 			sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_2_KEY_ECDSA);
 		} else {
@@ -262,11 +269,11 @@ public class GroupOSCOREInteropServerMcastBW {
 		System.out.println("Respond to non-confirmable messages: " + replyToNonConfirmable);
 		// FIXME
 		// System.out.println("Listening to IP: " + listenIP.getHostAddress());
-		// System.out.println("Using multicast: " + useMulticast);
+		System.out.println("Using multicast: " + "true");
 		// System.out.println("Unicast IP: " +
 		// endpoint.getAddress().getHostString());
-		// System.out.println("Incoming port: " +
-		// endpoint.getAddress().getPort());
+		System.out.println("Unicast port: " + unicastPort);
+		System.out.println("Multicast port: " + multicastPort);
 		System.out.print("CoAP resources: ");
 		for (Resource res : server.getRoot().getChildren()) {
 			System.out.print(res.getURI() + " ");
@@ -322,39 +329,31 @@ public class GroupOSCOREInteropServerMcastBW {
 
 		UdpMulticastConnector.Builder builder = new UdpMulticastConnector.Builder();
 
-		// if (NetworkInterfacesUtil.isAnyIpv6()) {
-		// Inet6Address ipv6 =
-		// NetworkInterfacesUtil.getMulticastInterfaceIpv6();
-		// LOGGER.info("Multicast: IPv6 Network Address: {}",
-		// StringUtil.toString(ipv6));
-		// UDPConnector udpConnector = new UDPConnector(new
-		// InetSocketAddress(ipv6, unicastPort));
-		// udpConnector.setReuseAddress(true);
-		// CoapEndpoint coapEndpoint = new
-		// CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector)
-		// .build();
-		//
-		// builder = new
-		// UdpMulticastConnector.Builder().setLocalAddress(CoAP.MULTICAST_IPV6_SITELOCAL,
-		// multicastPort)
-		// .addMulticastGroup(CoAP.MULTICAST_IPV6_SITELOCAL, networkInterface);
-		// createReceiver(builder, (MulticastReceivers) coapEndpoint);
-		//
-		// /*
-		// * https://bugs.openjdk.java.net/browse/JDK-8210493 link-local
-		// * multicast is broken
-		// */
-		// builder = new
-		// UdpMulticastConnector.Builder().setLocalAddress(CoAP.MULTICAST_IPV6_LINKLOCAL,
-		// multicastPort)
-		// .addMulticastGroup(CoAP.MULTICAST_IPV6_LINKLOCAL, networkInterface);
-		// createReceiver(builder, (MulticastReceivers) coapEndpoint);
-		//
-		// server.addEndpoint(coapEndpoint);
-		// LOGGER.info("IPv6 - multicast");
-		// }
+		if (!ipv4 && NetworkInterfacesUtil.isAnyIpv6()) {
+			Inet6Address ipv6 = NetworkInterfacesUtil.getMulticastInterfaceIpv6();
+			LOGGER.info("Multicast: IPv6 Network Address: {}", StringUtil.toString(ipv6));
+			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv6, unicastPort));
+			udpConnector.setReuseAddress(true);
+			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector)
+					.build();
 
-		if (true || NetworkInterfacesUtil.isAnyIpv4()) {
+			builder = new UdpMulticastConnector.Builder().setLocalAddress(CoAP.MULTICAST_IPV6_SITELOCAL, multicastPort)
+					.addMulticastGroup(CoAP.MULTICAST_IPV6_SITELOCAL, networkInterface);
+			createReceiver(builder, (MulticastReceivers) coapEndpoint);
+
+			/*
+			 * https://bugs.openjdk.java.net/browse/JDK-8210493 link-local
+			 * multicast is broken
+			 */
+			builder = new UdpMulticastConnector.Builder().setLocalAddress(CoAP.MULTICAST_IPV6_LINKLOCAL, multicastPort)
+					.addMulticastGroup(CoAP.MULTICAST_IPV6_LINKLOCAL, networkInterface);
+			createReceiver(builder, (MulticastReceivers) coapEndpoint);
+
+			server.addEndpoint(coapEndpoint);
+			LOGGER.info("IPv6 - multicast");
+		}
+
+		if (ipv4 || NetworkInterfacesUtil.isAnyIpv4()) {
 			Inet4Address ipv4 = NetworkInterfacesUtil.getMulticastInterfaceIpv4();
 			LOGGER.info("Multicast: IPv4 Network Address: {}", StringUtil.toString(ipv4));
 			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv4, unicastPort));
