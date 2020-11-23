@@ -376,7 +376,6 @@ public class GroupOSCOREInteropServerMcastBW {
 				// windows seems to fail to open a broadcast receiver
 				builder = new UdpMulticastConnector.Builder().setLocalAddress(broadcast, multicastPort);
 				createReceiver(builder, udpConnector);
-
 			}
 			server.addEndpoint(coapEndpoint);
 			LOGGER.info("IPv4 - multicast");
