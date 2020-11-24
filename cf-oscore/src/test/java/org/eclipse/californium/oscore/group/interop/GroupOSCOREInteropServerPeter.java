@@ -140,7 +140,7 @@ public class GroupOSCOREInteropServerPeter {
 
 	private static Random random;
 
-	private static int DEFAULT_BLOCK_SIZE = 512;
+	private static int DEFAULT_BLOCK_SIZE = 256;
 
 	public static void main(String[] args) throws Exception {
 
