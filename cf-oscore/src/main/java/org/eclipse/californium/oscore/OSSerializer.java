@@ -301,11 +301,11 @@ public class OSSerializer {
 		// Add update algorithms array to external AAD (used for encryption)
 		groupAadEnc.set(1, algorithms);
 
-		// Add request_kid_context //FIXED
-		CBORObject requestKidContext = CBORObject.FromObject(ctx.getIdContext());
+		// Add request_kid_context //FIXME
 		if (ctx.getIdContext() == null || ctx.getIdContext().length == 0) {
 			groupAadEnc.Add(CBORObject.FromObject(Bytes.EMPTY));
 		} else {
+			CBORObject requestKidContext = CBORObject.FromObject(ctx.getIdContext());
 			groupAadEnc.Add(requestKidContext);
 		}
 
