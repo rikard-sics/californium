@@ -4,6 +4,10 @@ import org.eclipse.californium.elements.util.Bytes;
 
 import net.i2p.crypto.eddsa.Utils;
 
+/**
+ * https://github.com/ace-wg/Hackathon-109/blob/master/GroupDerivation.md
+ *
+ */
 public class InteropParametersNew {
 
 	/* Public / private keys */
