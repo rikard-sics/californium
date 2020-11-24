@@ -331,7 +331,7 @@ public class GroupCtx {
 
 		byte[] pairwiseSenderKey = null;
 		try {
-			pairwiseSenderKey = OSCoreCtx.deriveKey(senderCtx.getSenderKey(), sharedSecret, keyLength, digest,
+			pairwiseSenderKey = OSCoreCtx.deriveKey(sharedSecret, senderCtx.getSenderKey(), keyLength, digest,
 					info.EncodeToBytes());
 
 		} catch (CoseException e) {
@@ -373,7 +373,7 @@ public class GroupCtx {
 		}
 
 		try {
-			pairwiseRecipientKey = OSCoreCtx.deriveKey(recipientKey, sharedSecret, keyLength, digest,
+			pairwiseRecipientKey = OSCoreCtx.deriveKey(sharedSecret, recipientKey, keyLength, digest,
 					info.EncodeToBytes());
 
 		} catch (CoseException e) {
