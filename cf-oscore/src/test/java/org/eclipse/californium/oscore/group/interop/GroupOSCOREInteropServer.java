@@ -213,15 +213,12 @@ public class GroupOSCOREInteropServer {
 		NetworkConfig config = NetworkConfig.getStandard();
 
 		// For BW (needed? Seems not)
-		// MatcherMode mode = MatcherMode.STRICT;
-		// config = config.setInt(Keys.ACK_TIMEOUT,
-		// 200).setFloat(Keys.ACK_RANDOM_FACTOR, 1f)
-		// .setFloat(Keys.ACK_TIMEOUT_SCALE, 1f)
-		// // set response timeout (indirect) to 10s
-		// .setLong(Keys.EXCHANGE_LIFETIME, 10 *
-		// 1000L).setInt(Keys.MAX_MESSAGE_SIZE, DEFAULT_BLOCK_SIZE)
-		// .setInt(Keys.PREFERRED_BLOCK_SIZE,
-		// DEFAULT_BLOCK_SIZE).setString(Keys.RESPONSE_MATCHING, mode.name());
+		MatcherMode mode = MatcherMode.STRICT;
+		config = config.setInt(Keys.ACK_TIMEOUT, 200).setFloat(Keys.ACK_RANDOM_FACTOR, 1f)
+				.setFloat(Keys.ACK_TIMEOUT_SCALE, 1f)
+				// set response timeout (indirect) to 10s
+				.setLong(Keys.EXCHANGE_LIFETIME, 10 * 1000L).setInt(Keys.MAX_MESSAGE_SIZE, DEFAULT_BLOCK_SIZE)
+				.setInt(Keys.PREFERRED_BLOCK_SIZE, DEFAULT_BLOCK_SIZE).setString(Keys.RESPONSE_MATCHING, mode.name());
 
 		CoapEndpoint endpoint = createEndpoints(config);
 
