@@ -27,6 +27,9 @@ import java.net.URISyntaxException;
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.Utils;
+import org.eclipse.californium.core.coap.CoAP.Code;
+import org.eclipse.californium.core.coap.CoAP.Type;
+import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
@@ -56,6 +59,7 @@ public class EdhocClient {
 	 */
 	public static void main(String args[]) {
 		String defaultUri = "coap://localhost/helloWorld";
+		String edhocURI = "coap://localhost/.well-known/edhoc";
 
 		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		NetworkConfig.setStandard(config);
@@ -73,8 +77,24 @@ public class EdhocClient {
 			System.err.println("Invalid URI: " + e.getMessage());
 			System.exit(-1);
 		}
+		// helloWorldExchange(args, uri);
+		
+		
+		// Run EDHOC
+		try {
+			uri = new URI(edhocURI);
+		}
+		catch (URISyntaxException e) {
+			System.err.println("Invalid URI: " + e.getMessage());
+			System.exit(-1);
+		}
+		edhocExchange(args, uri);
 
-		CoapClient client = new CoapClient(uri);
+	}
+	
+	private static void helloWorldExchange(final String args[], final URI targetUri) {
+		
+		CoapClient client = new CoapClient(targetUri);
 
 		CoapResponse response = null;
 		try {
@@ -105,7 +125,77 @@ public class EdhocClient {
 			System.out.println("No response received.");
 		}
 		client.shutdown();
+		
+	}
+	
+	private static void edhocExchange(final String args[], final URI targetUri) {
+		
+		CoapClient client = new CoapClient(targetUri);
 
+		CoapResponse response = null;
+		
+		/*
+		// Simple sending of a GET request
+		try {
+			response = client.get();
+		} catch (ConnectorException | IOException e) {
+			System.err.println("Got an error: " + e);
+		}
+
+		if (response != null) {
+
+			System.out.println(response.getCode());
+			System.out.println(response.getOptions());
+			if (args.length > 1) {
+				try (FileOutputStream out = new FileOutputStream(args[1])) {
+					out.write(response.getPayload());
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			} else {
+				System.out.println(response.getResponseText());
+
+				System.out.println(System.lineSeparator() + "ADVANCED" + System.lineSeparator());
+				// access advanced API with access to more details through
+				// .advanced()
+				System.out.println(Utils.prettyPrint(response));
+			}
+		} else {
+			System.out.println("No response received.");
+		}
+		*/
+		
+		// Send EDHOC Message 1
+		byte[] requestPayload = { (byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03 };
+		
+		Request edhocMessage1 = new Request(Code.POST, Type.CON);
+		edhocMessage1.setPayload(requestPayload);
+		edhocMessage1.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
+		
+        // Submit the request
+        System.out.println("\nSent EDHOC Message1\n");
+        CoapResponse edhocMessage2;
+        try {
+			edhocMessage2 = client.advanced(edhocMessage1);
+		} catch (ConnectorException e) {
+			System.err.println("ConnectorException when sending EDHOC Message1");
+			return;
+		} catch (IOException e) {
+			System.err.println("IOException when sending EDHOC Message1");
+			return;
+		}
+		
+        byte[] responsePayload = edhocMessage2.getPayload();
+        System.out.println("\nResponse: " + new String(responsePayload) + "\n");
+		
+		// Receive and process EDHOC Message 2
+		// TBD
+		
+		// Send EDHOC Message 3
+		// TBD
+				
+		client.shutdown();
+		
 	}
 
 }

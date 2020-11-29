@@ -21,13 +21,18 @@ package org.eclipse.californium.edhoc;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.nio.charset.Charset;
 
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
+import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
+
+import net.i2p.crypto.eddsa.Utils;
 
 public class EdhocServer extends CoapServer {
 
@@ -78,6 +83,15 @@ public class EdhocServer extends CoapServer {
 
 		// provide an instance of a Hello-World resource
 		add(new HelloWorldResource());
+		
+		// provide an instance of a .well-known resource
+		CoapResource wellKnownResource = new WellKnown();
+		add(wellKnownResource);
+		
+		// provide an instance of a .well-known/edhoc resource
+		CoapResource edhocResource = new EdhocResource();
+		wellKnownResource.add(edhocResource);
+
 	}
 
 	/*
@@ -100,5 +114,84 @@ public class EdhocServer extends CoapServer {
 			// respond to the request
 			exchange.respond("Hello World!");
 		}
+	}
+	
+	/*
+	 * Definition of the .well-known Resource
+	 */
+	class WellKnown extends CoapResource {
+
+		public WellKnown() {
+
+			// set resource identifier
+			super(".well-known");
+
+			// set display name
+			getAttributes().setTitle(".well-known");
+
+		}
+
+		@Override
+		public void handleGET(CoapExchange exchange) {
+
+			// respond to the request
+			exchange.respond(".well-known");
+		}
+	}
+	
+	/*
+	 * Definition of the EDHOC Resource
+	 */
+	class EdhocResource extends CoapResource {
+
+		public EdhocResource() {
+
+			// set resource identifier
+			super("edhoc");
+
+			// set display name
+			getAttributes().setTitle("EDHOC Resource");
+		}
+
+		@Override
+		public void handleGET(CoapExchange exchange) {
+
+			// respond to the request
+			exchange.respond("Send me a POST request to run EDHOC!");
+		}
+		
+		
+		@Override
+		public void handlePOST(CoapExchange exchange) {
+			
+			System.out.println("\nReceived EDHOC Message1\n");
+			
+			byte[] requestPayload = exchange.getRequestPayload();
+			
+			// Check if this is an EDHOC Message1 or an EDHOC Message3 bound to an ongoing instance
+			// TBD
+			
+			// Process EDHOC Message1
+			// TBD
+			
+			// Prepare EDHOC Message2
+			// TBD
+			String responseString = new String("Your payload was " + Utils.bytesToHex(requestPayload));
+			byte[] responsePayload = responseString.getBytes(Constants.charset);
+			
+			// Send EDHOC Message2
+			Response edhocMessage2 = new Response(ResponseCode.CREATED);
+			edhocMessage2.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
+			edhocMessage2.setPayload(responsePayload);
+			exchange.respond(edhocMessage2);
+			
+			// Save status to recognize a later EDHOC Message3
+			// TBD
+			
+			// Process EDHOC Message3
+			// TBD
+			
+		}
+		
 	}
 }
