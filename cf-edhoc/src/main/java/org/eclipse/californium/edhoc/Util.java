@@ -18,8 +18,61 @@
 
 package org.eclipse.californium.edhoc;
 
+import com.upokecenter.cbor.CBORObject;
+import com.upokecenter.cbor.CBORType;
+
 public class Util {
 
+    /**
+     *  Encode a CBOR byte string as a bstr_identifier, i.e.:
+     *  - A CBOR byte string with length 0, 2 or greater than 2 bytes remains as is
+     *  - A CBOR byte string with length 1 byte becomes a CBOR integer, with
+     *    value the byte-encoded integer value from the byte string - 24
+     * @param byteString   The CBOR byte string to encode as bstr_identifier
+     * @return  the bstr_identifier, as a CBOR byte string or a CBOR integer
+     */
+	public static CBORObject encodeToBstrIdentifier (CBORObject byteString) {
+		
+		if(byteString.getType() != CBORType.ByteString)
+			return null;
+		
+		byte[] rawByteString = byteString.GetByteString();
+		
+		if (rawByteString.length == 1) {
+			int value = bytesToInt(rawByteString) - 24;
+			return CBORObject.FromObject(value);
+		}
+		
+		return byteString;
+		
+	}
+	
+    /**
+     *  Produce a CBOR byte string from a bstr_identifier, i.e.:
+     *  - If the bstr_identifier is a CBOR integer, take its value + 24 and encode the result as a 1-byte CBOR byte string
+     *  - If the bstr_identifier is a CBOR byte string with length 0, 2 or more than 2 bytes, return it as is
+     * @param inputObject   The CBOR object to convert back into a CBOR byte string
+     * @return  the CBOR byte string corresponding to the input bstr_identifier
+     */
+	public static CBORObject decodeFromBstrIdentifier (CBORObject inputObject) {
+		
+		if(inputObject.getType() != CBORType.ByteString || inputObject.getType() != CBORType.Integer)
+			return null;
+		
+		if(inputObject.getType() != CBORType.ByteString) {
+			if(inputObject.GetByteString().length == 1) {
+				return null;
+			}
+			return inputObject;
+		}
+		
+		// The CBOR object is of Major Type "Integer"
+		int value = inputObject.AsInt32() + 24;
+		byte[] rawByteString = intToBytes(value);
+		return CBORObject.FromObject(rawByteString);
+		
+	}
+	
     /**
      *  Convert a positive integer into a byte array of minimal size.
      *  The positive integer can be up to 2,147,483,647 
