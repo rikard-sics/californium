@@ -18,11 +18,38 @@
 
 package org.eclipse.californium.edhoc;
 
+import java.util.List;
+
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
 public class Util {
 
+    /**
+     *  Prepare a CBOR sequence, given a list of CBOR Objects as input
+     * @param objectList   The CBOR Objects to compose the CBOR sequence
+     * @return  the CBOR sequence, as an array of bytes
+     */
+	public static byte[] buildCBORSequence (List<CBORObject> objectList) {
+		
+		byte[] mySequence = new byte[0];
+		
+		for (int i = 0; i < objectList.size(); i++) {
+			CBORObject obj = objectList.get(i);
+			byte[] encodedObj = obj.EncodeToBytes();
+			
+			byte[] auxSequence = new byte[mySequence.length + encodedObj.length];
+			System.arraycopy(mySequence, 0, auxSequence, 0, mySequence.length);
+			System.arraycopy(encodedObj, 0, auxSequence, mySequence.length, encodedObj.length);
+			
+			mySequence = new byte[auxSequence.length];
+			System.arraycopy(auxSequence, 0, mySequence, 0, auxSequence.length);
+		}
+		
+		return mySequence;
+		
+	}
+	
     /**
      *  Encode a CBOR byte string as a bstr_identifier, i.e.:
      *  - A CBOR byte string with length 0, 2 or greater than 2 bytes remains as is
