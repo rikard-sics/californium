@@ -106,8 +106,25 @@ public static final int EDHOC_CORR_METHOD_3 = 3;
  */
 
 public static final int EDHOC_CIPHER_SUITE_0 = 0;
-public static final int EDHOC_CIPHER_SUITE_1 = 2;
+public static final int EDHOC_CIPHER_SUITE_1 = 1;
 public static final int EDHOC_CIPHER_SUITE_2 = 2;
 public static final int EDHOC_CIPHER_SUITE_3 = 3;
+
+
+/**
+ * EDHOC protocol steps
+ * 
+ */
+
+// Initiator steps
+public static final int EDHOC_BEFORE_M1 = 0; // Before sending EDHOC Message 1
+public static final int EDHOC_AFTER_M1 = 1;  // After sending EDHOC Message 1
+
+// Responder steps
+public static final int EDHOC_BEFORE_M2 = 2; // Before sending EDHOC Message 2
+public static final int EDHOC_AFTER_M2 = 3;  // After sending EDHOC Message 2
+
+// Common steps
+public static final int EDHOC_AFTER_M3 = 4;  // After sending EDHOC Message 3
 
 }
