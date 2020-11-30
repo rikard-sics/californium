@@ -18,6 +18,7 @@ package org.eclipse.californium.edhoc;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -28,7 +29,7 @@ import javax.crypto.spec.SecretKeySpec;
  * 
  */
 public class Hkdf {
-
+		
 	/**
 	 * HKDF Extract-and-Expand.
 	 * 
