@@ -47,20 +47,24 @@ public class Util {
      */
 	public static byte[] computeSignature (CBORObject idCredX, byte[] externalData, byte[] payload, OneKey signKey)
 			                               throws CoseException {
-		
-        Sign1Message msg = new Sign1Message();
+        
+        if(idCredX == null || externalData == null || payload == null || signKey == null)
+        	return null;
         
         // The ID of the public credential has to be a CBOR map ...
-        if (idCredX.getType() != CBORType.Map)
+        if(idCredX.getType() != CBORType.Map)
         	return null;
         
         // ... and it cannot be empty
-        if (idCredX.size() == 0)
+        if(idCredX.size() == 0)
         	return null;
+        
+		
+        Sign1Message msg = new Sign1Message();
         
         // Set the protected header of the COSE object
         for(CBORObject label : idCredX.getKeys()) {
-            // All good if the map has only one element, otherwise it needs to be rebuil built deterministically
+            // All good if the map has only one element, otherwise it needs to be rebuilt built deterministically
         	msg.addAttribute(label, idCredX.get(label), Attribute.PROTECTED);
         }
         
@@ -92,8 +96,9 @@ public class Util {
      */
 	public static boolean verifySignature (byte[] signature, CBORObject idCredX, byte[] externalData, byte[] payload, OneKey publicKey)
 			                               throws CoseException {
-		
-        Sign1Message msg = new Sign1Message();
+	    
+        if(signature == null || idCredX == null || externalData == null || payload == null || publicKey == null)
+        	return false;
         
         // The ID of the public credential has to be a CBOR map ...
         if (idCredX.getType() != CBORType.Map)
@@ -103,9 +108,11 @@ public class Util {
         if (idCredX.size() == 0)
         	return false;
         
+        Sign1Message msg = new Sign1Message();
+        
         // Set the protected header of the COSE object
         for(CBORObject label : idCredX.getKeys()) {
-            // All good if the map has only one element, otherwise it needs to be rebuil built deterministically
+            // All good if the map has only one element, otherwise it needs to be rebuilt built deterministically
         	msg.addAttribute(label, idCredX.get(label), Attribute.PROTECTED);
         }
         
