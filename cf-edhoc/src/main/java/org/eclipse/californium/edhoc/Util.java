@@ -21,6 +21,13 @@ package org.eclipse.californium.edhoc;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.californium.cose.Attribute;
+import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.Message;
+import org.eclipse.californium.cose.MessageTag;
+import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.cose.Sign1Message;
+
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
@@ -31,9 +38,102 @@ import java.security.NoSuchAlgorithmException;
 public class Util {
 
     /**
+     *  Compute a signature using the COSE Sign1 object
+     * @param idCredX   The ID of the public credential of the signer, as a CBOR map 
+     * @param externalData   The data to use as external_aad
+     * @param payload   The payload to sign
+     * @param signKey   The private key to use for signing
+     * @return  the computed signature, or null in case of invalid input
+     */
+	public static byte[] computeSignature (CBORObject idCredX, byte[] externalData, byte[] payload, OneKey signKey)
+			                               throws CoseException {
+		
+        Sign1Message msg = new Sign1Message();
+        
+        // The ID of the public credential has to be a CBOR map ...
+        if (idCredX.getType() != CBORType.Map)
+        	return null;
+        
+        // ... and it cannot be empty
+        if (idCredX.size() == 0)
+        	return null;
+        
+        // Set the protected header of the COSE object
+        for(CBORObject label : idCredX.getKeys()) {
+            // All good if the map has only one element, otherwise it needs to be rebuil built deterministically
+        	msg.addAttribute(label, idCredX.get(label), Attribute.PROTECTED);
+        }
+        
+        // Set the external_aad to use for the signing process
+        msg.setExternal(externalData);
+       
+        // Set the payload of the COSE object
+        msg.SetContent(payload);
+        
+        // Compute the signature
+        msg.sign(signKey);
+        
+        // Serialize the COSE Sign1 object as a CBOR array
+        CBORObject myArray = msg.EncodeToCBORObject();
+		
+        // Return the actual signature, as fourth element of the CBOR array
+		return myArray.get(3).GetByteString();
+		
+	}
+	
+    /**
+     *  Verify a signature using the COSE Sign1 object
+     * @param signature   The signature to verify
+     * @param idCredX   The ID of the public credential of the signer, as a CBOR map
+     * @param externalData   The data to use as external_aad
+     * @param payload   The payload to sign
+     * @param publicKey   The private key to use for verifying the signature
+     * @return  true is the signature is valid, false if the signature is not valid or the input is not valid 
+     */
+	public static boolean verifySignature (byte[] signature, CBORObject idCredX, byte[] externalData, byte[] payload, OneKey publicKey)
+			                               throws CoseException {
+		
+        Sign1Message msg = new Sign1Message();
+        
+        // The ID of the public credential has to be a CBOR map ...
+        if (idCredX.getType() != CBORType.Map)
+        	return false;
+        
+        // ... and it cannot be empty
+        if (idCredX.size() == 0)
+        	return false;
+        
+        // Set the protected header of the COSE object
+        for(CBORObject label : idCredX.getKeys()) {
+            // All good if the map has only one element, otherwise it needs to be rebuil built deterministically
+        	msg.addAttribute(label, idCredX.get(label), Attribute.PROTECTED);
+        }
+        
+        // Set the external_aad to use for the signing process
+        msg.setExternal(externalData);
+
+        // Set the payload of the COSE object
+        msg.SetContent(payload);
+        
+        // Serialize the COSE Sign1 object as a CBOR array
+        CBORObject myArray = msg.EncodeToCBORObject();
+        
+        // Add the signature to verify, as fourth element of the CBOR array
+        myArray.set(3, CBORObject.FromObject(signature));
+		
+        // Rebuild the COSE object including the signature
+        byte[] serializedMsg = myArray.EncodeToBytes();
+        msg = (Sign1Message) Message.DecodeFromBytes(serializedMsg, MessageTag.Sign1);
+        
+        // Verify the signature
+        return msg.validate(publicKey);
+       
+	}
+	
+    /**
      *  Compute a hash value using the specified algorithm 
      * @param input   The content to hash
-     * @algorithm   The name of the hash algorithm to use
+     * @param algorithm   The name of the hash algorithm to use
      * @return  the computed hash, or null in case of invalid input
      */
 	public static byte[] computeHash (byte[] input, String algorithm) throws NoSuchAlgorithmException {
