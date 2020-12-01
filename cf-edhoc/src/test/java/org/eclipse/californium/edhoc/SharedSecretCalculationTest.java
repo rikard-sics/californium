@@ -24,8 +24,6 @@ import java.security.Provider;
 import java.security.Security;
 import java.util.Arrays;
 
-import javax.xml.bind.DatatypeConverter;
-
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.OneKey;
@@ -342,12 +340,9 @@ public class SharedSecretCalculationTest {
 
 		// First X25519 test vector
 
-		byte[] inputScalar = DatatypeConverter
-				.parseHexBinary("a546e36bf0527c9d3b16154b82465edd62144c0ac1fc5a18506a2244ba449ac4");
-		byte[] inputUCoordinate = DatatypeConverter
-				.parseHexBinary("e6db6867583030db3594c1a424b15f7c726624ec26b3353b10a903a6d0ab1c4c");
-		byte[] outputUCoordinate = DatatypeConverter
-				.parseHexBinary("c3da55379de9c6908e94ea4df28d084f32eccf03491c71f754b4075577a28552");
+		byte[] inputScalar = Utils.hexToBytes("a546e36bf0527c9d3b16154b82465edd62144c0ac1fc5a18506a2244ba449ac4");
+		byte[] inputUCoordinate = Utils.hexToBytes("e6db6867583030db3594c1a424b15f7c726624ec26b3353b10a903a6d0ab1c4c");
+		byte[] outputUCoordinate = Utils.hexToBytes("c3da55379de9c6908e94ea4df28d084f32eccf03491c71f754b4075577a28552");
 
 		byte[] myResult = SharedSecretCalculation.X25519(inputScalar, inputUCoordinate);
 		System.out.println("First test vector works: " + Arrays.equals(myResult, outputUCoordinate));
@@ -355,12 +350,9 @@ public class SharedSecretCalculationTest {
 
 		// Second X25519 test vector
 
-		inputScalar = DatatypeConverter
-				.parseHexBinary("4b66e9d4d1b4673c5ad22691957d6af5c11b6421e0ea01d42ca4169e7918ba0d");
-		inputUCoordinate = DatatypeConverter
-				.parseHexBinary("e5210f12786811d3f4b7959d0538ae2c31dbe7106fc03c3efc4cd549c715a493");
-		outputUCoordinate = DatatypeConverter
-				.parseHexBinary("95cbde9476e8907d7aade45cb4b873f88b595a68799fa152e6f8f7647aac7957");
+		inputScalar = Utils.hexToBytes("4b66e9d4d1b4673c5ad22691957d6af5c11b6421e0ea01d42ca4169e7918ba0d");
+		inputUCoordinate = Utils.hexToBytes("e5210f12786811d3f4b7959d0538ae2c31dbe7106fc03c3efc4cd549c715a493");
+		outputUCoordinate = Utils.hexToBytes("95cbde9476e8907d7aade45cb4b873f88b595a68799fa152e6f8f7647aac7957");
 
 		myResult = SharedSecretCalculation.X25519(inputScalar, inputUCoordinate);
 		System.out.println("Second test vector works: " + Arrays.equals(myResult, outputUCoordinate));
@@ -368,12 +360,9 @@ public class SharedSecretCalculationTest {
 
 		// Third X25519 test vector (iterations)
 
-		inputScalar = DatatypeConverter
-				.parseHexBinary("0900000000000000000000000000000000000000000000000000000000000000");
-		inputUCoordinate = DatatypeConverter
-				.parseHexBinary("0900000000000000000000000000000000000000000000000000000000000000");
-		byte[] resultIteration1 = DatatypeConverter
-				.parseHexBinary("422c8e7a6227d7bca1350b3e2bb7279f7897b87bb6854b783c60e80311ae3079");
+		inputScalar = Utils.hexToBytes("0900000000000000000000000000000000000000000000000000000000000000");
+		inputUCoordinate = Utils.hexToBytes("0900000000000000000000000000000000000000000000000000000000000000");
+		byte[] resultIteration1 = Utils.hexToBytes("422c8e7a6227d7bca1350b3e2bb7279f7897b87bb6854b783c60e80311ae3079");
 
 		byte[] myResult_1 = SharedSecretCalculation.X25519(inputScalar, inputUCoordinate);
 		System.out.println("Third test vector works (1 iteration): " + Arrays.equals(myResult_1, resultIteration1));
@@ -381,10 +370,8 @@ public class SharedSecretCalculationTest {
 
 		// 1000 iterations
 
-		byte[] tU = DatatypeConverter
-				.parseHexBinary("0900000000000000000000000000000000000000000000000000000000000000");
-		byte[] tK = DatatypeConverter
-				.parseHexBinary("0900000000000000000000000000000000000000000000000000000000000000");
+		byte[] tU = Utils.hexToBytes("0900000000000000000000000000000000000000000000000000000000000000");
+		byte[] tK = Utils.hexToBytes("0900000000000000000000000000000000000000000000000000000000000000");
 		byte[] tR = null;
 		for (int i = 0; i < 1000; i++) {
 
@@ -394,8 +381,8 @@ public class SharedSecretCalculationTest {
 
 		}
 
-		byte[] resultIteration1000 = DatatypeConverter
-				.parseHexBinary("684cf59ba83309552800ef566f2f4d3c1c3887c49360e3875f2eb94d99532c51");
+		byte[] resultIteration1000 = Utils
+				.hexToBytes("684cf59ba83309552800ef566f2f4d3c1c3887c49360e3875f2eb94d99532c51");
 		byte[] myResult_1000 = tK;
 
 		System.out.println(
@@ -409,8 +396,8 @@ public class SharedSecretCalculationTest {
 
 		if (runMillionTest) {
 
-			tU = DatatypeConverter.parseHexBinary("0900000000000000000000000000000000000000000000000000000000000000");
-			tK = DatatypeConverter.parseHexBinary("0900000000000000000000000000000000000000000000000000000000000000");
+			tU = Utils.hexToBytes("0900000000000000000000000000000000000000000000000000000000000000");
+			tK = Utils.hexToBytes("0900000000000000000000000000000000000000000000000000000000000000");
 			tR = null;
 			long startTime = System.nanoTime();
 			for (int i = 0; i < 1000000; i++) {
@@ -425,8 +412,8 @@ public class SharedSecretCalculationTest {
 				}
 			}
 
-			byte[] resultIteration1000000 = DatatypeConverter
-					.parseHexBinary("7c3911e0ab2586fd864497297e575e6f3bc601c0883c30df5f4dd2d24f665424");
+			byte[] resultIteration1000000 = Utils
+					.hexToBytes("7c3911e0ab2586fd864497297e575e6f3bc601c0883c30df5f4dd2d24f665424");
 			byte[] myResult_1000000 = tK;
 
 			System.out.println("Third test vector works (1 000 000 iterations): "
@@ -440,18 +427,13 @@ public class SharedSecretCalculationTest {
 		/* Test Diffie Hellman */
 		// See https://tools.ietf.org/html/rfc7748#section-6.1
 
-		byte[] private_key_a = DatatypeConverter
-				.parseHexBinary("77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a");
-		byte[] public_key_KA = DatatypeConverter
-				.parseHexBinary("8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a");
+		byte[] private_key_a = Utils.hexToBytes("77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a");
+		byte[] public_key_KA = Utils.hexToBytes("8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a");
 
-		byte[] private_key_b = DatatypeConverter
-				.parseHexBinary("5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb");
-		byte[] public_key_KB = DatatypeConverter
-				.parseHexBinary("de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f");
+		byte[] private_key_b = Utils.hexToBytes("5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb");
+		byte[] public_key_KB = Utils.hexToBytes("de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f");
 
-		byte[] nine = DatatypeConverter
-				.parseHexBinary("0900000000000000000000000000000000000000000000000000000000000000");
+		byte[] nine = Utils.hexToBytes("0900000000000000000000000000000000000000000000000000000000000000");
 
 		// Check public keys
 		byte[] public_key_KA_calc = SharedSecretCalculation.X25519(private_key_a, nine);
@@ -462,8 +444,7 @@ public class SharedSecretCalculationTest {
 		assertArrayEquals(public_key_KA_calc, public_key_KA);
 		assertArrayEquals(public_key_KB_calc, public_key_KB);
 
-		byte[] sharedSecret = DatatypeConverter
-				.parseHexBinary("4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742");
+		byte[] sharedSecret = Utils.hexToBytes("4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742");
 
 		// Check shared secret
 		byte[] sharedSecret_calc_one = SharedSecretCalculation.X25519(private_key_a, public_key_KB);
