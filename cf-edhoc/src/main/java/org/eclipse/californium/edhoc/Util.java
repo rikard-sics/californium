@@ -18,7 +18,9 @@
 
 package org.eclipse.californium.edhoc;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
@@ -77,6 +79,56 @@ public class Util {
 		}
 		
 		return mySequence;
+		
+	}
+	
+    /**
+     *  Build a CBOR map, ensuring the exact order of its entries
+     * @param labelList   The labels of the CBOR map entries, already prepared as CBOR objects (uint or tstr)
+     * @param valueList   The CBOR Objects to include as values of the CBOR map entries
+     * @return  the binary serialization of the CBOR map, or null in case of invalid input
+     */
+	public static byte[] buildDeterministicCBORMap (List<CBORObject> labelList, List<CBORObject> valueList) {
+		
+		if (labelList.size() != valueList.size())
+			return null;
+		
+		int numEntries = labelList.size(); 
+		
+		if (numEntries == 0) {
+			CBORObject emptyMap = CBORObject.NewMap();
+			return emptyMap.EncodeToBytes();
+		}
+		
+		byte[] mapContent = new byte[0];
+		List<CBORObject> pairList = new ArrayList<CBORObject>();
+		
+		for(int i = 0; i < numEntries; i++) {
+			if(labelList.get(i) == null || valueList.get(i) == null)
+				return null;
+			
+			if(labelList.get(i).getType() != CBORType.Integer ||
+			   labelList.get(i).getType() != CBORType.TextString) {
+				return null;
+			}
+			
+			pairList.add(labelList.get(i));
+			pairList.add(valueList.get(i));
+		}
+		mapContent = buildCBORSequence(pairList);
+		
+		// Encode the number N of map entries as a CBOR integer
+		CBORObject numEntriesCBOR = CBORObject.FromObject(numEntries);
+		byte[] mapHeader = numEntriesCBOR.EncodeToBytes();
+		// Change the first byte so that the result is the header of a CBOR map with N entries
+		// 0b000_xxxxx & 0b000_11111 --> 0b101_xxxxx  , x ={0,1}
+		mapHeader[0] = (byte) (mapHeader[0] & intToBytes(31)[0]);
+		
+		byte[] serializedMap = new byte[mapHeader.length + mapContent.length];
+		System.arraycopy(mapHeader, 0, serializedMap, 0, mapHeader.length);
+		System.arraycopy(mapContent, 0, serializedMap, mapHeader.length, mapContent.length);
+		
+		return serializedMap;
 		
 	}
 	
