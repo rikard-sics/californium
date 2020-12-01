@@ -20,6 +20,7 @@ package org.eclipse.californium.edhoc;
 
 import java.nio.charset.Charset;
 
+
 /**
  * Constants for use with the EDHOC protocol.
  * 
@@ -109,6 +110,78 @@ public static final int EDHOC_CIPHER_SUITE_0 = 0;
 public static final int EDHOC_CIPHER_SUITE_1 = 1;
 public static final int EDHOC_CIPHER_SUITE_2 = 2;
 public static final int EDHOC_CIPHER_SUITE_3 = 3;
+
+
+/**
+ * The EDHOC AEAD algorithms associated to each ciphersuite
+ */
+public static final String[] EDHOC_AEAD_ALGS = {
+		"AES_CCM_16_64_128",   // cipher suite 0
+		"AES_CCM_16_128_128",  // cipher suite 1
+		"AES_CCM_16_64_128",   // cipher suite 2
+		"AES_CCM_16_128_128"   // cipher suite 3
+};
+
+/**
+ * The EDHOC hash algorithms associated to each ciphersuite
+ */
+public static final String[] EDHOC_HASH_ALGS = {
+		"SHA-256",  // cipher suite 0
+		"SHA-256",  // cipher suite 1
+		"SHA-256",  // cipher suite 2
+		"SHA-256",  // cipher suite 3
+};
+
+/**
+ * The EDHOC ECDH curves associated to each ciphersuite
+ */
+public static final String[] EDHOC_ECDH_CURVES = {
+		"X25519",  // cipher suite 0
+		"X25519",  // cipher suite 1
+		"P-256",   // cipher suite 2
+		"P-256",   // cipher suite 3
+};
+
+/**
+ * The EDHOC signature algorithms associated to each ciphersuite
+ */
+public static final String[] EDHOC_SIGN_ALGS = {
+		"EdDSA",  // cipher suite 0
+		"EdDSA",  // cipher suite 1
+		"ES256",  // cipher suite 2
+		"ES256",  // cipher suite 3
+};
+
+/**
+ * The EDHOC signature algorithm curves associated to each ciphersuite
+ */
+public static final String[] EDHOC_SIGN_ALG_CURVES = {
+		"Ed25519",  // cipher suite 0
+		"Ed25519",  // cipher suite 1
+		"P-256",    // cipher suite 2
+		"P-256",    // cipher suite 3
+};
+
+/**
+ * The application AEAD algorithms associated to each ciphersuite
+ */
+public static final String[] APP_AEAD_ALGS = {
+		"AES_CCM_16_64_128",  // cipher suite 0
+		"AES_CCM_16_64_128",  // cipher suite 1
+		"AES_CCM_16_64_128",  // cipher suite 2
+		"AES_CCM_16_64_128"   // cipher suite 3
+};
+
+/**
+ * The application hash algorithms associated to each ciphersuite
+ */
+public static final String[] APP_HASH_ALGS = {
+		"SHA-256",  // cipher suite 0
+		"SHA-256",  // cipher suite 1
+		"SHA-256",  // cipher suite 2
+		"SHA-256",  // cipher suite 3
+};
+
 
 
 /**
