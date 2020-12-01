@@ -17,13 +17,22 @@
 package org.eclipse.californium.edhoc;
 
 import java.math.BigInteger;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.Security;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
 import java.util.Arrays;
+
+import javax.crypto.KeyAgreement;
 
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+
+import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
@@ -60,6 +69,94 @@ public class SharedSecretCalculation {
 	private static Field ed25519Field = new Field(256, // b
 			Utils.hexToBytes("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
 			new BigIntegerLittleEndianEncoding());
+
+	/**
+	 * Generates a shared secret for EdDSA or ECDSA.
+	 * 
+	 * @param privateKey the public/private key of the sender
+	 * @param publicKey the public key of the recipient
+	 * 
+	 * @return the shared secret
+	 */
+	static byte[] generateSharedSecret(OneKey privateKey, OneKey publicKey) {
+
+		// ECDSA
+
+		CBORObject privateCurve = privateKey.get(KeyKeys.EC2_Curve);
+		CBORObject publicCurve = publicKey.get(KeyKeys.EC2_Curve);
+
+		if (privateCurve != publicCurve) {
+			System.err.println("Public and private keys use different curves.");
+			return null;
+		}
+
+		if (privateCurve == KeyKeys.EC2_P256 || privateCurve == KeyKeys.EC2_P384 || privateCurve == KeyKeys.EC2_P521) {
+			return generateSharedSecretECDSA(privateKey, publicKey);
+		}
+
+		// EdDSA
+
+		privateCurve = privateKey.get(KeyKeys.OKP_Curve);
+		publicCurve = publicKey.get(KeyKeys.OKP_Curve);
+
+		if (privateCurve != publicCurve) {
+			System.err.println("Public and private keys use different curves.");
+			return null;
+		}
+
+		if (privateCurve == KeyKeys.OKP_Ed25519) {
+			return generateSharedSecretEdDSA(privateKey, publicKey);
+		}
+
+		System.err.println("Failed to generate shared secret.");
+		return null;
+	}
+
+	/**
+	 * Generate a shared secret when using ECDSA.
+	 * 
+	 * @param senderPrivateKey the public/private key of the sender
+	 * @param recipientPublicKey the public key of the recipient
+	 * @return the shared secret
+	 */
+	private static byte[] generateSharedSecretECDSA(OneKey senderPrivateKey, OneKey recipientPublicKey) {
+
+		byte[] sharedSecret = null;
+
+		try {
+			ECPublicKey recipientPubKey = (ECPublicKey) recipientPublicKey.AsPublicKey();
+			ECPrivateKey senderPrivKey = (ECPrivateKey) senderPrivateKey.AsPrivateKey();
+
+			KeyAgreement keyAgreement = KeyAgreement.getInstance("ECDH");
+			keyAgreement.init(senderPrivKey);
+			keyAgreement.doPhase(recipientPubKey, true);
+
+			sharedSecret = keyAgreement.generateSecret();
+		} catch (InvalidKeyException | NoSuchAlgorithmException | CoseException e) {
+			System.err.println("Could not generate the shared secret: " + e);
+		}
+
+		return sharedSecret;
+	}
+
+	/**
+	 * Generate a shared secret when using EdDSA.
+	 * 
+	 * @param senderPrivateKey the public/private key of the sender
+	 * @param recipientPublicKey the public key of the recipient
+	 * @return the shared secret
+	 */
+	private static byte[] generateSharedSecretEdDSA(OneKey senderPrivateKey, OneKey recipientPublicKey) {
+
+		byte[] sharedSecret = null;
+		try {
+			sharedSecret = SharedSecretCalculation.calculateSharedSecret(recipientPublicKey, senderPrivateKey);
+		} catch (CoseException e) {
+			System.err.println("Could not generate the shared secret: " + e);
+		}
+
+		return sharedSecret;
+	}
 
 	/**
 	 * Run a number of tests on the code.
@@ -494,7 +591,7 @@ public class SharedSecretCalculation {
 	 * @return the shared secret calculated
 	 * @throws CoseException on failure
 	 */
-	public static byte[] calculateSharedSecret(OneKey publicKey, OneKey privateKey) throws CoseException {
+	private static byte[] calculateSharedSecret(OneKey publicKey, OneKey privateKey) throws CoseException {
 
 		/* Calculate u coordinate from public key */
 
