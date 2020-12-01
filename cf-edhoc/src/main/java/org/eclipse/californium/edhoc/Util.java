@@ -23,8 +23,38 @@ import java.util.List;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
+
 public class Util {
 
+    /**
+     *  Compute a hash value using the specified algorithm 
+     * @param input   The content to hash
+     * @algorithm   The name of the hash algorithm to use
+     * @return  the computed hash, or null in case of invalid input
+     */
+	public static byte[] computeHash (byte[] input, String algorithm) throws NoSuchAlgorithmException {
+		
+		if (input == null)
+			return null;
+		
+		MessageDigest myDigest;
+		
+		if (algorithm.equals("SHA-256"))
+			myDigest = MessageDigest.getInstance("SHA-256");
+		else if (algorithm.equals("SHA-512"))
+			myDigest = MessageDigest.getInstance("SHA-512");
+		else
+			return null;
+		
+		myDigest.reset();
+		myDigest.update(input);
+		return myDigest.digest();
+		
+	}
+	
     /**
      *  Prepare a CBOR sequence, given a list of CBOR Objects as input
      * @param objectList   The CBOR Objects to compose the CBOR sequence
