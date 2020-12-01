@@ -75,7 +75,7 @@ public class EdhocSession {
 	 * EDHOC-Exporter interface
 	 * @param label   The label to use to derive the OKM
 	 * @param len   The intended length of the OKM to derive, in bytes
-	 * @return  the application key
+	 * @return  the application key, or null if the EDHOC execution is not completed yet
 	 */
 	public byte[] edhocExporter(String label, int len) throws InvalidKeyException, NoSuchAlgorithmException {
 		
