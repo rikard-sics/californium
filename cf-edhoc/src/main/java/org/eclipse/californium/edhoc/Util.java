@@ -20,7 +20,6 @@ package org.eclipse.californium.edhoc;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
