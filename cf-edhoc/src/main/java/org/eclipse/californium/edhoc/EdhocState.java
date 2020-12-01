@@ -23,19 +23,16 @@ import java.util.List;
 import org.eclipse.californium.cose.OneKey;
 
 public class EdhocState {
-
-	List<Integer> supportedCiphersuites;
 	
 	boolean initiator;
+	int method;
+	int correlation;
 	int currentStep;
-	int ciphersuite;
-	
-	int authenticationMethod;
-	int correlationMethod;
 	OneKey longTermKey;
 	OneKey ephemeralKey;
-	
-	int peerAuthenticationMethod;
+	List<Integer> supportedCiphersuites;
+
+	int ciphersuite;
 	OneKey peerLongTermPublicKey;
 	OneKey peerEphemeralPublicKey;
 	
@@ -48,25 +45,39 @@ public class EdhocState {
 	byte[] TH2 = null;
 	byte[] TH3 = null;
 	byte[] TH4 = null;
-	
-	
-	public EdhocState(boolean initiator, List<Integer> ciphersuites, int auth, int corr, OneKey ltk, OneKey ek) {
 		
-		this.supportedCiphersuites = ciphersuites;
+	public EdhocState(boolean initiator, int methodCorr, OneKey ltk, OneKey ek, List<Integer> ciphersuites) {
 		
-		if(initiator)
-			currentStep = Constants.EDHOC_BEFORE_M1;
-		else
-			currentStep = Constants.EDHOC_BEFORE_M2;
-		
-		this.authenticationMethod = auth;
-		this.correlationMethod = corr;
-		
+		this.initiator = initiator;
+		this.method = methodCorr / 4;
+		this.correlation = methodCorr % 4;
+		currentStep = initiator ? Constants.EDHOC_BEFORE_M1 : Constants.EDHOC_BEFORE_M2;
 		this.longTermKey = ltk;
 		this.ephemeralKey = ek;
+		this.supportedCiphersuites = ciphersuites;
 		
 	}
 	
+	public boolean isInitiator() {
+		return this.initiator;
+	}
+	
+	public int getMethod() {
+		return this.method;
+	}
+	
+	public int getCorrelation() {
+		return this.correlation;
+	}
+	
+	public void setCurrentStep(int newStep) {
+		this.currentStep = newStep;
+	}
+	
+	public int getCurrentStep() {
+		return this.currentStep;
+	}
+
 	public void setCiphersuite(int ciphersuite) {
 		this.ciphersuite = ciphersuite;
 	}
@@ -74,6 +85,23 @@ public class EdhocState {
 	public int getCiphersuite() {
 		return this.ciphersuite;
 	}
+	
+	public void setPeerLongTermPublicKey(OneKey peerKey) {
+		this.peerLongTermPublicKey = peerKey;
+	}
+	
+	public OneKey getPeerLongTermPublicKey() {
+		return this.peerLongTermPublicKey;
+	}
+	
+	public void setPeerEphemeralPublicKey(OneKey peerKey) {
+		this.peerEphemeralPublicKey = peerKey;
+	}
+	
+	public OneKey getPeerEphemeralPublicKey() {
+		return this.peerEphemeralPublicKey;
+	}
+	
 	
 	public void setPRK2e(byte[] inputKey) {
 		this.prk_2e = inputKey;

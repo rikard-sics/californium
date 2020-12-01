@@ -30,9 +30,9 @@ public class EdhocSession {
 	
 	private EdhocState state;
 	
-	public EdhocSession(boolean initiator, List<Integer> ciphersuites, int auth, int corr, OneKey ltk, OneKey ek) {
+	public EdhocSession(boolean initiator, int methodCorr, OneKey ltk, OneKey ek, List<Integer> ciphersuites) {
 		
-		this.state = new EdhocState(initiator, ciphersuites, auth, corr, ltk, ek);
+		this.state = new EdhocState(initiator, methodCorr, ltk, ek, ciphersuites);
 		
 	}
 	
