@@ -79,7 +79,7 @@ public class Util {
      *  - If the bstr_identifier is a CBOR integer, take its value + 24 and encode the result as a 1-byte CBOR byte string
      *  - If the bstr_identifier is a CBOR byte string with length 0, 2 or more than 2 bytes, return it as is
      * @param inputObject   The CBOR object to convert back into a CBOR byte string
-     * @return  the CBOR byte string corresponding to the input bstr_identifier
+     * @return  the CBOR byte string corresponding to the input bstr_identifier, or null in case of invalid input
      */
 	public static CBORObject decodeFromBstrIdentifier (CBORObject inputObject) {
 		
@@ -95,6 +95,10 @@ public class Util {
 		
 		// The CBOR object is of Major Type "Integer"
 		int value = inputObject.AsInt32() + 24;
+		
+		if(value < 0 || value > 255)
+			return null;
+		
 		byte[] rawByteString = intToBytes(value);
 		return CBORObject.FromObject(rawByteString);
 		
