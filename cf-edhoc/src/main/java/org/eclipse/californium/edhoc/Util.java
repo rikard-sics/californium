@@ -135,6 +135,34 @@ public class Util {
 	}
 	
     /**
+     *  Compute the bitwise xor between two byte arrays of equal length
+     * @param arg1   The first byte array
+     * @param arg2   The second byte array
+     * @return  a byte including the xor result, or null in case of invalid input
+     */
+	public static byte[] arrayXor (byte[] arg1, byte[] arg2) {
+		
+		if(arg1 == null || arg2 == null)
+			return null;
+		
+		if(arg1.length != arg2.length)
+			return null;
+		
+		if(arg1.length == 0)
+			return null;
+		
+		int length = arg1.length;
+		byte[] result = new byte[length];
+		
+		for (int i = 0; i < length; i ++) {
+			result[i] = (byte) (arg1[i] ^ arg2[i]);
+		}
+		
+		return result;
+		
+	}
+	
+    /**
      *  Convert a positive integer into a byte array of minimal size.
      *  The positive integer can be up to 2,147,483,647 
      * @param num
