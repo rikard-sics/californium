@@ -23,6 +23,8 @@ import java.util.List;
 
 import org.eclipse.californium.cose.Attribute;
 import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.HeaderKeys;
+import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.Message;
 import org.eclipse.californium.cose.MessageTag;
 import org.eclipse.californium.cose.OneKey;
@@ -30,6 +32,8 @@ import org.eclipse.californium.cose.Sign1Message;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
+
+import net.i2p.crypto.eddsa.Utils;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -48,9 +52,9 @@ public class Util {
 	public static byte[] computeSignature (CBORObject idCredX, byte[] externalData, byte[] payload, OneKey signKey)
 			                               throws CoseException {
         
-        if(idCredX == null || externalData == null || payload == null || signKey == null)
-        	return null;
-        
+		if(idCredX == null || externalData == null || payload == null || signKey == null)
+        	return null;       
+		
         // The ID of the public credential has to be a CBOR map ...
         if(idCredX.getType() != CBORType.Map)
         	return null;
@@ -59,7 +63,6 @@ public class Util {
         if(idCredX.size() == 0)
         	return null;
         
-		
         Sign1Message msg = new Sign1Message();
         
         // Set the protected header of the COSE object
@@ -68,11 +71,20 @@ public class Util {
         	msg.addAttribute(label, idCredX.get(label), Attribute.PROTECTED);
         }
         
+        msg.addAttribute(HeaderKeys.Algorithm, signKey.get(KeyKeys.Algorithm), Attribute.UNPROTECTED);
+        
         // Set the external_aad to use for the signing process
         msg.setExternal(externalData);
        
         // Set the payload of the COSE object
         msg.SetContent(payload);
+        
+        // Debug print
+        /*
+        System.out.println("Protected attributes: " + msg.getProtectedAttributes().toString());
+        System.out.println("aad                 : " + Utils.bytesToHex(msg.getExternal()));
+        System.out.println("payload             : " + Utils.bytesToHex(msg.GetContent()));
+        */
         
         // Compute the signature
         msg.sign(signKey);
@@ -80,6 +92,11 @@ public class Util {
         // Serialize the COSE Sign1 object as a CBOR array
         CBORObject myArray = msg.EncodeToCBORObject();
 		
+        // Debug print
+        /*
+        System.out.println("\nCBOR array with signature: " + myArray.toString() + "\n");
+        */
+        
         // Return the actual signature, as fourth element of the CBOR array
 		return myArray.get(3).GetByteString();
 		
@@ -108,29 +125,42 @@ public class Util {
         if (idCredX.size() == 0)
         	return false;
         
-        Sign1Message msg = new Sign1Message();
+        // Prepare the raw COSE Sign1 object as a CBOR array
+        CBORObject myArray = CBORObject.NewArray();
         
-        // Set the protected header of the COSE object
-        for(CBORObject label : idCredX.getKeys()) {
-            // All good if the map has only one element, otherwise it needs to be rebuilt built deterministically
-        	msg.addAttribute(label, idCredX.get(label), Attribute.PROTECTED);
-        }
+        // Add the Protected header, i.e. the provided CBOR map wrapped into a CBOR byte string
+        myArray.Add(idCredX.EncodeToBytes());
+        
+        // Add the Unprotected, i.e. a CBOR map specifying the signature algorithm
+        CBORObject myMap = CBORObject.NewMap();
+        myMap.Add(KeyKeys.Algorithm, publicKey.get(KeyKeys.Algorithm));
+        myArray.Add(myMap);
+        
+        // Add the signed payload
+        myArray.Add(payload);
+        
+        // Add the signature to verify
+        myArray.Add(signature);
+                
+        myArray = CBORObject.FromObjectAndTag(myArray, MessageTag.Sign1.value);
+  
+        // Debug print
+        /*
+        System.out.println("\nCBOR array with signature: " + myArray.toString() + "\n");
+        */
+        
+        // Build the COSE Sign1 object from the raw version
+        Sign1Message msg = (Sign1Message) Message.DecodeFromBytes(myArray.EncodeToBytes(), MessageTag.Sign1);
         
         // Set the external_aad to use for the signing process
         msg.setExternal(externalData);
-
-        // Set the payload of the COSE object
-        msg.SetContent(payload);
         
-        // Serialize the COSE Sign1 object as a CBOR array
-        CBORObject myArray = msg.EncodeToCBORObject();
-        
-        // Add the signature to verify, as fourth element of the CBOR array
-        myArray.set(3, CBORObject.FromObject(signature));
-		
-        // Rebuild the COSE object including the signature
-        byte[] serializedMsg = myArray.EncodeToBytes();
-        msg = (Sign1Message) Message.DecodeFromBytes(serializedMsg, MessageTag.Sign1);
+        // Debug print
+        /*
+        System.out.println("Protected attributes: " + msg.getProtectedAttributes().toString());
+        System.out.println("aad                 : " + Utils.bytesToHex(msg.getExternal()));
+        System.out.println("payload             : " + Utils.bytesToHex(msg.GetContent()));
+        */
         
         // Verify the signature
         return msg.validate(publicKey);
