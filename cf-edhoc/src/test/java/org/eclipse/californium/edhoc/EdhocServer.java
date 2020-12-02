@@ -21,6 +21,9 @@ package org.eclipse.californium.edhoc;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
+import java.security.Security;
 
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
@@ -29,14 +32,32 @@ import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.server.resources.CoapExchange;
+import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.KeyKeys;
+import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 
+import com.upokecenter.cbor.CBORObject;
+
+import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 import net.i2p.crypto.eddsa.Utils;
 
 public class EdhocServer extends CoapServer {
 
 	private static final int COAP_PORT = NetworkConfig.getStandard().getInt(NetworkConfig.Keys.COAP_PORT);
 
+	private final static Provider EdDSA = new EdDSASecurityProvider();
+	
+	// Uncomment to set ECDSA with curve P-256 for signatures
+    private final static int signKeyCurve = KeyKeys.EC2_P256.AsInt32();
+    
+    // Uncomment to set EDDSA with curve Ed25519 for signatures
+    // private final static int signKeyCurve = KeyKeys.OKP_Ed25519.AsInt32();
+    
+    // The long-term asymmetric key pair of this peer
+	private static OneKey keyPair = null;
+	
 	/*
 	 * Application entry point.
 	 */
@@ -50,10 +71,26 @@ public class EdhocServer extends CoapServer {
 			// add endpoints on all IP addresses
 			server.addEndpoints(udp);
 			server.start();
-
+						
 		} catch (SocketException e) {
 			System.err.println("Failed to initialize server: " + e.getMessage());
 		}
+		
+		// Generate the new long-term asymmetric key pair 
+		try {
+	 		if (signKeyCurve == KeyKeys.EC2_P256.AsInt32())
+	 			keyPair = OneKey.generateKey(AlgorithmID.ECDSA_256);
+	    	if (signKeyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
+	        	Security.insertProviderAt(EdDSA, 0);
+	    		keyPair = OneKey.generateKey(AlgorithmID.EDDSA);
+	    	}
+			
+		} catch (CoseException e) {
+			System.err.println("Error while generating the key pair");
+			return;
+		}
+		
+		runTests();		
 	}
 
 	/**
@@ -75,8 +112,7 @@ public class EdhocServer extends CoapServer {
 	}
 
 	/*
-	 * Constructor for a new Hello-World server. Here, the resources of the
-	 * server are initialized.
+	 * Constructor for a new server. Here, the resources of the server are initialized.
 	 */
 	public EdhocServer() throws SocketException {
 
@@ -92,7 +128,87 @@ public class EdhocServer extends CoapServer {
 		wellKnownResource.add(edhocResource);
 
 	}
+	
+	public static void runTests() {
+		// Test a hash computation
+		byte[] inputHash = new byte[] {(byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0, (byte) 0x5c};
+		try {
+			System.out.println("Hash input: " + Utils.bytesToHex(inputHash));			
+			byte[] resultHash = Util.computeHash(inputHash, "SHA-256");
+			System.out.println("Hash outpu: " + Utils.bytesToHex(resultHash));
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("Hash algorithm not supported");
+		}
 
+		// Test a signature computation and verification, using ECDSA
+		byte[] payloadToSign = new byte[] {(byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0, (byte) 0x5c};
+		byte[] externalData = new byte[] {(byte) 0xef, (byte) 0xde, (byte) 0xac, (byte) 0x75, (byte) 0x0f, (byte) 0xc5};
+		byte[] kid = new byte[] {(byte) 0x01};
+		CBORObject idCredX = CBORObject.NewMap();
+		idCredX.Add(KeyKeys.KeyId, kid);
+		
+		byte[] mySignature = null;
+		try {
+			mySignature = Util.computeSignature(idCredX, externalData, payloadToSign, keyPair);
+	        System.out.println("Signing completed");
+		} catch (CoseException e) {
+			System.err.println("Error while computing the signature");
+			e.printStackTrace();
+		}
+		
+		boolean verified = false;
+		try {
+			verified = Util.verifySignature(mySignature, idCredX, externalData, payloadToSign, keyPair);
+		} catch (CoseException e) {
+			System.err.println("Error while verifying the signature");
+			e.printStackTrace();
+		}
+		System.out.println("Signature validity: " + verified);
+		
+	}
+	
+	private static OneKey makeSingleKey(OneKey keyPair, boolean isPrivate) {
+		
+	    CBORObject key = CBORObject.NewMap();
+        OneKey coseKey = null;
+	    
+        key.Add(KeyKeys.KeyType.AsCBOR(), keyPair.get(KeyKeys.KeyType));
+        
+	    if (isPrivate) {
+	    	if(keyPair.get(KeyKeys.KeyType) == KeyKeys.KeyType_EC2) {
+		        key.Add(KeyKeys.EC2_Curve.AsCBOR(), keyPair.get(KeyKeys.EC2_Curve));
+		        key.Add(KeyKeys.EC2_D.AsCBOR(), keyPair.get(KeyKeys.EC2_D));
+
+	    	}
+	    	else if(keyPair.get(KeyKeys.KeyType) == KeyKeys.KeyType_OKP) {
+		        key.Add(KeyKeys.OKP_Curve.AsCBOR(), keyPair.get(KeyKeys.OKP_Curve));
+		        key.Add(KeyKeys.OKP_D.AsCBOR(), keyPair.get(KeyKeys.OKP_D));
+	    	}
+	        
+	    }
+	    else {
+	    	if(keyPair.get(KeyKeys.KeyType) == KeyKeys.KeyType_EC2) {
+		        key.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
+		        key.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P256);
+		        key.Add(KeyKeys.EC2_X.AsCBOR(), keyPair.get(KeyKeys.EC2_X));
+		        key.Add(KeyKeys.EC2_Y.AsCBOR(), keyPair.get(KeyKeys.EC2_Y));
+	    	}
+	    	else if(keyPair.get(KeyKeys.KeyType) == KeyKeys.KeyType_OKP) {
+		        key.Add(KeyKeys.OKP_Curve.AsCBOR(), keyPair.get(KeyKeys.OKP_Curve));
+		        key.Add(KeyKeys.OKP_X.AsCBOR(), keyPair.get(KeyKeys.OKP_X));
+	    	}
+	    }
+
+        try {
+        	coseKey = new OneKey(key);
+		} catch (CoseException e) {
+			System.err.println("Error while generating the private key");
+		}
+	    return coseKey;
+		
+	}
+
+	
 	/*
 	 * Definition of the Hello-World Resource
 	 */
