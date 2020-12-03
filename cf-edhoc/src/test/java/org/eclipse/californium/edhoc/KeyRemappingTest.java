@@ -319,6 +319,11 @@ public class KeyRemappingTest {
 
 	}
 
+	@Test
+	public void test() throws CoseException {
+		SharedSecretCalculation.generateCurve25519Key(null);
+	}
+
 	/**
 	 * Test converting a Wei25519 Y (& X) coordinate to an Edwards25519 x
 	 * coordinate
