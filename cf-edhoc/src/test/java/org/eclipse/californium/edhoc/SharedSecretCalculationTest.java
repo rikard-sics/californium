@@ -20,24 +20,36 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import java.math.BigInteger;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.Provider;
+import java.security.SecureRandom;
 import java.security.Security;
 import java.util.Arrays;
 
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.edhoc.SharedSecretCalculation.Tuple;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.upokecenter.cbor.CBORObject;
+
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
+import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
+import net.i2p.crypto.eddsa.KeyPairGenerator;
 import net.i2p.crypto.eddsa.Utils;
 import net.i2p.crypto.eddsa.math.Field;
 import net.i2p.crypto.eddsa.math.FieldElement;
 import net.i2p.crypto.eddsa.math.bigint.BigIntegerFieldElement;
 import net.i2p.crypto.eddsa.math.bigint.BigIntegerLittleEndianEncoding;
+import net.i2p.crypto.eddsa.spec.EdDSANamedCurveSpec;
+import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
+import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
+import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
 
 /**
  * Tests for calculating a shared secret using X25519.
@@ -74,6 +86,94 @@ public class SharedSecretCalculationTest {
 	}
 
 	/* Start tests */
+
+
+	/**
+	 * Test shared secret calculation from the test vectors in the EDHOC draft.
+	 * Note that these are already in Curve25519 so does not need to be
+	 * converted but can be feed straight into X25519. Covering Appendix B.1.
+	 * 
+	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#appendix-B.1
+	 * 
+	 * @throws CoseException on test failure
+	 * @throws InvalidAlgorithmParameterException on test failure
+	 */
+	@Test
+	public void testSharedSecretEdhocVectorsB1() throws CoseException, InvalidAlgorithmParameterException {
+		byte[] X = Utils.hexToBytes("8f781a095372f85b6d9f6109ae422611734d7dbfa0069a2df2935bb2e053bf35");
+		byte[] G_X = Utils.hexToBytes("898ff79a02067a16ea1eccb90fa52246f5aa4dd6ec076bba0259d904b7ec8b0c");
+
+		byte[] Y = Utils.hexToBytes("fd8cd877c9ea386e6af34ff7e606c4b64ca831c8ba33134fd4cd7167cabaecda");
+		byte[] G_Y = Utils.hexToBytes("71a3d599c21da18902a1aea810b2b6382ccd8d5f9bf0195281754c5ebcaf301e");
+
+		byte[] sharedSecret1 = SharedSecretCalculation.X25519(Y, G_X);
+		byte[] sharedSecret2 = SharedSecretCalculation.X25519(X, G_Y);
+
+		Assert.assertArrayEquals(sharedSecret1, sharedSecret2);
+
+		byte[] G_XY_correct = Utils.hexToBytes("2bb7fa6e135bc335d022d634cbfb14b3f582f3e2e3afb2b3150491495c61782b");
+
+		Assert.assertArrayEquals(G_XY_correct, sharedSecret1);
+	}
+
+	/**
+	 * Test shared secret calculation from the test vectors in the EDHOC draft.
+	 * Note that these are already in Curve25519 so does not need to be
+	 * converted but can be feed straight into X25519. Covering Appendix B.2.
+	 * 
+	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#appendix-B.2
+	 * 
+	 * @throws CoseException on test failure
+	 * @throws InvalidAlgorithmParameterException on test failure
+	 */
+	@Test
+	public void testSharedSecretEdhocVectorsB2() throws CoseException, InvalidAlgorithmParameterException {
+
+		// Calculating G_XY
+
+		byte[] X = Utils.hexToBytes("ae11a0db863c0227e53992feb8f5924c50d0a7ba6eeab4ad1ff24572f4f57cfa");
+		byte[] G_X = Utils.hexToBytes("8d3ef56d1b750a4351d68ac250a0e883790efc80a538a444ee9e2b57e2441a7c");
+
+		byte[] Y = Utils.hexToBytes("c646cddc58126e18105f01ce35056e5ebc35f4d4cc510749a3a5e069c116169a");
+		byte[] G_Y = Utils.hexToBytes("52fba0bdc8d953dd86ce1ab2fd7c05a4658c7c30afdbfc3301047069451baf35");
+
+		byte[] sharedSecret1 = SharedSecretCalculation.X25519(Y, G_X);
+		byte[] sharedSecret2 = SharedSecretCalculation.X25519(X, G_Y);
+
+		Assert.assertArrayEquals(sharedSecret1, sharedSecret2);
+
+		byte[] G_XY_correct = Utils.hexToBytes("defc2f3569109b3d1fa4a73dc5e2feb9e1150d90c25ee2f066c2d885f4f8ac4e");
+
+		Assert.assertArrayEquals(G_XY_correct, sharedSecret1);
+
+		// Calculating G_RX
+
+		byte[] R = Utils.hexToBytes("bb501aac67b9a95f97e0eded6b82a662934fbbfc7ad1b74c1fcad66a079422d0");
+		byte[] G_R = Utils.hexToBytes("a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
+
+		sharedSecret1 = SharedSecretCalculation.X25519(R, G_X);
+		sharedSecret2 = SharedSecretCalculation.X25519(X, G_R);
+
+		Assert.assertArrayEquals(sharedSecret1, sharedSecret2);
+
+		byte[] GR_X_correct = Utils.hexToBytes("21c7eff4fb69fa4b6797d05884315d8411a3fda54f6dada61d4fcd85e7906668");
+
+		Assert.assertArrayEquals(GR_X_correct, sharedSecret1);
+
+		// Calculating G_IY
+
+		byte[] SK_I = Utils.hexToBytes("2bbea655c23371c329cfbd3b1f02c6c062033837b8b59099a4436f666081b08e");
+		byte[] G_I = Utils.hexToBytes("2c440cc121f8d7f24c3b0e41aedafe9caa4f4e7abb835ec30f1de88adb96ff71");
+
+		sharedSecret1 = SharedSecretCalculation.X25519(SK_I, G_Y);
+		sharedSecret2 = SharedSecretCalculation.X25519(Y, G_I);
+
+		Assert.assertArrayEquals(sharedSecret1, sharedSecret2);
+
+		byte[] G_IY_correct = Utils.hexToBytes("cbff8cd34a81dfec4cb65d9a572ebd0964450c78563da4981d80d36c8b1a752a");
+
+		Assert.assertArrayEquals(G_IY_correct, sharedSecret1);
+	}
 
 	@Test
 	public void testDecodeLittleEndian() {
