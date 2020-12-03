@@ -33,6 +33,7 @@ import net.i2p.crypto.eddsa.math.Field;
 import net.i2p.crypto.eddsa.math.FieldElement;
 import net.i2p.crypto.eddsa.math.bigint.BigIntegerFieldElement;
 import net.i2p.crypto.eddsa.math.bigint.BigIntegerLittleEndianEncoding;
+import net.i2p.crypto.eddsa.math.ed25519.Ed25519FieldElement;
 
 /**
  * Class implementing functionality for key remapping from Edwards coordinates
@@ -198,7 +199,51 @@ public class KeyRemapping {
 		FieldElement v = root.multiply(u_over_x);
 
 		return v;
+	}
 
+	/**
+	 * BigInteger z_2_bi = new BigInteger(invertArray(z_2.toByteArray()));
+	 * BigIntegerFieldElement z_2_bif = new BigIntegerFieldElement(ed25519Field,
+	 * z_2_bi);
+	 */
+
+	/**
+	 * Calculate Curve25519 v coordinate from Ed25519 x coordinate and
+	 * Curve25519 u coordinate
+	 * 
+	 * @param x the Ed25519 x coordinate
+	 * @param u the Curve25519 u coordinate
+	 * @return the Curve25519 v coordinate
+	 */
+	static FieldElement calcCurve25519_v_alt(FieldElement x, FieldElement u) {
+
+		/* Calculate v from u and x */
+		// v = sqrt(-486664)*u/x
+
+		// invert(x)
+		FieldElement x_invert = x.invert();
+
+		// u / x -> u * invert(x)
+		FieldElement _x_invert = ed25519ToBiginteger(x_invert);
+		FieldElement u_over_x = u.multiply(_x_invert);
+
+		// calculate v
+		FieldElement v = root.multiply(u_over_x);
+
+		return v;
+	}
+
+	/**
+	 * Convert a Ed25519FieldElement to a BigIntegerFieldElement
+	 * 
+	 * @param input the Ed25519FieldElement
+	 * @return the resulting BigIntegerFieldElement
+	 */
+	static BigIntegerFieldElement ed25519ToBiginteger(FieldElement input) {
+		BigInteger outputBi = new BigInteger(invertArray(input.toByteArray()));
+		BigIntegerFieldElement outputFieldElement = new BigIntegerFieldElement(ed25519Field, outputBi);
+
+		return outputFieldElement;
 	}
 
 	/* COSE related functions below */
