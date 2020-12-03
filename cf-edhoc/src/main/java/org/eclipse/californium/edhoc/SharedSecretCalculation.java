@@ -17,9 +17,14 @@
 package org.eclipse.californium.edhoc;
 
 import java.math.BigInteger;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.Provider;
+import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.Security;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
@@ -35,12 +40,19 @@ import org.eclipse.californium.cose.OneKey;
 import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
+import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
+import net.i2p.crypto.eddsa.KeyPairGenerator;
 import net.i2p.crypto.eddsa.Utils;
 import net.i2p.crypto.eddsa.math.Field;
 import net.i2p.crypto.eddsa.math.FieldElement;
 import net.i2p.crypto.eddsa.math.bigint.BigIntegerFieldElement;
 import net.i2p.crypto.eddsa.math.bigint.BigIntegerLittleEndianEncoding;
+import net.i2p.crypto.eddsa.spec.EdDSAGenParameterSpec;
+import net.i2p.crypto.eddsa.spec.EdDSANamedCurveSpec;
+import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
+import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
+import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
 
 /**
  * Class implementing the X25519 function, supporting functionality, tests and
@@ -69,6 +81,116 @@ public class SharedSecretCalculation {
 	private static Field ed25519Field = new Field(256, // b
 			Utils.hexToBytes("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
 			new BigIntegerLittleEndianEncoding());
+
+	/**
+	 * Build a COSE OneKey from raw byte arrays containing the public and
+	 * private keys. Considers EdDSA with the curve Ed25519.
+	 * 
+	 * @param privateKey the private key bytes
+	 * @param publicKey the public key bytes
+	 * 
+	 * @return a OneKey representing the input material
+	 */
+	static OneKey buildEd25519OneKey(byte[] privateKey, byte[] publicKey) {
+		byte[] rgbX = publicKey;
+		byte[] rgbD = privateKey;
+
+		CBORObject keyMap = CBORObject.NewMap();
+
+		keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_OKP);
+		keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_Ed25519);
+		keyMap.Add(KeyKeys.OKP_X.AsCBOR(), CBORObject.FromObject(rgbX));
+		keyMap.Add(KeyKeys.OKP_D.AsCBOR(), CBORObject.FromObject(rgbD));
+
+		OneKey key = null;
+		try {
+			key = new OneKey(keyMap);
+		} catch (CoseException e) {
+			System.err.println("Failed to generate COSE OneKey: " + e);
+		}
+
+		System.out.println(key.AsCBOR());
+
+		return key;
+	}
+
+	/**
+	 * Build a Java key pair from raw byte arrays containing the public and
+	 * private keys. Considers EdDSA with the curve Ed25519.
+	 * 
+	 * @param privateKey the private key bytes
+	 * @param publicKey the public key bytes
+	 * @return a Java KeyPair representing the input material
+	 */
+	static KeyPair buildEd25519JavaKey(byte[] privateKey, byte[] publicKey) {
+		EdDSAPrivateKeySpec privSpec = new EdDSAPrivateKeySpec(privateKey, EdDSANamedCurveTable.getByName("Ed25519"));
+		EdDSAPrivateKey priv = new EdDSAPrivateKey(privSpec);
+		EdDSAPublicKeySpec pubSpec = new EdDSAPublicKeySpec(publicKey, EdDSANamedCurveTable.getByName("Ed25519"));
+		EdDSAPublicKey pub = new EdDSAPublicKey(pubSpec);
+
+		KeyPair pair = new KeyPair(pub, priv);
+
+		return pair;
+	}
+
+	/**
+	 * Calculate public key for a corresponding private key. Considers EdDSA
+	 * with the curve Ed25519.
+	 * 
+	 * @param privateKey the private key bytes
+	 * @return the public key bytes
+	 */
+	static byte[] calculatePublicEd25519FromPrivate(byte[] privateKey) {
+		EdDSANamedCurveSpec spec = EdDSANamedCurveTable.getByName("Ed25519");
+		// KeyPairGenerator generator = new KeyPairGenerator();
+		// SecureRandom secRand = new SecureRandom();
+		byte[] seed = privateKey;
+		EdDSAPrivateKeySpec privKeySpec = new EdDSAPrivateKeySpec(seed, spec);
+		EdDSAPublicKeySpec pubKeySpec = new EdDSAPublicKeySpec(privKeySpec.getA(), spec);
+
+		EdDSAPublicKey pubKeyKey = new EdDSAPublicKey(pubKeySpec);
+		// EdDSAPrivateKey privateKeyKey = new EdDSAPrivateKey(privKey);
+
+		// System.out.println("A (public) " +
+		// Utils.bytesToHex(pubKeyKey.getAbyte()));
+		// System.out.println("Seed (private) " +
+		// Utils.bytesToHex(privateKeyKey.getSeed()));
+
+		return pubKeyKey.getAbyte();
+	}
+
+	/**
+	 * Build a COSE OneKey from raw byte arrays containing the public and
+	 * private keys. Considers ECDSA_256.
+	 *
+	 * @param privateKey the private key bytes
+	 * @param publicKeyX the public key X parameter bytes
+	 * @param publicKeyY the public key Y parameter bytes
+	 * 
+	 * @return a OneKey representing the input material
+	 */
+	static OneKey buildEcdsa256OneKey(byte[] privateKey, byte[] publicKeyX, byte[] publicKeyY) {
+		byte[] rgbX = publicKeyX;
+		byte[] rgbY = publicKeyY;
+		byte[] rgbD = privateKey;
+
+		CBORObject keyMap = CBORObject.NewMap();
+
+		keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
+		keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P256);
+		keyMap.Add(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(rgbX));
+		keyMap.Add(KeyKeys.EC2_Y.AsCBOR(), CBORObject.FromObject(rgbY));
+		keyMap.Add(KeyKeys.EC2_D.AsCBOR(), CBORObject.FromObject(rgbD));
+
+		OneKey key = null;
+		try {
+			key = new OneKey(keyMap);
+		} catch (CoseException e) {
+			System.err.println("Failed to generate COSE OneKey: " + e);
+		}
+
+		return key;
+	}
 
 	/**
 	 * Generates a shared secret for EdDSA or ECDSA.
@@ -593,6 +715,14 @@ public class SharedSecretCalculation {
 	 */
 	private static byte[] calculateSharedSecret(OneKey publicKey, OneKey privateKey) throws CoseException {
 
+		/* Check that the keys are as expected (using Ed25519) */
+		if (publicKey.get(KeyKeys.OKP_Curve) != KeyKeys.OKP_Ed25519
+				|| privateKey.get(KeyKeys.OKP_Curve) != KeyKeys.OKP_Ed25519) {
+			System.err.println(
+					"Error: Keys for EdDSA shared secret calculation are not using Ed25519. Use X25519 directly.");
+			return null;
+		}
+		
 		/* Calculate u coordinate from public key */
 
 		FieldElement public_y = KeyRemapping.extractCOSE_y(publicKey);
