@@ -42,6 +42,15 @@ public static final int APPLICATION_EDHOC = 10001;
 
 
 /**
+ * EDHOC Message Types
+ */
+public static final int EDHOC_ERROR_MESSAGE = 0;
+public static final int EDHOC_MESSAGE_1 = 1;
+public static final int EDHOC_MESSAGE_2 = 2;
+public static final int EDHOC_MESSAGE_3 = 3;
+
+
+/**
  * EDHOC authentication methods
  * 
  * +-------+---------------+---------------+
