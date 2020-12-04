@@ -21,8 +21,11 @@ import static org.junit.Assert.assertEquals;
 
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.Security;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 
 import org.eclipse.californium.cose.AlgorithmID;
@@ -82,11 +85,18 @@ public class SharedSecretCalculationTest {
 	/**
 	 * Tests generating a Curve25519 OneKey and performing shared secret
 	 * calculation with it.
+	 * 
+	 * @throws IllegalStateException
+	 * @throws InvalidKeySpecException
+	 * @throws InvalidAlgorithmParameterException
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidKeyException
 	 */
 	@Test
-	public void testCurve25519KeyGeneration() {
-		SharedSecretCalculation.testAgreement2();
-
+	public void testCurve25519KeyGeneration() throws InvalidKeyException, NoSuchAlgorithmException,
+			InvalidAlgorithmParameterException, InvalidKeySpecException, IllegalStateException {
+		// SharedSecretCalculation.testAgreement2();
+		SharedSecretCalculation.testagreement3();
 		OneKey key1 = SharedSecretCalculation.generateCurve25519Key();
 		System.out.println("-----------");
 		OneKey key2 = SharedSecretCalculation.generateCurve25519Key();
