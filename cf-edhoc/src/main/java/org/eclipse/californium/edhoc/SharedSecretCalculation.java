@@ -119,17 +119,40 @@ public class SharedSecretCalculation {
 
 		// Build the COSE OneKey
 
-		// byte[] rgbD = privKey.
-		// byte[] rgbX =
+		//byte[] rgbD = privKey.getD().toByteArray();
+		//byte[] rgbX = pubKey.
+		
+		// System.out.println("D " +
+		// Utils.bytesToHex(privKey.getD().toByteArray()));
+		// System.out.println("Seed priv " +
+		// Utils.bytesToHex(privKey.getParameters().getSeed()));
 		//
-		// OneKey key = new OneKey();
-		//
-		// key.add(KeyKeys.KeyType, KeyKeys.KeyType_OKP);
-		// key.add(KeyKeys.OKP_Curve, KeyKeys.OKP_X25519);
-		// key.add(KeyKeys.OKP_X, CBORObject.FromObject(rgbX));
-		// key.add(KeyKeys.OKP_D, CBORObject.FromObject(rgbD));
-		//
-		return null;
+		// System.out.println("Seed pub " +
+		// Utils.bytesToHex(pubKey.getParameters().getSeed()));
+		// System.out.println("Q pub " + pubKey.getQ().toString());
+		// System.out.println("Q pub1 " +
+		// Utils.bytesToHex(pubKey.getQ().getEncoded(false)));
+		// System.out.println("Q pub2 " +
+		// Utils.bytesToHex(pubKey.getQ().getEncoded(true)));
+		// // System.out.println("Seed " +
+		// Utils.bytesToHex(privKey.getD().toByteArray()));
+		// System.out.println("b " + Utils.bytesToHex(pubKey.getParameters().
+		
+		// Get the private D
+		byte[] rgbD = privKey.getD().toByteArray();
+		// Get the public point Q (compressed true)
+		byte[] rgbX = pubKey.getQ().getEncoded(true);
+
+		System.out.println("WWW " + Utils.bytesToHex(X25519(rgbD, rgbX)));
+
+		OneKey key = new OneKey();
+		
+		key.add(KeyKeys.KeyType, KeyKeys.KeyType_OKP);
+		key.add(KeyKeys.OKP_Curve, KeyKeys.OKP_X25519);
+		key.add(KeyKeys.OKP_X, CBORObject.FromObject(rgbX));
+		key.add(KeyKeys.OKP_D, CBORObject.FromObject(rgbD));
+
+		return key;
 	}
 
 	// https://stackoverflow.com/questions/4407839/how-can-i-find-the-square-root-of-a-java-biginteger
