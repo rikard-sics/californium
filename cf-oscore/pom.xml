@@ -44,7 +44,7 @@
 	            <version>0.2.0</version>
 	            <type>jar</type>
         	</dependency>
-		<dependency>
+		<dependency> <!-- Rikard: Added this dependency (Curve25519) -->
 	            <groupId>org.bouncycastle</groupId>
 	            <artifactId>bcpkix-jdk15on</artifactId>
 	            <version>1.67</version>
