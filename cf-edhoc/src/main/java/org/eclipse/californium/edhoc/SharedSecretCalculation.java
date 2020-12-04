@@ -32,11 +32,18 @@ import java.util.Arrays;
 
 import javax.crypto.KeyAgreement;
 
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.x9.ECNamedCurveTable;
 import org.bouncycastle.asn1.x9.X9ECParameters;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.ec.CustomNamedCurves;
+import org.bouncycastle.crypto.generators.X25519KeyPairGenerator;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
+import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyPairGeneratorSpi;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.jce.spec.ECNamedCurveSpec;
 import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
@@ -86,6 +93,83 @@ public class SharedSecretCalculation {
 			Utils.hexToBytes("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
 			new BigIntegerLittleEndianEncoding());
 
+	static OneKey generateCurve25519Key() {
+
+		// Start by generating a Curve25519 key pair with BouncyCastle
+		// https://stackoverflow.com/questions/57852431/how-to-generate-curve25519-key-pair-for-diffie-hellman-algorithm
+		X9ECParameters curveParams = CustomNamedCurves.getByName("Curve25519");
+		byte[] seed = Utils.hexToBytes("1122334455667788112233445566778811223344556677881122334455667788");
+		ECParameterSpec ecSpec = new ECParameterSpec(curveParams.getCurve(), curveParams.getG(), curveParams.getN(),
+				curveParams.getH(), seed);
+
+		ECNamedCurveSpec specX = new ECNamedCurveSpec("Curve25519", curveParams.getCurve(), curveParams.getG(),
+				curveParams.getN(), curveParams.getH(), seed);
+
+		KeyPairGenerator kpg = null;
+		// kpg = new KeyPairGeneratorSpi.EC();
+		System.out.println("SEED " + Utils.bytesToHex(ecSpec.getSeed()));
+		try {
+			kpg = KeyPairGenerator.getInstance("EC", new BouncyCastleProvider());
+			kpg.initialize(specX);
+		} catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException e) {
+			System.err.println("Failed to generate Curve25519 key: " + e);
+		}
+
+		System.out.println("Class " + kpg.getClass());
+
+		KeyPair keyPair = kpg.generateKeyPair();
+		System.out.println("Class " + keyPair.getClass());
+		PublicKey publicKey = keyPair.getPublic();
+		PrivateKey privateKey = keyPair.getPrivate();
+
+		BCECPublicKey pubKey = (BCECPublicKey) publicKey;
+		BCECPrivateKey privKey = (BCECPrivateKey) privateKey;
+
+		// Testing other way
+		/*
+		 * org.bouncycastle.crypto.generators.X25519KeyPairGenerator test = new
+		 * X25519KeyPairGenerator(); AsymmetricCipherKeyPair keyPairX =
+		 * test.generateKeyPair(); AsymmetricKeyParameter pubKeyX =
+		 * keyPairX.getPublic(); AsymmetricKeyParameter privKeyX =
+		 * keyPairX.getPrivate();
+		 * 
+		 * // Get the private D byte[] rgbD = privKey.getD().toByteArray(); //
+		 * Get the public point Q (compressed true) byte[] rgbX = pubKeyX.
+		 */
+		// Testing other way
+
+		// Build the COSE OneKey
+
+		// byte[] rgbD = privKey.getD().toByteArray();
+		// byte[] rgbX = pubKey.
+
+		// System.out.println("D " +
+		// Utils.bytesToHex(privKey.getD().toByteArray()));
+		// System.out.println("Seed priv " +
+		// Utils.bytesToHex(privKey.getParameters().getSeed()));
+		//
+		System.out.println("Seed pub " + Utils.bytesToHex(pubKey.getParameters().getSeed()));
+		System.out.println("Q pub " + pubKey.getQ().toString());
+		System.out.println("Q pub1 " + Utils.bytesToHex(pubKey.getQ().getEncoded(false)));
+		System.out.println("Q pub2 " + Utils.bytesToHex(pubKey.getQ().getEncoded(true)));
+		System.out.println("Seed " + Utils.bytesToHex(privKey.getD().toByteArray()));
+		// System.out.println("b " + Utils.bytesToHex(pubKey.getParameters().
+
+		// Get the private D
+		byte[] rgbD = privKey.getD().toByteArray();
+		// Get the public point Q (compressed true)
+		byte[] rgbX = pubKey.getQ().getYCoord().getEncoded();
+
+		OneKey key = new OneKey();
+
+		key.add(KeyKeys.KeyType, KeyKeys.KeyType_OKP);
+		key.add(KeyKeys.OKP_Curve, KeyKeys.OKP_X25519);
+		key.add(KeyKeys.OKP_X, CBORObject.FromObject(rgbX));
+		key.add(KeyKeys.OKP_D, CBORObject.FromObject(rgbD));
+
+		return key;
+	}
+
 	/**
 	 * Generate a COSE OneKey using Curve25519 for X25519. Note that this key
 	 * will be lacking the Java keys internally.
@@ -94,10 +178,103 @@ public class SharedSecretCalculation {
 	 * 
 	 * @return the COSE OneKey
 	 */
-	static OneKey generateCurve25519Key() {
+	static OneKey generateCurve25519KeyOld2() {
 
 		// Start by generating a Curve25519 key pair with BouncyCastle
+		// https://stackoverflow.com/questions/57852431/how-to-generate-curve25519-key-pair-for-diffie-hellman-algorithm
+		X9ECParameters curveParams = CustomNamedCurves.getByName("Curve25519");
+		byte[] seed = Utils.hexToBytes("1122334455667788112233445566778811223344556677881122334455667788");
+		ECParameterSpec ecSpec = new ECParameterSpec(curveParams.getCurve(), curveParams.getG(), curveParams.getN(),
+				curveParams.getH(), seed);
+
+		ECNamedCurveSpec specX = new ECNamedCurveSpec("Curve25519",
+				curveParams.getCurve(), curveParams.getG(),
+				curveParams.getN(), curveParams.getH(), seed);
 		
+		org.bouncycastle.jcajce.provider.asymmetric.ec.KeyPairGeneratorSpi kpg = null;
+		kpg = new KeyPairGeneratorSpi.EC();
+		System.out.println("SEED " + Utils.bytesToHex(ecSpec.getSeed()));
+		try {
+			// kpg = KeyPairGenerator.getInstance("EC", new
+			// BouncyCastleProvider());
+			kpg.initialize(specX);
+		} catch (InvalidAlgorithmParameterException e) {
+			System.err.println("Failed to generate Curve25519 key: " + e);
+		}
+
+		System.out.println("Class " + kpg.getClass());
+
+
+		KeyPair keyPair = kpg.generateKeyPair();
+		System.out.println("Class " + keyPair.getClass());
+		PublicKey publicKey = keyPair.getPublic();
+		PrivateKey privateKey = keyPair.getPrivate();
+
+		BCECPublicKey pubKey = (BCECPublicKey) publicKey;
+		BCECPrivateKey privKey = (BCECPrivateKey) privateKey;
+
+		// Testing other way
+		/*
+		 * org.bouncycastle.crypto.generators.X25519KeyPairGenerator test = new
+		 * X25519KeyPairGenerator(); AsymmetricCipherKeyPair keyPairX =
+		 * test.generateKeyPair(); AsymmetricKeyParameter pubKeyX =
+		 * keyPairX.getPublic(); AsymmetricKeyParameter privKeyX =
+		 * keyPairX.getPrivate();
+		 * 
+		 * // Get the private D byte[] rgbD = privKey.getD().toByteArray(); //
+		 * Get the public point Q (compressed true) byte[] rgbX = pubKeyX.
+		 */
+		// Testing other way
+
+		// Build the COSE OneKey
+
+		//byte[] rgbD = privKey.getD().toByteArray();
+		//byte[] rgbX = pubKey.
+		
+		// System.out.println("D " +
+		// Utils.bytesToHex(privKey.getD().toByteArray()));
+		// System.out.println("Seed priv " +
+		// Utils.bytesToHex(privKey.getParameters().getSeed()));
+		//
+		 System.out.println("Seed pub " +
+		 Utils.bytesToHex(pubKey.getParameters().getSeed()));
+		 System.out.println("Q pub " + pubKey.getQ().toString());
+		 System.out.println("Q pub1 " +
+		 Utils.bytesToHex(pubKey.getQ().getEncoded(false)));
+		 System.out.println("Q pub2 " +
+		 Utils.bytesToHex(pubKey.getQ().getEncoded(true)));
+		 System.out.println("Seed " +
+		 Utils.bytesToHex(privKey.getD().toByteArray()));
+		// System.out.println("b " + Utils.bytesToHex(pubKey.getParameters().
+
+		
+		// Get the private D
+		byte[] rgbD = privKey.getD().toByteArray();
+		// Get the public point Q (compressed true)
+		byte[] rgbX = pubKey.getQ().getYCoord().getEncoded();
+
+		OneKey key = new OneKey();
+		
+		key.add(KeyKeys.KeyType, KeyKeys.KeyType_OKP);
+		key.add(KeyKeys.OKP_Curve, KeyKeys.OKP_X25519);
+		key.add(KeyKeys.OKP_X, CBORObject.FromObject(rgbX));
+		key.add(KeyKeys.OKP_D, CBORObject.FromObject(rgbD));
+
+		return key;
+	}
+
+	/**
+	 * Generate a COSE OneKey using Curve25519 for X25519. Note that this key
+	 * will be lacking the Java keys internally.
+	 * 
+	 * https://cryptojedi.org/peter/data/pairing-20131122.pdf
+	 * 
+	 * @return the COSE OneKey
+	 */
+	static OneKey generateCurve25519KeyOld() {
+
+		// Start by generating a Curve25519 key pair with BouncyCastle
+
 		X9ECParameters curveParams = CustomNamedCurves.getByName("Curve25519");
 		ECParameterSpec ecSpec = new ECParameterSpec(curveParams.getCurve(), curveParams.getG(), curveParams.getN(),
 				curveParams.getH(), curveParams.getSeed());
@@ -110,18 +287,33 @@ public class SharedSecretCalculation {
 			System.err.println("Failed to generate Curve25519 key: " + e);
 		}
 
+		System.out.println("Class " + kpg.getClass());
+
 		KeyPair keyPair = kpg.generateKeyPair();
 		PublicKey publicKey = keyPair.getPublic();
 		PrivateKey privateKey = keyPair.getPrivate();
-		
+
 		BCECPublicKey pubKey = (BCECPublicKey) publicKey;
 		BCECPrivateKey privKey = (BCECPrivateKey) privateKey;
 
+		// Testing other way
+		/*
+		 * org.bouncycastle.crypto.generators.X25519KeyPairGenerator test = new
+		 * X25519KeyPairGenerator(); AsymmetricCipherKeyPair keyPairX =
+		 * test.generateKeyPair(); AsymmetricKeyParameter pubKeyX =
+		 * keyPairX.getPublic(); AsymmetricKeyParameter privKeyX =
+		 * keyPairX.getPrivate();
+		 * 
+		 * // Get the private D byte[] rgbD = privKey.getD().toByteArray(); //
+		 * Get the public point Q (compressed true) byte[] rgbX = pubKeyX.
+		 */
+		// Testing other way
+
 		// Build the COSE OneKey
 
-		//byte[] rgbD = privKey.getD().toByteArray();
-		//byte[] rgbX = pubKey.
-		
+		// byte[] rgbD = privKey.getD().toByteArray();
+		// byte[] rgbX = pubKey.
+
 		// System.out.println("D " +
 		// Utils.bytesToHex(privKey.getD().toByteArray()));
 		// System.out.println("Seed priv " +
@@ -137,16 +329,14 @@ public class SharedSecretCalculation {
 		// // System.out.println("Seed " +
 		// Utils.bytesToHex(privKey.getD().toByteArray()));
 		// System.out.println("b " + Utils.bytesToHex(pubKey.getParameters().
-		
+
 		// Get the private D
 		byte[] rgbD = privKey.getD().toByteArray();
 		// Get the public point Q (compressed true)
-		byte[] rgbX = pubKey.getQ().getEncoded(true);
-
-		System.out.println("WWW " + Utils.bytesToHex(X25519(rgbD, rgbX)));
+		byte[] rgbX = pubKey.getQ().getYCoord().getEncoded();
 
 		OneKey key = new OneKey();
-		
+
 		key.add(KeyKeys.KeyType, KeyKeys.KeyType_OKP);
 		key.add(KeyKeys.OKP_Curve, KeyKeys.OKP_X25519);
 		key.add(KeyKeys.OKP_X, CBORObject.FromObject(rgbX));
