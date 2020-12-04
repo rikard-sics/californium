@@ -19,6 +19,7 @@ package org.eclipse.californium.edhoc;
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
@@ -29,6 +30,9 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.NamedParameterSpec;
+import java.security.spec.XECPublicKeySpec;
 import java.util.Arrays;
 
 import javax.crypto.KeyAgreement;
@@ -117,6 +121,32 @@ public class SharedSecretCalculation {
 		byte[] secretB = new byte[agreeB.getAgreementSize()];
 		agreeB.calculateAgreement(kpA.getPublic(), secretB, 0);
 
+	}
+
+	public static void java15generation()
+			throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeySpecException,
+			InvalidKeyException, IllegalStateException {
+		KeyPairGenerator kpg = KeyPairGenerator.getInstance("XDH");
+		NamedParameterSpec paramSpec = new NamedParameterSpec("X25519");
+		kpg.initialize(paramSpec); // equivalent to kpg.initialize(255)
+		// kpg = KeyPairGenerator.getInstance("X25519");
+		KeyPair kp = kpg.generateKeyPair();
+
+		KeyFactory kf = KeyFactory.getInstance("XDH");
+		BigInteger u = new BigInteger("1472384792374923478923892479237482379439478923789");
+		XECPublicKeySpec pubSpec = new XECPublicKeySpec(paramSpec, u);
+		PublicKey pubKey = kf.generatePublic(pubSpec);
+
+		System.out.println("Encoded public key: " + Utils.bytesToHex(pubKey.getEncoded()));
+
+		KeyAgreement ka = KeyAgreement.getInstance("XDH");
+		PrivateKey privKey = kp.getPrivate();
+		ka.init(kp.getPrivate());
+		ka.doPhase(pubKey, true);
+
+		System.out.println("Encoded private key: " + Utils.bytesToHex(privKey.getEncoded()));
+
+		byte[] secret = ka.generateSecret();
 	}
 
 	public static void testAgreement2() {
