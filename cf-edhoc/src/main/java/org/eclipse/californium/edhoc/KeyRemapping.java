@@ -33,7 +33,6 @@ import net.i2p.crypto.eddsa.math.Field;
 import net.i2p.crypto.eddsa.math.FieldElement;
 import net.i2p.crypto.eddsa.math.bigint.BigIntegerFieldElement;
 import net.i2p.crypto.eddsa.math.bigint.BigIntegerLittleEndianEncoding;
-import net.i2p.crypto.eddsa.math.ed25519.Ed25519FieldElement;
 
 /**
  * Class implementing functionality for key remapping from Edwards coordinates
