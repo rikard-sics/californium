@@ -47,6 +47,11 @@
 			<classifier>tests</classifier>
 			<type>test-jar</type>
         </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk15on</artifactId>
+            <version>1.67</version>
+        </dependency>
 		<!-- test dependencies -->
 		<dependency>
 			<groupId>junit</groupId>
