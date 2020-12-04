@@ -98,7 +98,7 @@ public class SharedSecretCalculationTest {
 			InvalidAlgorithmParameterException, InvalidKeySpecException, IllegalStateException, CoseException {
 		// SharedSecretCalculation.testAgreement2();
 		SharedSecretCalculation.java15Curve25519generation();
-		SharedSecretCalculation.java15Curve25519generationOld();
+		// SharedSecretCalculation.java15Curve25519generationOld();
 		for (int i = 0; i < 100; i++) {
 			// SharedSecretCalculation.java15Curve25519generation();
 		}

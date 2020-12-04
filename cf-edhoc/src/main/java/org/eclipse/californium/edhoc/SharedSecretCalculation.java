@@ -22,6 +22,7 @@ import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Provider;
@@ -108,47 +109,94 @@ public class SharedSecretCalculation {
 		FieldElement x = KeyRemapping.extractCOSE_x(initialKey);
 
 		// Calculate the corresponding Curve25519 u and v coordinates
-		FieldElement u = KeyRemapping.calcCurve25519_u(y);
-		FieldElement v = KeyRemapping.calcCurve25519_v_alt(x, u);
+		// FieldElement u = KeyRemapping.calcCurve25519_u(y);
+		// FieldElement v = KeyRemapping.calcCurve25519_v_alt(x, u);
 
 		System.out.println("Ed25519 y: " + Utils.bytesToHex(y.toByteArray()));
 		System.out.println("Ed25519 x: " + Utils.bytesToHex(x.toByteArray()));
 
-		System.out.println("Curve25519 u: " + Utils.bytesToHex(u.toByteArray()));
-		System.out.println("Curve25519 v: " + Utils.bytesToHex(v.toByteArray()));
+		// System.out.println("Curve25519 u: " +
+		// Utils.bytesToHex(u.toByteArray()));
+		// System.out.println("Curve25519 v: " +
+		// Utils.bytesToHex(v.toByteArray()));
 		System.out.println("---");
-		BigInteger u_bi = new BigInteger(invertArray(u.toByteArray()));
+		// BigInteger u_bi = new BigInteger(invertArray(u.toByteArray()));
 
 
 		//
 
-		KeyPairGenerator kpg = KeyPairGenerator.getInstance("X25519");
+		KeyPairGenerator kpg = KeyPairGenerator.getInstance("XDH");
 		NamedParameterSpec paramSpec = new NamedParameterSpec("X25519");
 		kpg.initialize(paramSpec); // equivalent to kpg.initialize(255)
 		// kpg = KeyPairGenerator.getInstance("X25519");
 		KeyPair kp = kpg.generateKeyPair();
 
 		KeyFactory kf = KeyFactory.getInstance("XDH");
-		// BigInteger u = new
-		// BigInteger("1472384792374923478923892479237482379439478923789");
-		XECPublicKeySpec pubSpec = new XECPublicKeySpec(paramSpec, u_bi);
+		BigInteger u = new BigInteger("1472384792374923478923892479237482379439478923789");
+		XECPublicKeySpec pubSpec = new XECPublicKeySpec(paramSpec, u);
 		PublicKey pubKey = kf.generatePublic(pubSpec);
 
 		System.out.println("Encoded public key: " + Utils.bytesToHex(pubKey.getEncoded()));
 
 		KeyAgreement ka = KeyAgreement.getInstance("XDH");
-		byte[] privKeyBytes = new byte[32];
-		XECPrivateKeySpec privSpec = new XECPrivateKeySpec(paramSpec, privKeyBytes);
+		byte[] privKeyBytesIn = new byte[32];
+		XECPrivateKeySpec privSpec = new XECPrivateKeySpec(paramSpec, privKeyBytesIn);
 		PrivateKey privKey = kf.generatePrivate(privSpec);
-		ka.init(kp.getPrivate());
+		// PrivateKey privKey = kp.getPrivate();
+		// ka.init(kp.getPrivate());
+		ka.init(privKey);
 		ka.doPhase(pubKey, true);
 
 		System.out.println("Encoded private key: " + Utils.bytesToHex(privKey.getEncoded()));
 
+		byte[] privKeyBytes = Arrays.copyOfRange(pubKey.getEncoded(), privKey.getEncoded().length - 32,
+				privKey.getEncoded().length);
+
 		byte[] secret = ka.generateSecret();
-		System.out.println("---");
+		System.out.println("*Secret1 " + Utils.bytesToHex(secret));
 
 		byte[] pubKeyEncoded = pubKey.getEncoded();
+		byte[] pubKeyBytes = Arrays.copyOfRange(pubKey.getEncoded(), pubKeyEncoded.length - 32, pubKeyEncoded.length);
+		byte[] secret2 = X25519(privKeyBytes, pubKeyBytes);
+		System.out.println("Secret2 " + Utils.bytesToHex(secret2));
+		byte[] secret3 = X25519(privKeyBytes, u.toByteArray());
+		System.out.println("Secret3 " + Utils.bytesToHex(secret3));
+		byte[] private_hash = ((EdDSAPrivateKey) initialKey.AsPrivateKey()).getH();
+		byte[] private_scalar = Arrays.copyOf(private_hash, 32);
+		byte[] secret4 = X25519(private_scalar, u.toByteArray());
+		System.out.println("Secret4 " + Utils.bytesToHex(secret4));
+		byte[] secret5 = calculateSharedSecret(initialKey.PublicKey(), initialKey);
+		System.out.println("Secret5 " + Utils.bytesToHex(secret5));
+
+		byte[] secret6 = X25519(privKeyBytes, invertArray(u.toByteArray()));
+		System.out.println("*Secret6 " + Utils.bytesToHex(secret6));
+
+		MessageDigest md = MessageDigest.getInstance("SHA-512");
+		byte[] bytesHash = md.digest(privKeyBytes);
+		byte[] pscalar = Arrays.copyOf(bytesHash, 32);
+		System.out.println("Priv scalar: " + Utils.bytesToHex(pscalar));
+
+		byte[] secret7 = X25519(pscalar, (u.toByteArray()));
+		System.out.println("*Secret7 " + Utils.bytesToHex(secret7));
+
+		byte[] secret8 = X25519(privKeyBytes, (u.toByteArray()));
+		System.out.println("*Secret8 " + Utils.bytesToHex(secret8));
+
+		byte[] secret9 = X25519(pscalar, invertArray(u.toByteArray()));
+		System.out.println("*Secret9 " + Utils.bytesToHex(secret9));
+
+		byte[] secret10 = X25519(privKeyBytes, invertArray(u.toByteArray()));
+		System.out.println("*Secret10 " + Utils.bytesToHex(secret10));
+
+		byte[] secret11 = X25519(privKeyBytesIn, invertArray(u.toByteArray()));
+		System.out.println("*Secret11 " + Utils.bytesToHex(secret11));
+
+		byte[] secret12 = X25519(privKeyBytesIn, (u.toByteArray()));
+		System.out.println("*Secret12 " + Utils.bytesToHex(secret12));
+
+		System.out.println("---");
+
+
 		if (Arrays.equals(u.toByteArray(),
 				Arrays.copyOfRange(pubKey.getEncoded(), pubKeyEncoded.length - 32, pubKeyEncoded.length))) {
 			System.out.println("Matching");
@@ -202,6 +250,7 @@ public class SharedSecretCalculation {
 		System.out.println("Encoded private key: " + Utils.bytesToHex(privKey.getEncoded()));
 
 		byte[] secret = ka.generateSecret();
+
 		System.out.println("---");
 
 		byte[] pubKeyEncoded = pubKey.getEncoded();
