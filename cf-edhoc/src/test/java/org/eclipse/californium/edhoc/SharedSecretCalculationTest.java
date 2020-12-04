@@ -83,6 +83,29 @@ public class SharedSecretCalculationTest {
 	/* Start tests */
 
 	/**
+	 * Test Curve25519 key generation with Java. Then try X25519 from Java and
+	 * local version to compare.
+	 * 
+	 * @throws InvalidKeyException
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidAlgorithmParameterException
+	 * @throws InvalidKeySpecException
+	 * @throws IllegalStateException
+	 * @throws CoseException
+	 */
+	@Test
+	public void newTest() throws InvalidKeyException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
+			InvalidKeySpecException, IllegalStateException, CoseException {
+		OneKey key1 = SharedSecretCalculation.java15Curve25519generation();
+		OneKey key2 = SharedSecretCalculation.java15Curve25519generation();
+
+		byte[] sharedSecretLocal = SharedSecretCalculation.generateSharedSecret(key1, key2);
+		System.out.println(Utils.bytesToHex(sharedSecretLocal));
+
+		SharedSecretCalculation.java15X25519(key1, key2);
+
+	}
+	/**
 	 * Tests generating a Curve25519 OneKey and performing shared secret
 	 * calculation with it.
 	 * 
@@ -97,7 +120,7 @@ public class SharedSecretCalculationTest {
 	public void testCurve25519KeyGenerationTesting() throws InvalidKeyException, NoSuchAlgorithmException,
 			InvalidAlgorithmParameterException, InvalidKeySpecException, IllegalStateException, CoseException {
 		// SharedSecretCalculation.testAgreement2();
-		SharedSecretCalculation.java15Curve25519generationGood();
+		SharedSecretCalculation.java15Curve25519generationAndSharedSecret();
 		// SharedSecretCalculation.java15Curve25519generationOld();
 		for (int i = 0; i < 100; i++) {
 			// SharedSecretCalculation.java15Curve25519generation();
