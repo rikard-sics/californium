@@ -82,7 +82,6 @@ public class SharedSecretCalculationTest {
 	 * Tests generating a Curve25519 OneKey and performing shared secret
 	 * calculation with it.
 	 */
-	@Ignore
 	@Test
 	public void testCurve25519KeyGeneration() {
 		OneKey key1 = SharedSecretCalculation.generateCurve25519Key();
