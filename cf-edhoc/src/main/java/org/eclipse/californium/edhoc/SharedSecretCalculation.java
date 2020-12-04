@@ -25,6 +25,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.Security;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
@@ -36,9 +37,12 @@ import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.x9.ECNamedCurveTable;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPairGenerator;
+import org.bouncycastle.crypto.agreement.X25519Agreement;
 import org.bouncycastle.crypto.ec.CustomNamedCurves;
 import org.bouncycastle.crypto.generators.X25519KeyPairGenerator;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.params.X25519KeyGenerationParameters;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyPairGeneratorSpi;
@@ -93,6 +97,90 @@ public class SharedSecretCalculation {
 			Utils.hexToBytes("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
 			new BigIntegerLittleEndianEncoding());
 
+	private void testAgreement() {
+		SecureRandom RANDOM = new SecureRandom();
+		AsymmetricCipherKeyPairGenerator kpGen = new X25519KeyPairGenerator();
+
+		kpGen.init(new X25519KeyGenerationParameters(RANDOM));
+
+		AsymmetricCipherKeyPair kpA = kpGen.generateKeyPair();
+		AsymmetricCipherKeyPair kpB = kpGen.generateKeyPair();
+		X25519Agreement agreeA = new X25519Agreement();
+
+		agreeA.init(kpA.getPrivate());
+
+		byte[] secretA = new byte[agreeA.getAgreementSize()];
+		agreeA.calculateAgreement(kpB.getPublic(), secretA, 0);
+		X25519Agreement agreeB = new X25519Agreement();
+		agreeB.init(kpB.getPrivate());
+
+		byte[] secretB = new byte[agreeB.getAgreementSize()];
+		agreeB.calculateAgreement(kpA.getPublic(), secretB, 0);
+
+	}
+
+	public static void testAgreement2() {
+		SecureRandom RANDOM = new SecureRandom();
+		AsymmetricCipherKeyPairGenerator kpGen = new X25519KeyPairGenerator();
+
+		kpGen.init(new X25519KeyGenerationParameters(RANDOM));
+
+		AsymmetricCipherKeyPair kpA = kpGen.generateKeyPair();
+		AsymmetricCipherKeyPair kpB = kpGen.generateKeyPair();
+		X25519Agreement agreeA = new X25519Agreement();
+
+		AsymmetricKeyParameter pub1 = kpA.getPublic();
+		AsymmetricKeyParameter pub2 = kpB.getPublic();
+
+		AsymmetricKeyParameter priv1 = kpA.getPrivate();
+		AsymmetricKeyParameter priv2 = kpB.getPrivate();
+
+		agreeA.init(kpA.getPrivate());
+
+		byte[] secretA = new byte[agreeA.getAgreementSize()];
+		agreeA.calculateAgreement(kpB.getPublic(), secretA, 0);
+		X25519Agreement agreeB = new X25519Agreement();
+		agreeB.init(kpB.getPrivate());
+
+		byte[] secretB = new byte[agreeB.getAgreementSize()];
+		agreeB.calculateAgreement(kpA.getPublic(), secretB, 0);
+
+	}
+
+	static public void testing() {
+
+		X9ECParameters curveParams = CustomNamedCurves.getByName("X25519");
+		byte[] seed = Utils.hexToBytes("1122334455667788112233445566778811223344556677881122334455667788");
+		ECParameterSpec ecSpec = new ECParameterSpec(curveParams.getCurve(), curveParams.getG(), curveParams.getN(),
+				curveParams.getH(), seed);
+
+		System.out.println("Spec using seed: " + Utils.bytesToHex(ecSpec.getSeed()));
+
+		KeyPairGenerator kpg = null;
+		try {
+			kpg = KeyPairGenerator.getInstance("EC", new BouncyCastleProvider());
+			kpg.initialize(ecSpec);
+		} catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
+			System.err.println("Failed to generate Curve25519 key: " + e);
+		}
+
+		/*
+		 * KeyPairGenerator kpg = KeyPairGenerator.getInstance("XDH");
+		 * NamedParameterSpec paramSpec = new NamedParameterSpec("X25519");
+		 * kpg.initialize(paramSpec); // equivalent to kpg.initialize(255) //
+		 * alternatively: kpg = KeyPairGenerator.getInstance("X25519") KeyPair
+		 * kp = kpg.generateKeyPair();
+		 * 
+		 * KeyFactory kf = KeyFactory.getInstance("XDH"); BigInteger u = ...
+		 * XECPublicKeySpec pubSpec = new XECPublicKeySpec(paramSpec, u);
+		 * PublicKey pubKey = kf.generatePublic(pubSpec);
+		 * 
+		 * KeyAgreement ka = KeyAgreement.getInstance("XDH");
+		 * ka.init(kp.getPrivate()); ka.doPhase(pubKey, true); byte[] secret =
+		 * ka.generateSecret();
+		 */
+	}
+
 	/**
 	 * Generate a COSE OneKey using Curve25519 for X25519. Note that this key
 	 * will be lacking the Java keys internally.
@@ -118,7 +206,7 @@ public class SharedSecretCalculation {
 		KeyPairGenerator kpg = null;
 		try {
 			kpg = KeyPairGenerator.getInstance("EC", new BouncyCastleProvider());
-			kpg.initialize(ecSpec, null);
+			kpg.initialize(ecSpec);
 		} catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
 			System.err.println("Failed to generate Curve25519 key: " + e);
 		}
@@ -140,17 +228,29 @@ public class SharedSecretCalculation {
 		System.out.println("Q pub uncompressed " + Utils.bytesToHex(pubKey.getQ().getEncoded(false)));
 		System.out.println("Q pub 1st half " + Utils.bytesToHex(Arrays.copyOf(pubKey.getQ().getEncoded(false), 32)));
 		System.out.println("Q compressed   " + Utils.bytesToHex(pubKey.getQ().getEncoded(true)));
-		System.out.println("Q part1 " + Utils.bytesToHex(pubKey.getQ().getAffineXCoord().toBigInteger().toByteArray()));
-		System.out.println("Q part2 " + Utils.bytesToHex(pubKey.getQ().getAffineYCoord().toBigInteger().toByteArray()));
+		System.out.println(
+				"getAffineXCoord " + Utils.bytesToHex(pubKey.getQ().getAffineXCoord().toBigInteger().toByteArray()));
+		System.out.println(
+				"getAffineYCoord " + Utils.bytesToHex(pubKey.getQ().getAffineYCoord().toBigInteger().toByteArray()));
+		System.out.println();
+		System.out
+				.println("getRawXCoord " + Utils.bytesToHex(pubKey.getQ().getRawXCoord().toBigInteger().toByteArray()));
+		System.out
+				.println("getRawYCoord " + Utils.bytesToHex(pubKey.getQ().getRawYCoord().toBigInteger().toByteArray()));
+		System.out.println();
+		System.out.println("getXCoord " + Utils.bytesToHex(pubKey.getQ().getXCoord().toBigInteger().toByteArray()));
+		System.out.println("getYCoord " + Utils.bytesToHex(pubKey.getQ().getYCoord().toBigInteger().toByteArray()));
 		System.out.println();
 		System.out.println("Pubkey encoded: " + Utils.bytesToHex(pubKey.getEncoded()));
 		System.out.println("Privkey encoded: " + Utils.bytesToHex(privKey.getEncoded()));
 		System.out.println();
+		System.out.println("S: " + Utils.bytesToHex(privKey.getS().toByteArray()));
+		System.out.println();
 
 		// Get the private D
-		byte[] rgbD = privKey.getD().toByteArray(); // Need private scalar!
+		byte[] rgbD = privKey.getS().toByteArray();
 		// Get the public point Q (compressed true)
-		byte[] rgbX = pubKey.getQ().getAffineYCoord().toBigInteger().toByteArray();
+		byte[] rgbX = Arrays.copyOf(pubKey.getQ().getEncoded(false), 32);
 
 		OneKey key = new OneKey();
 
