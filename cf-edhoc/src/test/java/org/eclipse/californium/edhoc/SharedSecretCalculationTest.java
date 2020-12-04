@@ -31,6 +31,7 @@ import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.edhoc.SharedSecretCalculation.Tuple;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
@@ -77,6 +78,21 @@ public class SharedSecretCalculationTest {
 
 	/* Start tests */
 
+	/**
+	 * Tests generating a Curve25519 OneKey and performing shared secret
+	 * calculation with it.
+	 */
+	@Ignore
+	@Test
+	public void testCurve25519KeyGeneration() {
+		OneKey key1 = SharedSecretCalculation.generateCurve25519Key();
+		OneKey key2 = SharedSecretCalculation.generateCurve25519Key();
+
+		byte[] sharedSecret1 = SharedSecretCalculation.generateSharedSecret(key1, key2);
+		byte[] sharedSecret2 = SharedSecretCalculation.generateSharedSecret(key2, key1);
+
+		Assert.assertArrayEquals(sharedSecret1, sharedSecret2);
+	}
 
 	/**
 	 * Test shared secret calculation from the test vectors in the EDHOC draft.
