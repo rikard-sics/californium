@@ -21,14 +21,17 @@ package org.eclipse.californium.edhoc;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.Attribute;
 import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.Message;
 import org.eclipse.californium.cose.MessageTag;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.cose.Sign1Message;
+import org.eclipse.californium.scandium.dtls.cipher.CCMBlockCipher;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
@@ -38,9 +41,122 @@ import net.i2p.crypto.eddsa.Utils;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-
 public class Util {
 
+    /**
+     *  Compute a ciphertext using the COSE Encrypt0 object
+     * @param idCredX   The ID of the public credential of the encrypter, as a CBOR map 
+     * @param externalData   The data to use as external_aad
+     * @param payload   The payload to encrypt
+     * @param alg   The encryption algorithm to use
+     * @param iv   The IV to use for encrypting
+     * @param key   The symmetric key to use for encrypting
+     * @return  the computed ciphertext, or null in case of invalid input
+     */
+	public static byte[] encrypt (CBORObject idCredX, byte[] externalData, byte[] payload, AlgorithmID alg, byte[] iv, byte[] key)
+			                               throws CoseException {
+        
+		if(idCredX == null || externalData == null || payload == null || iv == null || key == null)
+        	return null;       
+		
+        // The ID of the public credential has to be a CBOR map ...
+        if(idCredX.getType() != CBORType.Map)
+        	return null;
+        
+        // ... and it cannot be empty
+        if(idCredX.size() == 0)
+        	return null;
+        
+        Encrypt0Message msg = new Encrypt0Message();
+        
+        // Set the protected header of the COSE object
+        for(CBORObject label : idCredX.getKeys()) {
+            // All good if the map has only one element, otherwise it needs to be rebuilt deterministically
+        	msg.addAttribute(label, idCredX.get(label), Attribute.PROTECTED);
+        }
+        
+        msg.addAttribute(HeaderKeys.Algorithm, alg.AsCBOR(), Attribute.UNPROTECTED);
+        msg.addAttribute(HeaderKeys.IV, iv, Attribute.UNPROTECTED);
+        
+        // Set the external_aad to use for the encryption process
+        msg.setExternal(externalData);
+       
+        // Set the payload of the COSE object
+        msg.SetContent(payload);
+        
+        // Debug print
+        /*
+        System.out.println("Protected attributes: " + msg.getProtectedAttributes().toString());
+        System.out.println("aad                 : " + Utils.bytesToHex(msg.getExternal()));
+        System.out.println("payload             : " + Utils.bytesToHex(msg.GetContent()));
+        */
+        
+        // Perform the encryption
+        msg.encrypt(key);
+        
+        System.out.println("Encrypted content: " + Utils.bytesToHex(msg.getEncryptedContent()));
+        
+        return msg.getEncryptedContent();
+        
+	}
+	
+    /**
+     *  Decrypt a ciphertext using the COSE Encrypt0 object
+     * @param idCredX   The ID of the public credential of the decrypter, as a CBOR map 
+     * @param externalData   The data to use as external_aad
+     * @param payload   The ciphertext to decrypt
+     * @param alg   The encryption algorithm to use
+     * @param iv   The IV to use for decrypting
+     * @param key   The symmetric key to use for decrypting
+     * @return  the computed plaintext, or null in case of invalid input
+     */
+	public static byte[] decrypt (CBORObject idCredX, byte[] externalData, byte[] payload, AlgorithmID alg, byte[] iv, byte[] key)
+			                               throws CoseException {
+        
+		if(idCredX == null || externalData == null || payload == null || iv == null || key == null)
+        	return null;       
+		
+        // The ID of the public credential has to be a CBOR map ...
+        if(idCredX.getType() != CBORType.Map)
+        	return null;
+        
+        // ... and it cannot be empty
+        if(idCredX.size() == 0)
+        	return null;
+        
+        Encrypt0Message msg = new Encrypt0Message();
+        
+        // Set the protected header of the COSE object
+        for(CBORObject label : idCredX.getKeys()) {
+            // All good if the map has only one element, otherwise it needs to be rebuilt deterministically
+        	msg.addAttribute(label, idCredX.get(label), Attribute.PROTECTED);
+        }
+        
+        msg.addAttribute(HeaderKeys.Algorithm, alg.AsCBOR(), Attribute.UNPROTECTED);
+        msg.addAttribute(HeaderKeys.IV, iv, Attribute.UNPROTECTED);
+        
+        // Set the external_aad to use for the signing process
+        msg.setExternal(externalData);
+       
+        // Set the payload of the COSE object
+        msg.setEncryptedContent(payload);
+        
+        // Debug print
+        /*
+        System.out.println("Protected attributes: " + msg.getProtectedAttributes().toString());
+        System.out.println("aad                 : " + Utils.bytesToHex(msg.getExternal()));
+        System.out.println("payload             : " + Utils.bytesToHex(msg.GetContent()));
+        */
+        
+        // Perform the encryption
+        msg.decrypt(key);
+        
+        System.out.println("Decrypted content: " + Utils.bytesToHex(msg.GetContent()));
+        
+        return msg.GetContent();
+        
+	}
+	
     /**
      *  Compute a signature using the COSE Sign1 object
      * @param idCredX   The ID of the public credential of the signer, as a CBOR map 
@@ -67,7 +183,7 @@ public class Util {
         
         // Set the protected header of the COSE object
         for(CBORObject label : idCredX.getKeys()) {
-            // All good if the map has only one element, otherwise it needs to be rebuilt built deterministically
+            // All good if the map has only one element, otherwise it needs to be rebuilt deterministically
         	msg.addAttribute(label, idCredX.get(label), Attribute.PROTECTED);
         }
         
