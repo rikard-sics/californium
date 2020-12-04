@@ -17,14 +17,10 @@
 package org.eclipse.californium.edhoc;
 
 import java.math.BigInteger;
-import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.security.Provider;
-import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.security.Security;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
@@ -42,13 +38,11 @@ import com.upokecenter.cbor.CBORObject;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
-import net.i2p.crypto.eddsa.KeyPairGenerator;
 import net.i2p.crypto.eddsa.Utils;
 import net.i2p.crypto.eddsa.math.Field;
 import net.i2p.crypto.eddsa.math.FieldElement;
 import net.i2p.crypto.eddsa.math.bigint.BigIntegerFieldElement;
 import net.i2p.crypto.eddsa.math.bigint.BigIntegerLittleEndianEncoding;
-import net.i2p.crypto.eddsa.spec.EdDSAGenParameterSpec;
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveSpec;
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
@@ -331,7 +325,8 @@ public class SharedSecretCalculation {
 	/**
 	 * Generates a shared secret for EdDSA (Ed25519) or ECDSA.
 	 * 
-	 * TODO: Add Curve25519 support, and X448?
+	 * TODO: Add X448 support? (Would need a dedicated X448 method or
+	 * modification of the existing)
 	 * 
 	 * @param privateKey the public/private key of the sender
 	 * @param publicKey the public key of the recipient
@@ -368,11 +363,18 @@ public class SharedSecretCalculation {
 			return generateSharedSecretEdDSA(privateKey, publicKey);
 		}
 
-		System.err.println("Failed to generate shared secret.");
-
 		// EdDSA (Curve25519)
 
-		// FIXME
+		byte[] privateScalar = privateKey.get(KeyKeys.OKP_D).GetByteString();
+		// Take X value as U coordinate (although it's compressed there)
+		byte[] publicUCoordinate = publicKey.get(KeyKeys.OKP_X).GetByteString();
+
+		if (privateCurve == KeyKeys.OKP_X25519) {
+			// Use X25519 directly
+			return X25519(privateScalar, publicUCoordinate);
+		}
+
+		System.err.println("Failed to generate shared secret.");
 
 		return null;
 	}
@@ -851,7 +853,7 @@ public class SharedSecretCalculation {
 	 * converted to Montgomery coordinates and after that the X25519 function is
 	 * used to perform the shared secret calculation.
 	 * 
-	 * TODO: Update to handle both Ed25519 and Curve25519
+	 * TODO: Update to handle both Ed25519 and Curve25519 already here?
 	 * 
 	 * @param publicKey the public key (of the other party)
 	 * @param privateKey the private key (your own)
@@ -927,6 +929,13 @@ public class SharedSecretCalculation {
 
 	}
 
+	/**
+	 * Wrapper for the X25519 function
+	 * 
+	 * @param k the private scalar k
+	 * @param u the public u coordinate
+	 * @return the shared secret
+	 */
 	static byte[] X25519(byte[] k, byte[] u) {
 
 		k = k.clone(); // Needed?
@@ -946,9 +955,14 @@ public class SharedSecretCalculation {
 
 	}
 
-	// Skips decoding the scalar k
-	// Since it may not be encoded in the first place
-	// But in the end it seems decoding multiple times changes nothing
+	/**
+	 * Skips decoding the scalar k, since it may not be encoded in the first
+	 * place. But in the end it seems decoding multiple times changes nothing.
+	 * 
+	 * @param k
+	 * @param u
+	 * @return
+	 */
 	@SuppressWarnings("unused")
 	private static byte[] X25519_noDecodeScalar(byte[] k, byte[] u) {
 
