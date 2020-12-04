@@ -24,6 +24,7 @@ import java.net.SocketException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.Security;
+import java.util.Arrays;
 
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
@@ -131,16 +132,22 @@ public class EdhocServer extends CoapServer {
 	
 	public static void runTests() {
 		// Test a hash computation
+		System.out.println("=======================");
+		System.out.println("Test a hash computation");
 		byte[] inputHash = new byte[] {(byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0, (byte) 0x5c};
 		try {
-			System.out.println("Hash input: " + Utils.bytesToHex(inputHash));			
+			System.out.println("Hash input: " + Utils.bytesToHex(inputHash));
 			byte[] resultHash = Util.computeHash(inputHash, "SHA-256");
 			System.out.println("Hash outpu: " + Utils.bytesToHex(resultHash));
 		} catch (NoSuchAlgorithmException e) {
 			System.err.println("Hash algorithm not supported");
 		}
+		System.out.println();
+		
 
-		// Test a signature computation and verification, using ECDSA
+		// Test a signature computation and verification
+		System.out.println("=======================");
+		System.out.println("Test a signature computation and verification");
 		byte[] payloadToSign = new byte[] {(byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0, (byte) 0x5c};
 		byte[] externalData = new byte[] {(byte) 0xef, (byte) 0xde, (byte) 0xac, (byte) 0x75, (byte) 0x0f, (byte) 0xc5};
 		byte[] kid = new byte[] {(byte) 0x01};
@@ -164,6 +171,41 @@ public class EdhocServer extends CoapServer {
 			e.printStackTrace();
 		}
 		System.out.println("Signature validity: " + verified);
+		System.out.println();
+		
+		
+		// Test an encryption and decryption
+		System.out.println("=======================");
+		System.out.println("Test an encryption and decryption");
+		byte[] payloadToEncrypt = new byte[] {(byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0, (byte) 0x5c};
+		byte[] symmetricKey =  new byte[] {(byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03, (byte) 0x04, (byte) 0x05,
+				                           (byte) 0x06, (byte) 0x07, (byte) 0x08, (byte) 0x09, (byte) 0x10, (byte) 0x11,
+				                           (byte) 0x12, (byte) 0x013, (byte) 0x14, (byte) 0x15};
+		byte[] iv = {(byte) 0xc5, (byte) 0xb7, (byte) 0x17, (byte) 0x0e, (byte) 0x65, (byte) 0xd5, (byte) 0x4f,
+				     (byte) 0x1a, (byte) 0xe0, (byte) 0x5d, (byte) 0x10, (byte) 0xaf, (byte) 0x56,};
+		AlgorithmID encryptionAlg = AlgorithmID.AES_CCM_16_64_128;
+		
+		
+		System.out.println("Plaintext: " + Utils.bytesToHex(payloadToEncrypt));
+		byte[] myCiphertext = null;
+		try {
+			myCiphertext = Util.encrypt(idCredX, externalData, payloadToEncrypt, encryptionAlg, iv, symmetricKey);
+			System.out.println("Encryption completed");
+		} catch (CoseException e) {
+			System.err.println("Error while encrypting");
+			e.printStackTrace();
+		}
+		byte[] myPlaintext = null;
+		try {
+			myPlaintext = Util.decrypt(idCredX, externalData, myCiphertext, encryptionAlg, iv, symmetricKey);
+			System.out.println("Decryption completed");
+		} catch (CoseException e) {
+			System.err.println("Error while encrypting");
+			e.printStackTrace();
+		}
+		boolean decryptionMatch = false;
+		System.out.println("Decryption correctness: " + Arrays.equals(payloadToEncrypt, myPlaintext));
+		System.out.println();
 		
 	}
 	
