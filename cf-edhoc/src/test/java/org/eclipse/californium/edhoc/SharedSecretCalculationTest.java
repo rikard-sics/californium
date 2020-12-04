@@ -85,6 +85,8 @@ public class SharedSecretCalculationTest {
 	 */
 	@Test
 	public void testCurve25519KeyGeneration() {
+		SharedSecretCalculation.testAgreement2();
+
 		OneKey key1 = SharedSecretCalculation.generateCurve25519Key();
 		System.out.println("-----------");
 		OneKey key2 = SharedSecretCalculation.generateCurve25519Key();
@@ -101,6 +103,12 @@ public class SharedSecretCalculationTest {
 
 		byte[] priv2 = key2.get(KeyKeys.OKP_D).GetByteString();
 		byte[] pub2 = key2.get(KeyKeys.OKP_X).GetByteString();
+
+		System.out.println("D1 " + Utils.bytesToHex(key1.get(KeyKeys.OKP_D).GetByteString()));
+		System.out.println("X1 " + Utils.bytesToHex(key1.get(KeyKeys.OKP_X).GetByteString()));
+
+		System.out.println("D2 " + Utils.bytesToHex(key2.get(KeyKeys.OKP_D).GetByteString()));
+		System.out.println("X2 " + Utils.bytesToHex(key2.get(KeyKeys.OKP_X).GetByteString()));
 
 		sharedSecret1 = SharedSecretCalculation.X25519(priv1, pub2);
 		sharedSecret2 = SharedSecretCalculation.X25519(priv2, pub1);
