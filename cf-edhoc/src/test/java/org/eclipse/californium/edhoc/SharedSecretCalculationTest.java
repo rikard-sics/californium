@@ -96,13 +96,25 @@ public class SharedSecretCalculationTest {
 	@Test
 	public void newTest() throws InvalidKeyException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
 			InvalidKeySpecException, IllegalStateException, CoseException {
-		OneKey key1 = SharedSecretCalculation.java15Curve25519generation();
-		OneKey key2 = SharedSecretCalculation.java15Curve25519generation();
 
-		byte[] sharedSecretLocal = SharedSecretCalculation.generateSharedSecret(key1, key2);
-		System.out.println(Utils.bytesToHex(sharedSecretLocal));
+		for (int i = 0; i < 10; i++) {
+			OneKey key1 = SharedSecretCalculation.java15Curve25519generation();
+			OneKey key2 = SharedSecretCalculation.java15Curve25519generation();
 
-		SharedSecretCalculation.java15X25519(key1, key2);
+			// System.out.println("Priv " +
+			// Utils.bytesToHex(key1.get(KeyKeys.OKP_D).GetByteString()));
+			// System.out.println("Pub " +
+			// Utils.bytesToHex(key2.get(KeyKeys.OKP_X).GetByteString()));
+
+			byte[] sharedSecretLocal = SharedSecretCalculation.generateSharedSecret(key1, key2);
+			// System.out.println("Local " +
+			// Utils.bytesToHex(sharedSecretLocal));
+
+			byte[] sharedSecretJava = SharedSecretCalculation.java15X25519(key1, key2);
+			Assert.assertArrayEquals("Bad secrets " + i, sharedSecretLocal, sharedSecretJava);
+		}
+
+		System.out.println("Worked");
 
 	}
 	/**
@@ -122,7 +134,7 @@ public class SharedSecretCalculationTest {
 		// SharedSecretCalculation.testAgreement2();
 		SharedSecretCalculation.java15Curve25519generationAndSharedSecret();
 		// SharedSecretCalculation.java15Curve25519generationOld();
-		for (int i = 0; i < 100; i++) {
+		for (int i = 0; i < 10; i++) {
 			// SharedSecretCalculation.java15Curve25519generation();
 		}
 
@@ -130,15 +142,12 @@ public class SharedSecretCalculationTest {
 		System.out.println("-----------");
 		OneKey key2 = SharedSecretCalculation.generateCurve25519KeyTest();
 		System.out.println("-----------");
-		//
-		// byte[] sharedSecret1 =
-		// SharedSecretCalculation.generateSharedSecret(key1, key2);
-		// byte[] sharedSecret2 =
-		// SharedSecretCalculation.generateSharedSecret(key2, key1);
-		//
-		// System.out.println("Matching1 " + Arrays.equals(sharedSecret1,
-		// sharedSecret2));
-		// // Assert.assertArrayEquals(sharedSecret1, sharedSecret2);
+
+		byte[] sharedSecret1 = SharedSecretCalculation.generateSharedSecret(key1, key2);
+		byte[] sharedSecret2 = SharedSecretCalculation.generateSharedSecret(key2, key1);
+
+		System.out.println("Matching1 " + Arrays.equals(sharedSecret1, sharedSecret2));
+		// Assert.assertArrayEquals(sharedSecret1, sharedSecret2);
 
 		byte[] priv1 = key1.get(KeyKeys.OKP_D).GetByteString();
 		byte[] pub1 = key1.get(KeyKeys.OKP_X).GetByteString();
@@ -152,10 +161,10 @@ public class SharedSecretCalculationTest {
 		System.out.println("D2 " + Utils.bytesToHex(key2.get(KeyKeys.OKP_D).GetByteString()));
 		System.out.println("X2 " + Utils.bytesToHex(key2.get(KeyKeys.OKP_X).GetByteString()));
 
-		byte[] sharedSecret1 = SharedSecretCalculation.X25519(priv1, pub2);
-		byte[] sharedSecret2 = SharedSecretCalculation.X25519(priv2, pub1);
+		byte[] sharedSecret3 = SharedSecretCalculation.X25519(priv1, pub2);
+		byte[] sharedSecret4 = SharedSecretCalculation.X25519(priv2, pub1);
 
-		System.out.println("Matching2 " + Arrays.equals(sharedSecret1, sharedSecret2));
+		System.out.println("Matching2 " + Arrays.equals(sharedSecret3, sharedSecret4));
 
 	}
 
