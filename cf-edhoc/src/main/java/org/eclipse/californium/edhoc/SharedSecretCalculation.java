@@ -144,24 +144,39 @@ public class SharedSecretCalculation {
 	// System.out.println("---");
 	// }
 
-	// WIP
-	public static void java15X25519(OneKey privKeyIn, OneKey pubKeyIn)
+	/**
+	 * Shared secret calculation using Java.
+	 * 
+	 * @param privKeyIn
+	 * @param pubKeyIn
+	 * @return
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidAlgorithmParameterException
+	 * @throws InvalidKeySpecException
+	 * @throws InvalidKeyException
+	 * @throws IllegalStateException
+	 * @throws CoseException
+	 */
+	public static byte[] java15X25519(OneKey privKeyIn, OneKey pubKeyIn)
 			throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeySpecException,
 			InvalidKeyException, IllegalStateException, CoseException {
 
-		// Now extract the y coordinate
-		FieldElement y = KeyRemapping.extractCOSE_y(pubKeyIn);
+		/* Check that the keys are as expected (using Curve25519) */
+		if (pubKeyIn.get(KeyKeys.OKP_Curve) != KeyKeys.OKP_X25519
+				|| privKeyIn.get(KeyKeys.OKP_Curve) != KeyKeys.OKP_X25519) {
+			System.err.println("Error: Keys for Java EdDSA shared secret calculation are not using Curve25519.");
+			return null;
+		}
 
-		// Calculate the corresponding Curve25519 u coordinate
-		FieldElement u = KeyRemapping.calcCurve25519_u(y);
-		BigInteger u_bi = new BigInteger(invertArray(u.toByteArray()));
+		// Retrieve the Curve25519 u coordinate
+		byte[] u = pubKeyIn.get(KeyKeys.OKP_X).GetByteString();
+		// System.out.println("U " + Utils.bytesToHex(u));
+		BigInteger u_bi = new BigInteger(invertArray(u));
 
 		// Get the D parameter which must here be the private scalar
 		byte[] d = privKeyIn.get(KeyKeys.OKP_D).GetByteString();
 
-		KeyPairGenerator kpg = KeyPairGenerator.getInstance("XDH");
 		NamedParameterSpec paramSpec = new NamedParameterSpec("X25519");
-		kpg.initialize(paramSpec);
 
 		KeyFactory kf = KeyFactory.getInstance("XDH");
 		XECPublicKeySpec pubSpec = new XECPublicKeySpec(paramSpec, u_bi);
@@ -180,22 +195,27 @@ public class SharedSecretCalculation {
 		byte[] pubKeyEncoded = pubKey.getEncoded();
 		byte[] pubKeyBytes = Arrays.copyOfRange(pubKeyEncoded, pubKeyEncoded.length - 32, pubKeyEncoded.length);
 
-		byte[] secret = ka.generateSecret();
-		System.out.println("*SecretReal " + Utils.bytesToHex(secret));
+		// System.out.println("Priv key " + Utils.bytesToHex(privKeyBytes));
+		// System.out.println("Pub key " + Utils.bytesToHex(pubKeyBytes));
 
-		byte[] secret11 = X25519(privKeyBytes, invertArray(u.toByteArray()));
-		System.out.println("*SecretB " + Utils.bytesToHex(secret11));
+		byte[] secret = ka.generateSecret();
+		// System.out.println("*SecretReal " + Utils.bytesToHex(secret));
+
+		byte[] secret11 = X25519(privKeyBytes, invertArray(u));
+		// System.out.println("*SecretB " + Utils.bytesToHex(secret11));
 
 		byte[] secret12 = X25519(privKeyBytes, (pubKeyBytes));
-		System.out.println("*SecretC " + Utils.bytesToHex(secret12));
+		// System.out.println("*SecretC " + Utils.bytesToHex(secret12));
 
 		// byte[] secret12 = X25519(privKeyBytes, (pubKeyBytes));
 		// System.out.println("*SecretC " + Utils.bytesToHex(secret12));
 
-		System.out.println("---");
-		System.out.println("---");
-		System.out.println("---");
-		System.out.println("---");
+		// System.out.println("---");
+		// System.out.println("---");
+		// System.out.println("---");
+		// System.out.println("---");
+
+		return secret;
 	}
 
 	public static OneKey java15Curve25519generation()
@@ -220,7 +240,8 @@ public class SharedSecretCalculation {
 		return key;
 	}
 
-	public static void java15Curve25519generationAndSharedSecret()
+	@Deprecated
+	static void java15Curve25519generationAndSharedSecret()
 			throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeySpecException,
 			InvalidKeyException, IllegalStateException, CoseException {
 
@@ -232,7 +253,7 @@ public class SharedSecretCalculation {
 
 		// Calculate the corresponding Curve25519 u and v coordinates
 		FieldElement u = KeyRemapping.calcCurve25519_u(y);
-		BigInteger u_bi = new BigInteger((u.toByteArray()));
+		BigInteger u_bi = new BigInteger(invertArray(u.toByteArray()));
 		// FieldElement v = KeyRemapping.calcCurve25519_v_alt(x, u);
 
 		KeyPairGenerator kpg = KeyPairGenerator.getInstance("XDH");
@@ -260,7 +281,7 @@ public class SharedSecretCalculation {
 		System.out.println("*SecretA " + Utils.bytesToHex(secret));
 
 		byte[] secret11 = X25519(privKeyBytes, invertArray(u.toByteArray()));
-		System.out.println("*SecretB " + Utils.bytesToHex(secret11));
+		System.out.println("*SecretB (bad) " + Utils.bytesToHex(secret11));
 
 		byte[] secret12 = X25519(privKeyBytes, (pubKeyBytes));
 		System.out.println("*SecretC " + Utils.bytesToHex(secret12));
@@ -387,7 +408,8 @@ public class SharedSecretCalculation {
 	// }
 
 	// https://github.com/bcgit/bc-java/blob/master/core/src/test/java/org/bouncycastle/math/ec/rfc7748/test/X25519Test.java
-	public static void bouncyCastleKeyAgreement() {
+	@Deprecated
+	private static void bouncyCastleKeyAgreement() {
 		SecureRandom RANDOM = new SecureRandom();
 		AsymmetricCipherKeyPairGenerator kpGen = new X25519KeyPairGenerator();
 
@@ -420,6 +442,8 @@ public class SharedSecretCalculation {
 	 * will be lacking the Java keys internally.
 	 * 
 	 * https://cryptojedi.org/peter/data/pairing-20131122.pdf
+	 * 
+	 * FIXME: Not working
 	 * 
 	 * @return the COSE OneKey
 	 */
@@ -485,28 +509,14 @@ public class SharedSecretCalculation {
 		System.out.println();
 		privKey.getParameters().getH();
 		System.out.println("H: " + Utils.bytesToHex(privKey.getParameters().getH().toByteArray()));
-		privKey.getParameters().getH();
+		System.out.println();
+		System.out.println("Pubkey (Java) encoded: " + Utils.bytesToHex(publicKey.getEncoded()));
+		System.out.println("Privkey (Java) encoded: " + Utils.bytesToHex(privateKey.getEncoded()));
 
 		// Get the private D
-		byte[] rgbD = privKey.getS().toByteArray();
+		byte[] rgbD = privKey.getD().toByteArray();
 		// Get the public point Q (compressed true)
-		byte[] rgbX = Arrays.copyOf(pubKey.getQ().getEncoded(true), 32);
-
-		// CBORObject keyMap = CBORObject.NewMap();
-		//
-		// keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_OKP);
-		// keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_X25519);
-		// keyMap.Add(KeyKeys.OKP_X.AsCBOR(), CBORObject.FromObject(rgbX));
-		// keyMap.Add(KeyKeys.OKP_D.AsCBOR(), CBORObject.FromObject(rgbD));
-		//
-		// OneKey key = null;
-		// try {
-		// key = new OneKey(keyMap);
-		// } catch (CoseException e) {
-		// System.err.println("Failed to generate COSE OneKey: " + e);
-		// }
-
-		// System.out.println(key.AsCBOR());
+		byte[] rgbX = (pubKey.getQ().getAffineYCoord().getEncoded());
 
 		OneKey key = new OneKey();
 
@@ -696,7 +706,7 @@ public class SharedSecretCalculation {
 
 		// EdDSA (Curve25519)
 
-		// FIXME: D is seed, not the private scalar
+		// FIXME?: D is seed, not the private scalar
 		byte[] privateScalar = privateKey.get(KeyKeys.OKP_D).GetByteString();
 		// Take X value as U coordinate (although it's compressed there)
 		byte[] publicUCoordinate = publicKey.get(KeyKeys.OKP_X).GetByteString();
