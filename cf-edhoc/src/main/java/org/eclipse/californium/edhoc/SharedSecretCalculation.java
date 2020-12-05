@@ -235,7 +235,7 @@ public class SharedSecretCalculation {
 		byte[] pubKeyEncoded = pubKey.getEncoded();
 		byte[] pubKeyBytes = Arrays.copyOfRange(pubKeyEncoded, pubKeyEncoded.length - 32, pubKeyEncoded.length);
 
-		OneKey key = builCurve25519OneKey(privKeyBytes, pubKeyBytes);
+		OneKey key = buildCurve25519OneKey(privKeyBytes, pubKeyBytes);
 
 		return key;
 	}
@@ -571,7 +571,7 @@ public class SharedSecretCalculation {
 	 * 
 	 * @return a OneKey representing the input material
 	 */
-	static OneKey builCurve25519OneKey(byte[] privateKey, byte[] publicKey) {
+	static OneKey buildCurve25519OneKey(byte[] privateKey, byte[] publicKey) {
 		byte[] rgbX = publicKey;
 		byte[] rgbD = privateKey;
 
@@ -580,6 +580,7 @@ public class SharedSecretCalculation {
 		key.add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_OKP);
 		key.add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_X25519);
 		key.add(KeyKeys.OKP_X.AsCBOR(), CBORObject.FromObject(rgbX));
+		// FIXME: D should be seed?
 		key.add(KeyKeys.OKP_D.AsCBOR(), CBORObject.FromObject(rgbD));
 
 		return key;
