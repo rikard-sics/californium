@@ -43,58 +43,6 @@ import java.security.NoSuchAlgorithmException;
 public class Util {
 
     /**
-     *  Determine the type of a received EDHOC message
-     * @param msg   The received EDHOC message, as a CBOR sequence
-     * @return  The type of the EDHOC message, or -1 if it not a recognized type
-     */
-	public static int messageType(byte[] msg) {
-		
-		if (msg == null)
-			return -1;
-		
-		CBORObject[] myObjects = CBORObject.DecodeSequenceFromBytes(msg);
-		int count = myObjects.length;
-		
-		if (count < 1 || count > 5)
-			return -1;
-		
-		// First check if it is the EDHOC Error Message
-		if (count == 1) {
-			if (myObjects[0].getType() == CBORType.TextString)
-				return Constants.EDHOC_ERROR_MESSAGE;
-		}
-		if (count == 2) {
-			if (myObjects[0].getType() == CBORType.TextString || myObjects[1].getType() == CBORType.TextString)
-				return Constants.EDHOC_ERROR_MESSAGE;
-		}
-		if (count == 3) {
-			if (myObjects[1].getType() == CBORType.TextString)
-				return Constants.EDHOC_ERROR_MESSAGE;
-		}
-		
-		// It is not an EDHOC Error Message. Check for other message types.
-
-		if (count == 5)
-			return Constants.EDHOC_MESSAGE_1;
-
-		if (count == 3)
-			return Constants.EDHOC_MESSAGE_2;
-		
-		if (count == 1 || count == 2)
-			return Constants.EDHOC_MESSAGE_3;
-		
-		if (count == 4) {
-			if (myObjects[1].getType() == CBORType.Array || myObjects[1].getType() == CBORType.Integer)
-				return Constants.EDHOC_MESSAGE_1;
-			if (myObjects[1].getType() == CBORType.ByteString)
-				return Constants.EDHOC_MESSAGE_2;
-		}
-		
-		return -1;
-		
-	}
-	
-    /**
      *  Compute a ciphertext using the COSE Encrypt0 object
      * @param idCredX   The ID of the public credential of the encrypter, as a CBOR map 
      * @param externalData   The data to use as external_aad

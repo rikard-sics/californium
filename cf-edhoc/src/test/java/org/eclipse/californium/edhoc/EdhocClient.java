@@ -25,6 +25,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Provider;
 import java.security.Security;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResponse;
@@ -33,6 +37,8 @@ import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.elements.exception.ConnectorException;
+
+import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
@@ -62,6 +68,17 @@ public class EdhocClient {
     
     // The long-term asymmetric key pair of this peer
 	private static OneKey keyPair = null;
+	
+	// Long-term public keys of authorized peers
+	// The map label is a CBOR Map used as ID_CRED_X
+	private static Map<CBORObject, OneKey> peerPublicKeys = new HashMap<CBORObject, OneKey>();
+	
+	// Existing EDHOC Sessions, including completed ones
+	// The map label is C_X, i.e. the connection identifier offered to the other peer in the session, as a bstr_identifier
+	private static Map<CBORObject, EdhocSession> edhocSessions = new HashMap<CBORObject, EdhocSession>();
+	
+	// List of supported ciphersuites
+	private static List<Integer> ciphersuites = new ArrayList<Integer>();
 	
 	private static NetworkConfigDefaultHandler DEFAULTS = new NetworkConfigDefaultHandler() {
 
@@ -97,6 +114,12 @@ public class EdhocClient {
 			System.err.println("Error while generating the key pair");
 			return;
 		}
+		
+		// Add the supported ciphersuites
+		ciphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
+		ciphersuites.add(Constants.EDHOC_CIPHER_SUITE_1);
+		ciphersuites.add(Constants.EDHOC_CIPHER_SUITE_2);
+		ciphersuites.add(Constants.EDHOC_CIPHER_SUITE_3);
 		
 		URI uri = null; // URI parameter of the request
 
