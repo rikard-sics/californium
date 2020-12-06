@@ -367,18 +367,24 @@ public class Util {
      */
 	public static byte[] buildCBORSequence (List<CBORObject> objectList) {
 		
+		int sequenceLength = 0;
 		byte[] mySequence = new byte[0];
 		
+		List<CBORObject> serializationList = new ArrayList<CBORObject>();
+		
 		for (int i = 0; i < objectList.size(); i++) {
-			CBORObject obj = objectList.get(i);
-			byte[] encodedObj = obj.EncodeToBytes();
-			
-			byte[] auxSequence = new byte[mySequence.length + encodedObj.length];
-			System.arraycopy(mySequence, 0, auxSequence, 0, mySequence.length);
-			System.arraycopy(encodedObj, 0, auxSequence, mySequence.length, encodedObj.length);
-			
-			mySequence = new byte[auxSequence.length];
-			System.arraycopy(auxSequence, 0, mySequence, 0, auxSequence.length);
+			byte[] objBytes = objectList.get(i).EncodeToBytes();			
+			serializationList.add(CBORObject.FromObject(objBytes));
+			sequenceLength += objBytes.length;
+		}
+		
+		int offset = 0;
+		mySequence = new byte[sequenceLength];
+		
+		for (int i = 0; i < serializationList.size(); i++) {
+			byte[] objBytes = serializationList.get(i).GetByteString();
+			System.arraycopy(objBytes, 0, mySequence, offset, objBytes.length);
+			offset += objBytes.length;
 		}
 		
 		return mySequence;
