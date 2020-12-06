@@ -24,7 +24,11 @@ import java.net.SocketException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.Security;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
@@ -59,6 +63,17 @@ public class EdhocServer extends CoapServer {
     // The long-term asymmetric key pair of this peer
 	private static OneKey keyPair = null;
 	
+	// Long-term public keys of authorized peers
+	// The map label is a CBOR Map used as ID_CRED_X
+	private static Map<CBORObject, OneKey> peerPublicKeys = new HashMap<CBORObject, OneKey>();
+	
+	// Existing EDHOC Sessions, including completed ones
+	// The map label is C_X, i.e. the connection identifier offered to the other peer in the session, as a bstr_identifier
+	private static Map<CBORObject, EdhocSession> edhocSessions = new HashMap<CBORObject, EdhocSession>();
+	
+	// List of supported ciphersuites
+	private static List<Integer> ciphersuites = new ArrayList<Integer>();
+	
 	/*
 	 * Application entry point.
 	 */
@@ -90,6 +105,12 @@ public class EdhocServer extends CoapServer {
 			System.err.println("Error while generating the key pair");
 			return;
 		}
+		
+		// Add the supported ciphersuites
+		ciphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
+		ciphersuites.add(Constants.EDHOC_CIPHER_SUITE_1);
+		ciphersuites.add(Constants.EDHOC_CIPHER_SUITE_2);
+		ciphersuites.add(Constants.EDHOC_CIPHER_SUITE_3);
 		
 		runTests();		
 	}
