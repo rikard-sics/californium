@@ -125,13 +125,12 @@ public class MessageProcessor {
     /**
      *  Prepare an EDHOC Message 1
      * @param session   The EDHOC session associated to this EDHOC message
-     * @param cI   Connection identifier chosen by the Initiator and offered to the Responder
      * @param ad1   The auxiliary data, it can be null
      * @return  The raw payload to transmit as EDHOC Message 1, or null in case of errors
      */
-	public static byte[] writeMessage1(EdhocSession session, byte[] cI, byte[] ad1) {
+	public static byte[] writeMessage1(EdhocSession session, byte[] ad1) {
 		
-		if (session == null || cI == null)
+		if (session == null)
 			return null;
 		
 		int methodCorr = session.getMethodCorr();
@@ -161,6 +160,10 @@ public class MessageProcessor {
 			return null;
 		}
 		if (gX == null)
+			return null;
+		
+		byte[] cI = session.getConnectionId();
+		if (cI == null)
 			return null;
 		
 		List<CBORObject> objectList = new ArrayList<CBORObject>();
