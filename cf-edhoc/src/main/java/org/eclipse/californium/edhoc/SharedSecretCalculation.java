@@ -458,11 +458,13 @@ public class SharedSecretCalculation {
 		SecureRandom rand = new SecureRandom();
 
 		X9ECParameters curveParams = CustomNamedCurves.getByName("Curve25519");
-		byte[] seed = Utils.hexToBytes("1122334455667788112233445566778811223344556677881122334455667788");
+		// byte[] seed =
+		// Utils.hexToBytes("1122334455667788112233445566778811223344556677881122334455667788");
 		ECParameterSpec ecSpec = new ECParameterSpec(curveParams.getCurve(), curveParams.getG(), curveParams.getN(),
-				curveParams.getH(), seed);
+				curveParams.getH(), curveParams.getSeed());
 
-		System.out.println("Spec using seed: " + Utils.bytesToHex(ecSpec.getSeed()));
+		// System.out.println("Spec using seed: " +
+		// Utils.bytesToHex(ecSpec.getSeed()));
 
 		KeyPairGenerator kpg = null;
 		try {
@@ -489,6 +491,9 @@ public class SharedSecretCalculation {
 		System.out.println("Q pub uncompressed " + Utils.bytesToHex(pubKey.getQ().getEncoded(false)));
 		System.out.println("Q pub 1st half " + Utils.bytesToHex(Arrays.copyOf(pubKey.getQ().getEncoded(false), 32)));
 		System.out.println("Q compressed   " + Utils.bytesToHex(pubKey.getQ().getEncoded(true)));
+		System.out.println("Sing of v?   " + Utils.bytesToHex(Arrays.copyOf(pubKey.getQ().getEncoded(true), 1)));
+		System.out
+				.println("Actual U?   " + Utils.bytesToHex(Arrays.copyOfRange(pubKey.getQ().getEncoded(true), 1, 33)));
 		System.out.println(
 				"getAffineXCoord " + Utils.bytesToHex(pubKey.getQ().getAffineXCoord().toBigInteger().toByteArray()));
 		System.out.println(
@@ -514,9 +519,9 @@ public class SharedSecretCalculation {
 		System.out.println("Privkey (Java) encoded: " + Utils.bytesToHex(privateKey.getEncoded()));
 
 		// Get the private D
-		byte[] rgbD = privKey.getD().toByteArray();
+		byte[] rgbD = invertArray(privKey.getD().toByteArray());
 		// Get the public point Q (compressed true)
-		byte[] rgbX = (pubKey.getQ().getAffineYCoord().getEncoded());
+		byte[] rgbX = pubKey.getQ().getXCoord().getEncoded();
 
 		OneKey key = new OneKey();
 
