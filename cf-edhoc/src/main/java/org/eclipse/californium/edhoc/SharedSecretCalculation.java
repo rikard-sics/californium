@@ -145,11 +145,12 @@ public class SharedSecretCalculation {
 	// }
 
 	/**
-	 * Shared secret calculation using Java.
+	 * Shared secret calculation using Java for Curve25519. Only works for Java
+	 * version 11 or higher.
 	 * 
-	 * @param privKeyIn
-	 * @param pubKeyIn
-	 * @return
+	 * @param privKeyIn the private key
+	 * @param pubKeyIn the public key
+	 * @return the generated COSE OneKey
 	 * @throws NoSuchAlgorithmException
 	 * @throws InvalidAlgorithmParameterException
 	 * @throws InvalidKeySpecException
@@ -218,6 +219,17 @@ public class SharedSecretCalculation {
 		return secret;
 	}
 
+	/**
+	 * Build OneKey using Curve25519 (needs Java 11).
+	 * 
+	 * @return
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidAlgorithmParameterException
+	 * @throws InvalidKeySpecException
+	 * @throws InvalidKeyException
+	 * @throws IllegalStateException
+	 * @throws CoseException
+	 */
 	public static OneKey java15Curve25519generation()
 			throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeySpecException,
 			InvalidKeyException, IllegalStateException, CoseException {
@@ -776,6 +788,9 @@ public class SharedSecretCalculation {
 	}
 
 	/**
+	 * TODO: Try doing it manually:
+	 * https://github.com/bcgit/bc-java/blob/master/core/src/test/java/org/bouncycastle/math/ec/rfc7748/test/X25519Test.java
+	 * 
 	 * Generate a COSE OneKey using Curve25519 for X25519. Note that this key
 	 * will be lacking the Java keys internally.
 	 * 
