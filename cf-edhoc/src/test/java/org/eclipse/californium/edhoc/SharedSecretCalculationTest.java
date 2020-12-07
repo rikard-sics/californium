@@ -138,33 +138,37 @@ public class SharedSecretCalculationTest {
 			// SharedSecretCalculation.java15Curve25519generation();
 		}
 
-		OneKey key1 = SharedSecretCalculation.generateCurve25519KeyTest();
-		System.out.println("-----------");
-		OneKey key2 = SharedSecretCalculation.generateCurve25519KeyTest();
-		System.out.println("-----------");
+		SharedSecretCalculation.java15Curve25519generation();
 
-		byte[] sharedSecret1 = SharedSecretCalculation.generateSharedSecret(key1, key2);
-		byte[] sharedSecret2 = SharedSecretCalculation.generateSharedSecret(key2, key1);
+		for (int i = 0; i < 1; i++) {
+			OneKey key1 = SharedSecretCalculation.generateCurve25519KeyTest();
+			System.out.println("-----------");
+			OneKey key2 = SharedSecretCalculation.generateCurve25519KeyTest();
+			System.out.println("-----------");
 
-		System.out.println("Matching1 " + Arrays.equals(sharedSecret1, sharedSecret2));
-		// Assert.assertArrayEquals(sharedSecret1, sharedSecret2);
+			byte[] sharedSecret1 = SharedSecretCalculation.generateSharedSecret(key1, key2);
+			byte[] sharedSecret2 = SharedSecretCalculation.generateSharedSecret(key2, key1);
 
-		byte[] priv1 = key1.get(KeyKeys.OKP_D).GetByteString();
-		byte[] pub1 = key1.get(KeyKeys.OKP_X).GetByteString();
+			System.out.println("Matching1 " + Arrays.equals(sharedSecret1, sharedSecret2));
+			// Assert.assertArrayEquals(sharedSecret1, sharedSecret2);
 
-		byte[] priv2 = key2.get(KeyKeys.OKP_D).GetByteString();
-		byte[] pub2 = key2.get(KeyKeys.OKP_X).GetByteString();
+			byte[] priv1 = key1.get(KeyKeys.OKP_D).GetByteString();
+			byte[] pub1 = key1.get(KeyKeys.OKP_X).GetByteString();
 
-		System.out.println("D1 " + Utils.bytesToHex(key1.get(KeyKeys.OKP_D).GetByteString()));
-		System.out.println("X1 " + Utils.bytesToHex(key1.get(KeyKeys.OKP_X).GetByteString()));
+			byte[] priv2 = key2.get(KeyKeys.OKP_D).GetByteString();
+			byte[] pub2 = key2.get(KeyKeys.OKP_X).GetByteString();
 
-		System.out.println("D2 " + Utils.bytesToHex(key2.get(KeyKeys.OKP_D).GetByteString()));
-		System.out.println("X2 " + Utils.bytesToHex(key2.get(KeyKeys.OKP_X).GetByteString()));
+			System.out.println("D1 " + Utils.bytesToHex(key1.get(KeyKeys.OKP_D).GetByteString()));
+			System.out.println("X1 " + Utils.bytesToHex(key1.get(KeyKeys.OKP_X).GetByteString()));
 
-		byte[] sharedSecret3 = SharedSecretCalculation.X25519(priv1, pub2);
-		byte[] sharedSecret4 = SharedSecretCalculation.X25519(priv2, pub1);
+			System.out.println("D2 " + Utils.bytesToHex(key2.get(KeyKeys.OKP_D).GetByteString()));
+			System.out.println("X2 " + Utils.bytesToHex(key2.get(KeyKeys.OKP_X).GetByteString()));
 
-		System.out.println("Matching2 " + Arrays.equals(sharedSecret3, sharedSecret4));
+			byte[] sharedSecret3 = SharedSecretCalculation.X25519(priv1, pub2);
+			byte[] sharedSecret4 = SharedSecretCalculation.X25519(priv2, pub1);
+
+			System.out.println("Matching2 " + Arrays.equals(sharedSecret3, sharedSecret4));
+		}
 
 	}
 
