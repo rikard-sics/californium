@@ -20,6 +20,7 @@ package org.eclipse.californium.edhoc;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.Attribute;
@@ -31,6 +32,7 @@ import org.eclipse.californium.cose.Message;
 import org.eclipse.californium.cose.MessageTag;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.cose.Sign1Message;
+import org.eclipse.californium.oscore.OSCoreCtxDB;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
@@ -539,4 +541,122 @@ public class Util {
     	
     }
     
+    /**
+     * Get an available Connection Identifier to offer to the other peer
+     *  
+     * @param usedConnectionIds   The collection of already allocated Connection Identifiers
+     * @param db   The database of OSCORE security contexts when using EDHOC to key OSCORE, it can be null
+     * @return   the newly allocated connection identifier, or null in case of errors
+     */
+    public static byte[] getConnectionId (List<Set<Integer>> usedConnectionIds, OSCoreCtxDB db) {
+    	
+    	if (usedConnectionIds == null)
+    		return null;
+    
+    	synchronized(usedConnectionIds) {
+    		
+    		if (db != null) {
+    			synchronized(db) {
+        			return allocateConnectionId(usedConnectionIds, db);	
+    			}
+    		}
+    		else
+    			return allocateConnectionId(usedConnectionIds, db);
+    		
+    	}
+    	
+    }
+    
+    /**
+     * Actually allocate an available Connection Identifier to offer to the other peer
+     * If EDHOC is used for keying OSCORE, Recipient IDs are used as Connect Identifiers
+     *  
+     * @param usedConnectionIds   The collection of already allocated Connection Identifiers
+     * @param db   The database of OSCORE security contexts when using EDHOC to key OSCORE, it can be null
+     * @return   the newly allocated connection identifier, or null in case of errors
+     */
+    private static byte[] allocateConnectionId(List<Set<Integer>> usedConnectionIds, OSCoreCtxDB db) {
+    	
+    	byte[] connectionId = null;
+        boolean found = false;
+    	
+    	int maxIdValue;
+    	
+        // Start with 1 byte as size of the Connection ID; try with up to 4 bytes in size        
+        for (int idSize = 1; idSize <= 4; idSize++) {
+        	
+        	if (idSize == 4)
+        		maxIdValue = (1 << 31) - 1;
+        	else
+        		maxIdValue = (1 << (idSize * 8)) - 1;
+        	
+	        for (int j = 0; j <= maxIdValue; j++) {
+	        	
+	        	connectionId = Util.intToBytes(j);
+    			
+    			// This Connection ID is marked as not available to use
+    			if (usedConnectionIds.get(idSize - 1).contains(j))
+    				continue;
+    			
+    			try {
+		        	// This Connection ID seems to be available to use 
+	        		if (!usedConnectionIds.get(idSize - 1).contains(j)) {
+	        			
+	        			// Double check in the database of OSCORE Security Contexts
+	        			if (db != null && db.getContext(connectionId) != null) {
+	        				
+	        				// A Security Context with this Connection ID used as Recipient ID exists and was not tracked!
+	        				// Update the local list of used Connection IDs, then move on to the next candidate
+	        				usedConnectionIds.get(idSize - 1).add(j);
+	        				continue;
+	        				
+	        			}
+	        			else {
+	        				
+	        				// This Recipient ID is actually available at the moment as Connection ID. Add it to the local list
+	        				usedConnectionIds.get(idSize - 1).add(j);
+	        				found = true;
+	        				break;
+	        			}
+	        			
+	        		}
+    			}
+        		catch(RuntimeException e) {
+    				// Multiple Security Contexts with this Connection ID as Recipient ID exist and it was not tracked!
+    				// Update the local list of used Connection IDs, then move on to the next candidate
+    				usedConnectionIds.get(idSize - 1).add(j);
+    				continue;
+        		}
+        			
+	        }
+	        
+	        if (found)
+	        	break;
+	        	
+        }
+        
+        if (!found)
+        	return null;
+        else
+        	return connectionId;
+    	
+    }
+    
+    /**
+     * Deallocate a Connection Identifier previously locked to offer to a peer
+     * Note that, if this was an OSCORE Recipient ID, the Recipient ID itself will not be deallocated
+     *  
+     * @param connectionId   The Connection Identifier to release
+     * @param usedConnectionIds   The collection of already allocated Connection Identifiers
+     */
+    public static void releaseConnectionId (byte[] connectionId, List<Set<Integer>> usedConnectionIds) {
+    	
+    	if (connectionId == null || connectionId.length > 4)
+    		return;
+    	
+    	int connectionIdAsInt = bytesToInt(connectionId);
+    	usedConnectionIds.get(connectionId.length - 1).remove(connectionIdAsInt);
+    	
+    }
+        
 }
