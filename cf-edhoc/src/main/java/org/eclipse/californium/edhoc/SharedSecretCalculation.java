@@ -22,7 +22,6 @@ import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Provider;
@@ -150,71 +149,72 @@ public class SharedSecretCalculation {
 	 * 
 	 * @param privKeyIn the private key
 	 * @param pubKeyIn the public key
+	 * 
 	 * @return the generated COSE OneKey
-	 * @throws NoSuchAlgorithmException
-	 * @throws InvalidAlgorithmParameterException
-	 * @throws InvalidKeySpecException
-	 * @throws InvalidKeyException
-	 * @throws IllegalStateException
-	 * @throws CoseException
+	 * 
 	 */
-	public static byte[] java15X25519(OneKey privKeyIn, OneKey pubKeyIn)
-			throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeySpecException,
-			InvalidKeyException, IllegalStateException, CoseException {
+	public static byte[] java15X25519(OneKey privKeyIn, OneKey pubKeyIn) {
 
-		/* Check that the keys are as expected (using Curve25519) */
-		if (pubKeyIn.get(KeyKeys.OKP_Curve) != KeyKeys.OKP_X25519
-				|| privKeyIn.get(KeyKeys.OKP_Curve) != KeyKeys.OKP_X25519) {
-			System.err.println("Error: Keys for Java EdDSA shared secret calculation are not using Curve25519.");
-			return null;
+		byte[] secret = null;
+
+		try {
+
+			/* Check that the keys are as expected (using Curve25519) */
+			if (pubKeyIn.get(KeyKeys.OKP_Curve) != KeyKeys.OKP_X25519
+					|| privKeyIn.get(KeyKeys.OKP_Curve) != KeyKeys.OKP_X25519) {
+				System.err.println("Error: Keys for Java EdDSA shared secret calculation are not using Curve25519.");
+				return null;
+			}
+
+			// Retrieve the Curve25519 u coordinate
+			byte[] u = pubKeyIn.get(KeyKeys.OKP_X).GetByteString();
+			// System.out.println("U " + Utils.bytesToHex(u));
+			BigInteger u_bi = new BigInteger(invertArray(u));
+
+			// Get the D parameter which must here be the private scalar
+			byte[] d = privKeyIn.get(KeyKeys.OKP_D).GetByteString();
+
+			NamedParameterSpec paramSpec = new NamedParameterSpec("X25519");
+
+			KeyFactory kf = KeyFactory.getInstance("XDH");
+			XECPublicKeySpec pubSpec = new XECPublicKeySpec(paramSpec, u_bi);
+			PublicKey pubKey = kf.generatePublic(pubSpec);
+
+			KeyAgreement ka = KeyAgreement.getInstance("XDH");
+			byte[] privKeyBytesIn = d;
+			XECPrivateKeySpec privSpec = new XECPrivateKeySpec(paramSpec, privKeyBytesIn);
+			PrivateKey privKey = kf.generatePrivate(privSpec);
+
+			ka.init(privKey);
+			ka.doPhase(pubKey, true);
+
+			byte[] privKeyEncoded = privKey.getEncoded();
+			byte[] privKeyBytes = Arrays.copyOfRange(privKeyEncoded, privKeyEncoded.length - 32, privKeyEncoded.length);
+			byte[] pubKeyEncoded = pubKey.getEncoded();
+			byte[] pubKeyBytes = Arrays.copyOfRange(pubKeyEncoded, pubKeyEncoded.length - 32, pubKeyEncoded.length);
+
+			// System.out.println("Priv key " + Utils.bytesToHex(privKeyBytes));
+			// System.out.println("Pub key " + Utils.bytesToHex(pubKeyBytes));
+
+			secret = ka.generateSecret();
+			// System.out.println("*SecretReal " + Utils.bytesToHex(secret));
+
+			// byte[] secret11 = X25519(privKeyBytes, invertArray(u));
+			// System.out.println("*SecretB " + Utils.bytesToHex(secret11));
+
+			// byte[] secret12 = X25519(privKeyBytes, (pubKeyBytes));
+			// System.out.println("*SecretC " + Utils.bytesToHex(secret12));
+
+			// byte[] secret12 = X25519(privKeyBytes, (pubKeyBytes));
+			// System.out.println("*SecretC " + Utils.bytesToHex(secret12));
+
+			// System.out.println("---");
+			// System.out.println("---");
+			// System.out.println("---");
+			// System.out.println("---");
+		} catch (IllegalStateException | InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException e) {
+			System.err.println("Failed to generate Curve25519 OneKey: " + e);
 		}
-
-		// Retrieve the Curve25519 u coordinate
-		byte[] u = pubKeyIn.get(KeyKeys.OKP_X).GetByteString();
-		// System.out.println("U " + Utils.bytesToHex(u));
-		BigInteger u_bi = new BigInteger(invertArray(u));
-
-		// Get the D parameter which must here be the private scalar
-		byte[] d = privKeyIn.get(KeyKeys.OKP_D).GetByteString();
-
-		NamedParameterSpec paramSpec = new NamedParameterSpec("X25519");
-
-		KeyFactory kf = KeyFactory.getInstance("XDH");
-		XECPublicKeySpec pubSpec = new XECPublicKeySpec(paramSpec, u_bi);
-		PublicKey pubKey = kf.generatePublic(pubSpec);
-
-		KeyAgreement ka = KeyAgreement.getInstance("XDH");
-		byte[] privKeyBytesIn = d;
-		XECPrivateKeySpec privSpec = new XECPrivateKeySpec(paramSpec, privKeyBytesIn);
-		PrivateKey privKey = kf.generatePrivate(privSpec);
-
-		ka.init(privKey);
-		ka.doPhase(pubKey, true);
-
-		byte[] privKeyEncoded = privKey.getEncoded();
-		byte[] privKeyBytes = Arrays.copyOfRange(privKeyEncoded, privKeyEncoded.length - 32, privKeyEncoded.length);
-		byte[] pubKeyEncoded = pubKey.getEncoded();
-		byte[] pubKeyBytes = Arrays.copyOfRange(pubKeyEncoded, pubKeyEncoded.length - 32, pubKeyEncoded.length);
-
-		// System.out.println("Priv key " + Utils.bytesToHex(privKeyBytes));
-		// System.out.println("Pub key " + Utils.bytesToHex(pubKeyBytes));
-
-		byte[] secret = ka.generateSecret();
-		// System.out.println("*SecretReal " + Utils.bytesToHex(secret));
-
-		byte[] secret11 = X25519(privKeyBytes, invertArray(u));
-		// System.out.println("*SecretB " + Utils.bytesToHex(secret11));
-
-		byte[] secret12 = X25519(privKeyBytes, (pubKeyBytes));
-		// System.out.println("*SecretC " + Utils.bytesToHex(secret12));
-
-		// byte[] secret12 = X25519(privKeyBytes, (pubKeyBytes));
-		// System.out.println("*SecretC " + Utils.bytesToHex(secret12));
-
-		// System.out.println("---");
-		// System.out.println("---");
-		// System.out.println("---");
-		// System.out.println("---");
 
 		return secret;
 	}

@@ -104,7 +104,7 @@ public class SharedSecretCalculationTest {
 	 * @throws CoseException
 	 */
 	@Test
-	public void newTest() throws InvalidKeyException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
+	public void testCurve25519KeyGenerationJava() throws InvalidKeyException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
 			InvalidKeySpecException, IllegalStateException, CoseException {
 
 		for (int i = 0; i < 10; i++) {
