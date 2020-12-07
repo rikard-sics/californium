@@ -20,12 +20,22 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import java.math.BigInteger;
+import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.Provider;
+import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.Security;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.NamedParameterSpec;
+import java.security.spec.XECPrivateKeySpec;
+import java.security.spec.XECPublicKeySpec;
 import java.util.Arrays;
 
 import org.eclipse.californium.cose.AlgorithmID;
@@ -117,6 +127,118 @@ public class SharedSecretCalculationTest {
 		System.out.println("Worked");
 
 	}
+
+	// START
+	// https://www.tfzx.net/article/10082730.html
+	// https://github.com/bcgit/bc-java/blob/master/core/src/test/java/org/bouncycastle/math/ec/rfc7748/test/X25519Test.java
+	@Test
+	public void curve25519KeyGenerationAlternative()
+			throws GeneralSecurityException {
+
+		// === BouncyCastle way (modified to not use it) ===
+
+		int SCALAR_SIZE = org.bouncycastle.math.ec.rfc7748.X25519.SCALAR_SIZE;
+		int POINT_SIZE = org.bouncycastle.math.ec.rfc7748.X25519.POINT_SIZE;
+
+		byte[] kA = new byte[SCALAR_SIZE];
+		byte[] kB = new byte[SCALAR_SIZE];
+		byte[] qA = new byte[POINT_SIZE];
+		byte[] qB = new byte[POINT_SIZE];
+		byte[] sA = new byte[POINT_SIZE];
+		byte[] sB = new byte[POINT_SIZE];
+
+		SecureRandom RANDOM = new SecureRandom();
+
+		RANDOM.nextBytes(kA);
+		RANDOM.nextBytes(kB);
+
+		// ... publishes their public key, ...
+		//org.bouncycastle.math.ec.rfc7748.X25519.scalarMultBase(kA, 0, qA, 0);
+		//org.bouncycastle.math.ec.rfc7748.X25519.scalarMultBase(kB, 0, qB, 0);
+		Field ed25519Field = new Field(256, // b
+				Utils.hexToBytes("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
+				new BigIntegerLittleEndianEncoding());
+		byte[] basePoint = new byte[32];
+		basePoint[0] = 0x09;
+		qA = SharedSecretCalculation.X25519(kA, basePoint);
+		qB = SharedSecretCalculation.X25519(kB, basePoint);
+
+		System.out.println("Public key A (BC): " + Utils.bytesToHex(qA));
+		System.out.println("Public key B (BC: " + Utils.bytesToHex(qB));
+
+		// === Java way ===
+
+		KeyPairGenerator kpg = KeyPairGenerator.getInstance("XDH");
+		NamedParameterSpec paramSpec = new NamedParameterSpec("X25519");
+		kpg.initialize(paramSpec);
+		System.out.println(paramSpec.getClass());
+		// KeyPair kp = kpg.generateKeyPair();
+
+		KeyFactory kf = KeyFactory.getInstance("XDH");
+		byte[] privKeyBytesIn = kA; // Key A
+		XECPrivateKeySpec privSpec = new XECPrivateKeySpec(paramSpec, privKeyBytesIn);
+		PrivateKey privKey = kf.generatePrivate(privSpec);
+		System.out.println(privKey.getClass());
+
+		PublicKey pubKey = generatePublicKeyFromPrivate(privKey);
+
+		byte[] privKeyEncoded = privKey.getEncoded();
+		byte[] privKeyBytes = Arrays.copyOfRange(privKeyEncoded, privKeyEncoded.length - 32, privKeyEncoded.length);
+		byte[] pubKeyEncoded = pubKey.getEncoded();
+		byte[] pubKeyBytes = Arrays.copyOfRange(pubKeyEncoded, pubKeyEncoded.length - 32, pubKeyEncoded.length);
+
+		System.out.println("Private key A (Java): " + Utils.bytesToHex(privKeyBytes));
+		System.out.println("Public key A (Java): " + Utils.bytesToHex(pubKeyBytes));
+
+		Assert.assertArrayEquals(qA, pubKeyBytes);
+
+		// Key B
+
+		privKeyBytesIn = kB; // Key B
+		privSpec = new XECPrivateKeySpec(paramSpec, privKeyBytesIn);
+		privKey = kf.generatePrivate(privSpec);
+		System.out.println(privKey.getClass());
+
+		pubKey = generatePublicKeyFromPrivate(privKey);
+
+		privKeyEncoded = privKey.getEncoded();
+		privKeyBytes = Arrays.copyOfRange(privKeyEncoded, privKeyEncoded.length - 32, privKeyEncoded.length);
+		pubKeyEncoded = pubKey.getEncoded();
+		pubKeyBytes = Arrays.copyOfRange(pubKeyEncoded, pubKeyEncoded.length - 32, pubKeyEncoded.length);
+
+		System.out.println("Private key B (Java): " + Utils.bytesToHex(privKeyBytes));
+		System.out.println("Public key B (Java): " + Utils.bytesToHex(pubKeyBytes));
+
+		Assert.assertArrayEquals(qB, pubKeyBytes);
+
+	}
+
+	public class StaticSecureRandom extends SecureRandom {
+
+		private final byte[] privateKey;
+
+		public StaticSecureRandom(byte[] privateKey) {
+			this.privateKey = privateKey.clone();
+		}
+
+		@Override
+		public void nextBytes(byte[] bytes) {
+			System.arraycopy(privateKey, 0, bytes, 0, privateKey.length);
+		}
+
+	}
+
+	public PublicKey generatePublicKeyFromPrivate(PrivateKey privateKey) throws GeneralSecurityException {
+
+		byte[] privKeyEncoded = privateKey.getEncoded();
+		byte[] privKeyBytes = Arrays.copyOfRange(privKeyEncoded, privKeyEncoded.length - 32, privKeyEncoded.length);
+
+		KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("X25519");
+		keyPairGenerator.initialize(new NamedParameterSpec("X25519"), new StaticSecureRandom((privKeyBytes)));
+		return keyPairGenerator.generateKeyPair().getPublic();
+	}
+	// END
+
 	/**
 	 * Tests generating a Curve25519 OneKey and performing shared secret
 	 * calculation with it.
