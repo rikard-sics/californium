@@ -27,8 +27,10 @@ import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResponse;
@@ -77,8 +79,15 @@ public class EdhocClient {
 	// The map label is C_X, i.e. the connection identifier offered to the other peer in the session, as a bstr_identifier
 	private static Map<CBORObject, EdhocSession> edhocSessions = new HashMap<CBORObject, EdhocSession>();
 	
+	// Each set of the list refers to a different size of Connection Identifier, i.e. C_ID_X to offer to the other peer.
+	// The element with index 0 includes as elements Recipient IDs with size 1 byte.
+	private static List<Set<Integer>> usedConnectionIds = new ArrayList<Set<Integer>>();
+	
 	// List of supported ciphersuites
-	private static List<Integer> ciphersuites = new ArrayList<Integer>();
+	private static List<Integer> supportedCiphersuites = new ArrayList<Integer>();
+	
+	// EDHOC Message1 and EDHOC Message2 can be correlated thanks to the CoAP Token
+	private static int correlationMethod = Constants.EDHOC_CORR_METHOD_1;
 	
 	private static NetworkConfigDefaultHandler DEFAULTS = new NetworkConfigDefaultHandler() {
 
@@ -116,10 +125,16 @@ public class EdhocClient {
 		}
 		
 		// Add the supported ciphersuites
-		ciphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
-		ciphersuites.add(Constants.EDHOC_CIPHER_SUITE_1);
-		ciphersuites.add(Constants.EDHOC_CIPHER_SUITE_2);
-		ciphersuites.add(Constants.EDHOC_CIPHER_SUITE_3);
+		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
+		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_1);
+		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_2);
+		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_3);
+		
+    	for (int i = 0; i < 4; i++) {
+        	// Empty sets of assigned Connection Identifiers; one set for each possible size in bytes.
+        	// The set with index 0 refers to Connection Identifiers with size 1 byte
+    		usedConnectionIds.add(new HashSet<Integer>());
+    	}
 		
 		URI uri = null; // URI parameter of the request
 

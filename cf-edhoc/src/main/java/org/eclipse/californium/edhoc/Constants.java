@@ -65,7 +65,7 @@ public static final int EDHOC_MESSAGE_3 = 3;
  */
 
 public static final int EDHOC_AUTH_METHOD_0 = 0;
-public static final int EDHOC_AUTH_METHOD_1 = 2;
+public static final int EDHOC_AUTH_METHOD_1 = 1;
 public static final int EDHOC_AUTH_METHOD_2 = 2;
 public static final int EDHOC_AUTH_METHOD_3 = 3;
 
@@ -85,7 +85,7 @@ public static final int EDHOC_AUTH_METHOD_3 = 3;
  */
 
 public static final int EDHOC_CORR_METHOD_0 = 0;
-public static final int EDHOC_CORR_METHOD_1 = 2;
+public static final int EDHOC_CORR_METHOD_1 = 1;
 public static final int EDHOC_CORR_METHOD_2 = 2;
 public static final int EDHOC_CORR_METHOD_3 = 3;
 

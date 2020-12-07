@@ -21,6 +21,9 @@ package org.eclipse.californium.edhoc;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.californium.cose.KeyKeys;
+import org.eclipse.californium.cose.OneKey;
+
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
@@ -116,6 +119,65 @@ public class MessageProcessor {
 			return null;
 		
 		return CBORObject.DecodeSequenceFromBytes(sequence);
+		
+	}
+	
+    /**
+     *  Prepare an EDHOC Message 1
+     * @param session   The EDHOC session associated to this EDHOC message
+     * @param cI   Connection identifier chosen by the Initiator and offered to the Responder
+     * @param ad1   The auxiliary data, it can be null
+     * @return  The raw payload to transmit as EDHOC Message 1, or null in case of errors
+     */
+	public static byte[] writeMessage1(EdhocSession session, byte[] cI, byte[] ad1) {
+		
+		if (session == null || cI == null)
+			return null;
+		
+		int methodCorr = session.getMethodCorr();
+		if (methodCorr < 0 || methodCorr > 15)
+			return null;
+		
+		int numSuites = session.getSupportedCipherSuites().size();
+		if (numSuites == 0)
+			return null;
+		int[] suitesI = new int[numSuites];
+		for (Integer i : session.getSupportedCipherSuites()) {
+			suitesI[i] = i.intValue();
+		}
+		
+		byte[] gX = null;
+		OneKey ephemeralKey = session.getEphemeralKey();
+		if (ephemeralKey == null)
+			return null;
+		if (ephemeralKey.get(KeyKeys.KeyType) == KeyKeys.EC2_P256) {
+			gX = ephemeralKey.get(KeyKeys.EC2_X).GetByteString();
+		}
+		else if (ephemeralKey.get(KeyKeys.KeyType) == KeyKeys.OKP_Ed25519 ||
+				 ephemeralKey.get(KeyKeys.KeyType) == KeyKeys.OKP_X25519) {
+			gX = ephemeralKey.get(KeyKeys.OKP_X).GetByteString();
+		}
+		else {
+			return null;
+		}
+		if (gX == null)
+			return null;
+		
+		List<CBORObject> objectList = new ArrayList<CBORObject>();
+		
+		objectList.add(CBORObject.FromObject(methodCorr));
+		if (suitesI.length == 1)
+			objectList.add(CBORObject.FromObject(suitesI[0]));
+		else
+			objectList.add(CBORObject.FromObject(suitesI));
+		objectList.add(CBORObject.FromObject(gX));
+		objectList.add(Util.encodeToBstrIdentifier(CBORObject.FromObject(cI)));
+		if (ad1 != null)
+			objectList.add(CBORObject.FromObject(ad1));
+		
+		session.setCurrentStep(Constants.EDHOC_BEFORE_M1);
+		
+		return Util.buildCBORSequence(objectList);
 		
 	}
 	
