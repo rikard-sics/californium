@@ -31,12 +31,15 @@ public class EdhocSession {
 	private boolean initiator;
 	private int method;
 	private int correlation;
+	private byte[] connectionId;
 	private OneKey longTermKey;
 	private OneKey ephemeralKey;
 	private List<Integer> supportedCiphersuites;
 	
 	private int currentStep;
 	private int selectedCiphersuite = -1;
+	
+	private byte[] peerConnectionId;
 	private OneKey peerLongTermPublicKey = null;
 	private OneKey peerEphemeralPublicKey = null;
 	
@@ -50,11 +53,12 @@ public class EdhocSession {
 	private byte[] TH3 = null;
 	private byte[] TH4 = null;
 	
-	public EdhocSession(boolean initiator, int methodCorr, OneKey ltk, OneKey ek, List<Integer> cipherSuites) {
+	public EdhocSession(boolean initiator, int methodCorr, byte[] connectionId, OneKey ltk, OneKey ek, List<Integer> cipherSuites) {
 		
 		this.initiator = initiator;
 		this.method = methodCorr / 4;
 		this.correlation = methodCorr % 4;
+		this.connectionId = connectionId;
 		this.longTermKey = ltk;
 		this.ephemeralKey = ek;
 		this.supportedCiphersuites = cipherSuites;
@@ -89,6 +93,13 @@ public class EdhocSession {
 	public int getMethodCorr() {
 		return (4 * this.method) + this.correlation;
 	}
+	
+	/**
+	 * @return  the Connection Identifier of this peer
+	 */
+	public byte[] getConnectionId() {
+		return this.connectionId;
+	}	
 	
 	/**
 	 * @return  the long-term key pair of this peer 
@@ -145,6 +156,21 @@ public class EdhocSession {
 	 */
 	public int getSelectedCiphersuite() {
 		return this.selectedCiphersuite;
+	}
+	
+	/**
+	 * Set the Connection Identifier of the other peer
+	 * @param peerId   the Connection Id of the other peer
+	 */
+	public void setPeerConnectionId(byte[] peerId) {
+		this.peerConnectionId = peerId;
+	}
+
+	/**
+	 * @return  the Connection Identifier of the other peer
+	 */
+	public byte[] getPeerConnectionId() {
+		return this.peerConnectionId;
 	}
 	
 	/**
