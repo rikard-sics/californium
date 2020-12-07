@@ -28,11 +28,257 @@ import com.upokecenter.cbor.CBORObject;
 
 public class EdhocSession {
 	
-	private EdhocState state;
+	private boolean initiator;
+	private int method;
+	private int correlation;
+	private OneKey longTermKey;
+	private OneKey ephemeralKey;
+	private List<Integer> supportedCiphersuites;
 	
-	public EdhocSession(boolean initiator, int methodCorr, OneKey ltk, OneKey ek, List<Integer> ciphersuites) {
+	private int currentStep;
+	private int selectedCiphersuite = -1;
+	private OneKey peerLongTermPublicKey = null;
+	private OneKey peerEphemeralPublicKey = null;
+	
+	// Inner Key-Derivation Keys
+	private byte[] prk_2e = null;
+	private byte[] prk_3e2m = null;
+	private byte[] prk_4x3m = null;
+	
+	// Transcript Hashes
+	private byte[] TH2 = null;
+	private byte[] TH3 = null;
+	private byte[] TH4 = null;
+	
+	public EdhocSession(boolean initiator, int methodCorr, OneKey ltk, OneKey ek, List<Integer> cipherSuites) {
 		
-		this.state = new EdhocState(initiator, methodCorr, ltk, ek, ciphersuites);
+		this.initiator = initiator;
+		this.method = methodCorr / 4;
+		this.correlation = methodCorr % 4;
+		this.longTermKey = ltk;
+		this.ephemeralKey = ek;
+		this.supportedCiphersuites = cipherSuites;
+		currentStep = initiator ? Constants.EDHOC_BEFORE_M1 : Constants.EDHOC_BEFORE_M2;
+		
+	}
+	
+	/**
+	 * @return  True if this peer is the initiator, or False otherwise 
+	 */
+	public boolean isInitiator() {
+		return this.initiator;
+	}
+	
+	/**
+	 * @return  the authentication method of this peer 
+	 */
+	public int getMethod() {
+		return this.method;
+	}
+	
+	/**
+	 * @return  the correlation method
+	 */
+	public int getCorrelation() {
+		return this.correlation;
+	}
+	
+	/**
+	 * @return  the integer value combining the authentication method and correlation method
+	 */
+	public int getMethodCorr() {
+		return (4 * this.method) + this.correlation;
+	}
+	
+	/**
+	 * @return  the long-term key pair of this peer 
+	 */
+	public OneKey getLongTermKey() {
+		
+		return this.longTermKey;
+		
+	}
+	
+	/**
+	 * @return  the ephemeral key pair of this peer 
+	 */
+	public OneKey getEphemeralKey() {
+		
+		return this.ephemeralKey;
+		
+	}
+	
+	/**
+	 * @return  the supported ciphersuites 
+	 */
+	public List<Integer> getSupportedCipherSuites() {
+
+		return this.supportedCiphersuites;
+		
+	}
+	
+	/**
+	 * Set the current step in the execution of the EDHOC protocol
+	 * @param newStep   the new step to set 
+	 */
+	public void setCurrentStep(int newStep) {
+		this.currentStep = newStep;
+	}
+	
+	/**
+	 * @return  the current step in the execution of the EDHOC protocol 
+	 */
+	public int getCurrentStep() {
+		return this.currentStep;
+	}
+
+	/**
+	 * Set the selected ciphersuite for this EDHOC session
+	 * @param cipherSuite   the selected ciphersuite 
+	 */
+	public void setSelectedCiphersuite(int ciphersuite) {
+		this.selectedCiphersuite = ciphersuite;
+	}
+
+	/**
+	 * @return  the selected ciphersuite for this EDHOC session 
+	 */
+	public int getSelectedCiphersuite() {
+		return this.selectedCiphersuite;
+	}
+	
+	/**
+	 * Set the long-term public key of the other peer
+	 * @param peerKey   the long-term public key of the other peer 
+	 */
+	public void setPeerLongTermPublicKey(OneKey peerKey) {
+		this.peerLongTermPublicKey = peerKey;
+	}
+
+	/**
+	 * @return  the long-term public key of the other peer
+	 */
+	public OneKey getPeerLongTermPublicKey() {
+		return this.peerLongTermPublicKey;
+	}
+
+	/**
+	 * Set the ephemeral public key of the other peer
+	 * @param peerKey   the ephemeral public key of the other peer 
+	 */
+	public void setPeerEphemeralPublicKey(OneKey peerKey) {
+		this.peerEphemeralPublicKey = peerKey;
+	}
+
+	/**
+	 * @return  the ephemeral public key of the other peer
+	 */
+	public OneKey getPeerEphemeralPublicKey() {
+		return this.peerEphemeralPublicKey;
+	}
+	
+	/**
+	 * Set the inner key PRK2e
+	 * @param inputKey   the inner key PRK2e
+	 */
+	public void setPRK2e(byte[] inputKey) {
+		this.prk_2e = inputKey;
+	}
+	
+	/**
+	 * @return  the inner key PRK2e
+	 */
+	public byte[] getPRK2e() {
+		return this.prk_2e;
+	}
+
+	/**
+	 * Set the inner key PRK3e2m
+	 * @param inputKey   the inner key PRK3e2m
+	 */
+	public void setPRK3e2m(byte[] inputKey) {
+		this.prk_3e2m = inputKey;
+	}
+
+	/**
+	 * @return  the inner key PRK3e2m
+	 */
+	public byte[] getPRK3e2m() {
+		return this.prk_3e2m;
+	}
+	
+	/**
+	 * Set the inner key PRK4x3m
+	 * @param inputKey   the inner key PRK4x3m
+	 */
+	public void setPRK4x3m(byte[] inputKey) {
+		this.prk_4x3m = inputKey;
+	}
+	
+	/**
+	 * @return  the inner key PRK4x3m
+	 */
+	public byte[] getPRK4x3m() {
+		return this.prk_4x3m;
+	}
+	
+	/**
+	 * Set the Transcript Hash TH2 
+	 * @param inputTH   the Transcript Hash TH2
+	 */
+	public void setTH2(byte[] inputTH) {
+		this.TH2 = inputTH;
+	}
+	
+	/**
+	 * @return  the Transcript Hash TH2
+	 */
+	public byte[] getTH2() {
+		return this.TH2;
+	}
+	
+	/**
+	 * Set the Transcript Hash TH3 
+	 * @param inputTH   the Transcript Hash TH3
+	 */
+	public void setTH3(byte[] inputTH) {
+		this.TH3 = inputTH;
+	}
+	
+	/**
+	 * @return  the Transcript Hash TH3
+	 */
+	public byte[] getTH3() {
+		return this.TH3;
+	}
+	
+	/**
+	 * Set the Transcript Hash TH4
+	 * @param inputTH   the Transcript Hash TH4
+	 */
+	public void setTH4(byte[] inputTH) {
+		this.TH4 = inputTH;
+	}
+	
+	/**
+	 * @return  the Transcript Hash TH4
+	 */
+	public byte[] getTH4() {
+		return this.TH4;
+	}
+	
+	/**
+	 * EDHOC-Exporter interface
+	 * @param label   The label to use to derive the OKM
+	 * @param len   The intended length of the OKM to derive, in bytes
+	 * @return  the application key, or null if the EDHOC execution is not completed yet
+	 */
+	public byte[] edhocExporter(String label, int len) throws InvalidKeyException, NoSuchAlgorithmException {
+		
+		if (this.currentStep != Constants.EDHOC_AFTER_M3)
+			return null;
+		
+		return edhocKDF(this.prk_4x3m, this.TH4, label, len);
 		
 	}
 	
@@ -49,11 +295,9 @@ public class EdhocSession {
 		
 		int edhoc_aead_id;
 		
-		int ciphersuite = state.getCiphersuite();
-		
-		if(ciphersuite == Constants.EDHOC_CIPHER_SUITE_0 || ciphersuite == Constants.EDHOC_CIPHER_SUITE_2)
+		if(selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_2)
 			edhoc_aead_id = 10; // AES-CCM-16-64-128
-		else if(ciphersuite == Constants.EDHOC_CIPHER_SUITE_1 || ciphersuite == Constants.EDHOC_CIPHER_SUITE_3)
+		else if(selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_1 || selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_3)
 			edhoc_aead_id = 30; // AES-CCM-16-128-128
 		else
 			return null;
@@ -68,21 +312,6 @@ public class EdhocSession {
 		byte[] info = infoArray.EncodeToBytes();
 		
 		return Hkdf.expand(prk, info, len);
-		
-	}
-	
-	/**
-	 * EDHOC-Exporter interface
-	 * @param label   The label to use to derive the OKM
-	 * @param len   The intended length of the OKM to derive, in bytes
-	 * @return  the application key, or null if the EDHOC execution is not completed yet
-	 */
-	public byte[] edhocExporter(String label, int len) throws InvalidKeyException, NoSuchAlgorithmException {
-		
-		if (state.getCurrentStep() != Constants.EDHOC_AFTER_M3)
-			return null;
-		
-		return edhocKDF(this.state.getPRK4x3m(), this.state.getTH4(), label, len);
 		
 	}
 
