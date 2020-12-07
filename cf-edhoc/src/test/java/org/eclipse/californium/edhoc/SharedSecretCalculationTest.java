@@ -303,8 +303,8 @@ public class SharedSecretCalculationTest {
 	@Test
 	public void testCurve25519KeyGeneration() throws Exception {
 
-		OneKey key1 = SharedSecretCalculation.generateCurve25519Key();
-		OneKey key2 = SharedSecretCalculation.generateCurve25519Key();
+		OneKey key1 = SharedSecretCalculation.generateCurve25519KeyOld();
+		OneKey key2 = SharedSecretCalculation.generateCurve25519KeyOld();
 
 		byte[] sharedSecret1 = SharedSecretCalculation.generateSharedSecret(key1, key2);
 		byte[] sharedSecret2 = SharedSecretCalculation.generateSharedSecret(key2, key1);

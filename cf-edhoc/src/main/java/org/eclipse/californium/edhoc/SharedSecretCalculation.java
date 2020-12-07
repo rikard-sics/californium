@@ -252,6 +252,33 @@ public class SharedSecretCalculation {
 		return key;
 	}
 
+	/**
+	 * Build OneKey using Curve25519 (does not need Java 11 or BouncyCastle).
+	 * Also does not start from Ed25519 keys.
+	 * 
+	 * @return the generated Curve25519 OneKey
+	 */
+	public static OneKey Curve25519Keygeneration() {
+
+		int SCALAR_SIZE = 32;
+		int POINT_SIZE = 32;
+
+		byte[] kA = new byte[SCALAR_SIZE];
+		byte[] qA = new byte[POINT_SIZE];
+
+		SecureRandom random = new SecureRandom();
+
+		random.nextBytes(kA);
+
+		byte[] basePoint = new byte[32];
+		basePoint[0] = 0x09;
+		qA = SharedSecretCalculation.X25519(kA, basePoint);
+
+		OneKey key = buildCurve25519OneKey(kA, qA);
+
+		return key;
+	}
+
 	@Deprecated
 	static void java15Curve25519generationAndSharedSecret()
 			throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeySpecException,
@@ -788,16 +815,15 @@ public class SharedSecretCalculation {
 	}
 
 	/**
-	 * TODO: Try doing it manually:
-	 * https://github.com/bcgit/bc-java/blob/master/core/src/test/java/org/bouncycastle/math/ec/rfc7748/test/X25519Test.java
-	 * 
 	 * Generate a COSE OneKey using Curve25519 for X25519. Note that this key
 	 * will be lacking the Java keys internally.
+	 * 
+	 * This method uses Ed25519 keys as a starting point.
 	 * 
 	 * @return the generated COSE OneKey
 	 * @throws CoseException
 	 */
-	static OneKey generateCurve25519Key() throws CoseException {
+	static OneKey generateCurve25519KeyOld() throws CoseException {
 
 		// Start by generating a Ed25519 key pair
 		OneKey initialKey = null;
