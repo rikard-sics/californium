@@ -21,16 +21,25 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
+import java.security.Security;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
+import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.KeyKeys;
+import org.eclipse.californium.cose.OneKey;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
+import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 import net.i2p.crypto.eddsa.Utils;
 
 public class UtilTest {
@@ -150,5 +159,63 @@ public class UtilTest {
 		CBORObject output2 = Util.decodeFromBstrIdentifier(input2);
 		Assert.assertEquals(CBORType.ByteString, output2.getType());
 		Assert.assertArrayEquals(expected2.GetByteString(), output2.GetByteString());
+	}
+
+	/**
+	 * Test a signature computation and verification
+	 * 
+	 * @throws CoseException on test failure
+	 */
+	@Ignore
+	@Test
+	public void a() throws CoseException {
+		String keyPairBase64 = "pgMmAQIgASFYIPWSTdB9SCF/+CGXpy7gty8qipdR30t6HgdFGQo8ViiAIlggXvJCtXVXBJwmjMa4YdRbcdgjpXqM57S2CZENPrUGQnMjWCDXCb+hy1ybUu18KTAJMvjsmXch4W3Hd7Rw7mTF3ocbLQ==";
+
+		OneKey keyPair = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyPairBase64)));
+
+		byte[] payloadToSign = new byte[] { (byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0,
+				(byte) 0x5c };
+		byte[] externalData = new byte[] { (byte) 0xef, (byte) 0xde, (byte) 0xac, (byte) 0x75, (byte) 0x0f,
+				(byte) 0xc5 };
+		byte[] kid = new byte[] { (byte) 0x01 };
+		CBORObject idCredX = CBORObject.NewMap();
+		idCredX.Add(KeyKeys.KeyId, kid);
+
+		byte[] mySignature = null;
+		mySignature = Util.computeSignature(idCredX, externalData, payloadToSign, keyPair);
+
+		boolean verified = Util.verifySignature(mySignature, idCredX, externalData, payloadToSign, keyPair);
+		Assert.assertTrue(verified);
+
+	}
+
+	/**
+	 * Test a signature computation with EdDSA Ed25519.
+	 * 
+	 * TODO: Start from base64 string
+	 * 
+	 * @throws CoseException on test failure
+	 */
+	@Test
+	public void testComputeSignatureEd25519() throws CoseException {
+		Provider EdDSA = new EdDSASecurityProvider();
+		Security.addProvider(EdDSA);
+
+		// String keyStringEd25519 =
+		// "pQMnAQEgBiFYIDzQyFH694a7CcXQasH9RcqnmwQAy2FIX97dGGGy+bpSI1gg5aAfgdGCH2/2KFsQH5lXtDc8JUn1a+OkF0zOG6lIWXQ=";
+		OneKey keyPair = OneKey.generateKey(KeyKeys.OKP_Ed25519);
+		// OneKey keyPair = new
+		// OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyStringEd25519)));
+
+		byte[] payloadToSign = new byte[] { (byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0,
+				(byte) 0x5c };
+		byte[] externalData = new byte[] { (byte) 0xef, (byte) 0xde, (byte) 0xac, (byte) 0x75, (byte) 0x0f,
+				(byte) 0xc5 };
+		byte[] kid = new byte[] { (byte) 0x01 };
+		CBORObject idCredX = CBORObject.NewMap();
+		idCredX.Add(KeyKeys.KeyId, kid);
+
+		byte[] mySignature = Util.computeSignature(idCredX, externalData, payloadToSign, keyPair);
+		// System.out.println("XXX " + Utils.bytesToHex(mySignature));
 	}
 }
