@@ -24,7 +24,6 @@ import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
-import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -35,7 +34,6 @@ import java.security.Security;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.NamedParameterSpec;
 import java.security.spec.XECPrivateKeySpec;
-import java.security.spec.XECPublicKeySpec;
 import java.util.Arrays;
 
 import org.eclipse.californium.cose.AlgorithmID;
@@ -64,18 +62,21 @@ public class SharedSecretCalculationTest {
 
 	/*
 	 * Useful links:
+	 * 
 	 * https://crypto.stackexchange.com/questions/63732/curve-25519-x25519-
 	 * ed25519-convert-coordinates-between-montgomery-curve-and-t/63734
-	 * 
 	 * https://tools.ietf.org/html/rfc7748
 	 * 
-	 * https://tools.ietf.org/html/rfc8032
-	 * 
-	 * https://github.com/bifurcation/fourq
-	 * 
+	 * https://tools.ietf.org/html/rfc8032 https://github.com/bifurcation/fourq
 	 * https://blog.mozilla.org/warner/2011/11/29/ed25519-keys/
+	 * https://www.tfzx.net/article/10082730.html
 	 * 
-	 * See java-test.py I made.
+	 * https://github.com/bcgit/bc-java/blob/master/core/src/test/java/org/
+	 * bouncycastle/math/ec/rfc7748/test/X25519Test.java
+	 * 
+	 * https://tools.ietf.org/html/draft-ietf-lake-edhoc-02
+	 * https://tools.ietf.org/html/rfc7748
+	 * 
 	 */
 
 	// Create the ed25519 field
@@ -96,14 +97,18 @@ public class SharedSecretCalculationTest {
 	 * Test Curve25519 key generation with Java. Then try X25519 from Java and
 	 * local version to compare.
 	 * 
-	 * @throws InvalidKeyException
-	 * @throws NoSuchAlgorithmException
-	 * @throws InvalidAlgorithmParameterException
-	 * @throws InvalidKeySpecException
-	 * @throws IllegalStateException
-	 * @throws CoseException
+	 * TODO: Delete?
+	 * 
+	 * @throws InvalidKeyException on test failure
+	 * @throws NoSuchAlgorithmException on test failure
+	 * @throws InvalidAlgorithmParameterException on test failure
+	 * @throws InvalidKeySpecException on test failure
+	 * @throws IllegalStateException on test failure
+	 * @throws CoseException on test failure
 	 */
+	@SuppressWarnings("deprecation")
 	@Test
+	@Ignore
 	public void testCurve25519KeyGenerationJava() throws InvalidKeyException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
 			InvalidKeySpecException, IllegalStateException, CoseException {
 
@@ -128,40 +133,38 @@ public class SharedSecretCalculationTest {
 
 	}
 
-	// START
-	// https://www.tfzx.net/article/10082730.html
-	// https://github.com/bcgit/bc-java/blob/master/core/src/test/java/org/bouncycastle/math/ec/rfc7748/test/X25519Test.java
+	/**
+	 * Generate Curve25519 key with local method not using BouncyCastle or Java
+	 * 11. Then compare that with generating public keys from the same private
+	 * keys using Java 11+ functionality.
+	 * 
+	 * https://www.tfzx.net/article/10082730.html
+	 * https://github.com/bcgit/bc-java/blob/master/core/src/test/java/org/bouncycastle/math/ec/rfc7748/test/X25519Test.java
+	 * 
+	 * @throws GeneralSecurityException on test failure
+	 */
 	@Test
 	public void curve25519KeyGenerationAlternative()
 			throws GeneralSecurityException {
 
 		// === BouncyCastle way (modified to not use it) ===
 
-		int SCALAR_SIZE = org.bouncycastle.math.ec.rfc7748.X25519.SCALAR_SIZE;
-		int POINT_SIZE = org.bouncycastle.math.ec.rfc7748.X25519.POINT_SIZE;
+		int SCALAR_SIZE = 32;
+		int POINT_SIZE = 32;
 
 		byte[] kA = new byte[SCALAR_SIZE];
 		byte[] kB = new byte[SCALAR_SIZE];
 		byte[] qA = new byte[POINT_SIZE];
 		byte[] qB = new byte[POINT_SIZE];
-		byte[] sA = new byte[POINT_SIZE];
-		byte[] sB = new byte[POINT_SIZE];
 
-		SecureRandom RANDOM = new SecureRandom();
+		OneKey keyA = SharedSecretCalculation.generateCurve25519OneKey();
+		OneKey keyB = SharedSecretCalculation.generateCurve25519OneKey();
 
-		RANDOM.nextBytes(kA);
-		RANDOM.nextBytes(kB);
+		qA = keyA.get(KeyKeys.OKP_X).GetByteString();
+		qB = keyB.get(KeyKeys.OKP_X).GetByteString();
 
-		// ... publishes their public key, ...
-		//org.bouncycastle.math.ec.rfc7748.X25519.scalarMultBase(kA, 0, qA, 0);
-		//org.bouncycastle.math.ec.rfc7748.X25519.scalarMultBase(kB, 0, qB, 0);
-		Field ed25519Field = new Field(256, // b
-				Utils.hexToBytes("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
-				new BigIntegerLittleEndianEncoding());
-		byte[] basePoint = new byte[32];
-		basePoint[0] = 0x09;
-		qA = SharedSecretCalculation.X25519(kA, basePoint);
-		qB = SharedSecretCalculation.X25519(kB, basePoint);
+		kA = keyA.get(KeyKeys.OKP_D).GetByteString();
+		kB = keyB.get(KeyKeys.OKP_D).GetByteString();
 
 		System.out.println("Public key A (BC): " + Utils.bytesToHex(qA));
 		System.out.println("Public key B (BC: " + Utils.bytesToHex(qB));
@@ -213,8 +216,17 @@ public class SharedSecretCalculationTest {
 
 	}
 
+	/**
+	 * Support class for test above. Needed to build Java public key from a
+	 * specific private key.
+	 *
+	 */
 	public class StaticSecureRandom extends SecureRandom {
 
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 3095389701974890531L;
 		private final byte[] privateKey;
 
 		public StaticSecureRandom(byte[] privateKey) {
@@ -228,6 +240,15 @@ public class SharedSecretCalculationTest {
 
 	}
 
+	/**
+	 * Support method for test above. Needed to build Java public key from a
+	 * specific private key.
+	 * 
+	 * @param privateKey the private key to generate a public key for
+	 * @return the generated public key
+	 * 
+	 * @throws GeneralSecurityException on key generation failure
+	 */
 	public PublicKey generatePublicKeyFromPrivate(PrivateKey privateKey) throws GeneralSecurityException {
 
 		byte[] privKeyEncoded = privateKey.getEncoded();
@@ -237,19 +258,22 @@ public class SharedSecretCalculationTest {
 		keyPairGenerator.initialize(new NamedParameterSpec("X25519"), new StaticSecureRandom((privKeyBytes)));
 		return keyPairGenerator.generateKeyPair().getPublic();
 	}
-	// END
 
 	/**
 	 * Tests generating a Curve25519 OneKey and performing shared secret
 	 * calculation with it.
 	 * 
-	 * @throws IllegalStateException
-	 * @throws InvalidKeySpecException
-	 * @throws InvalidAlgorithmParameterException
-	 * @throws NoSuchAlgorithmException
-	 * @throws InvalidKeyException
-	 * @throws CoseException
+	 * TODO: Remove?
+	 * 
+	 * @throws IllegalStateException on test failure
+	 * @throws InvalidKeySpecException on test failure
+	 * @throws InvalidAlgorithmParameterException on test failure
+	 * @throws NoSuchAlgorithmException on test failure
+	 * @throws InvalidKeyException on test failure
+	 * @throws CoseException on test failure
 	 */
+	@SuppressWarnings("deprecation")
+	@Ignore
 	@Test
 	public void testCurve25519KeyGenerationTesting() throws InvalidKeyException, NoSuchAlgorithmException,
 			InvalidAlgorithmParameterException, InvalidKeySpecException, IllegalStateException, CoseException {
@@ -298,9 +322,13 @@ public class SharedSecretCalculationTest {
 	 * Tests generating a Curve25519 OneKey and performing shared secret
 	 * calculation with it.
 	 * 
+	 * TODO: Remove?
+	 * 
 	 * @throws Exception on test failure
 	 */
+	@SuppressWarnings("deprecation")
 	@Test
+	@Ignore
 	public void testCurve25519KeyGeneration() throws Exception {
 
 		OneKey key1 = SharedSecretCalculation.generateCurve25519KeyOld();
