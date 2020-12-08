@@ -3,6 +3,8 @@ package org.eclipse.californium.edhoc;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.californium.cose.KeyKeys;
+import org.eclipse.californium.cose.OneKey;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -45,4 +47,23 @@ public class MessageProcessorTest {
 		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(errorMessage));
 	}
 
+	/**
+	 * Test writing of message 1 and compare to test vector.
+	 * 
+	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#appendix-B.2.1
+	 */
+	@Test
+	public void testWriteMessage1() {
+		// First set up the session to use
+		boolean initiator = true;
+		int methodCorr = 13;
+		byte[] connectionId = new byte[] { 0x16 };
+		List<Integer> cipherSuites = new ArrayList<Integer>();
+		cipherSuites.add(1);
+		OneKey ltk = Util.generateKeyPair(KeyKeys.OKP_Ed25519.AsInt32());
+		byte[] ad = null;
+		
+		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, cipherSuites);
+		MessageProcessor.writeMessage1(session, ad);
+	}
 }
