@@ -63,10 +63,10 @@ public class EdhocClient {
 	private final static Provider EdDSA = new EdDSASecurityProvider();
 	
 	// Uncomment to set ECDSA with curve P-256 for signatures
-    private final static int signKeyCurve = KeyKeys.EC2_P256.AsInt32();
+    //private final static int keyCurve = KeyKeys.EC2_P256.AsInt32();
     
     // Uncomment to set EDDSA with curve Ed25519 for signatures
-    // private final static int signKeyCurve = KeyKeys.OKP_Ed25519.AsInt32();
+    private final static int keyCurve = KeyKeys.OKP_Ed25519.AsInt32();
     
     // The long-term asymmetric key pair of this peer
 	private static OneKey keyPair = null;
@@ -110,19 +110,7 @@ public class EdhocClient {
 		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		NetworkConfig.setStandard(config);
 
-		// Generate the new long-term asymmetric key pair 
-		try {
-	 		if (signKeyCurve == KeyKeys.EC2_P256.AsInt32())
-	 			keyPair = OneKey.generateKey(AlgorithmID.ECDSA_256);
-	    	if (signKeyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
-	        	Security.insertProviderAt(EdDSA, 0);
-	    		keyPair = OneKey.generateKey(AlgorithmID.EDDSA);
-	    	}
-			
-		} catch (CoseException e) {
-			System.err.println("Error while generating the key pair");
-			return;
-		}
+		keyPair = Util.generateKeyPair(keyCurve);
 		
 		// Add the supported ciphersuites
 		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
@@ -160,7 +148,8 @@ public class EdhocClient {
 			System.err.println("Invalid URI: " + e.getMessage());
 			System.exit(-1);
 		}
-		edhocExchange(args, uri);
+		// EDHOC execution with signature key
+		edhocExchangeSignature(args, uri);
 
 	}
 	
@@ -200,7 +189,7 @@ public class EdhocClient {
 		
 	}
 	
-	private static void edhocExchange(final String args[], final URI targetUri) {
+	private static void edhocExchangeSignature(final String args[], final URI targetUri) {
 		
 		CoapClient client = new CoapClient(targetUri);
 
