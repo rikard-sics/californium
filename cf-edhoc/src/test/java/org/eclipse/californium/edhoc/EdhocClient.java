@@ -274,7 +274,8 @@ public class EdhocClient {
 		}
 		*/
 		
-		// Send EDHOC Message 1
+		// Simple test with a dummy payload
+		/*
 		byte[] requestPayload = { (byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03 };
 		
 		Request edhocMessage1 = new Request(Code.POST, Type.CON);
@@ -296,7 +297,72 @@ public class EdhocClient {
 		
         byte[] responsePayload = edhocMessage2.getPayload();
         System.out.println("\nResponse: " + new String(responsePayload) + "\n");
+        */		
+        
+		// Send EDHOC Message 1
+		int corrMethod = (4 * Constants.EDHOC_AUTH_METHOD_0) + correlationMethod;
+		byte[] connectionId = Util.getConnectionId(usedConnectionIds, null);
+        EdhocSession mySession = new EdhocSession(true, corrMethod, connectionId, keyPair, supportedCiphersuites);
+        
+        // Prepare the list of CBOR objects to build the CBOR sequence
+        List<CBORObject> objectList = new ArrayList<>();
+        
+        // METDHOC_CORR as CBOR integer
+        objectList.add(CBORObject.FromObject(corrMethod));
+        
+        // SUITES_I as CBOR integer or CBOR array
+    	int preferredSuite = supportedCiphersuites.get(0).intValue();
+        if(supportedCiphersuites.size() == 1) {
+        	objectList.add(CBORObject.FromObject(preferredSuite));
+        }
+        else {
+        	CBORObject myArray = CBORObject.NewArray();
+        	myArray.Add(CBORObject.FromObject(preferredSuite));
+        	for (int i = 0; i < supportedCiphersuites.size(); i++) {
+        		int suiteListElement =  supportedCiphersuites.get(i).intValue();
+        		myArray.Add(CBORObject.FromObject(suiteListElement));
+        	}
+        	objectList.add(CBORObject.FromObject(myArray));
+        }
+        
+        // G_X as a CBOR byte string
+		if (preferredSuite == Constants.EDHOC_CIPHER_SUITE_0 || preferredSuite == Constants.EDHOC_CIPHER_SUITE_1) {
+			objectList.add(mySession.getEphemeralKey().PublicKey().get(KeyKeys.OKP_X));
+		}
+		else if (preferredSuite == Constants.EDHOC_CIPHER_SUITE_2 || preferredSuite == Constants.EDHOC_CIPHER_SUITE_3) {
+			objectList.add(mySession.getEphemeralKey().PublicKey().get(KeyKeys.EC2_X));
+		}
 		
+		// C_I as bstr_identifier
+		CBORObject cI = CBORObject.FromObject(connectionId);
+		objectList.add(Util.encodeToBstrIdentifier(cI));
+		
+		
+		// Add the new session to the list of existing EDHOC sessions 
+		edhocSessions.put(cI, mySession);
+		
+        // Send EDHOC Message 1
+		byte[] payloadMessage1 = Util.buildCBORSequence(objectList);
+		Request edhocMessage1 = new Request(Code.POST, Type.CON);
+		edhocMessage1.setPayload(payloadMessage1);
+		edhocMessage1.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
+		
+        System.out.println("\nSent EDHOC Message1\n");
+        CoapResponse edhocMessage2;
+        try {
+			edhocMessage2 = client.advanced(edhocMessage1);
+		} catch (ConnectorException e) {
+			System.err.println("ConnectorException when sending EDHOC Message1");
+			return;
+		} catch (IOException e) {
+			System.err.println("IOException when sending EDHOC Message1");
+			return;
+		}
+		
+        byte[] responsePayload = edhocMessage2.getPayload();
+        System.out.println("\nResponse: " + new String(responsePayload) + "\n");
+		
+        
 		// Receive and process EDHOC Message 2
 		// TBD
 		

@@ -22,6 +22,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
+import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 
 import com.upokecenter.cbor.CBORObject;
@@ -37,7 +38,7 @@ public class EdhocSession {
 	private List<Integer> supportedCiphersuites;
 	
 	private int currentStep;
-	private int selectedCiphersuite = -1;
+	private int selectedCiphersuite;
 	
 	private byte[] peerConnectionId;
 	private OneKey peerLongTermPublicKey = null;
@@ -53,15 +54,21 @@ public class EdhocSession {
 	private byte[] TH3 = null;
 	private byte[] TH4 = null;
 	
-	public EdhocSession(boolean initiator, int methodCorr, byte[] connectionId, OneKey ltk, OneKey ek, List<Integer> cipherSuites) {
+	public EdhocSession(boolean initiator, int methodCorr, byte[] connectionId, OneKey ltk, List<Integer> cipherSuites) {
 		
 		this.initiator = initiator;
 		this.method = methodCorr / 4;
 		this.correlation = methodCorr % 4;
 		this.connectionId = connectionId;
 		this.longTermKey = ltk;
-		this.ephemeralKey = ek;
 		this.supportedCiphersuites = cipherSuites;
+		
+		this.selectedCiphersuite = supportedCiphersuites.get(0); 
+		if (this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_0 || this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_1)
+			this.ephemeralKey = Util.generateKeyPair(KeyKeys.OKP_Ed25519.AsInt32());
+		else if (this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_2 || this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_3)
+			this.ephemeralKey = Util.generateKeyPair(KeyKeys.EC2_P256.AsInt32());
+		
 		currentStep = initiator ? Constants.EDHOC_BEFORE_M1 : Constants.EDHOC_BEFORE_M2;
 		
 	}
@@ -111,6 +118,15 @@ public class EdhocSession {
 	}
 	
 	/**
+	 * @param ek  the ephemeral key pair of this peer 
+	 */
+	public void setEphemeralKey(OneKey ek) {
+		
+		this.ephemeralKey = ek;
+		
+	}
+	
+	/**
 	 * @return  the ephemeral key pair of this peer 
 	 */
 	public OneKey getEphemeralKey() {
@@ -120,7 +136,16 @@ public class EdhocSession {
 	}
 	
 	/**
-	 * @return  the supported ciphersuites 
+	 * @param cipherSuites  the supported ciphersuites to indicate in EDHOC messages
+	 */
+	public void setSupportedCipherSuites(List<Integer> cipherSuites) {
+
+		this.supportedCiphersuites = cipherSuites;
+		
+	}
+	
+	/**
+	 * @return  the supported ciphersuites to indicate in EDHOC messages
 	 */
 	public List<Integer> getSupportedCipherSuites() {
 
