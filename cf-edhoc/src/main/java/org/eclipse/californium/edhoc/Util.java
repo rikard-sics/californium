@@ -19,6 +19,7 @@
 package org.eclipse.californium.edhoc;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Set;
@@ -41,6 +42,9 @@ import com.upokecenter.cbor.CBORType;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 import net.i2p.crypto.eddsa.Utils;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
@@ -340,6 +344,28 @@ public class Util {
 		
 	}
 	
+	/**
+	 * Read a CBOR sequence producing a list of all CBOR objects it contains.
+	 * 
+	 * @param sequence the bytes of the CBOR sequence
+	 * 
+	 * @return a list of CBOR objects from the sequence
+	 */
+	public static List<CBORObject> readCBORSequence(byte[] sequence) {
+		InputStream sequenceStream = new ByteArrayInputStream(sequence);
+
+		CBORObject[] objectArray = null;
+		try {
+			objectArray = CBORObject.ReadSequence(sequenceStream);
+		} catch (IOException e) {
+			System.err.println("Failed to parse CBOR sequence: " + e);
+		}
+
+		List<CBORObject> objectList = Arrays.asList(objectArray);
+
+		return objectList;
+	}
+
     /**
      *  Prepare a CBOR sequence, given a list of CBOR Objects as input
      * @param objectList   The CBOR Objects to compose the CBOR sequence
