@@ -19,6 +19,7 @@
 package org.eclipse.californium.edhoc;
 
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Set;
 
@@ -674,8 +675,9 @@ public class Util {
     	
 		// Generate the new long-term asymmetric key pair 
 		try {
-	 		if (keyCurve == KeyKeys.EC2_P256.AsInt32())
+	 		if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
 	 			keyPair = OneKey.generateKey(AlgorithmID.ECDSA_256);
+	 		}
 	 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
 	    		Provider EdDSA = new EdDSASecurityProvider();
 	        	Security.insertProviderAt(EdDSA, 0);
@@ -689,6 +691,21 @@ public class Util {
 			System.err.println("Error while generating the key pair");
 			return null;
 		}
+    	
+		// Print out the base64 serialization of the key pair
+		/*
+		byte[] keyPairBytes = keyPair.EncodeToBytes();
+    	String testKeyBytesBase64 = Base64.getEncoder().encodeToString(keyPairBytes);
+    	System.out.println(testKeyBytesBase64);
+    	*/
+		
+		// Print out the base64 serialization of the public key only
+		/*
+    	OneKey testPublicKey = keyPair.PublicKey();
+    	byte[] testPublicKeyBytes = testPublicKey.EncodeToBytes();
+    	String testPublicKeyBytesBase64 = Base64.getEncoder().encodeToString(testPublicKeyBytes);
+    	System.out.println(testPublicKeyBytesBase64);
+    	*/
     	
     	return keyPair;
     	
