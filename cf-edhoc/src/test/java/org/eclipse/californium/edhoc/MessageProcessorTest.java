@@ -59,11 +59,25 @@ public class MessageProcessorTest {
 		int methodCorr = 13;
 		byte[] connectionId = new byte[] { 0x16 };
 		List<Integer> cipherSuites = new ArrayList<Integer>();
-		cipherSuites.add(1);
+		cipherSuites.add(0);
 		OneKey ltk = Util.generateKeyPair(KeyKeys.OKP_Ed25519.AsInt32());
 		byte[] ad = null;
 		
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, cipherSuites);
-		MessageProcessor.writeMessage1(session, ad);
+
+		// Force a specific ephemeral key
+		byte[] privateEkeyBytes = Utils.hexToBytes("ae11a0db863c0227e53992feb8f5924c50d0a7ba6eeab4ad1ff24572f4f57cfa");
+		byte[] publicEkeyBytes = Utils.hexToBytes("8d3ef56d1b750a4351d68ac250a0e883790efc80a538a444ee9e2b57e2441a7c");
+		OneKey ek = SharedSecretCalculation.buildCurve25519OneKey(privateEkeyBytes, publicEkeyBytes);
+		session.setEphemeralKey(ek);
+
+		// Now write EDHOC message 1
+		byte[] message1 = MessageProcessor.writeMessage1(session, ad);
+
+		// Compare with the expected value from the test vectors
+		byte[] expectedMessage1 = Utils
+				.hexToBytes("0d0058208d3ef56d1b750a4351d68ac250a0e883790efc80a538a444ee9e2b57e2441a7c21");
+
+		Assert.assertArrayEquals(expectedMessage1, message1);
 	}
 }
