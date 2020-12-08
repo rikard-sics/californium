@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.Bytes;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -48,12 +49,12 @@ public class MessageProcessorTest {
 	}
 
 	/**
-	 * Test writing of message 1 and compare to test vector.
+	 * Test writing of message 1 and compare to the test vector in B.2.
 	 * 
 	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#appendix-B.2.1
 	 */
 	@Test
-	public void testWriteMessage1() {
+	public void testWriteMessage1B2() {
 		// First set up the session to use
 		boolean initiator = true;
 		int methodCorr = 13;
@@ -62,7 +63,7 @@ public class MessageProcessorTest {
 		cipherSuites.add(0);
 		OneKey ltk = Util.generateKeyPair(KeyKeys.OKP_Ed25519.AsInt32());
 		byte[] ad = null;
-		
+
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, cipherSuites);
 
 		// Force a specific ephemeral key
@@ -77,6 +78,40 @@ public class MessageProcessorTest {
 		// Compare with the expected value from the test vectors
 		byte[] expectedMessage1 = Utils
 				.hexToBytes("0d0058208d3ef56d1b750a4351d68ac250a0e883790efc80a538a444ee9e2b57e2441a7c21");
+
+		Assert.assertArrayEquals(expectedMessage1, message1);
+	}
+
+	/**
+	 * Test writing of message 1 and compare to the test vector in B.1.
+	 * 
+	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#appendix-B.1.1
+	 */
+	@Test
+	public void testWriteMessage1B1() {
+		// First set up the session to use
+		boolean initiator = true;
+		int methodCorr = 1;
+		byte[] connectionId = Bytes.EMPTY;
+		List<Integer> cipherSuites = new ArrayList<Integer>();
+		cipherSuites.add(0);
+		OneKey ltk = Util.generateKeyPair(KeyKeys.OKP_Ed25519.AsInt32());
+		byte[] ad = null;
+		
+		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, cipherSuites);
+
+		// Force a specific ephemeral key
+		byte[] privateEkeyBytes = Utils.hexToBytes("8f781a095372f85b6d9f6109ae422611734d7dbfa0069a2df2935bb2e053bf35");
+		byte[] publicEkeyBytes = Utils.hexToBytes("898ff79a02067a16ea1eccb90fa52246f5aa4dd6ec076bba0259d904b7ec8b0c");
+		OneKey ek = SharedSecretCalculation.buildCurve25519OneKey(privateEkeyBytes, publicEkeyBytes);
+		session.setEphemeralKey(ek);
+
+		// Now write EDHOC message 1
+		byte[] message1 = MessageProcessor.writeMessage1(session, ad);
+
+		// Compare with the expected value from the test vectors
+		byte[] expectedMessage1 = Utils
+				.hexToBytes("01005820898ff79a02067a16ea1eccb90fa52246f5aa4dd6ec076bba0259d904b7ec8b0c40");
 
 		Assert.assertArrayEquals(expectedMessage1, message1);
 	}
