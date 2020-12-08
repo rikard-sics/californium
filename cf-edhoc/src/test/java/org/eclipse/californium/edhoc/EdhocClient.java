@@ -26,6 +26,7 @@ import java.net.URISyntaxException;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -62,11 +63,17 @@ public class EdhocClient {
 	
 	private final static Provider EdDSA = new EdDSASecurityProvider();
 	
-	// Uncomment to set ECDSA with curve P-256 for signatures
-    //private final static int keyCurve = KeyKeys.EC2_P256.AsInt32();
+	// Uncomment to use an ECDSA key pair with curve P-256 as long-term identity key
+    private final static int keyCurve = KeyKeys.EC2_P256.AsInt32();
     
-    // Uncomment to set EDDSA with curve Ed25519 for signatures
-    private final static int keyCurve = KeyKeys.OKP_Ed25519.AsInt32();
+    // Uncomment to use an EdDSA key pair with curve Ed25519 for signatures
+    // private final static int keyCurve = KeyKeys.OKP_Ed25519.AsInt32();
+    
+    // Uncomment to use a Montgomery key pair with curve X25519
+    // private final static int keyCurve = KeyKeys.OKP_Ed25519.AsInt32();
+    
+    // The ID_CRED used for the identity key of this peer
+    private static byte[] idCred = null;
     
     // The long-term asymmetric key pair of this peer
 	private static OneKey keyPair = null;
@@ -88,7 +95,7 @@ public class EdhocClient {
 	
 	// EDHOC Message1 and EDHOC Message2 can be correlated thanks to the CoAP Token
 	private static int correlationMethod = Constants.EDHOC_CORR_METHOD_1;
-	
+		
 	private static NetworkConfigDefaultHandler DEFAULTS = new NetworkConfigDefaultHandler() {
 
 		@Override
@@ -110,7 +117,21 @@ public class EdhocClient {
 		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		NetworkConfig.setStandard(config);
 
-		keyPair = Util.generateKeyPair(keyCurve);
+		// Use to dynamically generate a key pair
+		// keyPair = Util.generateKeyPair(keyCurve);
+		
+		// Use to set up hardcoded keys for this peer and the other peer 
+		setupIdentityKeys(keyCurve);
+		
+		if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
+			
+		}
+		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
+			
+		}
+		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+			
+		}
 		
 		// Add the supported ciphersuites
 		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
@@ -151,6 +172,43 @@ public class EdhocClient {
 		// EDHOC execution with signature key
 		edhocExchangeSignature(args, uri);
 
+	}
+	
+	private static void setupIdentityKeys (int keyCurve) {
+		
+		String keyPairBase64 = null;
+		String peerPublicKeyBase64 = null;
+		
+		if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
+			keyPairBase64 = "pgMmAQIgASFYIGdZmgAlZDXB6FGfVVxHrB2LL8JMZag4JgK4ZcZ/+GBUIlgguZsSChh5hecy3n4Op+lZZJ2xXdbsz8DY7qRmLdIVavkjWCDfyRlRix5e7y5M9aMohvqWGgWCbCW2UYo7V5JppHHsRA==";
+			peerPublicKeyBase64 = "pQMmAQIgASFYIPWSTdB9SCF/+CGXpy7gty8qipdR30t6HgdFGQo8ViiAIlggXvJCtXVXBJwmjMa4YdRbcdgjpXqM57S2CZENPrUGQnM=";
+		}
+ 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
+ 			keyPairBase64 = "pQMnAQEgBiFYIEPgltbaO4rEBSYv3Lhs09jLtrOdihHUxLdc9pRoR/W9I1ggTriT3VdzE7bLv2mJ3gqW/YIyJ7vDuCac62OZMNO8SP4=";
+ 			peerPublicKeyBase64 = "pAMnAQEgBiFYIDzQyFH694a7CcXQasH9RcqnmwQAy2FIX97dGGGy+bpS";
+ 		}
+ 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+ 			keyPairBase64 = "pQMnAQEgBiFYIGt2OynWjaQY4cE9OhPQrwcrZYNg8lRJ+MwXIYMjeCtrI1gg5TeGQyIjv2d2mulBYLnL7Mxp0cuaHMBlSuuFtmaU808=";
+ 			peerPublicKeyBase64 = "pAMnAQEgBiFYIKOjK/y+4psOGi9zdnJBqTLThdpEj6Qygg4Voc10NYGS";
+ 		}
+		
+		try {
+			// Build the OneKey object for the identity key pair of this peer
+			keyPair =  new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyPairBase64)));
+			idCred = new byte[] {(byte) 0x00}; // Use 0x00 as ID_CRED for this peer
+			
+			// Build the OneKey object for the identity public key of the other peer
+			OneKey peerPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(peerPublicKeyBase64)));
+			CBORObject idCredX = CBORObject.NewMap();
+			byte[] kid = new byte[] {(byte) 0x01}; // Use 0x01 as ID_CRED for the other peer
+			idCredX.Add(KeyKeys.KeyId, CBORObject.FromObject(kid));
+			peerPublicKeys.put(idCredX, peerPublicKey);
+			
+		} catch (CoseException e) {
+			System.err.println("Error while generating the key pair");
+			return;
+		}
+		
 	}
 	
 	private static void helloWorldExchange(final String args[], final URI targetUri) {
