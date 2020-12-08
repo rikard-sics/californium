@@ -182,6 +182,9 @@ public class EdhocServer extends CoapServer {
  		}
 		
 		try {
+			Provider EdDSA = new EdDSASecurityProvider();
+			Security.insertProviderAt(EdDSA, 0);
+			
 			// Build the OneKey object for the identity key pair of this peer
 			keyPair =  new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyPairBase64)));
 			idCred = new byte[] {(byte) 0x01}; // Use 0x01 as ID_CRED for this peer
@@ -273,7 +276,6 @@ public class EdhocServer extends CoapServer {
 			System.err.println("Error while encrypting");
 			e.printStackTrace();
 		}
-		boolean decryptionMatch = false;
 		System.out.println("Decryption correctness: " + Arrays.equals(payloadToEncrypt, myPlaintext));
 		System.out.println();
 		
@@ -391,34 +393,38 @@ public class EdhocServer extends CoapServer {
 		@Override
 		public void handlePOST(CoapExchange exchange) {
 			
-			System.out.println("\nReceived EDHOC Message1\n");
+			System.out.println("\nReceived EDHOC Message\n");
 			
 			byte[] requestPayload = exchange.getRequestPayload();
 			int messageType = MessageProcessor.messageType(requestPayload);
 			System.out.println("\nDetermined EDHOC message type: " + messageType + "\n");
-			
-			// Check if this is an EDHOC Message1 or an EDHOC Message3 bound to an ongoing instance
-			// TBD
-			
-			// Process EDHOC Message1
-			// TBD
-			
-			// Prepare EDHOC Message2
-			// TBD
+
+			// Send a dummy response to EDHOC Message1
 			String responseString = new String("Your payload was " + Utils.bytesToHex(requestPayload));
 			byte[] responsePayload = responseString.getBytes(Constants.charset);
-			
-			// Send EDHOC Message2
 			Response edhocMessage2 = new Response(ResponseCode.CREATED);
 			edhocMessage2.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
 			edhocMessage2.setPayload(responsePayload);
 			exchange.respond(edhocMessage2);
-			
-			// Save status to recognize a later EDHOC Message3
-			// TBD
-			
-			// Process EDHOC Message3
-			// TBD
+
+			/*
+			switch(messageType) {
+				case Constants.EDHOC_MESSAGE_1:
+					MessageProcessor.readMessage1(edhocSessions, requestPayload);
+					break;
+				case Constants.EDHOC_MESSAGE_2:
+					MessageProcessor.readMessage2(edhocSessions, requestPayload);
+					break;
+				case Constants.EDHOC_MESSAGE_3:
+					MessageProcessor.readMessage3(edhocSessions, requestPayload);
+					break;
+				case Constants.EDHOC_ERROR_MESSAGE:
+					MessageProcessor.readErrorMessage(edhocSessions, supportedCiphersuites, requestPayload);
+					break;
+				default:
+					return;		
+			}
+			*/
 			
 		}
 		
