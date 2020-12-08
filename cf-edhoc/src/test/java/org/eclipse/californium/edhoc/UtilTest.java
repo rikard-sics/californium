@@ -216,4 +216,30 @@ public class UtilTest {
 
 		Assert.assertArrayEquals(expectedSignature, mySignature);
 	}
+
+	/**
+	 * Test a signature computation with ECDSA_256.
+	 * 
+	 * @throws CoseException on test failure
+	 */
+	@Test
+	public void testComputeSignatureEcdsa256() throws CoseException {
+
+		String keyStringEcdsa256 = "pgMmAQIgASFYIPWSTdB9SCF/+CGXpy7gty8qipdR30t6HgdFGQo8ViiAIlggXvJCtXVXBJwmjMa4YdRbcdgjpXqM57S2CZENPrUGQnMjWCDXCb+hy1ybUu18KTAJMvjsmXch4W3Hd7Rw7mTF3ocbLQ==";
+		OneKey keyPair = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyStringEcdsa256)));
+
+		byte[] payloadToSign = new byte[] { (byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0,
+				(byte) 0x5c };
+		byte[] externalData = new byte[] { (byte) 0xef, (byte) 0xde, (byte) 0xac, (byte) 0x75, (byte) 0x0f,
+				(byte) 0xc5 };
+		byte[] kid = new byte[] { (byte) 0x01 };
+		CBORObject idCredX = CBORObject.NewMap();
+		idCredX.Add(KeyKeys.KeyId, kid);
+
+		byte[] mySignature = Util.computeSignature(idCredX, externalData, payloadToSign, keyPair);
+
+		// Can't compare values since the signing is currently not deterministic
+		Assert.assertNotNull(mySignature);
+		Assert.assertEquals(64, mySignature.length);
+	}
 }
