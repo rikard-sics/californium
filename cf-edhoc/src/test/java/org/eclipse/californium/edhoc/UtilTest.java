@@ -161,34 +161,6 @@ public class UtilTest {
 	}
 
 	/**
-	 * Test a signature computation and verification
-	 * 
-	 * @throws CoseException on test failure
-	 */
-	@Ignore
-	@Test
-	public void a() throws CoseException {
-		String keyPairBase64 = "pgMmAQIgASFYIPWSTdB9SCF/+CGXpy7gty8qipdR30t6HgdFGQo8ViiAIlggXvJCtXVXBJwmjMa4YdRbcdgjpXqM57S2CZENPrUGQnMjWCDXCb+hy1ybUu18KTAJMvjsmXch4W3Hd7Rw7mTF3ocbLQ==";
-
-		OneKey keyPair = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyPairBase64)));
-
-		byte[] payloadToSign = new byte[] { (byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0,
-				(byte) 0x5c };
-		byte[] externalData = new byte[] { (byte) 0xef, (byte) 0xde, (byte) 0xac, (byte) 0x75, (byte) 0x0f,
-				(byte) 0xc5 };
-		byte[] kid = new byte[] { (byte) 0x01 };
-		CBORObject idCredX = CBORObject.NewMap();
-		idCredX.Add(KeyKeys.KeyId, kid);
-
-		byte[] mySignature = null;
-		mySignature = Util.computeSignature(idCredX, externalData, payloadToSign, keyPair);
-
-		boolean verified = Util.verifySignature(mySignature, idCredX, externalData, payloadToSign, keyPair);
-		Assert.assertTrue(verified);
-
-	}
-
-	/**
 	 * Test a signature computation and verification with EdDSA Ed25519.
 	 * 
 	 * @throws CoseException on test failure
