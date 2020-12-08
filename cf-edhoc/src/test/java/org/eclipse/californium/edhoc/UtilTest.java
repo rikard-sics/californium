@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 
-import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
@@ -190,15 +189,16 @@ public class UtilTest {
 	}
 
 	/**
-	 * Test a signature computation with EdDSA Ed25519.
+	 * Test a signature computation and verification with EdDSA Ed25519.
 	 * 
 	 * @throws CoseException on test failure
 	 */
 	@Test
-	public void testComputeSignatureEd25519() throws CoseException {
+	public void testComputeVerifySignatureEd25519() throws CoseException {
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 1);
 
+		// Set up needed parameters
 		String keyStringEd25519 = "pQMnAQEgBiFYIDzQyFH694a7CcXQasH9RcqnmwQAy2FIX97dGGGy+bpSI1gg5aAfgdGCH2/2KFsQH5lXtDc8JUn1a+OkF0zOG6lIWXQ=";
 		OneKey keyPair = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyStringEd25519)));
 
@@ -210,21 +210,28 @@ public class UtilTest {
 		CBORObject idCredX = CBORObject.NewMap();
 		idCredX.Add(KeyKeys.KeyId, kid);
 
+		// Sign
 		byte[] mySignature = Util.computeSignature(idCredX, externalData, payloadToSign, keyPair);
+
 		byte[] expectedSignature = Utils.hexToBytes(
 				"7cee3b39da704ce5fd77052235d9f28b7e4d747abfad9e57293be923249406c0f115c1cf6aab5d893ba9b75c0c3b6274f6d8a9340a306ee2571dfe929c377e09");
-
 		Assert.assertArrayEquals(expectedSignature, mySignature);
+
+		// Try verifying the signature
+		boolean verified = Util.verifySignature(mySignature, idCredX, externalData, payloadToSign, keyPair);
+		Assert.assertTrue(verified);
 	}
 
+
 	/**
-	 * Test a signature computation with ECDSA_256.
+	 * Test a signature computation and verification with ECDSA_256.
 	 * 
 	 * @throws CoseException on test failure
 	 */
 	@Test
-	public void testComputeSignatureEcdsa256() throws CoseException {
+	public void testComputeVerifySignatureEcdsa256() throws CoseException {
 
+		// Set up needed parameters
 		String keyStringEcdsa256 = "pgMmAQIgASFYIPWSTdB9SCF/+CGXpy7gty8qipdR30t6HgdFGQo8ViiAIlggXvJCtXVXBJwmjMa4YdRbcdgjpXqM57S2CZENPrUGQnMjWCDXCb+hy1ybUu18KTAJMvjsmXch4W3Hd7Rw7mTF3ocbLQ==";
 		OneKey keyPair = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyStringEcdsa256)));
 
@@ -236,10 +243,15 @@ public class UtilTest {
 		CBORObject idCredX = CBORObject.NewMap();
 		idCredX.Add(KeyKeys.KeyId, kid);
 
+		// Sign
 		byte[] mySignature = Util.computeSignature(idCredX, externalData, payloadToSign, keyPair);
 
 		// Can't compare values since the signing is currently not deterministic
 		Assert.assertNotNull(mySignature);
 		Assert.assertEquals(64, mySignature.length);
+
+		// Try verifying the signature
+		boolean verified = Util.verifySignature(mySignature, idCredX, externalData, payloadToSign, keyPair);
+		Assert.assertTrue(verified);
 	}
 }
