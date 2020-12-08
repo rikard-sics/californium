@@ -154,12 +154,20 @@ public class MessageProcessor {
 		
 		int numSuites = session.getSupportedCipherSuites().size();
 		if (numSuites == 0)
-			return null;
-		int[] suitesI = new int[numSuites];
-		int suitNr = 0;
-		for (Integer i : session.getSupportedCipherSuites()) {
-			suitesI[suitNr] = i.intValue();
-			suitNr++;
+		    return null;
+		int[] suitesI = null;
+		if (numSuites == 1) {
+		    suitesI = new int[1];
+		    suitesI[0] = session.getSupportedCipherSuites().get(0).intValue();
+		}
+		else {
+		    int index = 1;
+		    suitesI = new int[numSuites + 1];
+		    suitesI[0] = session.getSupportedCipherSuites().get(0).intValue();
+		    for (Integer i : session.getSupportedCipherSuites()) {
+		        suitesI[index] = i.intValue();
+		        index++;
+		    }
 		}
 		
 		byte[] gX = null;
