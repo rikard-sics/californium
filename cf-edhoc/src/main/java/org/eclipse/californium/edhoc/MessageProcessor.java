@@ -82,29 +82,44 @@ public class MessageProcessor {
 	}
 	
     /**
-     *  Prepare an EDHOC Error Message
-     * @param cX   Connection identifier of the other peer, encoded as a bstr_identifier. It can be null
-     * @param errMsg   The error message, encoded as a CBOR text string
-     * @param suitesR   The cipher suites that the Responder supports. It is not null only in response to EDHOC Message 1
-     * @return  The raw payload to transmit as EDHOC Error Message, or null in case of errors
+     *  Parse an EDHOC Message1
+     * @param sequence   The CBOR sequence used as payload of the EDHOC Message1
+     * @return  The elements of the EDHOC Message1 as CBOR objects, or null in case of errors
      */
-	public static byte[] writeErrorMessage(CBORObject cX, CBORObject errMsg, CBORObject suitesR) {
+	public static CBORObject[] readMessage1(byte[] sequence) {
 		
-		if (errMsg == null)
+		if (sequence == null)
 			return null;
 		
-		byte[] payload = null;
-		List<CBORObject> objectList = new ArrayList<CBORObject>();
+		return CBORObject.DecodeSequenceFromBytes(sequence);
 		
-		if (cX != null)
-			objectList.add(cX);
+	}
+	
+    /**
+     *  Parse an EDHOC Message2
+     * @param sequence   The CBOR sequence used as payload of the EDHOC Message2
+     * @return  The elements of the EDHOC Message2 as CBOR objects, or null in case of errors
+     */
+	public static CBORObject[] readMessage2(byte[] sequence) {
 		
-		objectList.add(errMsg);
+		if (sequence == null)
+			return null;
 		
-		if (suitesR != null)
-			objectList.add(suitesR);
+		return CBORObject.DecodeSequenceFromBytes(sequence);
 		
-		return payload;
+	}
+	
+    /**
+     *  Parse an EDHOC Message3
+     * @param sequence   The CBOR sequence used as payload of the EDHOC Message3
+     * @return  The elements of the EDHOC Message3 as CBOR objects, or null in case of errors
+     */
+	public static CBORObject[] readMessage3(byte[] sequence) {
+		
+		if (sequence == null)
+			return null;
+		
+		return CBORObject.DecodeSequenceFromBytes(sequence);
 		
 	}
 	
@@ -181,6 +196,33 @@ public class MessageProcessor {
 		session.setCurrentStep(Constants.EDHOC_BEFORE_M1);
 		
 		return Util.buildCBORSequence(objectList);
+		
+	}
+	
+    /**
+     *  Prepare an EDHOC Error Message
+     * @param cX   Connection identifier of the other peer, encoded as a bstr_identifier. It can be null
+     * @param errMsg   The error message, encoded as a CBOR text string
+     * @param suitesR   The cipher suites that the Responder supports. It is not null only in response to EDHOC Message 1
+     * @return  The raw payload to transmit as EDHOC Error Message, or null in case of errors
+     */
+	public static byte[] writeErrorMessage(CBORObject cX, CBORObject errMsg, CBORObject suitesR) {
+		
+		if (errMsg == null)
+			return null;
+		
+		byte[] payload = null;
+		List<CBORObject> objectList = new ArrayList<CBORObject>();
+		
+		if (cX != null)
+			objectList.add(cX);
+		
+		objectList.add(errMsg);
+		
+		if (suitesR != null)
+			objectList.add(suitesR);
+		
+		return payload;
 		
 	}
 	
