@@ -156,8 +156,10 @@ public class MessageProcessor {
 		if (numSuites == 0)
 			return null;
 		int[] suitesI = new int[numSuites];
+		int suitNr = 0;
 		for (Integer i : session.getSupportedCipherSuites()) {
-			suitesI[i] = i.intValue();
+			suitesI[suitNr] = i.intValue();
+			suitNr++;
 		}
 		
 		byte[] gX = null;
