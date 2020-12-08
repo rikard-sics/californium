@@ -122,17 +122,7 @@ public class EdhocClient {
 		
 		// Use to set up hardcoded keys for this peer and the other peer 
 		setupIdentityKeys(keyCurve);
-		
-		if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
-			
-		}
-		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
-			
-		}
-		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
-			
-		}
-		
+				
 		// Add the supported ciphersuites
 		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
 		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_1);
