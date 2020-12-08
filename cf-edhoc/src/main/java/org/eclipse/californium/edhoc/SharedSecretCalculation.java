@@ -81,67 +81,32 @@ public class SharedSecretCalculation {
 	 * Useful links:
 	 * https://crypto.stackexchange.com/questions/63732/curve-25519-x25519-
 	 * ed25519-convert-coordinates-between-montgomery-curve-and-t/63734
-	 * 
 	 * https://tools.ietf.org/html/rfc7748
 	 * 
 	 * https://tools.ietf.org/html/rfc8032
 	 * 
 	 * https://github.com/bifurcation/fourq
-	 * 
 	 * https://blog.mozilla.org/warner/2011/11/29/ed25519-keys/
 	 * 
-	 * See java-test.py I made.
+	 * https://github.com/bcgit/bc-java/blob/master/core/src/test/java/org/
+	 * bouncycastle/math/ec/rfc7748/test/X25519Test.java
+	 * 
+	 * https://cryptojedi.org/peter/data/pairing-20131122.pdf
+	 * 
+	 * https://github.com/bcgit/bc-java/blob/master/prov/src/main/java/org/
+	 * bouncycastle/jcajce/provider/asymmetric/ec/KeyPairGeneratorSpi.java#L251
+	 * 
+	 * https://stackoverflow.com/questions/57852431/how-to-generate-curve25519-
+	 * key-pair-for-diffie-hellman-algorithm
+	 * 
+	 * https://tools.ietf.org/html/rfc7748
+	 * 
 	 */
 
 	// Create the ed25519 field
 	private static Field ed25519Field = new Field(256, // b
 			Utils.hexToBytes("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
 			new BigIntegerLittleEndianEncoding());
-
-
-	// public static void java15Curve25519generationGoodX()
-	// throws NoSuchAlgorithmException, InvalidAlgorithmParameterException,
-	// InvalidKeySpecException,
-	// InvalidKeyException, IllegalStateException, CoseException {
-	// OneKey initialKey = OneKey.generateKey(KeyKeys.OKP_Ed25519);
-	//
-	// // Now extract the y and x point coordinates
-	// FieldElement yf = KeyRemapping.extractCOSE_y(initialKey);
-	// FieldElement xf = KeyRemapping.extractCOSE_x(initialKey);
-	//
-	// // Calculate the corresponding Curve25519 u and v coordinates
-	// FieldElement uf = KeyRemapping.calcCurve25519_u(yf);
-	// FieldElement vf = KeyRemapping.calcCurve25519_v_alt(xf, uf);
-	//
-	// KeyPairGenerator kpg = KeyPairGenerator.getInstance("XDH");
-	// NamedParameterSpec paramSpec = new NamedParameterSpec("X25519");
-	// kpg.initialize(paramSpec); // equivalent to kpg.initialize(255)
-	// // kpg = KeyPairGenerator.getInstance("X25519");
-	// KeyPair kp = kpg.generateKeyPair();
-	//
-	// KeyFactory kf = KeyFactory.getInstance("XDH");
-	// BigInteger u = new
-	// BigInteger("1472384792374923478923892479237482379439478923789");
-	// XECPublicKeySpec pubSpec = new XECPublicKeySpec(paramSpec, u);
-	// PublicKey pubKey = kf.generatePublic(pubSpec);
-	//
-	// KeyAgreement ka = KeyAgreement.getInstance("XDH");
-	// PrivateKey privKey = kp.getPrivate();
-	// ka.init(privKey);
-	// ka.doPhase(pubKey, true);
-	//
-	// byte[] privKeyBytes = Arrays.copyOfRange(privKey.getEncoded(),
-	// privKey.getEncoded().length - 32,
-	// privKey.getEncoded().length);
-	//
-	// byte[] secret = ka.generateSecret();
-	// System.out.println("*Secret1 " + Utils.bytesToHex(secret));
-	//
-	// byte[] secret11 = X25519(privKeyBytes, invertArray(u.toByteArray()));
-	// System.out.println("*Secret11 " + Utils.bytesToHex(secret11));
-	//
-	// System.out.println("---");
-	// }
 
 	/**
 	 * Shared secret calculation using Java for Curve25519. Only works for Java
@@ -153,6 +118,7 @@ public class SharedSecretCalculation {
 	 * @return the generated COSE OneKey
 	 * 
 	 */
+	@Deprecated
 	public static byte[] java15X25519(OneKey privKeyIn, OneKey pubKeyIn) {
 
 		byte[] secret = null;
@@ -222,14 +188,15 @@ public class SharedSecretCalculation {
 	/**
 	 * Build OneKey using Curve25519 (needs Java 11).
 	 * 
-	 * @return
-	 * @throws NoSuchAlgorithmException
-	 * @throws InvalidAlgorithmParameterException
-	 * @throws InvalidKeySpecException
-	 * @throws InvalidKeyException
-	 * @throws IllegalStateException
-	 * @throws CoseException
+	 * @return the OneKey
+	 * @throws NoSuchAlgorithmException on key generation failure
+	 * @throws InvalidAlgorithmParameterException on key generation failure
+	 * @throws InvalidKeySpecException on key generation failure
+	 * @throws InvalidKeyException on key generation failure
+	 * @throws IllegalStateException on key generation failure
+	 * @throws CoseException on key generation failure
 	 */
+	@Deprecated
 	public static OneKey java15Curve25519generation()
 			throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeySpecException,
 			InvalidKeyException, IllegalStateException, CoseException {
@@ -253,12 +220,14 @@ public class SharedSecretCalculation {
 	}
 
 	/**
-	 * Build OneKey using Curve25519 (does not need Java 11 or BouncyCastle).
-	 * Also does not start from Ed25519 keys.
+	 * Build OneKey using Curve25519. This method does not need Java 11 or
+	 * BouncyCastle, also it does not start from Ed25519 keys but generates
+	 * Curve25519 keys directly. Note that this OneKey will not have the
+	 * internal Java keys set.
 	 * 
 	 * @return the generated Curve25519 OneKey
 	 */
-	public static OneKey Curve25519Keygeneration() {
+	public static OneKey generateCurve25519OneKey() {
 
 		int SCALAR_SIZE = 32;
 		int POINT_SIZE = 32;
@@ -275,6 +244,23 @@ public class SharedSecretCalculation {
 		qA = SharedSecretCalculation.X25519(kA, basePoint);
 
 		OneKey key = buildCurve25519OneKey(kA, qA);
+
+		return key;
+	}
+
+	/**
+	 * Build OneKey using Ed25519.
+	 * 
+	 * @return the generated Ed25519 OneKey
+	 */
+	public static OneKey generateEd25519OneKey() {
+
+		OneKey key = null;
+		try {
+			key = OneKey.generateKey(KeyKeys.OKP_Ed25519);
+		} catch (CoseException e) {
+			System.err.println("Failed to generate Ed25519 key: " + e);
+		}
 
 		return key;
 	}
@@ -330,121 +316,6 @@ public class SharedSecretCalculation {
 		System.out.println("---");
 		System.out.println("---");
 	}
-	//
-	// public static void java15Curve25519generationOld()
-	// throws NoSuchAlgorithmException, InvalidAlgorithmParameterException,
-	// InvalidKeySpecException,
-	// InvalidKeyException, IllegalStateException, CoseException {
-	// OneKey initialKey = OneKey.generateKey(KeyKeys.OKP_Ed25519);
-	//
-	// // Now extract the y and x point coordinates
-	// FieldElement y = KeyRemapping.extractCOSE_y(initialKey);
-	// FieldElement x = KeyRemapping.extractCOSE_x(initialKey);
-	//
-	// // Calculate the corresponding Curve25519 u and v coordinates
-	// // FieldElement u = KeyRemapping.calcCurve25519_u(y);
-	// // FieldElement v = KeyRemapping.calcCurve25519_v_alt(x, u);
-	//
-	// System.out.println("Ed25519 y: " + Utils.bytesToHex(y.toByteArray()));
-	// System.out.println("Ed25519 x: " + Utils.bytesToHex(x.toByteArray()));
-	//
-	// // System.out.println("Curve25519 u: " +
-	// // Utils.bytesToHex(u.toByteArray()));
-	// // System.out.println("Curve25519 v: " +
-	// // Utils.bytesToHex(v.toByteArray()));
-	// System.out.println("---");
-	// // BigInteger u_bi = new BigInteger(invertArray(u.toByteArray()));
-	//
-	// //
-	//
-	// KeyPairGenerator kpg = KeyPairGenerator.getInstance("XDH");
-	// NamedParameterSpec paramSpec = new NamedParameterSpec("X25519");
-	// kpg.initialize(paramSpec); // equivalent to kpg.initialize(255)
-	// // kpg = KeyPairGenerator.getInstance("X25519");
-	// KeyPair kp = kpg.generateKeyPair();
-	//
-	// KeyFactory kf = KeyFactory.getInstance("XDH");
-	// BigInteger u = new
-	// BigInteger("1472384792374923478923892479237482379439478923789");
-	// XECPublicKeySpec pubSpec = new XECPublicKeySpec(paramSpec, u);
-	// PublicKey pubKey = kf.generatePublic(pubSpec);
-	//
-	// System.out.println("Encoded public key: " +
-	// Utils.bytesToHex(pubKey.getEncoded()));
-	//
-	// KeyAgreement ka = KeyAgreement.getInstance("XDH");
-	// byte[] privKeyBytesIn = new byte[32];
-	// XECPrivateKeySpec privSpec = new XECPrivateKeySpec(paramSpec,
-	// privKeyBytesIn);
-	// PrivateKey privKey = kf.generatePrivate(privSpec);
-	// // PrivateKey privKey = kp.getPrivate();
-	// // ka.init(kp.getPrivate());
-	// ka.init(privKey);
-	// ka.doPhase(pubKey, true);
-	//
-	// System.out.println("Encoded private key: " +
-	// Utils.bytesToHex(privKey.getEncoded()));
-	//
-	// byte[] privKeyBytes = Arrays.copyOfRange(pubKey.getEncoded(),
-	// privKey.getEncoded().length - 32,
-	// privKey.getEncoded().length);
-	//
-	// byte[] secret = ka.generateSecret();
-	// System.out.println("*Secret1 " + Utils.bytesToHex(secret));
-	//
-	// byte[] pubKeyEncoded = pubKey.getEncoded();
-	// byte[] pubKeyBytes = Arrays.copyOfRange(pubKey.getEncoded(),
-	// pubKeyEncoded.length - 32, pubKeyEncoded.length);
-	// byte[] secret2 = X25519(privKeyBytes, pubKeyBytes);
-	// System.out.println("Secret2 " + Utils.bytesToHex(secret2));
-	// byte[] secret3 = X25519(privKeyBytes, u.toByteArray());
-	// System.out.println("Secret3 " + Utils.bytesToHex(secret3));
-	// byte[] private_hash = ((EdDSAPrivateKey)
-	// initialKey.AsPrivateKey()).getH();
-	// byte[] private_scalar = Arrays.copyOf(private_hash, 32);
-	// byte[] secret4 = X25519(private_scalar, u.toByteArray());
-	// System.out.println("Secret4 " + Utils.bytesToHex(secret4));
-	// byte[] secret5 = calculateSharedSecret(initialKey.PublicKey(),
-	// initialKey);
-	// System.out.println("Secret5 " + Utils.bytesToHex(secret5));
-	//
-	// byte[] secret6 = X25519(privKeyBytes, invertArray(u.toByteArray()));
-	// System.out.println("*Secret6 " + Utils.bytesToHex(secret6));
-	//
-	// MessageDigest md = MessageDigest.getInstance("SHA-512");
-	// byte[] bytesHash = md.digest(privKeyBytes);
-	// byte[] pscalar = Arrays.copyOf(bytesHash, 32);
-	// System.out.println("Priv scalar: " + Utils.bytesToHex(pscalar));
-	//
-	// byte[] secret7 = X25519(pscalar, (u.toByteArray()));
-	// System.out.println("*Secret7 " + Utils.bytesToHex(secret7));
-	//
-	// byte[] secret8 = X25519(privKeyBytes, (u.toByteArray()));
-	// System.out.println("*Secret8 " + Utils.bytesToHex(secret8));
-	//
-	// byte[] secret9 = X25519(pscalar, invertArray(u.toByteArray()));
-	// System.out.println("*Secret9 " + Utils.bytesToHex(secret9));
-	//
-	// byte[] secret10 = X25519(privKeyBytes, invertArray(u.toByteArray()));
-	// System.out.println("*Secret10 " + Utils.bytesToHex(secret10));
-	//
-	// byte[] secret11 = X25519(privKeyBytesIn, invertArray(u.toByteArray()));
-	// System.out.println("*Secret11 " + Utils.bytesToHex(secret11));
-	//
-	// byte[] secret12 = X25519(privKeyBytesIn, (u.toByteArray()));
-	// System.out.println("*Secret12 " + Utils.bytesToHex(secret12));
-	//
-	// System.out.println("---");
-	//
-	//
-	// if (Arrays.equals(u.toByteArray(),
-	// Arrays.copyOfRange(pubKey.getEncoded(), pubKeyEncoded.length - 32,
-	// pubKeyEncoded.length))) {
-	// System.out.println("Matching");
-	// } else {
-	// System.out.println("Not matching");
-	// }
-	// }
 
 	// https://github.com/bcgit/bc-java/blob/master/core/src/test/java/org/bouncycastle/math/ec/rfc7748/test/X25519Test.java
 	@Deprecated
@@ -486,6 +357,7 @@ public class SharedSecretCalculation {
 	 * 
 	 * @return the COSE OneKey
 	 */
+	@Deprecated
 	static OneKey generateCurve25519KeyTest() {
 
 		// https://github.com/bcgit/bc-java/blob/master/prov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/ec/KeyPairGeneratorSpi.java#L251
@@ -658,20 +530,11 @@ public class SharedSecretCalculation {
 	 */
 	static byte[] calculatePublicEd25519FromPrivate(byte[] privateKey) {
 		EdDSANamedCurveSpec spec = EdDSANamedCurveTable.getByName("Ed25519");
-		// KeyPairGenerator generator = new KeyPairGenerator();
-		// SecureRandom secRand = new SecureRandom();
 		byte[] seed = privateKey;
 		EdDSAPrivateKeySpec privKeySpec = new EdDSAPrivateKeySpec(seed, spec);
 		EdDSAPublicKeySpec pubKeySpec = new EdDSAPublicKeySpec(privKeySpec.getA(), spec);
 
 		EdDSAPublicKey pubKeyKey = new EdDSAPublicKey(pubKeySpec);
-		// EdDSAPrivateKey privateKeyKey = new EdDSAPrivateKey(privKey);
-
-		// System.out.println("A (public) " +
-		// Utils.bytesToHex(pubKeyKey.getAbyte()));
-		// System.out.println("Seed (private) " +
-		// Utils.bytesToHex(privateKeyKey.getSeed()));
-
 		return pubKeyKey.getAbyte();
 	}
 
@@ -753,7 +616,7 @@ public class SharedSecretCalculation {
 
 		// FIXME?: D is seed, not the private scalar
 		byte[] privateScalar = privateKey.get(KeyKeys.OKP_D).GetByteString();
-		// Take X value as U coordinate (although it's compressed there)
+		// Take X value as U coordinate
 		byte[] publicUCoordinate = publicKey.get(KeyKeys.OKP_X).GetByteString();
 
 		if (privateCurve == KeyKeys.OKP_X25519) {
@@ -775,7 +638,7 @@ public class SharedSecretCalculation {
 	 * 
 	 * @throws CoseException
 	 */
-	static OneKey ed25519ToCurve25519Key(OneKey initialKey) throws CoseException {
+	static OneKey convertEd25519ToCurve25519(OneKey initialKey) throws CoseException {
 
 		FieldElement y = null;
 		try {
@@ -823,6 +686,7 @@ public class SharedSecretCalculation {
 	 * @return the generated COSE OneKey
 	 * @throws CoseException
 	 */
+	@Deprecated
 	static OneKey generateCurve25519KeyOld() throws CoseException {
 
 		// Start by generating a Ed25519 key pair
@@ -834,127 +698,8 @@ public class SharedSecretCalculation {
 		}
 
 		// Convert and return it as an Curve25519 key
-		return ed25519ToCurve25519Key(initialKey);
+		return convertEd25519ToCurve25519(initialKey);
 	}
-
-	//
-	// /**
-	// * Generate a COSE OneKey using Curve25519 for X25519. Note that this key
-	// * will be lacking the Java keys internally.
-	// *
-	// * https://cryptojedi.org/peter/data/pairing-20131122.pdf
-	// *
-	// * @return the COSE OneKey
-	// *
-	// * @throws CoseException
-	// */
-	// private static OneKey generateCurve25519KeyManual(OneKey initialKey)
-	// throws CoseException {
-	//
-	// // // Start by generating a Ed25519 key pair
-	// //
-	// // EdDSANamedCurveSpec spec = EdDSANamedCurveTable.getByName("Ed25519");
-	// // KeyPairGenerator generator = new KeyPairGenerator();
-	// // SecureRandom secRand = new SecureRandom();
-	// // try {
-	// // generator.initialize(spec, secRand);
-	// // } catch (InvalidAlgorithmParameterException e) {
-	// // System.err.println("Failed to generate key.");
-	// // }
-	// // KeyPair keyPair = generator.generateKeyPair();
-	// //
-	// // PublicKey publicKey = keyPair.getPublic();
-	// // PrivateKey privateKey = keyPair.getPrivate();
-	// //
-	// // // Cast to format from library
-	// //
-	// // EdDSAPrivateKey privKey = (EdDSAPrivateKey) privateKey;
-	// // EdDSAPublicKey pubKey = (EdDSAPublicKey) publicKey;
-	//
-	// // Start by generating a Ed25519 key (if not provided)
-	// if (initialKey == null) {
-	// initialKey = OneKey.generateKey(KeyKeys.OKP_Ed25519);
-	// }
-	//
-	// // Now extract the y and x point coordinates
-	// FieldElement y = KeyRemapping.extractCOSE_y(initialKey);
-	// FieldElement x = KeyRemapping.extractCOSE_x(initialKey);
-	//
-	// // Calculate the corresponding Curve25519 u and v coordinates
-	// FieldElement u = KeyRemapping.calcCurve25519_u(y);
-	// FieldElement v = KeyRemapping.calcCurve25519_v_alt(x, u);
-	//
-	// System.out.println("Ed25519 y: " + Utils.bytesToHex(y.toByteArray()));
-	// System.out.println("Ed25519 x: " + Utils.bytesToHex(x.toByteArray()));
-	//
-	// System.out.println("Curve25519 u: " + Utils.bytesToHex(u.toByteArray()));
-	// System.out.println("Curve25519 v: " + Utils.bytesToHex(v.toByteArray()));
-	//
-	// BigIntegerFieldElement x_bif = KeyRemapping.ed25519ToBiginteger(x);
-	// BigInteger x_bi = new BigInteger(invertArray(x_bif.toByteArray()));
-	// System.out.println("BigIntegerFieldElement " + x_bif);
-	// System.out.println("BigInteger " + x_bi);
-	//
-	// // BigIntegerFieldElement p = new BigIntegerFieldElement(ed25519Field,
-	// // new BigInteger("2"));
-	// // BigIntegerFieldElement power = new
-	// // BigIntegerFieldElement(ed25519Field, new BigInteger("255"));
-	// // BigIntegerFieldElement nineteen = new
-	// // BigIntegerFieldElement(ed25519Field, new BigInteger("19"));
-	// // p = (BigIntegerFieldElement) p.pow(power);
-	// // p = (BigIntegerFieldElement) p.subtract(nineteen);
-	//
-	// BigInteger pow = new BigInteger("2").pow(255);
-	// BigInteger p_bi = pow.subtract(new BigInteger("19"));
-	// FieldElement p = new BigIntegerFieldElement(ed25519Field, p_bi);
-	// BigIntegerFieldElement x_modulo = (BigIntegerFieldElement) x_bif.mod(p);
-	// BigInteger x_modulo_bi = new
-	// BigInteger(invertArray(x_modulo.toByteArray()));
-	//
-	// //
-	//
-	// BigInteger three = pow.subtract(new BigInteger("5"));
-	// BigInteger four = pow.subtract(new BigInteger("8"));
-	// BigInteger pminus = p_bi.subtract(three);
-	// BigInteger result = pminus.mod(four);
-	// System.out.println("Result : " + result);
-	//
-	// BigIntegerFieldElement y_bif = KeyRemapping.ed25519ToBiginteger(y);
-	// BigInteger y_bi = new BigInteger(invertArray(y_bif.toByteArray()));
-	// BigInteger two = new BigInteger("2");
-	//
-	// BigInteger root = bigIntSqRootFloor(x_modulo_bi);
-	//
-	// // BigInteger square = new BigInteger("101");
-	// // BigInteger root = bigIntSqRootFloor(square);
-	// BigInteger i = null;
-	// if (root.multiply(root).equals(x_modulo_bi)) {
-	// System.out.println("NO rounding happened.");
-	// i = y_bi.mod(two);
-	//
-	// } else {
-	// System.out.println("Rounding happened.");
-	// // i = y_bi.divide(val);
-	// }
-	//
-	// System.out.println("i " + i);
-	//
-	// // Build the COSE OneKey
-	//
-	// // byte[] rgbX = pubKey.getAbyte();
-	//
-	// // The private key / seed remains the same
-	// byte[] rgbD = initialKey.get(KeyKeys.OKP_D).GetByteString();
-	//
-	// OneKey key = new OneKey();
-	//
-	// key.add(KeyKeys.KeyType, KeyKeys.KeyType_OKP);
-	// key.add(KeyKeys.OKP_Curve, KeyKeys.OKP_X25519);
-	// // key.add(KeyKeys.OKP_X, CBORObject.FromObject(rgbX));
-	// key.add(KeyKeys.OKP_D, CBORObject.FromObject(rgbD));
-	//
-	// return key;
-	// }
 
 	/**
 	 * Generate a shared secret when using ECDSA.
