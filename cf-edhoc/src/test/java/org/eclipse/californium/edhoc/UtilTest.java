@@ -192,20 +192,15 @@ public class UtilTest {
 	/**
 	 * Test a signature computation with EdDSA Ed25519.
 	 * 
-	 * TODO: Start from base64 string
-	 * 
 	 * @throws CoseException on test failure
 	 */
 	@Test
 	public void testComputeSignatureEd25519() throws CoseException {
 		Provider EdDSA = new EdDSASecurityProvider();
-		Security.addProvider(EdDSA);
+		Security.insertProviderAt(EdDSA, 1);
 
-		// String keyStringEd25519 =
-		// "pQMnAQEgBiFYIDzQyFH694a7CcXQasH9RcqnmwQAy2FIX97dGGGy+bpSI1gg5aAfgdGCH2/2KFsQH5lXtDc8JUn1a+OkF0zOG6lIWXQ=";
-		OneKey keyPair = OneKey.generateKey(KeyKeys.OKP_Ed25519);
-		// OneKey keyPair = new
-		// OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyStringEd25519)));
+		String keyStringEd25519 = "pQMnAQEgBiFYIDzQyFH694a7CcXQasH9RcqnmwQAy2FIX97dGGGy+bpSI1gg5aAfgdGCH2/2KFsQH5lXtDc8JUn1a+OkF0zOG6lIWXQ=";
+		OneKey keyPair = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyStringEd25519)));
 
 		byte[] payloadToSign = new byte[] { (byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0,
 				(byte) 0x5c };
@@ -216,6 +211,9 @@ public class UtilTest {
 		idCredX.Add(KeyKeys.KeyId, kid);
 
 		byte[] mySignature = Util.computeSignature(idCredX, externalData, payloadToSign, keyPair);
-		// System.out.println("XXX " + Utils.bytesToHex(mySignature));
+		byte[] expectedSignature = Utils.hexToBytes(
+				"7cee3b39da704ce5fd77052235d9f28b7e4d747abfad9e57293be923249406c0f115c1cf6aab5d893ba9b75c0c3b6274f6d8a9340a306ee2571dfe929c377e09");
+
+		Assert.assertArrayEquals(expectedSignature, mySignature);
 	}
 }
