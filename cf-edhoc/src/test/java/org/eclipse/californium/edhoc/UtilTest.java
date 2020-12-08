@@ -284,22 +284,32 @@ public class UtilTest {
 				.FromObject(Utils.hexToBytes("b1a3e89460e88d3a8d54211dc95f0b903ff205eb71912d6db8f4af980d2db83a")));
 		valueList.add(CBORObject.FromObject("42-50-31-FF-EF-37-32-39"));
 
+		// Build equivalent CBOR map normally
+		CBORObject comparisonMap = CBORObject.NewMap();
+		comparisonMap.Add(CBORObject.FromObject(1), CBORObject.FromObject(1));
+		comparisonMap.Add(CBORObject.FromObject(-1), CBORObject.FromObject(4));
+		comparisonMap.Add(CBORObject.FromObject(-2), CBORObject
+				.FromObject(Utils.hexToBytes("b1a3e89460e88d3a8d54211dc95f0b903ff205eb71912d6db8f4af980d2db83a")));
+		comparisonMap.Add(CBORObject.FromObject("subject name"), CBORObject.FromObject("42-50-31-FF-EF-37-32-39"));
+
 		// Generate the bytes of the map
 		byte[] mapBytes = Util.buildDeterministicCBORMap(labelList, valueList);
 		
-		///Testing
-		
-		CBORObject testMap = CBORObject.NewMap();
-		testMap.Add(CBORObject.FromObject(1), CBORObject.FromObject(1));
-		testMap.Add(CBORObject.FromObject(-1), CBORObject.FromObject(4));
-		testMap.Add(CBORObject.FromObject(-2), CBORObject
-				.FromObject(Utils.hexToBytes("b1a3e89460e88d3a8d54211dc95f0b903ff205eb71912d6db8f4af980d2db83a")));
-		testMap.Add(CBORObject.FromObject("subject name"), CBORObject.FromObject("42-50-31-FF-EF-37-32-39"));
-		System.out.println("Real: " + Utils.bytesToHex(testMap.EncodeToBytes()));
-		System.out.println("Real: " + Utils.bytesToHex(mapBytes));
-
-		// Try to parse it to check that the contents are as expected
+		// Try to parse it as a CBOR map
 		CBORObject parsedMap = CBORObject.DecodeFromBytes(mapBytes);
 
+		// Compare that it contains what is expected
+		Assert.assertEquals(comparisonMap.size(), parsedMap.size());
+		ArrayList<CBORObject> keys = new ArrayList<>(comparisonMap.getKeys());
+
+		for(int i = 0 ; i < keys.size() ; i++) {
+			CBORObject key = keys.get(i);
+			Assert.assertEquals(comparisonMap.get(key), parsedMap.get(key));
+		}
+
+		// Finally compare with the expected bytes
+		byte[] expectedBytes = Utils.hexToBytes(
+				"a401012004215820b1a3e89460e88d3a8d54211dc95f0b903ff205eb71912d6db8f4af980d2db83a6c7375626a656374206e616d657734322d35302d33312d46462d45462d33372d33322d3339");
+		Assert.assertArrayEquals(expectedBytes, mapBytes);
 	}
 }
