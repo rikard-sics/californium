@@ -48,7 +48,6 @@ import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
 import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
-import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
@@ -183,6 +182,9 @@ public class EdhocClient {
  		}
 		
 		try {
+			Provider EdDSA = new EdDSASecurityProvider();
+			Security.insertProviderAt(EdDSA, 0);
+			
 			// Build the OneKey object for the identity key pair of this peer
 			keyPair =  new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyPairBase64)));
 			idCred = new byte[] {(byte) 0x00}; // Use 0x00 as ID_CRED for this peer
