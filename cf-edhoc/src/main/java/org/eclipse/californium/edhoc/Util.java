@@ -343,28 +343,6 @@ public class Util {
 		return myDigest.digest();
 		
 	}
-	
-	/**
-	 * Read a CBOR sequence producing a list of all CBOR objects it contains.
-	 * 
-	 * @param sequence the bytes of the CBOR sequence
-	 * 
-	 * @return a list of CBOR objects from the sequence
-	 */
-	public static List<CBORObject> readCBORSequence(byte[] sequence) {
-		InputStream sequenceStream = new ByteArrayInputStream(sequence);
-
-		CBORObject[] objectArray = null;
-		try {
-			objectArray = CBORObject.ReadSequence(sequenceStream);
-		} catch (IOException e) {
-			System.err.println("Failed to parse CBOR sequence: " + e);
-		}
-
-		List<CBORObject> objectList = Arrays.asList(objectArray);
-
-		return objectList;
-	}
 
     /**
      *  Prepare a CBOR sequence, given a list of CBOR Objects as input
