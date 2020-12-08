@@ -57,10 +57,10 @@ public class EdhocServer extends CoapServer {
 	private final static Provider EdDSA = new EdDSASecurityProvider();
 	
 	// Uncomment to set ECDSA with curve P-256 for signatures
-    private final static int signKeyCurve = KeyKeys.EC2_P256.AsInt32();
+    // private final static int keyCurve = KeyKeys.EC2_P256.AsInt32();
     
     // Uncomment to set EDDSA with curve Ed25519 for signatures
-    // private final static int signKeyCurve = KeyKeys.OKP_Ed25519.AsInt32();
+    private final static int keyCurve = KeyKeys.OKP_Ed25519.AsInt32();
     
     // The long-term asymmetric key pair of this peer
 	private static OneKey keyPair = null;
@@ -98,19 +98,7 @@ public class EdhocServer extends CoapServer {
 			System.err.println("Failed to initialize server: " + e.getMessage());
 		}
 		
-		// Generate the new long-term asymmetric key pair 
-		try {
-	 		if (signKeyCurve == KeyKeys.EC2_P256.AsInt32())
-	 			keyPair = OneKey.generateKey(AlgorithmID.ECDSA_256);
-	    	if (signKeyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
-	        	Security.insertProviderAt(EdDSA, 0);
-	    		keyPair = OneKey.generateKey(AlgorithmID.EDDSA);
-	    	}
-			
-		} catch (CoseException e) {
-			System.err.println("Error while generating the key pair");
-			return;
-		}
+		keyPair = Util.generateKeyPair(keyCurve);
 		
 		// Add the supported ciphersuites
 		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
