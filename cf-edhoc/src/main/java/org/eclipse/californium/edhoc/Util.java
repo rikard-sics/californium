@@ -397,13 +397,12 @@ public class Util {
 		List<CBORObject> pairList = new ArrayList<CBORObject>();
 		
 		for(int i = 0; i < numEntries; i++) {
-			if(labelList.get(i) == null || valueList.get(i) == null)
+			if (labelList.get(i) == null || valueList.get(i) == null)
 				return null;
 			
-			if(labelList.get(i).getType() != CBORType.Integer ||
-			   labelList.get(i).getType() != CBORType.TextString) {
+			if (labelList.get(i).getType() != CBORType.Integer &&
+					labelList.get(i).getType() != CBORType.TextString)
 				return null;
-			}
 			
 			pairList.add(labelList.get(i));
 			pairList.add(valueList.get(i));
@@ -416,6 +415,8 @@ public class Util {
 		// Change the first byte so that the result is the header of a CBOR map with N entries
 		// 0b000_xxxxx & 0b000_11111 --> 0b101_xxxxx  , x ={0,1}
 		mapHeader[0] = (byte) (mapHeader[0] & intToBytes(31)[0]);
+		byte mapTypeValue = (byte) 0b10100000;
+		mapHeader[0] |= mapTypeValue;
 		
 		byte[] serializedMap = new byte[mapHeader.length + mapContent.length];
 		System.arraycopy(mapHeader, 0, serializedMap, 0, mapHeader.length);

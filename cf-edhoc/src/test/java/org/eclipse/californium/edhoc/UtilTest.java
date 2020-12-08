@@ -261,4 +261,45 @@ public class UtilTest {
 		Assert.assertArrayEquals(payloadToEncrypt, myPlaintext);
 
 	}
+
+	/**
+	 * Test building a CBOR map in deterministic order.
+	 * 
+	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#page-18
+	 */
+	@Test
+	public void testBuildDeterministicCBORMap() {
+		// Build a list with labels for the map
+		List<CBORObject> labelList = new ArrayList<CBORObject>();
+		labelList.add(CBORObject.FromObject(1));
+		labelList.add(CBORObject.FromObject(-1));
+		labelList.add(CBORObject.FromObject(-2));
+		labelList.add(CBORObject.FromObject("subject name"));
+
+		// Build a list with values for the map
+		List<CBORObject> valueList = new ArrayList<CBORObject>();
+		valueList.add(CBORObject.FromObject(1));
+		valueList.add(CBORObject.FromObject(4));
+		valueList.add(CBORObject
+				.FromObject(Utils.hexToBytes("b1a3e89460e88d3a8d54211dc95f0b903ff205eb71912d6db8f4af980d2db83a")));
+		valueList.add(CBORObject.FromObject("42-50-31-FF-EF-37-32-39"));
+
+		// Generate the bytes of the map
+		byte[] mapBytes = Util.buildDeterministicCBORMap(labelList, valueList);
+		
+		///Testing
+		
+		CBORObject testMap = CBORObject.NewMap();
+		testMap.Add(CBORObject.FromObject(1), CBORObject.FromObject(1));
+		testMap.Add(CBORObject.FromObject(-1), CBORObject.FromObject(4));
+		testMap.Add(CBORObject.FromObject(-2), CBORObject
+				.FromObject(Utils.hexToBytes("b1a3e89460e88d3a8d54211dc95f0b903ff205eb71912d6db8f4af980d2db83a")));
+		testMap.Add(CBORObject.FromObject("subject name"), CBORObject.FromObject("42-50-31-FF-EF-37-32-39"));
+		System.out.println("Real: " + Utils.bytesToHex(testMap.EncodeToBytes()));
+		System.out.println("Real: " + Utils.bytesToHex(mapBytes));
+
+		// Try to parse it to check that the contents are as expected
+		CBORObject parsedMap = CBORObject.DecodeFromBytes(mapBytes);
+
+	}
 }
