@@ -123,7 +123,8 @@ public class EdhocServer extends CoapServer {
     		usedConnectionIds.add(new HashSet<Integer>());
     	}
 		
-		runTests();		
+    	// Uncomment to run tests of different cryptographic operations
+		//runTests();		
 	}
 
 	/**
@@ -393,6 +394,8 @@ public class EdhocServer extends CoapServer {
 			System.out.println("\nReceived EDHOC Message1\n");
 			
 			byte[] requestPayload = exchange.getRequestPayload();
+			int messageType = MessageProcessor.messageType(requestPayload);
+			System.out.println("\nDetermined EDHOC message type: " + messageType + "\n");
 			
 			// Check if this is an EDHOC Message1 or an EDHOC Message3 bound to an ongoing instance
 			// TBD
