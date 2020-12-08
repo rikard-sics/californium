@@ -192,7 +192,12 @@ public class Util {
         	msg.addAttribute(label, idCredX.get(label), Attribute.PROTECTED);
         }
         
-        msg.addAttribute(HeaderKeys.Algorithm, signKey.get(KeyKeys.Algorithm), Attribute.UNPROTECTED);
+		// Identify algorithm used from values in the key
+		CBORObject alg = signKey.get(KeyKeys.Algorithm);
+		if (alg == null) {
+			alg = determineKeyAlgorithm(signKey).AsCBOR();
+		}
+		msg.addAttribute(HeaderKeys.Algorithm, alg, Attribute.UNPROTECTED);
         
         // Set the external_aad to use for the signing process
         msg.setExternal(externalData);
@@ -223,6 +228,27 @@ public class Util {
 		
 	}
 	
+	/**
+	 * Identifies the algorithm used by a key from the curve parameters.
+	 * 
+	 * @param key the key
+	 * @return the algorithm used
+	 */
+	private static AlgorithmID determineKeyAlgorithm(OneKey key) {
+
+		if (key.get(KeyKeys.OKP_Curve) == KeyKeys.OKP_Ed25519) {
+			return AlgorithmID.EDDSA;
+		} else if (key.get(KeyKeys.EC2_Curve) == KeyKeys.EC2_P256) {
+			return AlgorithmID.ECDSA_256;
+		} else if (key.get(KeyKeys.EC2_Curve) == KeyKeys.EC2_P384) {
+			return AlgorithmID.ECDSA_384;
+		} else if (key.get(KeyKeys.EC2_Curve) == KeyKeys.EC2_P521) {
+			return AlgorithmID.ECDSA_512;
+		} else {
+			return null;
+		}
+	}
+
     /**
      *  Verify a signature using the COSE Sign1 object
      * @param signature   The signature to verify
