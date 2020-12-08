@@ -26,6 +26,7 @@ import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -56,11 +57,17 @@ public class EdhocServer extends CoapServer {
 
 	private final static Provider EdDSA = new EdDSASecurityProvider();
 	
-	// Uncomment to set ECDSA with curve P-256 for signatures
-    // private final static int keyCurve = KeyKeys.EC2_P256.AsInt32();
+	// Uncomment to use an ECDSA key pair with curve P-256 as long-term identity key
+    private final static int keyCurve = KeyKeys.EC2_P256.AsInt32();
     
-    // Uncomment to set EDDSA with curve Ed25519 for signatures
-    private final static int keyCurve = KeyKeys.OKP_Ed25519.AsInt32();
+    // Uncomment to use an EdDSA key pair with curve Ed25519 for signatures
+    // private final static int keyCurve = KeyKeys.OKP_Ed25519.AsInt32();
+    
+    // Uncomment to use a Montgomery key pair with curve X25519
+    // private final static int keyCurve = KeyKeys.OKP_Ed25519.AsInt32();
+    
+    // The ID_CRED used for the identity key of this peer
+    private static byte[] idCred = null;
     
     // The long-term asymmetric key pair of this peer
 	private static OneKey keyPair = null;
@@ -98,7 +105,11 @@ public class EdhocServer extends CoapServer {
 			System.err.println("Failed to initialize server: " + e.getMessage());
 		}
 		
-		keyPair = Util.generateKeyPair(keyCurve);
+		// Use to dynamically generate a key pair
+		// keyPair = Util.generateKeyPair(keyCurve);
+		
+		// Use to set up hardcoded keys for this peer and the other peer 
+		setupIdentityKeys(keyCurve);
 		
 		// Add the supported ciphersuites
 		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
@@ -149,6 +160,43 @@ public class EdhocServer extends CoapServer {
 		CoapResource edhocResource = new EdhocResource();
 		wellKnownResource.add(edhocResource);
 
+	}
+	
+	private static void setupIdentityKeys (int keyCurve) {
+		
+		String keyPairBase64 = null;
+		String peerPublicKeyBase64 = null;
+		
+		if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
+			keyPairBase64 = "pgMmAQIgASFYIPWSTdB9SCF/+CGXpy7gty8qipdR30t6HgdFGQo8ViiAIlggXvJCtXVXBJwmjMa4YdRbcdgjpXqM57S2CZENPrUGQnMjWCDXCb+hy1ybUu18KTAJMvjsmXch4W3Hd7Rw7mTF3ocbLQ==";
+			peerPublicKeyBase64 = "pQMmAQIgASFYIGdZmgAlZDXB6FGfVVxHrB2LL8JMZag4JgK4ZcZ/+GBUIlgguZsSChh5hecy3n4Op+lZZJ2xXdbsz8DY7qRmLdIVavk=";
+		}
+ 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
+ 			keyPairBase64 = "pQMnAQEgBiFYIDzQyFH694a7CcXQasH9RcqnmwQAy2FIX97dGGGy+bpSI1gg5aAfgdGCH2/2KFsQH5lXtDc8JUn1a+OkF0zOG6lIWXQ=";
+ 			peerPublicKeyBase64 = "pAMnAQEgBiFYIEPgltbaO4rEBSYv3Lhs09jLtrOdihHUxLdc9pRoR/W9";
+ 		}
+ 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+ 			keyPairBase64 = "pQMnAQEgBiFYIKOjK/y+4psOGi9zdnJBqTLThdpEj6Qygg4Voc10NYGSI1ggn/quL33vMaN9Rp4LKWCXVnaIRSgeeCJlU0Mv/y6zHlQ=";
+ 			peerPublicKeyBase64 = "pAMnAQEgBiFYIGt2OynWjaQY4cE9OhPQrwcrZYNg8lRJ+MwXIYMjeCtr";
+ 		}
+		
+		try {
+			// Build the OneKey object for the identity key pair of this peer
+			keyPair =  new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyPairBase64)));
+			idCred = new byte[] {(byte) 0x01}; // Use 0x01 as ID_CRED for this peer
+			
+			// Build the OneKey object for the identity public key of the other peer
+			OneKey peerPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(peerPublicKeyBase64)));
+			CBORObject idCredX = CBORObject.NewMap();
+			byte[] kid = new byte[] {(byte) 0x00}; // Use 0x00 as ID_CRED for the other peer
+			idCredX.Add(KeyKeys.KeyId, CBORObject.FromObject(kid));
+			peerPublicKeys.put(idCredX, peerPublicKey);
+			
+		} catch (CoseException e) {
+			System.err.println("Error while generating the key pair");
+			return;
+		}
+		
 	}
 	
 	public static void runTests() {
