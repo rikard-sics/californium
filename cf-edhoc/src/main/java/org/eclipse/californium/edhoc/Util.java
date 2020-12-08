@@ -682,7 +682,7 @@ public class Util {
 	    		keyPair = OneKey.generateKey(AlgorithmID.EDDSA);
 	    	}
 	 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
-	    		keyPair = SharedSecretCalculation.Curve25519Keygeneration();
+				keyPair = SharedSecretCalculation.generateCurve25519OneKey();
 	    	}
 			
 		} catch (CoseException e) {
