@@ -28,11 +28,11 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 
+import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.upokecenter.cbor.CBORObject;
@@ -198,7 +198,7 @@ public class UtilTest {
 	/**
 	 * Test a signature computation and verification with ECDSA_256.
 	 * 
-	 * @throws CoseException on test failure
+	 * @throws CoseException on signing or verification failure
 	 */
 	@Test
 	public void testComputeVerifySignatureEcdsa256() throws CoseException {
@@ -225,5 +225,40 @@ public class UtilTest {
 		// Try verifying the signature
 		boolean verified = Util.verifySignature(mySignature, idCredX, externalData, payloadToSign, keyPair);
 		Assert.assertTrue(verified);
+	}
+
+	/**
+	 * Test encryption and decryption with AES_CCM_16_64_128.
+	 * 
+	 * @throws CoseException on encryption or decryption failure
+	 */
+	@Test
+	public void testEncryptDecrypt() throws CoseException {
+		// Set up needed parameters
+		byte[] externalData = new byte[] { (byte) 0xef, (byte) 0xde, (byte) 0xac, (byte) 0x75, (byte) 0x0f,
+				(byte) 0xc5 };
+		byte[] kid = new byte[] { (byte) 0x01 };
+		CBORObject idCredX = CBORObject.NewMap();
+		idCredX.Add(KeyKeys.KeyId, kid);
+		byte[] payloadToEncrypt = new byte[] { (byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0,
+				(byte) 0x5c };
+		byte[] symmetricKey = new byte[] { (byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03, (byte) 0x04, (byte) 0x05,
+				(byte) 0x06, (byte) 0x07, (byte) 0x08, (byte) 0x09, (byte) 0x10, (byte) 0x11, (byte) 0x12, (byte) 0x013,
+				(byte) 0x14, (byte) 0x15 };
+		byte[] iv = { (byte) 0xc5, (byte) 0xb7, (byte) 0x17, (byte) 0x0e, (byte) 0x65, (byte) 0xd5, (byte) 0x4f,
+				(byte) 0x1a, (byte) 0xe0, (byte) 0x5d, (byte) 0x10, (byte) 0xaf, (byte) 0x56, };
+		AlgorithmID encryptionAlg = AlgorithmID.AES_CCM_16_64_128;
+
+		// Perform the encryption
+		byte[] myCiphertext = Util.encrypt(idCredX, externalData, payloadToEncrypt, encryptionAlg, iv, symmetricKey);
+
+		byte[] expectedCiphertext = Utils.hexToBytes("b1e139edeec6d38f707e1b35b72b");
+		Assert.assertArrayEquals(expectedCiphertext, myCiphertext);
+
+		// Perform decryption
+		byte[] myPlaintext = Util.decrypt(idCredX, externalData, myCiphertext, encryptionAlg, iv, symmetricKey);
+
+		Assert.assertArrayEquals(payloadToEncrypt, myPlaintext);
+
 	}
 }
