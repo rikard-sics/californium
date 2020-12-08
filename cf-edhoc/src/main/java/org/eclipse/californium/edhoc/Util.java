@@ -37,10 +37,13 @@ import org.eclipse.californium.oscore.OSCoreCtxDB;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
+import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 import net.i2p.crypto.eddsa.Utils;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
+import java.security.Security;
 
 public class Util {
 
@@ -656,6 +659,38 @@ public class Util {
     	
     	int connectionIdAsInt = bytesToInt(connectionId);
     	usedConnectionIds.get(connectionId.length - 1).remove(connectionIdAsInt);
+    	
+    }
+    
+    /**
+     * Generate an asymmetric key pair, according to the specified elliptic curve
+     *  
+     * @param keyCurve   The elliptic curve
+     * @return    The generated asymmetric key pair, or null in case of error
+     */
+    public static OneKey generateKeyPair (int keyCurve) {
+    	
+    	OneKey keyPair = null;
+    	
+		// Generate the new long-term asymmetric key pair 
+		try {
+	 		if (keyCurve == KeyKeys.EC2_P256.AsInt32())
+	 			keyPair = OneKey.generateKey(AlgorithmID.ECDSA_256);
+	 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
+	    		Provider EdDSA = new EdDSASecurityProvider();
+	        	Security.insertProviderAt(EdDSA, 0);
+	    		keyPair = OneKey.generateKey(AlgorithmID.EDDSA);
+	    	}
+	 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+	    		keyPair = SharedSecretCalculation.Curve25519Keygeneration();
+	    	}
+			
+		} catch (CoseException e) {
+			System.err.println("Error while generating the key pair");
+			return null;
+		}
+    	
+    	return keyPair;
     	
     }
         
