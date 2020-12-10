@@ -682,7 +682,7 @@ public class OSCoreCtx {
 	private void setLengths() {
 		if (common_alg != null) {
 
-			iv_length = EncryptCommon.ivLength(common_alg);
+            iv_length = 0; // FIXME
 			if (iv_length > 0) {
 				id_length = iv_length - 6; // RFC section 5.2
 				key_length = common_alg.getKeySize() / 8;

@@ -1,48 +1,15 @@
-/*******************************************************************************
-
- * Original from https://github.com/cose-wg/COSE-JAVA Commit 1a20373
- *
- * Copyright (c) 2016, Jim Schaad
- * Copyright (c) 2018, Ludwig Seitz, RISE SICS
- * Copyright (c) 2018, Rikard Höglund, RISE SICS
- * All rights reserved.
-
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
-
- * Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
-
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
-
- * Neither the name of COSE-JAVA nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
-
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
- * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
- * Contributors:
- *    Achim Kraus (Bosch Software Innovations GmbH) - update to cbor 4.0.0
- *                                                    align with cose 1.0
- *                                                    commit 629912b94ea80c4c6
- ******************************************************************************/
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
 package org.eclipse.californium.cose;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
-import org.eclipse.californium.elements.util.StandardCharsets;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The Message class provides a common class that all of the COSE message classes
@@ -51,6 +18,7 @@ import org.eclipse.californium.elements.util.StandardCharsets;
  * 
  * @author jimsch
  */
+
 public abstract class Message extends Attribute {
     /**
      * Is the tag identifying the message emitted?
@@ -101,7 +69,7 @@ public abstract class Message extends Attribute {
         if (messageObject.getType() != CBORType.Array)  throw new CoseException("Message is not a COSE security Message");
         
         if (messageObject.isTagged()) {
-            if (messageObject.getTagCount() != 1) throw new CoseException("Malformed message - too many tags");
+            if (messageObject.GetAllTags().length != 1) throw new CoseException("Malformed message - too many tags");
             
             if (defaultTag == MessageTag.Unknown) {
                 defaultTag = MessageTag.FromInt(messageObject.getMostInnerTag().ToInt32Unchecked());
@@ -116,23 +84,72 @@ public abstract class Message extends Attribute {
         switch (defaultTag) {
             case Unknown: // Unknown
                 throw new CoseException("Message was not tagged and no default tagging option given");
-		
+                
             case Encrypt:
-            case MAC: 
-            case MAC0:                
-            case Sign1:
-            case Sign:
-            	throw new CoseException("Message format not supported by this library");
-		
+                msg = new EncryptMessage();
+                break;
+                        
             case Encrypt0: 
-		        msg = new Encrypt0Message();
-		        break;
+                msg = new Encrypt0Message();
+                break;
+
+            case MAC: 
+                msg = new MACMessage();
+                break;
+            
+            case MAC0: 
+                msg = new MAC0Message();
+                break;
+                
+            case Sign1:
+                msg = new Sign1Message();
+                break;
+                
+            case Sign:
+                msg = new SignMessage();
+                break;
                 
             default:
                 throw new CoseException("Message is not recognized as a COSE security Object");
         }
     
         msg.DecodeFromCBORObject(messageObject);
+        
+        CBORObject countersignature = msg.findAttribute(HeaderKeys.CounterSignature, UNPROTECTED);
+        if (countersignature != null) {
+            if ((countersignature.getType() != CBORType.Array) ||
+                    (countersignature.getValues().isEmpty())) {
+                throw new CoseException("Invalid countersignature attribute");
+            }
+            
+            if (countersignature.get(0).getType() == CBORType.Array) {
+                for (CBORObject obj : countersignature.getValues()) {
+                    if (obj.getType() != CBORType.Array) {
+                        throw new CoseException("Invalid countersignature attribute");
+                    }
+                    
+                    CounterSign cs = new CounterSign(obj);
+                    cs.setObject(msg);
+                    msg.addCountersignature(cs);
+                }
+            }
+            else {
+                CounterSign cs = new CounterSign(countersignature);
+                cs.setObject(msg);
+                msg.addCountersignature(cs);
+            }
+        }
+        
+        countersignature = msg.findAttribute(HeaderKeys.CounterSignature0, UNPROTECTED);
+        if (countersignature != null) {
+            if (countersignature.getType() != CBORType.ByteString) {
+                throw new CoseException("Invalid Countersignature0 attribute");
+            }
+            
+            CounterSign1 cs = new CounterSign1(countersignature.GetByteString());
+            cs.setObject(msg);
+            msg.counterSign1 = cs;
+        }
         return msg;
         
     }
@@ -218,5 +235,56 @@ public abstract class Message extends Attribute {
      */
     public void SetContent(String strData) {
         rgbContent = strData.getBytes(StandardCharsets.UTF_8);
+    }
+    
+    
+    List<CounterSign> counterSignList = new ArrayList<CounterSign>();
+    CounterSign1 counterSign1;
+    
+    public void addCountersignature(CounterSign countersignature)
+    {
+        counterSignList.add(countersignature);
+    }
+    
+    public List<CounterSign> getCountersignerList() {
+        return counterSignList;
+    }
+    
+    public CounterSign1 getCountersign1() {
+        return counterSign1;
+    }
+    
+    public void setCountersign1(CounterSign1 value) {
+        counterSign1 = value;
+    }
+    
+    protected void ProcessCounterSignatures() throws CoseException {
+        if (!counterSignList.isEmpty()) {
+            if (counterSignList.size() == 1) {
+                counterSignList.get(0).sign(rgbProtected, rgbContent);
+                addAttribute(HeaderKeys.CounterSignature, counterSignList.get(0).EncodeToCBORObject(), Attribute.UNPROTECTED);
+            }
+            else {
+                CBORObject list = CBORObject.NewArray();
+                for (CounterSign sig : counterSignList) {
+                    sig.sign(rgbProtected, rgbContent);
+                    list.Add(sig.EncodeToCBORObject());
+                }
+                addAttribute(HeaderKeys.CounterSignature, list, Attribute.UNPROTECTED);
+            }
+        }
+        
+        if (counterSign1 != null) {
+            counterSign1.sign(rgbProtected, rgbContent);
+            addAttribute(HeaderKeys.CounterSignature0, counterSign1.EncodeToCBORObject(), Attribute.UNPROTECTED);
+        }
+    }
+    
+    public boolean validate(CounterSign1 countersignature) throws CoseException {
+        return countersignature.validate(rgbProtected, rgbContent);
+    }
+    
+    public boolean validate(CounterSign countersignature) throws CoseException {
+        return countersignature.validate(rgbProtected, rgbContent);
     }
 }
