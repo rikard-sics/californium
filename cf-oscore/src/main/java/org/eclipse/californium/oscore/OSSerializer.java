@@ -276,7 +276,10 @@ public class OSSerializer {
 
 	/**
 	 * Update the external AAD for Group OSCORE by adding further parameters.
+<<<<<<< HEAD
 	 * TODO: Add also newPartialIV as input parameter.
+=======
+>>>>>>> 81c6d9aec (Use a single external_aad for both encryption and signing)
 	 * 
 	 * @param ctx the context used
 	 * @param aadBytes the current external AAD value
