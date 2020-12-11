@@ -35,6 +35,7 @@ import org.eclipse.californium.core.network.serialization.UdpDataSerializer;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.EndpointContext;
 import org.eclipse.californium.elements.UdpEndpointContext;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
 import org.eclipse.californium.oscore.ByteId;
@@ -435,9 +436,12 @@ public class GroupDecryptorTest {
 		HashMapCtxDB db = new HashMapCtxDB();
 		db.addContext(uri, commonCtx);
 
-		// Set an incorrect par countersign key for the external aad
-		// (2nd element in par countersign)
-		commonCtx.parCountersign[1] = new int[] { 10 };
+		// Set an incorrect par countersign for the external aad
+		// (1st element in par countersign)
+		commonCtx.parCountersign[0] = new int[] { 10, 11 };
+
+		// Set a source context as this should simulate an incoming request
+		r.setSourceContext(new UdpEndpointContext(new InetSocketAddress(0)));
 
 		// Decrypt the request message
 		RequestDecryptor.decrypt(db, r, recipientCtx);
