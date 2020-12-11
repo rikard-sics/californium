@@ -277,18 +277,15 @@ public class OSSerializer {
 
 		CBORObject algCountersign;
 		CBORObject parCountersign;
-		CBORObject parCountersignKey;
 
 		if (ctx instanceof GroupRecipientCtx) {
 			GroupRecipientCtx recipientCtx = (GroupRecipientCtx) ctx;
 			algCountersign = recipientCtx.getAlgCountersign().AsCBOR();
 			parCountersign = CBORObject.FromObject(recipientCtx.getParCountersign());
-			parCountersignKey = CBORObject.FromObject(recipientCtx.getParCountersignKey());
 		} else {
 			GroupSenderCtx senderCtx = (GroupSenderCtx) ctx;
 			algCountersign = senderCtx.getAlgCountersign().AsCBOR();
 			parCountersign = CBORObject.FromObject(senderCtx.getParCountersign());
-			parCountersignKey = CBORObject.FromObject(senderCtx.getParCountersignKey());
 		}
 
 		CBORObject groupAadEnc = CBORObject.DecodeFromBytes(aadBytes);
@@ -297,7 +294,6 @@ public class OSSerializer {
 		CBORObject algorithms = groupAadEnc.get(1);
 		algorithms.Add(algCountersign);
 		algorithms.Add(parCountersign);
-		algorithms.Add(parCountersignKey);
 		// Add update algorithms array to external AAD (used for encryption)
 		groupAadEnc.set(1, algorithms);
 
