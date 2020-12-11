@@ -158,7 +158,7 @@ public abstract class Decryptor {
 					+ " using Group OSCORE. Pairwise mode: " + !groupModeMessage);
 
 			// Update external AAD value for Group OSCORE
-			aad = OSSerializer.updateAADForGroupEnc(ctx, aad);
+			aad = OSSerializer.updateAADForGroup(ctx, aad, message);
 
 			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + " with AAD "
 					+ Utils.toHexString(aad));
@@ -376,7 +376,7 @@ public abstract class Decryptor {
 
 			CBORObject signAlg = recipientCtx.getAlgCountersign().AsCBOR();
 			sign.addAttribute(HeaderKeys.Algorithm, signAlg, Attribute.DO_NOT_SEND);
-			byte[] signAad = OSSerializer.updateAADForGroupSign(ctx, aad, message);
+			byte[] signAad = aad;
 
 			sign.setExternal(signAad);
 
