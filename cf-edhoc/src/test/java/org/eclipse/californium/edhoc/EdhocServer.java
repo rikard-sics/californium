@@ -53,18 +53,20 @@ import net.i2p.crypto.eddsa.Utils;
 
 public class EdhocServer extends CoapServer {
 
+	private static final boolean debugPrint = true;
+	
 	private static final int COAP_PORT = NetworkConfig.getStandard().getInt(NetworkConfig.Keys.COAP_PORT);
 
 	private final static Provider EdDSA = new EdDSASecurityProvider();
 	
 	// Uncomment to use an ECDSA key pair with curve P-256 as long-term identity key
-    private final static int keyCurve = KeyKeys.EC2_P256.AsInt32();
+    // private final static int keyCurve = KeyKeys.EC2_P256.AsInt32();
     
     // Uncomment to use an EdDSA key pair with curve Ed25519 for signatures
-    // private final static int keyCurve = KeyKeys.OKP_Ed25519.AsInt32();
+    private final static int keyCurve = KeyKeys.OKP_Ed25519.AsInt32();
     
     // Uncomment to use a Montgomery key pair with curve X25519
-    // private final static int keyCurve = KeyKeys.OKP_Ed25519.AsInt32();
+	// private final static int keyCurve = KeyKeys.OKP_X25519.AsInt32();
     
     // The ID_CRED used for the identity key of this peer
     private static byte[] idCred = null;
@@ -440,7 +442,8 @@ public class EdhocServer extends CoapServer {
 			System.out.println("Determined EDHOC message type: " + requestType + "\n");
 			Util.nicePrint("EDHOC message " + requestType, requestPayload);
 
-			processingResult = MessageProcessor.readMessage1(requestPayload, supportedCiphersuites, edhocSessions);
+			processingResult = MessageProcessor.readMessage1(requestPayload, keyPair, usedConnectionIds,
+					                                         supportedCiphersuites, edhocSessions);
 			responsePayload = processingResult.get(0).GetByteString();
 			
 			// Deliver AD_1 to the application
