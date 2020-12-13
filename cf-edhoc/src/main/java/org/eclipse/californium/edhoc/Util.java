@@ -741,5 +741,28 @@ public class Util {
     	return keyPair;
     	
     }
+    
+    /**
+     * Print out a byte string in a convenient diagnostic way
+     *  
+     * @param header   First readable part of the output
+     * @param bstr   Actual binary content to print
+     */
+    public static void nicePrint(String header, byte[] content) {
+    	
+    	System.out.println(header + " (" + (content.length) + " bytes):");
+    	
+    	String contentStr = Utils.bytesToHex(content);
+    	for (int i = 0; i < (content.length * 2); i++) {
+    		if ((i % 20) == 0)
+    	    	System.out.println();
+    		
+        	System.out.print(contentStr.charAt(i));
+    		if ((i % 2) == 1)
+    	    	System.out.print(" ");
+    	}
+    	
+    	System.out.println();
+    }
         
 }
