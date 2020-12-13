@@ -54,6 +54,8 @@ import org.eclipse.californium.cose.OneKey;
 
 public class EdhocClient {
 
+	private static final boolean debugPrint = true;
+	
 	private static final File CONFIG_FILE = new File("Californium.properties");
 	private static final String CONFIG_HEADER = "Californium CoAP Properties file for Fileclient";
 	private static final int DEFAULT_MAX_RESOURCE_SIZE = 2 * 1024 * 1024; // 2
@@ -92,7 +94,7 @@ public class EdhocClient {
 	// List of supported ciphersuites
 	private static List<Integer> supportedCiphersuites = new ArrayList<Integer>();
 	
-	// EDHOC Message1 and EDHOC Message2 can be correlated thanks to the CoAP Token
+	// A Request and a corresponding Response can be correlated thanks to the CoAP Token
 	private static int correlationMethod = Constants.EDHOC_CORR_METHOD_1;
 		
 	private static NetworkConfigDefaultHandler DEFAULTS = new NetworkConfigDefaultHandler() {
@@ -311,11 +313,23 @@ public class EdhocClient {
         
         // METDHOC_CORR as CBOR integer
         objectList.add(CBORObject.FromObject(corrMethod));
+        if (debugPrint) {
+        	System.out.println("===================================");
+        	System.out.println("EDHOC Message 1 content:\n");
+        	CBORObject obj = CBORObject.FromObject(corrMethod);
+        	byte[] objBytes = obj.EncodeToBytes();
+        	Util.nicePrint("METHOD_CORR", objBytes);
+        }
         
         // SUITES_I as CBOR integer or CBOR array
     	int preferredSuite = supportedCiphersuites.get(0).intValue();
         if(supportedCiphersuites.size() == 1) {
         	objectList.add(CBORObject.FromObject(preferredSuite));
+            if (debugPrint) {
+            	CBORObject obj = CBORObject.FromObject(preferredSuite);
+            	byte[] objBytes = obj.EncodeToBytes();
+            	Util.nicePrint("SUITES_I", objBytes);
+            }
         }
         else {
         	CBORObject myArray = CBORObject.NewArray();
@@ -325,22 +339,46 @@ public class EdhocClient {
         		myArray.Add(CBORObject.FromObject(suiteListElement));
         	}
         	objectList.add(CBORObject.FromObject(myArray));
+            if (debugPrint) {
+            	CBORObject obj = CBORObject.FromObject(myArray);
+            	byte[] objBytes = obj.EncodeToBytes();
+            	Util.nicePrint("SUITES_I", objBytes);
+            }
         }
         
         // G_X as a CBOR byte string
+        CBORObject gX = null;
 		if (preferredSuite == Constants.EDHOC_CIPHER_SUITE_0 || preferredSuite == Constants.EDHOC_CIPHER_SUITE_1) {
-			objectList.add(mySession.getEphemeralKey().PublicKey().get(KeyKeys.OKP_X));
+			gX = mySession.getEphemeralKey().PublicKey().get(KeyKeys.OKP_X);
 		}
 		else if (preferredSuite == Constants.EDHOC_CIPHER_SUITE_2 || preferredSuite == Constants.EDHOC_CIPHER_SUITE_3) {
-			objectList.add(mySession.getEphemeralKey().PublicKey().get(KeyKeys.EC2_X));
+			gX = mySession.getEphemeralKey().PublicKey().get(KeyKeys.EC2_X);
 		}
+		objectList.add(gX);
+        if (debugPrint) {
+        	CBORObject obj = CBORObject.FromObject(gX);
+        	byte[] objBytes = obj.EncodeToBytes();
+        	Util.nicePrint("G_X", objBytes);
+        }
 		
 		// C_I as bstr_identifier
 		CBORObject cI = CBORObject.FromObject(connectionId);
 		objectList.add(Util.encodeToBstrIdentifier(cI));
+        if (debugPrint) {
+        	CBORObject obj = CBORObject.FromObject(Util.encodeToBstrIdentifier(cI));
+        	byte[] objBytes = obj.EncodeToBytes();
+        	Util.nicePrint("C_I", objBytes);
+        }
+        if (debugPrint) {
+        	System.out.println("===================================");
+        }
 		
-		
-		// Add the new session to the list of existing EDHOC sessions 
+		// Add the new session to the list of existing EDHOC sessions
+		if (mySession.getCurrentStep() != Constants.EDHOC_BEFORE_M1) {
+			System.err.println("Inconsistent state before sending EDHOC Message 1");
+			return;
+		}
+		mySession.setCurrentStep(Constants.EDHOC_AFTER_M1);
 		edhocSessions.put(cI, mySession);
 		
         // Send EDHOC Message 1
@@ -349,7 +387,7 @@ public class EdhocClient {
 		edhocMessage1.setPayload(payloadMessage1);
 		edhocMessage1.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
 		
-        System.out.println("\nSent EDHOC Message1\n");
+        System.out.println("Sent EDHOC Message 1\n");
         Util.nicePrint("EDHOC message 1", payloadMessage1);
         
         CoapResponse edhocMessage2;

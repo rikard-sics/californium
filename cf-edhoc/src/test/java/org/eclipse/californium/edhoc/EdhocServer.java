@@ -87,6 +87,9 @@ public class EdhocServer extends CoapServer {
 	// List of supported ciphersuites
 	private static List<Integer> supportedCiphersuites = new ArrayList<Integer>();
 	
+	// A Request and a corresponding Response can be correlated thanks to the CoAP Token
+	private static int correlationMethod = Constants.EDHOC_CORR_METHOD_1;
+	
 	/*
 	 * Application entry point.
 	 */
@@ -396,36 +399,35 @@ public class EdhocServer extends CoapServer {
 			System.out.println("\nReceived EDHOC Message\n");
 			
 			byte[] requestPayload = exchange.getRequestPayload();
-			int messageType = MessageProcessor.messageType(requestPayload);
-			System.out.println("Determined EDHOC message type: " + messageType + "\n");
-			Util.nicePrint("EDHOC message " + messageType, requestPayload);
+			int requestType = MessageProcessor.messageType(requestPayload);
+			
+			List<CBORObject> processingResult = new ArrayList<CBORObject>();
+			byte[] responsePayload = new byte[] {};
 
-			// Send a dummy response to EDHOC Message1
-			String responseString = new String("Your payload was " + Utils.bytesToHex(requestPayload));
-			byte[] responsePayload = responseString.getBytes(Constants.charset);
-			Response edhocMessage2 = new Response(ResponseCode.CREATED);
-			edhocMessage2.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
-			edhocMessage2.setPayload(responsePayload);
-			exchange.respond(edhocMessage2);
-
-			/*
-			switch(messageType) {
-				case Constants.EDHOC_MESSAGE_1:
-					MessageProcessor.readMessage1(edhocSessions, requestPayload);
-					break;
-				case Constants.EDHOC_MESSAGE_2:
-					MessageProcessor.readMessage2(edhocSessions, requestPayload);
-					break;
-				case Constants.EDHOC_MESSAGE_3:
-					MessageProcessor.readMessage3(edhocSessions, requestPayload);
-					break;
-				case Constants.EDHOC_ERROR_MESSAGE:
-					MessageProcessor.readErrorMessage(edhocSessions, supportedCiphersuites, requestPayload);
-					break;
-				default:
-					return;		
+			// Invalid EDHOC message type
+			if (requestType == -1) {
+				String responseString = new String("Invalid EDHOC message type");
+				responsePayload = responseString.getBytes(Constants.charset);
+				Response genericErrorResponse = new Response(ResponseCode.BAD_REQUEST);
+				genericErrorResponse.setPayload(responsePayload);
+				
 			}
-			*/
+			
+			System.out.println("Determined EDHOC message type: " + requestType + "\n");
+			Util.nicePrint("EDHOC message " + requestType, requestPayload);
+
+			processingResult = MessageProcessor.readMessage1(requestPayload, supportedCiphersuites, edhocSessions);
+			responsePayload = processingResult.get(0).GetByteString();
+			
+			int responseType = MessageProcessor.messageType(responsePayload);
+			System.out.println("Response type: " + responseType + "\n");
+			// TODO When all is stable, this should never have value -1
+			
+			
+			Response myResponse = new Response(ResponseCode.CREATED);
+			myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
+			myResponse.setPayload(responsePayload);
+			exchange.respond(myResponse);
 			
 		}
 		
