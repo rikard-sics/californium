@@ -754,7 +754,7 @@ public class Util {
     	
     	String contentStr = Utils.bytesToHex(content);
     	for (int i = 0; i < (content.length * 2); i++) {
-    		if ((i % 20) == 0)
+    		if ((i != 0) && (i % 20) == 0)
     	    	System.out.println();
     		
         	System.out.print(contentStr.charAt(i));
@@ -762,7 +762,8 @@ public class Util {
     	    	System.out.print(" ");
     	}
     	
-    	System.out.println();
+    	System.out.println("\n");
+
     }
         
 }
