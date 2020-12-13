@@ -312,7 +312,7 @@ public class MessageProcessor {
 		// Serialized EDHOC Message 2
 		processingResult.add(CBORObject.FromObject(responsePayload));
 		
-		// Application Data from AD1 (if present)
+		// Application Data from AD_1 (if present)
 		if (hasApplicationData == true) {
 			processingResult.add(objectListRequest[4]);
 		}
