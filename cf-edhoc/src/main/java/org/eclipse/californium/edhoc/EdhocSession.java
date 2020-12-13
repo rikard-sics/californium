@@ -41,6 +41,7 @@ public class EdhocSession {
 	private int selectedCiphersuite;
 	
 	private byte[] peerConnectionId;
+	private List<Integer> peerSupportedCiphersuites = null;
 	private OneKey peerLongTermPublicKey = null;
 	private OneKey peerEphemeralPublicKey = null;
 	
@@ -196,6 +197,21 @@ public class EdhocSession {
 	 */
 	public byte[] getPeerConnectionId() {
 		return this.peerConnectionId;
+	}
+	
+	/**
+	 * Set the list of the ciphersuites supported by the peer
+	 * @param peerSupportedCiphersuites   the list of the ciphersuites supported by the peer
+	 */
+	public void setPeerSupportedCipherSuites(List<Integer> peerSupportedCiphersuites) {
+		this.peerSupportedCiphersuites = peerSupportedCiphersuites;
+	}
+
+	/**
+	 * @return  the list of the ciphersuites supported by the peer
+	 */
+	public List<Integer> getPeerSupportedCipherSuites() {
+		return this.peerSupportedCiphersuites;
 	}
 	
 	/**
