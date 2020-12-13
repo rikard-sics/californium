@@ -350,6 +350,8 @@ public class EdhocClient {
 		edhocMessage1.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
 		
         System.out.println("\nSent EDHOC Message1\n");
+        Util.nicePrint("EDHOC message 1", payloadMessage1);
+        
         CoapResponse edhocMessage2;
         try {
 			edhocMessage2 = client.advanced(edhocMessage1);

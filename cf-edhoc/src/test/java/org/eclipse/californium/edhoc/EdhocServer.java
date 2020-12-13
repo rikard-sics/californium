@@ -397,7 +397,8 @@ public class EdhocServer extends CoapServer {
 			
 			byte[] requestPayload = exchange.getRequestPayload();
 			int messageType = MessageProcessor.messageType(requestPayload);
-			System.out.println("\nDetermined EDHOC message type: " + messageType + "\n");
+			System.out.println("Determined EDHOC message type: " + messageType + "\n");
+			Util.nicePrint("EDHOC message " + messageType, requestPayload);
 
 			// Send a dummy response to EDHOC Message1
 			String responseString = new String("Your payload was " + Utils.bytesToHex(requestPayload));
