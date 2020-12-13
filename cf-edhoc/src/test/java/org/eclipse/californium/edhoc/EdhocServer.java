@@ -127,7 +127,7 @@ public class EdhocServer extends CoapServer {
     	}
 		
     	// Uncomment to run tests of different cryptographic operations
-		//runTests();		
+		// runTests();		
 	}
 
 	/**
@@ -164,6 +164,30 @@ public class EdhocServer extends CoapServer {
 		CoapResource edhocResource = new EdhocResource();
 		wellKnownResource.add(edhocResource);
 
+	}
+	
+	/*
+	 * Process application data conveyed in AD_1 in EDHOC Message 1
+	 */
+	private void processAD1(byte[] ad1) {
+		// Do nothing
+		System.out.println("Entered processAD1()");
+	}
+	
+	/*
+	 * Process application data conveyed in AD_2 in EDHOC Message 2
+	 */
+	private void processAD2(byte[] ad2) {
+		// Do nothing
+		System.out.println("Entered processAD2()");
+	}
+	
+	/*
+	 * Process application data conveyed in AD_3 in EDHOC Message 3
+	 */
+	private void processAD3(byte[] ad3) {
+		// Do nothing
+		System.out.println("Entered processAD3()");
 	}
 	
 	private static void setupIdentityKeys (int keyCurve) {
@@ -206,7 +230,7 @@ public class EdhocServer extends CoapServer {
 		
 	}
 	
-	public static void runTests() {
+	private static void runTests() {
 		// Test a hash computation
 		System.out.println("=======================");
 		System.out.println("Test a hash computation");
@@ -418,6 +442,11 @@ public class EdhocServer extends CoapServer {
 
 			processingResult = MessageProcessor.readMessage1(requestPayload, supportedCiphersuites, edhocSessions);
 			responsePayload = processingResult.get(0).GetByteString();
+			
+			// Deliver AD_1 to the application
+			if (processingResult.size() == 2) {
+				processAD1(processingResult.get(1).GetByteString());
+			}
 			
 			int responseType = MessageProcessor.messageType(responsePayload);
 			System.out.println("Response type: " + responseType + "\n");
