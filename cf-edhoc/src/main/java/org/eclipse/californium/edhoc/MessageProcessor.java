@@ -21,6 +21,7 @@ package org.eclipse.californium.edhoc;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
@@ -31,8 +32,11 @@ import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
 import net.i2p.crypto.eddsa.Utils;
+import sun.security.rsa.RSAUtil.KeyType;
 
 public class MessageProcessor {
+	
+	private static final boolean debugPrint = true;
 	
     /**
      *  Determine the type of a received EDHOC message
@@ -100,9 +104,12 @@ public class MessageProcessor {
     /**
      *  Process an EDHOC Message 1
      * @param sequence   The CBOR sequence used as payload of the EDHOC Message1
-     * @param edhocSession   The EDHOC session of this peer 
-     *                       The map label is C_X, i.e. the connection identifier
-     *                       offered to the other peer in the session, as a bstr_identifier
+     * @param ltk   The long term identity key
+     * @param usedConnectionIds   The collection of Connection Identifiers used by this peer
+     * @param supportedCipherSuites   The list of cipher suites supported by this peer 
+     * @param edhocSessions   The EDHOC sessions of this peer 
+     *                        The map label is C_X, i.e. the connection identifier
+     *                        offered to the other peer in the session, as a bstr_identifier
      * @return   A list of CBOR Objects including up to two elements.
      *           The first element is always present. It it is a CBOR byte string, with value
      *           the payload to send as response, for either EDHOC Message 2 or EDHOC Error Message.
@@ -110,6 +117,8 @@ public class MessageProcessor {
      *           the application data AD1 to deliver to the application.
      */
 	public static List<CBORObject> readMessage1(byte[] sequence,
+												OneKey ltk,
+												List<Set<Integer>> usedConnectionIds,
 												List<Integer> supportedCiphersuites,
 												Map<CBORObject, EdhocSession> edhocSessions) {
 		
@@ -309,6 +318,64 @@ public class MessageProcessor {
 		String responseString = new String("Your payload was " + Utils.bytesToHex(sequence));
 		responsePayload = responseString.getBytes(Constants.charset);
 		
+		
+		
+		/*
+		// Retrieve elements from EDHOC Message 1
+		
+		// METHOD_CORR
+		int methodCorr = objectListRequest[0].AsInt32();
+		
+		// Selected ciphersuites from SUITES_I
+		int selectedCipherSuite = -1;
+		if (objectListRequest[1].getType() == CBORType.Integer)
+			selectedCipherSuite = objectListRequest[1].AsInt32();
+		else if (objectListRequest[1].getType() == CBORType.Array)
+			selectedCipherSuite = objectListRequest[1].get(0).AsInt32();
+		
+		// G_X
+		byte[] gX = objectListRequest[2].GetByteString();
+		
+		// C_I
+		byte[] cI = Util.decodeFromBstrIdentifier(objectListRequest[3]).GetByteString();
+		
+		// Create a new EDHOC session
+		byte[] connectionId = Util.getConnectionId(usedConnectionIds, null);
+		EdhocSession mySession = new EdhocSession(false, methodCorr, connectionId, ltk, supportedCiphersuites);
+		
+		// Set the selected cipher suite
+		mySession.setSelectedCiphersuite(selectedCipherSuite);
+		
+		// Set the Connection Identifier of the peer
+		mySession.setPeerConnectionId(cI);
+		
+		// Set the ephemeral public key of the initiator
+		CBORObject key = CBORObject.NewMap();
+		OneKey peerEphemeralKey = null;
+		
+		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_1) {
+			key.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_OKP);
+			key.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_X25519);
+			key.Add(KeyKeys.OKP_X.AsCBOR(), CBORObject.FromObject(gX));
+		}
+		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_2 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_3) {
+			key.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
+			key.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.EC2_P256);
+			key.Add(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(gX));
+		}
+        try {
+        	peerEphemeralKey = new OneKey(key);
+		} catch (CoseException e) {
+			System.err.println("Error while rebuilding the peer's ephemeral public key");
+			System.err.println(e.getMessage());
+			responsePayload = null;
+		}
+		mySession.setPeerEphemeralPublicKey(peerEphemeralKey);
+		*/
+		
+		
+		
+		
 		// Serialized EDHOC Message 2
 		processingResult.add(CBORObject.FromObject(responsePayload));
 		
@@ -372,6 +439,107 @@ public class MessageProcessor {
      */
 	public static byte[] writeMessage1(EdhocSession session, byte[] ad1) {
 		
+        // Prepare the list of CBOR objects to build the CBOR sequence
+        List<CBORObject> objectList = new ArrayList<>();
+        
+        // METHOD_CORR as CBOR integer
+        int methodCorr = session.getMethodCorr();
+        objectList.add(CBORObject.FromObject(methodCorr));
+        if (debugPrint) {
+        	System.out.println("===================================");
+        	System.out.println("EDHOC Message 1 content:\n");
+        	CBORObject obj = CBORObject.FromObject(methodCorr);
+        	byte[] objBytes = obj.EncodeToBytes();
+        	Util.nicePrint("METHOD_CORR", objBytes);
+        }
+        
+        // SUITES_I as CBOR integer or CBOR array
+        List<Integer> supportedCiphersuites = session.getSupportedCipherSuites();
+        List<Integer> peerSupportedCiphersuites = session.getPeerSupportedCipherSuites();
+        
+    	int selectedSuite = -1;
+    	
+    	// No SUITES_R has been received, so it is not known what ciphersuites the responder supports
+    	if (peerSupportedCiphersuites == null) {
+    		// The selected ciphersuite is the most preferred by the initiator
+    		selectedSuite = supportedCiphersuites.get(0).intValue();
+    	}
+    	// SUITES_R has been received, so it is known what ciphersuites the responder supports
+    	else {
+    		// Pick the selected ciphersuited as the most preferred by the initiator from the ones supported by the responder
+    		for (Integer i : supportedCiphersuites) {
+    			if (peerSupportedCiphersuites.contains(i)) {
+    				selectedSuite = i.intValue();
+    				break;
+    			}
+    		}
+    	}
+    	if (selectedSuite == -1) {
+    		System.err.println("Impossible to agree on a mutually supported ciphersuite");
+    		return null;
+    	}
+    	
+        if(supportedCiphersuites.size() == 1) {
+        	objectList.add(CBORObject.FromObject(selectedSuite));
+            if (debugPrint) {
+            	CBORObject obj = CBORObject.FromObject(selectedSuite);
+            	byte[] objBytes = obj.EncodeToBytes();
+            	Util.nicePrint("SUITES_I", objBytes);
+            }
+        }
+        else {
+        	CBORObject myArray = CBORObject.NewArray();
+        	myArray.Add(CBORObject.FromObject(selectedSuite));
+        	for (int i = 0; i < supportedCiphersuites.size(); i++) {
+        		int suiteListElement =  supportedCiphersuites.get(i).intValue();
+        		myArray.Add(CBORObject.FromObject(suiteListElement));
+        		
+        		// SUITES_R has been received - Truncate the list of supported cipher suites, with the selected one as last one 
+        		if (peerSupportedCiphersuites != null) {
+        			if (suiteListElement == selectedSuite)
+        				break;
+        		}
+        		
+        	}
+        	objectList.add(CBORObject.FromObject(myArray));
+            if (debugPrint) {
+            	CBORObject obj = CBORObject.FromObject(myArray);
+            	byte[] objBytes = obj.EncodeToBytes();
+            	Util.nicePrint("SUITES_I", objBytes);
+            }
+        }
+        
+        // G_X as a CBOR byte string
+        CBORObject gX = null;
+		if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_1) {
+			gX = session.getEphemeralKey().PublicKey().get(KeyKeys.OKP_X);
+		}
+		else if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_2 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_3) {
+			gX = session.getEphemeralKey().PublicKey().get(KeyKeys.EC2_X);
+		}
+		objectList.add(gX);
+        if (debugPrint) {
+        	CBORObject obj = CBORObject.FromObject(gX);
+        	byte[] objBytes = obj.EncodeToBytes();
+        	Util.nicePrint("G_X", objBytes);
+        }
+		
+		// C_I as bstr_identifier
+        byte[] connectionId = session.getConnectionId();
+		CBORObject cI = CBORObject.FromObject(connectionId);
+		objectList.add(Util.encodeToBstrIdentifier(cI));
+        if (debugPrint) {
+        	CBORObject obj = CBORObject.FromObject(Util.encodeToBstrIdentifier(cI));
+        	byte[] objBytes = obj.EncodeToBytes();
+        	Util.nicePrint("C_I", objBytes);
+        }
+        if (debugPrint) {
+        	System.out.println("===================================");
+        }
+		
+        return Util.buildCBORSequence(objectList);
+		
+		/*
 		if (session == null)
 			return null;
 		
@@ -432,6 +600,7 @@ public class MessageProcessor {
 		session.setCurrentStep(Constants.EDHOC_BEFORE_M1);
 		
 		return Util.buildCBORSequence(objectList);
+		*/
 		
 	}
 	
