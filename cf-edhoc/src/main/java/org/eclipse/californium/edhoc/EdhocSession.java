@@ -65,7 +65,7 @@ public class EdhocSession {
 		
 		this.selectedCiphersuite = supportedCiphersuites.get(0); 
 		if (this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_0 || this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_1)
-			this.ephemeralKey = Util.generateKeyPair(KeyKeys.OKP_Ed25519.AsInt32());
+				this.ephemeralKey = Util.generateKeyPair(KeyKeys.OKP_X25519.AsInt32());
 		else if (this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_2 || this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_3)
 			this.ephemeralKey = Util.generateKeyPair(KeyKeys.EC2_P256.AsInt32());
 		
