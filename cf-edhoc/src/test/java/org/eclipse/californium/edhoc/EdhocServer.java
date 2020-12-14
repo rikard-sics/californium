@@ -35,7 +35,10 @@ import java.util.Set;
 
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
+import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.core.coap.CoAP.Type;
+import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.config.NetworkConfig;
@@ -412,8 +415,7 @@ public class EdhocServer extends CoapServer {
 				
 					// TODO remove
 					// Force the sending a dummy response to EDHOC Message 1 --- TODO REMOVE
-					String responseString = new String("Your payload was good");
-					responsePayload = responseString.getBytes(Constants.charset);
+					
 					
 					
 					CBORObject[] objectListRequest = CBORObject.DecodeSequenceFromBytes(requestPayload);
@@ -457,12 +459,15 @@ public class EdhocServer extends CoapServer {
 					}
 					mySession.setPeerEphemeralPublicKey(peerEphemeralKey);
 					
-					// TODO Build the actual EDHOC Message 2
-					// TODO Update the session status to EDHOC_AFTER_M2
-					// TODO Store the session in the list of active sessions for this peer, using C_R as map label
+					responsePayload = MessageProcessor.writeMessage2(mySession, null);
 					
-					// writeMessage2(mySession, null);
-					
+					// Add the new session to the list of existing EDHOC sessions
+					if (responsePayload == null || mySession.getCurrentStep() != Constants.EDHOC_BEFORE_M2) {
+						System.err.println("Inconsistent state before sending EDHOC Message 2");
+						return;
+					}
+					mySession.setCurrentStep(Constants.EDHOC_AFTER_M2);
+					edhocSessions.put(CBORObject.FromObject(connectionId), mySession);
 					
 				}
 				int responseType = MessageProcessor.messageType(responsePayload);
@@ -479,6 +484,16 @@ public class EdhocServer extends CoapServer {
 					Response myResponse = new Response(ResponseCode.CREATED);
 					myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
 					myResponse.setPayload(responsePayload);
+					
+					if (responseType == Constants.EDHOC_MESSAGE_2) {
+				        System.out.println("Sent EDHOC Message 2\n");
+				        // Util.nicePrint("EDHOC Message 2", responsePayload);
+					}
+					if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
+				        System.out.println("Sent EDHOC Error Message\n");
+				        // Util.nicePrint("EDHOC Error Message", responsePayload);
+					}
+					
 					exchange.respond(myResponse);
 				}
 				
