@@ -500,9 +500,10 @@ public class MessageProcessor {
      */
 	public static byte[] writeMessage2(EdhocSession session, byte[] ad2) {
 		
+		String responseString = new String("Your payload was good");
+		byte[] responsePayload = responseString.getBytes(Constants.charset);
 		
-		
-		return null;
+		return responsePayload;
 		
 	}
 	
