@@ -37,6 +37,12 @@ public class Tester {
 
     public static void runme() throws Exception {
 		
+        String javaVersion = System.getProperty("java.version");
+        System.out.println("Ver " + javaVersion);
+        if (!javaVersion.equals("15")) {
+            System.err.println("Needs Java 15!");
+        }
+        
         // === Initial testing ===
 //
         OneKey okCOSE1 = OneKey.generateKey(KeyKeys.OKP_Ed25519);
@@ -111,12 +117,6 @@ public class Tester {
         OneKey asymmetricB = new OneKey(CBORObject.DecodeFromBytes(java.util.Base64.getDecoder().decode(base64String)));
 
         System.out.println(" B " + asymmetricB.AsCBOR());
-
-        String javaVersion = System.getProperty("java.version");
-        System.out.println("Ver " + javaVersion);
-        if (!javaVersion.equals("15")) {
-            System.err.println("Needs Java 15!");
-        }
 
         //
         String keyString = "pQMnAQEgBiFYIDajeDBT7zonm7zQ9psEjSou6/90+fTTQorNWMVUKhI2I1ggkOTw7TxVACoEj/Ss6wwASfplNFQ5lUYVfQCqmKEvpeM=";

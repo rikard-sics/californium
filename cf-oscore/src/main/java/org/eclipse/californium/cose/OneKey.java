@@ -5,8 +5,11 @@
  */
 package org.eclipse.californium.cose;
 
+import com.upokecenter.cbor.CBORObject;
+import com.upokecenter.cbor.CBORType;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -26,18 +29,14 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAMultiPrimePrivateCrtKeySpec;
 import java.security.spec.RSAOtherPrimeInfo;
 import java.security.spec.RSAPrivateCrtKeySpec;
-import java.security.spec.RSAPrivateKeySpec;
-import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.ArrayList;
-import java.util.Arrays;
-
-import com.upokecenter.cbor.CBORObject;
-import com.upokecenter.cbor.CBORType;
-
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.spec.EdDSAGenParameterSpec;
+import java.security.spec.RSAPrivateKeySpec;
+import java.security.spec.RSAPublicKeySpec;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  *
@@ -113,7 +112,7 @@ public class OneKey {
             } else if (Arrays.equals(alg.get(0).value, ASN1.Oid_Ed25519)
                     || Arrays.equals(alg.get(0).value, ASN1.Oid_Ed448)
                     || Arrays.equals(alg.get(0).value, ASN1.Oid_X25519)
-                    || Arrays.equals(alg.get(0).value, ASN1.Oid_X448)) { // EdDSA
+                    || Arrays.equals(alg.get(0).value, ASN1.Oid_X448)) {
                 byte[] oid = (byte[]) alg.get(0).value;
                 if (oid == null)
                     throw new CoseException("Invalid SPKI structure");
@@ -167,7 +166,7 @@ public class OneKey {
                     }
                 }
 
-                ArrayList<ASN1.TagValue> pkdl = ASN1.DecodePKCS8Ecdsa(pkl);
+                ArrayList<ASN1.TagValue> pkdl = ASN1.DecodePKCS8EC(pkl);
                 if (pkdl.get(1).tag != 4) throw new CoseException("Invalid PKCS8 structure");
                 byte[] keyData = pkdl.get(1).value;
                 keyMap.Add(KeyKeys.EC2_D.AsCBOR(), keyData);
@@ -194,7 +193,7 @@ public class OneKey {
             } else if (Arrays.equals(alg.get(0).value, ASN1.Oid_Ed25519)
                     || Arrays.equals(alg.get(0).value, ASN1.Oid_Ed448)
                     || Arrays.equals(alg.get(0).value, ASN1.Oid_X25519)
-                    || Arrays.equals(alg.get(0).value, ASN1.Oid_X448)) { // EdDSA
+                    || Arrays.equals(alg.get(0).value, ASN1.Oid_X448)) {
                 byte[] oid = (byte[]) alg.get(0).value;
                 if (oid == null)
                     throw new CoseException("Invalid PKCS8 structure");
@@ -219,7 +218,7 @@ public class OneKey {
                     }
                 }
 
-                ArrayList<ASN1.TagValue> pkdl = ASN1.DecodePKCS8Eddsa(pkl);
+				ArrayList<ASN1.TagValue> pkdl = ASN1.DecodePKCS8EC(pkl);
                 if (pkdl.get(0).tag != 4)
                     throw new CoseException("Invalid PKCS8 structure");
                 byte[] keyData = (byte[]) (pkdl.get(0).value);

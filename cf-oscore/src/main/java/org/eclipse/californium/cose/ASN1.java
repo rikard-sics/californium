@@ -252,7 +252,7 @@ public class ASN1 {
     }
     
     /**
-     * Decode an array of bytes which is supposed to be an ASN.1 encoded structure. Considers simpler object types such
+     * Decode an array of bytes which is supposed to be an ASN.1 encoded structure. Considers simple object types such
      * as the ones used for EdDSA private keys.
      * 
      * @param offset - starting offset in array to begin decoding
@@ -389,20 +389,28 @@ public class ASN1 {
     }
 
     /**
-     * Decode an ECDSA EC PKCS#8 private key octet string
+     * Decode an EC PKCS#8 private key octet string
      *
      * @param pkcs8 The decoded PKCS#8 structure
      * @return tag/value from the decoded object
      * @throws CoseException - ASN.1 encoding errors
      */
-    public static ArrayList<TagValue> DecodePKCS8Ecdsa(ArrayList<TagValue> pkcs8) throws CoseException {
+    public static ArrayList<TagValue> DecodePKCS8EC(ArrayList<TagValue> pkcs8) throws CoseException {
         //  Decode the contents of the octet string PrivateKey
 
         byte[] pk = pkcs8.get(2).value;
+        TagValue pkd;
 
-        TagValue pkd = DecodeCompound(0, pk);
+        // First check if it can be decoded as a simple value
+        if (pk[0] == 0x04) { // ASN.1 Octet string
+            pkd = DecodeSimple(0, pk);
+            return pkd.list;
+        }
+
+        // Otherwise proceed to parse as compund value
+        pkd = DecodeCompound(0, pk);
         ArrayList<TagValue> pkdl = pkd.list;
-        if (pkd.tag != 0x30) throw new CoseException("Invalid ECPrivateKey");
+		if (pkd.tag != 0x30) throw new CoseException("Invalid ECPrivateKey");
         if (pkdl.size() < 2 || pkdl.size() > 4) throw new CoseException("Invalid ECPrivateKey");
 
         if (pkdl.get(0).tag != 2 && pkcs8.get(0).value[0] != 1) {
@@ -424,32 +432,8 @@ public class ASN1 {
         return pkdl;
     }
 
-    /**
-     * Decode an EdDSA PKCS#8 private key octet string
-     * 
-     * @param pkcs8 The decoded PKCS#8 structure
-     * @return tag/value from the decoded object
-     * @throws CoseException - ASN.1 encoding errors
-     */
-    public static ArrayList<TagValue> DecodePKCS8Eddsa(ArrayList<TagValue> pkcs8) throws CoseException {
-        // Decode the contents of the octet string PrivateKey
 
-        byte[] pk = pkcs8.get(2).value;
 
-        TagValue pkd = DecodeSimple(0, pk);
-        ArrayList<TagValue> pkdl = pkd.list;
-        if (pkd.tag != 0x04)
-            throw new CoseException("Invalid EdDSAPrivateKey");
-        if (pkdl.size() != 1)
-            throw new CoseException("Invalid EdDSAPrivateKey");
-
-        if (pkdl.get(0).tag != IntegerTag && pkdl.get(0).tag != 4) {
-            throw new CoseException("Invalid EdDSAPrivateKey");
-        }
-
-        return pkdl;
-    }
-    
     public static byte[] EncodeSignature(byte[] r, byte[] s) throws CoseException {
         ArrayList<byte[]> x = new ArrayList<byte[]>();
         x.add(UnsignedInteger(r));
