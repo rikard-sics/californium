@@ -111,8 +111,9 @@ public class MessageProcessor {
      *                        The map label is C_X, i.e. the connection identifier
      *                        offered to the other peer in the session, as a bstr_identifier
      * @return   A list of CBOR Objects including up to two elements.
-     *           The first element is always present. It it is a CBOR byte string, with value
-     *           the payload to send as response, for either EDHOC Message 2 or EDHOC Error Message.
+     *           The first element is always present. It it is a CBOR byte string, with value either:
+     *           i) a zero length byte string, indicating that the EDHOC Message 2 can be prepared; or
+     *           ii) a non-zero length byte string as the EDHOC Error Message to be sent.
      *           The second element is optional. If present, it is a CBOR byte string, with value
      *           the application data AD1 to deliver to the application.
      */
@@ -303,73 +304,27 @@ public class MessageProcessor {
 				objectListResponse.add(suitesR);
 			}
 
+			// The EDHOC Error Message, as a CBOR sequence
 			responsePayload = Util.buildCBORSequence(objectListResponse);
 			processingResult.add(CBORObject.FromObject(responsePayload));
-						
+			
+			// Application Data from AD_1 (if present), as a CBOR byte string
+			if (hasApplicationData == true) {
+				processingResult.add(objectListRequest[4]);
+			}
+			
 			System.out.println("Completed preparation of EDHOC Error Message");
 			return processingResult;
 			
 		}
 		
 		
-		/* Prepare an EDHOC Message 2 */
+		/* Return an indication to prepare EDHOC Message 2, possibly with the provided Application Data */
 		
-		// Send a dummy response to EDHOC Message 1
-		String responseString = new String("Your payload was " + Utils.bytesToHex(sequence));
-		responsePayload = responseString.getBytes(Constants.charset);
-		
-		
-		
-		
-		// Retrieve elements from EDHOC Message 1
-		
-		// METHOD_CORR
-		int methodCorr = objectListRequest[0].AsInt32();
-		
-		// Selected ciphersuites from SUITES_I
-		int selectedCipherSuite = -1;
-		if (objectListRequest[1].getType() == CBORType.Integer)
-			selectedCipherSuite = objectListRequest[1].AsInt32();
-		else if (objectListRequest[1].getType() == CBORType.Array)
-			selectedCipherSuite = objectListRequest[1].get(0).AsInt32();
-		
-		// G_X
-		byte[] gX = objectListRequest[2].GetByteString();
-		
-		// C_I
-		byte[] cI = Util.decodeFromBstrIdentifier(objectListRequest[3]).GetByteString();
-		
-		// Create a new EDHOC session
-		byte[] connectionId = Util.getConnectionId(usedConnectionIds, null);
-		EdhocSession mySession = new EdhocSession(false, methodCorr, connectionId, ltk, supportedCiphersuites);
-		
-		// Set the selected cipher suite
-		mySession.setSelectedCiphersuite(selectedCipherSuite);
-		
-		// Set the Connection Identifier of the peer
-		mySession.setPeerConnectionId(cI);
-		
-		// Set the ephemeral public key of the initiator
-		OneKey peerEphemeralKey = null;
-		
-		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_1) {
-			peerEphemeralKey = SharedSecretCalculation.buildCurve25519OneKey(null, gX);
-		}
-		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_2 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_3) {
-			// TODO Need a way to build a public-key-only OneKey object starting only from the received 'X' parameter
-		}
-		mySession.setPeerEphemeralPublicKey(peerEphemeralKey);
-		
-		// TODO Build the actual EDHOC Message 2
-		// TODO Update the session status to EDHOC_AFTER_M2
-		// TODO Store the session in the list of active sessions for this peer, using C_R as map label
-		
-		
-		
-		// Serialized EDHOC Message 2
+		// A CBOR byte string wihth zero length, indicating that the EDHOC Message 2 can be prepared
 		processingResult.add(CBORObject.FromObject(responsePayload));
 		
-		// Application Data from AD_1 (if present)
+		// Application Data from AD_1 (if present), as a CBOR byte string
 		if (hasApplicationData == true) {
 			processingResult.add(objectListRequest[4]);
 		}
@@ -533,6 +488,21 @@ public class MessageProcessor {
         }
 		
         return Util.buildCBORSequence(objectList);
+		
+	}
+	
+	
+    /**
+     *  Prepare an EDHOC Message 2
+     * @param session   The EDHOC session associated to this EDHOC message
+     * @param ad2   The auxiliary data, it can be null
+     * @return  The raw payload to transmit as EDHOC Message 2, or null in case of errors
+     */
+	public static byte[] writeMessage2(EdhocSession session, byte[] ad2) {
+		
+		
+		
+		return null;
 		
 	}
 	

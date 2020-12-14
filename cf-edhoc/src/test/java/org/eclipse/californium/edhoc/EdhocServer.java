@@ -47,6 +47,7 @@ import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 
 import com.upokecenter.cbor.CBORObject;
+import com.upokecenter.cbor.CBORType;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 import net.i2p.crypto.eddsa.Utils;
@@ -400,25 +401,94 @@ public class EdhocServer extends CoapServer {
 			System.out.println("Determined EDHOC message type: " + requestType + "\n");
 			Util.nicePrint("EDHOC message " + requestType, requestPayload);
 
-			processingResult = MessageProcessor.readMessage1(requestPayload, keyPair, usedConnectionIds,
-					                                         supportedCiphersuites, edhocSessions);
-			responsePayload = processingResult.get(0).GetByteString();
-			
-			// Deliver AD_1 to the application
-			if (processingResult.size() == 2) {
-				processAD1(processingResult.get(1).GetByteString());
+			if (requestType == Constants.EDHOC_MESSAGE_1) {
+				processingResult = MessageProcessor.readMessage1(requestPayload, keyPair, usedConnectionIds,
+						                                         supportedCiphersuites, edhocSessions);
+
+				responsePayload = processingResult.get(0).GetByteString();
+
+				// Prepare EDHOC Message 2
+				if (responsePayload.length == 0) {
+				
+					// TODO remove
+					// Force the sending a dummy response to EDHOC Message 1 --- TODO REMOVE
+					String responseString = new String("Your payload was good");
+					responsePayload = responseString.getBytes(Constants.charset);
+					
+					
+					CBORObject[] objectListRequest = CBORObject.DecodeSequenceFromBytes(requestPayload);
+					
+					// Retrieve elements from EDHOC Message 1
+					
+					// METHOD_CORR
+					int methodCorr = objectListRequest[0].AsInt32();
+					
+					// Selected ciphersuites from SUITES_I
+					int selectedCipherSuite = -1;
+					if (objectListRequest[1].getType() == CBORType.Integer)
+						selectedCipherSuite = objectListRequest[1].AsInt32();
+					else if (objectListRequest[1].getType() == CBORType.Array)
+						selectedCipherSuite = objectListRequest[1].get(0).AsInt32();
+					
+					// G_X
+					byte[] gX = objectListRequest[2].GetByteString();
+					
+					// C_I
+					byte[] cI = Util.decodeFromBstrIdentifier(objectListRequest[3]).GetByteString();
+					
+					// Create a new EDHOC session
+					byte[] connectionId = Util.getConnectionId(usedConnectionIds, null);
+					EdhocSession mySession = new EdhocSession(false, methodCorr, connectionId, keyPair, supportedCiphersuites);
+					
+					// Set the selected cipher suite
+					mySession.setSelectedCiphersuite(selectedCipherSuite);
+					
+					// Set the Connection Identifier of the peer
+					mySession.setPeerConnectionId(cI);
+					
+					// Set the ephemeral public key of the initiator
+					OneKey peerEphemeralKey = null;
+					
+					if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_1) {
+						peerEphemeralKey = SharedSecretCalculation.buildCurve25519OneKey(null, gX);
+					}
+					if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_2 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_3) {
+						// TODO Need a way to build a public-key-only OneKey object starting only from the received 'X' parameter
+					}
+					mySession.setPeerEphemeralPublicKey(peerEphemeralKey);
+					
+					// TODO Build the actual EDHOC Message 2
+					// TODO Update the session status to EDHOC_AFTER_M2
+					// TODO Store the session in the list of active sessions for this peer, using C_R as map label
+					
+					// writeMessage2(mySession, null);
+					
+					
+				}
+				int responseType = MessageProcessor.messageType(responsePayload);
+				
+				// TODO: REMOVE
+				responseType = Constants.EDHOC_MESSAGE_2; // forcing for testing
+				
+				System.out.println("Response type: " + responseType + "\n");
+				if (responseType != Constants.EDHOC_MESSAGE_2 && responseType != Constants.EDHOC_ERROR_MESSAGE) {
+					responsePayload = null;
+				}
+				
+				if (responsePayload != null) {
+					Response myResponse = new Response(ResponseCode.CREATED);
+					myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
+					myResponse.setPayload(responsePayload);
+					exchange.respond(myResponse);
+				}
+				
+				// Deliver AD_1 to the application
+				if (processingResult.size() == 2) {
+					processAD1(processingResult.get(1).GetByteString());
+				}
+				
 			}
-			
-			int responseType = MessageProcessor.messageType(responsePayload);
-			System.out.println("Response type: " + responseType + "\n");
-			// TODO When all is stable, this should never have value -1
-			
-			
-			Response myResponse = new Response(ResponseCode.CREATED);
-			myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
-			myResponse.setPayload(responsePayload);
-			exchange.respond(myResponse);
-			
+
 		}
 		
 	}
