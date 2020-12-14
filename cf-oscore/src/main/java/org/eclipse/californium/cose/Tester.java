@@ -23,6 +23,8 @@ import java.security.PrivateKey;
 import org.eclipse.californium.core.coap.CoAP;
 import java.security.PublicKey;
 import org.eclipse.californium.scandium.dtls.cipher.ThreadLocalKeyPairGenerator;
+import org.eclipse.californium.scandium.dtls.x509.StaticNewAdvancedCertificateVerifier;
+
 import com.upokecenter.cbor.CBORObject;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.Utils;
@@ -30,6 +32,7 @@ import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.scandium.DTLSConnector;
 import org.eclipse.californium.scandium.config.DtlsConnectorConfig;
+import org.eclipse.californium.scandium.dtls.CertificateType;
 import org.eclipse.californium.scandium.dtls.cipher.CipherSuite;
 
 
@@ -104,9 +107,9 @@ public class Tester {
         PublicKey javaPublic = kp.getPublic();
         PrivateKey javaPrivate = kp.getPrivate();
 
-        //Try with Californium/Scandium key generator
+        // Try with Californium/Scandium key generator
         KeyPair keyPairScand = new ThreadLocalKeyPairGenerator("Ed25519").current().generateKeyPair();
-		OneKey coseVersionScand = new OneKey(keyPair.getPublic(), keyPair.getPrivate());
+        OneKey coseVersionScand = new OneKey(keyPair.getPublic(), keyPair.getPrivate());
         
         // Start from COSE OneKey
         OneKey coseBasedKey = OneKey.generateKey(KeyKeys.OKP_Ed25519);
@@ -139,7 +142,16 @@ public class Tester {
         config.setSupportedCipherSuites(new CipherSuite[] { CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8 });
         config.setIdentity(asymmetric.AsPrivateKey(), asymmetric.AsPublicKey());
 
-        config.setClientAuthenticationRequired(false);
+        // RPK trust section
+        config.setClientAuthenticationRequired(true);
+        config.setTrustCertificateTypes(CertificateType.RAW_PUBLIC_KEY); // Trust RPK type
+        // Use this to trust all RPKs
+        org.eclipse.californium.scandium.dtls.x509.StaticNewAdvancedCertificateVerifier.Builder verifierBuilder = StaticNewAdvancedCertificateVerifier
+                .builder();
+        verifierBuilder.setTrustAllRPKs();
+        config.setAdvancedCertificateVerifier(verifierBuilder.build());
+        // End RPK trust section
+
         DTLSConnector connector = new DTLSConnector(config.build());
         CoapEndpoint cep = new org.eclipse.californium.core.network.CoapEndpoint.Builder().setConnector(connector)
                 .setNetworkConfig(NetworkConfig.getStandard()).build();
