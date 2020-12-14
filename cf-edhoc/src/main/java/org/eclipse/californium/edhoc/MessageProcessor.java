@@ -539,69 +539,6 @@ public class MessageProcessor {
 		
         return Util.buildCBORSequence(objectList);
 		
-		/*
-		if (session == null)
-			return null;
-		
-		int methodCorr = session.getMethodCorr();
-		if (methodCorr < 0 || methodCorr > 15)
-			return null;
-		
-		int numSuites = session.getSupportedCipherSuites().size();
-		if (numSuites == 0)
-		    return null;
-		int[] suitesI = null;
-		if (numSuites == 1) {
-		    suitesI = new int[1];
-		    suitesI[0] = session.getSupportedCipherSuites().get(0).intValue();
-		}
-		else {
-		    int index = 1;
-		    suitesI = new int[numSuites + 1];
-		    suitesI[0] = session.getSupportedCipherSuites().get(0).intValue();
-		    for (Integer i : session.getSupportedCipherSuites()) {
-		        suitesI[index] = i.intValue();
-		        index++;
-		    }
-		}
-		
-		byte[] gX = null;
-		OneKey ephemeralKey = session.getEphemeralKey();
-		if (ephemeralKey == null)
-			return null;
-		if (ephemeralKey.get(KeyKeys.KeyType) == KeyKeys.EC2_P256) {
-			gX = ephemeralKey.get(KeyKeys.EC2_X).GetByteString();
-		}
-		else if (ephemeralKey.get(KeyKeys.KeyType) == KeyKeys.OKP_X25519) {
-			gX = ephemeralKey.get(KeyKeys.OKP_X).GetByteString();
-		}
-		else {
-			return null;
-		}
-		if (gX == null)
-			return null;
-		
-		byte[] cI = session.getConnectionId();
-		if (cI == null)
-			return null;
-		
-		List<CBORObject> objectList = new ArrayList<CBORObject>();
-		
-		objectList.add(CBORObject.FromObject(methodCorr));
-		if (suitesI.length == 1)
-			objectList.add(CBORObject.FromObject(suitesI[0]));
-		else
-			objectList.add(CBORObject.FromObject(suitesI));
-		objectList.add(CBORObject.FromObject(gX));
-		objectList.add(Util.encodeToBstrIdentifier(CBORObject.FromObject(cI)));
-		if (ad1 != null)
-			objectList.add(CBORObject.FromObject(ad1));
-		
-		session.setCurrentStep(Constants.EDHOC_BEFORE_M1);
-		
-		return Util.buildCBORSequence(objectList);
-		*/
-		
 	}
 	
 }
