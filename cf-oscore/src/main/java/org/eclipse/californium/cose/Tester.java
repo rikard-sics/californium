@@ -43,13 +43,13 @@ public class Tester {
             System.err.println("Needs Java 15!");
         }
         
-		// ECDSA 256
+        // ECDSA 256
 
         // === Initial testing ===
-		OneKey ecdsaCose = OneKey.generateKey(AlgorithmID.ECDSA_256);
-		OneKey ecdsaCose2 = new OneKey(ecdsaCose.AsPublicKey(), ecdsaCose.AsPrivateKey());
+        OneKey ecdsaCose = OneKey.generateKey(AlgorithmID.ECDSA_256);
+        OneKey ecdsaCose2 = new OneKey(ecdsaCose.AsPublicKey(), ecdsaCose.AsPrivateKey());
 //
-		OneKey okCOSE1 = OneKey.generateKey(KeyKeys.OKP_Ed25519);
+        OneKey okCOSE1 = OneKey.generateKey(KeyKeys.OKP_Ed25519);
         OneKey okCOSE2 = new OneKey(okCOSE1.AsPublicKey(), okCOSE1.AsPrivateKey());
         OneKey okCOSE3 = new OneKey(okCOSE1.AsCBOR());
         OneKey okCOSE4 = new OneKey(okCOSE2.AsCBOR());
