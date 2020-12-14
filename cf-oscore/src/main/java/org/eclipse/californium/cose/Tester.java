@@ -47,10 +47,10 @@ public class Tester {
         }
         
         // ECDSA 256
-
-        // === Initial testing ===
         OneKey ecdsaCose = OneKey.generateKey(AlgorithmID.ECDSA_256);
         OneKey ecdsaCose2 = new OneKey(ecdsaCose.AsPublicKey(), ecdsaCose.AsPrivateKey());
+
+        // === Initial testing ===
 //
         OneKey okCOSE1 = OneKey.generateKey(KeyKeys.OKP_Ed25519);
         OneKey okCOSE2 = new OneKey(okCOSE1.AsPublicKey(), okCOSE1.AsPrivateKey());
