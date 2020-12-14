@@ -458,7 +458,7 @@ public class SharedSecretCalculation {
 		byte[] rgbD = privateKey;
 
 		CBORObject keyMap = CBORObject.NewMap();
-
+		
 		keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_OKP);
 		keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_Ed25519);
 		keyMap.Add(KeyKeys.OKP_X.AsCBOR(), CBORObject.FromObject(rgbX));
@@ -492,12 +492,14 @@ public class SharedSecretCalculation {
 		byte[] rgbD = privateKey;
 
 		OneKey key = new OneKey();
-
+		
 		key.add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_OKP);
 		key.add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_X25519);
 		key.add(KeyKeys.OKP_X.AsCBOR(), CBORObject.FromObject(rgbX));
+		
 		// FIXME: D should be seed?
-		key.add(KeyKeys.OKP_D.AsCBOR(), CBORObject.FromObject(rgbD));
+		if (privateKey != null)
+			key.add(KeyKeys.OKP_D.AsCBOR(), CBORObject.FromObject(rgbD));
 
 		return key;
 	}
@@ -554,11 +556,13 @@ public class SharedSecretCalculation {
 		byte[] rgbD = privateKey;
 
 		CBORObject keyMap = CBORObject.NewMap();
-
+		
 		keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
 		keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P256);
 		keyMap.Add(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(rgbX));
-		keyMap.Add(KeyKeys.EC2_Y.AsCBOR(), CBORObject.FromObject(rgbY));
+		if (publicKeyY != null)
+			keyMap.Add(KeyKeys.EC2_Y.AsCBOR(), CBORObject.FromObject(rgbY));
+		if (privateKey != null)
 		keyMap.Add(KeyKeys.EC2_D.AsCBOR(), CBORObject.FromObject(rgbD));
 
 		OneKey key = null;
@@ -583,8 +587,8 @@ public class SharedSecretCalculation {
 	 * @return the shared secret
 	 */
 	static byte[] generateSharedSecret(OneKey privateKey, OneKey publicKey) {
-
-		// ECDSA
+		
+		// EC2 keys (P-256)
 
 		CBORObject privateCurve = privateKey.get(KeyKeys.EC2_Curve);
 		CBORObject publicCurve = publicKey.get(KeyKeys.EC2_Curve);
@@ -594,11 +598,12 @@ public class SharedSecretCalculation {
 			return null;
 		}
 
-		if (privateCurve == KeyKeys.EC2_P256 || privateCurve == KeyKeys.EC2_P384 || privateCurve == KeyKeys.EC2_P521) {
+		if (privateCurve == KeyKeys.EC2_P256 /*|| privateCurve == KeyKeys.EC2_P384 || privateCurve == KeyKeys.EC2_P521*/) {
 			return generateSharedSecretECDSA(privateKey, publicKey);
 		}
 
-		// EdDSA (Ed25519)
+		
+		// OKP keys (Curve25519)
 
 		privateCurve = privateKey.get(KeyKeys.OKP_Curve);
 		publicCurve = publicKey.get(KeyKeys.OKP_Curve);
@@ -608,25 +613,21 @@ public class SharedSecretCalculation {
 			return null;
 		}
 
-		if (privateCurve == KeyKeys.OKP_Ed25519) {
-			return generateSharedSecretEdDSA(privateKey, publicKey);
-		}
-
-		// EdDSA (Curve25519)
-
 		// FIXME?: D is seed, not the private scalar
 		byte[] privateScalar = privateKey.get(KeyKeys.OKP_D).GetByteString();
 		// Take X value as U coordinate
 		byte[] publicUCoordinate = publicKey.get(KeyKeys.OKP_X).GetByteString();
 
-		if (privateCurve == KeyKeys.OKP_X25519) {
+		if (privateCurve == KeyKeys.OKP_X25519 /*|| privateCurve == KeyKeys.OKP_X448*/) {
 			// Use X25519 directly
 			return X25519(privateScalar, publicUCoordinate);
 		}
 
+		
 		System.err.println("Failed to generate shared secret.");
 
 		return null;
+		
 	}
 
 	/**

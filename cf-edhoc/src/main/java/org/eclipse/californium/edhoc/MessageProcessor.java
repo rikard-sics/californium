@@ -320,7 +320,7 @@ public class MessageProcessor {
 		
 		
 		
-		/*
+		
 		// Retrieve elements from EDHOC Message 1
 		
 		// METHOD_CORR
@@ -350,29 +350,19 @@ public class MessageProcessor {
 		mySession.setPeerConnectionId(cI);
 		
 		// Set the ephemeral public key of the initiator
-		CBORObject key = CBORObject.NewMap();
 		OneKey peerEphemeralKey = null;
 		
 		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_1) {
-			key.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_OKP);
-			key.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_X25519);
-			key.Add(KeyKeys.OKP_X.AsCBOR(), CBORObject.FromObject(gX));
+			peerEphemeralKey = SharedSecretCalculation.buildCurve25519OneKey(null, gX);
 		}
 		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_2 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_3) {
-			key.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
-			key.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.EC2_P256);
-			key.Add(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(gX));
-		}
-        try {
-        	peerEphemeralKey = new OneKey(key);
-		} catch (CoseException e) {
-			System.err.println("Error while rebuilding the peer's ephemeral public key");
-			System.err.println(e.getMessage());
-			responsePayload = null;
+			// TODO Need a way to build a public-key-only OneKey object starting only from the received 'X' parameter
 		}
 		mySession.setPeerEphemeralPublicKey(peerEphemeralKey);
-		*/
 		
+		// TODO Build the actual EDHOC Message 2
+		// TODO Update the session status to EDHOC_AFTER_M2
+		// TODO Store the session in the list of active sessions for this peer, using C_R as map label
 		
 		
 		
