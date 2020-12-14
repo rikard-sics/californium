@@ -309,49 +309,7 @@ public class EdhocServer extends CoapServer {
 		System.out.println();
 		
 	}
-	
-	private static OneKey makeSingleKey(OneKey keyPair, boolean isPrivate) {
 		
-	    CBORObject key = CBORObject.NewMap();
-        OneKey coseKey = null;
-	    
-        key.Add(KeyKeys.KeyType.AsCBOR(), keyPair.get(KeyKeys.KeyType));
-        
-	    if (isPrivate) {
-	    	if(keyPair.get(KeyKeys.KeyType) == KeyKeys.KeyType_EC2) {
-		        key.Add(KeyKeys.EC2_Curve.AsCBOR(), keyPair.get(KeyKeys.EC2_Curve));
-		        key.Add(KeyKeys.EC2_D.AsCBOR(), keyPair.get(KeyKeys.EC2_D));
-
-	    	}
-	    	else if(keyPair.get(KeyKeys.KeyType) == KeyKeys.KeyType_OKP) {
-		        key.Add(KeyKeys.OKP_Curve.AsCBOR(), keyPair.get(KeyKeys.OKP_Curve));
-		        key.Add(KeyKeys.OKP_D.AsCBOR(), keyPair.get(KeyKeys.OKP_D));
-	    	}
-	        
-	    }
-	    else {
-	    	if(keyPair.get(KeyKeys.KeyType) == KeyKeys.KeyType_EC2) {
-		        key.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
-		        key.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P256);
-		        key.Add(KeyKeys.EC2_X.AsCBOR(), keyPair.get(KeyKeys.EC2_X));
-		        key.Add(KeyKeys.EC2_Y.AsCBOR(), keyPair.get(KeyKeys.EC2_Y));
-	    	}
-	    	else if(keyPair.get(KeyKeys.KeyType) == KeyKeys.KeyType_OKP) {
-		        key.Add(KeyKeys.OKP_Curve.AsCBOR(), keyPair.get(KeyKeys.OKP_Curve));
-		        key.Add(KeyKeys.OKP_X.AsCBOR(), keyPair.get(KeyKeys.OKP_X));
-	    	}
-	    }
-
-        try {
-        	coseKey = new OneKey(key);
-		} catch (CoseException e) {
-			System.err.println("Error while generating the private key");
-		}
-	    return coseKey;
-		
-	}
-
-	
 	/*
 	 * Definition of the Hello-World Resource
 	 */
