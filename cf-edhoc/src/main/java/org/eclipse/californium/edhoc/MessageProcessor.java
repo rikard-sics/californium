@@ -523,6 +523,11 @@ public class MessageProcessor {
         	byte[] objBytes = obj.EncodeToBytes();
         	Util.nicePrint("C_I", objBytes);
         }
+        
+        // AD_1 as a CBOR byte string (if provided)
+        if (ad1 != null) {
+        	objectList.add(CBORObject.FromObject(ad1));
+        }
         if (debugPrint) {
         	System.out.println("===================================");
         }
