@@ -32,7 +32,6 @@ import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
 import net.i2p.crypto.eddsa.Utils;
-import sun.security.rsa.RSAUtil.KeyType;
 
 public class MessageProcessor {
 	
