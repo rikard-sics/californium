@@ -104,6 +104,10 @@ public class Tester {
         PublicKey javaPublic = kp.getPublic();
         PrivateKey javaPrivate = kp.getPrivate();
 
+        //Try with Californium/Scandium key generator
+        KeyPair keyPairScand = new ThreadLocalKeyPairGenerator("Ed25519").current().generateKeyPair();
+		OneKey coseVersionScand = new OneKey(keyPair.getPublic(), keyPair.getPrivate());
+        
         // Start from COSE OneKey
         OneKey coseBasedKey = OneKey.generateKey(KeyKeys.OKP_Ed25519);
         // Works (Provider must be at 1)
@@ -125,7 +129,7 @@ public class Tester {
         //
         String keyString = "pQMnAQEgBiFYIDajeDBT7zonm7zQ9psEjSou6/90+fTTQorNWMVUKhI2I1ggkOTw7TxVACoEj/Ss6wwASfplNFQ5lUYVfQCqmKEvpeM=";
         OneKey asymmetric = new OneKey(CBORObject.DecodeFromBytes(java.util.Base64.getDecoder().decode(keyString)));
-
+        
         String keyStringPublic = "pAMnAQEgBiFYIDajeDBT7zonm7zQ9psEjSou6/90+fTTQorNWMVUKhI2";
         OneKey asymmetricPublic = new OneKey(
                 CBORObject.DecodeFromBytes(java.util.Base64.getDecoder().decode(keyStringPublic)));
