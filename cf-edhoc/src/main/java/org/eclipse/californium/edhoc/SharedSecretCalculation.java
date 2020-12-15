@@ -56,6 +56,7 @@ import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.junit.Test;
 
 import com.upokecenter.cbor.CBORObject;
 
@@ -575,6 +576,75 @@ public class SharedSecretCalculation {
 		}
 
 		return key;
+	}
+
+	@Test
+	public static byte[] calculateEcdsaXFromY(byte[] publicKeyX) throws CoseException {
+
+		BigInteger x = new BigInteger((publicKeyX));
+
+		// secp256r1
+		// y^2 = x^3 + ax + b -> y = +- sqrt(a x + b + x^3)
+		BigInteger prime = new BigInteger("ffffffff00000001000000000000000000000000ffffffffffffffffffffffff", 16);
+		BigInteger A = new BigInteger("ffffffff00000001000000000000000000000000fffffffffffffffffffffffc", 16);
+		BigInteger B = new BigInteger("5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b", 16);
+		BigInteger three = new BigInteger("3");
+
+		// p == 3 mod 4?
+		// https://math.stackexchange.com/questions/464253/square-roots-in-finite-fields-i-e-mod-pm
+		BigInteger primeMod4 = prime.mod(new BigInteger("4"));
+		System.out.println("p == 3 mod 4: " + primeMod4);
+
+		BigInteger xPow3 = x.modPow(three, prime);
+		BigInteger ax = (A.multiply(x)).mod(prime);
+		BigInteger combined = (ax.add(B).add(xPow3)).mod(prime);
+
+		BigInteger root1 = squareMod(combined).mod(prime);
+		BigInteger root2 = root1.negate().mod(prime);
+
+		// Now build keys and try shared secret calc
+		OneKey publicFirstY = SharedSecretCalculation.buildEcdsa256OneKey(null, x.toByteArray(), root1.toByteArray());
+		OneKey publicSecondY = SharedSecretCalculation.buildEcdsa256OneKey(null, x.toByteArray(), root2.toByteArray());
+
+		// Check if on point (other way) (first y)
+		// jdk.crypto.ec/sun.security.ec.ECDHKeyAgreement
+		ECPublicKey _key = (ECPublicKey) publicFirstY.AsPublicKey();
+		BigInteger _x = _key.getW().getAffineX();
+		System.out.println("First Y Affine X: " + Utils.bytesToHex(_x.toByteArray()));
+		BigInteger _y = _key.getW().getAffineY();
+		System.out.println("First Y Affine Y: " + Utils.bytesToHex(_y.toByteArray()));
+		BigInteger _p = prime;
+		EllipticCurve curve = _key.getParams().getCurve();
+		BigInteger _rhs = _x.modPow(BigInteger.valueOf(3), _p).add(curve.getA().multiply(x)).add(curve.getB()).mod(_p);
+		BigInteger _lhs = _y.modPow(BigInteger.valueOf(2), _p).mod(_p);
+		if (!_rhs.equals(_lhs)) {
+			System.out.println("Key using first Y not on curve!");
+		}
+		// Check if on point (other way) (second y)
+		_key = (ECPublicKey) publicSecondY.AsPublicKey();
+		_x = _key.getW().getAffineX();
+		System.out.println("Second Y Affine X: " + Utils.bytesToHex(_x.toByteArray()));
+		_y = _key.getW().getAffineY();
+		System.out.println("Second Y Affine X: " + Utils.bytesToHex(_y.toByteArray()));
+		_p = prime;
+		curve = _key.getParams().getCurve();
+		_rhs = _x.modPow(BigInteger.valueOf(3), _p).add(curve.getA().multiply(x)).add(curve.getB()).mod(_p);
+		_lhs = _y.modPow(BigInteger.valueOf(2), _p).mod(_p);
+		if (!_rhs.equals(_lhs)) {
+			System.out.println("Key using second Y not on curve!");
+		}
+
+		return root1.toByteArray();
+	}
+
+	// Only works if p == 3 mod 4
+	static BigInteger squareMod(BigInteger val) {
+		// root = val^((prime+1) / 4)
+		BigInteger prime = new BigInteger("ffffffff00000001000000000000000000000000ffffffffffffffffffffffff", 16);
+		BigInteger power = prime.add(BigInteger.ONE).divide(new BigInteger("4"));
+
+		return val.modPow(power, prime);
+
 	}
 
 	/**
