@@ -28,23 +28,30 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Provider;
+import java.security.ProviderException;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.EllipticCurve;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.NamedParameterSpec;
 import java.security.spec.XECPrivateKeySpec;
 import java.util.Arrays;
+import java.util.Base64;
 
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.edhoc.SharedSecretCalculation.Tuple;
+import org.eclipse.californium.elements.util.Bytes;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
@@ -91,6 +98,126 @@ public class SharedSecretCalculationTest {
 		Security.insertProviderAt(EdDSA, 0);
 	}
 
+	@Test
+	public void testEcdsaYFromX() throws CoseException {
+		OneKey ecdd = OneKey.generateKey((AlgorithmID.ECDSA_256));
+		System.out.println(Utils.bytesToHex(ecdd.AsPublicKey().getEncoded()));
+
+		OneKey rebuilt = SharedSecretCalculation.buildEcdsa256OneKey(ecdd.get(KeyKeys.OKP_D).GetByteString(),
+				ecdd.get(KeyKeys.EC2_X).GetByteString(), ecdd.get(KeyKeys.EC2_Y).GetByteString());
+
+		System.out.println("HELLO");
+
+		SharedSecretCalculation.generateSharedSecret(ecdd, rebuilt);
+
+		// https://crypto.stackexchange.com/questions/8914/ecdsa-compressed-public-key-point-back-to-uncompressed-public-key-point
+		// https://asecuritysite.com/encryption/js08
+		// https://bitcoin.stackexchange.com/questions/44024/get-uncompressed-public-key-from-compressed-form
+		// http://www-cs-students.stanford.edu/~tjw/jsbn/ecdh.html
+		// https://tools.ietf.org/html/rfc6090#appendix-C
+		// jdk.crypto.ec/sun.security.ec.ECDHKeyAgreement
+
+		// Testing with Curve base point
+		BigInteger x = new BigInteger("6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296", 16);
+
+
+		// secp256r1
+		// y^2 = x^3 + ax + b -> y = +- sqrt(a x + b + x^3)
+		BigInteger prime = new BigInteger("ffffffff00000001000000000000000000000000ffffffffffffffffffffffff", 16);
+		BigInteger A = new BigInteger("ffffffff00000001000000000000000000000000fffffffffffffffffffffffc", 16);
+		BigInteger B = new BigInteger("5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b", 16);
+		BigInteger three = new BigInteger("3");
+
+		// p == 3 mod 4?
+		// https://math.stackexchange.com/questions/464253/square-roots-in-finite-fields-i-e-mod-pm
+		BigInteger primeMod4 = prime.mod(new BigInteger("4"));
+		System.out.println("p == 3 mod 4: " + primeMod4);
+
+		BigInteger xPow3 = x.modPow(three, prime);
+		BigInteger ax = (A.multiply(x)).mod(prime);
+		BigInteger combined = (ax.add(B).add(xPow3)).mod(prime);
+
+		BigInteger root1 = squareMod(combined).mod(prime);
+		BigInteger root2 = root1.negate().mod(prime);
+
+		System.out.println("Root1: " + root1);
+		System.out.println("Root1: " + Utils.bytesToHex(root1.toByteArray()));
+		System.out.println("Root2: " + root2);
+		System.out.println("Root2: " + Utils.bytesToHex(root2.toByteArray()));
+
+		// Check roots
+		System.out.println("Expected: " + combined);
+		System.out.println("root1^2 " + root1.multiply(root1).mod(prime));
+		System.out.println("root2^2 " + root2.multiply(root2).mod(prime));
+
+		// Check if on point
+		// http://hg.openjdk.java.net/jdk/jdk/rev/752e57845ad2#l1.97
+		BigInteger rhs = x.modPow(BigInteger.valueOf(3), prime).add(A.multiply(x)).add(B).mod(prime);
+		BigInteger lhs1 = root1.modPow(BigInteger.valueOf(2), prime).mod(prime);
+		BigInteger lhs2 = root2.modPow(BigInteger.valueOf(2), prime).mod(prime);
+		System.out.println("RHS  " + rhs);
+		System.out.println("LHS1 " + lhs1);
+		System.out.println("LHS2 " + lhs2);
+
+		// Now build keys and try shared secret calc
+		String keyPairBase64 = "pgMmAQIgASFYIPWSTdB9SCF/+CGXpy7gty8qipdR30t6HgdFGQo8ViiAIlggXvJCtXVXBJwmjMa4YdRbcdgjpXqM57S2CZENPrUGQnMjWCDXCb+hy1ybUu18KTAJMvjsmXch4W3Hd7Rw7mTF3ocbLQ==";
+		OneKey privateKey = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyPairBase64)));
+		OneKey publicFirstY = SharedSecretCalculation.buildEcdsa256OneKey(null, x.toByteArray(), root1.toByteArray());
+		OneKey publicSecondY = SharedSecretCalculation.buildEcdsa256OneKey(null, x.toByteArray(), root2.toByteArray());
+		System.out.println("publicFirstY " + publicFirstY.AsCBOR().toString());
+		System.out.println("publicSecondY " + publicSecondY.AsCBOR().toString());
+
+		// Check if on point (other way) (first y)
+		// jdk.crypto.ec/sun.security.ec.ECDHKeyAgreement
+		ECPublicKey _key = (ECPublicKey) publicFirstY.AsPublicKey();
+		BigInteger _x = _key.getW().getAffineX();
+		BigInteger _y = _key.getW().getAffineY();
+		BigInteger _p = prime;
+		EllipticCurve curve = _key.getParams().getCurve();
+		BigInteger _rhs = _x.modPow(BigInteger.valueOf(3), _p).add(curve.getA().multiply(x)).add(curve.getB()).mod(_p);
+		BigInteger _lhs = _y.modPow(BigInteger.valueOf(2), _p).mod(_p);
+		if (!_rhs.equals(_lhs)) {
+			System.out.println("Key using first Y not on curve!");
+		}
+		// Check if on point (other way) (second y)
+		_key = (ECPublicKey) publicSecondY.AsPublicKey();
+		_x = _key.getW().getAffineX();
+		_y = _key.getW().getAffineY();
+		_p = prime;
+		curve = _key.getParams().getCurve();
+		_rhs = _x.modPow(BigInteger.valueOf(3), _p).add(curve.getA().multiply(x)).add(curve.getB()).mod(_p);
+		_lhs = _y.modPow(BigInteger.valueOf(2), _p).mod(_p);
+		if (!_rhs.equals(_lhs)) {
+			System.out.println("Key using second Y not on curve!");
+		}
+
+		byte[] secret1 = null;
+		try {
+			secret1 = SharedSecretCalculation.generateSharedSecret(privateKey, publicFirstY);
+		} catch (Exception e) {
+			System.out.println("Shared secret 1 generation failed: " + e);
+		}
+		byte[] secret2 = null;
+		try {
+			secret2 = SharedSecretCalculation.generateSharedSecret(privateKey, publicSecondY);
+		} catch (Exception e) {
+			System.out.println("Shared secret 2 generation failed: " + e);
+		}
+
+		System.out.println("Secret 1 " + Utils.bytesToHex(secret1));
+		System.out.println("Secret 2 " + Utils.bytesToHex(secret2));
+
+	}
+
+	// Only works if p == 3 mod 4
+	BigInteger squareMod(BigInteger val) {
+		// root = val^((prime+1) / 4)
+		BigInteger prime = new BigInteger("ffffffff00000001000000000000000000000000ffffffffffffffffffffffff", 16);
+		BigInteger power = prime.add(BigInteger.ONE).divide(new BigInteger("4"));
+
+		return val.modPow(power, prime);
+
+	}
 	/* Start tests */
 
 	/**
