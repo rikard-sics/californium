@@ -171,7 +171,9 @@ public class SharedSecretCalculationTest {
 		// jdk.crypto.ec/sun.security.ec.ECDHKeyAgreement
 		ECPublicKey _key = (ECPublicKey) publicFirstY.AsPublicKey();
 		BigInteger _x = _key.getW().getAffineX();
+		System.out.println("First Y Affine X: " + Utils.bytesToHex(_x.toByteArray()));
 		BigInteger _y = _key.getW().getAffineY();
+		System.out.println("First Y Affine Y: " + Utils.bytesToHex(_y.toByteArray()));
 		BigInteger _p = prime;
 		EllipticCurve curve = _key.getParams().getCurve();
 		BigInteger _rhs = _x.modPow(BigInteger.valueOf(3), _p).add(curve.getA().multiply(x)).add(curve.getB()).mod(_p);
@@ -182,7 +184,9 @@ public class SharedSecretCalculationTest {
 		// Check if on point (other way) (second y)
 		_key = (ECPublicKey) publicSecondY.AsPublicKey();
 		_x = _key.getW().getAffineX();
+		System.out.println("Second Y Affine X: " + Utils.bytesToHex(_x.toByteArray()));
 		_y = _key.getW().getAffineY();
+		System.out.println("Second Y Affine X: " + Utils.bytesToHex(_y.toByteArray()));
 		_p = prime;
 		curve = _key.getParams().getCurve();
 		_rhs = _x.modPow(BigInteger.valueOf(3), _p).add(curve.getA().multiply(x)).add(curve.getB()).mod(_p);
@@ -218,6 +222,30 @@ public class SharedSecretCalculationTest {
 		return val.modPow(power, prime);
 
 	}
+
+	@Test
+	public void testCalculateEcdsaXFromY() throws CoseException {
+		BigInteger x = new BigInteger("6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296", 16);
+		byte[] y = SharedSecretCalculation.calculateEcdsaXFromY(x.toByteArray());
+
+		BigInteger expectedY = new BigInteger("4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5", 16);
+		Assert.assertArrayEquals(expectedY.toByteArray(), y);
+
+		System.out.println("Y " + Utils.bytesToHex(y));
+		System.out.println("Expected Y " + Utils.bytesToHex(expectedY.toByteArray()));
+
+		//
+		x = new BigInteger("2998623951099103915277074161220854922681413823330538534640767405128727550446");
+		y = SharedSecretCalculation.calculateEcdsaXFromY(x.toByteArray());
+
+		expectedY = new BigInteger("80229022462408177306771569263011452155201860785492173627912300922693430387832");
+		Assert.assertArrayEquals(expectedY.toByteArray(), y);
+
+		System.out.println("Y " + Utils.bytesToHex(y));
+		System.out.println("Expected Y " + Utils.bytesToHex(expectedY.toByteArray()));
+
+	}
+
 	/* Start tests */
 
 	/**
