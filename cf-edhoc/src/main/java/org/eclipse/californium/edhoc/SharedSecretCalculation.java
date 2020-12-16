@@ -588,30 +588,6 @@ public class SharedSecretCalculation {
 		return key;
 	}
 
-	@Deprecated
-	static OneKey buildEcdsa256OneKey(byte[] privateKey, byte[] publicKeyX, boolean publicKeyY) {
-		byte[] rgbX = publicKeyX;
-		byte[] rgbD = privateKey;
-
-		CBORObject keyMap = CBORObject.NewMap();
-
-		keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
-		keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P256);
-		keyMap.Add(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(rgbX));
-		keyMap.Add(KeyKeys.EC2_Y.AsCBOR(), CBORObject.FromObject(publicKeyY));
-		if (privateKey != null)
-			keyMap.Add(KeyKeys.EC2_D.AsCBOR(), CBORObject.FromObject(rgbD));
-
-		OneKey key = null;
-		try {
-			key = new OneKey(keyMap);
-		} catch (CoseException e) {
-			System.err.println("Failed to generate COSE OneKey: " + e);
-		}
-
-		return key;
-	}
-
 	/**
 	 * Will only give one possible Y value.
 	 * 
