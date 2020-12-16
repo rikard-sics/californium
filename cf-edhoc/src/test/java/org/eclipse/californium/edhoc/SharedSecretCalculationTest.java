@@ -98,6 +98,13 @@ public class SharedSecretCalculationTest {
 		Security.insertProviderAt(EdDSA, 0);
 	}
 
+	/**
+	 * Initial testing of calculating ECDSA_256 Y parameter from X.
+	 * 
+	 * TODO: Delete when standalone methods i complete.
+	 * 
+	 * @throws CoseException on test failure
+	 */
 	@Test
 	public void testEcdsaYFromX() throws CoseException {
 		OneKey ecdd = OneKey.generateKey((AlgorithmID.ECDSA_256));
@@ -133,9 +140,13 @@ public class SharedSecretCalculationTest {
 		BigInteger primeMod4 = prime.mod(new BigInteger("4"));
 		System.out.println("p == 3 mod 4: " + primeMod4);
 
+		x = x.mod(prime);
 		BigInteger xPow3 = x.modPow(three, prime);
 		BigInteger ax = (A.multiply(x)).mod(prime);
-		BigInteger combined = (ax.add(B).add(xPow3)).mod(prime);
+		//BigInteger combined = (ax.add(B).add(xPow3)).mod(prime);
+		BigInteger partial = ax.add(B).mod(prime);
+		BigInteger combined = partial.add(xPow3).mod(prime);
+		
 
 		BigInteger root1 = squareMod(combined).mod(prime);
 		BigInteger root2 = root1.negate().mod(prime);
@@ -213,7 +224,12 @@ public class SharedSecretCalculationTest {
 
 	}
 
-	// Only works if p == 3 mod 4
+	/**
+	 * Square root in prime field. Only works if p == 3 mod 4
+	 * 
+	 * @param val value to take root of
+	 * @return one of the roots
+	 */
 	BigInteger squareMod(BigInteger val) {
 		// root = val^((prime+1) / 4)
 		BigInteger prime = new BigInteger("ffffffff00000001000000000000000000000000ffffffffffffffffffffffff", 16);
@@ -224,27 +240,133 @@ public class SharedSecretCalculationTest {
 	}
 
 	@Test
-	public void testCalculateEcdsaXFromY() throws CoseException {
+	@Ignore
+	public void testCalculateEcdsaYFromXOld() throws CoseException {
 		BigInteger x = new BigInteger("6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296", 16);
-		byte[] y = SharedSecretCalculation.calculateEcdsaXFromY(x.toByteArray());
+		byte[] y = SharedSecretCalculation.recomputeEcdsaYFromX(x.toByteArray());
 
 		BigInteger expectedY = new BigInteger("4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5", 16);
-		Assert.assertArrayEquals(expectedY.toByteArray(), y);
 
 		System.out.println("Y " + Utils.bytesToHex(y));
 		System.out.println("Expected Y " + Utils.bytesToHex(expectedY.toByteArray()));
+
+		Assert.assertArrayEquals(expectedY.toByteArray(), y);
 
 		//
-		x = new BigInteger("2998623951099103915277074161220854922681413823330538534640767405128727550446");
-		y = SharedSecretCalculation.calculateEcdsaXFromY(x.toByteArray());
+		x = new BigInteger("a2339c12d4a03c33546de533268b4ad667debf458b464d77443636440ee7fec3", 16);
+		y = SharedSecretCalculation.recomputeEcdsaYFromX(x.toByteArray());
 
-		expectedY = new BigInteger("80229022462408177306771569263011452155201860785492173627912300922693430387832");
-		Assert.assertArrayEquals(expectedY.toByteArray(), y);
+		expectedY = new BigInteger("ef48a3ab26e20220bcda2c1851076839dae88eae962869a497bf73cb66faf536", 16);
 
 		System.out.println("Y " + Utils.bytesToHex(y));
 		System.out.println("Expected Y " + Utils.bytesToHex(expectedY.toByteArray()));
 
+		Assert.assertArrayEquals(expectedY.toByteArray(), y);
+
 	}
+
+	@Test
+	// https://github.com/conz27/crypto-test-vectors/blob/master/ecdh.py
+	public void testCalculateEcdsaYFromX() throws CoseException {
+
+		//
+		BigInteger x = new BigInteger(
+				Utils.hexToBytes("6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296"));
+		byte[] y = SharedSecretCalculation.recomputeEcdsaYFromX(x.toByteArray());
+
+
+		BigInteger expectedY = new BigInteger(
+				Utils.hexToBytes("4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5"));
+
+		System.out.println("Y " + Utils.bytesToHex(y));
+		System.out.println("Expected Y " + Utils.bytesToHex(expectedY.toByteArray()));
+
+		Assert.assertArrayEquals(expectedY.toByteArray(), y);
+
+		//
+		x = new BigInteger(Utils.hexToBytes("a2339c12d4a03c33546de533268b4ad667debf458b464d77443636440ee7fec3"));
+		y = SharedSecretCalculation.recomputeEcdsaYFromX(x.toByteArray());
+
+		expectedY = new BigInteger(
+				Utils.hexToBytes("ef48a3ab26e20220bcda2c1851076839dae88eae962869a497bf73cb66faf536"));
+
+		System.out.println("Y " + Utils.bytesToHex(y));
+		System.out.println("Expected Y " + Utils.bytesToHex(expectedY.toByteArray()));
+
+		Assert.assertArrayEquals(expectedY.toByteArray(), y);
+
+		//
+		x = new BigInteger(Utils.hexToBytes("a28a2edf58025668f724aaf83a50956b7ac1cfbbff79b08c3bf87dfd2828d767"));
+		y = SharedSecretCalculation.recomputeEcdsaYFromX(x.toByteArray());
+
+		expectedY = new BigInteger(
+				Utils.hexToBytes("dfa7bfffd4c766b86abeaf5c99b6e50cb9ccc9d9d00b7ffc7804b0491b67bc03"));
+
+		System.out.println("Y " + Utils.bytesToHex(y));
+		System.out.println("Expected Y " + Utils.bytesToHex(expectedY.toByteArray()));
+
+		Assert.assertArrayEquals(expectedY.toByteArray(), y);
+
+		// This test fails but that is because the other possibly Y is found
+		// x = new
+		// BigInteger(Utils.hexToBytes("7c9e950841d26c8dde8994398b8f5d475a022bc63de7773fcf8d552e01f1ba0a"));
+		// y = SharedSecretCalculation.recomputeEcdsaYFromX(x.toByteArray());
+		//
+		// expectedY = new BigInteger(
+		// Utils.hexToBytes("cc42b9885c9b3bee0f8d8c57d3a8f6355016c019c4062fa22cff2f209b5cc2e1"));
+		//
+		// System.out.println("Y " + Utils.bytesToHex(y));
+		// System.out.println("Expected Y " +
+		// Utils.bytesToHex(expectedY.toByteArray()));
+		//
+		// Assert.assertArrayEquals(expectedY.toByteArray(), y);
+
+	}
+
+	/**
+	 * Tests calculating a shared secret based on 2 different public keys where
+	 * their Y values are different (but still correct for the X value.)
+	 */
+	@Test
+	public void sharedSecretSameXDifferentY() {
+		byte[] publicX = Utils.hexToBytes("7c9e950841d26c8dde8994398b8f5d475a022bc63de7773fcf8d552e01f1ba0a");
+		byte[] publicY1 = Utils.hexToBytes("33bd4676a364c412f07273a82c5709caafe93fe73bf9d05dd300d0df64a33d1e");
+		byte[] publicY2 = Utils.hexToBytes("cc42b9885c9b3bee0f8d8c57d3a8f6355016c019c4062fa22cff2f209b5cc2e1");
+
+		OneKey publicKeyY1 = SharedSecretCalculation.buildEcdsa256OneKey(null,
+				publicX, publicY1);
+		OneKey publicKeyY2 = SharedSecretCalculation.buildEcdsa256OneKey(null,
+				publicX, publicY2);
+
+		OneKey privateKey = SharedSecretCalculation.buildEcdsa256OneKey(
+				Utils.hexToBytes("57c92077664146e876760c9520d054aa93c3afb04e306705db6090308507b4d3"),
+				Utils.hexToBytes("bac5b11cad8f99f9c72b05cf4b9e26d244dc189f745228255a219a86d6a09eff"),
+				Utils.hexToBytes("20138bf82dc1b6d562be0fa54ab7804a3a64b6d72ccfed6b6fb6ed28bbfc117e"));
+
+		byte[] secret1 = SharedSecretCalculation.generateSharedSecret(privateKey, publicKeyY1);
+		byte[] secret2 = SharedSecretCalculation.generateSharedSecret(privateKey, publicKeyY2);
+
+		System.out.println("Secret1 " + Utils.bytesToHex(secret1));
+		System.out.println("Secret2 " + Utils.bytesToHex(secret2));
+
+		Assert.assertArrayEquals(secret1, secret2);
+
+		// Now try with a third key that is using the buildEcdsa256OneKey method
+		// (that should rebuild one Y value automatically)
+		OneKey publicKey3 = SharedSecretCalculation.buildEcdsa256OneKey(null, publicX, null);
+		byte[] secret3 = SharedSecretCalculation.generateSharedSecret(privateKey, publicKey3);
+		Assert.assertArrayEquals(secret1, secret3);
+		/*
+		 * { / kty / 1:2, / kid / 2:h'E1', / crv / -1:1, / x /
+		 * -2:h'bac5b11cad8f99f9c72b05cf4b9e26d244dc189f745228255a219
+		 * a86d6a09eff', / y /
+		 * -3:h'20138bf82dc1b6d562be0fa54ab7804a3a64b6d72ccfed6b6fb6e
+		 * d28bbfc117e', / d /
+		 * -4:h'57c92077664146e876760c9520d054aa93c3afb04e306705db609
+		 * 0308507b4d3' }
+		 */
+	}
+
 
 	/* Start tests */
 
