@@ -549,11 +549,21 @@ public class SharedSecretCalculation {
 	 *
 	 * @param privateKey the private key bytes
 	 * @param publicKeyX the public key X parameter bytes
-	 * @param publicKeyY the public key Y parameter bytes
+	 * @param publicKeyY the public key Y parameter bytes (if none is provided a
+	 *            valid Y will be recomputed)
 	 * 
 	 * @return a OneKey representing the input material
 	 */
 	static OneKey buildEcdsa256OneKey(byte[] privateKey, byte[] publicKeyX, byte[] publicKeyY) {
+
+		if (publicKeyY == null) {
+			try {
+				publicKeyY = recomputeEcdsaYFromX(publicKeyX);
+			} catch (CoseException e) {
+				System.err.println("Failed to recompute missing Y value: " + e);
+			}
+		}
+
 		byte[] rgbX = publicKeyX;
 		byte[] rgbY = publicKeyY;
 		byte[] rgbD = privateKey;
@@ -578,10 +588,46 @@ public class SharedSecretCalculation {
 		return key;
 	}
 
-	@Test
-	public static byte[] calculateEcdsaXFromY(byte[] publicKeyX) throws CoseException {
+	@Deprecated
+	static OneKey buildEcdsa256OneKey(byte[] privateKey, byte[] publicKeyX, boolean publicKeyY) {
+		byte[] rgbX = publicKeyX;
+		byte[] rgbD = privateKey;
 
-		BigInteger x = new BigInteger((publicKeyX));
+		CBORObject keyMap = CBORObject.NewMap();
+
+		keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
+		keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P256);
+		keyMap.Add(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(rgbX));
+		keyMap.Add(KeyKeys.EC2_Y.AsCBOR(), CBORObject.FromObject(publicKeyY));
+		if (privateKey != null)
+			keyMap.Add(KeyKeys.EC2_D.AsCBOR(), CBORObject.FromObject(rgbD));
+
+		OneKey key = null;
+		try {
+			key = new OneKey(keyMap);
+		} catch (CoseException e) {
+			System.err.println("Failed to generate COSE OneKey: " + e);
+		}
+
+		return key;
+	}
+
+	/**
+	 * Will only give one possible Y value.
+	 * 
+	 * @param publicKeyX
+	 * @return
+	 * @throws CoseException
+	 */
+	@Test
+	public static byte[] recomputeEcdsaYFromX(byte[] publicKeyX) throws CoseException {
+
+		// BigInteger x = new BigInteger((publicKeyX));
+		BigInteger x = new BigInteger(1, publicKeyX);
+		// BigInteger x = new BigInteger(publicKeyX); ???
+
+		System.out.println("x len " + x.toByteArray().length);
+		System.out.println("x " + Utils.bytesToHex(x.toByteArray()));
 
 		// secp256r1
 		// y^2 = x^3 + ax + b -> y = +- sqrt(a x + b + x^3)
@@ -590,51 +636,109 @@ public class SharedSecretCalculation {
 		BigInteger B = new BigInteger("5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b", 16);
 		BigInteger three = new BigInteger("3");
 
-		// p == 3 mod 4?
-		// https://math.stackexchange.com/questions/464253/square-roots-in-finite-fields-i-e-mod-pm
-		BigInteger primeMod4 = prime.mod(new BigInteger("4"));
-		System.out.println("p == 3 mod 4: " + primeMod4);
-
+		// x = x.mod(prime); // ???
 		BigInteger xPow3 = x.modPow(three, prime);
 		BigInteger ax = (A.multiply(x)).mod(prime);
-		BigInteger combined = (ax.add(B).add(xPow3)).mod(prime);
+		// BigInteger combined = (ax.add(B).add(xPow3)).mod(prime);
+		BigInteger partial = ax.add(B).mod(prime);
+		BigInteger combined = partial.add(xPow3).mod(prime);
 
-		BigInteger root1 = squareMod(combined).mod(prime);
+		BigInteger root1 = squareMod(combined);
 		BigInteger root2 = root1.negate().mod(prime);
 
-		// Now build keys and try shared secret calc
-		OneKey publicFirstY = SharedSecretCalculation.buildEcdsa256OneKey(null, x.toByteArray(), root1.toByteArray());
-		OneKey publicSecondY = SharedSecretCalculation.buildEcdsa256OneKey(null, x.toByteArray(), root2.toByteArray());
+		// System.out.println("Root1: " +
+		// Utils.bytesToHex(root1.toByteArray()));
+		// System.out.println("Root2: " +
+		// Utils.bytesToHex(root2.toByteArray()));
 
-		// Check if on point (other way) (first y)
+		// Must truncate roots to 32 bytes since they can have leading zeroes
+		// byte[] root1Bytes = Arrays.copyOfRange(root1.toByteArray(),
+		// root1.toByteArray().length - 32,
+		// root1.toByteArray().length);
+		// byte[] root2Bytes = Arrays.copyOfRange(root2.toByteArray(),
+		// root2.toByteArray().length - 32,
+		// root2.toByteArray().length);
+
+		byte[] root1Bytes = root1.toByteArray();
+		byte[] root2Bytes = root2.toByteArray();
+
+		if (root1Bytes.length == 33) {
+			root1Bytes = Arrays.copyOfRange(root1Bytes, 1, 33);
+		}
+		if (root2Bytes.length == 33) {
+			root2Bytes = Arrays.copyOfRange(root2Bytes, 1, 33);
+		}
+
+		byte[] xBytes = x.toByteArray();
+		if (xBytes.length == 33) {
+			xBytes = Arrays.copyOfRange(xBytes, 1, 33);
+		}
+
+		System.out.println("Root1 : " + Utils.bytesToHex(root1Bytes) + " " + root1Bytes.length + " " + root1.signum()
+				+ " " + (Math.ceil((root1.bitLength() + 1) / 8)));
+		System.out.println("Root2 : " + Utils.bytesToHex(root2Bytes) + " " + root2Bytes.length + " " + root2.signum()
+				+ " " + (Math.ceil((root2.bitLength() + 1) / 8)));
+
+		System.out.println("x len " + xBytes.length);
+		System.out.println("x " + Utils.bytesToHex(x.toByteArray()));
+
+		// Now build 2 keys from the potential Y values
+		OneKey possibleKey1 = null;
+		OneKey possibleKey2 = null;
+		try {
+			possibleKey1 = SharedSecretCalculation.buildEcdsa256OneKey(null, xBytes, root1Bytes);
+		} catch (Exception e) {
+			System.out.println("1 " + e);
+			// Failed to build key with this Y
+		}
+		try {
+			possibleKey2 = SharedSecretCalculation.buildEcdsa256OneKey(null, xBytes, root2Bytes);
+		} catch (Exception e) {
+			System.out.println("2 " + e);
+			// Failed to build key with this Y
+		}
+
+		// Check if on point (first y)
 		// jdk.crypto.ec/sun.security.ec.ECDHKeyAgreement
-		ECPublicKey _key = (ECPublicKey) publicFirstY.AsPublicKey();
-		BigInteger _x = _key.getW().getAffineX();
-		System.out.println("First Y Affine X: " + Utils.bytesToHex(_x.toByteArray()));
-		BigInteger _y = _key.getW().getAffineY();
-		System.out.println("First Y Affine Y: " + Utils.bytesToHex(_y.toByteArray()));
-		BigInteger _p = prime;
-		EllipticCurve curve = _key.getParams().getCurve();
-		BigInteger _rhs = _x.modPow(BigInteger.valueOf(3), _p).add(curve.getA().multiply(x)).add(curve.getB()).mod(_p);
-		BigInteger _lhs = _y.modPow(BigInteger.valueOf(2), _p).mod(_p);
-		if (!_rhs.equals(_lhs)) {
-			System.out.println("Key using first Y not on curve!");
-		}
-		// Check if on point (other way) (second y)
-		_key = (ECPublicKey) publicSecondY.AsPublicKey();
-		_x = _key.getW().getAffineX();
-		System.out.println("Second Y Affine X: " + Utils.bytesToHex(_x.toByteArray()));
-		_y = _key.getW().getAffineY();
-		System.out.println("Second Y Affine X: " + Utils.bytesToHex(_y.toByteArray()));
-		_p = prime;
-		curve = _key.getParams().getCurve();
-		_rhs = _x.modPow(BigInteger.valueOf(3), _p).add(curve.getA().multiply(x)).add(curve.getB()).mod(_p);
-		_lhs = _y.modPow(BigInteger.valueOf(2), _p).mod(_p);
-		if (!_rhs.equals(_lhs)) {
-			System.out.println("Key using second Y not on curve!");
+		ECPublicKey keyToTest;
+		BigInteger keyX;
+		BigInteger keyY;
+		BigInteger p = prime;
+		EllipticCurve curve;
+		BigInteger rhs;
+		BigInteger lhs;
+
+		if (possibleKey1 != null) {
+			keyToTest = (ECPublicKey) possibleKey1.AsPublicKey();
+			keyX = keyToTest.getW().getAffineX();
+			keyY = keyToTest.getW().getAffineY();
+			p = prime;
+			curve = keyToTest.getParams().getCurve();
+			rhs = keyX.modPow(BigInteger.valueOf(3), p).add(curve.getA().multiply(x)).add(curve.getB()).mod(p);
+			lhs = keyY.modPow(BigInteger.valueOf(2), p).mod(p);
+			if (!rhs.equals(lhs)) {
+				System.out.println("Key using first Y not on curve!");
+			} else {
+				return possibleKey1.get(KeyKeys.EC2_Y).GetByteString();
+			}
 		}
 
-		return root1.toByteArray();
+		// Check if on point (second y)
+		if (possibleKey2 != null) {
+			keyToTest = (ECPublicKey) possibleKey2.AsPublicKey();
+			keyX = keyToTest.getW().getAffineX();
+			keyY = keyToTest.getW().getAffineY();
+			curve = keyToTest.getParams().getCurve();
+			rhs = keyX.modPow(BigInteger.valueOf(3), p).add(curve.getA().multiply(x)).add(curve.getB()).mod(p);
+			lhs = keyY.modPow(BigInteger.valueOf(2), p).mod(p);
+			if (!rhs.equals(lhs)) {
+				System.out.println("Key using second Y not on curve!");
+			} else {
+				return possibleKey2.get(KeyKeys.EC2_Y).GetByteString();
+			}
+		}
+		System.out.println("Found no fitting Y value.");
+		return null;
 	}
 
 	// Only works if p == 3 mod 4
