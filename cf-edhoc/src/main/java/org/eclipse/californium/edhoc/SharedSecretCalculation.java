@@ -556,6 +556,7 @@ public class SharedSecretCalculation {
 	 */
 	static OneKey buildEcdsa256OneKey(byte[] privateKey, byte[] publicKeyX, byte[] publicKeyY) {
 
+        // Attempt to recalculate Y value if missing
 		if (publicKeyY == null) {
 			try {
 				publicKeyY = recomputeEcdsaYFromX(publicKeyX);
@@ -589,21 +590,34 @@ public class SharedSecretCalculation {
 	}
 
 	/**
-	 * Will only give one possible Y value.
-	 * 
-	 * @param publicKeyX
-	 * @return
-	 * @throws CoseException
-	 */
-	@Test
-	public static byte[] recomputeEcdsaYFromX(byte[] publicKeyX) throws CoseException {
+     * Takes an ECDSA_256 X coordinate and computes a valid Y value for that X.
+     * Will only only return one of the possible Y values.
+     * 
+     * TODO: Add support for ECDSA_384 also.
+     * 
+     * Resources:
+     * https://github.com/conz27/crypto-test-vectors/blob/master/ecdh.py
+     * https://crypto.stackexchange.com/questions/8914/ecdsa-compressed-public-key-point-back-to-uncompressed-public-key-point
+     * https://asecuritysite.com/encryption/js08
+     * https://bitcoin.stackexchange.com/questions/44024/get-uncompressed-public-key-from-compressed-form
+     * http://www-cs-students.stanford.edu/~tjw/jsbn/ecdh.html
+     * https://tools.ietf.org/html/rfc6090#appendix-C
+     * https://math.stackexchange.com/questions/464253/square-roots-in-finite-fields-i-e-mod-pm
+     * http://hg.openjdk.java.net/jdk/jdk/rev/752e57845ad2#l1.97
+     * jdk.crypto.ec/sun.security.ec.ECDHKeyAgreement
+     * 
+     * @param publicKeyX the public key X coordinate
+     * @return the recomputed Y value for that X
+     * @throws CoseException if recomputation fails
+     */
+    static byte[] recomputeEcdsaYFromX(byte[] publicKeyX) throws CoseException {
 
 		// BigInteger x = new BigInteger((publicKeyX));
 		BigInteger x = new BigInteger(1, publicKeyX);
 		// BigInteger x = new BigInteger(publicKeyX); ???
 
-		System.out.println("x len " + x.toByteArray().length);
-		System.out.println("x " + Utils.bytesToHex(x.toByteArray()));
+//		System.out.println("x len " + x.toByteArray().length);
+//		System.out.println("x " + Utils.bytesToHex(x.toByteArray()));
 
 		// secp256r1
 		// y^2 = x^3 + ax + b -> y = +- sqrt(a x + b + x^3)
@@ -612,7 +626,7 @@ public class SharedSecretCalculation {
 		BigInteger B = new BigInteger("5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b", 16);
 		BigInteger three = new BigInteger("3");
 
-		// x = x.mod(prime); // ???
+		// x = x.mod(prime); // Seems not needed
 		BigInteger xPow3 = x.modPow(three, prime);
 		BigInteger ax = (A.multiply(x)).mod(prime);
 		// BigInteger combined = (ax.add(B).add(xPow3)).mod(prime);
@@ -650,13 +664,13 @@ public class SharedSecretCalculation {
 			xBytes = Arrays.copyOfRange(xBytes, 1, 33);
 		}
 
-		System.out.println("Root1 : " + Utils.bytesToHex(root1Bytes) + " " + root1Bytes.length + " " + root1.signum()
-				+ " " + (Math.ceil((root1.bitLength() + 1) / 8)));
-		System.out.println("Root2 : " + Utils.bytesToHex(root2Bytes) + " " + root2Bytes.length + " " + root2.signum()
-				+ " " + (Math.ceil((root2.bitLength() + 1) / 8)));
-
-		System.out.println("x len " + xBytes.length);
-		System.out.println("x " + Utils.bytesToHex(x.toByteArray()));
+//		System.out.println("Root1 : " + Utils.bytesToHex(root1Bytes) + " " + root1Bytes.length + " " + root1.signum()
+//				+ " " + (Math.ceil((root1.bitLength() + 1) / 8)));
+//		System.out.println("Root2 : " + Utils.bytesToHex(root2Bytes) + " " + root2Bytes.length + " " + root2.signum()
+//				+ " " + (Math.ceil((root2.bitLength() + 1) / 8)));
+//
+//		System.out.println("x len " + xBytes.length);
+//		System.out.println("x " + Utils.bytesToHex(x.toByteArray()));
 
 		// Now build 2 keys from the potential Y values
 		OneKey possibleKey1 = null;
@@ -664,14 +678,12 @@ public class SharedSecretCalculation {
 		try {
 			possibleKey1 = SharedSecretCalculation.buildEcdsa256OneKey(null, xBytes, root1Bytes);
 		} catch (Exception e) {
-			System.out.println("1 " + e);
-			// Failed to build key with this Y
+			// Failed to build key with this Y, so it won't be used
 		}
 		try {
 			possibleKey2 = SharedSecretCalculation.buildEcdsa256OneKey(null, xBytes, root2Bytes);
 		} catch (Exception e) {
-			System.out.println("2 " + e);
-			// Failed to build key with this Y
+			// Failed to build key with this Y, so it won't be used
 		}
 
 		// Check if on point (first y)
@@ -717,7 +729,14 @@ public class SharedSecretCalculation {
 		return null;
 	}
 
-	// Only works if p == 3 mod 4
+    /**
+     * Calculates prime roots in a field. Only works if p congruent 3 mod 4.
+     * 
+     * https://math.stackexchange.com/questions/464253/square-roots-in-finite-fields-i-e-mod-pm
+     * 
+     * @param val the value to square
+     * @return one of the square roots
+     */
 	static BigInteger squareMod(BigInteger val) {
 		// root = val^((prime+1) / 4)
 		BigInteger prime = new BigInteger("ffffffff00000001000000000000000000000000ffffffffffffffffffffffff", 16);

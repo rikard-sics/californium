@@ -101,11 +101,10 @@ public class SharedSecretCalculationTest {
 	/**
 	 * Initial testing of calculating ECDSA_256 Y parameter from X.
 	 * 
-	 * TODO: Delete when standalone methods i complete.
-	 * 
 	 * @throws CoseException on test failure
 	 */
 	@Test
+    @Deprecated
 	public void testEcdsaYFromX() throws CoseException {
 		OneKey ecdd = OneKey.generateKey((AlgorithmID.ECDSA_256));
 		System.out.println(Utils.bytesToHex(ecdd.AsPublicKey().getEncoded()));
