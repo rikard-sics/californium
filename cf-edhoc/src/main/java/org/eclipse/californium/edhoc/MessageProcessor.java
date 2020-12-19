@@ -18,13 +18,16 @@
 
 package org.eclipse.californium.edhoc;
 
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 
@@ -504,9 +507,11 @@ public class MessageProcessor {
 		
         if (debugPrint) {
         	System.out.println("===================================");
-        	System.out.println("EDHOC Message 1 content:\n");
+        	System.out.println("Start processing EDHOC Message 2:\n");
         }
 		
+        /* Start preparing data_2 */
+        
 		// C_I as a bstr_identifier
 		int correlationMethod = session.getCorrelation();
 		if (correlationMethod == Constants.EDHOC_CORR_METHOD_0 || correlationMethod == Constants.EDHOC_CORR_METHOD_2) {
@@ -545,7 +550,13 @@ public class MessageProcessor {
         	Util.nicePrint("C_R", objBytes);
         }
 		
+        /* End preparing data_2 */
+        
+        
+        /* Start computing the inner COSE object */
+        
         // Compute TH_2
+        
         byte[] th2 = null;
         byte[] message1 = session.getMessage1(); // message_1 as a CBOR sequence
         byte[] data2 = Util.buildCBORSequence(objectList); // data_2 as a CBOR sequence
@@ -555,17 +566,23 @@ public class MessageProcessor {
         try {
 			th2 = Util.computeHash(hashInput, "SHA-256");
 		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Invalid hash algorithm when computing TH2" + e.getMessage());
+			System.err.println("Invalid hash algorithm when computing TH2\n" + e.getMessage());
+			return null;
 			
 		}
         session.setTH2(th2);
+    	if (debugPrint) {
+    		Util.nicePrint("TH_2", th2);
+    	}
+        
         
         // Compute the external data for the external_aad, as a CBOR sequence
+        
         List<CBORObject> externalDataList = new ArrayList<>();
         externalDataList.add(CBORObject.FromObject(th2)); // TH2 is the first element of the CBOR Sequence
         List<CBORObject> labelList = new ArrayList<>();
         List<CBORObject> valueList = new ArrayList<>();
-        OneKey identityKey = session.getLongTermKey().PublicKey();
+        OneKey identityKey = session.getLongTermKey();
         labelList.add(KeyKeys.KeyType.AsCBOR());
         valueList.add(identityKey.get(KeyKeys.KeyType));
         if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_1) {
@@ -590,9 +607,234 @@ public class MessageProcessor {
         	externalDataList.add(CBORObject.FromObject(ad2)); // AD_2 is the third element of the CBOR Sequence (if provided)
         }
         byte[] externalData = Util.buildCBORSequence(externalDataList); 
-				
+    	if (debugPrint) {
+    		Util.nicePrint("External Data to compute MAC_2", externalData);
+    	}
+        
+        // Prepare the plaintext, as empty
+        
+        byte[] plaintext = new byte[] {};
+        
+        
+        // Compute the key material
+        
+        byte[] prk2e = null;
+        byte[] prk3e2m = null;
+        
+        // Compute the Diffie-Hellman secret G_XY
+        byte[] dhSecret = SharedSecretCalculation.generateSharedSecret(session.getEphemeralKey(),
+        		                                                       session.getPeerEphemeralPublicKey());
+    	if (debugPrint) {
+    		Util.nicePrint("G_XY", dhSecret);
+    	}
+        
+        // Compute PRK_2e
+        try {
+			prk2e = Hkdf.extract(new byte[] {}, dhSecret);
+		} catch (InvalidKeyException e) {
+			System.err.println("Error when generating PRK_2e\n" + e.getMessage());
+			return null;
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("Error when generating PRK_2e\n" + e.getMessage());
+			return null;
+		}
+        session.setPRK2e(prk2e);
+    	if (debugPrint) {
+    		Util.nicePrint("PRK_2e", prk2e);
+    	}
+        
+        
+        // Compute PRK_3e2m
+        int authenticationMethod = session.getMethod();
+        if (authenticationMethod == Constants.EDHOC_AUTH_METHOD_0 || authenticationMethod == Constants.EDHOC_AUTH_METHOD_2) {
+        	// The responded uses signatures as authentication method, then PRK_3e2m is equal to PRK_2e 
+        	prk3e2m = new byte[prk2e.length];
+        	System.arraycopy(prk2e, 0, prk3e2m, 0, prk2e.length);
+        	session.setPRK3e2m(prk3e2m);
+        }
+        else if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_1 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_3) {
+        		// The responded does not use signatures as authentication method, then PRK_3e2m has to be computed
+            	byte[] dhSecret2;
+            	OneKey ownKey = identityKey;
+            	OneKey peerKey = session.getPeerEphemeralPublicKey();
+            	if (identityKey.get(KeyKeys.OKP_Curve) == KeyKeys.OKP_Ed25519) {
+                	// Convert the identity key from Edward to Montgomery form
+                	try {
+						ownKey = SharedSecretCalculation.convertEd25519ToCurve25519(identityKey);
+					} catch (CoseException e) {
+						System.err.println("Error when converting the Responder identity key" + 
+								           "from Edward to Montgomery format\n" + e.getMessage());
+						return null;
+					}
+            	}
+
+        		dhSecret2 = SharedSecretCalculation.generateSharedSecret(ownKey, peerKey);	
+            	try {
+					prk3e2m = Hkdf.extract(prk2e, dhSecret2);
+				} catch (InvalidKeyException e) {
+					System.err.println("Error when generating PRK_3e2m\n" + e.getMessage());
+					return null;
+				} catch (NoSuchAlgorithmException e) {
+					System.err.println("Error when generating PRK_3e2m\n" + e.getMessage());
+					return null;
+				}
+            	session.setPRK3e2m(prk3e2m);
+    	}
+    	if (debugPrint) {
+    		Util.nicePrint("PRK_3e2m", prk3e2m);
+    	}
+        
+        
+    	// Compute K_2m and IV_2m to protect the inner COSE object
+        
+    	int keyLength = 0;
+    	int ivLength = 0;
+    	switch (selectedSuite) {
+		case Constants.EDHOC_CIPHER_SUITE_0:
+		case Constants.EDHOC_CIPHER_SUITE_1:
+		case Constants.EDHOC_CIPHER_SUITE_2:
+		case Constants.EDHOC_CIPHER_SUITE_3:
+			keyLength = 16;
+			ivLength = 13;
+    	}
+    	byte[] k2m = new byte[keyLength];
+    	byte[] iv2m = new byte[ivLength];
+    	try {
+			k2m = session.edhocKDF(prk3e2m, th2, "K_2m", keyLength);
+		} catch (InvalidKeyException e) {
+			System.err.println("Error when generating K_2m\n" + e.getMessage());
+			return null;
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("Error when generating K_2m\n" + e.getMessage());
+			return null;
+		}
+    	if (debugPrint) {
+    		Util.nicePrint("K_2m", k2m);
+    	}
+    	try {
+			iv2m = session.edhocKDF(prk3e2m, th2, "IV_2m", ivLength);
+		} catch (InvalidKeyException e) {
+			System.err.println("Error when generating K_2m\n" + e.getMessage());
+			return null;
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("Error when generating K_2m\n" + e.getMessage());
+			return null;
+		}
+    	if (debugPrint) {
+    		Util.nicePrint("IV_2m", iv2m);
+    	}
+    	
+    	
+    	// Encrypt the inner COSE object and take the ciphertext as MAC_2
+    	
+    	AlgorithmID alg = null;
+    	byte[] mac2 = null;
+    	switch (selectedSuite) {
+    		case Constants.EDHOC_CIPHER_SUITE_0:
+    		case Constants.EDHOC_CIPHER_SUITE_2:
+    			alg = AlgorithmID.AES_CCM_16_64_128;
+    			break;
+    		case Constants.EDHOC_CIPHER_SUITE_1:
+    		case Constants.EDHOC_CIPHER_SUITE_3:
+    			alg = AlgorithmID.AES_CCM_16_128_128;
+    			break;
+    	}
+    	try {
+			mac2 = Util.encrypt(session.getIdCred(), externalData, plaintext, alg, iv2m, k2m);
+		} catch (CoseException e) {
+			System.err.println("Error when computing MAC_2\n" + e.getMessage());
+			return null;
+		}
+    	if (debugPrint) {
+    		Util.nicePrint("MAC_2", mac2);
+    	}
+    	
+    	
+    	// Compute Signature_or_MAC_2
+    	
+    	byte[] signatureOrMac2 = null;
+    	if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_1 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_3) {
+    		// The responded does not use signatures as authentication method, then Signature_or_MAC_2 is equal to MAC_2
+    		signatureOrMac2 = new byte[mac2.length];
+    		System.arraycopy(mac2, 0, signatureOrMac2, 0, mac2.length);
+    	}
+    	else if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_2) {
+    		// The responded uses signatures as authentication method, then Signature_or_MAC_2 has to be computed
+    		try {
+				signatureOrMac2 = Util.computeSignature(session.getIdCred(), externalData, mac2, identityKey);
+			} catch (CoseException e) {
+				System.err.println("Error when signing MAC_2 to produce Signature_or_MAC_2\n" + e.getMessage());
+				return null;
+			}
+    	}
+    	if (debugPrint) {
+    		Util.nicePrint("Signature_or_MAC_2", signatureOrMac2);
+    	}
+    	
+        /* End computing the inner COSE object */
+    
+    	
+    	// The following is as per v -02:   https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#section-4.5
+    	// It's unclear how the initiator side should process EDHOC Message 2 when receiving it
+    	
+    	/* Start computing CIPHERTEXT_2 */
+    
+    	// Prepare the plaintext
+    	List<CBORObject> plaintextElementList = new ArrayList<>();
+    	CBORObject plaintextElement = null;
+    	if (session.getIdCred().size() == 1 && session.getIdCred().ContainsKey(HeaderKeys.KID.AsCBOR())) {
+    		// ID_CRED_R is composed of only 'kid', which is the only thing to include, as a bstr_identifier
+    		CBORObject kid = session.getIdCred().get(HeaderKeys.KID.AsCBOR());
+    		plaintextElement = Util.encodeToBstrIdentifier(kid);
+    	}
+    	else {
+    		// TODO: Again, this requires something better to ensure a deterministic encoding, if the map has more than 2 elements
+    		plaintextElement = session.getIdCred();
+    	}
+    	plaintextElementList.add(plaintextElement);
+    	plaintextElementList.add(CBORObject.FromObject(signatureOrMac2));
+    	if (ad2 != null) {
+        	plaintextElementList.add(CBORObject.FromObject(ad2));
+    	}
+    	plaintext = Util.buildCBORSequence(plaintextElementList);
+    	if (debugPrint) {
+    		Util.nicePrint("Plaintext to compute CIPHERTEXT_2", plaintext);
+    	}
+    	
+    	
+    	// Compute K_2e
+    	
+    	byte[] k2e = new byte[plaintext.length];
+    	try {
+			k2e = session.edhocKDF(prk2e, th2, "K_2e", plaintext.length);
+		} catch (InvalidKeyException e) {
+			System.err.println("Error when generating K_2e\n" + e.getMessage());
+			return null;
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("Error when generating K_2e\n" + e.getMessage());
+			return null;
+		}
+    	if (debugPrint) {
+    		Util.nicePrint("K_2e", k2e);
+    	}
+
+    	
+    	// Compute CIPHERTEXT_2 and add it to the outer CBOR sequence
+    	
+    	byte[] ciphertext2 = Util.arrayXor(plaintext, k2e);
+    	objectList.add(CBORObject.FromObject(ciphertext2));
+    	if (debugPrint) {
+    		Util.nicePrint("CIPHERTEXT_2", ciphertext2);
+    	}
+    	        
+    	/* End computing CIPHERTEXT_2 */
+    	
+    	if (debugPrint) {
+    		Util.nicePrint("EDHOC Message 2", Util.buildCBORSequence(objectList));
+    	}
         // return Util.buildCBORSequence(objectList);
 		
+    	
 		// Return a dummy payload just for testing
 		String responseString = new String("Your payload was good");
 		byte[] responsePayload = responseString.getBytes(Constants.charset);
