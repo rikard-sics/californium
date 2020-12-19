@@ -56,16 +56,16 @@ public class Util {
      *  Compute a ciphertext using the COSE Encrypt0 object
      * @param idCredX   The ID of the public credential of the encrypter, as a CBOR map 
      * @param externalData   The data to use as external_aad
-     * @param payload   The payload to encrypt
+     * @param plaintext   The plaintext to encrypt
      * @param alg   The encryption algorithm to use
      * @param iv   The IV to use for encrypting
      * @param key   The symmetric key to use for encrypting
      * @return  the computed ciphertext, or null in case of invalid input
      */
-	public static byte[] encrypt (CBORObject idCredX, byte[] externalData, byte[] payload, AlgorithmID alg, byte[] iv, byte[] key)
+	public static byte[] encrypt (CBORObject idCredX, byte[] externalData, byte[] plaintext, AlgorithmID alg, byte[] iv, byte[] key)
 			                               throws CoseException {
         
-		if(idCredX == null || externalData == null || payload == null || iv == null || key == null)
+		if(idCredX == null || externalData == null || plaintext == null || iv == null || key == null)
         	return null;       
 		
         // The ID of the public credential has to be a CBOR map ...
@@ -77,8 +77,6 @@ public class Util {
         	return null;
         
         Encrypt0Message msg = new Encrypt0Message();
-        
-        System.out.println("XXX " + idCredX.toString());
         
         // Set the protected header of the COSE object
         for(CBORObject label : idCredX.getKeys()) {
@@ -93,19 +91,22 @@ public class Util {
         msg.setExternal(externalData);
        
         // Set the payload of the COSE object
-        msg.SetContent(payload);
+        msg.SetContent(plaintext);
         
         // Debug print
-        
+        /*
         System.out.println("Protected attributes: " + msg.getProtectedAttributes().toString());
         System.out.println("aad                 : " + Utils.bytesToHex(msg.getExternal()));
-        System.out.println("payload             : " + Utils.bytesToHex(msg.GetContent()));
-        
+        System.out.println("plaintext           : " + Utils.bytesToHex(msg.GetContent()));
+        */
         
         // Perform the encryption
         msg.encrypt(key);
         
+        // Debug print
+        /*
         System.out.println("Encrypted content: " + Utils.bytesToHex(msg.getEncryptedContent()));
+        */
         
         return msg.getEncryptedContent();
         
@@ -115,16 +116,16 @@ public class Util {
      *  Decrypt a ciphertext using the COSE Encrypt0 object
      * @param idCredX   The ID of the public credential of the decrypter, as a CBOR map 
      * @param externalData   The data to use as external_aad
-     * @param payload   The ciphertext to decrypt
+     * @param ciphertext   The ciphertext to decrypt
      * @param alg   The encryption algorithm to use
      * @param iv   The IV to use for decrypting
      * @param key   The symmetric key to use for decrypting
      * @return  the computed plaintext, or null in case of invalid input
      */
-	public static byte[] decrypt (CBORObject idCredX, byte[] externalData, byte[] payload, AlgorithmID alg, byte[] iv, byte[] key)
+	public static byte[] decrypt (CBORObject idCredX, byte[] externalData, byte[] ciphertext, AlgorithmID alg, byte[] iv, byte[] key)
 			                               throws CoseException {
         
-		if(idCredX == null || externalData == null || payload == null || iv == null || key == null)
+		if(idCredX == null || externalData == null || ciphertext == null || iv == null || key == null)
         	return null;       
 		
         // The ID of the public credential has to be a CBOR map ...
@@ -150,7 +151,7 @@ public class Util {
         msg.setExternal(externalData);
        
         // Set the payload of the COSE object
-        msg.setEncryptedContent(payload);
+        msg.setEncryptedContent(ciphertext);
         
         // Debug print
         /*
@@ -162,7 +163,10 @@ public class Util {
         // Perform the encryption
         msg.decrypt(key);
         
+        // Debug print
+        /*
         System.out.println("Decrypted content: " + Utils.bytesToHex(msg.GetContent()));
+        */
         
         return msg.GetContent();
         
