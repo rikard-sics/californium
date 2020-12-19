@@ -78,14 +78,16 @@ public class Util {
         
         Encrypt0Message msg = new Encrypt0Message();
         
+        System.out.println("XXX " + idCredX.toString());
+        
         // Set the protected header of the COSE object
         for(CBORObject label : idCredX.getKeys()) {
             // All good if the map has only one element, otherwise it needs to be rebuilt deterministically
         	msg.addAttribute(label, idCredX.get(label), Attribute.PROTECTED);
         }
         
-        msg.addAttribute(HeaderKeys.Algorithm, alg.AsCBOR(), Attribute.UNPROTECTED);
-        msg.addAttribute(HeaderKeys.IV, iv, Attribute.UNPROTECTED);
+        msg.addAttribute(HeaderKeys.Algorithm, alg.AsCBOR(), Attribute.DO_NOT_SEND);
+        msg.addAttribute(HeaderKeys.IV, iv, Attribute.DO_NOT_SEND);
         
         // Set the external_aad to use for the encryption process
         msg.setExternal(externalData);
@@ -94,11 +96,11 @@ public class Util {
         msg.SetContent(payload);
         
         // Debug print
-        /*
+        
         System.out.println("Protected attributes: " + msg.getProtectedAttributes().toString());
         System.out.println("aad                 : " + Utils.bytesToHex(msg.getExternal()));
         System.out.println("payload             : " + Utils.bytesToHex(msg.GetContent()));
-        */
+        
         
         // Perform the encryption
         msg.encrypt(key);
@@ -141,8 +143,8 @@ public class Util {
         	msg.addAttribute(label, idCredX.get(label), Attribute.PROTECTED);
         }
         
-        msg.addAttribute(HeaderKeys.Algorithm, alg.AsCBOR(), Attribute.UNPROTECTED);
-        msg.addAttribute(HeaderKeys.IV, iv, Attribute.UNPROTECTED);
+        msg.addAttribute(HeaderKeys.Algorithm, alg.AsCBOR(), Attribute.DO_NOT_SEND);
+        msg.addAttribute(HeaderKeys.IV, iv, Attribute.DO_NOT_SEND);
         
         // Set the external_aad to use for the signing process
         msg.setExternal(externalData);
@@ -201,7 +203,7 @@ public class Util {
 		if (alg == null) {
 			alg = determineKeyAlgorithm(signKey).AsCBOR();
 		}
-		msg.addAttribute(HeaderKeys.Algorithm, alg, Attribute.UNPROTECTED);
+		msg.addAttribute(HeaderKeys.Algorithm, alg, Attribute.DO_NOT_SEND);
         
         // Set the external_aad to use for the signing process
         msg.setExternal(externalData);
