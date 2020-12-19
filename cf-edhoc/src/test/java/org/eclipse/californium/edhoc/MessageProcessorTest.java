@@ -3,6 +3,7 @@ package org.eclipse.californium.edhoc;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
@@ -63,8 +64,13 @@ public class MessageProcessorTest {
 		cipherSuites.add(0);
 		OneKey ltk = Util.generateKeyPair(KeyKeys.OKP_Ed25519.AsInt32());
 		byte[] ad = null;
+		
+		// Just for method compatibility; it is not used for EDHOC Message 1
+		byte[] idCredKid = new byte[] {(byte) 0x24};
+		CBORObject idCred = CBORObject.NewMap();
+		idCred.Add(HeaderKeys.KID, idCredKid);
 
-		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, cipherSuites);
+		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, idCred, "", cipherSuites);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = Utils.hexToBytes("ae11a0db863c0227e53992feb8f5924c50d0a7ba6eeab4ad1ff24572f4f57cfa");
@@ -96,9 +102,19 @@ public class MessageProcessorTest {
 		List<Integer> cipherSuites = new ArrayList<Integer>();
 		cipherSuites.add(0);
 		OneKey ltk = Util.generateKeyPair(KeyKeys.OKP_Ed25519.AsInt32());
+		byte[] idCredKid = new byte[] {(byte) 0x24};
 		byte[] ad = null;
 		
-		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, cipherSuites);
+		// Just for method compatibility; it is not used for EDHOC Message 1
+		CBORObject idCred = CBORObject.NewMap();
+		CBORObject idCredElem = CBORObject.NewArray();
+		idCredElem.Add(-15);
+		byte[] truncatedHash = new byte[] {(byte) 0xFC, (byte) 0x79, (byte) 0x99, (byte) 0x0F,
+		                                   (byte) 0x24, (byte) 0x31, (byte) 0xA3, (byte) 0xF5 };
+		idCredElem.Add(CBORObject.FromObject(truncatedHash));
+		idCred.Add(34, idCredElem);
+		
+		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, idCred, "", cipherSuites);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = Utils.hexToBytes("8f781a095372f85b6d9f6109ae422611734d7dbfa0069a2df2935bb2e053bf35");
