@@ -18,6 +18,7 @@
 
 package org.eclipse.californium.edhoc;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -320,7 +321,7 @@ public class MessageProcessor {
 		
 		/* Return an indication to prepare EDHOC Message 2, possibly with the provided Application Data */
 		
-		// A CBOR byte string wihth zero length, indicating that the EDHOC Message 2 can be prepared
+		// A CBOR byte string with zero length, indicating that the EDHOC Message 2 can be prepared
 		processingResult.add(CBORObject.FromObject(responsePayload));
 		
 		// Application Data from AD_1 (if present), as a CBOR byte string
@@ -328,7 +329,7 @@ public class MessageProcessor {
 			processingResult.add(objectListRequest[4]);
 		}
 		
-		System.out.println("Completed preparation of EDHOC Message 1");
+		System.out.println("Completed processing of EDHOC Message 1");
 		return processingResult;
 		
 	}
@@ -499,9 +500,102 @@ public class MessageProcessor {
      */
 	public static byte[] writeMessage2(EdhocSession session, byte[] ad2) {
 		
+		List<CBORObject> objectList = new ArrayList<>();
+		
+        if (debugPrint) {
+        	System.out.println("===================================");
+        	System.out.println("EDHOC Message 1 content:\n");
+        }
+		
+		// C_I as a bstr_identifier
+		int correlationMethod = session.getCorrelation();
+		if (correlationMethod == Constants.EDHOC_CORR_METHOD_0 || correlationMethod == Constants.EDHOC_CORR_METHOD_2) {
+			CBORObject cI = CBORObject.FromObject(session.getPeerConnectionId());
+			objectList.add(Util.encodeToBstrIdentifier(cI));
+	        if (debugPrint) {
+	        	CBORObject obj = CBORObject.FromObject(Util.encodeToBstrIdentifier(cI));
+	        	byte[] objBytes = obj.EncodeToBytes();
+	        	Util.nicePrint("C_I", objBytes);
+	        }
+		}
+		
+		// G_Y as a CBOR byte string
+		CBORObject ephemeralKey = session.getEphemeralKey().AsCBOR();
+		int selectedSuite = session.getSelectedCiphersuite();
+        CBORObject gY = null;
+        if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_1) {
+			gY = session.getEphemeralKey().PublicKey().get(KeyKeys.OKP_X);
+		}
+		else if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_2 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_3) {
+			gY = session.getEphemeralKey().PublicKey().get(KeyKeys.EC2_X);
+		}
+		objectList.add(gY);
+        if (debugPrint) {
+        	CBORObject obj = CBORObject.FromObject(gY);
+        	byte[] objBytes = obj.EncodeToBytes();
+        	Util.nicePrint("G_Y", objBytes);
+        }
+		
+		// C_R as a bstr_identifier
+		CBORObject cR = CBORObject.FromObject(session.getConnectionId());
+		objectList.add(Util.encodeToBstrIdentifier(cR));
+        if (debugPrint) {
+        	CBORObject obj = CBORObject.FromObject(Util.encodeToBstrIdentifier(cR));
+        	byte[] objBytes = obj.EncodeToBytes();
+        	Util.nicePrint("C_R", objBytes);
+        }
+		
+        // Compute TH_2
+        byte[] th2 = null;
+        byte[] message1 = session.getMessage1(); // message_1 as a CBOR sequence
+        byte[] data2 = Util.buildCBORSequence(objectList); // data_2 as a CBOR sequence
+        byte[] hashInput = new byte[message1.length + data2.length];
+        System.arraycopy(message1, 0, hashInput, 0, message1.length);
+        System.arraycopy(data2, 0, hashInput, message1.length, data2.length);
+        try {
+			th2 = Util.computeHash(hashInput, "SHA-256");
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("Invalid hash algorithm when computing TH2" + e.getMessage());
+			
+		}
+        session.setTH2(th2);
+        
+        // Compute the external data for the external_aad, as a CBOR sequence
+        List<CBORObject> externalDataList = new ArrayList<>();
+        externalDataList.add(CBORObject.FromObject(th2)); // TH2 is the first element of the CBOR Sequence
+        List<CBORObject> labelList = new ArrayList<>();
+        List<CBORObject> valueList = new ArrayList<>();
+        OneKey identityKey = session.getLongTermKey().PublicKey();
+        labelList.add(KeyKeys.KeyType.AsCBOR());
+        valueList.add(identityKey.get(KeyKeys.KeyType));
+        if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_1) {
+            labelList.add(KeyKeys.OKP_Curve.AsCBOR());
+            valueList.add(identityKey.get(KeyKeys.OKP_Curve));
+            labelList.add(KeyKeys.OKP_X.AsCBOR());
+            valueList.add(identityKey.get(KeyKeys.OKP_X));
+		}
+		else if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_2 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_3) {
+            labelList.add(KeyKeys.EC2_Curve.AsCBOR());
+            valueList.add(identityKey.get(KeyKeys.EC2_Curve));
+            labelList.add(KeyKeys.EC2_X.AsCBOR());
+            valueList.add(identityKey.get(KeyKeys.EC2_X));
+            labelList.add(KeyKeys.EC2_Y.AsCBOR());
+            valueList.add(identityKey.get(KeyKeys.EC2_Y));
+		}
+        labelList.add(CBORObject.FromObject("subject name"));
+        valueList.add(CBORObject.FromObject(session.getSubjectName()));
+        byte[] credI = Util.buildDeterministicCBORMap(labelList, valueList);
+        externalDataList.add(CBORObject.FromObject(credI)); // CRED_I is the second element of the CBOR Sequence
+        if (ad2 != null) {
+        	externalDataList.add(CBORObject.FromObject(ad2)); // AD_2 is the third element of the CBOR Sequence (if provided)
+        }
+        byte[] externalData = Util.buildCBORSequence(externalDataList); 
+				
+        // return Util.buildCBORSequence(objectList);
+		
+		// Return a dummy payload just for testing
 		String responseString = new String("Your payload was good");
 		byte[] responsePayload = responseString.getBytes(Constants.charset);
-		
 		return responsePayload;
 		
 	}
