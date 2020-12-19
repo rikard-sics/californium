@@ -26,6 +26,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.junit.Assert;
@@ -190,8 +191,13 @@ public class VectorsTxtTest {
 		if (ad1.length == 0) { // Consider len 0 ad as null
 			ad1 = null;
 		}
+		
+		// Just for method compatibility; it is not used for EDHOC Message 1
+		byte[] idCredKid = new byte[] {(byte) 0x24};
+		CBORObject idCred = CBORObject.NewMap();
+		idCred.Add(HeaderKeys.KID, idCredKid);
 
-		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, cipherSuites);
+		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, idCred, "", cipherSuites);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = initiatorEphemeralPrivateList.get(index);
