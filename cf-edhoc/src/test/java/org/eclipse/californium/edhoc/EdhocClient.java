@@ -49,6 +49,7 @@ import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
 import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
 import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 
@@ -72,7 +73,10 @@ public class EdhocClient {
     // private final static int keyCurve = KeyKeys.OKP_X25519.AsInt32();
     
     // The ID_CRED used for the identity key of this peer
-    private static byte[] idCred = null;
+    private static CBORObject idCred = null;
+    
+    // The subject name used for the identity key of this peer
+    private static String subjectName = "myClient";
     
     // The long-term asymmetric key pair of this peer
 	private static OneKey keyPair = null;
@@ -187,14 +191,16 @@ public class EdhocClient {
 			
 			// Build the OneKey object for the identity key pair of this peer
 			keyPair =  new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyPairBase64)));
-			idCred = new byte[] {(byte) 0x00}; // Use 0x00 as ID_CRED for this peer
+			byte[] idCredKid = new byte[] {(byte) 0x00}; // Use 0x00 as ID_CRED for this peer
+			idCred = CBORObject.NewMap();
+			idCred.Add(HeaderKeys.KID.AsCBOR(), idCredKid);
 			
 			// Build the OneKey object for the identity public key of the other peer
 			OneKey peerPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(peerPublicKeyBase64)));
-			CBORObject idCredX = CBORObject.NewMap();
+			CBORObject idCredPeer = CBORObject.NewMap();
 			byte[] kid = new byte[] {(byte) 0x01}; // Use 0x01 as ID_CRED for the other peer
-			idCredX.Add(KeyKeys.KeyId, CBORObject.FromObject(kid));
-			peerPublicKeys.put(idCredX, peerPublicKey);
+			idCredPeer.Add(HeaderKeys.KID.AsCBOR(), CBORObject.FromObject(kid));
+			peerPublicKeys.put(idCredPeer, peerPublicKey);
 			
 		} catch (CoseException e) {
 			System.err.println("Error while generating the key pair");
@@ -306,7 +312,8 @@ public class EdhocClient {
 		
 		int methodCorr = (4 * Constants.EDHOC_AUTH_METHOD_0) + correlationMethod;
 		byte[] connectionId = Util.getConnectionId(usedConnectionIds, null);
-        EdhocSession mySession = new EdhocSession(true, methodCorr, connectionId, keyPair, supportedCiphersuites);
+        EdhocSession mySession = new EdhocSession(true, methodCorr, connectionId, keyPair,
+        										  idCred, subjectName, supportedCiphersuites);
         
         byte[] payloadMessage1 = MessageProcessor.writeMessage1(mySession, null);
         
@@ -315,6 +322,7 @@ public class EdhocClient {
 			System.err.println("Inconsistent state before sending EDHOC Message 1");
 			return;
 		}
+		mySession.setMessage1(payloadMessage1);
 		mySession.setCurrentStep(Constants.EDHOC_AFTER_M1);
 		edhocSessions.put(CBORObject.FromObject(connectionId), mySession);
 		

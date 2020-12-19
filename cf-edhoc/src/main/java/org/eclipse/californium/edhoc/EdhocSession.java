@@ -35,6 +35,8 @@ public class EdhocSession {
 	private int correlation;
 	private byte[] connectionId;
 	private OneKey longTermKey;
+	private CBORObject idCred;
+	private String subjectName;
 	private OneKey ephemeralKey;
 	private List<Integer> supportedCiphersuites;
 	
@@ -46,6 +48,15 @@ public class EdhocSession {
 	private OneKey peerLongTermPublicKey = null;
 	private OneKey peerEphemeralPublicKey = null;
 	
+	// Stored EDHOC Message 1
+	private byte[] message1 = null;
+	
+	// Stored CIPHERTEXT 2
+	private byte[] ciphertext2 = null;
+	
+	// Stored CIPHERTEXT 3
+	private byte[] ciphertext3 = null;
+	
 	// Inner Key-Derivation Keys
 	private byte[] prk_2e = null;
 	private byte[] prk_3e2m = null;
@@ -56,13 +67,16 @@ public class EdhocSession {
 	private byte[] TH3 = null;
 	private byte[] TH4 = null;
 	
-	public EdhocSession(boolean initiator, int methodCorr, byte[] connectionId, OneKey ltk, List<Integer> cipherSuites) {
+	public EdhocSession(boolean initiator, int methodCorr, byte[] connectionId, OneKey ltk,
+						CBORObject idCred, String subjectName, List<Integer> cipherSuites) {
 		
 		this.initiator = initiator;
 		this.method = methodCorr / 4;
 		this.correlation = methodCorr % 4;
 		this.connectionId = connectionId;
 		this.longTermKey = ltk;
+		this.idCred = idCred;
+		this.subjectName = subjectName;
 		this.supportedCiphersuites = cipherSuites;
 		
 		this.selectedCiphersuite = supportedCiphersuites.get(0); 
@@ -116,6 +130,24 @@ public class EdhocSession {
 	public OneKey getLongTermKey() {
 		
 		return this.longTermKey;
+		
+	}
+	
+	/**
+	 * @return  the ID_CRED for the long term key of this peer  
+	 */
+	public CBORObject getIdCred() {
+		
+		return this.idCred;
+		
+	}
+	
+	/**
+	 * @return  the subject name for the long term key of this peer
+	 */
+	public String getSubjectName() {
+		
+		return this.subjectName;
 		
 	}
 	
@@ -246,26 +278,10 @@ public class EdhocSession {
 	}
 	
 	/**
-	 * Set the inner key PRK2e
-	 * @param inputKey   the inner key PRK2e
-	 */
-	public void setPRK2e(byte[] inputKey) {
-		this.prk_2e = inputKey;
-	}
-	
-	/**
-	 * @return  the inner key PRK2e
+	 * @return  the inner key PRK_2e
 	 */
 	public byte[] getPRK2e() {
 		return this.prk_2e;
-	}
-
-	/**
-	 * Set the inner key PRK3e2m
-	 * @param inputKey   the inner key PRK3e2m
-	 */
-	public void setPRK3e2m(byte[] inputKey) {
-		this.prk_3e2m = inputKey;
 	}
 
 	/**
@@ -273,14 +289,6 @@ public class EdhocSession {
 	 */
 	public byte[] getPRK3e2m() {
 		return this.prk_3e2m;
-	}
-	
-	/**
-	 * Set the inner key PRK4x3m
-	 * @param inputKey   the inner key PRK4x3m
-	 */
-	public void setPRK4x3m(byte[] inputKey) {
-		this.prk_4x3m = inputKey;
 	}
 	
 	/**
@@ -333,6 +341,51 @@ public class EdhocSession {
 	 */
 	public byte[] getTH4() {
 		return this.TH4;
+	}
+
+	/**
+	 * @return  the EDHOC Message 1
+	 */
+	public byte[] getMessage1() {
+		return this.message1;
+	}
+	
+	/**
+	 * @param msg  an EDHOC Message 1 to store for later computation of TH2
+	 */
+	public void setMessage1(byte[] msg) {
+		this.message1 = new byte[msg.length];
+		System.arraycopy(msg, 0, this.message1, 0, msg.length);
+	}
+	
+	/**
+	 * @return  the CIPHERTEXT 2
+	 */
+	public byte[] getCiphertext2() {
+		return this.ciphertext2;
+	}
+	
+	/**
+	 * @param ct  store a CIPHERTEXT 2 for later computation of TH3
+	 */
+	public void setCiphertext2(byte[] ct) {
+		this.ciphertext2 = new byte[ct.length];
+		System.arraycopy(ct, 0, this.ciphertext2, 0, ct.length);
+	}
+	
+	/**
+	 * @return  the CIPHERTEXT 3
+	 */
+	public byte[] getCiphertext3() {
+		return this.ciphertext3;
+	}
+	
+	/**
+	 * @param ct  store a CIPHERTEXT 3 for later computation of TH3
+	 */
+	public void setCiphertext3(byte[] ct) {
+		this.ciphertext3 = new byte[ct.length];
+		System.arraycopy(ct, 0, this.ciphertext3, 0, ct.length);
 	}
 	
 	/**
