@@ -349,9 +349,26 @@ public class EdhocClient {
 			return;
 		}
 		
+        boolean discontinue = false;
+        int responseType = -1;
         byte[] responsePayload = edhocMessage2.getPayload();
-        System.out.println("\nResponse: " + new String(responsePayload) + "\n");
+        
+        if (responsePayload == null)
+        	discontinue = true;
+        else {
+        	responseType = MessageProcessor.messageType(responsePayload);
+        	if (responseType != Constants.EDHOC_MESSAGE_2 || responseType == Constants.EDHOC_ERROR_MESSAGE)
+        		discontinue = true;
+        }
+        if (discontinue == true) {
+        	client.shutdown();
+        	return;
+        }
 		
+        String myString = (responseType == Constants.EDHOC_MESSAGE_2) ? "EDHOC Message 2" : "EDHOC Error Message";
+		System.out.println("Response type: " + myString + "\n");
+        Util.nicePrint("Received message", responsePayload);
+        
         
 		/* Process the received response */
 		// TBD

@@ -382,6 +382,38 @@ public class Util {
 	}
 	
     /**
+     *  Concatenate byte arrays, each of which wrapped as a CBOR byte strings
+     * @param objectList   The list of CBOR byte strings wrapping the byte arrays to concatenate
+     * @return  the concatenation of all the byte arrays taken as input
+     */
+	public static byte[] concatenateByteArrays (List<CBORObject> byteStrings) {
+		
+		int outputLength = 0;
+		byte[] myOutput = new byte[0];
+		
+		if (byteStrings == null || byteStrings.size() == 0)
+			return null;
+		
+		for (int i = 0; i < byteStrings.size(); i++) {
+			if (byteStrings.get(i).getType() != CBORType.ByteString)
+				return null;
+			outputLength += byteStrings.get(i).GetByteString().length;
+		}
+		
+		int offset = 0;
+		myOutput = new byte[outputLength];
+		
+		for (int i = 0; i < byteStrings.size(); i++) {
+			byte[] objBytes = byteStrings.get(i).GetByteString();
+			System.arraycopy(objBytes, 0, myOutput, offset, objBytes.length);
+			offset += objBytes.length;
+		}
+		
+		return myOutput;
+		
+	}
+	
+    /**
      *  Build a CBOR map, ensuring the exact order of its entries
      * @param labelList   The labels of the CBOR map entries, already prepared as CBOR objects (uint or tstr)
      * @param valueList   The CBOR Objects to include as values of the CBOR map entries
