@@ -844,15 +844,6 @@ public class MessageProcessor {
     	}
         return Util.buildCBORSequence(objectList);
 		
-    	
-    	// TODO Remove
-		// Return a dummy payload just for testing
-        /*
-		String responseString = new String("Your payload was good");
-		byte[] responsePayload = responseString.getBytes(Constants.charset);
-		return responsePayload;
-		*/
-		
 	}
 	
 	
