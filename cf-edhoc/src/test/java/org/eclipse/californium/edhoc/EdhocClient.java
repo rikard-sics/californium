@@ -96,7 +96,10 @@ public class EdhocClient {
 	// List of supported ciphersuites
 	private static List<Integer> supportedCiphersuites = new ArrayList<Integer>();
 	
-	// A Request and a corresponding Response can be correlated thanks to the CoAP Token
+	// The authentication method to be indicated in EDHOC message 1 (relevant for the Initiator only)
+	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
+	
+	// The correlation method to be indicated in EDHOC message 1 (relevant for the Initiator only)
 	private static int correlationMethod = Constants.EDHOC_CORR_METHOD_1;
 		
 	private static NetworkConfigDefaultHandler DEFAULTS = new NetworkConfigDefaultHandler() {
@@ -310,12 +313,13 @@ public class EdhocClient {
 		
 		/* Prepare and send EDHOC Message 1 */
 		
-		int methodCorr = (4 * Constants.EDHOC_AUTH_METHOD_0) + correlationMethod;
-		byte[] connectionId = Util.getConnectionId(usedConnectionIds, null);
-        EdhocSession mySession = new EdhocSession(true, methodCorr, connectionId, keyPair,
-        										  idCred, subjectName, supportedCiphersuites);
+		// Possibly specify application data for AD_1, or null if none have to be provided
+		byte[] ad1 = null;
         
-        byte[] payloadMessage1 = MessageProcessor.writeMessage1(mySession, null);
+		EdhocSession mySession = MessageProcessor.createSessionAsInitiator
+                (authenticationMethod, correlationMethod, keyPair, idCred, subjectName, supportedCiphersuites, usedConnectionIds);
+		
+        byte[] payloadMessage1 = MessageProcessor.writeMessage1(mySession, ad1);
         
 		// Add the new session to the list of existing EDHOC sessions
 		if (payloadMessage1 == null || mySession.getCurrentStep() != Constants.EDHOC_BEFORE_M1) {
@@ -324,6 +328,7 @@ public class EdhocClient {
 		}
 		mySession.setMessage1(payloadMessage1);
 		mySession.setCurrentStep(Constants.EDHOC_AFTER_M1);
+		byte[] connectionId = mySession.getConnectionId(); 
 		edhocSessions.put(CBORObject.FromObject(connectionId), mySession);
 		
 		Request edhocMessage1 = new Request(Code.POST, Type.CON);

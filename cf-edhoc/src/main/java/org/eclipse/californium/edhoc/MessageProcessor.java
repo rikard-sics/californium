@@ -380,7 +380,7 @@ public class MessageProcessor {
 	}
 	
     /**
-     *  Prepare an EDHOC Message 1
+     *  Write an EDHOC Message 1
      * @param session   The EDHOC session associated to this EDHOC message
      * @param ad1   The auxiliary data, it can be null
      * @return  The raw payload to transmit as EDHOC Message 1, or null in case of errors
@@ -493,10 +493,10 @@ public class MessageProcessor {
         return Util.buildCBORSequence(objectList);
 		
 	}
-	
+
 	
     /**
-     *  Prepare an EDHOC Message 2
+     *  Write an EDHOC Message 2
      * @param session   The EDHOC session associated to this EDHOC message
      * @param ad2   The auxiliary data, it can be null
      * @return  The raw payload to transmit as EDHOC Message 2, or null in case of errors
@@ -525,7 +525,6 @@ public class MessageProcessor {
 		}
 		
 		// G_Y as a CBOR byte string
-		CBORObject ephemeralKey = session.getEphemeralKey().AsCBOR();
 		int selectedSuite = session.getSelectedCiphersuite();
         CBORObject gY = null;
         if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_1) {
@@ -835,10 +834,98 @@ public class MessageProcessor {
         // return Util.buildCBORSequence(objectList);
 		
     	
+    	// TODO Remove
 		// Return a dummy payload just for testing
 		String responseString = new String("Your payload was good");
 		byte[] responsePayload = responseString.getBytes(Constants.charset);
 		return responsePayload;
+		
+	}
+	
+	
+    /**
+     *  Create a new EDHOC session as an Initiator
+     * @param authenticationMethod   The authentication method signaled by the Initiator
+     * @param correlationMethod   The correlation method signaled by the Initiator
+     * @param keyPair   The identity key of the Initiator
+     * @param idCredI   ID_CRED_I for the identity key of the Initiator
+     * @param subjectName   The subject name for the identity key of the Initiator
+     * @param supportedCipherSuites   The list of ciphersuites supported by the Initiator
+     * @param usedConnectionIds   The list of allocated Connection Identifiers for the Initiator
+     * @return  The newly created EDHOC session
+     */
+	public static EdhocSession createSessionAsInitiator(int authenticationMethod, int correlationMethod,
+												  OneKey keyPair, CBORObject idCredI, String subjectName,
+			  									  List<Integer> supportedCiphersuites, List<Set<Integer>> usedConnectionIds) {
+		
+		int methodCorr = (4 * authenticationMethod) + correlationMethod;
+		byte[] connectionId = Util.getConnectionId(usedConnectionIds, null);
+        EdhocSession mySession = new EdhocSession(true, methodCorr, connectionId, keyPair,
+        										  idCredI, subjectName, supportedCiphersuites);
+		
+		return mySession;
+		
+	}
+	
+    /**
+     *  Create a new EDHOC session as a Responder
+     * @param message1   The payload of the received EDHOC Message 1
+     * @param keyPair   The identity key of the Responder
+     * @param idCredR   ID_CRED_R for the identity key of the Responder
+     * @param subjectName   The subject name for the identity key of the Responder
+     * @param supportedCipherSuites   The list of ciphersuites supported by the Responder
+     * @param usedConnectionIds   The list of allocated Connection Identifiers for the Responder
+     * @return  The newly created EDHOC session
+     */
+	public static EdhocSession createSessionAsResponder(byte[] message1, OneKey keyPair, CBORObject idCredR, String subjectName,
+			  									  List<Integer> supportedCiphersuites, List<Set<Integer>> usedConnectionIds) {
+		
+		CBORObject[] objectListMessage1 = CBORObject.DecodeSequenceFromBytes(message1);
+		
+		// Retrieve elements from EDHOC Message 1
+		
+		// METHOD_CORR
+		int methodCorr = objectListMessage1[0].AsInt32();
+		
+		// Selected ciphersuites from SUITES_I
+		int selectedCipherSuite = -1;
+		if (objectListMessage1[1].getType() == CBORType.Integer)
+			selectedCipherSuite = objectListMessage1[1].AsInt32();
+		else if (objectListMessage1[1].getType() == CBORType.Array)
+			selectedCipherSuite = objectListMessage1[1].get(0).AsInt32();
+		
+		// G_X
+		byte[] gX = objectListMessage1[2].GetByteString();
+		
+		// C_I
+		byte[] cI = Util.decodeFromBstrIdentifier(objectListMessage1[3]).GetByteString();
+		
+		// Create a new EDHOC session
+		byte[] connectionId = Util.getConnectionId(usedConnectionIds, null);
+		EdhocSession mySession = new EdhocSession(false, methodCorr, connectionId, keyPair,
+												  idCredR, subjectName, supportedCiphersuites);
+		
+		// Set the selected cipher suite
+		mySession.setSelectedCiphersuite(selectedCipherSuite);
+		
+		// Set the Connection Identifier of the peer
+		mySession.setPeerConnectionId(cI);
+		
+		// Set the ephemeral public key of the initiator
+		OneKey peerEphemeralKey = null;
+		
+		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_1) {
+			peerEphemeralKey = SharedSecretCalculation.buildCurve25519OneKey(null, gX);
+		}
+		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_2 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_3) {
+			// TODO Need a way to build a public-key-only OneKey object starting only from the received 'X' parameter
+		}
+		mySession.setPeerEphemeralPublicKey(peerEphemeralKey);
+		
+		// Store the EDHOC Message 1
+		mySession.setMessage1(message1);
+		
+		return mySession;
 		
 	}
 	

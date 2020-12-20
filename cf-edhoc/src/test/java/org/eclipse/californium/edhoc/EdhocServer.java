@@ -97,7 +97,10 @@ public class EdhocServer extends CoapServer {
 	// List of supported ciphersuites
 	private static List<Integer> supportedCiphersuites = new ArrayList<Integer>();
 	
-	// A Request and a corresponding Response can be correlated thanks to the CoAP Token
+	// The authentication method to be indicated in EDHOC message 1 (relevant for the Initiator only)
+	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
+	
+	// The correlation method to be indicated in EDHOC message 1 (relevant for the Initiator only)
 	private static int correlationMethod = Constants.EDHOC_CORR_METHOD_1;
 	
 	/*
@@ -392,115 +395,87 @@ public class EdhocServer extends CoapServer {
 			
 			System.out.println("\nReceived EDHOC Message\n");
 			
-			byte[] requestPayload = exchange.getRequestPayload();
-			int requestType = MessageProcessor.messageType(requestPayload);
+			byte[] message1 = exchange.getRequestPayload();
+			int messagetType = MessageProcessor.messageType(message1);
 			
 			List<CBORObject> processingResult = new ArrayList<CBORObject>();
-			byte[] responsePayload = new byte[] {};
-
+			byte[] nextMessage = new byte[] {};
+			
+			// Possibly specify application data for AD_2, or null if none have to be provided
+			byte[] ad2 = null;
+			
 			// Invalid EDHOC message type
-			if (requestType == -1) {
+			if (messagetType == -1) {
 				String responseString = new String("Invalid EDHOC message type");
-				responsePayload = responseString.getBytes(Constants.charset);
+				nextMessage = responseString.getBytes(Constants.charset);
 				Response genericErrorResponse = new Response(ResponseCode.BAD_REQUEST);
-				genericErrorResponse.setPayload(responsePayload);
+				genericErrorResponse.setPayload(nextMessage);
 				
 			}
 			
-			System.out.println("Determined EDHOC message type: " + requestType + "\n");
-			Util.nicePrint("EDHOC message " + requestType, requestPayload);
+			System.out.println("Determined EDHOC message type: " + messagetType + "\n");
+			Util.nicePrint("EDHOC message " + messagetType, message1);
 
-			if (requestType == Constants.EDHOC_MESSAGE_1) {
-				processingResult = MessageProcessor.readMessage1(requestPayload, keyPair, usedConnectionIds,
+			/* Start handling EDHOC Message 1 */
+			if (messagetType == Constants.EDHOC_MESSAGE_1) {
+				processingResult = MessageProcessor.readMessage1(message1, keyPair, usedConnectionIds,
 						                                         supportedCiphersuites, edhocSessions);
 
-				responsePayload = processingResult.get(0).GetByteString();
+				// A non-zero length response payload would be an EDHOC Error Message
+				nextMessage = processingResult.get(0).GetByteString();
 
-				// Prepare EDHOC Message 2
-				if (responsePayload.length == 0) {
 				
-					// TODO remove
-					// Force the sending a dummy response to EDHOC Message 1 --- TODO REMOVE
+				
+				
+				// Prepare EDHOC Message 2
+				if (nextMessage.length == 0) {
 					
-					CBORObject[] objectListRequest = CBORObject.DecodeSequenceFromBytes(requestPayload);
-					
-					// Retrieve elements from EDHOC Message 1
-					
-					// METHOD_CORR
-					int methodCorr = objectListRequest[0].AsInt32();
-					
-					// Selected ciphersuites from SUITES_I
-					int selectedCipherSuite = -1;
-					if (objectListRequest[1].getType() == CBORType.Integer)
-						selectedCipherSuite = objectListRequest[1].AsInt32();
-					else if (objectListRequest[1].getType() == CBORType.Array)
-						selectedCipherSuite = objectListRequest[1].get(0).AsInt32();
-					
-					// G_X
-					byte[] gX = objectListRequest[2].GetByteString();
-					
-					// C_I
-					byte[] cI = Util.decodeFromBstrIdentifier(objectListRequest[3]).GetByteString();
-					
-					// Create a new EDHOC session
-					byte[] connectionId = Util.getConnectionId(usedConnectionIds, null);
-					EdhocSession mySession = new EdhocSession(false, methodCorr, connectionId, keyPair,
-															  idCred, subjectName, supportedCiphersuites);
-					
-					// Set the selected cipher suite
-					mySession.setSelectedCiphersuite(selectedCipherSuite);
-					
-					// Set the Connection Identifier of the peer
-					mySession.setPeerConnectionId(cI);
-					
-					// Set the ephemeral public key of the initiator
-					OneKey peerEphemeralKey = null;
-					
-					if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_1) {
-						peerEphemeralKey = SharedSecretCalculation.buildCurve25519OneKey(null, gX);
-					}
-					if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_2 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_3) {
-						// TODO Need a way to build a public-key-only OneKey object starting only from the received 'X' parameter
-					}
-					mySession.setPeerEphemeralPublicKey(peerEphemeralKey);
-					
-					// Store the EDHOC Message 1
-					mySession.setMessage1(requestPayload);
+					EdhocSession mySession = MessageProcessor.createSessionAsResponder
+							                 (message1, keyPair, idCred, subjectName, supportedCiphersuites, usedConnectionIds);
 					
 					// Compute the EDHOC Message 2
-					responsePayload = MessageProcessor.writeMessage2(mySession, null);
+					nextMessage = MessageProcessor.writeMessage2(mySession, ad2);
+
+					byte[] connectionId = mySession.getConnectionId();
 					
-					// Add the new session to the list of existing EDHOC sessions
-					if (responsePayload == null || mySession.getCurrentStep() != Constants.EDHOC_BEFORE_M2) {
+					// Deallocate the assigned Connection Identifier for this peer
+					if (nextMessage == null || mySession.getCurrentStep() != Constants.EDHOC_BEFORE_M2) {
+						Util.releaseConnectionId(connectionId, usedConnectionIds);
 						System.err.println("Inconsistent state before sending EDHOC Message 2");
 						return;
 					}
+					
+					// Add the new session to the list of existing EDHOC sessions
 					mySession.setCurrentStep(Constants.EDHOC_AFTER_M2);
 					edhocSessions.put(CBORObject.FromObject(connectionId), mySession);
 					
 				}
-				int responseType = MessageProcessor.messageType(responsePayload);
+				int responseType = MessageProcessor.messageType(nextMessage);
 				
 				// TODO: REMOVE
 				responseType = Constants.EDHOC_MESSAGE_2; // forcing for testing
 				
 				System.out.println("Response type: " + responseType + "\n");
 				if (responseType != Constants.EDHOC_MESSAGE_2 && responseType != Constants.EDHOC_ERROR_MESSAGE) {
-					responsePayload = null;
+					nextMessage = null;
 				}
 				
-				if (responsePayload != null) {
+				if (nextMessage != null) {
 					Response myResponse = new Response(ResponseCode.CREATED);
 					myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
-					myResponse.setPayload(responsePayload);
+					myResponse.setPayload(nextMessage);
 					
 					if (responseType == Constants.EDHOC_MESSAGE_2) {
 				        System.out.println("Sent EDHOC Message 2\n");
-				        // Util.nicePrint("EDHOC Message 2", responsePayload);
+				        if (debugPrint) {
+				        	Util.nicePrint("EDHOC Message 2", nextMessage);
+				        }
 					}
 					if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
 				        System.out.println("Sent EDHOC Error Message\n");
-				        // Util.nicePrint("EDHOC Error Message", responsePayload);
+				        if (debugPrint) {
+				        	Util.nicePrint("EDHOC Error Message", nextMessage);
+				        }
 					}
 					
 					exchange.respond(myResponse);
@@ -512,6 +487,7 @@ public class EdhocServer extends CoapServer {
 				}
 				
 			}
+			/* End handling EDHOC Message 1 */
 
 		}
 		
