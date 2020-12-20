@@ -1,7 +1,9 @@
 package org.eclipse.californium.edhoc;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.KeyKeys;
@@ -50,45 +52,6 @@ public class MessageProcessorTest {
 	}
 
 	/**
-	 * Test writing of message 1 and compare to the test vector in B.2.
-	 * 
-	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#appendix-B.2.1
-	 */
-	@Test
-	public void testWriteMessage1B2() {
-		// First set up the session to use
-		boolean initiator = true;
-		int methodCorr = 13;
-		byte[] connectionId = new byte[] { 0x16 };
-		List<Integer> cipherSuites = new ArrayList<Integer>();
-		cipherSuites.add(0);
-		OneKey ltk = Util.generateKeyPair(KeyKeys.OKP_Ed25519.AsInt32());
-		byte[] ad = null;
-		
-		// Just for method compatibility; it is not used for EDHOC Message 1
-		byte[] idCredKid = new byte[] {(byte) 0x24};
-		CBORObject idCred = CBORObject.NewMap();
-		idCred.Add(HeaderKeys.KID, idCredKid);
-
-		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, idCred, "", cipherSuites);
-
-		// Force a specific ephemeral key
-		byte[] privateEkeyBytes = Utils.hexToBytes("ae11a0db863c0227e53992feb8f5924c50d0a7ba6eeab4ad1ff24572f4f57cfa");
-		byte[] publicEkeyBytes = Utils.hexToBytes("8d3ef56d1b750a4351d68ac250a0e883790efc80a538a444ee9e2b57e2441a7c");
-		OneKey ek = SharedSecretCalculation.buildCurve25519OneKey(privateEkeyBytes, publicEkeyBytes);
-		session.setEphemeralKey(ek);
-
-		// Now write EDHOC message 1
-		byte[] message1 = MessageProcessor.writeMessage1(session, ad);
-
-		// Compare with the expected value from the test vectors
-		byte[] expectedMessage1 = Utils
-				.hexToBytes("0d0058208d3ef56d1b750a4351d68ac250a0e883790efc80a538a444ee9e2b57e2441a7c21");
-
-		Assert.assertArrayEquals(expectedMessage1, message1);
-	}
-
-	/**
 	 * Test writing of message 1 and compare to the test vector in B.1.
 	 * 
 	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#appendix-B.1.1
@@ -103,7 +66,7 @@ public class MessageProcessorTest {
 		cipherSuites.add(0);
 		OneKey ltk = Util.generateKeyPair(KeyKeys.OKP_Ed25519.AsInt32());
 		byte[] idCredKid = new byte[] {(byte) 0x24};
-		byte[] ad = null;
+		byte[] ad1 = null;
 		
 		// Just for method compatibility; it is not used for EDHOC Message 1
 		CBORObject idCred = CBORObject.NewMap();
@@ -123,7 +86,7 @@ public class MessageProcessorTest {
 		session.setEphemeralKey(ek);
 
 		// Now write EDHOC message 1
-		byte[] message1 = MessageProcessor.writeMessage1(session, ad);
+		byte[] message1 = MessageProcessor.writeMessage1(session, ad1);
 
 		// Compare with the expected value from the test vectors
 		byte[] expectedMessage1 = Utils
@@ -131,4 +94,133 @@ public class MessageProcessorTest {
 
 		Assert.assertArrayEquals(expectedMessage1, message1);
 	}
+	
+	/**
+	 * Test writing of message 1 and compare to the test vector in B.2.
+	 * 
+	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#appendix-B.2.1
+	 */
+	@Test
+	public void testWriteMessage1B2() {
+		// First set up the session to use
+		boolean initiator = true;
+		int methodCorr = 13;
+		byte[] connectionId = new byte[] { 0x16 };
+		List<Integer> cipherSuites = new ArrayList<Integer>();
+		cipherSuites.add(0);
+		OneKey ltk = Util.generateKeyPair(KeyKeys.OKP_X25519.AsInt32());
+		byte[] ad1 = null;
+		
+		// Just for method compatibility; it is not used for EDHOC Message 1
+		byte[] idCredKid = new byte[] {(byte) 0x24};
+		CBORObject idCred = CBORObject.NewMap();
+		idCred.Add(HeaderKeys.KID.AsCBOR(), idCredKid);
+
+		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, idCred, "", cipherSuites);
+
+		// Force a specific ephemeral key
+		byte[] privateEkeyBytes = Utils.hexToBytes("ae11a0db863c0227e53992feb8f5924c50d0a7ba6eeab4ad1ff24572f4f57cfa");
+		byte[] publicEkeyBytes = Utils.hexToBytes("8d3ef56d1b750a4351d68ac250a0e883790efc80a538a444ee9e2b57e2441a7c");
+		OneKey ek = SharedSecretCalculation.buildCurve25519OneKey(privateEkeyBytes, publicEkeyBytes);
+		session.setEphemeralKey(ek);
+
+		// Now write EDHOC message 1
+		byte[] message1 = MessageProcessor.writeMessage1(session, ad1);
+
+		// Compare with the expected value from the test vectors
+		byte[] expectedMessage1 = Utils
+				.hexToBytes("0d0058208d3ef56d1b750a4351d68ac250a0e883790efc80a538a444ee9e2b57e2441a7c21");
+
+		Assert.assertArrayEquals(expectedMessage1, message1);
+		
+	}
+	
+	/**
+	 * Test writing of message 2 and compare to the test vector in B.2.
+	 * 
+	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#appendix-B.2.2
+	 */
+	@Test
+	public void testWriteMessage2B2() {
+
+		boolean initiator = false;
+		int methodCorr = 13;
+		byte[] ad2 = null;
+		
+		
+		/* Responder information*/
+
+		// C_R, in plain binary format
+		byte[] connectionIdResponder = new byte[] { 0x20 };
+		
+		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
+		supportedCipherSuites.add(0);
+		
+		// The identity key of the Responder
+		byte[] privateIdentityKeyBytes = Utils.hexToBytes("bb501aac67b9a95f97e0eded6b82a662934fbbfc7ad1b74c1fcad66a079422d0");
+		byte[] publicIdentityKeyBytes = Utils.hexToBytes("a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
+		OneKey identityKey = SharedSecretCalculation.buildCurve25519OneKey(privateIdentityKeyBytes, publicIdentityKeyBytes);
+		
+		// ID_CRED_R for the identity key of the Responder
+		byte[] idCredKid = new byte[] {(byte) 0x07};
+		CBORObject idCredR = CBORObject.NewMap();
+		idCredR.Add(HeaderKeys.KID.AsCBOR(), idCredKid);
+		
+		// Subject Name of the identity key of the Responder
+		String subjectName = "";
+		
+		// The ephemeral key of the Responder
+		byte[] privateEphemeralKeyBytes = Utils.hexToBytes("c646cddc58126e18105f01ce35056e5ebc35f4d4cc510749a3a5e069c116169a");
+		byte[] publicEphemeralKeyBytes = Utils.hexToBytes("52fba0bdc8d953dd86ce1ab2fd7c05a4658c7c30afdbfc3301047069451baf35");
+		OneKey ephemeralKey = SharedSecretCalculation.buildCurve25519OneKey(privateEphemeralKeyBytes, publicEphemeralKeyBytes);
+
+		
+		/* Initiator information*/
+		
+		// C_I, in plain binary format
+		byte[] connectionIdIiniator = new byte[] { 0x16 };
+		
+		// ID_CRED_I
+		idCredKid = new byte[] {(byte) 0x24};
+		CBORObject idCredI = CBORObject.NewMap();
+		idCredI.Add(HeaderKeys.KID.AsCBOR(), idCredKid);
+
+		// The ephemeral key of the Initiator
+		byte[] privatePeerEphemeralKeyBytes = Utils.hexToBytes("ae11a0db863c0227e53992feb8f5924c50d0a7ba6eeab4ad1ff24572f4f57cfa");
+		byte[] publicPeerEphemeralKeyBytes = Utils.hexToBytes("8d3ef56d1b750a4351d68ac250a0e883790efc80a538a444ee9e2b57e2441a7c");
+		OneKey peerEphemeralPublicKey = SharedSecretCalculation.buildCurve25519OneKey(null, publicPeerEphemeralKeyBytes);
+		
+		
+		/* Set up the session to use */
+		
+		// Create the session
+		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdResponder,
+												identityKey, idCredR, subjectName, supportedCipherSuites);
+
+		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
+		session.setEphemeralKey(ephemeralKey);
+		session.setPeerEphemeralPublicKey(peerEphemeralPublicKey);
+
+		// Set the selected cipher suite
+		session.setSelectedCiphersuite(0);
+		
+		// Set the Connection Identifier of the peer
+		session.setPeerConnectionId(connectionIdIiniator);
+		
+		// Store the EDHOC Message 1
+		byte[] message1 = Utils.hexToBytes("0d0058208d3ef56d1b750a4351d68ac250a0e883790efc80a538a444ee9e2b57e2441a7c21");
+		session.setMessage1(message1);
+		
+		
+		// Now write EDHOC message 1
+		byte[] message2 = MessageProcessor.writeMessage2(session, ad2);
+
+		// Compare with the expected value from the test vectors
+		byte[] expectedMessage2 = Utils
+				.hexToBytes("582052fba0bdc8d953dd86ce1ab2fd7c05a4658c7c30afdbfc3301047069451baf35084adcf6fe9c524c22454deb");
+
+		Assert.assertArrayEquals(expectedMessage2, message2);
+		
+	}
+	
 }
