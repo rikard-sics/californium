@@ -424,9 +424,6 @@ public class EdhocServer extends CoapServer {
 				// A non-zero length response payload would be an EDHOC Error Message
 				nextMessage = processingResult.get(0).GetByteString();
 
-				
-				
-				
 				// Prepare EDHOC Message 2
 				if (nextMessage.length == 0) {
 					
@@ -452,10 +449,6 @@ public class EdhocServer extends CoapServer {
 				}
 				int responseType = MessageProcessor.messageType(nextMessage);
 				
-				// TODO: REMOVE
-				responseType = Constants.EDHOC_MESSAGE_2; // forcing for testing
-				
-				System.out.println("Response type: " + responseType + "\n");
 				if (responseType != Constants.EDHOC_MESSAGE_2 && responseType != Constants.EDHOC_ERROR_MESSAGE) {
 					nextMessage = null;
 				}
@@ -464,6 +457,9 @@ public class EdhocServer extends CoapServer {
 					Response myResponse = new Response(ResponseCode.CREATED);
 					myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
 					myResponse.setPayload(nextMessage);
+					
+					String myString = (responseType == Constants.EDHOC_MESSAGE_2) ? "EDHOC Message 2" : "EDHOC Error Message";
+					System.out.println("Response type: " + myString + "\n");
 					
 					if (responseType == Constants.EDHOC_MESSAGE_2) {
 				        System.out.println("Sent EDHOC Message 2\n");
