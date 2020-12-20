@@ -535,18 +535,15 @@ public class MessageProcessor {
 		}
 		objectList.add(gY);
         if (debugPrint) {
-        	CBORObject obj = CBORObject.FromObject(gY);
-        	byte[] objBytes = obj.EncodeToBytes();
-        	Util.nicePrint("G_Y", objBytes);
+        	Util.nicePrint("G_Y", gY.GetByteString());
         }
 		
 		// C_R as a bstr_identifier
 		CBORObject cR = CBORObject.FromObject(session.getConnectionId());
-		objectList.add(Util.encodeToBstrIdentifier(cR));
+		CBORObject obj = Util.encodeToBstrIdentifier(cR);
+		objectList.add(obj);
         if (debugPrint) {
-        	CBORObject obj = CBORObject.FromObject(Util.encodeToBstrIdentifier(cR));
-        	byte[] objBytes = obj.EncodeToBytes();
-        	Util.nicePrint("C_R", objBytes);
+        	Util.nicePrint("C_R", obj.EncodeToBytes());
         }
 		
         /* End preparing data_2 */
@@ -578,7 +575,12 @@ public class MessageProcessor {
         // Compute the external data for the external_aad, as a CBOR sequence
         
         List<CBORObject> externalDataList = new ArrayList<>();
-        externalDataList.add(CBORObject.FromObject(th2)); // TH2 is the first element of the CBOR Sequence
+        
+        // TH2 is the first element of the CBOR Sequence
+        byte[] th2SerializedCBOR = CBORObject.FromObject(th2).EncodeToBytes();
+        externalDataList.add(CBORObject.FromObject(th2SerializedCBOR));
+        
+        // CRED_I is the second element of the CBOR Sequence
         List<CBORObject> labelList = new ArrayList<>();
         List<CBORObject> valueList = new ArrayList<>();
         OneKey identityKey = session.getLongTermKey();
@@ -600,16 +602,21 @@ public class MessageProcessor {
 		}
         labelList.add(CBORObject.FromObject("subject name"));
         valueList.add(CBORObject.FromObject(session.getSubjectName()));
-        byte[] credI = Util.buildDeterministicCBORMap(labelList, valueList);
-        externalDataList.add(CBORObject.FromObject(credI)); // CRED_I is the second element of the CBOR Sequence
+        byte[] credISerializedCBOR = Util.buildDeterministicCBORMap(labelList, valueList);
+        externalDataList.add(CBORObject.FromObject(credISerializedCBOR));
+        
+        // AD_2 is the third element of the CBOR Sequence (if provided)
         if (ad2 != null) {
-        	externalDataList.add(CBORObject.FromObject(ad2)); // AD_2 is the third element of the CBOR Sequence (if provided)
+            byte[] ad2SerializedCBOR = CBORObject.FromObject(ad2).EncodeToBytes();
+            externalDataList.add(CBORObject.FromObject(ad2SerializedCBOR)); 
         }
-        byte[] externalData = Util.buildCBORSequence(externalDataList); 
+      
+        byte[] externalData = Util.concatenateByteArrays(externalDataList);
     	if (debugPrint) {
     		Util.nicePrint("External Data to compute MAC_2", externalData);
     	}
         
+    	
         // Prepare the plaintext, as empty
         
         byte[] plaintext = new byte[] {};
@@ -651,8 +658,8 @@ public class MessageProcessor {
         	System.arraycopy(prk2e, 0, prk3e2m, 0, prk2e.length);
         	session.setPRK3e2m(prk3e2m);
         }
-        else if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_1 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_3) {
-        		// The responded does not use signatures as authentication method, then PRK_3e2m has to be computed
+        else if (authenticationMethod == Constants.EDHOC_AUTH_METHOD_1 || authenticationMethod == Constants.EDHOC_AUTH_METHOD_3) {
+        		// The responder does not use signatures as authentication method, then PRK_3e2m has to be computed
             	byte[] dhSecret2;
             	OneKey ownKey = identityKey;
             	OneKey peerKey = session.getPeerEphemeralPublicKey();
@@ -667,7 +674,10 @@ public class MessageProcessor {
 					}
             	}
 
-        		dhSecret2 = SharedSecretCalculation.generateSharedSecret(ownKey, peerKey);	
+        		dhSecret2 = SharedSecretCalculation.generateSharedSecret(ownKey, peerKey);
+            	if (debugPrint) {
+            		Util.nicePrint("G_RX", dhSecret2);
+            	}
             	try {
 					prk3e2m = Hkdf.extract(prk2e, dhSecret2);
 				} catch (InvalidKeyException e) {
@@ -752,12 +762,13 @@ public class MessageProcessor {
     	// Compute Signature_or_MAC_2
     	
     	byte[] signatureOrMac2 = null;
-    	if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_1 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_3) {
+    	
+    	if (authenticationMethod == Constants.EDHOC_AUTH_METHOD_1 || authenticationMethod == Constants.EDHOC_AUTH_METHOD_3) {
     		// The responded does not use signatures as authentication method, then Signature_or_MAC_2 is equal to MAC_2
     		signatureOrMac2 = new byte[mac2.length];
     		System.arraycopy(mac2, 0, signatureOrMac2, 0, mac2.length);
     	}
-    	else if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_2) {
+    	else if (authenticationMethod == Constants.EDHOC_AUTH_METHOD_0 || authenticationMethod == Constants.EDHOC_AUTH_METHOD_2) {
     		// The responded uses signatures as authentication method, then Signature_or_MAC_2 has to be computed
     		try {
 				signatureOrMac2 = Util.computeSignature(session.getIdCred(), externalData, mac2, identityKey);
@@ -831,14 +842,16 @@ public class MessageProcessor {
     	if (debugPrint) {
     		Util.nicePrint("EDHOC Message 2", Util.buildCBORSequence(objectList));
     	}
-        // return Util.buildCBORSequence(objectList);
+        return Util.buildCBORSequence(objectList);
 		
     	
     	// TODO Remove
 		// Return a dummy payload just for testing
+        /*
 		String responseString = new String("Your payload was good");
 		byte[] responsePayload = responseString.getBytes(Constants.charset);
 		return responsePayload;
+		*/
 		
 	}
 	
