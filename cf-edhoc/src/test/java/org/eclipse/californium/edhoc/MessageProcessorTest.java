@@ -1,11 +1,8 @@
 package org.eclipse.californium.edhoc;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
@@ -65,10 +62,11 @@ public class MessageProcessorTest {
 		List<Integer> cipherSuites = new ArrayList<Integer>();
 		cipherSuites.add(0);
 		OneKey ltk = Util.generateKeyPair(KeyKeys.OKP_Ed25519.AsInt32());
-		byte[] idCredKid = new byte[] {(byte) 0x24};
 		byte[] ad1 = null;
 		
 		// Just for method compatibility; it is not used for EDHOC Message 1
+		// TODO Do this with building taking 'lkt' and 'cred' as argument
+		byte[] cred = Utils.hexToBytes("47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb28f9cf6180b5a6af31e80209a085cfbf95f3fdcf9b18b693d6c0e0d0ffb8e3f9a32a50859ecd0bfcff2c218");
 		CBORObject idCred = CBORObject.NewMap();
 		CBORObject idCredElem = CBORObject.NewArray();
 		idCredElem.Add(-15);
@@ -77,7 +75,7 @@ public class MessageProcessorTest {
 		idCredElem.Add(CBORObject.FromObject(truncatedHash));
 		idCred.Add(34, idCredElem);
 		
-		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, idCred, "", cipherSuites);
+		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, idCred, cred, cipherSuites);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = Utils.hexToBytes("8f781a095372f85b6d9f6109ae422611734d7dbfa0069a2df2935bb2e053bf35");
@@ -113,10 +111,10 @@ public class MessageProcessorTest {
 		
 		// Just for method compatibility; it is not used for EDHOC Message 1
 		byte[] idCredKid = new byte[] {(byte) 0x24};
-		CBORObject idCred = CBORObject.NewMap();
-		idCred.Add(HeaderKeys.KID.AsCBOR(), idCredKid);
+		CBORObject idCred = Util.buildIdCredKid(idCredKid);
+		byte[] cred = Util.buildCredRawPublicKey(ltk, "");
 
-		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, idCred, "", cipherSuites);
+		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, idCred, cred, cipherSuites);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = Utils.hexToBytes("ae11a0db863c0227e53992feb8f5924c50d0a7ba6eeab4ad1ff24572f4f57cfa");
@@ -166,8 +164,8 @@ public class MessageProcessorTest {
 		byte[] idCredKid = new byte[] {(byte) 0x07};
 		CBORObject idCredR = Util.buildIdCredKid(idCredKid);
 		
-		// Subject Name of the identity key of the Responder
-		String subjectName = "";
+		// CRED_R for the identity key of the Responder
+		byte[] credR = Util.buildCredRawPublicKey(identityKey, "");
 		
 		// The ephemeral key of the Responder
 		byte[] privateEphemeralKeyBytes = Utils.hexToBytes("c646cddc58126e18105f01ce35056e5ebc35f4d4cc510749a3a5e069c116169a");
@@ -189,7 +187,7 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdResponder,
-												identityKey, idCredR, subjectName, supportedCipherSuites);
+												identityKey, idCredR, credR, supportedCipherSuites);
 
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
