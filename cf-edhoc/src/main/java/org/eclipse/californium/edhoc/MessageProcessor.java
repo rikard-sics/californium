@@ -580,7 +580,7 @@ public class MessageProcessor {
         byte[] th2SerializedCBOR = CBORObject.FromObject(th2).EncodeToBytes();
         externalDataList.add(CBORObject.FromObject(th2SerializedCBOR));
         
-        // CRED_I is the second element of the CBOR Sequence
+        // CRED_R is the second element of the CBOR Sequence
         List<CBORObject> labelList = new ArrayList<>();
         List<CBORObject> valueList = new ArrayList<>();
         OneKey identityKey = session.getLongTermKey();
