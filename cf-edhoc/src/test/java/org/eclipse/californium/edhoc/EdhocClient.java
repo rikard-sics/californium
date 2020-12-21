@@ -75,6 +75,9 @@ public class EdhocClient {
     // The ID_CRED used for the identity key of this peer
     private static CBORObject idCred = null;
     
+    // The CRED used for the identity key of this peer
+    private static byte[] cred = null;
+    
     // The subject name used for the identity key of this peer
     private static String subjectName = "myClient";
     
@@ -84,6 +87,11 @@ public class EdhocClient {
 	// Long-term public keys of authorized peers
 	// The map label is a CBOR Map used as ID_CRED_X
 	private static Map<CBORObject, OneKey> peerPublicKeys = new HashMap<CBORObject, OneKey>();
+	
+	// CRED of the long-term public keys of authorized peers
+	// The map label is a CBOR Map used as ID_CRED_X
+	// The map value is a CBOR byte string wrapping the serialization of CRED
+	private static Map<CBORObject, CBORObject> peerCredentials = new HashMap<CBORObject, CBORObject>();
 	
 	// Existing EDHOC Sessions, including completed ones
 	// The map label is C_X, i.e. the connection identifier offered to the other peer in the session, as a bstr_identifier
@@ -198,6 +206,7 @@ public class EdhocClient {
 			byte[] idCredKid = new byte[] {(byte) 0x00}; // Use 0x00 as kid for this peer
 			idCred = Util.buildIdCredKid(idCredKid);
 			// Build the related CRED
+			cred = Util.buildCredRawPublicKey(keyPair, "");
 			
 			// Build the OneKey object for the identity public key of the other peer
 			OneKey peerPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(peerPublicKeyBase64)));
@@ -206,7 +215,8 @@ public class EdhocClient {
 			CBORObject idCredPeer = Util.buildIdCredKid(peerKid);
 			peerPublicKeys.put(idCredPeer, peerPublicKey);
 			// Build the related CRED
-			
+			byte[] peerCred = Util.buildCredRawPublicKey(peerPublicKey, "");
+			peerCredentials.put(idCredPeer, CBORObject.FromObject(peerCred));
 			
 		} catch (CoseException e) {
 			System.err.println("Error while generating the key pair");
@@ -320,7 +330,7 @@ public class EdhocClient {
 		byte[] ad1 = null;
         
 		EdhocSession mySession = MessageProcessor.createSessionAsInitiator
-                (authenticationMethod, correlationMethod, keyPair, idCred, subjectName, supportedCiphersuites, usedConnectionIds);
+                (authenticationMethod, correlationMethod, keyPair, idCred, cred, subjectName, supportedCiphersuites, usedConnectionIds);
 		
         byte[] payloadMessage1 = MessageProcessor.writeMessage1(mySession, ad1);
         
