@@ -135,6 +135,7 @@ public class MessageProcessorTest {
 		
 	}
 	
+	
 	/**
 	 * Test writing of message 2 and compare to the test vector in B.2.
 	 * 
