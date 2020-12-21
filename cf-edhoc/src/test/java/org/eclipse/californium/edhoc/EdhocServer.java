@@ -225,18 +225,22 @@ public class EdhocServer extends CoapServer {
 			Provider EdDSA = new EdDSASecurityProvider();
 			Security.insertProviderAt(EdDSA, 0);
 			
+			// The following considers raw public keys when building ID_CRED_X and CRED_X
+			
 			// Build the OneKey object for the identity key pair of this peer
 			keyPair =  new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyPairBase64)));
-			byte[] idCredKid = new byte[] {(byte) 0x01}; // Use 0x01 as ID_CRED for this peer
-			idCred = CBORObject.NewMap();
-			idCred.Add(HeaderKeys.KID.AsCBOR(), idCredKid);
+			// Build the related ID_CRED
+			byte[] idCredKid = new byte[] {(byte) 0x01}; // Use 0x01 as kid for this peer
+			idCred = Util.buildIdCredKid(idCredKid);
+			// Build the related CRED
 			
 			// Build the OneKey object for the identity public key of the other peer
 			OneKey peerPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(peerPublicKeyBase64)));
-			CBORObject idCredPeer = CBORObject.NewMap();
-			byte[] kid = new byte[] {(byte) 0x00}; // Use 0x00 as ID_CRED for the other peer
-			idCredPeer.Add(HeaderKeys.KID.AsCBOR(), CBORObject.FromObject(kid));
+			// Build the related ID_CRED
+			byte[] peerKid = new byte[] {(byte) 0x00}; // Use 0x00 as kid for the other peer
+			CBORObject idCredPeer = Util.buildIdCredKid(peerKid);
 			peerPublicKeys.put(idCredPeer, peerPublicKey);
+			// Build the related CRED
 			
 		} catch (CoseException e) {
 			System.err.println("Error while generating the key pair");
