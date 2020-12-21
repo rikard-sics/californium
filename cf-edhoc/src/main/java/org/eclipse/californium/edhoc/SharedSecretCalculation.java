@@ -474,8 +474,6 @@ public class SharedSecretCalculation {
 			System.err.println("Failed to generate COSE OneKey: " + e);
 		}
 
-		System.out.println(key.AsCBOR());
-
 		return key;
 	}
 
