@@ -36,7 +36,7 @@ public class EdhocSession {
 	private byte[] connectionId;
 	private OneKey longTermKey;
 	private CBORObject idCred;
-	private String subjectName;
+	private byte[] cred;
 	private OneKey ephemeralKey;
 	private List<Integer> supportedCiphersuites;
 	
@@ -68,7 +68,7 @@ public class EdhocSession {
 	private byte[] TH4 = null;
 	
 	public EdhocSession(boolean initiator, int methodCorr, byte[] connectionId, OneKey ltk,
-						CBORObject idCred, String subjectName, List<Integer> cipherSuites) {
+						CBORObject idCred, byte[] cred, List<Integer> cipherSuites) {
 		
 		this.initiator = initiator;
 		this.method = methodCorr / 4;
@@ -76,7 +76,7 @@ public class EdhocSession {
 		this.connectionId = connectionId;
 		this.longTermKey = ltk;
 		this.idCred = idCred;
-		this.subjectName = subjectName;
+		this.cred = cred;
 		this.supportedCiphersuites = cipherSuites;
 		
 		this.selectedCiphersuite = supportedCiphersuites.get(0); 
@@ -143,11 +143,11 @@ public class EdhocSession {
 	}
 	
 	/**
-	 * @return  the subject name for the long term key of this peer
+	 * @return  the CRED for the long term key of this peer  
 	 */
-	public String getSubjectName() {
+	public byte[] getCred() {
 		
-		return this.subjectName;
+		return this.cred;
 		
 	}
 	
