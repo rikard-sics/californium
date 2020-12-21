@@ -581,28 +581,8 @@ public class MessageProcessor {
         externalDataList.add(CBORObject.FromObject(th2SerializedCBOR));
         
         // CRED_R is the second element of the CBOR Sequence
-        List<CBORObject> labelList = new ArrayList<>();
-        List<CBORObject> valueList = new ArrayList<>();
         OneKey identityKey = session.getLongTermKey();
-        labelList.add(KeyKeys.KeyType.AsCBOR());
-        valueList.add(identityKey.get(KeyKeys.KeyType));
-        if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_1) {
-            labelList.add(KeyKeys.OKP_Curve.AsCBOR());
-            valueList.add(identityKey.get(KeyKeys.OKP_Curve));
-            labelList.add(KeyKeys.OKP_X.AsCBOR());
-            valueList.add(identityKey.get(KeyKeys.OKP_X));
-		}
-		else if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_2 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_3) {
-            labelList.add(KeyKeys.EC2_Curve.AsCBOR());
-            valueList.add(identityKey.get(KeyKeys.EC2_Curve));
-            labelList.add(KeyKeys.EC2_X.AsCBOR());
-            valueList.add(identityKey.get(KeyKeys.EC2_X));
-            labelList.add(KeyKeys.EC2_Y.AsCBOR());
-            valueList.add(identityKey.get(KeyKeys.EC2_Y));
-		}
-        labelList.add(CBORObject.FromObject("subject name"));
-        valueList.add(CBORObject.FromObject(session.getSubjectName()));
-        byte[] credISerializedCBOR = Util.buildDeterministicCBORMap(labelList, valueList);
+        byte[] credISerializedCBOR = Util.buildCredRawPublicKey(identityKey, "");
         externalDataList.add(CBORObject.FromObject(credISerializedCBOR));
         
         // AD_2 is the third element of the CBOR Sequence (if provided)
