@@ -1,12 +1,23 @@
 package org.eclipse.californium.edhoc;
 
+import static org.junit.Assert.fail;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.security.PublicKey;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.upokecenter.cbor.CBORObject;
@@ -125,6 +136,135 @@ public class MessageProcessorTest {
 		Assert.assertArrayEquals(expectedMessage1, message1);
 		
 	}
+	
+	
+	/**
+	 * Test writing of message 2 and compare to the test vector in B.1.
+	 * 
+	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#appendix-B.1.2
+	 */
+	@Test
+	public void testWriteMessage2B1() {
+
+		boolean initiator = false;
+		int methodCorr = 1;
+		byte[] ad2 = null;
+		
+		
+		/* Responder information*/
+
+		// C_R, in plain binary format
+		byte[] connectionIdResponder = new byte[] { 0x2b };
+		
+		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
+		supportedCipherSuites.add(0);
+		
+		// The identity key of the Responder
+		byte[] privateIdentityKeyBytes = Utils.hexToBytes("df69274d713296e246306365372b4683ced5381bfcadcd440a24c391d2fedb94");
+		byte[] publicIdentityKeyBytes = Utils.hexToBytes("a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
+		OneKey identityKey = SharedSecretCalculation.buildEd25519OneKey(privateIdentityKeyBytes, publicIdentityKeyBytes);
+		
+		// The x509 certificate of the Responder
+		byte[] serializedCert = Utils.hexToBytes("47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb28f9cf6180b5a6af31e80209a085cfbf95f3fdcf9b18b693d6c0e0d0ffb8e3f9a32a50859ecd0bfcff2c218");
+		
+		// CRED_R, as serialization of a CBOR byte string wrapping the serialized certificate
+		byte[] credR = CBORObject.FromObject(serializedCert).EncodeToBytes();
+		
+		// ID_CRED_R for the identity key of the Responder, built from the x509 certificate using x5t
+		CBORObject idCredR = Util.buildIdCredX5t(serializedCert);
+		
+		
+		// Open point: the parsing of the certificate fails. Is it an actually valid x509 certificate ?
+		/*
+		ByteArrayInputStream inputStream = new ByteArrayInputStream(credR);
+		try {
+			System.out.println((Utils.bytesToHex(inputStream.readAllBytes())));
+		} catch (IOException e) {
+			fail("Error when printing the input bytes: " + e.getMessage());
+			return;
+		}
+		
+		CertificateFactory certFactory;
+		X509Certificate cert;
+		try {
+			certFactory = CertificateFactory.getInstance("X.509");
+		} catch (CertificateException e) {
+			fail("Error when initializing the Certificate Factory: " + e.getMessage());
+			return;
+		}
+		try {
+			cert = (X509Certificate)certFactory.generateCertificate(inputStream);
+		} catch (CertificateException e) {
+			fail("Error when decoding the x509 certificate: " + e.getMessage());
+			return;
+		}
+		if (cert == null) {
+			fail("Decoded a null certificate");
+			return;
+		}
+		PublicKey pk = cert.getPublicKey();
+		
+		OneKey publicKey;
+		try {
+			publicKey = new OneKey(pk, null);
+		} catch (CoseException e) {
+			fail("Error when rebuilding the COSE key from : " + e.getMessage());
+			return;
+		}
+		byte[] publicPart = publicKey.AsCBOR().get(KeyKeys.OKP_X.AsCBOR()).GetByteString();
+		identityKey = SharedSecretCalculation.buildEd25519OneKey(privateIdentityKeyBytes, publicPart);
+		*/
+		
+		
+		
+		// The ephemeral key of the Responder
+		byte[] privateEphemeralKeyBytes = Utils.hexToBytes("fd8cd877c9ea386e6af34ff7e606c4b64ca831c8ba33134fd4cd7167cabaecda");
+		byte[] publicEphemeralKeyBytes = Utils.hexToBytes("71a3d599c21da18902a1aea810b2b6382ccd8d5f9bf0195281754c5ebcaf301e");
+		OneKey ephemeralKey = SharedSecretCalculation.buildCurve25519OneKey(privateEphemeralKeyBytes, publicEphemeralKeyBytes);
+
+		
+		/* Initiator information*/
+		
+		// C_I, in plain binary format
+		byte[] connectionIdIiniator = new byte[] {};
+
+		// The ephemeral key of the Initiator
+		byte[] publicPeerEphemeralKeyBytes = Utils.hexToBytes("898ff79a02067a16ea1eccb90fa52246f5aa4dd6ec076bba0259d904b7ec8b0c");
+		OneKey peerEphemeralPublicKey = SharedSecretCalculation.buildCurve25519OneKey(null, publicPeerEphemeralKeyBytes);
+		
+		
+		/* Set up the session to use */
+		
+		// Create the session
+		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdResponder,
+												identityKey, idCredR, credR, supportedCipherSuites);
+
+		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
+		session.setEphemeralKey(ephemeralKey);
+		session.setPeerEphemeralPublicKey(peerEphemeralPublicKey);
+
+		// Set the selected cipher suite
+		session.setSelectedCiphersuite(0);
+		
+		// Set the Connection Identifier of the peer
+		session.setPeerConnectionId(connectionIdIiniator);
+		
+		// Store the EDHOC Message 1
+		byte[] message1 = Utils.hexToBytes("01005820898ff79a02067a16ea1eccb90fa52246f5aa4dd6ec076bba0259d904b7ec8b0c40");
+		session.setMessage1(message1);
+		
+		
+		// Now write EDHOC message 1
+		byte[] message2 = MessageProcessor.writeMessage2(session, ad2);
+
+		// Compare with the expected value from the test vectors
+		byte[] expectedMessage2 = Utils
+				.hexToBytes("582071a3d599c21da18902a1aea810b2b6382ccd8d5f9bf0195281754c5ebcaf301e13585099d53801a725bfd6a4e71d0484b755ec383df77a916ec0dbc02bba7c21a200807b4f585f728b671ad678a43aacd33b78ebd566cd004fc6f1d406f01d9704e705b21552a9eb28ea316ab65037d717862e");
+
+		Assert.assertArrayEquals(expectedMessage2, message2);
+		
+	}
+	
 	
 	
 	/**

@@ -36,7 +36,7 @@ public class EdhocSession {
 	private byte[] connectionId;
 	private OneKey longTermKey;
 	private CBORObject idCred;
-	private byte[] cred;
+	private byte[] cred; // This is the serialization of a CBOR object
 	private OneKey ephemeralKey;
 	private List<Integer> supportedCiphersuites;
 	

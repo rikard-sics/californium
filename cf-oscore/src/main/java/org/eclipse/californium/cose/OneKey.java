@@ -45,7 +45,9 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
+import java.security.Provider;
 import java.security.PublicKey;
+import java.security.Security;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECGenParameterSpec;
@@ -59,6 +61,9 @@ import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.spec.EdDSAGenParameterSpec;
 import java.util.ArrayList;
 import java.util.Arrays;
+
+// M.T.
+import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 /**
  *
@@ -115,6 +120,44 @@ public class OneKey {
                 }
                 else throw new CoseException("Invalid key data");
             }
+            
+            
+            
+            /* ********************************************************************************* */
+            /* M.T. Taken from the pull request at https://github.com/cose-wg/COSE-JAVA/pull/103 */
+            
+            else if (Arrays.equals(alg.get(0).value, ASN1.Oid_Ed25519)
+                    || Arrays.equals(alg.get(0).value, ASN1.Oid_Ed448)
+                    || Arrays.equals(alg.get(0).value, ASN1.Oid_X25519)
+                    || Arrays.equals(alg.get(0).value, ASN1.Oid_X448)) {
+                byte[] oid = (byte[]) alg.get(0).value;
+                if (oid == null)
+                    throw new CoseException("Invalid SPKI structure");
+
+                // OKP Key
+                keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_OKP);
+                keyMap.Add(KeyKeys.Algorithm.AsCBOR(), AlgorithmID.EDDSA.AsCBOR());
+                if (Arrays.equals(oid, ASN1.Oid_X25519))
+                    keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_X25519);
+                else if (Arrays.equals(oid, ASN1.Oid_X448))
+                    keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_X448);
+                else if (Arrays.equals(oid, ASN1.Oid_Ed25519))
+                    keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_Ed25519);
+                else if (Arrays.equals(oid, ASN1.Oid_Ed448))
+                    keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_Ed448);
+                else
+                    throw new CoseException("Unsupported curve");
+
+                byte[] keyData = (byte[]) spki.get(1).value;
+                if (keyData[0] == 0) {
+                    keyMap.Add(KeyKeys.OKP_X.AsCBOR(), Arrays.copyOfRange(keyData, 1, keyData.length));
+                } else
+                    throw new CoseException("Invalid key data");
+            }
+            
+            /* ********************************************************************************* */
+            
+            
             else {
                 throw new CoseException("Unsupported Algorithm");
             }
@@ -147,6 +190,51 @@ public class OneKey {
                 byte[] keyData = (byte[]) (pkl.get(2).list).get(1).value;
                 keyMap.Add(KeyKeys.EC2_D.AsCBOR(), keyData);
             }
+            
+            
+            
+            /* ********************************************************************************* */
+            /* M.T. Taken from the pull request at https://github.com/cose-wg/COSE-JAVA/pull/103 */
+            
+            else if (Arrays.equals(alg.get(0).value, ASN1.Oid_Ed25519)
+                    || Arrays.equals(alg.get(0).value, ASN1.Oid_Ed448)
+                    || Arrays.equals(alg.get(0).value, ASN1.Oid_X25519)
+                    || Arrays.equals(alg.get(0).value, ASN1.Oid_X448)) {
+                byte[] oid = (byte[]) alg.get(0).value;
+                if (oid == null)
+                    throw new CoseException("Invalid PKCS8 structure");
+                // OKP Key
+                if (!keyMap.ContainsKey(KeyKeys.KeyType.AsCBOR())) {
+
+                    keyMap.Add(KeyKeys.Algorithm.AsCBOR(), AlgorithmID.EDDSA.AsCBOR());
+                    if (Arrays.equals(oid, ASN1.Oid_X25519))
+                        keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_X25519);
+                    else if (Arrays.equals(oid, ASN1.Oid_X448))
+                        keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_X448);
+                    else if (Arrays.equals(oid, ASN1.Oid_Ed25519))
+                        keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_Ed25519);
+                    else if (Arrays.equals(oid, ASN1.Oid_Ed448))
+                        keyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), KeyKeys.OKP_Ed448);
+                    else
+                        throw new CoseException("Unsupported curve");
+
+                } else {
+                    if (!this.get(KeyKeys.KeyType).equals(KeyKeys.KeyType_OKP)) {
+                        throw new CoseException("Public/Private key don't match");
+                    }
+                }
+
+                ArrayList<ASN1.TagValue> pkdl = ASN1.DecodePKCS8EC(pkl);
+                if (pkdl.get(0).tag != 4)
+                    throw new CoseException("Invalid PKCS8 structure");
+                byte[] keyData = (byte[]) (pkdl.get(0).value);
+                keyMap.Add(KeyKeys.OKP_D.AsCBOR(), keyData);
+            }
+            
+            /* ********************************************************************************* */
+            
+            
+            
             else {
                 throw new CoseException("Unsupported Algorithm");
             }
@@ -791,7 +879,19 @@ public class OneKey {
                     byte[] privateKeyBytes = ASN1.EncodeOctetString(val.GetByteString());
                     byte[] pkcs8 = ASN1.EncodePKCS8(ASN1.AlgorithmIdentifier(oid, null), privateKeyBytes, null);
                     
-                    KeyFactory fact = KeyFactory.getInstance(algName);
+                    
+                    /* ********************************************************************************* */
+                    /* M.T. Explicitly refer to a provider                                               */
+                    Provider EdDSA = new EdDSASecurityProvider();
+        			Security.insertProviderAt(EdDSA, 0);
+                    KeyFactory fact = null;
+					try {
+						fact = KeyFactory.getInstance(algName, "EdDSA");
+					} catch (NoSuchProviderException e) {
+						throw new CoseException("Unable to instantiate a provider", e);
+					}
+					/* ********************************************************************************* */
+					
                     KeySpec keyspec = new PKCS8EncodedKeySpec(pkcs8);
 
                     privateKey = fact.generatePrivate(keyspec);
