@@ -892,6 +892,22 @@ public class Util {
 	}
 	
     /**
+     * Build an ID_CRED using 'x5u'
+     *  
+     * @param cert   The binary serialization of the x509 certificate
+     * @param uri   The URI pointing to the certificate
+     * @return The ID_CRED, as a CBOR map
+     */
+	public static CBORObject buildIdCredX5u(byte[] cert, String uri) {
+		
+		CBORObject idCred = CBORObject.NewMap();
+		
+		idCred.Add(35, uri);
+		return idCred;
+		
+	}
+	
+    /**
      * Build an ID_CRED using 'kid'
      *  
      * @param identityKey   The identity key to encode as CRED
