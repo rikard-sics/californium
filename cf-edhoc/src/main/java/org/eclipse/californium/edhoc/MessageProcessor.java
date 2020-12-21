@@ -833,19 +833,20 @@ public class MessageProcessor {
      * @param correlationMethod   The correlation method signaled by the Initiator
      * @param keyPair   The identity key of the Initiator
      * @param idCredI   ID_CRED_I for the identity key of the Initiator
+     * @param credI   CRED_I for the identity key of the Initiator
      * @param subjectName   The subject name for the identity key of the Initiator
      * @param supportedCipherSuites   The list of ciphersuites supported by the Initiator
      * @param usedConnectionIds   The list of allocated Connection Identifiers for the Initiator
      * @return  The newly created EDHOC session
      */
 	public static EdhocSession createSessionAsInitiator(int authenticationMethod, int correlationMethod,
-												  OneKey keyPair, CBORObject idCredI, String subjectName,
+												  OneKey keyPair, CBORObject idCredI, byte[] credI, String subjectName,
 			  									  List<Integer> supportedCiphersuites, List<Set<Integer>> usedConnectionIds) {
 		
 		int methodCorr = (4 * authenticationMethod) + correlationMethod;
 		byte[] connectionId = Util.getConnectionId(usedConnectionIds, null);
         EdhocSession mySession = new EdhocSession(true, methodCorr, connectionId, keyPair,
-        										  idCredI, subjectName, supportedCiphersuites);
+        										  idCredI, credI, supportedCiphersuites);
 		
 		return mySession;
 		
@@ -856,12 +857,11 @@ public class MessageProcessor {
      * @param message1   The payload of the received EDHOC Message 1
      * @param keyPair   The identity key of the Responder
      * @param idCredR   ID_CRED_R for the identity key of the Responder
-     * @param subjectName   The subject name for the identity key of the Responder
      * @param supportedCipherSuites   The list of ciphersuites supported by the Responder
      * @param usedConnectionIds   The list of allocated Connection Identifiers for the Responder
      * @return  The newly created EDHOC session
      */
-	public static EdhocSession createSessionAsResponder(byte[] message1, OneKey keyPair, CBORObject idCredR, String subjectName,
+	public static EdhocSession createSessionAsResponder(byte[] message1, OneKey keyPair, CBORObject idCredR, byte[] credR,
 			  									  List<Integer> supportedCiphersuites, List<Set<Integer>> usedConnectionIds) {
 		
 		CBORObject[] objectListMessage1 = CBORObject.DecodeSequenceFromBytes(message1);
@@ -887,7 +887,7 @@ public class MessageProcessor {
 		// Create a new EDHOC session
 		byte[] connectionId = Util.getConnectionId(usedConnectionIds, null);
 		EdhocSession mySession = new EdhocSession(false, methodCorr, connectionId, keyPair,
-												  idCredR, subjectName, supportedCiphersuites);
+												  idCredR, credR, supportedCiphersuites);
 		
 		// Set the selected cipher suite
 		mySession.setSelectedCiphersuite(selectedCipherSuite);
