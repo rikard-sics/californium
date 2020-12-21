@@ -845,5 +845,58 @@ public class Util {
 	    return coseKey;
 		
 	}
+	
+    /**
+     * Build an ID_CRED using 'kid'
+     *  
+     * @param kid   The kid to use
+     * @return The ID_CRED, as a CBOR map
+     */
+	public static CBORObject buildIdCredKid(byte[] kid) {
+		
+		CBORObject idCred = CBORObject.NewMap();
+		idCred.Add(HeaderKeys.KID.AsCBOR(), kid);
+		return idCred;
+		
+	}
+	
+    /**
+     * Build an ID_CRED using 'kid'
+     *  
+     * @param identityKey   The identity key to encode as CRED
+     * @param subjectName   The subject name associated to this key, it can be an empty string
+     * @return The CRED, as a byte serialization of a deterministic CBOR map
+     */
+	public static byte[] buildCredRawPublicKey(OneKey identityKey, String subjectName) {
+		
+		if (identityKey  == null || subjectName == null)
+			return null;
+		
+        List<CBORObject> labelList = new ArrayList<>();
+        List<CBORObject> valueList = new ArrayList<>();
+        labelList.add(KeyKeys.KeyType.AsCBOR());
+        valueList.add(identityKey.get(KeyKeys.KeyType));
+        if (identityKey.get(KeyKeys.KeyType) == KeyKeys.KeyType_OKP) {
+            labelList.add(KeyKeys.OKP_Curve.AsCBOR());
+            valueList.add(identityKey.get(KeyKeys.OKP_Curve));
+            labelList.add(KeyKeys.OKP_X.AsCBOR());
+            valueList.add(identityKey.get(KeyKeys.OKP_X));
+		}
+		else if (identityKey.get(KeyKeys.KeyType) == KeyKeys.KeyType_EC2) {
+            labelList.add(KeyKeys.EC2_Curve.AsCBOR());
+            valueList.add(identityKey.get(KeyKeys.EC2_Curve));
+            labelList.add(KeyKeys.EC2_X.AsCBOR());
+            valueList.add(identityKey.get(KeyKeys.EC2_X));
+            labelList.add(KeyKeys.EC2_Y.AsCBOR());
+            valueList.add(identityKey.get(KeyKeys.EC2_Y));
+		}
+		else {
+			return null;
+		}
+        labelList.add(CBORObject.FromObject("subject name"));
+        valueList.add(CBORObject.FromObject(subjectName));
+        return Util.buildDeterministicCBORMap(labelList, valueList);
+		
+	}
         
 }
