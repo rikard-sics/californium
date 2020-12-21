@@ -861,6 +861,37 @@ public class Util {
 	}
 	
     /**
+     * Build an ID_CRED using 'x5t'
+     *  
+     * @param cert   The binary serialization of the x509 certificate
+     * @return The ID_CRED, as a CBOR map
+     */
+	public static CBORObject buildIdCredX5t(byte[] cert) {
+		
+		CBORObject idCred = CBORObject.NewMap();
+		
+		CBORObject idCredElem = CBORObject.NewArray();
+		idCredElem.Add(-15); // SHA-2 256-bit Hash truncated to 64-bits
+		byte[] hash = null;
+		try {
+			hash = Util.computeHash(cert, "SHA-256");
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("Error while hashing the x509 certificate: " + e.getMessage());
+			return null;
+		}
+		if (hash == null) {
+			return null;
+		}
+		byte[] truncatedHash = new byte[8];
+		System.arraycopy(hash, 0, truncatedHash, 0, 8);
+		idCredElem.Add(truncatedHash);
+		
+		idCred.Add(34, idCredElem);
+		return idCred;
+		
+	}
+	
+    /**
      * Build an ID_CRED using 'kid'
      *  
      * @param identityKey   The identity key to encode as CRED

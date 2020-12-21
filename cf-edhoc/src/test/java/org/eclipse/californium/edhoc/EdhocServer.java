@@ -289,16 +289,14 @@ public class EdhocServer extends CoapServer {
 			mySignature = Util.computeSignature(idCredX, externalData, payloadToSign, keyPair);
 	        System.out.println("Signing completed");
 		} catch (CoseException e) {
-			System.err.println("Error while computing the signature");
-			e.printStackTrace();
+			System.err.println("Error while computing the signature: " +  e.getMessage());
 		}
 		
 		boolean verified = false;
 		try {
 			verified = Util.verifySignature(mySignature, idCredX, externalData, payloadToSign, keyPair);
 		} catch (CoseException e) {
-			System.err.println("Error while verifying the signature");
-			e.printStackTrace();
+			System.err.println("Error while verifying the signature: " + e.getMessage());
 		}
 		System.out.println("Signature validity: " + verified);
 		System.out.println();
@@ -322,16 +320,14 @@ public class EdhocServer extends CoapServer {
 			myCiphertext = Util.encrypt(idCredX, externalData, payloadToEncrypt, encryptionAlg, iv, symmetricKey);
 			System.out.println("Encryption completed");
 		} catch (CoseException e) {
-			System.err.println("Error while encrypting");
-			e.printStackTrace();
+			System.err.println("Error while encrypting: " + e.getMessage());
 		}
 		byte[] myPlaintext = null;
 		try {
 			myPlaintext = Util.decrypt(idCredX, externalData, myCiphertext, encryptionAlg, iv, symmetricKey);
 			System.out.println("Decryption completed");
 		} catch (CoseException e) {
-			System.err.println("Error while encrypting");
-			e.printStackTrace();
+			System.err.println("Error while encrypting: " + e.getMessage());
 		}
 		System.out.println("Decryption correctness: " + Arrays.equals(payloadToEncrypt, myPlaintext));
 		System.out.println();

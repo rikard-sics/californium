@@ -244,7 +244,7 @@ public class EdhocClient {
 				try (FileOutputStream out = new FileOutputStream(args[1])) {
 					out.write(response.getPayload());
 				} catch (IOException e) {
-					e.printStackTrace();
+					System.err.println("Error while writing the response payload to file: " +  e.getMessage());
 				}
 			} else {
 				System.out.println(response.getResponseText());
@@ -283,7 +283,7 @@ public class EdhocClient {
 				try (FileOutputStream out = new FileOutputStream(args[1])) {
 					out.write(response.getPayload());
 				} catch (IOException e) {
-					e.printStackTrace();
+					System.err.println("Error while writing the response payload to file: " +  e.getMessage());
 				}
 			} else {
 				System.out.println(response.getResponseText());

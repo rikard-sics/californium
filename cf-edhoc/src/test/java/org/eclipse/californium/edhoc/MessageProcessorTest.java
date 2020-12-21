@@ -65,15 +65,8 @@ public class MessageProcessorTest {
 		byte[] ad1 = null;
 		
 		// Just for method compatibility; it is not used for EDHOC Message 1
-		// TODO Do this with building taking 'lkt' and 'cred' as argument
 		byte[] cred = Utils.hexToBytes("47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb28f9cf6180b5a6af31e80209a085cfbf95f3fdcf9b18b693d6c0e0d0ffb8e3f9a32a50859ecd0bfcff2c218");
-		CBORObject idCred = CBORObject.NewMap();
-		CBORObject idCredElem = CBORObject.NewArray();
-		idCredElem.Add(-15);
-		byte[] truncatedHash = new byte[] {(byte) 0xFC, (byte) 0x79, (byte) 0x99, (byte) 0x0F,
-		                                   (byte) 0x24, (byte) 0x31, (byte) 0xA3, (byte) 0xF5 };
-		idCredElem.Add(CBORObject.FromObject(truncatedHash));
-		idCred.Add(34, idCredElem);
+		CBORObject idCred = Util.buildIdCredX5t(cred);
 		
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, idCred, cred, cipherSuites);
 
