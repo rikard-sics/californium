@@ -240,6 +240,39 @@ public class ASN1 {
         return new TagValue(retTag, result);
     }
     
+    
+    /* ********************************************************************************* */
+    /* M.T. Taken from the pull request at https://github.com/cose-wg/COSE-JAVA/pull/103 */
+    /**
+     * Decode an array of bytes which is supposed to be an ASN.1 encoded octet string.
+     * 
+     * @param offset - starting offset in array to begin decoding
+     * @param encoding - bytes of the ASN.1 encoded value
+     * @return Decoded structure
+     * @throws CoseException - ASN.1 encoding errors
+     */
+    public static TagValue DecodeSimple(int offset, byte[] encoding) throws CoseException {
+        ArrayList<TagValue> result = new ArrayList<TagValue>();
+        int retTag = encoding[offset];
+
+        if (encoding[offset] != 0x04)
+            throw new CoseException("Invalid structure");
+        int[] l = DecodeLength(offset + 1, encoding);
+
+        int sequenceLength = l[1];
+        if (offset + 2 + sequenceLength != encoding.length)
+            throw new CoseException("Invalid sequence");
+
+        int tag = encoding[offset];
+        offset += 1 + l[0];
+        result.add(new TagValue(tag, Arrays.copyOfRange(encoding, offset, offset + l[1])));
+
+        return new TagValue(retTag, result);
+    }
+    /* ********************************************************************************* */
+    
+    
+    
     /**
      * Encode a private key into a PKCS#8 private key structure.
      * 
@@ -318,7 +351,23 @@ public class ASN1 {
         //  Decode the contents of the octet string PrivateKey
         
         byte[] pk = (byte[]) retValue.get(2).value;
-        TagValue pkd = DecodeCompound(0, pk);
+        
+        
+        /* ********************************************************************************* */
+        /* M.T. Taken from the pull request at https://github.com/cose-wg/COSE-JAVA/pull/103 */
+        //TagValue pkd = DecodeCompound(0, pk);
+        TagValue pkd;
+        // First check if it can be decoded as a simple value
+        if (pk[0] == 0x04) { // ASN.1 Octet string
+            pkd = DecodeSimple(0, pk);
+            return pkd.list;
+        }
+
+        // Otherwise proceed to parse as compound value
+        pkd = DecodeCompound(0, pk);
+        /* ********************************************************************************* */
+        
+        
         ArrayList<TagValue> pkdl = pkd.list;
         if (pkd.tag != 0x30) throw new CoseException("Invalid ECPrivateKey");
         if (pkdl.size() < 2 || pkdl.size() > 4) throw new CoseException("Invalid ECPrivateKey");
@@ -345,6 +394,55 @@ public class ASN1 {
         
         return retValue;
     }
+    
+    
+    /* ********************************************************************************* */
+    /* M.T. Taken from the pull request at https://github.com/cose-wg/COSE-JAVA/pull/103 */
+    /**
+     * Decode an EC PKCS#8 private key octet string
+     *
+     * @param pkcs8 The decoded PKCS#8 structure
+     * @return tag/value from the decoded object
+     * @throws CoseException - ASN.1 encoding errors
+     */
+    public static ArrayList<TagValue> DecodePKCS8EC(ArrayList<TagValue> pkcs8) throws CoseException {
+        //  Decode the contents of the octet string PrivateKey
+
+        byte[] pk = pkcs8.get(2).value;
+        TagValue pkd;
+
+        // First check if it can be decoded as a simple value
+        if (pk[0] == 0x04) { // ASN.1 Octet string
+            pkd = DecodeSimple(0, pk);
+            return pkd.list;
+        }
+
+        // Otherwise proceed to parse as compound value
+        pkd = DecodeCompound(0, pk);
+        ArrayList<TagValue> pkdl = pkd.list;
+        if (pkd.tag != 0x30) throw new CoseException("Invalid ECPrivateKey");
+        if (pkdl.size() < 2 || pkdl.size() > 4) throw new CoseException("Invalid ECPrivateKey");
+
+        if (pkdl.get(0).tag != 2 && pkcs8.get(0).value[0] != 1) {
+            throw new CoseException("Invalid ECPrivateKey");
+        }
+
+        if (pkdl.get(1).tag != 4) throw new CoseException("Invalid ECPrivateKey");
+
+        if (pkdl.size() > 2) {
+            if ((pkdl.get(2).tag & 0xff) != 0xA0) {
+                if (pkdl.size() != 3 || (pkdl.get(2).tag & 0xff) != 0xa1) {
+                    throw new CoseException("Invalid ECPrivateKey");
+                }
+            } else {
+                if (pkdl.size() == 4 && (pkdl.get(3).tag & 0xff) != 0xa1) throw new CoseException("Invalid ECPrivateKey");
+            }
+        }
+
+        return pkdl;
+    }
+    /* ********************************************************************************* */
+    
     
     public static byte[] EncodeSignature(byte[] r, byte[] s) throws CoseException {
         ArrayList<byte[]> x = new ArrayList<byte[]>();

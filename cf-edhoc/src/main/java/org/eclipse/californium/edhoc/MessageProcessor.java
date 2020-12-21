@@ -582,7 +582,13 @@ public class MessageProcessor {
         
         // CRED_R is the second element of the CBOR Sequence
         OneKey identityKey = session.getLongTermKey();
-        byte[] credISerializedCBOR = Util.buildCredRawPublicKey(identityKey, "");
+        
+        
+        // TODO REMOVE
+        //byte[] credISerializedCBOR = Util.buildCredRawPublicKey(identityKey, "");
+        
+        
+        byte[] credISerializedCBOR = session.getCred();
         externalDataList.add(CBORObject.FromObject(credISerializedCBOR));
         
         // AD_2 is the third element of the CBOR Sequence (if provided)
