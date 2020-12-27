@@ -432,6 +432,11 @@ public class EdhocServer extends CoapServer {
 				processingResult = MessageProcessor.readMessage1(message1, keyPair, usedConnectionIds,
 						                                         supportedCiphersuites, edhocSessions);
 
+				if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
+					System.err.println("Internal error when processing EDHOC Message 1");
+					return;
+				}
+					
 				// A non-zero length response payload would be an EDHOC Error Message
 				nextMessage = processingResult.get(0).GetByteString();
 
