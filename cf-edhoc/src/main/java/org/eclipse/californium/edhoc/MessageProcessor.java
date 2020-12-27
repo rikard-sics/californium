@@ -352,15 +352,108 @@ public class MessageProcessor {
 	
     /**
      *  Parse an EDHOC Error Message
+     * @param edhocSessions   The list of active EDHOC sessions of the recipient
+     * @param cX   The connection identifier of the recipient; set to null if expected in the EDHOC Error Message
      * @param sequence   The CBOR sequence used as paylod of the EDHOC Error Message
      * @return  The elements of the EDHOC Error Message as CBOR objects, or null in case of errors
      */
-	public static CBORObject[] readErrorMessage(byte[] sequence) {
+	public static CBORObject[] readErrorMessage(Map<CBORObject, EdhocSession> edhocSessions, CBORObject cX, byte[] sequence) {
 		
-		if (sequence == null)
+		if (edhocSessions == null || sequence == null) {
+			System.err.println("Error when processing EDHOC Error Message");
 			return null;
+		}
 		
-		return CBORObject.DecodeSequenceFromBytes(sequence);
+		int index = 0;
+		EdhocSession mySession = null;
+		CBORObject[] objectList = CBORObject.DecodeSequenceFromBytes(sequence);
+		
+		if (objectList.length == 0 || objectList.length > 3) {
+			System.err.println("Error when processing EDHOC Error Message - Zero or too many elements");
+			return null;
+		}
+		
+		// C_X is provided by the method caller
+		if (cX != null) {
+			mySession = edhocSessions.get(cX);
+		}
+		
+		// The connection identifier is expected as first element in the EDHOC Error Message
+		else {
+			
+			if (objectList[index].getType() == CBORType.ByteString) {
+				mySession = edhocSessions.get(objectList[index]);
+				index++;		
+			}
+			else {
+				System.err.println("Error when processing EDHOC Error Message - Invalid format of C_X");
+				return null;
+			}
+			
+		}
+		
+		// No session for this Connection Identifier
+		if (mySession == null) {
+			System.err.println("Error when processing EDHOC Error Message - Impossible to retrieve a session from C_X");
+			return null;
+		}
+		
+		boolean initiator = mySession.isInitiator();
+		int correlation = mySession.getCorrelation();
+		
+		if (initiator == true) {
+			if (correlation != Constants.EDHOC_CORR_METHOD_0 && correlation != Constants.EDHOC_CORR_METHOD_2) {
+				System.err.println("Error when processing EDHOC Error Message - Inconsistent correlation method");
+				return null;
+			}
+		}
+		else if (initiator == false) {
+			if (correlation != Constants.EDHOC_CORR_METHOD_0 && correlation != Constants.EDHOC_CORR_METHOD_1) {
+				System.err.println("Error when processing EDHOC Error Message - Inconsistent correlation method");
+				return null;
+			}
+		}
+		
+		if (objectList[index].getType() != CBORType.TextString) {
+			System.err.println("Error when processing EDHOC Error Message - Invalid format of ERR_MSG");
+			return null;
+		}
+		
+		index++;
+		
+		if (initiator == true && mySession.getCurrentStep() == Constants.EDHOC_AFTER_M1) {
+			
+			if (objectList.length == index){
+				System.err.println("Error when processing EDHOC Error Message - SUITES_R expected but not included");
+				return null;
+			}
+			
+			if (objectList.length > (index + 1)){
+				System.err.println("Error when processing EDHOC Error Message - Unexpected parameters following SUITES_R");
+				return null;
+			}
+			
+			if (objectList[index].getType() != CBORType.Array &&  objectList[index].getType() != CBORType.Integer) {
+				System.err.println("Error when processing EDHOC Error Message - Invalid format for SUITES_R");
+				return null;
+			}
+			
+			if (objectList[index].getType() != CBORType.Array) {
+				for (int i = 0; i < objectList[index].size(); i++) {
+					if (objectList[index].get(i).getType() != CBORType.Integer) {
+						System.err.println("Error when processing EDHOC Error Message - Invalid format for elements of SUITES_R");
+						return null;
+					}
+				}
+			}
+			
+		}
+		else if (objectList.length != index){
+			System.err.println("Error when processing EDHOC Error Message - SUITES_R included while not pertinent");
+			return null;
+		}
+		
+		return objectList;
 		
 	}
 	
@@ -819,17 +912,17 @@ public class MessageProcessor {
 	
     /**
      *  Write an EDHOC Error Message
-     * @param responseTo   The message to which this EDHOC Error Message is intended to reply to
+     * @param replyTo   The message to which this EDHOC Error Message is intended to reply to
      * @param corr   The used correlation method
      * @param cX   The connection identifier of the recipient, it can be null
      * @param errMsg   The text string to include in the EDHOC Error Message
      * @param suitesR   The cipher suite(s) supported by the Responder (only in response to EDHOC Message 1), it can be null
      * @return  The raw payload to transmit as EDHOC Error Message, or null in case of errors
      */
-	public static byte[] writeErrorMessage(int responseTo, int corr, CBORObject cX, String errMsg, CBORObject suitesR) {
+	public static byte[] writeErrorMessage(int replyTo, int corr, CBORObject cX, String errMsg, CBORObject suitesR) {
 		
-		if (responseTo != Constants.EDHOC_MESSAGE_1 && responseTo != Constants.EDHOC_MESSAGE_2 &&
-			responseTo != Constants.EDHOC_MESSAGE_3) {
+		if (replyTo != Constants.EDHOC_MESSAGE_1 && replyTo != Constants.EDHOC_MESSAGE_2 &&
+			replyTo != Constants.EDHOC_MESSAGE_3) {
 				   return null;
 		}
 				
@@ -846,12 +939,12 @@ public class MessageProcessor {
 		// Possibly include C_X - This might not have been included if the incoming EDHOC message was malformed
 		if (cX != null) {
 			
-			if (responseTo == Constants.EDHOC_MESSAGE_1 || responseTo == Constants.EDHOC_MESSAGE_3) {
+			if (replyTo == Constants.EDHOC_MESSAGE_1 || replyTo == Constants.EDHOC_MESSAGE_3) {
 				if (corr == Constants.EDHOC_CORR_METHOD_0 || corr == Constants.EDHOC_CORR_METHOD_2) {
 					includeIdentifier = true;
 				}
 			}
-			else if (responseTo != Constants.EDHOC_MESSAGE_2) {
+			else if (replyTo != Constants.EDHOC_MESSAGE_2) {
 				if (corr == Constants.EDHOC_CORR_METHOD_0 || corr == Constants.EDHOC_CORR_METHOD_1) {
 					includeIdentifier = true;
 				}
@@ -871,7 +964,7 @@ public class MessageProcessor {
 		
 
 		// Possibly include SUITES_R - This implies that EDHOC Message 1 was good enough and yielding a suite negotiation
-		if (responseTo == Constants.EDHOC_MESSAGE_1) {
+		if (replyTo == Constants.EDHOC_MESSAGE_1) {
 			
 			if (suitesR != null) {
 				objectList.add(suitesR);
