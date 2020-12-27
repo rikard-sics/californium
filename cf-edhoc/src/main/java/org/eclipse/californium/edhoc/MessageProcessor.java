@@ -127,19 +127,17 @@ public class MessageProcessor {
 												Map<CBORObject, EdhocSession> edhocSessions) {
 		
 		boolean hasSuites = false; // Will be set to True if SUITES_I is present and valid for further inspection
-		boolean hasCI = false;  // Will be set to True if C_I is present and valid
 		boolean hasApplicationData = false; // Will be set to True if Application Data is present as AD1
 		
 		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
-		
-		// Elements composing the response to be sent back to the client, as CBOR object
-		List<CBORObject> objectListResponse = new ArrayList<CBORObject>();
 		
 		// Serialization of the response to be sent back to the client
 		byte[] responsePayload = new byte[] {};
 		
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
 		String errMsg = null; // The text string to be possibly returned as ERR_MSG in an EDHOC Error Message
+		int correlation = -1; // The correlation method indicated by METHOD_CORR, or left to -1 in case on invalid message
+		CBORObject cI = null; // The Connection Identifier C_I, or left to null in case of invalid message
 		CBORObject suitesR = null; // The SUITE_R element to be possibly returned as SUITES_R in an EDHOC Error Message
 		
 
@@ -151,6 +149,9 @@ public class MessageProcessor {
 		if (objectListRequest[0].getType() != CBORType.Integer) {
 			errMsg = new String("METHOD_CORR must be an integer");
 			error = true;
+		}
+		else {
+			correlation = objectListRequest[0].AsInt32() % 4; 
 		}
 		
 		// SUITES_I
@@ -209,8 +210,8 @@ public class MessageProcessor {
 			errMsg = new String("C_I must be encoded as a valid bstr_identifier");
 			error = true;
 		}
-		if (error == false) {
-			hasCI = true;
+		else {
+			cI = objectListRequest[3];
 		}
 		
 		// AD_1
@@ -292,23 +293,8 @@ public class MessageProcessor {
 		/* Prepare an EDHOC Error Message */
 		
 		if (error == true) {
-			// Possibly include C_I as C_X in the upcoming EDHOC Error Message to send
-			if (hasCI == true) {
-				int correlation = objectListRequest[3].AsInt32() % 4;
-				if (correlation == 0 || correlation == 2)
-					objectListResponse.add(CBORObject.FromObject(correlation));
-			}
 			
-			// Include ERR_MSG in the EDHOC Error Message
-			objectListResponse.add(CBORObject.FromObject(errMsg));
-
-			// Possibly include SUITES_R
-			if (suitesR != null) {
-				objectListResponse.add(suitesR);
-			}
-
-			// The EDHOC Error Message, as a CBOR sequence
-			responsePayload = Util.buildCBORSequence(objectListResponse);
+			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_1, correlation, cI, errMsg, suitesR);
 			processingResult.add(CBORObject.FromObject(responsePayload));
 			
 			// Application Data from AD_1 (if present), as a CBOR byte string
@@ -316,7 +302,6 @@ public class MessageProcessor {
 				processingResult.add(objectListRequest[4]);
 			}
 			
-			System.out.println("Completed preparation of EDHOC Error Message");
 			return processingResult;
 			
 		}
@@ -832,6 +817,76 @@ public class MessageProcessor {
 		
 	}
 	
+    /**
+     *  Write an EDHOC Error Message
+     * @param responseTo   The message to which this EDHOC Error Message is intended to reply to
+     * @param corr   The used correlation method
+     * @param cX   The connection identifier of the recipient, it can be null
+     * @param errMsg   The text string to include in the EDHOC Error Message
+     * @param suitesR   The cipher suite(s) supported by the Responder (only in response to EDHOC Message 1), it can be null
+     * @return  The raw payload to transmit as EDHOC Error Message, or null in case of errors
+     */
+	public static byte[] writeErrorMessage(int responseTo, int corr, CBORObject cX, String errMsg, CBORObject suitesR) {
+		
+		if (responseTo != Constants.EDHOC_MESSAGE_1 && responseTo != Constants.EDHOC_MESSAGE_2 &&
+			responseTo != Constants.EDHOC_MESSAGE_3) {
+				   return null;
+		}
+				
+		if (errMsg == null)
+			return null;
+
+		if (suitesR.getType() != CBORType.Integer && suitesR.getType() != CBORType.Array)
+			return null;
+		
+		List<CBORObject> objectList = new ArrayList<CBORObject>();
+		boolean includeIdentifier = false;
+		byte[] payload;
+			
+		// Possibly include C_X - This might not have been included if the incoming EDHOC message was malformed
+		if (cX != null) {
+			
+			if (responseTo == Constants.EDHOC_MESSAGE_1 || responseTo == Constants.EDHOC_MESSAGE_3) {
+				if (corr == Constants.EDHOC_CORR_METHOD_0 || corr == Constants.EDHOC_CORR_METHOD_2) {
+					includeIdentifier = true;
+				}
+			}
+			else if (responseTo != Constants.EDHOC_MESSAGE_2) {
+				if (corr == Constants.EDHOC_CORR_METHOD_0 || corr == Constants.EDHOC_CORR_METHOD_1) {
+					includeIdentifier = true;
+				}
+			}
+		
+			if (includeIdentifier == true) {
+				
+				objectList.add(CBORObject.FromObject(cX));
+				
+			}
+			
+		}
+
+		
+		// Include ERR_MSG
+		objectList.add(CBORObject.FromObject(errMsg));
+		
+
+		// Possibly include SUITES_R - This implies that EDHOC Message 1 was good enough and yielding a suite negotiation
+		if (responseTo == Constants.EDHOC_MESSAGE_1) {
+			
+			if (suitesR != null) {
+				objectList.add(suitesR);
+			}
+			
+		}
+		
+		
+		// Encode the EDHOC Error Message, as a CBOR sequence
+		payload = Util.buildCBORSequence(objectList);
+		
+		System.out.println("Completed preparation of EDHOC Error Message");
+		return payload;
+		
+	}
 	
     /**
      *  Create a new EDHOC session as an Initiator

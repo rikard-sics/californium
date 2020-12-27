@@ -334,11 +334,12 @@ public class EdhocClient {
 		
         byte[] payloadMessage1 = MessageProcessor.writeMessage1(mySession, ad1);
         
-		// Add the new session to the list of existing EDHOC sessions
 		if (payloadMessage1 == null || mySession.getCurrentStep() != Constants.EDHOC_BEFORE_M1) {
 			System.err.println("Inconsistent state before sending EDHOC Message 1");
 			return;
 		}
+		
+		// Add the new session to the list of existing EDHOC sessions
 		mySession.setMessage1(payloadMessage1);
 		mySession.setCurrentStep(Constants.EDHOC_AFTER_M1);
 		byte[] connectionId = mySession.getConnectionId(); 
