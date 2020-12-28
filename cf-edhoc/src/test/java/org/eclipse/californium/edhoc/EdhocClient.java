@@ -175,7 +175,7 @@ public class EdhocClient {
 			System.exit(-1);
 		}
 		// EDHOC execution with signature key
-		edhocExchangeSignature(args, uri);
+		edhocExchangeAsInitiator(args, uri);
 
 	}
 	
@@ -262,7 +262,7 @@ public class EdhocClient {
 		
 	}
 	
-	private static void edhocExchangeSignature(final String args[], final URI targetUri) {
+	private static void edhocExchangeAsInitiator(final String args[], final URI targetUri) {
 		
 		CoapClient client = new CoapClient(targetUri);
 
@@ -414,7 +414,7 @@ public class EdhocClient {
         	
         	System.out.println("ERR_MSG: " + errMsg + "\n");
         	
-        	// TODO - Retransmit EDHOC Message 1 now knowing the ciphersuites supported by the Responder
+        	// TODO - Send a new EDHOC Message 1, now knowing the ciphersuites supported by the Responder
         	
     		client.shutdown();
     		
