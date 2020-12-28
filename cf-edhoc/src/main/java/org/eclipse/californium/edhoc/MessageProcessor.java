@@ -534,6 +534,12 @@ public class MessageProcessor {
             	Util.nicePrint("SUITES_I", objBytes);
             }
         }
+                
+        // The session has been reused, e.g. following an EDHOC Error Message
+        // Generate new ephemeral key, according to the (updated) selected ciphersuite
+        if (session.getFirstUse() == false) {
+        	session.setEphemeralKey();
+        }
         
         // G_X as a CBOR byte string
         CBORObject gX = null;
@@ -568,6 +574,9 @@ public class MessageProcessor {
         	System.out.println("===================================");
         }
 		
+        // Mark the session as used - Possible reusage will trigger the generation of new ephemeral keys
+        session.setAsUsed();
+        
         return Util.buildCBORSequence(objectList);
 		
 	}
