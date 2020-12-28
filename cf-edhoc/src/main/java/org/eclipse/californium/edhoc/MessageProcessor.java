@@ -492,7 +492,7 @@ public class MessageProcessor {
     	}
     	// SUITES_R has been received, so it is known what ciphersuites the responder supports
     	else {
-    		// Pick the selected ciphersuited as the most preferred by the initiator from the ones supported by the responder
+    		// Pick the selected ciphersuite as the most preferred by the Initiator from the ones supported by the Responder
     		for (Integer i : supportedCiphersuites) {
     			if (peerSupportedCiphersuites.contains(i)) {
     				selectedSuite = i.intValue();

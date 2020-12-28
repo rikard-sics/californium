@@ -93,7 +93,7 @@ public class EdhocServer extends CoapServer {
 	// The map label is a CBOR Map used as ID_CRED_X
 	// The map value is a CBOR byte string wrapping the serialization of CRED
 	private static Map<CBORObject, CBORObject> peerCredentials = new HashMap<CBORObject, CBORObject>();
-	
+
 	// Existing EDHOC Sessions, including completed ones
 	// The map label is C_X, i.e. the connection identifier offered to the other peer in the session, as a bstr_identifier
 	private static Map<CBORObject, EdhocSession> edhocSessions = new HashMap<CBORObject, EdhocSession>();
@@ -146,7 +146,7 @@ public class EdhocServer extends CoapServer {
         	// The set with index 0 refers to Connection Identifiers with size 1 byte
     		usedConnectionIds.add(new HashSet<Integer>());
     	}
-		
+		    	
     	// Uncomment to run tests of different cryptographic operations
 		// runTests();		
 	}
