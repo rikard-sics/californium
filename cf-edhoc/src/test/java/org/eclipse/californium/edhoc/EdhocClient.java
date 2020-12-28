@@ -343,8 +343,9 @@ public class EdhocClient {
 		// Add the new session to the list of existing EDHOC sessions
 		mySession.setMessage1(payloadMessage1);
 		mySession.setCurrentStep(Constants.EDHOC_AFTER_M1);
-		byte[] connectionId = mySession.getConnectionId(); 
-		edhocSessions.put(CBORObject.FromObject(connectionId), mySession);
+		byte[] connectionId = mySession.getConnectionId();
+		CBORObject bstrIdentifier = Util.encodeToBstrIdentifier(CBORObject.FromObject(connectionId));
+		edhocSessions.put(CBORObject.FromObject(bstrIdentifier), mySession);
 		
 		Request edhocMessage1 = new Request(Code.POST, Type.CON);
 		edhocMessage1.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
@@ -381,22 +382,23 @@ public class EdhocClient {
         }
 		
         String myString = (responseType == Constants.EDHOC_MESSAGE_2) ? "EDHOC Message 2" : "EDHOC Error Message";
-		System.out.println("Response type: " + myString + "\n");
-        Util.nicePrint("Received message", responsePayload);
+		System.out.println("Determined EDHOC message type: " + myString + "\n");
+        Util.nicePrint("EDHOC message " + responseType, responsePayload);
         
         
 		/* Process the received response */
         
-        // Since the Correlation Method 1 is used, this response relates to the previous request through the CoAP Token 
+        // Since the Correlation Method 1 is used, this response relates to the previous request through the CoAP Token
+        // Hence, the Initiator knows what session to refer to, from which the correct C_I can be retrieved
+    	CBORObject connectionIdentifier = CBORObject.FromObject(mySession.getConnectionId());
+    	CBORObject cI = Util.encodeToBstrIdentifier(connectionIdentifier);
         
         // The received message is an EDHOC Error Message
         if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
         	
         	List<Integer> peerSupportedCiphersuites = new ArrayList<Integer>();
-        	CBORObject connectionIdentifier = CBORObject.FromObject(mySession.getConnectionId());
-        	CBORObject cI = Util.encodeToBstrIdentifier(connectionIdentifier);
         	
-        	CBORObject[] objectList = MessageProcessor.readErrorMessage(edhocSessions, cI, responsePayload);
+        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload, cI, edhocSessions);
         	
         	String errMsg = objectList[0].toString();
         	
@@ -418,6 +420,26 @@ public class EdhocClient {
         	
     		client.shutdown();
     		
+        }
+        
+        // The received message is an EDHOC Message 2
+        if (responseType == Constants.EDHOC_MESSAGE_2) {
+        	
+        	List<CBORObject> processingResult = new ArrayList<CBORObject>();
+			byte[] nextMessage = new byte[] {};
+			
+			// Possibly specify application data for AD_3, or null if none have to be provided
+			byte[] ad3 = null;
+			
+			/* Start handling EDHOC Message 2 */
+			MessageProcessor.readMessage2(responsePayload, cI, edhocSessions);
+			/* End handling EDHOC Message 2 */
+			
+			
+			/* Prepare and send EDHOC Message 3 */
+			
+			// TBD
+			
         }
         
 		client.shutdown();

@@ -429,8 +429,7 @@ public class EdhocServer extends CoapServer {
 
 			/* Start handling EDHOC Message 1 */
 			if (messagetType == Constants.EDHOC_MESSAGE_1) {
-				processingResult = MessageProcessor.readMessage1(message1, keyPair, usedConnectionIds,
-						                                         supportedCiphersuites, edhocSessions);
+				processingResult = MessageProcessor.readMessage1(message1, keyPair, usedConnectionIds, supportedCiphersuites);
 
 				if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
 					System.err.println("Internal error when processing EDHOC Message 1");

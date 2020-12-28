@@ -106,7 +106,7 @@ public class MessageProcessor {
 	
     /**
      *  Process an EDHOC Message 1
-     * @param sequence   The CBOR sequence used as payload of the EDHOC Message1
+     * @param sequence   The CBOR sequence used as payload of the EDHOC Message 1
      * @param ltk   The long term identity key
      * @param usedConnectionIds   The collection of Connection Identifiers used by this peer
      * @param supportedCipherSuites   The list of cipher suites supported by this peer 
@@ -115,23 +115,22 @@ public class MessageProcessor {
      *                        offered to the other peer in the session, as a bstr_identifier
      * @return   A list of CBOR Objects including up to two elements.
      *           The first element is always present. It it is a CBOR byte string, with value either:
-     *           i) a zero length byte string, indicating that the EDHOC Message 2 can be prepared; or
-     *           ii) a non-zero length byte string as the EDHOC Error Message to be sent.
+     *             i) a zero length byte string, indicating that the EDHOC Message 2 can be prepared; or
+     *             ii) a non-zero length byte string as the EDHOC Error Message to be sent.
      *           The second element is optional. If present, it is a CBOR byte string, with value
      *           the application data AD1 to deliver to the application.
      */
 	public static List<CBORObject> readMessage1(byte[] sequence,
 												OneKey ltk,
 												List<Set<Integer>> usedConnectionIds,
-												List<Integer> supportedCiphersuites,
-												Map<CBORObject, EdhocSession> edhocSessions) {
+												List<Integer> supportedCiphersuites) {
 		
 		boolean hasSuites = false; // Will be set to True if SUITES_I is present and valid for further inspection
 		boolean hasApplicationData = false; // Will be set to True if Application Data is present as AD1
 		
 		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
 		
-		// Serialization of the response to be sent back to the client
+		// Serialization of the response to be sent back to the Initiator
 		byte[] responsePayload = new byte[] {};
 		
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
@@ -321,16 +320,162 @@ public class MessageProcessor {
 		return processingResult;
 		
 	}
-	
-    /**
-     *  Process an EDHOC Message2
-     * @param sequence   The CBOR sequence used as payload of the EDHOC Message2
-     * @return  The elements of the EDHOC Message2 as CBOR objects, or null in case of errors
-     */
-	public static CBORObject[] readMessage2(byte[] sequence) {
 		
-		if (sequence == null)
+    /**
+     *  Process an EDHOC Message 2
+     * @param sequence   The CBOR sequence used as payload of the EDHOC Message 2
+     * @param cI   The connection identifier of the Initiator; set to null if expected in the EDHOC Message 2
+     * @param edhocSessions   The list of active EDHOC sessions of the recipient
+     * @return   A list of CBOR Objects including up to two elements.
+     *           The first element is always present. It it is a CBOR byte string, with value either:
+     *             i) a zero length byte string, indicating that the EDHOC Message 3 can be prepared; or
+     *             ii) a non-zero length byte string as the EDHOC Error Message to be sent.
+     *           The second element is optional. If present, it is a CBOR byte string, with value
+     *           the application data AD2 to deliver to the application.
+     */
+	public static CBORObject[] readMessage2(byte[] sequence, CBORObject cI, Map<CBORObject, EdhocSession> edhocSessions) {
+		
+		if (sequence == null || edhocSessions == null)
 			return null;
+		
+		boolean hasApplicationData = false; // Will be set to True if Application Data is present as AD2
+		
+		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
+		
+		// Serialization of the response to be sent back to the client
+				byte[] responsePayload = new byte[] {};
+		
+		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
+		String errMsg = null; // The text string to be possibly returned as ERR_MSG in an EDHOC Error Message
+		int correlation = -1; // The correlation method indicated by METHOD_CORR, or left to -1 in case on invalid message
+		CBORObject cR = null; // The Connection Identifier C_R, or left to null in case of invalid message
+		EdhocSession mySession = null; // The session used for this EDHOC execution
+		
+		CBORObject[] objectListRequest = CBORObject.DecodeSequenceFromBytes(sequence);
+		
+		/* Consistency checks */
+		
+		int index = 0;
+		
+		if (cI == null && objectListRequest.length != 4) {
+			errMsg = new String("C_I must be specified");
+			error = true;
+		}
+		
+		if (error == false && cI != null && objectListRequest.length != 3) {
+			errMsg = new String("C_I must not be specified");
+			error = true;
+		}
+		
+		// C_I is present as first element
+		if (error == false && cI == null) {
+			if (error == false && objectListRequest[index].getType() != CBORType.ByteString &&
+				objectListRequest[index].getType() != CBORType.Integer)  {
+					errMsg = new String("C_I must be a byte string or an integer");
+					error = true;
+			}
+			
+			if (error == false && Util.decodeFromBstrIdentifier(objectListRequest[index]) == null) {
+				errMsg = new String("C_I must be encoded as a valid bstr_identifier");
+				error = true;
+			}
+			else {
+				cI = objectListRequest[index];
+				index++;
+			}
+		}
+		
+		if (error == false && cI != null) {
+			mySession = edhocSessions.get(cI);
+			
+			if (mySession == null) {
+				errMsg = new String("EDHOC session not found");
+				error = true;
+			}
+			else if (mySession.isInitiator() == false) {
+				errMsg = new String("EDHOC Message 2 is intended only to an Iniator");
+				error = true;
+			}
+			else if (mySession.getCurrentStep() != Constants.EDHOC_AFTER_M1) {
+				errMsg = new String("The protocol state is not waiting for an EDHOC Message 2");
+				error = true;
+			}
+			else {
+				correlation = mySession.getCorrelation();
+			}
+		}
+		
+		// G_Y
+		if (error == false && objectListRequest[index].getType() != CBORType.ByteString) {
+				errMsg = new String("G_Y must be a byte string");
+				error = true;
+		}
+		if (error == false) {
+			// Set the ephemeral public key of the Responder
+			OneKey peerEphemeralKey = null;
+			
+			byte[] gY = objectListRequest[index].GetByteString();
+			int selectedCipherSuite = mySession.getSelectedCiphersuite();
+			
+			if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_1) {
+				peerEphemeralKey = SharedSecretCalculation.buildCurve25519OneKey(null, gY);
+			}
+			if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_2 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_3) {
+				peerEphemeralKey = SharedSecretCalculation.buildEcdsa256OneKey(null, gY, null);
+			}
+			
+			if (peerEphemeralKey == null) {
+				errMsg = new String("Invalid ephemeral public key G_Y");
+				error = true;
+			}
+			else {
+				mySession.setPeerEphemeralPublicKey(peerEphemeralKey);
+				index++;
+			}
+		}
+		
+		
+		// C_R
+		if (error == false) {
+			cR = Util.decodeFromBstrIdentifier(objectListRequest[index]);
+			
+			if (cR == null) {
+				errMsg = new String("Invalid format for the Connection Identifier C_R");
+				error = true;
+			}
+			else {
+				mySession.setPeerConnectionId(cR.GetByteString());
+				index++;
+			}
+		}
+		
+		
+		// CIPHERTEXT_2
+		if (error == false && objectListRequest[index].getType() != CBORType.ByteString) {
+			errMsg = new String("CIPHERTEXT_2 must be a byte string");
+			error = true;
+		}
+		
+		
+		
+		System.out.println("Error: " + error);
+		
+		/* Prepare an EDHOC Error Message */
+		
+		if (error == true) {
+						
+			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
+			processingResult.add(CBORObject.FromObject(responsePayload));
+			
+			// Application Data from AD_2 (if present), as a CBOR byte string
+			if (hasApplicationData == true) {
+				// TBD from the Chipertext
+				//processingResult.add(objectListRequest[4]);
+			}
+			
+			// return processingResult;
+			
+		}
 		
 		return CBORObject.DecodeSequenceFromBytes(sequence);
 		
@@ -352,12 +497,12 @@ public class MessageProcessor {
 	
     /**
      *  Parse an EDHOC Error Message
-     * @param edhocSessions   The list of active EDHOC sessions of the recipient
-     * @param cX   The connection identifier of the recipient; set to null if expected in the EDHOC Error Message
      * @param sequence   The CBOR sequence used as paylod of the EDHOC Error Message
+     * @param cX   The connection identifier of the recipient; set to null if expected in the EDHOC Error Message
+     * @param edhocSessions   The list of active EDHOC sessions of the recipient
      * @return  The elements of the EDHOC Error Message as CBOR objects, or null in case of errors
      */
-	public static CBORObject[] readErrorMessage(Map<CBORObject, EdhocSession> edhocSessions, CBORObject cX, byte[] sequence) {
+	public static CBORObject[] readErrorMessage(byte[] sequence, CBORObject cX, Map<CBORObject, EdhocSession> edhocSessions) {
 		
 		if (edhocSessions == null || sequence == null) {
 			System.err.println("Error when processing EDHOC Error Message");
@@ -938,7 +1083,7 @@ public class MessageProcessor {
 		if (errMsg == null)
 			return null;
 
-		if (suitesR.getType() != CBORType.Integer && suitesR.getType() != CBORType.Array)
+		if (suitesR != null && suitesR.getType() != CBORType.Integer && suitesR.getType() != CBORType.Array)
 			return null;
 		
 		List<CBORObject> objectList = new ArrayList<CBORObject>();
@@ -1065,7 +1210,7 @@ public class MessageProcessor {
 			peerEphemeralKey = SharedSecretCalculation.buildCurve25519OneKey(null, gX);
 		}
 		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_2 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_3) {
-			// TODO Need a way to build a public-key-only OneKey object starting only from the received 'X' parameter
+			peerEphemeralKey = SharedSecretCalculation.buildEcdsa256OneKey(null, gX, null);
 		}
 		mySession.setPeerEphemeralPublicKey(peerEphemeralKey);
 		
