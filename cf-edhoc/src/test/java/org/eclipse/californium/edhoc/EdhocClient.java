@@ -91,7 +91,8 @@ public class EdhocClient {
 	
 	// CRED of the long-term public keys of authorized peers
 	// The map label is a CBOR Map used as ID_CRED_X
-	// The map value is a CBOR byte string wrapping the serialization of CRED
+	// The map value is a CBOR byte string, with value the serialization of CRED
+	// (i.e. the serialization of what the other peer stores as CRED in its Session)
 	private static Map<CBORObject, CBORObject> peerCredentials = new HashMap<CBORObject, CBORObject>();
 		
 	// Existing EDHOC Sessions, including completed ones
@@ -134,15 +135,13 @@ public class EdhocClient {
 
 		// Use to dynamically generate a key pair
 		// keyPair = Util.generateKeyPair(keyCurve);
+		Util.generateKeyPair(keyCurve);
 		
 		// Use to set up hardcoded keys for this peer and the other peer 
-		setupIdentityKeys(keyCurve);
+		setupIdentityKeys();
 				
 		// Add the supported ciphersuites
-		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
-		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_1);
-		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_2);
-		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_3);
+		setupSupportedCipherSuites();
 		
     	for (int i = 0; i < 4; i++) {
         	// Empty sets of assigned Connection Identifiers; one set for each possible size in bytes.
@@ -179,7 +178,7 @@ public class EdhocClient {
 
 	}
 	
-	private static void setupIdentityKeys (int keyCurve) {
+	private static void setupIdentityKeys () {
 		
 		String keyPairBase64 = null;
 		String peerPublicKeyBase64 = null;
@@ -193,8 +192,16 @@ public class EdhocClient {
  			peerPublicKeyBase64 = "pAMnAQEgBiFYIDzQyFH694a7CcXQasH9RcqnmwQAy2FIX97dGGGy+bpS";
  		}
  		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+ 			
  			keyPairBase64 = "pQMnAQEgBiFYIGt2OynWjaQY4cE9OhPQrwcrZYNg8lRJ+MwXIYMjeCtrI1gg5TeGQyIjv2d2mulBYLnL7Mxp0cuaHMBlSuuFtmaU808=";
  			peerPublicKeyBase64 = "pAMnAQEgBiFYIKOjK/y+4psOGi9zdnJBqTLThdpEj6Qygg4Voc10NYGS";
+ 			
+ 			
+ 			/*
+ 			keyPairBase64 = "pAEBIAQhWCBKnDup/RNKUlI34RpV7oL66uUv4YLJHQ7C9siQGCjQCCNYID6bhr0M9aXL8O3ZDN+CneyWdYrrU7J2jKCcQAm9C9Jn";
+ 			peerPublicKeyBase64 = "owEBIAQhWCDmEXBYPmWt3xrRPNr9UMnyDgErwLV+j4uDy3G05//INA==";
+ 			*/
+ 			
  		}
 		
 		try {
@@ -224,6 +231,23 @@ public class EdhocClient {
 			return;
 		}
 		
+	}
+	
+	private static void setupSupportedCipherSuites() {
+		
+		if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
+ 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_2);
+ 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_3);
+ 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
+ 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_1);
+		}
+ 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32() || keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+ 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
+ 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_1);
+ 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_2);
+ 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_3);
+ 		}
+				
 	}
 	
 	private static void helloWorldExchange(final String args[], final URI targetUri) {
@@ -393,6 +417,8 @@ public class EdhocClient {
     	CBORObject connectionIdentifier = CBORObject.FromObject(mySession.getConnectionId());
     	CBORObject cI = Util.encodeToBstrIdentifier(connectionIdentifier);
         
+    	byte[] nextMessage = new byte[] {};
+    	
         // The received message is an EDHOC Error Message
         if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
         	
@@ -426,24 +452,76 @@ public class EdhocClient {
         if (responseType == Constants.EDHOC_MESSAGE_2) {
         	
         	List<CBORObject> processingResult = new ArrayList<CBORObject>();
-			byte[] nextMessage = new byte[] {};
 			
 			// Possibly specify application data for AD_3, or null if none have to be provided
 			byte[] ad3 = null;
 			
 			/* Start handling EDHOC Message 2 */
-			MessageProcessor.readMessage2(responsePayload, cI, edhocSessions);
-			/* End handling EDHOC Message 2 */
+			
+			processingResult = MessageProcessor.readMessage2(responsePayload, cI, edhocSessions, peerPublicKeys, peerCredentials);
+			
+			if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
+				System.err.println("Internal error when processing EDHOC Message 2");
+				return;
+			}
+			
+			// A non-zero length response payload would be an EDHOC Error Message
+			nextMessage = processingResult.get(0).GetByteString();
+
+			// Prepare EDHOC Message 3
+			if (nextMessage.length == 0) {
+				
+				mySession.setCurrentStep(Constants.EDHOC_AFTER_M2);
+				// TBD
+				
+			}
+			
+			/*
+			int requestType = MessageProcessor.messageType(nextMessage);
+			
+			if (requestType != Constants.EDHOC_MESSAGE_3 && responseType != Constants.EDHOC_ERROR_MESSAGE) {
+				nextMessage = null;
+			}
+			
+			if (nextMessage != null) {
+				// Send the EDHOC Message 3 or the EDHOC Error Message, as above
+			}
+			*/
 			
 			
-			/* Prepare and send EDHOC Message 3 */
-			
-			// TBD
+			// Deliver AD_2 to the application
+			if (processingResult.size() == 2) {
+				processAD2(processingResult.get(1).GetByteString());
+			}
 			
         }
         
 		client.shutdown();
 		
+	}
+	
+	/*
+	 * Process application data conveyed in AD_1 in EDHOC Message 1
+	 */
+	private static void processAD1(byte[] ad1) {
+		// Do nothing
+		System.out.println("Entered processAD1()");
+	}
+	
+	/*
+	 * Process application data conveyed in AD_2 in EDHOC Message 2
+	 */
+	private static void processAD2(byte[] ad2) {
+		// Do nothing
+		System.out.println("Entered processAD2()");
+	}
+	
+	/*
+	 * Process application data conveyed in AD_3 in EDHOC Message 3
+	 */
+	private static void processAD3(byte[] ad3) {
+		// Do nothing
+		System.out.println("Entered processAD3()");
 	}
 
 }
