@@ -91,7 +91,8 @@ public class EdhocServer extends CoapServer {
 	
 	// CRED of the long-term public keys of authorized peers
 	// The map label is a CBOR Map used as ID_CRED_X
-	// The map value is a CBOR byte string wrapping the serialization of CRED
+	// The map value is a CBOR byte string, with value the serialization of CRED
+	// (i.e. the serialization of what the other peer stores as CRED in its Session)
 	private static Map<CBORObject, CBORObject> peerCredentials = new HashMap<CBORObject, CBORObject>();
 
 	// Existing EDHOC Sessions, including completed ones
@@ -133,13 +134,10 @@ public class EdhocServer extends CoapServer {
 		// keyPair = Util.generateKeyPair(keyCurve);
 		
 		// Use to set up hardcoded keys for this peer and the other peer 
-		setupIdentityKeys(keyCurve);
+		setupIdentityKeys();
 		
 		// Add the supported ciphersuites
-		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
-		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_1);
-		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_2);
-		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_3);
+		setupSupportedCipherSuites();
 		
     	for (int i = 0; i < 4; i++) {
         	// Empty sets of assigned Connection Identifiers; one set for each possible size in bytes.
@@ -211,7 +209,7 @@ public class EdhocServer extends CoapServer {
 		System.out.println("Entered processAD3()");
 	}
 	
-	private static void setupIdentityKeys (int keyCurve) {
+	private static void setupIdentityKeys () {
 		
 		String keyPairBase64 = null;
 		String peerPublicKeyBase64 = null;
@@ -225,8 +223,17 @@ public class EdhocServer extends CoapServer {
  			peerPublicKeyBase64 = "pAMnAQEgBiFYIEPgltbaO4rEBSYv3Lhs09jLtrOdihHUxLdc9pRoR/W9";
  		}
  		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+ 			
+ 			
  			keyPairBase64 = "pQMnAQEgBiFYIKOjK/y+4psOGi9zdnJBqTLThdpEj6Qygg4Voc10NYGSI1ggn/quL33vMaN9Rp4LKWCXVnaIRSgeeCJlU0Mv/y6zHlQ=";
  			peerPublicKeyBase64 = "pAMnAQEgBiFYIGt2OynWjaQY4cE9OhPQrwcrZYNg8lRJ+MwXIYMjeCtr";
+ 			
+ 			
+ 			/*
+ 			keyPairBase64 = "pAEBIAQhWCDmEXBYPmWt3xrRPNr9UMnyDgErwLV+j4uDy3G05//INCNYII4f/bEJhN+6cCHkSK5PnW+79FupFm4RMPAKvDxdgMX6";
+ 			peerPublicKeyBase64 = "owEBIAQhWCBKnDup/RNKUlI34RpV7oL66uUv4YLJHQ7C9siQGCjQCA==";
+ 			*/
+ 			
  		}
 		
 		try {
@@ -244,7 +251,7 @@ public class EdhocServer extends CoapServer {
 			cred = Util.buildCredRawPublicKey(keyPair, "");
 			
 			// Build the OneKey object for the identity public key of the other peer
-			OneKey peerPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(peerPublicKeyBase64)));
+			OneKey peerPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(peerPublicKeyBase64)));	
 			// Build the related ID_CRED
 			byte[] peerKid = new byte[] {(byte) 0x00}; // Use 0x00 as kid for the other peer
 			CBORObject idCredPeer = Util.buildIdCredKid(peerKid);
@@ -254,10 +261,27 @@ public class EdhocServer extends CoapServer {
 			peerCredentials.put(idCredPeer, CBORObject.FromObject(peerCred));
 			
 		} catch (CoseException e) {
-			System.err.println("Error while generating the key pair");
+			System.err.println("Error while generating the key pair " + e.getMessage());
 			return;
 		}
 		
+	}
+	
+	private static void setupSupportedCipherSuites() {
+		
+		if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
+ 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_2);
+ 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_3);
+ 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
+ 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_1);
+		}
+ 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32() || keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+ 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
+ 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_1);
+ 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_2);
+ 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_3);
+ 		}
+				
 	}
 	
 	private static void runTests() {
@@ -268,7 +292,7 @@ public class EdhocServer extends CoapServer {
 		try {
 			System.out.println("Hash input: " + Utils.bytesToHex(inputHash));
 			byte[] resultHash = Util.computeHash(inputHash, "SHA-256");
-			System.out.println("Hash outpu: " + Utils.bytesToHex(resultHash));
+			System.out.println("Hash output: " + Utils.bytesToHex(resultHash));
 		} catch (NoSuchAlgorithmException e) {
 			System.err.println("Hash algorithm not supported");
 		}
