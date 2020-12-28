@@ -12,7 +12,7 @@
  * 
  * Contributors:
  *    Rikard Höglund (RISE)
- *    
+ *    Marco Tiloca (RISE)
  ******************************************************************************/
 package org.eclipse.californium.edhoc;
 
@@ -823,26 +823,29 @@ public class SharedSecretCalculation {
 
 		// Build the COSE OneKey
 
+		OneKey key = new OneKey();
+		
 		// The private key
-		EdDSAPrivateKey initialPrivKey = (EdDSAPrivateKey) initialKey.AsPrivateKey();
-		byte[] rgbD_bad = initialKey.get(KeyKeys.OKP_D).GetByteString(); // FIXME
-		byte[] privateHash = initialPrivKey.getH();
-		byte[] privateScalar = Arrays.copyOf(privateHash, 32);
-		byte[] rgbD = privateScalar;
-
-		System.out.println("D bad: " + Utils.bytesToHex(rgbD_bad));
-		System.out.println("D good: " + Utils.bytesToHex(rgbD));
+		if (initialKey.AsPrivateKey() != null) {
+			EdDSAPrivateKey initialPrivKey = (EdDSAPrivateKey) initialKey.AsPrivateKey();
+			byte[] rgbD_bad = initialKey.get(KeyKeys.OKP_D).GetByteString(); // FIXME
+			byte[] privateHash = initialPrivKey.getH();
+			byte[] privateScalar = Arrays.copyOf(privateHash, 32);
+			byte[] rgbD = privateScalar;
+			
+			// System.out.println("D bad: " + Utils.bytesToHex(rgbD_bad));
+			// System.out.println("D good: " + Utils.bytesToHex(rgbD));
+			
+			key.add(KeyKeys.OKP_D, CBORObject.FromObject(rgbD));
+		}
 
 		// The X value is the value of the u coordinate
 		// FIXME: Compress
 		byte[] rgbX = u.toByteArray();
 
-		OneKey key = new OneKey();
-
 		key.add(KeyKeys.KeyType, KeyKeys.KeyType_OKP);
 		key.add(KeyKeys.OKP_Curve, KeyKeys.OKP_X25519);
 		key.add(KeyKeys.OKP_X, CBORObject.FromObject(rgbX));
-		key.add(KeyKeys.OKP_D, CBORObject.FromObject(rgbD));
 
 		return key;
 	}
