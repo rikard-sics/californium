@@ -766,6 +766,9 @@ public class Util {
 		byte[] keyPairBytes = keyPair.EncodeToBytes();
     	String testKeyBytesBase64 = Base64.getEncoder().encodeToString(keyPairBytes);
     	System.out.println(testKeyBytesBase64);
+    	
+    	System.out.println(keyCurve);
+    	System.out.println(keyPair.AsCBOR());
     	*/
 		
 		// Print out the base64 serialization of the public key only
@@ -774,6 +777,9 @@ public class Util {
     	byte[] testPublicKeyBytes = testPublicKey.EncodeToBytes();
     	String testPublicKeyBytesBase64 = Base64.getEncoder().encodeToString(testPublicKeyBytes);
     	System.out.println(testPublicKeyBytesBase64);
+    	
+    	System.out.println(keyCurve);
+    	System.out.println(testPublicKey.AsCBOR());
     	*/
     	
     	return keyPair;
