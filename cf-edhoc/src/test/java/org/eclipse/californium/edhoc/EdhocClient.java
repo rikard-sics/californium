@@ -42,6 +42,7 @@ import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.elements.exception.ConnectorException;
 
 import com.upokecenter.cbor.CBORObject;
+import com.upokecenter.cbor.CBORType;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
@@ -92,7 +93,7 @@ public class EdhocClient {
 	// The map label is a CBOR Map used as ID_CRED_X
 	// The map value is a CBOR byte string wrapping the serialization of CRED
 	private static Map<CBORObject, CBORObject> peerCredentials = new HashMap<CBORObject, CBORObject>();
-	
+		
 	// Existing EDHOC Sessions, including completed ones
 	// The map label is C_X, i.e. the connection identifier offered to the other peer in the session, as a bstr_identifier
 	private static Map<CBORObject, EdhocSession> edhocSessions = new HashMap<CBORObject, EdhocSession>();
@@ -148,7 +149,7 @@ public class EdhocClient {
         	// The set with index 0 refers to Connection Identifiers with size 1 byte
     		usedConnectionIds.add(new HashSet<Integer>());
     	}
-		
+    	
 		URI uri = null; // URI parameter of the request
 
 		// input URI from command line arguments
@@ -371,7 +372,7 @@ public class EdhocClient {
         	discontinue = true;
         else {
         	responseType = MessageProcessor.messageType(responsePayload);
-        	if (responseType != Constants.EDHOC_MESSAGE_2 || responseType == Constants.EDHOC_ERROR_MESSAGE)
+        	if (responseType != Constants.EDHOC_MESSAGE_2 && responseType != Constants.EDHOC_ERROR_MESSAGE)
         		discontinue = true;
         }
         if (discontinue == true) {
@@ -385,8 +386,40 @@ public class EdhocClient {
         
         
 		/* Process the received response */
-		// TBD
-				
+        
+        // Since the Correlation Method 1 is used, this response relates to the previous request through the CoAP Token 
+        
+        // The received message is an EDHOC Error Message
+        if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
+        	
+        	List<Integer> peerSupportedCiphersuites = new ArrayList<Integer>();
+        	CBORObject connectionIdentifier = CBORObject.FromObject(mySession.getConnectionId());
+        	CBORObject cI = Util.encodeToBstrIdentifier(connectionIdentifier);
+        	
+        	CBORObject[] objectList = MessageProcessor.readErrorMessage(edhocSessions, cI, responsePayload);
+        	
+        	String errMsg = objectList[0].toString();
+        	
+        	if (objectList[1].getType() == CBORType.Integer) {
+        		int suite = objectList[1].AsInt32();
+        		peerSupportedCiphersuites.add(Integer.valueOf(suite));
+        	}
+        	else if (objectList[1].getType() == CBORType.Array) {
+        		for (int i = 0; i < objectList.length; i++) {
+            		int suite = objectList[1].get(i).AsInt32();
+            		peerSupportedCiphersuites.add(Integer.valueOf(suite));
+        		}
+        	}
+        	mySession.setPeerSupportedCipherSuites(peerSupportedCiphersuites);
+        	
+        	System.out.println("ERR_MSG: " + errMsg + "\n");
+        	
+        	// TODO - Retransmit EDHOC Message 1 now knowing the ciphersuites supported by the Responder
+        	
+    		client.shutdown();
+    		
+        }
+        
 		client.shutdown();
 		
 	}
