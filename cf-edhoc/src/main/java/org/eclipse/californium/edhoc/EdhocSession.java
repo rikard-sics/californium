@@ -47,6 +47,7 @@ public class EdhocSession {
 	
 	private byte[] peerConnectionId;
 	private List<Integer> peerSupportedCiphersuites = null;
+	private CBORObject peerIdCred = null;
 	private OneKey peerLongTermPublicKey = null;
 	private OneKey peerEphemeralPublicKey = null;
 	
@@ -291,7 +292,21 @@ public class EdhocSession {
 	public OneKey getPeerLongTermPublicKey() {
 		return this.peerLongTermPublicKey;
 	}
-
+	
+	/**
+	 * Set the ID_CRED of the long-term public key of the other peer
+	 */
+	public void setPeerIdCred(CBORObject idCred) {
+		this.peerIdCred = idCred;
+	}
+	
+	/**
+	 * @return  the ID_CRED of the long-term public key of the other peer
+	 */
+	public CBORObject getPeerIdCred() {
+		return this.peerIdCred;
+	}
+	
 	/**
 	 * Set the ephemeral public key of the other peer
 	 * @param peerKey   the ephemeral public key of the other peer 
