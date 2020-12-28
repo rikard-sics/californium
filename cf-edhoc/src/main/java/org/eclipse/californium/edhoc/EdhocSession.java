@@ -30,6 +30,8 @@ import com.upokecenter.cbor.CBORObject;
 
 public class EdhocSession {
 	
+	private boolean firstUse;
+	
 	private boolean initiator;
 	private int method;
 	private int correlation;
@@ -70,6 +72,8 @@ public class EdhocSession {
 	public EdhocSession(boolean initiator, int methodCorr, byte[] connectionId, OneKey ltk,
 						CBORObject idCred, byte[] cred, List<Integer> cipherSuites) {
 		
+		this.firstUse = true;
+		
 		this.initiator = initiator;
 		this.method = methodCorr / 4;
 		this.correlation = methodCorr % 4;
@@ -79,14 +83,24 @@ public class EdhocSession {
 		this.cred = cred;
 		this.supportedCiphersuites = cipherSuites;
 		
-		this.selectedCiphersuite = supportedCiphersuites.get(0); 
-		if (this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_0 || this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_1)
-				this.ephemeralKey = Util.generateKeyPair(KeyKeys.OKP_X25519.AsInt32());
-		else if (this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_2 || this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_3)
-			this.ephemeralKey = Util.generateKeyPair(KeyKeys.EC2_P256.AsInt32());
+		this.selectedCiphersuite = supportedCiphersuites.get(0);		
+		setEphemeralKey();
 		
 		currentStep = initiator ? Constants.EDHOC_BEFORE_M1 : Constants.EDHOC_BEFORE_M2;
 		
+	}
+	
+	/**
+	 */
+	public void setAsUsed() {
+		this.firstUse = false;
+	}
+
+	/**
+	 * @return  True if this is the first use of this session, or false otherwise 
+	 */
+	public boolean getFirstUse() {
+		return this.firstUse;
 	}
 	
 	/**
@@ -159,6 +173,22 @@ public class EdhocSession {
 		this.ephemeralKey = ek;
 		
 	}
+	
+	/**
+	 * @param ek  the ephemeral key pair of this peer 
+	 */
+	public void setEphemeralKey() {
+		
+		OneKey ek = null;
+		if (this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_0 || this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_1)
+			ek = Util.generateKeyPair(KeyKeys.OKP_X25519.AsInt32());
+		else if (this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_2 || this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_3)
+			ek = Util.generateKeyPair(KeyKeys.EC2_P256.AsInt32());
+		
+		setEphemeralKey(ek);
+		
+	}
+
 	
 	/**
 	 * @return  the ephemeral key pair of this peer 
