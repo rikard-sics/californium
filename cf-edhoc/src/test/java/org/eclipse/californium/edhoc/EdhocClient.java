@@ -23,6 +23,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
@@ -505,13 +507,22 @@ public class EdhocClient {
 				System.out.println("Request type: " + myString + "\n");
 				
 				if (requestType == Constants.EDHOC_MESSAGE_3) {
+			        mySession.setCurrentStep(Constants.EDHOC_AFTER_M3);
+			        
+			        /* Invoke the EDHOC-Exporter to produce OSCORE input material */
+			        byte[] masterSecret = getMasterSecretOSCORE(mySession);
+			        byte[] masterSalt = getMasterSaltOSCORE(mySession);
+			        if (debugPrint) {
+			        	Util.nicePrint("OSCORE Master Secret", masterSecret);
+			        	Util.nicePrint("OSCORE Master Salt", masterSalt);
+			        }
+			        
 			        System.out.println("Sent EDHOC Message 3\n");
 			        if (debugPrint) {
 			        	Util.nicePrint("EDHOC Message 3", nextMessage);
 			        }
-			        mySession.setCurrentStep(Constants.EDHOC_AFTER_M3);
 				}
-				if (requestType == Constants.EDHOC_ERROR_MESSAGE) {
+				else if (requestType == Constants.EDHOC_ERROR_MESSAGE) {
 			        System.out.println("Sent EDHOC Error Message\n");
 			        if (debugPrint) {
 			        	Util.nicePrint("EDHOC Error Message", nextMessage);
@@ -562,6 +573,58 @@ public class EdhocClient {
 	private static void processAD3(byte[] ad3) {
 		// Do nothing
 		System.out.println("Entered processAD3()");
+	}
+	
+    /**
+     *  Get an OSCORE Master Secret using the EDHOC-Exporter
+     * @param session   The used EDHOC session
+     * @return  the OSCORE Master Secret, or null in case of errors
+     */
+	private static byte[] getMasterSecretOSCORE(EdhocSession session) {
+
+	    int keyLength = 0;
+	    byte[] masterSecret = null;
+	    int selectedCiphersuite = session.getSelectedCiphersuite();
+	    
+	    switch (selectedCiphersuite) {
+	    	case Constants.EDHOC_CIPHER_SUITE_0:
+	    	case Constants.EDHOC_CIPHER_SUITE_1:
+	    	case Constants.EDHOC_CIPHER_SUITE_2:
+	    	case Constants.EDHOC_CIPHER_SUITE_3:
+	    		keyLength = 16;
+	    }
+	    
+	    try {
+			masterSecret = session.edhocExporter("OSCORE Master Secret", keyLength);
+		} catch (InvalidKeyException e) {
+			System.err.println("Error when the OSCORE Master Secret" + e.getMessage());
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("Error when the OSCORE Master Secret" + e.getMessage());
+		}
+	    
+	    return masterSecret;
+		
+	}
+	
+    /**
+     *  Get an OSCORE Master Salt using the EDHOC-Exporter
+     * @param session   The used EDHOC session
+     * @return  the OSCORE Master Salt, or null in case of errors
+     */
+	private static byte[] getMasterSaltOSCORE(EdhocSession session) {
+
+	    byte[] masterSalt = null;
+	    
+	    try {
+			masterSalt = session.edhocExporter("OSCORE Master Salt", 8);
+		} catch (InvalidKeyException e) {
+			System.err.println("Error when the OSCORE Master Salt" + e.getMessage());
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("Error when the OSCORE Master Salt" + e.getMessage());
+		}
+	    
+	    return masterSalt;
+		
 	}
 
 }
