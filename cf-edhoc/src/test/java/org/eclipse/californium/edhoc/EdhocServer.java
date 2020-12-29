@@ -523,6 +523,35 @@ public class EdhocServer extends CoapServer {
 				
 			}
 			/* End handling EDHOC Message 1 */
+			
+			
+			/* Start handling EDHOC Message 2 */
+			if (messagetType == Constants.EDHOC_MESSAGE_2) {
+				
+				System.out.println("Handler for processing EDHOC Message 2");
+				
+				// Do nothing
+				
+			}
+			
+			
+			/* Start handling EDHOC Message 3 */
+			if (messagetType == Constants.EDHOC_MESSAGE_3) {
+				
+				System.out.println("Handler for processing EDHOC Message 3");
+				
+			}
+			
+			
+			/* Start handling EDHOC Error Message */
+			if (messagetType == Constants.EDHOC_ERROR_MESSAGE) {
+				
+				System.out.println("Handler for processing EDHOC Error Message");
+				
+				// Do nothing
+				
+			}
+			
 
 		}
 		
