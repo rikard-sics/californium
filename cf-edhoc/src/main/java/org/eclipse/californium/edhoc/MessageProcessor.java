@@ -994,6 +994,13 @@ public class MessageProcessor {
         // Mark the session as used - Possible reusage will trigger the generation of new ephemeral keys
         session.setAsUsed();
         
+        
+    	/* Prepare EDHOC Message 1 */
+    	
+    	if (debugPrint) {
+    		Util.nicePrint("EDHOC Message 1", Util.buildCBORSequence(objectList));
+    	}
+        
         return Util.buildCBORSequence(objectList);
 		
 	}
@@ -1218,6 +1225,9 @@ public class MessageProcessor {
     	        
     	/* End computing CIPHERTEXT_2 */
     	
+    	
+    	/* Prepare EDHOC Message 2 */
+    	
     	if (debugPrint) {
     		Util.nicePrint("EDHOC Message 2", Util.buildCBORSequence(objectList));
     	}
@@ -1416,6 +1426,23 @@ public class MessageProcessor {
     	/* End computing CIPHERTEXT_3 */
     	
     	
+    	/* Compute TH4 */
+    	
+        byte[] th3SerializedCBOR = CBORObject.FromObject(th3).EncodeToBytes();
+        byte[] ciphertext3SerializedCBOR = CBORObject.FromObject(ciphertext3).EncodeToBytes(); 
+    	byte[] th4 = computeTH4(th3SerializedCBOR, ciphertext3SerializedCBOR, "SHA-256");
+        if (th4 == null) {
+    		// TODO send an EDHOC Error Message
+        	return null;
+        }
+    	session.setTH4(th4);
+    	if (debugPrint) {
+    		Util.nicePrint("TH_4", th4);
+    	}
+    	
+    	
+    	/* Prepare EDHOC Message 3 */
+    	    	
     	if (debugPrint) {
     		Util.nicePrint("EDHOC Message 3", Util.buildCBORSequence(objectList));
     	}
@@ -2265,8 +2292,8 @@ public class MessageProcessor {
 	
     /**
      *  Compute the transcript hash TH2
-     * @param message1   The payload of the EDHOC Message 1
-     * @param data2   The data_2 information from the EDHOC Message 2
+     * @param message1   The payload of the EDHOC Message 1, as a serialized CBOR byte string
+     * @param data2   The data_2 information from the EDHOC Message 2, as a serialized CBOR byte string
      * @param hashAlgorithm   The name of the hash algorithm to use
      * @return  The computed TH2
      */
@@ -2291,11 +2318,11 @@ public class MessageProcessor {
 	
     /**
      *  Compute the transcript hash TH3
-     * @param th2   The transcript hash TH2
-     * @param ciphertext2   The CIPHERTEXT_2 from EDHOC Message 2
-     * @param data3   The data_3 information from the EDHOC Message 3, it can be null
+     * @param th2   The transcript hash TH2, as a serialized CBOR byte string
+     * @param ciphertext2   The CIPHERTEXT_2 from EDHOC Message 2, as a serialized CBOR byte string
+     * @param data3   The data_3 information from the EDHOC Message 3, as a serialized CBOR byte string. It can be null
      * @param hashAlgorithm   The name of the hash algorithm to use
-     * @return  The computed TH2
+     * @return  The computed TH3
      */
 	public static byte[] computeTH3(byte[] th2, byte[] ciphertext2, byte[] data3, String hashAlgorithm) {
 	
@@ -2322,6 +2349,34 @@ public class MessageProcessor {
 		}
 		
 		return th3;
+		
+	}
+	
+	
+    /**
+     *  Compute the transcript hash TH4
+     * @param th3   The transcript hash TH3, as a serialized CBOR byte string
+     * @param ciphertext3   The CIPHERTEXT_3 from EDHOC Message 3, as a serialized CBOR byte string
+     * @param hashAlgorithm   The name of the hash algorithm to use
+     * @return  The computed TH4
+     */
+	public static byte[] computeTH4(byte[] th3, byte[] ciphertext3, String hashAlgorithm) {
+	
+        byte[] th4 = null;
+        int inputLength = th3.length + ciphertext3.length;
+        
+        byte[] hashInput = new byte[inputLength];
+        System.arraycopy(th3, 0, hashInput, 0, th3.length);
+        System.arraycopy(ciphertext3, 0, hashInput, th3.length, ciphertext3.length);
+        try {
+        	th4 = Util.computeHash(hashInput, hashAlgorithm);
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("Invalid hash algorithm when computing TH4\n" + e.getMessage());
+			return null;
+			
+		}
+		
+		return th4;
 		
 	}
 	
