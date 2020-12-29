@@ -537,7 +537,7 @@ public class MessageProcessor {
     	}
     	
     	// Compute K_2e
-    	byte[] k2e = computeK2e(mySession, prk2e, th2, ciphertext2.length);
+    	byte[] k2e = computeK2e(mySession, ciphertext2.length);
     	if (k2e == null) {
         	errMsg = new String("Error when computing K_2e");
 			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
@@ -1204,7 +1204,7 @@ public class MessageProcessor {
     	
     	
     	// Compute K_2e
-    	byte[] k2e = computeK2e(session, prk2e, th2, plaintext.length);
+    	byte[] k2e = computeK2e(session, plaintext.length);
     	if (k2e == null) {
     		System.err.println("Error when computing K_2e");
     		return null;
@@ -1824,16 +1824,14 @@ public class MessageProcessor {
     /**
      *  Compute the key K_2e
      * @param session   The used EDHOC session
-     * @param prk2e   The key PRK_2e
-     * @param th2   The transcript hash TH2
      * @param length   The desired length in bytes for the key K_2e
      * @return  The computed key K_2e
      */
-	public static byte[] computeK2e(EdhocSession session, byte[] prk2e, byte[] th2, int length) {
+	public static byte[] computeK2e(EdhocSession session, int length) {
 		
 		byte[] k2e = new byte[length];
 		try {
-			k2e = session.edhocKDF(prk2e, th2, "K_2e", length);
+			k2e = session.edhocKDF(session.getPRK2e(), session.getTH2(), "K_2e", length);
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when generating K_2e\n" + e.getMessage());
 			return null;
