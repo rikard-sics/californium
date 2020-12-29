@@ -395,16 +395,9 @@ public class MessageProcessorTest {
 		// C_R, in plain binary format
 		byte[] connectionIdResponder = new byte[] { 0x2b };
 		
-		/*
-		// The identity key of the Responder
-		byte[] peerPublicIdentityKeyBytes = Utils.hexToBytes("a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
-		OneKey peerIdentityKey = SharedSecretCalculation.buildEd25519OneKey(null, peerPublicIdentityKeyBytes);
-		*/
-		
 		// The ephemeral key of the Responder
 		byte[] publicPeerEphemeralKeyBytes = Utils.hexToBytes("71a3d599c21da18902a1aea810b2b6382ccd8d5f9bf0195281754c5ebcaf301e");
 		OneKey peerEphemeralPublicKey = SharedSecretCalculation.buildCurve25519OneKey(null, publicPeerEphemeralKeyBytes);
-
 
 		
 		/* Status from after receiving EDHOC Message 2 */
