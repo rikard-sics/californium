@@ -1069,7 +1069,7 @@ public class MessageProcessor {
         
         byte[] th2 = computeTH2(message1, data2, "SHA-256");
         if (th2 == null) {
-    		// TODO send an EDHOC Error Message
+    		System.err.println("Error when computing TH_2");
         	return null;
         }
         session.setTH2(th2);
@@ -1081,7 +1081,7 @@ public class MessageProcessor {
         // Compute the external data for the external_aad, as a CBOR sequence
     	byte[] externalData = computeExternalData(th2, session.getCred(), ad2);
     	if (externalData == null) {
-    		// TODO send an EDHOC Error Message
+    		System.err.println("Error when computing the external data for MAC_2");
     		return null;
     	}
     	if (debugPrint) {
@@ -1109,7 +1109,7 @@ public class MessageProcessor {
         // Compute PRK_2e
     	prk2e = computePRK2e(dhSecret);
     	if (prk2e == null) {
-    		// TODO send an EDHOC Error Message
+    		System.err.println("Error when computing PRK_2e");
     		return null;
     	}
         session.setPRK2e(prk2e);
@@ -1120,7 +1120,7 @@ public class MessageProcessor {
         // Compute PRK_3e2m
     	prk3e2m = computePRK3e2m(session, prk2e);
     	if (prk3e2m == null) {
-    		// TODO send an EDHOC Error Message
+    		System.err.println("Error when computing PRK_3e2m");
     		return null;
     	}
     	session.setPRK3e2m(prk3e2m);
@@ -1132,7 +1132,7 @@ public class MessageProcessor {
     	// Compute K_2m and IV_2m to protect the inner COSE object
     	byte[] k2m = computeK2m(session);
     	if (k2m == null) {
-    		// TODO send an EDHOC Error Message
+    		System.err.println("Error when computing K_2m");
     		return null;
     	}
     	if (debugPrint) {
@@ -1140,7 +1140,7 @@ public class MessageProcessor {
     	}
     	byte[] iv2m = computeIV2m(session);
     	if (iv2m == null) {
-    		// TODO send an EDHOC Error Message
+    		System.err.println("Error when computing IV_2m");
     		return null;
     	}
     	if (debugPrint) {
@@ -1152,7 +1152,7 @@ public class MessageProcessor {
 
     	byte[] mac2 = computeMAC2(session.getSelectedCiphersuite(), session.getIdCred(), externalData, plaintext, k2m, iv2m);
     	if (mac2 == null) {
-    		// TODO send an EDHOC Error Message
+    		System.err.println("Error when computing MAC_2");
     		return null;
     	}
     	if (debugPrint) {
@@ -1164,7 +1164,7 @@ public class MessageProcessor {
     	
     	byte[] signatureOrMac2 = computeSignatureOrMac2(session, mac2, externalData);
     	if (signatureOrMac2 == null) {
-    		// TODO send an EDHOC Error Message
+    		System.err.println("Error when computing Signature_or_MAC_2");
     		return null;
     	}
     	if (debugPrint) {
@@ -1206,7 +1206,7 @@ public class MessageProcessor {
     	// Compute K_2e
     	byte[] k2e = computeK2e(session, prk2e, th2, plaintext.length);
     	if (k2e == null) {
-    		// TODO send an EDHOC Error Message
+    		System.err.println("Error when computing K_2e");
     		return null;
     	}
     	if (debugPrint) {
@@ -1282,7 +1282,7 @@ public class MessageProcessor {
 
         byte[] th3 = computeTH3(th2SerializedCBOR, ciphertext2SerializedCBOR, data3, "SHA-256");
         if (th3 == null) {
-    		// TODO send an EDHOC Error Message
+        	System.err.println("Error when computing TH_3");
         	return null;
         }
         session.setTH3(th3);
@@ -1295,7 +1295,7 @@ public class MessageProcessor {
     	
     	byte[] externalData = computeExternalData(th3, session.getCred(), ad3);
     	if (externalData == null) {
-    		// TODO send an EDHOC Error Message
+    		System.err.println("Error when computing the external data for MAC_3");
     		return null;
     	}
     	if (debugPrint) {
@@ -1312,7 +1312,7 @@ public class MessageProcessor {
         
         byte[] prk4x3m = computePRK4x3m(session);
     	if (prk4x3m == null) {
-    		// TODO send an EDHOC Error Message
+    		System.err.println("Error when computing PRK_4x3m");
     		return null;
     	}
     	session.setPRK4x3m(prk4x3m);
@@ -1324,7 +1324,7 @@ public class MessageProcessor {
     	// Compute K_3m and IV_3m to protect the inner COSE object
     	byte[] k3m = computeK3m(session);
     	if (k3m == null) {
-    		// TODO send an EDHOC Error Message
+    		System.err.println("Error when computing K_3m");
     		return null;
     	}
     	if (debugPrint) {
@@ -1332,7 +1332,7 @@ public class MessageProcessor {
     	}
     	byte[] iv3m = computeIV3m(session);
     	if (iv3m == null) {
-    		// TODO send an EDHOC Error Message
+    		System.err.println("Error when computing IV_3m");
     		return null;
     	}
     	if (debugPrint) {
@@ -1344,7 +1344,7 @@ public class MessageProcessor {
 
     	byte[] mac3 = computeMAC3(session.getSelectedCiphersuite(), session.getIdCred(), externalData, plaintext, k3m, iv3m);
     	if (mac3 == null) {
-    		// TODO send an EDHOC Error Message
+    		System.err.println("MAC_3");
     		return null;
     	}
     	if (debugPrint) {
@@ -1356,7 +1356,7 @@ public class MessageProcessor {
     	
     	byte[] signatureOrMac3 = computeSignatureOrMac3(session, mac3, externalData);
     	if (signatureOrMac3 == null) {
-    		// TODO send an EDHOC Error Message
+    		System.err.println("Error when computing Signature_or_MAC_3");
     		return null;
     	}
     	if (debugPrint) {
@@ -1372,7 +1372,7 @@ public class MessageProcessor {
     	// Compute K_3ae and IV_3ae to protect the outer COSE object
     	byte[] k3ae = computeK3ae(session);
     	if (k3ae == null) {
-    		// TODO send an EDHOC Error Message
+    		System.err.println("Error when computing K_3ae");
     		return null;
     	}
     	if (debugPrint) {
@@ -1380,7 +1380,7 @@ public class MessageProcessor {
     	}
     	byte[] iv3ae = computeIV3ae(session);
     	if (iv3ae == null) {
-    		// TODO send an EDHOC Error Message
+    		System.err.println("Error when computing IV_3ae");
     		return null;
     	}
     	if (debugPrint) {
@@ -1422,7 +1422,6 @@ public class MessageProcessor {
     		Util.nicePrint("CIPHERTEXT_3", ciphertext3);
     	}
     	
-    	
     	/* End computing CIPHERTEXT_3 */
     	
     	
@@ -1432,7 +1431,7 @@ public class MessageProcessor {
         byte[] ciphertext3SerializedCBOR = CBORObject.FromObject(ciphertext3).EncodeToBytes(); 
     	byte[] th4 = computeTH4(th3SerializedCBOR, ciphertext3SerializedCBOR, "SHA-256");
         if (th4 == null) {
-    		// TODO send an EDHOC Error Message
+        	System.err.println("Error when computing TH_4");
         	return null;
         }
     	session.setTH4(th4);
