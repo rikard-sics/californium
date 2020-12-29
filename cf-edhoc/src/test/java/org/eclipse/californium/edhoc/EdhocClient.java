@@ -52,7 +52,6 @@ import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
 import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
 import org.eclipse.californium.cose.CoseException;
-import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 
@@ -293,11 +292,12 @@ public class EdhocClient {
 	private static void edhocExchangeAsInitiator(final String args[], final URI targetUri) {
 		
 		CoapClient client = new CoapClient(targetUri);
-
-		CoapResponse response = null;
 		
 		/*
 		// Simple sending of a GET request
+		 
+		CoapResponse response = null;
+		
 		try {
 			response = client.get();
 		} catch (ConnectorException | IOException e) {
