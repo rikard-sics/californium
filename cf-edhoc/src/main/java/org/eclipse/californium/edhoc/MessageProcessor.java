@@ -1378,7 +1378,7 @@ public class MessageProcessor {
     	}
     	    	
     	// Prepare the external_aad as including only TH3
-    	externalData = CBORObject.FromObject(th3).EncodeToBytes();
+    	externalData = th3;
     	
     	// Prepare the plaintext
     	List<CBORObject> plaintextElementList = new ArrayList<>();
