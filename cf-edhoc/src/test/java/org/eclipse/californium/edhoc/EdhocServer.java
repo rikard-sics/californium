@@ -35,10 +35,7 @@ import java.util.Set;
 
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
-import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
-import org.eclipse.californium.core.coap.CoAP.Type;
-import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.config.NetworkConfig;
