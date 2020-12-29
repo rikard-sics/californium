@@ -226,7 +226,7 @@ public class MessageProcessorTest {
 		/* Initiator information*/
 		
 		// C_I, in plain binary format
-		byte[] connectionIdIiniator = new byte[] {};
+		byte[] connectionIdInitiator = new byte[] {};
 
 		// The ephemeral key of the Initiator
 		byte[] publicPeerEphemeralKeyBytes = Utils.hexToBytes("898ff79a02067a16ea1eccb90fa52246f5aa4dd6ec076bba0259d904b7ec8b0c");
@@ -247,7 +247,7 @@ public class MessageProcessorTest {
 		session.setSelectedCiphersuite(0);
 		
 		// Set the Connection Identifier of the peer
-		session.setPeerConnectionId(connectionIdIiniator);
+		session.setPeerConnectionId(connectionIdInitiator);
 		
 		// Store the EDHOC Message 1
 		byte[] message1 = Utils.hexToBytes("01005820898ff79a02067a16ea1eccb90fa52246f5aa4dd6ec076bba0259d904b7ec8b0c40");
@@ -309,7 +309,7 @@ public class MessageProcessorTest {
 		/* Initiator information*/
 		
 		// C_I, in plain binary format
-		byte[] connectionIdIiniator = new byte[] { 0x16 };
+		byte[] connectionIdInitiator = new byte[] { 0x16 };
 
 		// The ephemeral key of the Initiator
 		byte[] publicPeerEphemeralKeyBytes = Utils.hexToBytes("8d3ef56d1b750a4351d68ac250a0e883790efc80a538a444ee9e2b57e2441a7c");
@@ -330,7 +330,7 @@ public class MessageProcessorTest {
 		session.setSelectedCiphersuite(0);
 		
 		// Set the Connection Identifier of the peer
-		session.setPeerConnectionId(connectionIdIiniator);
+		session.setPeerConnectionId(connectionIdInitiator);
 		
 		// Store the EDHOC Message 1
 		byte[] message1 = Utils.hexToBytes("0d0058208d3ef56d1b750a4351d68ac250a0e883790efc80a538a444ee9e2b57e2441a7c21");
@@ -345,6 +345,108 @@ public class MessageProcessorTest {
 				.hexToBytes("582052fba0bdc8d953dd86ce1ab2fd7c05a4658c7c30afdbfc3301047069451baf35084adcf6fe9c524c22454deb");
 
 		Assert.assertArrayEquals(expectedMessage2, message2);
+		
+	}
+	
+	
+	/**
+	 * Test writing of message 3 and compare to the test vector in B.1.
+	 * 
+	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#appendix-B.1.3
+	 */
+	@Test
+	public void testWriteMessage3B1() {
+
+		boolean initiator = true;
+		int methodCorr = 1;
+		byte[] ad3 = null;
+		
+		
+		/* Initiator information*/
+
+		// C_I, in plain binary format
+		byte[] connectionIdInitiator = new byte[] {};
+		
+		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
+		supportedCipherSuites.add(0);
+		
+		// The identity key of the Initiator
+		byte[] privateIdentityKeyBytes = Utils.hexToBytes("2ffce7a0b2b825d397d0cb54f746e3da3f27596ee06b5371481dc0e012bc34d7");
+		byte[] publicIdentityKeyBytes = Utils.hexToBytes("2c440cc121f8d7f24c3b0e41aedafe9caa4f4e7abb835ec30f1de88adb96ff71");
+		OneKey identityKey = SharedSecretCalculation.buildEd25519OneKey(privateIdentityKeyBytes, publicIdentityKeyBytes);
+		
+		// The ephemeral key of the Initiator
+		byte[] privateEphemeralKeyBytes = Utils.hexToBytes("8f781a095372f85b6d9f6109ae422611734d7dbfa0069a2df2935bb2e053bf35");
+		byte[] publicEphemeralKeyBytes = Utils.hexToBytes("898ff79a02067a16ea1eccb90fa52246f5aa4dd6ec076bba0259d904b7ec8b0c");
+		OneKey ephemeralKey = SharedSecretCalculation.buildCurve25519OneKey(privateEphemeralKeyBytes, publicEphemeralKeyBytes);
+		
+		// The x509 certificate of the Initiator
+		byte[] serializedCert = Utils.hexToBytes("fa34b22a9ca4a1e12924eae1d1766088098449cb848ffc795f88afc49cbe8afdd1ba009f21675e8f6c77a4a2c30195601f6f0a0852978bd43d28207d44486502ff7bdda632c788370016b8965bdb2074bff82e5a20e09bec21f8406e86442b87ec3ff245b7");
+		
+		// CRED_I, as serialization of a CBOR byte string wrapping the serialized certificate
+		byte[] credI = CBORObject.FromObject(serializedCert).EncodeToBytes();
+		
+		// ID_CRED_I for the identity key of the initiator, built from the x509 certificate using x5t
+		CBORObject idCredI = Util.buildIdCredX5t(serializedCert);
+		
+		
+		/* Responder information*/
+
+		// C_R, in plain binary format
+		byte[] connectionIdResponder = new byte[] { 0x2b };
+		
+		/*
+		// The identity key of the Responder
+		byte[] peerPublicIdentityKeyBytes = Utils.hexToBytes("a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
+		OneKey peerIdentityKey = SharedSecretCalculation.buildEd25519OneKey(null, peerPublicIdentityKeyBytes);
+		*/
+		
+		// The ephemeral key of the Responder
+		byte[] publicPeerEphemeralKeyBytes = Utils.hexToBytes("71a3d599c21da18902a1aea810b2b6382ccd8d5f9bf0195281754c5ebcaf301e");
+		OneKey peerEphemeralPublicKey = SharedSecretCalculation.buildCurve25519OneKey(null, publicPeerEphemeralKeyBytes);
+
+
+		
+		/* Status from after receiving EDHOC Message 2 */
+		byte[] th2 = Utils.hexToBytes("b0dc6c1ba0bae6e2888610fa0b27bfc52e311a47b9cafb609de4f6a1760d6cf7");
+		byte[] ciphertext2 = Utils.hexToBytes("99d53801a725bfd6a4e71d0484b755ec383df77a916ec0dbc02bba7c21a200807b4f585f728b671ad678a43aacd33b78ebd566cd004fc6f1d406f01d9704e705b21552a9eb28ea316ab65037d717862e");
+		byte[] prk3e2m = Utils.hexToBytes("ec6292a067f137fc7f59629d226fbfc4e0688949f662a97fd82fbeb79971394a");
+		
+		
+		/* Set up the session to use */
+		
+		// Create the session
+		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdInitiator,
+												identityKey, idCredI, credI, supportedCipherSuites);
+
+		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
+		session.setEphemeralKey(ephemeralKey);
+		session.setPeerEphemeralPublicKey(peerEphemeralPublicKey);
+
+		// Set the selected cipher suite
+		session.setSelectedCiphersuite(0);
+		
+		// Set the Connection Identifier of the peer
+		session.setPeerConnectionId(connectionIdResponder);
+		
+		// Set TH_2 from the previous protocol step
+		session.setTH2(th2);
+		
+		// Set CIPHERTEXT_2 from the previous protocol step
+		session.setCiphertext2(ciphertext2);
+		
+		// Set PRK_3e2m from the previous protocol step
+		session.setPRK3e2m(prk3e2m);
+		
+		
+		// Now write EDHOC message 1
+		byte[] message3 = MessageProcessor.writeMessage3(session, ad3);
+
+		// Compare with the expected value from the test vectors
+		byte[] expectedMessage3 = Utils
+				.hexToBytes("1358582d88ff86da47482c0dfa559ac824a4a783d870c9dba47805e8aafbad6974c49646586503fa9bbf3e00012c037eaf56e45e301920839b813a53f6d4c557480f6c797d5b76f0e462f5f57a3db6d2b50c32319f340f4ac5af9a");
+
+		Assert.assertArrayEquals(expectedMessage3, message3);
 		
 	}
 	
