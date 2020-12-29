@@ -56,6 +56,8 @@ import org.eclipse.californium.cose.OneKey;
 
 public class EdhocClient {
 	
+	private static final boolean debugPrint = true;
+	
 	private static final File CONFIG_FILE = new File("Californium.properties");
 	private static final String CONFIG_HEADER = "Californium CoAP Properties file for Fileclient";
 	private static final int DEFAULT_MAX_RESOURCE_SIZE = 2 * 1024 * 1024; // 2
@@ -357,15 +359,15 @@ public class EdhocClient {
 		EdhocSession mySession = MessageProcessor.createSessionAsInitiator
                 (authenticationMethod, correlationMethod, keyPair, idCred, cred, subjectName, supportedCiphersuites, usedConnectionIds);
 		
-        byte[] payloadMessage1 = MessageProcessor.writeMessage1(mySession, ad1);
+        byte[] nextMessage = MessageProcessor.writeMessage1(mySession, ad1);
         
-		if (payloadMessage1 == null || mySession.getCurrentStep() != Constants.EDHOC_BEFORE_M1) {
+		if (nextMessage == null || mySession.getCurrentStep() != Constants.EDHOC_BEFORE_M1) {
 			System.err.println("Inconsistent state before sending EDHOC Message 1");
 			return;
 		}
 		
 		// Add the new session to the list of existing EDHOC sessions
-		mySession.setMessage1(payloadMessage1);
+		mySession.setMessage1(nextMessage);
 		mySession.setCurrentStep(Constants.EDHOC_AFTER_M1);
 		byte[] connectionId = mySession.getConnectionId();
 		CBORObject bstrIdentifier = Util.encodeToBstrIdentifier(CBORObject.FromObject(connectionId));
@@ -373,10 +375,10 @@ public class EdhocClient {
 		
 		Request edhocMessage1 = new Request(Code.POST, Type.CON);
 		edhocMessage1.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
-		edhocMessage1.setPayload(payloadMessage1);
+		edhocMessage1.setPayload(nextMessage);
 		
         System.out.println("Sent EDHOC Message 1\n");
-        Util.nicePrint("EDHOC message 1", payloadMessage1);
+        Util.nicePrint("EDHOC message 1", nextMessage);
         
         CoapResponse edhocMessage2;
         try {
@@ -417,7 +419,7 @@ public class EdhocClient {
     	CBORObject connectionIdentifier = CBORObject.FromObject(mySession.getConnectionId());
     	CBORObject cI = Util.encodeToBstrIdentifier(connectionIdentifier);
         
-    	byte[] nextMessage = new byte[] {};
+    	nextMessage = new byte[] {};
     	
         // The received message is an EDHOC Error Message
         if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
@@ -465,6 +467,11 @@ public class EdhocClient {
 				return;
 			}
 			
+			// Deliver AD_2 to the application
+			if (processingResult.size() == 2) {
+				processAD2(processingResult.get(1).GetByteString());
+			}
+			
 			// A non-zero length response payload would be an EDHOC Error Message
 			nextMessage = processingResult.get(0).GetByteString();
 
@@ -472,28 +479,61 @@ public class EdhocClient {
 			if (nextMessage.length == 0) {
 				
 				mySession.setCurrentStep(Constants.EDHOC_AFTER_M2);
-				// TBD
+				
+				nextMessage = MessageProcessor.writeMessage3(mySession, ad3);
+		        
+		        
+				if (nextMessage == null || mySession.getCurrentStep() != Constants.EDHOC_AFTER_M2) {
+					System.err.println("Inconsistent state before sending EDHOC Message 3");
+					return;
+				}
 				
 			}
-			
-			/*
-			int requestType = MessageProcessor.messageType(nextMessage);
-			
+
+			int requestType = MessageProcessor.messageType(nextMessage);			
 			if (requestType != Constants.EDHOC_MESSAGE_3 && responseType != Constants.EDHOC_ERROR_MESSAGE) {
 				nextMessage = null;
 			}
 			
 			if (nextMessage != null) {
-				// Send the EDHOC Message 3 or the EDHOC Error Message, as above
+				
+				Request edhocMessage3 = new Request(Code.POST, Type.CON);
+				edhocMessage3.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
+				edhocMessage3.setPayload(nextMessage);
+				
+				myString = (requestType == Constants.EDHOC_MESSAGE_3) ? "EDHOC Message 3" : "EDHOC Error Message";
+				System.out.println("Request type: " + myString + "\n");
+				
+				if (requestType == Constants.EDHOC_MESSAGE_3) {
+			        System.out.println("Sent EDHOC Message 3\n");
+			        if (debugPrint) {
+			        	Util.nicePrint("EDHOC Message 3", nextMessage);
+			        }
+			        mySession.setCurrentStep(Constants.EDHOC_AFTER_M3);
+				}
+				if (requestType == Constants.EDHOC_ERROR_MESSAGE) {
+			        System.out.println("Sent EDHOC Error Message\n");
+			        if (debugPrint) {
+			        	Util.nicePrint("EDHOC Error Message", nextMessage);
+			        }
+				}
+				
+		        CoapResponse edhocPostMessage;
+		        
+		        try {
+		        	edhocPostMessage = client.advanced(edhocMessage3);
+				} catch (ConnectorException e) {
+					System.err.println("ConnectorException when sending " + myString + "\n");
+					return;
+				} catch (IOException e) {
+					System.err.println("IOException when sending "  + myString + "\n");
+					return;
+				}
+				
+				// Wait for a possible Error Message as a response. For how long?
+				
 			}
-			*/
-			
-			
-			// Deliver AD_2 to the application
-			if (processingResult.size() == 2) {
-				processAD2(processingResult.get(1).GetByteString());
-			}
-			
+
         }
         
 		client.shutdown();
