@@ -72,10 +72,6 @@ public class Util {
         if(idCredX.getType() != CBORType.Map)
         	return null;
         
-        // ... and it cannot be empty
-        if(idCredX.size() == 0)
-        	return null;
-        
         Encrypt0Message msg = new Encrypt0Message();
         
         // Set the protected header of the COSE object
