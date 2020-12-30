@@ -570,6 +570,7 @@ public class EdhocServer extends CoapServer {
 					
 					if (mySession == null || mySession.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
 							System.err.println("Inconsistent state before sending EDHOC Message 3");
+							edhocSessions.remove(CBORObject.FromObject(mySession.getConnectionId()), mySession);
 							return;
 					}
 			        
