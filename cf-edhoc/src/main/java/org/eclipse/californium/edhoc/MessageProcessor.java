@@ -838,7 +838,6 @@ public class MessageProcessor {
 		}
 		else {
 			ciphertext3 = objectListRequest[index].GetByteString();
-			session.setCiphertext3(ciphertext3);
 		}
 		
 		
@@ -1771,7 +1770,6 @@ public class MessageProcessor {
     	
     	byte[] ciphertext3 = computeCiphertext3(session, externalData, plaintext, k3ae, iv3ae);
     	objectList.add(CBORObject.FromObject(ciphertext3));
-    	session.setCiphertext3(ciphertext3);
     	if (debugPrint) {
     		Util.nicePrint("CIPHERTEXT_3", ciphertext3);
     	}
