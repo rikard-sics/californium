@@ -35,8 +35,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.californium.core.CoapResource;
+import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.config.NetworkConfig;
@@ -206,6 +208,17 @@ public class EdhocServer extends CoapServer {
 		// Do nothing
 		System.out.println("Entered processAD3()");
 	}
+	
+	/*
+	 * Process a request targeting the EDHOC resource with content-format different than application/edhoc
+	 */
+	private void processNonEdhocMessage(CoapExchange request) {
+		// Do nothing
+		System.out.println("Entered processNonEdhocMessage()");
+		
+		// Here the server can start acting as Initiator and send an EDHOC Message 1 as a CoAP response
+	}
+	
 	
 	private static void setupIdentityKeys () {
 		
@@ -426,31 +439,43 @@ public class EdhocServer extends CoapServer {
 		@Override
 		public void handlePOST(CoapExchange exchange) {
 			
-			System.out.println("\nReceived EDHOC Message\n");
+			if (exchange.getRequestOptions().getContentFormat() != Constants.APPLICATION_EDHOC) {
+				// Then the server can start acting as Initiator and send an EDHOC Message 1 as a CoAP response
+				processNonEdhocMessage(exchange);	
+			}
 			
-			byte[] message = exchange.getRequestPayload();
-			int messagetType = MessageProcessor.messageType(message);
+			// The content-format is application/edhoc so an actual EDHOC message is expected to be processed
 			
-			List<CBORObject> processingResult = new ArrayList<CBORObject>();
 			byte[] nextMessage = new byte[] {};
 			
-			// Possibly specify application data for AD_2, or null if none have to be provided
-			byte[] ad2 = null;
+			byte[] message = exchange.getRequestPayload();
+			int messageType = MessageProcessor.messageType(message);
 			
 			// Invalid EDHOC message type
-			if (messagetType == -1) {
+			if (messageType == -1) {
 				String responseString = new String("Invalid EDHOC message type");
 				nextMessage = responseString.getBytes(Constants.charset);
 				Response genericErrorResponse = new Response(ResponseCode.BAD_REQUEST);
 				genericErrorResponse.setPayload(nextMessage);
+				exchange.respond(genericErrorResponse);
+				return;
 				
 			}
 			
-			System.out.println("Determined EDHOC message type: " + messagetType + "\n");
-			Util.nicePrint("EDHOC message " + messagetType, message);
+			List<CBORObject> processingResult = new ArrayList<CBORObject>();
+			
+			// Possibly specify application data for AD_2, or null if none have to be provided
+			byte[] ad2 = null;		
+			
+			// The received message is an actual EDHOC message
+			
+			System.out.println("Determined EDHOC message type: " + messageType + "\n");
+			Util.nicePrint("EDHOC message " + messageType, message);
 
+			
 			/* Start handling EDHOC Message 1 */
-			if (messagetType == Constants.EDHOC_MESSAGE_1) {
+			
+			if (messageType == Constants.EDHOC_MESSAGE_1) {
 				processingResult = MessageProcessor.readMessage1(message, keyPair, usedConnectionIds, supportedCiphersuites);
 
 				if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
@@ -522,6 +547,7 @@ public class EdhocServer extends CoapServer {
 					}
 					
 					exchange.respond(myResponse);
+					return;
 				}
 				else {
 					System.err.println("Inconsistent state before after processing EDHOC Message 1");
@@ -534,7 +560,8 @@ public class EdhocServer extends CoapServer {
 			
 			
 			/* Start handling EDHOC Message 2 */
-			if (messagetType == Constants.EDHOC_MESSAGE_2) {
+			
+			if (messageType == Constants.EDHOC_MESSAGE_2) {
 				
 				System.out.println("Handler for processing EDHOC Message 2");
 				
@@ -544,7 +571,8 @@ public class EdhocServer extends CoapServer {
 			
 			
 			/* Start handling EDHOC Message 3 */
-			if (messagetType == Constants.EDHOC_MESSAGE_3) {
+			
+			if (messageType == Constants.EDHOC_MESSAGE_3) {
 				
 				processingResult = MessageProcessor.readMessage3(message, null, edhocSessions, peerPublicKeys,
 						                                         peerCredentials, usedConnectionIds);
@@ -604,11 +632,31 @@ public class EdhocServer extends CoapServer {
 			
 			
 			/* Start handling EDHOC Error Message */
-			if (messagetType == Constants.EDHOC_ERROR_MESSAGE) {
+			if (messageType == Constants.EDHOC_ERROR_MESSAGE) {
 				
-				System.out.println("Handler for processing EDHOC Error Message");
-				
-				// Do nothing
+	    		System.out.println("Determined EDHOC message type: EDHOC Error Message\n");
+	            Util.nicePrint("EDHOC message " + messageType, message);
+	            
+	        	CBORObject[] objectList = MessageProcessor.readErrorMessage(message, null, edhocSessions);
+	        	
+	        	// If the server acts as Responder, the Correlation Method is 1, hence the first element is C_X as C_R.
+	        	// If the server acts as Initiator, the Correlation Method is 2, hence the first element is C_X as C_I.
+	        	CBORObject cX = objectList[0]; 
+	        	EdhocSession mySession = edhocSessions.get(cX);
+	        	CBORObject connectionIdentifier = Util.decodeFromBstrIdentifier(cX);
+	        	
+	        	String errMsg = objectList[1].toString();
+	        	
+	        	System.out.println("ERR_MSG: " + errMsg + "\n");
+	        	
+	        	// The following simply deletes the EDHOC session. However, if the server was the Initiator 
+	        	// and the EDHOC Error Message is a reply to an EDHOC Message 1, it would be fine to prepare a new
+	        	// EDHOC Message 1 right away, keeping the same Connection Identifier C_I and this same session.
+	        	// In fact, the session is marked as "used", hence new ephemeral keys would be generated when
+	        	// preparing a new EDHOC Message 1. 
+	        	
+	        	Util.purgeSession(mySession, connectionIdentifier, edhocSessions, usedConnectionIds);
+	    		return;
 				
 			}
 			
