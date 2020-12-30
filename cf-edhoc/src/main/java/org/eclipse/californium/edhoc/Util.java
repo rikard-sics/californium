@@ -20,6 +20,7 @@ package org.eclipse.californium.edhoc;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.californium.cose.AlgorithmID;
@@ -718,6 +719,23 @@ public class Util {
     	usedConnectionIds.get(connectionId.length - 1).remove(connectionIdAsInt);
     	
     }
+    
+	/**
+	 * Remove an EDHOC session from the list of active sessions; release the used Connection Identifier; invalidate the session
+	 * @param session   The EDHOC session to invalidate
+	 * @param connectionIdentifier   The Connection Identifier used for the session to invalidate
+	 * @param edhocSessions   The list of active EDHOC sessions of the recipient
+     * @param usedConnectionIds   The collection of already allocated Connection Identifiers
+	 */
+	public static void purgeSession(EdhocSession session, CBORObject connectionIdentifier,
+			                        Map<CBORObject, EdhocSession> edhocSessions, List<Set<Integer>> usedConnectionIds) {
+
+	    edhocSessions.remove(connectionIdentifier, session);
+	    Util.releaseConnectionId(connectionIdentifier.GetByteString(), usedConnectionIds);
+	    session.deleteTemporaryMaterial();
+	    session = null;
+
+	}
     
     /**
      * Generate an asymmetric key pair, according to the specified elliptic curve

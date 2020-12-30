@@ -94,7 +94,7 @@ public class EdhocServer extends CoapServer {
 	private static Map<CBORObject, CBORObject> peerCredentials = new HashMap<CBORObject, CBORObject>();
 
 	// Existing EDHOC Sessions, including completed ones
-	// The map label is C_X, i.e. the connection identifier offered to the other peer in the session, as plain bytes
+	// The map label is C_X, i.e. the connection identifier offered to the other peer, as a CBOR byte string
 	private static Map<CBORObject, EdhocSession> edhocSessions = new HashMap<CBORObject, EdhocSession>();
 	
 	// Each set of the list refers to a different size of Connection Identifier, i.e. C_ID_X to offer to the other peer.
@@ -457,15 +457,17 @@ public class EdhocServer extends CoapServer {
 					System.err.println("Internal error when processing EDHOC Message 1");
 					return;
 				}
-					
+				
+				EdhocSession session = null;
+				
 				// A non-zero length response payload would be an EDHOC Error Message
 				nextMessage = processingResult.get(0).GetByteString();
 
 				// Prepare EDHOC Message 2
 				if (nextMessage.length == 0) {
 					
-					EdhocSession session = MessageProcessor.createSessionAsResponder
-							                 (message, keyPair, idCred, cred, supportedCiphersuites, usedConnectionIds);
+					session = MessageProcessor.createSessionAsResponder
+							                    (message, keyPair, idCred, cred, supportedCiphersuites, usedConnectionIds);
 					
 					// Compute the EDHOC Message 2
 					nextMessage = MessageProcessor.writeMessage2(session, ad2);
@@ -474,8 +476,10 @@ public class EdhocServer extends CoapServer {
 					
 					// Deallocate the assigned Connection Identifier for this peer
 					if (nextMessage == null || session.getCurrentStep() != Constants.EDHOC_BEFORE_M2) {
-						Util.releaseConnectionId(connectionId, usedConnectionIds);
 						System.err.println("Inconsistent state before sending EDHOC Message 2");
+						Util.releaseConnectionId(connectionId, usedConnectionIds);
+						session.deleteTemporaryMaterial();
+						session = null;
 						return;
 					}
 					
@@ -484,6 +488,12 @@ public class EdhocServer extends CoapServer {
 					edhocSessions.put(CBORObject.FromObject(connectionId), session);
 					
 				}
+				
+				// Deliver AD_1 to the application
+				if (processingResult.size() == 2) {
+					processAD1(processingResult.get(1).GetByteString());
+				}
+				
 				int responseType = MessageProcessor.messageType(nextMessage);
 				
 				if (responseType != Constants.EDHOC_MESSAGE_2 && responseType != Constants.EDHOC_ERROR_MESSAGE) {
@@ -513,10 +523,10 @@ public class EdhocServer extends CoapServer {
 					
 					exchange.respond(myResponse);
 				}
-				
-				// Deliver AD_1 to the application
-				if (processingResult.size() == 2) {
-					processAD1(processingResult.get(1).GetByteString());
+				else {
+					System.err.println("Inconsistent state before after processing EDHOC Message 1");
+					Util.purgeSession(session, CBORObject.FromObject(session.getConnectionId()), edhocSessions, usedConnectionIds);
+					return;
 				}
 				
 			}
@@ -536,7 +546,8 @@ public class EdhocServer extends CoapServer {
 			/* Start handling EDHOC Message 3 */
 			if (messagetType == Constants.EDHOC_MESSAGE_3) {
 				
-				processingResult = MessageProcessor.readMessage3(message, null, edhocSessions, peerPublicKeys, peerCredentials);
+				processingResult = MessageProcessor.readMessage3(message, null, edhocSessions, peerPublicKeys,
+						                                         peerCredentials, usedConnectionIds);
 				
 				if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
 					System.err.println("Internal error when processing EDHOC Message 3");
@@ -568,9 +579,14 @@ public class EdhocServer extends CoapServer {
 					CBORObject cR = processingResult.get(1);
 					EdhocSession mySession = edhocSessions.get(cR);
 					
-					if (mySession == null || mySession.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
-							System.err.println("Inconsistent state before sending EDHOC Message 3");
-							edhocSessions.remove(CBORObject.FromObject(mySession.getConnectionId()), mySession);
+					if (mySession == null) {
+						System.err.println("Inconsistent state before sending EDHOC Message 3");
+						return;
+					}
+					if (mySession.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
+							System.err.println("Inconsistent state before sending EDHOC Message 3");							
+							Util.purgeSession(mySession, CBORObject.FromObject(mySession.getConnectionId()),
+									          edhocSessions, usedConnectionIds);
 							return;
 					}
 			        
