@@ -97,7 +97,7 @@ public class EdhocClient {
 	private static Map<CBORObject, CBORObject> peerCredentials = new HashMap<CBORObject, CBORObject>();
 		
 	// Existing EDHOC Sessions, including completed ones
-	// The map label is C_X, i.e. the connection identifier offered to the other peer in the session, as plain bytes
+	// The map label is C_X, i.e. the connection identifier offered to the other peer, as a CBOR byte string
 	private static Map<CBORObject, EdhocSession> edhocSessions = new HashMap<CBORObject, EdhocSession>();
 	
 	// Each set of the list refers to a different size of Connection Identifier, i.e. C_ID_X to offer to the other peer.
@@ -359,10 +359,15 @@ public class EdhocClient {
 		EdhocSession session = MessageProcessor.createSessionAsInitiator
                 (authenticationMethod, correlationMethod, keyPair, idCred, cred, subjectName, supportedCiphersuites, usedConnectionIds);
 		
+		// At this point, the initiator may overwrite the information in the EDHOC session about the supported ciphersuites
+		// and the selected ciphersuite, based on a previously received EDHOC Error Message
+		
         byte[] nextPayload = MessageProcessor.writeMessage1(session, ad1);
         
 		if (nextPayload == null || session.getCurrentStep() != Constants.EDHOC_BEFORE_M1) {
 			System.err.println("Inconsistent state before sending EDHOC Message 1");
+			session.deleteTemporaryMaterial();
+			session = null;
 			client.shutdown();
 			return;
 		}
@@ -384,13 +389,13 @@ public class EdhocClient {
         try {
         	edhocMessageResp = client.advanced(edhocMessageReq);
 		} catch (ConnectorException e) {
-			System.err.println("ConnectorException when sending EDHOC Message1");
-			edhocSessions.remove(CBORObject.FromObject(connectionId), session);
+			System.err.println("ConnectorException when sending EDHOC Message 1");
+			Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
 			client.shutdown();
 			return;
 		} catch (IOException e) {
-			System.err.println("IOException when sending EDHOC Message1");
-			edhocSessions.remove(CBORObject.FromObject(connectionId), session);
+			System.err.println("IOException when sending EDHOC Message 1");
+			Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
 			client.shutdown();
 			return;
 		}
@@ -407,7 +412,8 @@ public class EdhocClient {
         		discontinue = true;
         }
         if (discontinue == true) {
-			edhocSessions.remove(CBORObject.FromObject(connectionId), session);
+        	System.err.println("Received invalid reply to EDHOC Message 1");
+			Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
         	client.shutdown();
         	return;
         }
@@ -449,10 +455,13 @@ public class EdhocClient {
         	
         	System.out.println("ERR_MSG: " + errMsg + "\n");
         	
-        	// TODO - Send a new EDHOC Message 1, now knowing the ciphersuites supported by the Responder
+        	// The following simply delete the EDHOC session. However, it would be fine to prepare a new
+        	// EDHOC Message 1 right away, keeping the same Connection Identifier C_I and this same session.
+        	// In fact, the session is marked as "used", hence new ephemeral keys would be generated when
+        	// preparing a new EDHOC Message 1.
         	
         	
-			edhocSessions.remove(CBORObject.FromObject(connectionId), session);
+        	Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
 			client.shutdown();
     		return;
     		
@@ -468,11 +477,12 @@ public class EdhocClient {
 			
 			/* Start handling EDHOC Message 2 */
 			
-			processingResult = MessageProcessor.readMessage2(responsePayload, cI, edhocSessions, peerPublicKeys, peerCredentials);
+			processingResult = MessageProcessor.readMessage2(responsePayload, cI, edhocSessions, peerPublicKeys,
+					                                         peerCredentials, usedConnectionIds);
 			
 			if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
 				System.err.println("Internal error when processing EDHOC Message 2");
-				edhocSessions.remove(CBORObject.FromObject(connectionId), session);
+				Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
 				client.shutdown();
 				return;
 			}
@@ -494,7 +504,7 @@ public class EdhocClient {
 		        
 				if (nextPayload == null || session.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
 					System.err.println("Inconsistent state before sending EDHOC Message 3");
-					edhocSessions.remove(CBORObject.FromObject(connectionId), session);
+					Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
 					client.shutdown();
 					return;
 				}
@@ -544,12 +554,12 @@ public class EdhocClient {
 		        	edhocMessageResp2 = client.advanced(edhocMessageReq2);
 				} catch (ConnectorException e) {
 					System.err.println("ConnectorException when sending " + myString + "\n");
-					edhocSessions.remove(CBORObject.FromObject(connectionId), session);
+					Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
 					client.shutdown();
 					return;
 				} catch (IOException e) {
 					System.err.println("IOException when sending "  + myString + "\n");
-					edhocSessions.remove(CBORObject.FromObject(connectionId), session);
+					Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
 					client.shutdown();
 					return;
 				}
