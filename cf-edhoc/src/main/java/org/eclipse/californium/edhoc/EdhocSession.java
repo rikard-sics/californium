@@ -92,6 +92,20 @@ public class EdhocSession {
 	}
 	
 	/**
+	 * Delete all ephemeral keys and other temporary material used during the session
+	 */
+	public void deleteTemporaryMaterial() {
+		
+		this.ephemeralKey = null;
+		this.peerEphemeralPublicKey = null;
+		this.prk_2e = null;
+		this.prk_3e2m = null;
+		this.TH2 = null;
+		this.TH3 = null;
+		
+	}
+	
+	/**
 	 */
 	public void setAsUsed() {
 		this.firstUse = false;
