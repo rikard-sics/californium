@@ -336,6 +336,8 @@ public class MessageProcessor {
 		if (sequence == null || edhocSessions == null)
 			return null;
 		
+		CBORObject connectionIdentifier = null;
+		
 		byte[] ad2 = null; // Will be set if Application Data is present as AD2
 		
 		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
@@ -375,13 +377,14 @@ public class MessageProcessor {
 				error = true;
 			}
 			else {
-				cI = Util.decodeFromBstrIdentifier(objectListRequest[index]);
+				connectionIdentifier = Util.decodeFromBstrIdentifier(objectListRequest[index]);
 				index++;
 			}
 		}
 		
 		if (error == false && cI != null) {
-			session = edhocSessions.get(cI);
+			connectionIdentifier = Util.decodeFromBstrIdentifier(cI);
+			session = edhocSessions.get(connectionIdentifier);
 			
 			if (session == null) {
 				errMsg = new String("EDHOC session not found");
@@ -740,6 +743,8 @@ public class MessageProcessor {
 		if (sequence == null || edhocSessions == null)
 			return null;
 		
+		CBORObject connectionIdentifier = null;
+		
 		byte[] ad3 = null; // Will be set if Application Data is present as AD3
 		
 		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
@@ -779,13 +784,13 @@ public class MessageProcessor {
 				error = true;
 			}
 			else {
-				cR = Util.decodeFromBstrIdentifier(objectListRequest[index]);
+				connectionIdentifier = Util.decodeFromBstrIdentifier(objectListRequest[index]);
 				index++;
 			}
 		}
 		
-		if (error == false && cR != null) {
-			mySession = edhocSessions.get(cR);
+		if (error == false && connectionIdentifier != null) {
+			mySession = edhocSessions.get(connectionIdentifier);
 			
 			if (mySession == null) {
 				errMsg = new String("EDHOC session not found");
@@ -1062,7 +1067,7 @@ public class MessageProcessor {
 		processingResult.add(CBORObject.FromObject(reply));
 		
 		// The Connection Identifier C_R used by the Responder
-		processingResult.add(cR);
+		processingResult.add(connectionIdentifier);
 		
 		// Application Data from AD_2 (if present), as a CBOR byte string
 		if (ad3 != null) {
