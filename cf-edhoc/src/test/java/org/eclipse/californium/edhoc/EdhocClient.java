@@ -371,7 +371,8 @@ public class EdhocClient {
 		session.setCurrentStep(Constants.EDHOC_AFTER_M1);
 		byte[] connectionId = session.getConnectionId();
 		CBORObject bstrIdentifier = Util.encodeToBstrIdentifier(CBORObject.FromObject(connectionId));
-		edhocSessions.put(CBORObject.FromObject(bstrIdentifier), session);
+		edhocSessions.put(CBORObject.FromObject(connectionId), session);
+		System.out.println(net.i2p.crypto.eddsa.Utils.bytesToHex(CBORObject.FromObject(connectionId).EncodeToBytes()));
 		
 		Request edhocMessageReq = new Request(Code.POST, Type.CON);
 		edhocMessageReq.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
@@ -505,6 +506,11 @@ public class EdhocClient {
 				
 				if (requestType == Constants.EDHOC_MESSAGE_3) {
 			        
+			        System.out.println("Sent EDHOC Message 3\n");
+			        if (debugPrint) {
+			        	Util.nicePrint("EDHOC Message 3", nextPayload);
+			        }
+					
 			        /* Invoke the EDHOC-Exporter to produce OSCORE input material */
 			        byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(session);
 			        byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(session);
@@ -512,11 +518,7 @@ public class EdhocClient {
 			        	Util.nicePrint("OSCORE Master Secret", masterSecret);
 			        	Util.nicePrint("OSCORE Master Salt", masterSalt);
 			        }
-			        
-			        System.out.println("Sent EDHOC Message 3\n");
-			        if (debugPrint) {
-			        	Util.nicePrint("EDHOC Message 3", nextPayload);
-			        }
+
 				}
 				else if (requestType == Constants.EDHOC_ERROR_MESSAGE) {
 			        System.out.println("Sent EDHOC Error Message\n");
