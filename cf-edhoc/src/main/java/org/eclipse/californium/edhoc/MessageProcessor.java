@@ -384,6 +384,9 @@ public class MessageProcessor {
 		
 		if (error == false && cI != null) {
 			connectionIdentifier = Util.decodeFromBstrIdentifier(cI);
+		}
+		
+		if (error == false) {
 			session = edhocSessions.get(connectionIdentifier);
 			
 			if (session == null) {
@@ -753,7 +756,7 @@ public class MessageProcessor {
 		String errMsg = null; // The text string to be possibly returned as ERR_MSG in an EDHOC Error Message
 		int correlation = -1; // The correlation method to retrieve from the session, or left to -1 in case on invalid message
 		CBORObject cI = null; // The Connection Identifier C_I, or left to null in case of invalid message
-		EdhocSession mySession = null; // The session used for this EDHOC execution
+		EdhocSession session = null; // The session used for this EDHOC execution
 		
 		CBORObject[] objectListRequest = CBORObject.DecodeSequenceFromBytes(sequence);
 		
@@ -789,23 +792,27 @@ public class MessageProcessor {
 			}
 		}
 		
-		if (error == false && connectionIdentifier != null) {
-			mySession = edhocSessions.get(connectionIdentifier);
+		if (error == false && cR != null) {
+			connectionIdentifier = Util.decodeFromBstrIdentifier(cR);
+		}
 			
-			if (mySession == null) {
+		if (error == false) {
+			session = edhocSessions.get(connectionIdentifier);
+			
+			if (session == null) {
 				errMsg = new String("EDHOC session not found");
 				error = true;
 			}
-			else if (mySession.isInitiator() == true) {
+			else if (session.isInitiator() == true) {
 				errMsg = new String("EDHOC Message 3 is intended only to a Responder");
 				error = true;
 			}
-			else if (mySession.getCurrentStep() != Constants.EDHOC_AFTER_M2) {
+			else if (session.getCurrentStep() != Constants.EDHOC_AFTER_M2) {
 				errMsg = new String("The protocol state is not waiting for an EDHOC Message 3");
 				error = true;
 			}
 			else {
-				correlation = mySession.getCorrelation();
+				correlation = session.getCorrelation();
 			}
 		}
 		
@@ -817,51 +824,56 @@ public class MessageProcessor {
 		}
 		else {
 			ciphertext3 = objectListRequest[index].GetByteString();
-			mySession.setCiphertext3(ciphertext3);
+			session.setCiphertext3(ciphertext3);
 		}
 		
 		
 		/* Send an EDHOC Error Message */
 		
-		if (error == true)
+		if (error == true) {
+			edhocSessions.remove(CBORObject.FromObject(connectionIdentifier), session);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, null);
+		}
 		
 		
 		/* Decrypt CIPHERTEXT_3 */
 		
         // Compute TH3
-        byte[] th2 = mySession.getTH2(); // TH_2 as plain bytes
+        byte[] th2 = session.getTH2(); // TH_2 as plain bytes
         byte[] th2SerializedCBOR = CBORObject.FromObject(th2).EncodeToBytes();
-        byte[] ciphertext2 = mySession.getCiphertext2(); // CIPHERTEXT_2 as plain bytes
+        byte[] ciphertext2 = session.getCiphertext2(); // CIPHERTEXT_2 as plain bytes
         byte[] ciphertext2SerializedCBOR = CBORObject.FromObject(ciphertext2).EncodeToBytes(); 
         List<CBORObject> objectListData3 = new ArrayList<>();
         for (int i = 0; i < objectListRequest.length - 1; i++)
         	objectListData3.add(objectListRequest[i]);
         byte[] data3 = Util.buildCBORSequence(objectListData3); // data_3 as a CBOR sequence
         
-        byte[] th3 = computeTH3(mySession, th2SerializedCBOR, ciphertext2SerializedCBOR, data3);
+        byte[] th3 = computeTH3(session, th2SerializedCBOR, ciphertext2SerializedCBOR, data3);
         if (th3 == null) {
         	errMsg = new String("Error when computing TH3");
+        	edhocSessions.remove(CBORObject.FromObject(connectionIdentifier), session);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, null);
         }
-        mySession.setTH3(th3);
+        session.setTH3(th3);
     	if (debugPrint) {
     		Util.nicePrint("TH_3", th3);
     	}
 		
 		
     	// Compute K_3ae and IV_3ae to protect the outer COSE object
-    	byte[] k3ae = computeK3ae(mySession);
+    	byte[] k3ae = computeK3ae(session);
     	if (k3ae == null) {
         	errMsg = new String("Error when computing TH3");
+        	edhocSessions.remove(CBORObject.FromObject(connectionIdentifier), session);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, null);
     	}
     	if (debugPrint) {
     		Util.nicePrint("K_3ae", k3ae);
     	}
-    	byte[] iv3ae = computeIV3ae(mySession);
+    	byte[] iv3ae = computeIV3ae(session);
     	if (iv3ae == null) {
         	errMsg = new String("Error when computing IV_3ae");
+        	edhocSessions.remove(CBORObject.FromObject(connectionIdentifier), session);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, null);
     	}
     	if (debugPrint) {
@@ -878,9 +890,10 @@ public class MessageProcessor {
     		Util.nicePrint("CIPHERTEXT_3", ciphertext3);
     	}
 
-    	byte[] outerPlaintext = decryptCiphertext3(mySession, externalData, ciphertext3, k3ae, iv3ae);
+    	byte[] outerPlaintext = decryptCiphertext3(session, externalData, ciphertext3, k3ae, iv3ae);
     	if (outerPlaintext == null) {
         	errMsg = new String("Error when decrypting CIPHERTEXT_3");
+        	edhocSessions.remove(CBORObject.FromObject(connectionIdentifier), session);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, null);
     	}
     	if (debugPrint) {
@@ -916,8 +929,10 @@ public class MessageProcessor {
     			System.arraycopy(ad3CBOR.GetByteString(), 0, ad3, 0, length);
     		}
     	}
-    	if (error == true)		
+    	if (error == true) {
+    		edhocSessions.remove(CBORObject.FromObject(connectionIdentifier), session);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, ad3);
+    	}
     	
     	
     	// Verify that the identity of the Initiator is an allowed identity
@@ -961,12 +976,13 @@ public class MessageProcessor {
     		}
     	}
     	if (error == true) {
+    		edhocSessions.remove(CBORObject.FromObject(connectionIdentifier), session);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, ad3);
     	}
     	
-    	mySession.setPeerIdCred(idCredI);
+    	session.setPeerIdCred(idCredI);
     	OneKey peerKey = peerPublicKeys.get(idCredI);
-    	mySession.setPeerLongTermPublicKey(peerKey);
+    	session.setPeerLongTermPublicKey(peerKey);
     	
     	error = false;
     	
@@ -978,6 +994,7 @@ public class MessageProcessor {
     	externalData = computeExternalData(th3, peerCredentials.get(idCredI).GetByteString(), ad3);
     	if (externalData == null) {
     		errMsg = new String("Error when computing the external data for MAC_3");
+    		edhocSessions.remove(CBORObject.FromObject(connectionIdentifier), session);
     		return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, ad3);
     	}
     	if (debugPrint) {
@@ -991,29 +1008,32 @@ public class MessageProcessor {
         
         // Compute the key material
         
-        byte[] prk4x3m = computePRK4x3m(mySession);
+        byte[] prk4x3m = computePRK4x3m(session);
     	if (prk4x3m == null) {
     		errMsg = new String("Error when computing PRK_4x3m");
+    		edhocSessions.remove(CBORObject.FromObject(connectionIdentifier), session);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, ad3);
     	}
-    	mySession.setPRK4x3m(prk4x3m);
+    	session.setPRK4x3m(prk4x3m);
     	if (debugPrint) {
     		Util.nicePrint("PRK_4x3m", prk4x3m);
     	}
         
     	
     	// Compute K_3m and IV_3m to protect the inner COSE object
-    	byte[] k3m = computeK3m(mySession);
+    	byte[] k3m = computeK3m(session);
     	if (k3m == null) {
     		errMsg = new String("Error when computing K_3m");
+    		edhocSessions.remove(CBORObject.FromObject(connectionIdentifier), session);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, ad3);
     	}
     	if (debugPrint) {
     		Util.nicePrint("K_3m", k3m);
     	}
-    	byte[] iv3m = computeIV3m(mySession);
+    	byte[] iv3m = computeIV3m(session);
     	if (iv3m == null) {
     		errMsg = new String("Error when computing IV_3m");
+    		edhocSessions.remove(CBORObject.FromObject(connectionIdentifier), session);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, ad3);
     	}
     	if (debugPrint) {
@@ -1023,9 +1043,10 @@ public class MessageProcessor {
     	
     	// Encrypt the inner COSE object and take the ciphertext as MAC_3
 
-    	byte[] mac3 = computeMAC3(mySession.getSelectedCiphersuite(), idCredI, externalData, plaintext, k3m, iv3m);
+    	byte[] mac3 = computeMAC3(session.getSelectedCiphersuite(), idCredI, externalData, plaintext, k3m, iv3m);
     	if (mac3 == null) {
     		errMsg = new String("Error when computing MAC_3");
+    		edhocSessions.remove(CBORObject.FromObject(connectionIdentifier), session);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, ad3);
     	}
     	if (debugPrint) {
@@ -1039,8 +1060,9 @@ public class MessageProcessor {
     	if (debugPrint) {
     		Util.nicePrint("Signature_or_MAC_3", signatureOrMac3);
     	}
-    	if (!verifySignatureOrMac3(mySession, signatureOrMac3, externalData, mac3)) {
+    	if (!verifySignatureOrMac3(session, signatureOrMac3, externalData, mac3)) {
         	errMsg = new String("Error when verifying the signature of Signature_or_MAC_3");
+        	edhocSessions.remove(CBORObject.FromObject(connectionIdentifier), session);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, ad3);
     	}
     	
@@ -1049,12 +1071,13 @@ public class MessageProcessor {
     	
         byte[] th3SerializedCBOR = CBORObject.FromObject(th3).EncodeToBytes();
         byte[] ciphertext3SerializedCBOR = CBORObject.FromObject(ciphertext3).EncodeToBytes();
-    	byte[] th4 = computeTH4(mySession, th3SerializedCBOR, ciphertext3SerializedCBOR);
+    	byte[] th4 = computeTH4(session, th3SerializedCBOR, ciphertext3SerializedCBOR);
         if (th4 == null) {
         	errMsg = new String("Error when computing TH_4");
+        	edhocSessions.remove(CBORObject.FromObject(connectionIdentifier), session);
         	return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, ad3);
         }
-    	mySession.setTH4(th4);
+        session.setTH4(th4);
     	if (debugPrint) {
     		Util.nicePrint("TH_4", th4);
     	}
@@ -1074,7 +1097,7 @@ public class MessageProcessor {
 			processingResult.add(CBORObject.FromObject(ad3));
 		}
 		
-		mySession.setCurrentStep(Constants.EDHOC_AFTER_M3);
+		session.setCurrentStep(Constants.EDHOC_AFTER_M3);
 		
 		System.out.println("Completed processing of EDHOC Message 3\n");
 		return processingResult;
