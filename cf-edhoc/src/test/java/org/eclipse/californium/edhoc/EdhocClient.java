@@ -23,8 +23,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
@@ -358,22 +356,22 @@ public class EdhocClient {
 		// Possibly specify application data for AD_1, or null if none have to be provided
 		byte[] ad1 = null;
         
-		EdhocSession mySession = MessageProcessor.createSessionAsInitiator
+		EdhocSession session = MessageProcessor.createSessionAsInitiator
                 (authenticationMethod, correlationMethod, keyPair, idCred, cred, subjectName, supportedCiphersuites, usedConnectionIds);
 		
-        byte[] nextPayload = MessageProcessor.writeMessage1(mySession, ad1);
+        byte[] nextPayload = MessageProcessor.writeMessage1(session, ad1);
         
-		if (nextPayload == null || mySession.getCurrentStep() != Constants.EDHOC_BEFORE_M1) {
+		if (nextPayload == null || session.getCurrentStep() != Constants.EDHOC_BEFORE_M1) {
 			System.err.println("Inconsistent state before sending EDHOC Message 1");
 			return;
 		}
 		
 		// Add the new session to the list of existing EDHOC sessions
-		mySession.setMessage1(nextPayload);
-		mySession.setCurrentStep(Constants.EDHOC_AFTER_M1);
-		byte[] connectionId = mySession.getConnectionId();
+		session.setMessage1(nextPayload);
+		session.setCurrentStep(Constants.EDHOC_AFTER_M1);
+		byte[] connectionId = session.getConnectionId();
 		CBORObject bstrIdentifier = Util.encodeToBstrIdentifier(CBORObject.FromObject(connectionId));
-		edhocSessions.put(CBORObject.FromObject(bstrIdentifier), mySession);
+		edhocSessions.put(CBORObject.FromObject(bstrIdentifier), session);
 		
 		Request edhocMessageReq = new Request(Code.POST, Type.CON);
 		edhocMessageReq.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
@@ -418,7 +416,7 @@ public class EdhocClient {
         
         // Since the Correlation Method 1 is used, this response relates to the previous request through the CoAP Token
         // Hence, the Initiator knows what session to refer to, from which the correct C_I can be retrieved
-    	CBORObject connectionIdentifier = CBORObject.FromObject(mySession.getConnectionId());
+    	CBORObject connectionIdentifier = CBORObject.FromObject(session.getConnectionId());
     	CBORObject cI = Util.encodeToBstrIdentifier(connectionIdentifier);
         
     	nextPayload = new byte[] {};
@@ -442,7 +440,7 @@ public class EdhocClient {
             		peerSupportedCiphersuites.add(Integer.valueOf(suite));
         		}
         	}
-        	mySession.setPeerSupportedCipherSuites(peerSupportedCiphersuites);
+        	session.setPeerSupportedCipherSuites(peerSupportedCiphersuites);
         	
         	System.out.println("ERR_MSG: " + errMsg + "\n");
         	
@@ -480,11 +478,11 @@ public class EdhocClient {
 			// Prepare EDHOC Message 3
 			if (nextPayload.length == 0) {
 				
-				mySession.setCurrentStep(Constants.EDHOC_AFTER_M2);
+				session.setCurrentStep(Constants.EDHOC_AFTER_M2);
 				
-				nextPayload = MessageProcessor.writeMessage3(mySession, ad3);
+				nextPayload = MessageProcessor.writeMessage3(session, ad3);
 		        
-				if (nextPayload == null || mySession.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
+				if (nextPayload == null || session.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
 					System.err.println("Inconsistent state before sending EDHOC Message 3");
 					return;
 				}
@@ -508,8 +506,8 @@ public class EdhocClient {
 				if (requestType == Constants.EDHOC_MESSAGE_3) {
 			        
 			        /* Invoke the EDHOC-Exporter to produce OSCORE input material */
-			        byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(mySession);
-			        byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(mySession);
+			        byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(session);
+			        byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(session);
 			        if (debugPrint) {
 			        	Util.nicePrint("OSCORE Master Secret", masterSecret);
 			        	Util.nicePrint("OSCORE Master Salt", masterSalt);
