@@ -57,9 +57,6 @@ public class EdhocSession {
 	// Stored CIPHERTEXT 2
 	private byte[] ciphertext2 = null;
 	
-	// Stored CIPHERTEXT 3
-	private byte[] ciphertext3 = null;
-	
 	// Inner Key-Derivation Keys
 	private byte[] prk_2e = null;
 	private byte[] prk_3e2m = null;
@@ -454,21 +451,6 @@ public class EdhocSession {
 	public void setCiphertext2(byte[] ct) {
 		this.ciphertext2 = new byte[ct.length];
 		System.arraycopy(ct, 0, this.ciphertext2, 0, ct.length);
-	}
-	
-	/**
-	 * @return  the CIPHERTEXT 3
-	 */
-	public byte[] getCiphertext3() {
-		return this.ciphertext3;
-	}
-	
-	/**
-	 * @param ct  store a CIPHERTEXT 3 for later computation of TH3
-	 */
-	public void setCiphertext3(byte[] ct) {
-		this.ciphertext3 = new byte[ct.length];
-		System.arraycopy(ct, 0, this.ciphertext3, 0, ct.length);
 	}
 	
 	/**
