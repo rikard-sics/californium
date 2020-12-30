@@ -404,6 +404,8 @@ public class EdhocClient {
         int responseType = -1;
         byte[] responsePayload = edhocMessageResp.getPayload();
         
+        if (edhocMessageResp.getOptions().getContentFormat() != Constants.APPLICATION_EDHOC)
+        	discontinue = true;
         if (responsePayload == null)
         	discontinue = true;
         else {
@@ -439,6 +441,8 @@ public class EdhocClient {
         	
         	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload, cI, edhocSessions);
         	
+        	// This execution flow has the client as Initiator. Consistently, the Correlation Method is 1.
+        	// Hence, there is no C_I included, and the first element of the EDHOC Error Message is ERR_MSG.
         	String errMsg = objectList[0].toString();
         	
         	if (objectList[1].getType() == CBORType.Integer) {
@@ -455,11 +459,10 @@ public class EdhocClient {
         	
         	System.out.println("ERR_MSG: " + errMsg + "\n");
         	
-        	// The following simply delete the EDHOC session. However, it would be fine to prepare a new
+        	// The following simply deletes the EDHOC session. However, it would be fine to prepare a new
         	// EDHOC Message 1 right away, keeping the same Connection Identifier C_I and this same session.
         	// In fact, the session is marked as "used", hence new ephemeral keys would be generated when
-        	// preparing a new EDHOC Message 1.
-        	
+        	// preparing a new EDHOC Message 1.        	
         	
         	Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
 			client.shutdown();
@@ -564,7 +567,47 @@ public class EdhocClient {
 					return;
 				}
 				
-				// Wait for a possible Error Message as a response. For how long?
+				// Wait for a possible response. For how long?
+		        
+		        // This is a generic response, to be passed to the application
+		        if (edhocMessageResp2.getOptions().getContentFormat() != Constants.APPLICATION_EDHOC) {
+		        	
+		        	processResponseAfterEdhoc(edhocMessageResp2);
+		        	
+		        }
+		        else { // Only an EDHOC Error Message is a legitimate EDHOC message at this point
+		        	
+		        	responseType = -1;
+		            responsePayload = edhocMessageResp2.getPayload();
+		            
+		            if (responsePayload == null)
+		            	discontinue = true;
+		            else {
+		            	responseType = MessageProcessor.messageType(responsePayload);
+		            	if (responseType != Constants.EDHOC_ERROR_MESSAGE)
+		            		discontinue = true;
+		            }
+		            if (discontinue == true) {
+		            	System.err.println("Received invalid reply to EDHOC Message 3");
+		    			Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+		            	client.shutdown();
+		            	return;
+		            }
+		    		
+		    		System.out.println("Determined EDHOC message type: EDHOC Error Message\n");
+		            Util.nicePrint("EDHOC message " + responseType, responsePayload);
+		            
+		        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload, cI, edhocSessions);
+		        	
+		        	String errMsg = objectList[0].toString();
+		        	
+		        	System.out.println("ERR_MSG: " + errMsg + "\n");
+		        			        	
+		        	Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+					client.shutdown();
+		    		return;
+		        	
+		        }
 				
 			}
 
@@ -596,6 +639,14 @@ public class EdhocClient {
 	private static void processAD3(byte[] ad3) {
 		// Do nothing
 		System.out.println("Entered processAD3()");
+	}
+	
+	/*
+	 * Process a generic response received as reply to EDHOC Message 3
+	 */
+	private static void processResponseAfterEdhoc(CoapResponse msg) {
+		// Do nothing
+		System.out.println("ResponseAfterEdhoc()");
 	}
 	
 }

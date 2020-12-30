@@ -1146,14 +1146,14 @@ public class MessageProcessor {
 		
 		// C_X is provided by the method caller
 		if (cX != null) {
-			mySession = edhocSessions.get(cX);
+			mySession = edhocSessions.get(Util.decodeFromBstrIdentifier(cX));
 		}
 		
 		// The connection identifier is expected as first element in the EDHOC Error Message
 		else {
 			
 			if (objectList[index].getType() == CBORType.ByteString) {
-				mySession = edhocSessions.get(objectList[index]);
+				mySession = edhocSessions.get(Util.decodeFromBstrIdentifier(objectList[index]));
 				index++;		
 			}
 			else {
