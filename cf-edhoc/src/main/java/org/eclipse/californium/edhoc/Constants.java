@@ -192,6 +192,23 @@ public static final String[] APP_HASH_ALGS = {
 };
 
 
+/**
+ * Temporary keys
+ * 
+ */
+public static final int EDHOC_K_2M =  0; // Key K_2m
+public static final int EDHOC_K_3M =  1; // Key K_3m
+public static final int EDHOC_K_3AE = 2; // Key K_3ae
+
+
+/**
+ * Temporary IVs
+ * 
+ */
+public static final int EDHOC_IV_2M =  0; // Key IV_2m
+public static final int EDHOC_IV_3M =  1; // Key IV_3m
+public static final int EDHOC_IV_3AE = 2; // Key IV_3ae
+
 
 /**
  * EDHOC protocol steps
@@ -200,13 +217,13 @@ public static final String[] APP_HASH_ALGS = {
 
 // Initiator steps
 public static final int EDHOC_BEFORE_M1 = 0; // Before sending EDHOC Message 1
-public static final int EDHOC_AFTER_M1 = 1;  // After sending EDHOC Message 1
+public static final int EDHOC_AFTER_M1  = 1; // After sending EDHOC Message 1
 
 // Responder steps
 public static final int EDHOC_BEFORE_M2 = 2; // Before sending EDHOC Message 2
 
 // Common steps
-public static final int EDHOC_AFTER_M2 = 3;  // After sending/receiving EDHOC Message 2
-public static final int EDHOC_AFTER_M3 = 4;  // After sending/receiving EDHOC Message 3
+public static final int EDHOC_AFTER_M2  = 3; // After sending/receiving EDHOC Message 2
+public static final int EDHOC_AFTER_M3  = 4; // After sending/receiving EDHOC Message 3
 
 }
