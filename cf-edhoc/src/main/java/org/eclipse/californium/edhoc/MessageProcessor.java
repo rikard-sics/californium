@@ -116,7 +116,7 @@ public class MessageProcessor {
      *                        offered to the other peer in the session, as a bstr_identifier
      * @return   A list of CBOR Objects including up to two elements.
      *           The first element is always present. It it is a CBOR byte string, with value either:
-     *             i) a zero length byte string, indicating that the EDHOC Message 2 can be prepared; or
+     *              i) a zero length byte string, indicating that the EDHOC Message 2 can be prepared; or
      *             ii) a non-zero length byte string as the EDHOC Error Message to be sent.
      *           The second element is optional. If present, it is a CBOR byte string, with value
      *           the application data AD1 to deliver to the application.
@@ -331,7 +331,7 @@ public class MessageProcessor {
      * @param peerCredentials   The list of CRED of the long-term public keys of authorized peers
      * @return   A list of CBOR Objects including up to two elements.
      *           The first element is always present. It it is a CBOR byte string, with value either:
-     *             i) a zero length byte string, indicating that the EDHOC Message 3 can be prepared; or
+     *              i) a zero length byte string, indicating that the EDHOC Message 3 can be prepared; or
      *             ii) a non-zero length byte string as the EDHOC Error Message to be sent.
      *           The second element is optional. If present, it is a CBOR byte string, with value
      *           the application data AD2 to deliver to the application.
@@ -352,7 +352,7 @@ public class MessageProcessor {
 		
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
 		String errMsg = null; // The text string to be possibly returned as ERR_MSG in an EDHOC Error Message
-		int correlation = -1; // The correlation method indicated by METHOD_CORR, or left to -1 in case on invalid message
+		int correlation = -1; // The correlation method to retrieve from the session, or left to -1 in case on invalid message
 		CBORObject cR = null; // The Connection Identifier C_R, or left to null in case of invalid message
 		EdhocSession mySession = null; // The session used for this EDHOC execution
 		
@@ -385,7 +385,7 @@ public class MessageProcessor {
 				error = true;
 			}
 			else {
-				cI = objectListRequest[index];
+				cI = Util.decodeFromBstrIdentifier(objectListRequest[index]);
 				index++;
 			}
 		}
@@ -398,7 +398,7 @@ public class MessageProcessor {
 				error = true;
 			}
 			else if (mySession.isInitiator() == false) {
-				errMsg = new String("EDHOC Message 2 is intended only to an Iniator");
+				errMsg = new String("EDHOC Message 2 is intended only to an Initiator");
 				error = true;
 			}
 			else if (mySession.getCurrentStep() != Constants.EDHOC_AFTER_M1) {
@@ -492,7 +492,7 @@ public class MessageProcessor {
         	objectListData2.add(objectListRequest[i]);
         byte[] data2 = Util.buildCBORSequence(objectListData2); // data_2 as a CBOR sequence
         
-        th2 = computeTH2(message1, data2, "SHA-256");
+        th2 = computeTH2(mySession, message1, data2);
         if (th2 == null) {
         	errMsg = new String("Error when computing TH2");
 			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
@@ -593,6 +593,9 @@ public class MessageProcessor {
     	if (error == true) {
 			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
 			processingResult.add(CBORObject.FromObject(responsePayload));
+			if (ad2 != null) {
+				processingResult.add(CBORObject.FromObject(ad2));
+			}
 			return processingResult;
     	}
     	
@@ -640,6 +643,9 @@ public class MessageProcessor {
     	if (error == true) {
 			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
 			processingResult.add(CBORObject.FromObject(responsePayload));
+			if (ad2 != null) {
+				processingResult.add(CBORObject.FromObject(ad2));
+			}
 			return processingResult;
     	}
     	mySession.setPeerIdCred(idCredR);
@@ -664,6 +670,9 @@ public class MessageProcessor {
     	if (error == true) {
 			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
 			processingResult.add(CBORObject.FromObject(responsePayload));
+			if (ad2 != null) {
+				processingResult.add(CBORObject.FromObject(ad2));
+			}
 			return processingResult;
     	}
     	
@@ -674,6 +683,9 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing K_2M");
 			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
 			processingResult.add(CBORObject.FromObject(responsePayload));
+			if (ad2 != null) {
+				processingResult.add(CBORObject.FromObject(ad2));
+			}
 			return processingResult;
     	}
     	if (debugPrint) {
@@ -684,6 +696,9 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing IV_2M");
 			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
 			processingResult.add(CBORObject.FromObject(responsePayload));
+			if (ad2 != null) {
+				processingResult.add(CBORObject.FromObject(ad2));
+			}
 			return processingResult;
     	}
     	if (debugPrint) {
@@ -699,6 +714,9 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing External Data for MAC_2");
 			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
 			processingResult.add(CBORObject.FromObject(responsePayload));
+			if (ad2 != null) {
+				processingResult.add(CBORObject.FromObject(ad2));
+			}
 			return processingResult;
     	}
     	if (debugPrint) {
@@ -717,6 +735,9 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing MAC_2");
 			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
 			processingResult.add(CBORObject.FromObject(responsePayload));
+			if (ad2 != null) {
+				processingResult.add(CBORObject.FromObject(ad2));
+			}
 			return processingResult;
     	}
     	if (debugPrint) {
@@ -735,6 +756,9 @@ public class MessageProcessor {
         	errMsg = new String("Error when verifying the signature of Signature_or_MAC_2");
 			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
 			processingResult.add(CBORObject.FromObject(responsePayload));
+			if (ad2 != null) {
+				processingResult.add(CBORObject.FromObject(ad2));
+			}
 			return processingResult;
     	}
 		
@@ -754,16 +778,425 @@ public class MessageProcessor {
 	}
 	
     /**
-     *  Process an EDHOC Message3
-     * @param sequence   The CBOR sequence used as payload of the EDHOC Message3
-     * @return  The elements of the EDHOC Message3 as CBOR objects, or null in case of errors
+     *  Process an EDHOC Message 3
+     * @param sequence   The CBOR sequence used as payload of the EDHOC Message 3
+     * @param cR   The connection identifier of the Responder; set to null if expected in the EDHOC Message 3
+     * @param edhocSessions   The list of active EDHOC sessions of the recipient
+     * @param peerPublicKeys   The list of the long-term public keys of authorized peers
+     * @param peerCredentials   The list of CRED of the long-term public keys of authorized peers
+     * @return   A list of CBOR Objects including up to three elements.
+     *           The first element is always present. It it is a CBOR byte string, with value either:
+     *              i) a zero length byte string, indicating that the protocol has successfully completed; or
+     *             ii) a non-zero length byte string as the EDHOC Error Message to be sent.
+     *           The second element is a CBOR byte string, and is relevant only if the protocol
+     *           has successfully completed. In such a case, it specifies  the Connection Identifier
+     *           of the Responder in the used EDHOC session, i.e. C_R, as a bstr_identifier.  
+     *           The third element is optional. If present, it is a CBOR byte string, with value
+     *           the application data AD3 to deliver to the application.
      */
-	public static CBORObject[] readMessage3(byte[] sequence) {
+	public static List<CBORObject> readMessage3(byte[] sequence, CBORObject cR, Map<CBORObject,
+            								EdhocSession> edhocSessions, Map<CBORObject, OneKey> peerPublicKeys,
+            								Map<CBORObject, CBORObject> peerCredentials) {
 		
-		if (sequence == null)
+		if (sequence == null || edhocSessions == null)
 			return null;
 		
-		return CBORObject.DecodeSequenceFromBytes(sequence);
+		byte[] ad3 = null; // Will be set if Application Data is present as AD3
+		
+		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
+		
+		// Serialization of the response to be sent back to the client, if this is an EDHOC Error Message
+		byte[] responsePayload = new byte[] {};
+		
+		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
+		String errMsg = null; // The text string to be possibly returned as ERR_MSG in an EDHOC Error Message
+		int correlation = -1; // The correlation method to retrieve from the session, or left to -1 in case on invalid message
+		CBORObject cI = null; // The Connection Identifier C_I, or left to null in case of invalid message
+		EdhocSession mySession = null; // The session used for this EDHOC execution
+		
+		CBORObject[] objectListRequest = CBORObject.DecodeSequenceFromBytes(sequence);
+		
+		/* Consistency checks */
+		
+		int index = 0;
+		
+		if (cR == null && objectListRequest.length != 2) {
+			errMsg = new String("C_R must be specified");
+			error = true;
+		}
+		
+		if (error == false && cR != null && objectListRequest.length != 1) {
+			errMsg = new String("C_R must not be specified");
+			error = true;
+		}
+		
+		// C_R is present as first element
+		if (error == false && cR == null) {
+			if (error == false && objectListRequest[index].getType() != CBORType.ByteString &&
+				objectListRequest[index].getType() != CBORType.Integer)  {
+					errMsg = new String("C_R must be a byte string or an integer");
+					error = true;
+			}
+			
+			if (error == false && Util.decodeFromBstrIdentifier(objectListRequest[index]) == null) {
+				errMsg = new String("C_R must be encoded as a valid bstr_identifier");
+				error = true;
+			}
+			else {
+				cR = Util.decodeFromBstrIdentifier(objectListRequest[index]);
+				index++;
+			}
+		}
+		
+		if (error == false && cR != null) {
+			mySession = edhocSessions.get(cR);
+			
+			if (mySession == null) {
+				errMsg = new String("EDHOC session not found");
+				error = true;
+			}
+			else if (mySession.isInitiator() == true) {
+				errMsg = new String("EDHOC Message 3 is intended only to a Responder");
+				error = true;
+			}
+			else if (mySession.getCurrentStep() != Constants.EDHOC_AFTER_M2) {
+				errMsg = new String("The protocol state is not waiting for an EDHOC Message 3");
+				error = true;
+			}
+			else {
+				correlation = mySession.getCorrelation();
+			}
+		}
+		
+		// CIPHERTEXT_3
+		byte[] ciphertext3 = null;
+		if (error == false && objectListRequest[index].getType() != CBORType.ByteString) {
+			errMsg = new String("CIPHERTEXT_3 must be a byte string");
+			error = true;
+		}
+		else {
+			ciphertext3 = objectListRequest[index].GetByteString();
+			mySession.setCiphertext3(ciphertext3);
+		}
+		
+		
+		/* Prepare an EDHOC Error Message */
+		
+		if (error == true) {
+			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
+			processingResult.add(CBORObject.FromObject(responsePayload));
+			processingResult.add(cR);
+			return processingResult;
+		}
+		
+		
+		/* Decrypt CIPHERTEXT_3 */
+		
+        // Compute TH3
+        byte[] th2 = mySession.getTH2(); // TH_2 as plain bytes
+        byte[] th2SerializedCBOR = CBORObject.FromObject(th2).EncodeToBytes();
+        byte[] ciphertext2 = mySession.getCiphertext2(); // CIPHERTEXT_2 as plain bytes
+        byte[] ciphertext2SerializedCBOR = CBORObject.FromObject(ciphertext2).EncodeToBytes(); 
+        List<CBORObject> objectListData3 = new ArrayList<>();
+        for (int i = 0; i < objectListRequest.length - 1; i++)
+        	objectListData3.add(objectListRequest[i]);
+        byte[] data3 = Util.buildCBORSequence(objectListData3); // data_3 as a CBOR sequence
+        
+        byte[] th3 = computeTH3(mySession, th2SerializedCBOR, ciphertext2SerializedCBOR, data3);
+        if (th3 == null) {
+        	errMsg = new String("Error when computing TH3");
+			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
+			processingResult.add(CBORObject.FromObject(responsePayload));
+			processingResult.add(cR);
+			return processingResult;
+        }
+        mySession.setTH3(th3);
+    	if (debugPrint) {
+    		Util.nicePrint("TH_3", th3);
+    	}
+		
+		
+    	// Compute K_3ae and IV_3ae to protect the outer COSE object
+    	byte[] k3ae = computeK3ae(mySession);
+    	if (k3ae == null) {
+        	errMsg = new String("Error when computing TH3");
+			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
+			processingResult.add(CBORObject.FromObject(responsePayload));
+			processingResult.add(cR);
+			return processingResult;
+    	}
+    	if (debugPrint) {
+    		Util.nicePrint("K_3ae", k3ae);
+    	}
+    	byte[] iv3ae = computeIV3ae(mySession);
+    	if (iv3ae == null) {
+        	errMsg = new String("Error when computing IV_3ae");
+			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
+			processingResult.add(CBORObject.FromObject(responsePayload));
+			processingResult.add(cR);
+			return processingResult;
+    	}
+    	if (debugPrint) {
+    		Util.nicePrint("IV_3ae", iv3ae);
+    	}
+    	
+    	// Prepare the external_aad as including only TH3
+    	byte[] externalData = th3;
+
+    	
+    	// Compute the outer plaintext
+    	
+    	if (debugPrint) {
+    		Util.nicePrint("CIPHERTEXT_3", ciphertext3);
+    	}
+
+    	byte[] outerPlaintext = decryptCiphertext3(mySession, externalData, ciphertext3, k3ae, iv3ae);
+    	if (outerPlaintext == null) {
+        	System.err.println("Error when decrypting CIPHERTEXT_3");
+        	errMsg = new String("Error when decrypting CIPHERTEXT_3");
+			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
+			processingResult.add(CBORObject.FromObject(responsePayload));
+			processingResult.add(cR);
+			return processingResult;
+    	}
+    	if (debugPrint) {
+    		Util.nicePrint("Plaintext retrieved from CIPHERTEXT_3", outerPlaintext);
+    	}
+    	
+    	// Parse the outer plaintext as a CBOR sequence
+    	CBORObject[] plaintextElementList = CBORObject.DecodeSequenceFromBytes(outerPlaintext);
+	    
+    	error = false;
+    	if (plaintextElementList.length != 2 && plaintextElementList.length != 3) {
+        	errMsg = new String("Invalid format of the content encrypted as CIPHERTEXT_3");
+        	error = true;
+    	}
+    	else if (plaintextElementList[0].getType() != CBORType.ByteString &&
+    			 plaintextElementList[0].getType() != CBORType.Integer) {
+        	errMsg = new String("ID_CRED_I must be a bstr_identifier");
+        	error = true;
+    	}
+    	else if (plaintextElementList[1].getType() != CBORType.ByteString) {
+        	errMsg = new String("Signature_or_MAC_3 must be a byte string");
+        	error = true;
+    	}
+    	else if (plaintextElementList.length == 3) {
+    		if (plaintextElementList[2].getType() != CBORType.ByteString) {
+	        	errMsg = new String("AD3 must be a byte string");
+	        	error = true;
+    		}
+    		else {
+    			CBORObject ad3CBOR = plaintextElementList[2];
+    			int length = ad3CBOR.GetByteString().length; 
+    			ad3 = new byte[length];
+    			System.arraycopy(ad3CBOR.GetByteString(), 0, ad3, 0, length);
+    		}
+    	}
+    	if (error == true) {
+			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
+			processingResult.add(CBORObject.FromObject(responsePayload));
+			processingResult.add(cR);
+			if (ad3 != null) {
+				processingResult.add(CBORObject.FromObject(ad3));
+			}
+			return processingResult;
+    	}
+    	
+    	
+    	// Verify that the identity of the Initiator is an allowed identity
+    	CBORObject idCredI = CBORObject.NewMap();
+    	CBORObject rawIdCredI = plaintextElementList[0];
+    	error = false;
+    	
+    	// ID_CRED_I is a CBOR map with only 'kid', and only 'kid' was transported as bstr_identifier
+    	if (rawIdCredI.getType() == CBORType.Integer) {
+    		CBORObject kidCBOR = Util.decodeFromBstrIdentifier(rawIdCredI);
+    		if (kidCBOR == null) {
+	        	errMsg = new String("Invalid format for ID_CRED_I");
+    			error = true;
+    		}
+    		else {
+	    		idCredI.Add(HeaderKeys.KID.AsCBOR(), kidCBOR);
+	    		
+	    		if (!peerPublicKeys.containsKey(idCredI)) {
+		        	errMsg = new String("The identity expressed by ID_CRED_I is not recognized");
+	    			error = true;
+	    		}
+    		}
+    	}
+    	else if (rawIdCredI.getType() == CBORType.ByteString) {
+    		
+    		// First check the case where ID_CRED_R is a CBOR map with only 'kid', and only 'kid' was transported as bstr_identifier
+    		CBORObject kidCBOR = Util.decodeFromBstrIdentifier(rawIdCredI);
+    		idCredI.Add(kidCBOR);
+    		if (kidCBOR != null) {
+    			idCredI.Add(HeaderKeys.KID.AsCBOR(), kidCBOR);
+    		}
+    		if (!peerPublicKeys.containsKey(idCredI)) {
+    			// If not found yet, check the case where the byte string is the serialization of a whole CBOR map
+    			// TODO: Again, this requires something better to ensure a deterministic encoding, if the map has more than 2 elements
+    			idCredI = CBORObject.DecodeFromBytes(rawIdCredI.GetByteString());
+    			
+    			if (!peerPublicKeys.containsKey(idCredI)) {
+		        	errMsg = new String("The identity expressed by ID_CRED_I is not recognized");
+	    			error = true;
+    			}
+    		}
+    	}
+    	if (error == true) {
+			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
+			processingResult.add(CBORObject.FromObject(responsePayload));
+			processingResult.add(cR);
+			if (ad3 != null) {
+				processingResult.add(CBORObject.FromObject(ad3));
+			}
+			return processingResult;
+    	}
+    	mySession.setPeerIdCred(idCredI);
+    	OneKey peerKey = peerPublicKeys.get(idCredI);
+    	mySession.setPeerLongTermPublicKey(peerKey);
+    	
+    	error = false;
+    	
+
+    	/* Start computing the inner COSE object */
+    	
+        // Compute the external data for the external_aad, as a CBOR sequence
+    	
+    	externalData = computeExternalData(th3, peerCredentials.get(idCredI).GetByteString(), ad3);
+    	if (externalData == null) {
+    		System.err.println("Error when computing the external data for MAC_3");
+    		return null;
+    	}
+    	if (debugPrint) {
+    		Util.nicePrint("External Data to compute MAC_3", externalData);
+    	}
+    	
+        // Prepare the plaintext, as empty
+        
+        byte[] plaintext = new byte[] {};
+        
+        
+        // Compute the key material
+        
+        byte[] prk4x3m = computePRK4x3m(mySession);
+    	if (prk4x3m == null) {
+    		errMsg = new String("Error when computing PRK_4x3m");
+			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
+			processingResult.add(CBORObject.FromObject(responsePayload));
+			processingResult.add(cR);
+			if (ad3 != null) {
+				processingResult.add(CBORObject.FromObject(ad3));
+			}
+			return processingResult;
+    	}
+    	mySession.setPRK4x3m(prk4x3m);
+    	if (debugPrint) {
+    		Util.nicePrint("PRK_4x3m", prk4x3m);
+    	}
+        
+    	
+    	// Compute K_3m and IV_3m to protect the inner COSE object
+    	byte[] k3m = computeK3m(mySession);
+    	if (k3m == null) {
+    		errMsg = new String("Error when computing K_3m");
+			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
+			processingResult.add(CBORObject.FromObject(responsePayload));
+			processingResult.add(cR);
+			if (ad3 != null) {
+				processingResult.add(CBORObject.FromObject(ad3));
+			}
+			return processingResult;
+    	}
+    	if (debugPrint) {
+    		Util.nicePrint("K_3m", k3m);
+    	}
+    	byte[] iv3m = computeIV3m(mySession);
+    	if (iv3m == null) {
+    		errMsg = new String("Error when computing IV_3m");
+			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
+			processingResult.add(CBORObject.FromObject(responsePayload));
+			processingResult.add(cR);
+			if (ad3 != null) {
+				processingResult.add(CBORObject.FromObject(ad3));
+			}
+			return processingResult;
+    	}
+    	if (debugPrint) {
+    		Util.nicePrint("IV_3m", iv3m);
+    	}
+    	
+    	
+    	// Encrypt the inner COSE object and take the ciphertext as MAC_3
+
+    	byte[] mac3 = computeMAC3(mySession.getSelectedCiphersuite(), idCredI, externalData, plaintext, k3m, iv3m);
+    	if (mac3 == null) {
+    		System.err.println("Error when computing MAC_3");
+    		errMsg = new String("Error when computing MAC_3");
+			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
+			processingResult.add(CBORObject.FromObject(responsePayload));
+			processingResult.add(cR);
+			if (ad3 != null) {
+				processingResult.add(CBORObject.FromObject(ad3));
+			}
+			return processingResult;
+    	}
+    	if (debugPrint) {
+    		Util.nicePrint("MAC_3", mac3);
+    	}
+    	
+    	
+    	// Verify Signature_or_MAC_3
+    	
+    	byte[] signatureOrMac3 = plaintextElementList[1].GetByteString();
+    	if (debugPrint) {
+    		Util.nicePrint("Signature_or_MAC_3", signatureOrMac3);
+    	}
+        
+    	if (!verifySignatureOrMac3(mySession, signatureOrMac3, externalData, mac3)) {
+        	errMsg = new String("Error when verifying the signature of Signature_or_MAC_3");
+			responsePayload = writeErrorMessage(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
+			processingResult.add(CBORObject.FromObject(responsePayload));
+			processingResult.add(cR);
+			if (ad3 != null) {
+				processingResult.add(CBORObject.FromObject(ad3));
+			}
+			return processingResult;
+    	}
+    	
+    	
+    	/* Compute TH4 */
+    	
+        byte[] th3SerializedCBOR = CBORObject.FromObject(th3).EncodeToBytes();
+        byte[] ciphertext3SerializedCBOR = CBORObject.FromObject(ciphertext3).EncodeToBytes();
+    	byte[] th4 = computeTH4(mySession, th3SerializedCBOR, ciphertext3SerializedCBOR);
+        if (th4 == null) {
+        	System.err.println("Error when computing TH_4");
+        	return null;
+        }
+    	mySession.setTH4(th4);
+    	if (debugPrint) {
+    		Util.nicePrint("TH_4", th4);
+    	}
+    	
+    	
+		/* Return an indication that the protocol is completed, possibly with the provided Application Data */
+		
+		// A CBOR byte string with zero length, indicating that the protocol has successfully completed
+		processingResult.add(CBORObject.FromObject(responsePayload));
+		
+		// The Connection Identifier C_R used by the Responder
+		processingResult.add(cR);
+		
+		// Application Data from AD_2 (if present), as a CBOR byte string
+		if (ad3 != null) {
+			processingResult.add(CBORObject.FromObject(ad3));
+		}
+		
+		mySession.setCurrentStep(Constants.EDHOC_AFTER_M3);
+		
+		System.out.println("Completed processing of EDHOC Message 3\n");
+		return processingResult;
 		
 	}
 	
@@ -1067,7 +1500,7 @@ public class MessageProcessor {
         byte[] message1 = session.getMessage1(); // message_1 as a CBOR sequence
         byte[] data2 = Util.buildCBORSequence(objectList); // data_2 as a CBOR sequence
         
-        byte[] th2 = computeTH2(message1, data2, "SHA-256");
+        byte[] th2 = computeTH2(session, message1, data2);
         if (th2 == null) {
     		System.err.println("Error when computing TH_2");
         	return null;
@@ -1280,7 +1713,7 @@ public class MessageProcessor {
         	data3 = Util.buildCBORSequence(objectList); // data_3 as a CBOR sequence
         }
 
-        byte[] th3 = computeTH3(th2SerializedCBOR, ciphertext2SerializedCBOR, data3, "SHA-256");
+        byte[] th3 = computeTH3(session, th2SerializedCBOR, ciphertext2SerializedCBOR, data3);
         if (th3 == null) {
         	System.err.println("Error when computing TH_3");
         	return null;
@@ -1344,7 +1777,7 @@ public class MessageProcessor {
 
     	byte[] mac3 = computeMAC3(session.getSelectedCiphersuite(), session.getIdCred(), externalData, plaintext, k3m, iv3m);
     	if (mac3 == null) {
-    		System.err.println("MAC_3");
+    		System.err.println("Error when computing MAC_3");
     		return null;
     	}
     	if (debugPrint) {
@@ -1429,7 +1862,7 @@ public class MessageProcessor {
     	
         byte[] th3SerializedCBOR = CBORObject.FromObject(th3).EncodeToBytes();
         byte[] ciphertext3SerializedCBOR = CBORObject.FromObject(ciphertext3).EncodeToBytes(); 
-    	byte[] th4 = computeTH4(th3SerializedCBOR, ciphertext3SerializedCBOR, "SHA-256");
+    	byte[] th4 = computeTH4(session, th3SerializedCBOR, ciphertext3SerializedCBOR);
         if (th4 == null) {
         	System.err.println("Error when computing TH_4");
         	return null;
@@ -1441,7 +1874,9 @@ public class MessageProcessor {
     	
     	
     	/* Prepare EDHOC Message 3 */
-    	    	
+    	
+    	session.setCurrentStep(Constants.EDHOC_AFTER_M3);
+    	
     	if (debugPrint) {
     		Util.nicePrint("EDHOC Message 3", Util.buildCBORSequence(objectList));
     	}
@@ -1551,6 +1986,7 @@ public class MessageProcessor {
      * @param message1   The payload of the received EDHOC Message 1
      * @param keyPair   The identity key of the Responder
      * @param idCredR   ID_CRED_R for the identity key of the Responder
+     * @param credR   CRED_R for the identity key of the Responder
      * @param supportedCipherSuites   The list of ciphersuites supported by the Responder
      * @param usedConnectionIds   The list of allocated Connection Identifiers for the Responder
      * @return  The newly created EDHOC session
@@ -2190,6 +2626,48 @@ public class MessageProcessor {
 	
 	
     /**
+     *  Decrypt CIPHERTEXT_3
+     * @param session   The used EDHOC session
+     * @param externalData   The External Data for the encryption process
+     * @param plaintext   The ciphertext to decrypt
+     * @param k3ae   The decryption key
+     * @param iv3ae   The initialization vector
+     * @return  The plaintext recovered from CIPHERTEXT_3
+     */
+	public static byte[] decryptCiphertext3(EdhocSession session, byte[] externalData,
+			                                byte[] ciphertext, byte[] k3ae, byte[] iv3ae) {
+		
+    	AlgorithmID alg = null;
+    	byte[] plaintext = null;
+    	
+    	int selectedCiphersuite = session.getSelectedCiphersuite();
+    	switch (selectedCiphersuite) {
+    		case Constants.EDHOC_CIPHER_SUITE_0:
+    		case Constants.EDHOC_CIPHER_SUITE_2:
+    			alg = AlgorithmID.AES_CCM_16_64_128;
+    			break;
+    		case Constants.EDHOC_CIPHER_SUITE_1:
+    		case Constants.EDHOC_CIPHER_SUITE_3:
+    			alg = AlgorithmID.AES_CCM_16_128_128;
+    			break;
+    	}
+    	
+    	// Prepare the empty content for the COSE protected header
+    	CBORObject emptyMap = CBORObject.NewMap();
+    	
+    	try {
+    		plaintext = Util.decrypt(emptyMap, externalData, ciphertext, alg, iv3ae, k3ae);
+		} catch (CoseException e) {
+			System.err.println("Error when decrypting CIPHERTEXT_3\n" + e.getMessage());
+			return null;
+		}
+		
+		return plaintext;
+		
+	}
+	
+	
+    /**
      *  Compute Signature_or_MAC_2 - Only for the Responder
      * @param session   The used EDHOC session
      * @param mac2   The MAC_2 value
@@ -2268,11 +2746,11 @@ public class MessageProcessor {
 		int authenticationMethod = session.getMethod();
 		
     	if (authenticationMethod == Constants.EDHOC_AUTH_METHOD_1 || authenticationMethod == Constants.EDHOC_AUTH_METHOD_3) {
-    		// The responded does not use signatures as authentication method, then Signature_or_MAC_2 has to be equal to MAC_2
+    		// The responder does not use signatures as authentication method, then Signature_or_MAC_2 has to be equal to MAC_2
     		return Arrays.equals(signatureOrMac2, mac2);
     	}
     	else if (authenticationMethod == Constants.EDHOC_AUTH_METHOD_0 || authenticationMethod == Constants.EDHOC_AUTH_METHOD_2) {
-    		// The responded uses signatures as authentication method, then Signature_or_MAC_2 is equal to MAC_2
+    		// The responder uses signatures as authentication method, then Signature_or_MAC_2 is a signature to verify
 			try {
 				return Util.verifySignature(signatureOrMac2, session.getPeerIdCred(),
 						                    externalData, mac2, session.getPeerLongTermPublicKey());
@@ -2288,15 +2766,59 @@ public class MessageProcessor {
 	
 	
     /**
+     *  Verify Signature_or_MAC_3, when this contains an actual signature - Only for the Responder
+     * @param session   The used EDHOC session
+     * @param signature   The signature value specified as Signature_or_MAC_3
+     * @param externalData   The external data for the possible signature process, it can be null
+     * @param mac3   The MAC_3 whose signature has to be verified
+     * @return  True in case of successful verification, false otherwise
+     */
+	public static boolean verifySignatureOrMac3(EdhocSession session, byte[] signatureOrMac3, byte[] externalData, byte[] mac3) {
+		
+		int authenticationMethod = session.getMethod();
+		
+    	if (authenticationMethod == Constants.EDHOC_AUTH_METHOD_2 || authenticationMethod == Constants.EDHOC_AUTH_METHOD_3) {
+    		// The initiator does not use signatures as authentication method, then Signature_or_MAC_3 has to be equal to MAC_3
+    		return Arrays.equals(signatureOrMac3, mac3);
+    	}
+    	else if (authenticationMethod == Constants.EDHOC_AUTH_METHOD_0 || authenticationMethod == Constants.EDHOC_AUTH_METHOD_1) {
+    		// The initiator uses signatures as authentication method, then Signature_or_MAC_3 is a signature to verify
+			try {
+				return Util.verifySignature(signatureOrMac3, session.getPeerIdCred(),
+						                    externalData, mac3, session.getPeerLongTermPublicKey());
+			} catch (CoseException e) {
+				System.err.println("Error when verifying the signature of Signature_or_MAC_3\n" + e.getMessage());
+				return false;
+			}
+		}
+		
+		return false;
+		
+	}
+	
+	
+    /**
      *  Compute the transcript hash TH2
+     * @param session   The used EDHOC session
      * @param message1   The payload of the EDHOC Message 1, as a serialized CBOR byte string
      * @param data2   The data_2 information from the EDHOC Message 2, as a serialized CBOR byte string
-     * @param hashAlgorithm   The name of the hash algorithm to use
      * @return  The computed TH2
      */
-	public static byte[] computeTH2(byte[] message1, byte[] data2, String hashAlgorithm) {
+	public static byte[] computeTH2(EdhocSession session, byte[] message1, byte[] data2) {
 	
         byte[] th2 = null;
+        
+        String hashAlgorithm = null;
+        int selectedCiphersuite = session.getSelectedCiphersuite();
+        switch (selectedCiphersuite) {
+        	case Constants.EDHOC_CIPHER_SUITE_0:
+        	case Constants.EDHOC_CIPHER_SUITE_1:
+        	case Constants.EDHOC_CIPHER_SUITE_2:
+        	case Constants.EDHOC_CIPHER_SUITE_3:
+        		hashAlgorithm = "SHA-256";
+        		break;
+        }
+        
         byte[] hashInput = new byte[message1.length + data2.length];
         System.arraycopy(message1, 0, hashInput, 0, message1.length);
         System.arraycopy(data2, 0, hashInput, message1.length, data2.length);
@@ -2315,18 +2837,29 @@ public class MessageProcessor {
 	
     /**
      *  Compute the transcript hash TH3
+     * @param session   The used EDHOC session
      * @param th2   The transcript hash TH2, as a serialized CBOR byte string
      * @param ciphertext2   The CIPHERTEXT_2 from EDHOC Message 2, as a serialized CBOR byte string
      * @param data3   The data_3 information from the EDHOC Message 3, as a serialized CBOR byte string. It can be null
-     * @param hashAlgorithm   The name of the hash algorithm to use
      * @return  The computed TH3
      */
-	public static byte[] computeTH3(byte[] th2, byte[] ciphertext2, byte[] data3, String hashAlgorithm) {
+	public static byte[] computeTH3(EdhocSession session, byte[] th2, byte[] ciphertext2, byte[] data3) {
 	
         byte[] th3 = null;
         int inputLength = th2.length + ciphertext2.length;
         if (data3 != null)
         	inputLength += data3.length;
+        
+        String hashAlgorithm = null;
+        int selectedCiphersuite = session.getSelectedCiphersuite();
+        switch (selectedCiphersuite) {
+        	case Constants.EDHOC_CIPHER_SUITE_0:
+        	case Constants.EDHOC_CIPHER_SUITE_1:
+        	case Constants.EDHOC_CIPHER_SUITE_2:
+        	case Constants.EDHOC_CIPHER_SUITE_3:
+        		hashAlgorithm = "SHA-256";
+        		break;
+        }
         
         int offset = 0;
         byte[] hashInput = new byte[inputLength];
@@ -2352,15 +2885,26 @@ public class MessageProcessor {
 	
     /**
      *  Compute the transcript hash TH4
+     * @param session   The used EDHOC session
      * @param th3   The transcript hash TH3, as a serialized CBOR byte string
      * @param ciphertext3   The CIPHERTEXT_3 from EDHOC Message 3, as a serialized CBOR byte string
-     * @param hashAlgorithm   The name of the hash algorithm to use
      * @return  The computed TH4
      */
-	public static byte[] computeTH4(byte[] th3, byte[] ciphertext3, String hashAlgorithm) {
+	public static byte[] computeTH4(EdhocSession session, byte[] th3, byte[] ciphertext3) {
 	
         byte[] th4 = null;
         int inputLength = th3.length + ciphertext3.length;
+        
+        String hashAlgorithm = null;
+        int selectedCiphersuite = session.getSelectedCiphersuite();
+        switch (selectedCiphersuite) {
+        	case Constants.EDHOC_CIPHER_SUITE_0:
+        	case Constants.EDHOC_CIPHER_SUITE_1:
+        	case Constants.EDHOC_CIPHER_SUITE_2:
+        	case Constants.EDHOC_CIPHER_SUITE_3:
+        		hashAlgorithm = "SHA-256";
+        		break;
+        }
         
         byte[] hashInput = new byte[inputLength];
         System.arraycopy(th3, 0, hashInput, 0, th3.length);

@@ -99,7 +99,7 @@ public class EdhocClient {
 	private static Map<CBORObject, CBORObject> peerCredentials = new HashMap<CBORObject, CBORObject>();
 		
 	// Existing EDHOC Sessions, including completed ones
-	// The map label is C_X, i.e. the connection identifier offered to the other peer in the session, as a bstr_identifier
+	// The map label is C_X, i.e. the connection identifier offered to the other peer in the session, as plain bytes
 	private static Map<CBORObject, EdhocSession> edhocSessions = new HashMap<CBORObject, EdhocSession>();
 	
 	// Each set of the list refers to a different size of Connection Identifier, i.e. C_ID_X to offer to the other peer.
@@ -361,30 +361,30 @@ public class EdhocClient {
 		EdhocSession mySession = MessageProcessor.createSessionAsInitiator
                 (authenticationMethod, correlationMethod, keyPair, idCred, cred, subjectName, supportedCiphersuites, usedConnectionIds);
 		
-        byte[] nextMessage = MessageProcessor.writeMessage1(mySession, ad1);
+        byte[] nextPayload = MessageProcessor.writeMessage1(mySession, ad1);
         
-		if (nextMessage == null || mySession.getCurrentStep() != Constants.EDHOC_BEFORE_M1) {
+		if (nextPayload == null || mySession.getCurrentStep() != Constants.EDHOC_BEFORE_M1) {
 			System.err.println("Inconsistent state before sending EDHOC Message 1");
 			return;
 		}
 		
 		// Add the new session to the list of existing EDHOC sessions
-		mySession.setMessage1(nextMessage);
+		mySession.setMessage1(nextPayload);
 		mySession.setCurrentStep(Constants.EDHOC_AFTER_M1);
 		byte[] connectionId = mySession.getConnectionId();
 		CBORObject bstrIdentifier = Util.encodeToBstrIdentifier(CBORObject.FromObject(connectionId));
 		edhocSessions.put(CBORObject.FromObject(bstrIdentifier), mySession);
 		
-		Request edhocMessage1 = new Request(Code.POST, Type.CON);
-		edhocMessage1.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
-		edhocMessage1.setPayload(nextMessage);
+		Request edhocMessageReq = new Request(Code.POST, Type.CON);
+		edhocMessageReq.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
+		edhocMessageReq.setPayload(nextPayload);
 		
         System.out.println("Sent EDHOC Message 1\n");
-        Util.nicePrint("EDHOC message 1", nextMessage);
+        Util.nicePrint("EDHOC message 1", nextPayload);
         
-        CoapResponse edhocMessage2;
+        CoapResponse edhocMessageResp;
         try {
-			edhocMessage2 = client.advanced(edhocMessage1);
+        	edhocMessageResp = client.advanced(edhocMessageReq);
 		} catch (ConnectorException e) {
 			System.err.println("ConnectorException when sending EDHOC Message1");
 			return;
@@ -395,7 +395,7 @@ public class EdhocClient {
 		
         boolean discontinue = false;
         int responseType = -1;
-        byte[] responsePayload = edhocMessage2.getPayload();
+        byte[] responsePayload = edhocMessageResp.getPayload();
         
         if (responsePayload == null)
         	discontinue = true;
@@ -421,7 +421,7 @@ public class EdhocClient {
     	CBORObject connectionIdentifier = CBORObject.FromObject(mySession.getConnectionId());
     	CBORObject cI = Util.encodeToBstrIdentifier(connectionIdentifier);
         
-    	nextMessage = new byte[] {};
+    	nextPayload = new byte[] {};
     	
         // The received message is an EDHOC Error Message
         if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
@@ -475,43 +475,41 @@ public class EdhocClient {
 			}
 			
 			// A non-zero length response payload would be an EDHOC Error Message
-			nextMessage = processingResult.get(0).GetByteString();
+			nextPayload = processingResult.get(0).GetByteString();
 
 			// Prepare EDHOC Message 3
-			if (nextMessage.length == 0) {
+			if (nextPayload.length == 0) {
 				
 				mySession.setCurrentStep(Constants.EDHOC_AFTER_M2);
 				
-				nextMessage = MessageProcessor.writeMessage3(mySession, ad3);
+				nextPayload = MessageProcessor.writeMessage3(mySession, ad3);
 		        
-		        
-				if (nextMessage == null || mySession.getCurrentStep() != Constants.EDHOC_AFTER_M2) {
+				if (nextPayload == null || mySession.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
 					System.err.println("Inconsistent state before sending EDHOC Message 3");
 					return;
 				}
 				
 			}
 
-			int requestType = MessageProcessor.messageType(nextMessage);			
+			int requestType = MessageProcessor.messageType(nextPayload);			
 			if (requestType != Constants.EDHOC_MESSAGE_3 && responseType != Constants.EDHOC_ERROR_MESSAGE) {
-				nextMessage = null;
+				nextPayload = null;
 			}
 			
-			if (nextMessage != null) {
+			if (nextPayload != null) {
 				
-				Request edhocMessage3 = new Request(Code.POST, Type.CON);
-				edhocMessage3.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
-				edhocMessage3.setPayload(nextMessage);
+				Request edhocMessageReq2 = new Request(Code.POST, Type.CON);
+				edhocMessageReq2.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
+				edhocMessageReq2.setPayload(nextPayload);
 				
 				myString = (requestType == Constants.EDHOC_MESSAGE_3) ? "EDHOC Message 3" : "EDHOC Error Message";
 				System.out.println("Request type: " + myString + "\n");
 				
 				if (requestType == Constants.EDHOC_MESSAGE_3) {
-			        mySession.setCurrentStep(Constants.EDHOC_AFTER_M3);
 			        
 			        /* Invoke the EDHOC-Exporter to produce OSCORE input material */
-			        byte[] masterSecret = getMasterSecretOSCORE(mySession);
-			        byte[] masterSalt = getMasterSaltOSCORE(mySession);
+			        byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(mySession);
+			        byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(mySession);
 			        if (debugPrint) {
 			        	Util.nicePrint("OSCORE Master Secret", masterSecret);
 			        	Util.nicePrint("OSCORE Master Salt", masterSalt);
@@ -519,20 +517,20 @@ public class EdhocClient {
 			        
 			        System.out.println("Sent EDHOC Message 3\n");
 			        if (debugPrint) {
-			        	Util.nicePrint("EDHOC Message 3", nextMessage);
+			        	Util.nicePrint("EDHOC Message 3", nextPayload);
 			        }
 				}
 				else if (requestType == Constants.EDHOC_ERROR_MESSAGE) {
 			        System.out.println("Sent EDHOC Error Message\n");
 			        if (debugPrint) {
-			        	Util.nicePrint("EDHOC Error Message", nextMessage);
+			        	Util.nicePrint("EDHOC Error Message", nextPayload);
 			        }
 				}
 				
-		        CoapResponse edhocPostMessage;
+		        CoapResponse edhocMessageResp2;
 		        
 		        try {
-		        	edhocPostMessage = client.advanced(edhocMessage3);
+		        	edhocMessageResp2 = client.advanced(edhocMessageReq2);
 				} catch (ConnectorException e) {
 					System.err.println("ConnectorException when sending " + myString + "\n");
 					return;
@@ -575,56 +573,4 @@ public class EdhocClient {
 		System.out.println("Entered processAD3()");
 	}
 	
-    /**
-     *  Get an OSCORE Master Secret using the EDHOC-Exporter
-     * @param session   The used EDHOC session
-     * @return  the OSCORE Master Secret, or null in case of errors
-     */
-	private static byte[] getMasterSecretOSCORE(EdhocSession session) {
-
-	    int keyLength = 0;
-	    byte[] masterSecret = null;
-	    int selectedCiphersuite = session.getSelectedCiphersuite();
-	    
-	    switch (selectedCiphersuite) {
-	    	case Constants.EDHOC_CIPHER_SUITE_0:
-	    	case Constants.EDHOC_CIPHER_SUITE_1:
-	    	case Constants.EDHOC_CIPHER_SUITE_2:
-	    	case Constants.EDHOC_CIPHER_SUITE_3:
-	    		keyLength = 16;
-	    }
-	    
-	    try {
-			masterSecret = session.edhocExporter("OSCORE Master Secret", keyLength);
-		} catch (InvalidKeyException e) {
-			System.err.println("Error when the OSCORE Master Secret" + e.getMessage());
-		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Error when the OSCORE Master Secret" + e.getMessage());
-		}
-	    
-	    return masterSecret;
-		
-	}
-	
-    /**
-     *  Get an OSCORE Master Salt using the EDHOC-Exporter
-     * @param session   The used EDHOC session
-     * @return  the OSCORE Master Salt, or null in case of errors
-     */
-	private static byte[] getMasterSaltOSCORE(EdhocSession session) {
-
-	    byte[] masterSalt = null;
-	    
-	    try {
-			masterSalt = session.edhocExporter("OSCORE Master Salt", 8);
-		} catch (InvalidKeyException e) {
-			System.err.println("Error when the OSCORE Master Salt" + e.getMessage());
-		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Error when the OSCORE Master Salt" + e.getMessage());
-		}
-	    
-	    return masterSalt;
-		
-	}
-
 }
