@@ -363,6 +363,7 @@ public class EdhocClient {
         
 		if (nextPayload == null || session.getCurrentStep() != Constants.EDHOC_BEFORE_M1) {
 			System.err.println("Inconsistent state before sending EDHOC Message 1");
+			client.shutdown();
 			return;
 		}
 		
@@ -384,9 +385,13 @@ public class EdhocClient {
         	edhocMessageResp = client.advanced(edhocMessageReq);
 		} catch (ConnectorException e) {
 			System.err.println("ConnectorException when sending EDHOC Message1");
+			edhocSessions.remove(CBORObject.FromObject(connectionId), session);
+			client.shutdown();
 			return;
 		} catch (IOException e) {
 			System.err.println("IOException when sending EDHOC Message1");
+			edhocSessions.remove(CBORObject.FromObject(connectionId), session);
+			client.shutdown();
 			return;
 		}
 		
@@ -402,6 +407,7 @@ public class EdhocClient {
         		discontinue = true;
         }
         if (discontinue == true) {
+			edhocSessions.remove(CBORObject.FromObject(connectionId), session);
         	client.shutdown();
         	return;
         }
@@ -445,7 +451,10 @@ public class EdhocClient {
         	
         	// TODO - Send a new EDHOC Message 1, now knowing the ciphersuites supported by the Responder
         	
-    		client.shutdown();
+        	
+			edhocSessions.remove(CBORObject.FromObject(connectionId), session);
+			client.shutdown();
+    		return;
     		
         }
         
@@ -463,6 +472,8 @@ public class EdhocClient {
 			
 			if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
 				System.err.println("Internal error when processing EDHOC Message 2");
+				edhocSessions.remove(CBORObject.FromObject(connectionId), session);
+				client.shutdown();
 				return;
 			}
 			
@@ -483,6 +494,8 @@ public class EdhocClient {
 		        
 				if (nextPayload == null || session.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
 					System.err.println("Inconsistent state before sending EDHOC Message 3");
+					edhocSessions.remove(CBORObject.FromObject(connectionId), session);
+					client.shutdown();
 					return;
 				}
 				
@@ -531,9 +544,13 @@ public class EdhocClient {
 		        	edhocMessageResp2 = client.advanced(edhocMessageReq2);
 				} catch (ConnectorException e) {
 					System.err.println("ConnectorException when sending " + myString + "\n");
+					edhocSessions.remove(CBORObject.FromObject(connectionId), session);
+					client.shutdown();
 					return;
 				} catch (IOException e) {
 					System.err.println("IOException when sending "  + myString + "\n");
+					edhocSessions.remove(CBORObject.FromObject(connectionId), session);
+					client.shutdown();
 					return;
 				}
 				
