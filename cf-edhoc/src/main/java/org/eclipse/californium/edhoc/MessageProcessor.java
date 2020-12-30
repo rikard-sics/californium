@@ -520,6 +520,7 @@ public class MessageProcessor {
         
         // Compute PRK_2e
     	prk2e = computePRK2e(dhSecret);
+    	dhSecret = null;
     	if (prk2e == null) {
         	errMsg = new String("Error when computing PRK_2e");
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
@@ -655,7 +656,10 @@ public class MessageProcessor {
     	
     	
     	// Compute K_2m and IV_2m to protect the inner COSE object
-    	byte[] k2m = computeK2m(session);
+    	// NNN
+    	//byte[] k2m = computeK2m(session);
+    	
+    	byte[] k2m = computeKey(Constants.EDHOC_K_2M, session);
     	if (k2m == null) {
         	errMsg = new String("Error when computing K_2M");
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
@@ -664,7 +668,10 @@ public class MessageProcessor {
     	if (debugPrint) {
     		Util.nicePrint("K_2m", k2m);
     	}
-    	byte[] iv2m = computeIV2m(session);
+    	// NNN
+    	// byte[] iv2m = computeIV2m(session);
+    	
+    	byte[] iv2m = computeIV(Constants.EDHOC_IV_2M, session);
     	if (iv2m == null) {
         	errMsg = new String("Error when computing IV_2M");
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
@@ -874,7 +881,10 @@ public class MessageProcessor {
 		
 		
     	// Compute K_3ae and IV_3ae to protect the outer COSE object
-    	byte[] k3ae = computeK3ae(session);
+    	// NNN
+    	// byte[] k3ae = computeK3ae(session);
+    	
+    	byte[] k3ae = computeKey(Constants.EDHOC_K_3AE, session);
     	if (k3ae == null) {
         	errMsg = new String("Error when computing TH3");
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
@@ -883,7 +893,10 @@ public class MessageProcessor {
     	if (debugPrint) {
     		Util.nicePrint("K_3ae", k3ae);
     	}
-    	byte[] iv3ae = computeIV3ae(session);
+    	// NNN
+    	// byte[] iv3ae = computeIV3ae(session);
+    	
+    	byte[] iv3ae = computeIV(Constants.EDHOC_IV_3AE, session);
     	if (iv3ae == null) {
         	errMsg = new String("Error when computing IV_3ae");
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
@@ -1032,7 +1045,10 @@ public class MessageProcessor {
         
     	
     	// Compute K_3m and IV_3m to protect the inner COSE object
-    	byte[] k3m = computeK3m(session);
+    	// NNN
+    	//byte[] k3m = computeK3m(session);
+    	
+    	byte[] k3m = computeKey(Constants.EDHOC_K_3M, session);
     	if (k3m == null) {
     		errMsg = new String("Error when computing K_3m");
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
@@ -1041,7 +1057,10 @@ public class MessageProcessor {
     	if (debugPrint) {
     		Util.nicePrint("K_3m", k3m);
     	}
-    	byte[] iv3m = computeIV3m(session);
+    	// NNN
+    	// byte[] iv3m = computeIV3m(session);
+    	
+    	byte[] iv3m = computeIV(Constants.EDHOC_IV_3M, session);
     	if (iv3m == null) {
     		errMsg = new String("Error when computing IV_3m");
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
@@ -1461,6 +1480,7 @@ public class MessageProcessor {
         
         // Compute PRK_2e
     	prk2e = computePRK2e(dhSecret);
+    	dhSecret = null;
     	if (prk2e == null) {
     		System.err.println("Error when computing PRK_2e");
     		return null;
@@ -1483,7 +1503,11 @@ public class MessageProcessor {
         
     	
     	// Compute K_2m and IV_2m to protect the inner COSE object
-    	byte[] k2m = computeK2m(session);
+    	
+    	// NNN
+    	//byte[] k2m = computeK2m(session);
+    	
+    	byte[] k2m = computeKey(Constants.EDHOC_K_2M, session);
     	if (k2m == null) {
     		System.err.println("Error when computing K_2m");
     		return null;
@@ -1491,7 +1515,10 @@ public class MessageProcessor {
     	if (debugPrint) {
     		Util.nicePrint("K_2m", k2m);
     	}
-    	byte[] iv2m = computeIV2m(session);
+    	// NNN
+    	// byte[] iv2m = computeIV2m(session);
+    	
+    	byte[] iv2m = computeIV(Constants.EDHOC_IV_2M, session);
     	if (iv2m == null) {
     		System.err.println("Error when computing IV_2m");
     		return null;
@@ -1675,7 +1702,10 @@ public class MessageProcessor {
         
     	
     	// Compute K_3m and IV_3m to protect the inner COSE object
-    	byte[] k3m = computeK3m(session);
+    	// NNN
+    	// byte[] k3m = computeK3m(session);
+    	
+    	byte[] k3m = computeKey(Constants.EDHOC_K_3M, session);
     	if (k3m == null) {
     		System.err.println("Error when computing K_3m");
     		return null;
@@ -1683,7 +1713,10 @@ public class MessageProcessor {
     	if (debugPrint) {
     		Util.nicePrint("K_3m", k3m);
     	}
-    	byte[] iv3m = computeIV3m(session);
+    	// NNN
+    	// byte[] iv3m = computeIV3m(session);
+    	
+    	byte[] iv3m = computeIV(Constants.EDHOC_IV_3M, session);
     	if (iv3m == null) {
     		System.err.println("Error when computing IV_3m");
     		return null;
@@ -1723,7 +1756,10 @@ public class MessageProcessor {
     	/* Start computing CIPHERTEXT_3 */
     	
     	// Compute K_3ae and IV_3ae to protect the outer COSE object
-    	byte[] k3ae = computeK3ae(session);
+    	// NNN
+    	// byte[] k3ae = computeK3ae(session);
+    	
+    	byte[] k3ae = computeKey(Constants.EDHOC_K_3AE, session);
     	if (k3ae == null) {
     		System.err.println("Error when computing K_3ae");
     		return null;
@@ -1731,7 +1767,10 @@ public class MessageProcessor {
     	if (debugPrint) {
     		Util.nicePrint("K_3ae", k3ae);
     	}
-    	byte[] iv3ae = computeIV3ae(session);
+    	// NNN
+    	// byte[] iv3ae = computeIV3ae(session);
+    	
+    	byte[] iv3ae = computeIV(Constants.EDHOC_IV_3AE, session);
     	if (iv3ae == null) {
     		System.err.println("Error when computing IV_3ae");
     		return null;
@@ -2008,218 +2047,113 @@ public class MessageProcessor {
 	}
 	
 	
-    /**
-     *  Compute the key K_2m
-     * @param session   The used EDHOC session
-     * @return  The computed key K_2m
-     */
-	public static byte[] computeK2m(EdhocSession session) {
-		
-		int keyLength = 0;
-		byte[] k2m = null;
-		
-    	switch (session.getSelectedCiphersuite()) {
-			case Constants.EDHOC_CIPHER_SUITE_0:
-			case Constants.EDHOC_CIPHER_SUITE_1:
-			case Constants.EDHOC_CIPHER_SUITE_2:
-			case Constants.EDHOC_CIPHER_SUITE_3:
-				keyLength = 16;
-    	}
-    	
-    	if (keyLength == 0)
-    		return null;
-    	
-    	k2m = new byte[keyLength];
-    	try {
-			k2m = session.edhocKDF(session.getPRK3e2m(), session.getTH2(), "K_2m", keyLength);
-		} catch (InvalidKeyException e) {
-			System.err.println("Error when generating K_2m\n" + e.getMessage());
-		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Error when generating K_2m\n" + e.getMessage());
-		}
-    	
-    	return k2m;
-    	
+	/**
+    *  Compute one of the temporary keys
+    * @param keyName   The name of the key to compute
+    * @param session   The used EDHOC session
+    * @return  The computed key
+    */
+	public static byte[] computeKey(int keyName, EdhocSession session) {
+	    
+	    int keyLength = 0;
+	    byte[] key = null;
+	    
+	    switch (session.getSelectedCiphersuite()) {
+	        case Constants.EDHOC_CIPHER_SUITE_0:
+	        case Constants.EDHOC_CIPHER_SUITE_1:
+	        case Constants.EDHOC_CIPHER_SUITE_2:
+	        case Constants.EDHOC_CIPHER_SUITE_3:
+	            keyLength = 16;
+	    }
+	    if (keyLength == 0)
+	        return null;
+	    
+	    key = new byte[keyLength];
+	    String label = null;
+	    
+	    try {
+	        switch(keyName) {
+	            case Constants.EDHOC_K_2M:
+	            	label = new String("K_2m");
+	                key = session.edhocKDF(session.getPRK3e2m(), session.getTH2(), label, keyLength);
+	                break;
+	            case Constants.EDHOC_K_3M:
+	            	label = new String("K_3m");
+	                key = session.edhocKDF(session.getPRK4x3m(), session.getTH3(), label, keyLength);
+	                break;
+	            case Constants.EDHOC_K_3AE:
+	            	label = new String("K_3ae");
+	                key = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), label, keyLength);
+	                break;
+	            default:
+	            	key = null;
+	            	break;
+	        }
+	    } catch (InvalidKeyException e) {
+	        System.err.println("Error when generating " + label + "\n" + e.getMessage());
+	    } catch (NoSuchAlgorithmException e) {
+	        System.err.println("Error when generating " + label + "\n" + e.getMessage());
+	    }
+	    
+	    return key;
+	    
 	}
 	
 	
-    /**
-     *  Compute the key IV_2m
-     * @param session   The used EDHOC session
-     * @return  The computed key IV_2m
-     */
-	public static byte[] computeIV2m(EdhocSession session) {
-		
-		int ivLength = 0;
-		byte[] iv2m = null;
-		
-    	switch (session.getSelectedCiphersuite()) {
-			case Constants.EDHOC_CIPHER_SUITE_0:
-			case Constants.EDHOC_CIPHER_SUITE_1:
-			case Constants.EDHOC_CIPHER_SUITE_2:
-			case Constants.EDHOC_CIPHER_SUITE_3:
-				ivLength = 13;
-    	}
-    	
-    	if (ivLength == 0)
-    		return null;
-		
-    	try {
-			iv2m = session.edhocKDF(session.getPRK3e2m(), session.getTH2(), "IV_2m", ivLength);
-		} catch (InvalidKeyException e) {
-			System.err.println("Error when generating IV_2m\n" + e.getMessage());
-			return null;
-		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Error when generating IV_2m\n" + e.getMessage());
-			return null;
-		}
-		
-    	return iv2m;
-		
+	/**
+    *  Compute one of the temporary IVs
+    * @param ivName   The name of the IV to compute
+    * @param session   The used EDHOC session
+    * @return  The computed key IV_2m
+    */
+	public static byte[] computeIV(int ivName, EdhocSession session) {
+	    
+	    int ivLength = 0;
+	    byte[] iv = null;
+	    
+	    switch (session.getSelectedCiphersuite()) {
+	        case Constants.EDHOC_CIPHER_SUITE_0:
+	        case Constants.EDHOC_CIPHER_SUITE_1:
+	        case Constants.EDHOC_CIPHER_SUITE_2:
+	        case Constants.EDHOC_CIPHER_SUITE_3:
+	            ivLength = 13;
+	    }
+	    if (ivLength == 0)
+	        return null;
+	    
+	    iv = new byte[ivLength];
+	    String label = null;
+	    
+	    try {
+	        switch(ivName) {
+            case Constants.EDHOC_IV_2M:
+            	label = new String("IV_2m");
+                iv = session.edhocKDF(session.getPRK3e2m(), session.getTH2(), label, ivLength);
+                break;
+            case Constants.EDHOC_IV_3M:
+            	label = new String("IV_3m");
+                iv = session.edhocKDF(session.getPRK4x3m(), session.getTH3(), label, ivLength);
+                break;
+            case Constants.EDHOC_IV_3AE:
+            	label = new String("IV_3ae");
+                iv = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), label, ivLength);
+                break;
+            default:
+            	iv = null;
+            	break;
+        }
+	    } catch (InvalidKeyException e) {
+	    	System.err.println("Error when generating " + label + "\n" + e.getMessage());
+	        return null;
+	    } catch (NoSuchAlgorithmException e) {
+	    	System.err.println("Error when generating " + label + "\n" + e.getMessage());
+	        return null;
+	    }
+	    
+	    return iv;
+	    
 	}
-	
-	
-    /**
-     *  Compute the key K_3m
-     * @param session   The used EDHOC session
-     * @return  The computed key K_3m
-     */
-	public static byte[] computeK3m(EdhocSession session) {
-		
-		int keyLength = 0;
-		byte[] k3m = null;
-		
-    	switch (session.getSelectedCiphersuite()) {
-			case Constants.EDHOC_CIPHER_SUITE_0:
-			case Constants.EDHOC_CIPHER_SUITE_1:
-			case Constants.EDHOC_CIPHER_SUITE_2:
-			case Constants.EDHOC_CIPHER_SUITE_3:
-				keyLength = 16;
-    	}
-    	
-    	if (keyLength == 0)
-    		return null;
-    	
-    	k3m = new byte[keyLength];
-    	try {
-			k3m = session.edhocKDF(session.getPRK4x3m(), session.getTH3(), "K_3m", keyLength);
-		} catch (InvalidKeyException e) {
-			System.err.println("Error when generating K_3m\n" + e.getMessage());
-		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Error when generating K_3m\n" + e.getMessage());
-		}
-    	
-    	return k3m;
-    	
-	}
-	
-	
-    /**
-     *  Compute the key IV_3m
-     * @param session   The used EDHOC session
-     * @return  The computed key IV_3m
-     */
-	public static byte[] computeIV3m(EdhocSession session) {
-		
-		int ivLength = 0;
-		byte[] iv3m = null;
-		
-    	switch (session.getSelectedCiphersuite()) {
-			case Constants.EDHOC_CIPHER_SUITE_0:
-			case Constants.EDHOC_CIPHER_SUITE_1:
-			case Constants.EDHOC_CIPHER_SUITE_2:
-			case Constants.EDHOC_CIPHER_SUITE_3:
-				ivLength = 13;
-    	}
-    	
-    	if (ivLength == 0)
-    		return null;
-		
-    	try {
-			iv3m = session.edhocKDF(session.getPRK4x3m(), session.getTH3(), "IV_3m", ivLength);
-		} catch (InvalidKeyException e) {
-			System.err.println("Error when generating IV_3m\n" + e.getMessage());
-			return null;
-		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Error when generating IV_3m\n" + e.getMessage());
-			return null;
-		}
-		
-    	return iv3m;
-		
-	}
-	
-	
-    /**
-     *  Compute the key K_3ae
-     * @param session   The used EDHOC session
-     * @return  The computed key K_3ae
-     */
-	public static byte[] computeK3ae(EdhocSession session) {
-		
-		int keyLength = 0;
-		byte[] k3ae = null;
-		
-    	switch (session.getSelectedCiphersuite()) {
-			case Constants.EDHOC_CIPHER_SUITE_0:
-			case Constants.EDHOC_CIPHER_SUITE_1:
-			case Constants.EDHOC_CIPHER_SUITE_2:
-			case Constants.EDHOC_CIPHER_SUITE_3:
-				keyLength = 16;
-    	}
-    	
-    	if (keyLength == 0)
-    		return null;
-    	
-    	k3ae = new byte[keyLength];
-    	try {
-			k3ae = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), "K_3ae", keyLength);
-		} catch (InvalidKeyException e) {
-			System.err.println("Error when generating K_3ae\n" + e.getMessage());
-		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Error when generating K_3ae\n" + e.getMessage());
-		}
-    	
-    	return k3ae;
-    	
-	}
-	
-	
-    /**
-     *  Compute the key IV_3ae
-     * @param session   The used EDHOC session
-     * @return  The computed key IV_3ae
-     */
-	public static byte[] computeIV3ae(EdhocSession session) {
-		
-		int ivLength = 0;
-		byte[] iv3ae = null;
-		
-    	switch (session.getSelectedCiphersuite()) {
-			case Constants.EDHOC_CIPHER_SUITE_0:
-			case Constants.EDHOC_CIPHER_SUITE_1:
-			case Constants.EDHOC_CIPHER_SUITE_2:
-			case Constants.EDHOC_CIPHER_SUITE_3:
-				ivLength = 13;
-    	}
-    	
-    	if (ivLength == 0)
-    		return null;
-		
-    	try {
-			iv3ae = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), "IV_3ae", ivLength);
-		} catch (InvalidKeyException e) {
-			System.err.println("Error when generating IV_3ae\n" + e.getMessage());
-			return null;
-		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Error when generating IV_3ae\n" + e.getMessage());
-			return null;
-		}
-		
-    	return iv3ae;
-		
-	}
-	
+
 	
     /**
      *  Compute the key K_2e
@@ -2348,6 +2282,9 @@ public class MessageProcessor {
 					System.err.println("Error when generating PRK_3e2m\n" + e.getMessage());
 					return null;
 				}
+            	finally {
+            		dhSecret = null;
+            	}
     	}
         
         return prk3e2m;
@@ -2434,6 +2371,9 @@ public class MessageProcessor {
 					System.err.println("Error when generating PRK_4x3m\n" + e.getMessage());
 					return null;
 				}
+            	finally {
+            		dhSecret = null;
+            	}
     	}
         
         return prk4x3m;
