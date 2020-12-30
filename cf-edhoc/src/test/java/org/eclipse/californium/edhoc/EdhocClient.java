@@ -370,9 +370,7 @@ public class EdhocClient {
 		session.setMessage1(nextPayload);
 		session.setCurrentStep(Constants.EDHOC_AFTER_M1);
 		byte[] connectionId = session.getConnectionId();
-		CBORObject bstrIdentifier = Util.encodeToBstrIdentifier(CBORObject.FromObject(connectionId));
 		edhocSessions.put(CBORObject.FromObject(connectionId), session);
-		System.out.println(net.i2p.crypto.eddsa.Utils.bytesToHex(CBORObject.FromObject(connectionId).EncodeToBytes()));
 		
 		Request edhocMessageReq = new Request(Code.POST, Type.CON);
 		edhocMessageReq.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
