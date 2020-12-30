@@ -21,6 +21,7 @@ package org.eclipse.californium.edhoc;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.Security;
@@ -93,7 +94,7 @@ public class EdhocServer extends CoapServer {
 	private static Map<CBORObject, CBORObject> peerCredentials = new HashMap<CBORObject, CBORObject>();
 
 	// Existing EDHOC Sessions, including completed ones
-	// The map label is C_X, i.e. the connection identifier offered to the other peer in the session, as a bstr_identifier
+	// The map label is C_X, i.e. the connection identifier offered to the other peer in the session, as plain bytes
 	private static Map<CBORObject, EdhocSession> edhocSessions = new HashMap<CBORObject, EdhocSession>();
 	
 	// Each set of the list refers to a different size of Connection Identifier, i.e. C_ID_X to offer to the other peer.
@@ -427,8 +428,8 @@ public class EdhocServer extends CoapServer {
 			
 			System.out.println("\nReceived EDHOC Message\n");
 			
-			byte[] message1 = exchange.getRequestPayload();
-			int messagetType = MessageProcessor.messageType(message1);
+			byte[] message = exchange.getRequestPayload();
+			int messagetType = MessageProcessor.messageType(message);
 			
 			List<CBORObject> processingResult = new ArrayList<CBORObject>();
 			byte[] nextMessage = new byte[] {};
@@ -446,11 +447,11 @@ public class EdhocServer extends CoapServer {
 			}
 			
 			System.out.println("Determined EDHOC message type: " + messagetType + "\n");
-			Util.nicePrint("EDHOC message " + messagetType, message1);
+			Util.nicePrint("EDHOC message " + messagetType, message);
 
 			/* Start handling EDHOC Message 1 */
 			if (messagetType == Constants.EDHOC_MESSAGE_1) {
-				processingResult = MessageProcessor.readMessage1(message1, keyPair, usedConnectionIds, supportedCiphersuites);
+				processingResult = MessageProcessor.readMessage1(message, keyPair, usedConnectionIds, supportedCiphersuites);
 
 				if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
 					System.err.println("Internal error when processing EDHOC Message 1");
@@ -464,7 +465,7 @@ public class EdhocServer extends CoapServer {
 				if (nextMessage.length == 0) {
 					
 					EdhocSession mySession = MessageProcessor.createSessionAsResponder
-							                 (message1, keyPair, idCred, cred, supportedCiphersuites, usedConnectionIds);
+							                 (message, keyPair, idCred, cred, supportedCiphersuites, usedConnectionIds);
 					
 					// Compute the EDHOC Message 2
 					nextMessage = MessageProcessor.writeMessage2(mySession, ad2);
@@ -535,7 +536,42 @@ public class EdhocServer extends CoapServer {
 			/* Start handling EDHOC Message 3 */
 			if (messagetType == Constants.EDHOC_MESSAGE_3) {
 				
-				System.out.println("Handler for processing EDHOC Message 3");
+				processingResult = MessageProcessor.readMessage3(message, null, edhocSessions, peerPublicKeys, peerCredentials);
+				
+				if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
+					System.err.println("Internal error when processing EDHOC Message 3");
+					return;
+				}
+				
+				// Deliver AD_3 to the application
+				if (processingResult.size() == 3) {
+					processAD3(processingResult.get(2).GetByteString());
+				}
+				
+				
+				// A non-zero length response payload would be an EDHOC Error Message
+				nextMessage = processingResult.get(0).GetByteString();
+				
+				// The protocol has successfully completed
+				if (nextMessage.length == 0) {
+					
+					CBORObject cR = processingResult.get(1);
+					EdhocSession mySession = edhocSessions.get(cR);
+					
+					if (mySession == null || mySession.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
+							System.err.println("Inconsistent state before sending EDHOC Message 3");
+							return;
+					}
+			        
+			        /* Invoke the EDHOC-Exporter to produce OSCORE input material */
+			        byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(mySession);
+			        byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(mySession);
+			        if (debugPrint) {
+			        	Util.nicePrint("OSCORE Master Secret", masterSecret);
+			        	Util.nicePrint("OSCORE Master Salt", masterSalt);
+			        }
+					
+				}
 				
 			}
 			
@@ -553,4 +589,5 @@ public class EdhocServer extends CoapServer {
 		}
 		
 	}
+
 }

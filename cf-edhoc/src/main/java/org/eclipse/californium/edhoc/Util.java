@@ -123,10 +123,6 @@ public class Util {
         if(idCredX.getType() != CBORType.Map)
         	return null;
         
-        // ... and it cannot be empty
-        if(idCredX.size() == 0)
-        	return null;
-        
         Encrypt0Message msg = new Encrypt0Message();
         
         // Set the protected header of the COSE object
@@ -256,7 +252,7 @@ public class Util {
      * @param idCredX   The ID of the public credential of the signer, as a CBOR map
      * @param externalData   The data to use as external_aad
      * @param payload   The payload to sign
-     * @param publicKey   The private key to use for verifying the signature
+     * @param publicKey   The public key to use for verifying the signature
      * @return  true is the signature is valid, false if the signature is not valid or the input is not valid 
      */
 	public static boolean verifySignature (byte[] signature, CBORObject idCredX, byte[] externalData, byte[] payload, OneKey publicKey)
