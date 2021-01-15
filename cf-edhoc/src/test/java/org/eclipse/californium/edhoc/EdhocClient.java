@@ -134,7 +134,8 @@ public class EdhocClient {
 	public static void main(String args[]) {
 		String defaultUri = "coap://localhost/helloWorld";
 		String edhocURI = "coap://localhost/.well-known/edhoc";
-
+		//String edhocURI = "coap://85.228.126.192/.well-known/edhoc";		
+		
 		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		NetworkConfig.setStandard(config);
 
@@ -572,10 +573,6 @@ public class EdhocClient {
 			
 			if (nextPayload != null) {
 				
-				Request edhocMessageReq2 = new Request(Code.POST, Type.CON);
-				edhocMessageReq2.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
-				edhocMessageReq2.setPayload(nextPayload);
-				
 				myString = (requestType == Constants.EDHOC_MESSAGE_3) ? "EDHOC Message 3" : "EDHOC Error Message";
 				System.out.println("Request type: " + myString + "\n");
 				
@@ -605,6 +602,9 @@ public class EdhocClient {
 		        CoapResponse edhocMessageResp2;
 		        
 		        try {
+					Request edhocMessageReq2 = new Request(Code.POST, Type.CON);
+					edhocMessageReq2.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
+					edhocMessageReq2.setPayload(nextPayload);
 		        	edhocMessageResp2 = client.advanced(edhocMessageReq2);
 				} catch (ConnectorException e) {
 					System.err.println("ConnectorException when sending " + myString + "\n");
