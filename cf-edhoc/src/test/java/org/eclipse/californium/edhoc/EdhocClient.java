@@ -134,7 +134,6 @@ public class EdhocClient {
 	public static void main(String args[]) {
 		String defaultUri = "coap://localhost/helloWorld";
 		String edhocURI = "coap://localhost/.well-known/edhoc";
-		//String edhocURI = "coap://85.228.126.192/.well-known/edhoc";		
 		
 		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		NetworkConfig.setStandard(config);
