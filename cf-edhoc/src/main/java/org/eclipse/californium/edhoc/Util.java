@@ -729,12 +729,12 @@ public class Util {
 	 */
 	public static void purgeSession(EdhocSession session, CBORObject connectionIdentifier,
 			                        Map<CBORObject, EdhocSession> edhocSessions, List<Set<Integer>> usedConnectionIds) {
-
-	    edhocSessions.remove(connectionIdentifier, session);
-	    Util.releaseConnectionId(connectionIdentifier.GetByteString(), usedConnectionIds);
-	    session.deleteTemporaryMaterial();
-	    session = null;
-
+		if (session != null) {
+		    edhocSessions.remove(connectionIdentifier, session);
+		    Util.releaseConnectionId(connectionIdentifier.GetByteString(), usedConnectionIds);
+		    session.deleteTemporaryMaterial();
+		    session = null;
+		}
 	}
     
     /**
