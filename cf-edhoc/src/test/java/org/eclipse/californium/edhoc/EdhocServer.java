@@ -651,7 +651,6 @@ public class EdhocServer extends CoapServer {
 					processAD3(processingResult.get(1).GetByteString());
 				}
 				
-				
 				// The protocol has successfully completed
 				if (nextMessage.length == 0) {
 					
@@ -678,6 +677,34 @@ public class EdhocServer extends CoapServer {
 			        }
 					
 				}
+				// An error message has to be returned
+				else {
+					/*
+					if (mySession == null) {
+						System.err.println("Inconsistent state before sending EDHOC Error Message");
+						return;
+					}
+					*/
+					int responseType = MessageProcessor.messageType(nextMessage);
+					
+					if (responseType != Constants.EDHOC_ERROR_MESSAGE) {
+						System.err.println("Inconsistent state before sending EDHOC Error Message");	
+						/*
+						Util.purgeSession(mySession, CBORObject.FromObject(mySession.getConnectionId()),
+								          edhocSessions, usedConnectionIds);
+					    */
+						return;
+					}
+					
+					Response myResponse = new Response(ResponseCode.CREATED);
+					myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
+					myResponse.setPayload(nextMessage);
+					
+					exchange.respond(myResponse);
+					return;
+					
+				}
+				
 				
 			}
 			
