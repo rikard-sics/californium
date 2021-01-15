@@ -337,7 +337,7 @@ public class MessageProcessor {
 		if (sequence == null || edhocSessions == null)
 			return null;
 		
-		CBORObject connectionIdentifier = null;
+		CBORObject connectionIdentifier = null; // The Connection Identifier C_I
 		
 		byte[] ad2 = null; // Will be set if Application Data is present as AD2
 		
@@ -661,9 +661,7 @@ public class MessageProcessor {
     	
     	
     	// Compute K_2m and IV_2m to protect the inner COSE object
-    	// NNN
-    	//byte[] k2m = computeK2m(session);
-    	
+
     	byte[] k2m = computeKey(Constants.EDHOC_K_2M, session);
     	if (k2m == null) {
         	errMsg = new String("Error when computing K_2M");
@@ -673,9 +671,7 @@ public class MessageProcessor {
     	if (debugPrint) {
     		Util.nicePrint("K_2m", k2m);
     	}
-    	// NNN
-    	// byte[] iv2m = computeIV2m(session);
-    	
+
     	byte[] iv2m = computeIV(Constants.EDHOC_IV_2M, session);
     	if (iv2m == null) {
         	errMsg = new String("Error when computing IV_2M");
@@ -761,7 +757,7 @@ public class MessageProcessor {
      *             ii) a non-zero length byte string as the EDHOC Error Message to be sent.
      *           The second element is a CBOR byte string, and is relevant only if the protocol
      *           has successfully completed. In such a case, it specifies  the Connection Identifier
-     *           of the Responder in the used EDHOC session, i.e. C_R, as a bstr_identifier.  
+     *           of the Responder in the used EDHOC session, i.e. C_R.
      *           The third element is optional. If present, it is a CBOR byte string, with value
      *           the application data AD3 to deliver to the application.
      */
@@ -772,7 +768,7 @@ public class MessageProcessor {
 		if (sequence == null || edhocSessions == null)
 			return null;
 		
-		CBORObject connectionIdentifier = null;
+		CBORObject connectionIdentifier = null; // The Connection Identifier C_R
 		
 		byte[] ad3 = null; // Will be set if Application Data is present as AD3
 		
@@ -839,6 +835,7 @@ public class MessageProcessor {
 			}
 			else {
 				correlation = session.getCorrelation();
+				cI = CBORObject.FromObject(session.getPeerConnectionId());
 			}
 		}
 		
@@ -886,9 +883,6 @@ public class MessageProcessor {
 		
 		
     	// Compute K_3ae and IV_3ae to protect the outer COSE object
-    	// NNN
-    	// byte[] k3ae = computeK3ae(session);
-    	
     	byte[] k3ae = computeKey(Constants.EDHOC_K_3AE, session);
     	if (k3ae == null) {
         	errMsg = new String("Error when computing TH3");
@@ -898,8 +892,6 @@ public class MessageProcessor {
     	if (debugPrint) {
     		Util.nicePrint("K_3ae", k3ae);
     	}
-    	// NNN
-    	// byte[] iv3ae = computeIV3ae(session);
     	
     	byte[] iv3ae = computeIV(Constants.EDHOC_IV_3AE, session);
     	if (iv3ae == null) {
@@ -1055,9 +1047,7 @@ public class MessageProcessor {
         
     	
     	// Compute K_3m and IV_3m to protect the inner COSE object
-    	// NNN
-    	//byte[] k3m = computeK3m(session);
-    	
+
     	byte[] k3m = computeKey(Constants.EDHOC_K_3M, session);
     	if (k3m == null) {
     		errMsg = new String("Error when computing K_3m");
@@ -1067,8 +1057,6 @@ public class MessageProcessor {
     	if (debugPrint) {
     		Util.nicePrint("K_3m", k3m);
     	}
-    	// NNN
-    	// byte[] iv3m = computeIV3m(session);
     	
     	byte[] iv3m = computeIV(Constants.EDHOC_IV_3M, session);
     	if (iv3m == null) {
@@ -1471,7 +1459,13 @@ public class MessageProcessor {
         // Compute the Diffie-Hellman secret G_XY
         byte[] dhSecret = SharedSecretCalculation.generateSharedSecret(session.getEphemeralKey(),
         		                                                       session.getPeerEphemeralPublicKey());
-    	if (debugPrint) {
+    	
+        if (dhSecret == null) {
+    		System.err.println("Error when computing the Diffie-Hellman Secret");
+    		return null;
+        }
+        
+        if (debugPrint) {
     		Util.nicePrint("G_XY", dhSecret);
     	}
         
@@ -1499,11 +1493,8 @@ public class MessageProcessor {
     	}
         
     	
-    	// Compute K_2m and IV_2m to protect the inner COSE object
-    	
-    	// NNN
-    	//byte[] k2m = computeK2m(session);
-    	
+    	// Compute K_2m and IV_2m to protect the inner COSE object    	
+
     	byte[] k2m = computeKey(Constants.EDHOC_K_2M, session);
     	if (k2m == null) {
     		System.err.println("Error when computing K_2m");
@@ -1512,8 +1503,6 @@ public class MessageProcessor {
     	if (debugPrint) {
     		Util.nicePrint("K_2m", k2m);
     	}
-    	// NNN
-    	// byte[] iv2m = computeIV2m(session);
     	
     	byte[] iv2m = computeIV(Constants.EDHOC_IV_2M, session);
     	if (iv2m == null) {
@@ -1699,8 +1688,6 @@ public class MessageProcessor {
         
     	
     	// Compute K_3m and IV_3m to protect the inner COSE object
-    	// NNN
-    	// byte[] k3m = computeK3m(session);
     	
     	byte[] k3m = computeKey(Constants.EDHOC_K_3M, session);
     	if (k3m == null) {
@@ -1710,9 +1697,7 @@ public class MessageProcessor {
     	if (debugPrint) {
     		Util.nicePrint("K_3m", k3m);
     	}
-    	// NNN
-    	// byte[] iv3m = computeIV3m(session);
-    	
+
     	byte[] iv3m = computeIV(Constants.EDHOC_IV_3M, session);
     	if (iv3m == null) {
     		System.err.println("Error when computing IV_3m");
@@ -1753,9 +1738,7 @@ public class MessageProcessor {
     	/* Start computing CIPHERTEXT_3 */
     	
     	// Compute K_3ae and IV_3ae to protect the outer COSE object
-    	// NNN
-    	// byte[] k3ae = computeK3ae(session);
-    	
+
     	byte[] k3ae = computeKey(Constants.EDHOC_K_3AE, session);
     	if (k3ae == null) {
     		System.err.println("Error when computing K_3ae");
@@ -1764,8 +1747,6 @@ public class MessageProcessor {
     	if (debugPrint) {
     		Util.nicePrint("K_3ae", k3ae);
     	}
-    	// NNN
-    	// byte[] iv3ae = computeIV3ae(session);
     	
     	byte[] iv3ae = computeIV(Constants.EDHOC_IV_3AE, session);
     	if (iv3ae == null) {
@@ -1892,10 +1873,9 @@ public class MessageProcessor {
 				}
 			}
 		
-			if (includeIdentifier == true) {
-				
-				objectList.add(CBORObject.FromObject(cX));
-				
+			if (includeIdentifier == true) {		
+				CBORObject bstrIdentifier = Util.encodeToBstrIdentifier(cX);
+				objectList.add(CBORObject.FromObject(bstrIdentifier));
 			}
 			
 		}
@@ -1943,7 +1923,7 @@ public class MessageProcessor {
 		
 		// EDHOC Error Message, as a CBOR byte string
 		processingResult.add(CBORObject.FromObject(replyPayload));
-				
+
 		// Application Data as a CBOR byte string, if present in the message to reply to
 		if (ad != null) {
 			processingResult.add(CBORObject.FromObject(ad));
@@ -2267,6 +2247,12 @@ public class MessageProcessor {
             	}
             	
             	dhSecret = SharedSecretCalculation.generateSharedSecret(privateKey, publicKey);
+            	
+                if (dhSecret == null) {
+            		System.err.println("Error when computing the Diffie-Hellman Secret");
+            		return null;
+                }
+            	
             	if (debugPrint) {
             		Util.nicePrint("G_RX", dhSecret);
             	}
@@ -2356,6 +2342,12 @@ public class MessageProcessor {
             	}
             	
             	dhSecret = SharedSecretCalculation.generateSharedSecret(privateKey, publicKey);
+            	
+                if (dhSecret == null) {
+            		System.err.println("Error when computing the Diffie-Hellman Secret");
+            		return null;
+                }
+            	
             	if (debugPrint) {
             		Util.nicePrint("G_IY", dhSecret);
             	}

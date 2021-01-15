@@ -61,7 +61,7 @@ public class EdhocServer extends CoapServer {
 	private static final boolean debugPrint = true;
 	
 	private static final int COAP_PORT = NetworkConfig.getStandard().getInt(NetworkConfig.Keys.COAP_PORT);
-
+	
 	private final static Provider EdDSA = new EdDSASecurityProvider();
 	
 	// Uncomment to use an ECDSA key pair with curve P-256 as long-term identity key
@@ -679,20 +679,10 @@ public class EdhocServer extends CoapServer {
 				}
 				// An error message has to be returned
 				else {
-					/*
-					if (mySession == null) {
-						System.err.println("Inconsistent state before sending EDHOC Error Message");
-						return;
-					}
-					*/
 					int responseType = MessageProcessor.messageType(nextMessage);
 					
 					if (responseType != Constants.EDHOC_ERROR_MESSAGE) {
 						System.err.println("Inconsistent state before sending EDHOC Error Message");	
-						/*
-						Util.purgeSession(mySession, CBORObject.FromObject(mySession.getConnectionId()),
-								          edhocSessions, usedConnectionIds);
-					    */
 						return;
 					}
 					
