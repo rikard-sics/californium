@@ -1200,19 +1200,6 @@ public class MessageProcessor {
 		boolean initiator = mySession.isInitiator();
 		int correlation = mySession.getCorrelation();
 		
-		if (initiator == true) {
-			if (correlation != Constants.EDHOC_CORR_METHOD_0 && correlation != Constants.EDHOC_CORR_METHOD_2) {
-				System.err.println("Error when processing EDHOC Error Message - Inconsistent correlation method");
-				return null;
-			}
-		}
-		else if (initiator == false) {
-			if (correlation != Constants.EDHOC_CORR_METHOD_0 && correlation != Constants.EDHOC_CORR_METHOD_1) {
-				System.err.println("Error when processing EDHOC Error Message - Inconsistent correlation method");
-				return null;
-			}
-		}
-		
 		if (objectList[index].getType() != CBORType.TextString) {
 			System.err.println("Error when processing EDHOC Error Message - Invalid format of ERR_MSG");
 			return null;
