@@ -564,8 +564,9 @@ public class MessageProcessor {
         	error = true;
     	}
     	else if (plaintextElementList[0].getType() != CBORType.ByteString &&
-    			 plaintextElementList[0].getType() != CBORType.Integer) {
-        	errMsg = new String("ID_CRED_R must be a bstr_identifier");
+    			 plaintextElementList[0].getType() != CBORType.Integer &&
+    			 plaintextElementList[0].getType() != CBORType.Map) {
+        	errMsg = new String("ID_CRED_R must be a CBOR map or a bstr_identifier");
         	error = true;
     	}
     	else if (plaintextElementList[1].getType() != CBORType.ByteString) {
@@ -630,6 +631,10 @@ public class MessageProcessor {
     			}
     		}
     	}
+    	else if (rawIdCredR.getType() == CBORType.Map) {
+    		idCredR = rawIdCredR;
+    	}
+    	
     	if (error == true) {
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, ad2);
@@ -935,8 +940,9 @@ public class MessageProcessor {
         	error = true;
     	}
     	else if (plaintextElementList[0].getType() != CBORType.ByteString &&
-    			 plaintextElementList[0].getType() != CBORType.Integer) {
-        	errMsg = new String("ID_CRED_I must be a bstr_identifier");
+    			 plaintextElementList[0].getType() != CBORType.Integer &&
+    			 plaintextElementList[0].getType() != CBORType.Map) {
+        	errMsg = new String("ID_CRED_I must be a CBOR map or a bstr_identifier");
         	error = true;
     	}
     	else if (plaintextElementList[1].getType() != CBORType.ByteString) {
@@ -1001,6 +1007,10 @@ public class MessageProcessor {
     			}
     		}
     	}
+    	else if (rawIdCredI.getType() == CBORType.Map) {
+    		idCredI = rawIdCredI;
+    	}
+    	
     	if (error == true) {
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, ad3);
@@ -1870,7 +1880,7 @@ public class MessageProcessor {
 		if (suitesR != null && suitesR.getType() != CBORType.Integer && suitesR.getType() != CBORType.Array)
 			return null;
 		
-		if (suitesR.getType() == CBORType.Array) {
+		if (suitesR != null && suitesR.getType() == CBORType.Array) {
 			for (int i = 0 ; i < suitesR.size(); i++) {
 				if (suitesR.get(i).getType() != CBORType.Integer)
 					return null;
