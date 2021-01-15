@@ -76,6 +76,10 @@ public class EdhocServer extends CoapServer {
     // The ID_CRED used for the identity key of this peer
     private static CBORObject idCred = null;
     
+    // The type of the credential of this peer and the other peer
+    // Possible values: CRED_TYPE_RPK ; CRED_TYPE_X5T ; CRED_TYPE_X5U 
+    private static int credType = Constants.CRED_TYPE_RPK;
+    
     // The CRED used for the identity key of this peer
     private static byte[] cred = null;
     
@@ -234,43 +238,90 @@ public class EdhocServer extends CoapServer {
  			peerPublicKeyBase64 = "pAMnAQEgBiFYIEPgltbaO4rEBSYv3Lhs09jLtrOdihHUxLdc9pRoR/W9";
  		}
  		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
- 			
- 			
  			keyPairBase64 = "pQMnAQEgBiFYIKOjK/y+4psOGi9zdnJBqTLThdpEj6Qygg4Voc10NYGSI1ggn/quL33vMaN9Rp4LKWCXVnaIRSgeeCJlU0Mv/y6zHlQ=";
  			peerPublicKeyBase64 = "pAMnAQEgBiFYIGt2OynWjaQY4cE9OhPQrwcrZYNg8lRJ+MwXIYMjeCtr";
- 			
- 			
- 			/*
- 			keyPairBase64 = "pAEBIAQhWCDmEXBYPmWt3xrRPNr9UMnyDgErwLV+j4uDy3G05//INCNYII4f/bEJhN+6cCHkSK5PnW+79FupFm4RMPAKvDxdgMX6";
- 			peerPublicKeyBase64 = "owEBIAQhWCBKnDup/RNKUlI34RpV7oL66uUv4YLJHQ7C9siQGCjQCA==";
- 			*/
- 			
  		}
 		
 		try {
 			Provider EdDSA = new EdDSASecurityProvider();
 			Security.insertProviderAt(EdDSA, 0);
 			
-			// The following considers raw public keys when building ID_CRED_X and CRED_X
+			
+			/* Settings for this peer */
 			
 			// Build the OneKey object for the identity key pair of this peer
 			keyPair =  new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyPairBase64)));
-			// Build the related ID_CRED
-			byte[] idCredKid = new byte[] {(byte) 0x01}; // Use 0x01 as kid for this peer
-			idCred = Util.buildIdCredKid(idCredKid);
-			// Build the related CRED
-			cred = Util.buildCredRawPublicKey(keyPair, "");
 			
+			byte[] serializedCert = null;
+			
+		    switch (credType) {
+		    	case Constants.CRED_TYPE_RPK:
+					// Build the related ID_CRED
+					byte[] idCredKid = new byte[] {(byte) 0x01}; // Use 0x01 as kid for this peer
+					idCred = Util.buildIdCredKid(idCredKid);
+					// Build the related CRED
+					cred = Util.buildCredRawPublicKey(keyPair, "");
+					break;
+		    	case Constants.CRED_TYPE_X5T:
+		    	case Constants.CRED_TYPE_X5U:
+		    		// The x509 certificate of this peer
+		    		serializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb28f9cf6180b5a6af31e80209a085cfbf95f3fdcf9b18b693d6c0e0d0ffb8e3f9a32a50859ecd0bfcff2c218");
+		    		// CRED, as serialization of a CBOR byte string wrapping the serialized certificate
+		    		cred = CBORObject.FromObject(serializedCert).EncodeToBytes();
+		    		switch (credType) {
+		    			case Constants.CRED_TYPE_X5T:
+				    		// ID_CRED for the identity key of this peer, built from the x509 certificate using x5t
+				    		idCred = Util.buildIdCredX5t(serializedCert);
+				    		break;
+		    			case Constants.CRED_TYPE_X5U:
+				    		// ID_CRED for the identity key of this peer, built from the x509 certificate using x5u
+				    		idCred = Util.buildIdCredX5u("http://example.repo.com");
+				    		break;
+		    		}
+		    		break;
+		    }
+		    
+
+			/* Settings for the other peer */
+		    
 			// Build the OneKey object for the identity public key of the other peer
-			OneKey peerPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(peerPublicKeyBase64)));	
-			// Build the related ID_CRED
-			byte[] peerKid = new byte[] {(byte) 0x00}; // Use 0x00 as kid for the other peer
-			CBORObject idCredPeer = Util.buildIdCredKid(peerKid);
-			peerPublicKeys.put(idCredPeer, peerPublicKey);
-			// Build the related CRED
-			byte[] peerCred = Util.buildCredRawPublicKey(peerPublicKey, "");
-			peerCredentials.put(idCredPeer, CBORObject.FromObject(peerCred));
+			OneKey peerPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(peerPublicKeyBase64)));
 			
+			CBORObject peerIdCred = null;
+			byte[] peerCred = null;
+			byte[] peerSerializedCert = null;
+			
+		    switch (credType) {
+		    	case Constants.CRED_TYPE_RPK:
+					// Build the related ID_CRED
+					byte[] peerKid = new byte[] {(byte) 0x00}; // Use 0x00 as kid for the other peer
+					CBORObject idCredPeer = Util.buildIdCredKid(peerKid);
+					peerPublicKeys.put(idCredPeer, peerPublicKey);
+					// Build the related CRED
+					peerCred = Util.buildCredRawPublicKey(peerPublicKey, "");
+					peerCredentials.put(idCredPeer, CBORObject.FromObject(peerCred));
+					break;
+		    	case Constants.CRED_TYPE_X5T:
+		    	case Constants.CRED_TYPE_X5U:
+		    		// The x509 certificate of the other peer
+		    		peerSerializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("fa34b22a9ca4a1e12924eae1d1766088098449cb848ffc795f88afc49cbe8afdd1ba009f21675e8f6c77a4a2c30195601f6f0a0852978bd43d28207d44486502ff7bdda632c788370016b8965bdb2074bff82e5a20e09bec21f8406e86442b87ec3ff245b7");
+		    		// CRED, as serialization of a CBOR byte string wrapping the serialized certificate
+		    		peerCred = CBORObject.FromObject(peerSerializedCert).EncodeToBytes();
+		    		switch (credType) {
+		    			case Constants.CRED_TYPE_X5T:
+				    		// ID_CRED for the identity key of the other peer, built from the x509 certificate using x5t
+				    		peerIdCred = Util.buildIdCredX5t(peerSerializedCert);
+				    		break;
+		    			case Constants.CRED_TYPE_X5U:
+				    		// ID_CRED for the identity key of the other peer, built from the x509 certificate using x5u
+		    				peerIdCred = Util.buildIdCredX5u("http://example.repo.com");
+		    				break;
+		    		}
+		    		break;
+		    }
+			peerPublicKeys.put(peerIdCred, peerPublicKey);
+			peerCredentials.put(peerIdCred, CBORObject.FromObject(peerCred));
+						
 		} catch (CoseException e) {
 			System.err.println("Error while generating the key pair " + e.getMessage());
 			return;
