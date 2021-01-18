@@ -167,7 +167,7 @@ public class MessageProcessorTest {
 		
 		// The identity key of the Responder
 		byte[] privateIdentityKeyBytes = Utils.hexToBytes("df69274d713296e246306365372b4683ced5381bfcadcd440a24c391d2fedb94");
-		byte[] publicIdentityKeyBytes = Utils.hexToBytes("a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
+		byte[] publicIdentityKeyBytes = Utils.hexToBytes("DBD9DC8CD03FB7C3913511462BB23816477C6BD8D66EF5A1A070AC854ED73FD2");
 		OneKey identityKey = SharedSecretCalculation.buildEd25519OneKey(privateIdentityKeyBytes, publicIdentityKeyBytes);
 		
 		// The x509 certificate of the Responder
@@ -257,7 +257,7 @@ public class MessageProcessorTest {
 		session.setMessage1(message1);
 		
 		
-		// Now write EDHOC message 1
+		// Now write EDHOC message 2
 		byte[] message2 = MessageProcessor.writeMessage2(session, ad2);
 
 		// Compare with the expected value from the test vectors
@@ -375,7 +375,7 @@ public class MessageProcessorTest {
 		
 		// The identity key of the Initiator
 		byte[] privateIdentityKeyBytes = Utils.hexToBytes("2ffce7a0b2b825d397d0cb54f746e3da3f27596ee06b5371481dc0e012bc34d7");
-		byte[] publicIdentityKeyBytes = Utils.hexToBytes("2c440cc121f8d7f24c3b0e41aedafe9caa4f4e7abb835ec30f1de88adb96ff71");
+		byte[] publicIdentityKeyBytes = Utils.hexToBytes("38E5D54563C2B6A4BA26F3015F61BB706E5C2EFDB556D2E1690B97FC3C6DE149");
 		OneKey identityKey = SharedSecretCalculation.buildEd25519OneKey(privateIdentityKeyBytes, publicIdentityKeyBytes);
 		
 		// The ephemeral key of the Initiator
