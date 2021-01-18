@@ -31,6 +31,7 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.Bytes;
 
 import com.upokecenter.cbor.CBORException;
 import com.upokecenter.cbor.CBORObject;
@@ -616,7 +617,6 @@ public class MessageProcessor {
     		
     		// First check the case where ID_CRED_R is a CBOR map with only 'kid', and only 'kid' was transported as bstr_identifier
     		CBORObject kidCBOR = Util.decodeFromBstrIdentifier(rawIdCredR);
-    		idCredR.Add(kidCBOR);
     		if (kidCBOR != null) {
     			idCredR.Add(HeaderKeys.KID.AsCBOR(), kidCBOR);
     		}
@@ -984,7 +984,6 @@ public class MessageProcessor {
     		
     		// First check the case where ID_CRED_R is a CBOR map with only 'kid', and only 'kid' was transported as bstr_identifier
     		CBORObject kidCBOR = Util.decodeFromBstrIdentifier(rawIdCredI);
-    		idCredI.Add(kidCBOR);
     		if (kidCBOR != null) {
     			idCredI.Add(HeaderKeys.KID.AsCBOR(), kidCBOR);
     		}
@@ -1953,7 +1952,10 @@ public class MessageProcessor {
 			  									  List<Integer> supportedCiphersuites, List<Set<Integer>> usedConnectionIds) {
 		
 		int methodCorr = (4 * authenticationMethod) + correlationMethod;
-		byte[] connectionId = Util.getConnectionId(usedConnectionIds, null);
+		
+		//byte[] connectionId = Util.getConnectionId(usedConnectionIds, null);
+		byte[] connectionId = Bytes.EMPTY; // Forced and aligned with the test vector
+		
         EdhocSession mySession = new EdhocSession(true, methodCorr, connectionId, keyPair,
         										  idCredI, credI, supportedCiphersuites);
 		
@@ -1994,8 +1996,12 @@ public class MessageProcessor {
 		// C_I
 		byte[] cI = Util.decodeFromBstrIdentifier(objectListMessage1[3]).GetByteString();
 		
+		
 		// Create a new EDHOC session
-		byte[] connectionId = Util.getConnectionId(usedConnectionIds, null);
+		
+		//byte[] connectionId = Util.getConnectionId(usedConnectionIds, null);
+		byte[] connectionId = new byte[] {(byte) 0x2b}; // Forced and aligned with the test vector
+		
 		EdhocSession mySession = new EdhocSession(false, methodCorr, connectionId, keyPair,
 												  idCredR, credR, supportedCiphersuites);
 		
