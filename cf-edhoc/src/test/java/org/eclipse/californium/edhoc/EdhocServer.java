@@ -48,6 +48,7 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 
 import com.upokecenter.cbor.CBORObject;
@@ -64,6 +65,8 @@ public class EdhocServer extends CoapServer {
 	
 	private final static Provider EdDSA = new EdDSASecurityProvider();
 	
+	private final static int keyFormat = 1; // 0 is for Base64; 1 is for binary encoding
+	
 	// Uncomment to use an ECDSA key pair with curve P-256 as long-term identity key
     // private final static int keyCurve = KeyKeys.EC2_P256.AsInt32();
     
@@ -78,13 +81,13 @@ public class EdhocServer extends CoapServer {
     
     // The type of the credential of this peer and the other peer
     // Possible values: CRED_TYPE_RPK ; CRED_TYPE_X5T ; CRED_TYPE_X5U 
-    private static int credType = Constants.CRED_TYPE_RPK;
+    private static int credType = Constants.CRED_TYPE_X5T;
     
     // The CRED used for the identity key of this peer
     private static byte[] cred = null;
     
     // The subject name used for the identity key of this peer
-    private static String subjectName = "myServer";
+    private static String subjectName = "";
     
     // The long-term asymmetric key pair of this peer
 	private static OneKey keyPair = null;
@@ -228,19 +231,49 @@ public class EdhocServer extends CoapServer {
 		
 		String keyPairBase64 = null;
 		String peerPublicKeyBase64 = null;
+		byte[] privateKeyBinary = null;
+		byte[] publicKeyBinary = null;
+		byte[] publicKeyBinaryY = null;
+		byte[] peerPublicKeyBinary = null;
+		byte[] peerPublicKeyBinaryY = null;
 		
-		if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
-			keyPairBase64 = "pgMmAQIgASFYIPWSTdB9SCF/+CGXpy7gty8qipdR30t6HgdFGQo8ViiAIlggXvJCtXVXBJwmjMa4YdRbcdgjpXqM57S2CZENPrUGQnMjWCDXCb+hy1ybUu18KTAJMvjsmXch4W3Hd7Rw7mTF3ocbLQ==";
-			peerPublicKeyBase64 = "pQMmAQIgASFYIGdZmgAlZDXB6FGfVVxHrB2LL8JMZag4JgK4ZcZ/+GBUIlgguZsSChh5hecy3n4Op+lZZJ2xXdbsz8DY7qRmLdIVavk=";
+		switch (keyFormat) {
+		
+			/* For stand-alone testing, as base64 encoding of OneKey objects */
+			case 0:
+				if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
+					keyPairBase64 = "pgMmAQIgASFYIPWSTdB9SCF/+CGXpy7gty8qipdR30t6HgdFGQo8ViiAIlggXvJCtXVXBJwmjMa4YdRbcdgjpXqM57S2CZENPrUGQnMjWCDXCb+hy1ybUu18KTAJMvjsmXch4W3Hd7Rw7mTF3ocbLQ==";
+					peerPublicKeyBase64 = "pQMmAQIgASFYIGdZmgAlZDXB6FGfVVxHrB2LL8JMZag4JgK4ZcZ/+GBUIlgguZsSChh5hecy3n4Op+lZZJ2xXdbsz8DY7qRmLdIVavk=";
+				}
+		 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
+		 			keyPairBase64 = "pQMnAQEgBiFYIDzQyFH694a7CcXQasH9RcqnmwQAy2FIX97dGGGy+bpSI1gg5aAfgdGCH2/2KFsQH5lXtDc8JUn1a+OkF0zOG6lIWXQ=";
+		 			peerPublicKeyBase64 = "pAMnAQEgBiFYIEPgltbaO4rEBSYv3Lhs09jLtrOdihHUxLdc9pRoR/W9";
+		 		}
+		 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+		 			keyPairBase64 = "pQMnAQEgBiFYIKOjK/y+4psOGi9zdnJBqTLThdpEj6Qygg4Voc10NYGSI1ggn/quL33vMaN9Rp4LKWCXVnaIRSgeeCJlU0Mv/y6zHlQ=";
+		 			peerPublicKeyBase64 = "pAMnAQEgBiFYIGt2OynWjaQY4cE9OhPQrwcrZYNg8lRJ+MwXIYMjeCtr";
+		 		}
+				break;
+				
+			/* Value from the test vectors, as binary serializations */
+			case 1:
+				if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
+					privateKeyBinary = null;
+					publicKeyBinary = null;
+					peerPublicKeyBinary = null;
+				}
+		 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
+		 			privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("df69274d713296e246306365372b4683ced5381bfcadcd440a24c391d2fedb94");
+		 			publicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("DBD9DC8CD03FB7C3913511462BB23816477C6BD8D66EF5A1A070AC854ED73FD2");
+					peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("38E5D54563C2B6A4BA26F3015F61BB706E5C2EFDB556D2E1690B97FC3C6DE149");
+		 		}
+		 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+		 			privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("bb501aac67b9a95f97e0eded6b82a662934fbbfc7ad1b74c1fcad66a079422d0");
+		 			publicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
+					peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("2c440cc121f8d7f24c3b0e41aedafe9caa4f4e7abb835ec30f1de88adb96ff71");
+		 		}
+				break;
 		}
- 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
- 			keyPairBase64 = "pQMnAQEgBiFYIDzQyFH694a7CcXQasH9RcqnmwQAy2FIX97dGGGy+bpSI1gg5aAfgdGCH2/2KFsQH5lXtDc8JUn1a+OkF0zOG6lIWXQ=";
- 			peerPublicKeyBase64 = "pAMnAQEgBiFYIEPgltbaO4rEBSYv3Lhs09jLtrOdihHUxLdc9pRoR/W9";
- 		}
- 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
- 			keyPairBase64 = "pQMnAQEgBiFYIKOjK/y+4psOGi9zdnJBqTLThdpEj6Qygg4Voc10NYGSI1ggn/quL33vMaN9Rp4LKWCXVnaIRSgeeCJlU0Mv/y6zHlQ=";
- 			peerPublicKeyBase64 = "pAMnAQEgBiFYIGt2OynWjaQY4cE9OhPQrwcrZYNg8lRJ+MwXIYMjeCtr";
- 		}
 		
 		try {
 			Provider EdDSA = new EdDSASecurityProvider();
@@ -250,17 +283,37 @@ public class EdhocServer extends CoapServer {
 			/* Settings for this peer */
 			
 			// Build the OneKey object for the identity key pair of this peer
-			keyPair =  new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyPairBase64)));
+			
+			switch (keyFormat) {
+			/* For stand-alone testing, as base64 encoding of OneKey objects */
+			case 0:
+				keyPair =  new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyPairBase64)));
+				break;
+				
+			/* Value from the test vectors, as binary serializations */
+			case 1:
+				if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
+					keyPair =  SharedSecretCalculation.buildEcdsa256OneKey(privateKeyBinary, publicKeyBinary, publicKeyBinaryY);
+				}
+		 		else 
+				if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
+					keyPair =  SharedSecretCalculation.buildEd25519OneKey(privateKeyBinary, publicKeyBinary);
+				}
+				else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+					keyPair =  SharedSecretCalculation.buildCurve25519OneKey(privateKeyBinary, publicKeyBinary);
+				}
+				break;
+			}
 			
 			byte[] serializedCert = null;
 			
 		    switch (credType) {
 		    	case Constants.CRED_TYPE_RPK:
 					// Build the related ID_CRED
-					byte[] idCredKid = new byte[] {(byte) 0x01}; // Use 0x01 as kid for this peer
+					byte[] idCredKid = new byte[] {(byte) 0x07}; // Use 0x07 as kid for this peer
 					idCred = Util.buildIdCredKid(idCredKid);
 					// Build the related CRED
-					cred = Util.buildCredRawPublicKey(keyPair, "");
+					cred = Util.buildCredRawPublicKey(keyPair, subjectName);
 					break;
 		    	case Constants.CRED_TYPE_X5T:
 		    	case Constants.CRED_TYPE_X5U:
@@ -285,7 +338,28 @@ public class EdhocServer extends CoapServer {
 			/* Settings for the other peer */
 		    
 			// Build the OneKey object for the identity public key of the other peer
-			OneKey peerPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(peerPublicKeyBase64)));
+		    OneKey peerPublicKey = null;
+		    
+			switch (keyFormat) {
+				/* For stand-alone testing, as base64 encoding of OneKey objects */
+				case 0:
+					peerPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(peerPublicKeyBase64)));
+					break;
+					
+				/* Value from the test vectors, as binary serializations */
+				case 1:
+					if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
+						peerPublicKey =  SharedSecretCalculation.buildEcdsa256OneKey(null, peerPublicKeyBinary, peerPublicKeyBinaryY);
+					}
+			 		else 
+					if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
+						peerPublicKey =  SharedSecretCalculation.buildEd25519OneKey(null, peerPublicKeyBinary);
+					}
+					else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+						peerPublicKey =  SharedSecretCalculation.buildCurve25519OneKey(null, peerPublicKeyBinary);
+					}
+					break;
+			}
 			
 			CBORObject peerIdCred = null;
 			byte[] peerCred = null;
@@ -294,7 +368,8 @@ public class EdhocServer extends CoapServer {
 		    switch (credType) {
 		    	case Constants.CRED_TYPE_RPK:
 					// Build the related ID_CRED
-					byte[] peerKid = new byte[] {(byte) 0x00}; // Use 0x00 as kid for the other peer
+		    		// Use 0xa1, 0x04, 0x41, 0x24 as kid for the other peer
+					byte[] peerKid = new byte[] {(byte) 0xa1, 0x04, 0x41, 0x24};
 					CBORObject idCredPeer = Util.buildIdCredKid(peerKid);
 					peerPublicKeys.put(idCredPeer, peerPublicKey);
 					// Build the related CRED
