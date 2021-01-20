@@ -380,6 +380,53 @@ public class SharedSecretCalculation {
 
 	/**
 	 * Build a COSE OneKey from raw byte arrays containing the public and
+	 * private keys. Considers ECDSA_384.
+	 *
+	 * @param privateKey the private key bytes
+	 * @param publicKeyX the public key X parameter bytes
+	 * @param publicKeyY the public key Y parameter bytes (if none is provided a
+	 *            valid Y will be recomputed)
+	 * 
+	 * @return a OneKey representing the input material
+	 */
+	static OneKey buildEcdsa384OneKey(byte[] privateKey, byte[] publicKeyX, byte[] publicKeyY) {
+
+		// Attempt to recalculate Y value if missing
+		if (publicKeyY == null) {
+			try {
+				publicKeyY = recomputeEcdsa384YFromX(publicKeyX);
+			} catch (CoseException e) {
+				System.err.println("Failed to recompute missing Y value: " + e);
+			}
+		}
+
+		byte[] rgbX = publicKeyX;
+		byte[] rgbY = publicKeyY;
+		byte[] rgbD = privateKey;
+
+		CBORObject keyMap = CBORObject.NewMap();
+
+		keyMap.Add(KeyKeys.Algorithm.AsCBOR(), AlgorithmID.ECDSA_384.AsCBOR());
+		keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
+		keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P384);
+		keyMap.Add(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(rgbX));
+		if (publicKeyY != null)
+			keyMap.Add(KeyKeys.EC2_Y.AsCBOR(), CBORObject.FromObject(rgbY));
+		if (privateKey != null)
+			keyMap.Add(KeyKeys.EC2_D.AsCBOR(), CBORObject.FromObject(rgbD));
+
+		OneKey key = null;
+		try {
+			key = new OneKey(keyMap);
+		} catch (CoseException e) {
+			System.err.println("Failed to generate COSE OneKey: " + e);
+		}
+
+		return key;
+	}
+
+	/**
+	 * Build a COSE OneKey from raw byte arrays containing the public and
 	 * private keys. Considers ECDSA_256.
 	 *
 	 * @param privateKey the private key bytes
@@ -429,8 +476,6 @@ public class SharedSecretCalculation {
      * Takes an ECDSA_256 X coordinate and computes a valid Y value for that X.
      * Will only only return one of the possible Y values.
      * 
-     * TODO: Add support for ECDSA_384 also.
-     * 
      * Resources:
      * https://github.com/conz27/crypto-test-vectors/blob/master/ecdh.py
      * https://crypto.stackexchange.com/questions/8914/ecdsa-compressed-public-key-point-back-to-uncompressed-public-key-point
@@ -469,7 +514,7 @@ public class SharedSecretCalculation {
 		BigInteger partial = ax.add(B).mod(prime);
 		BigInteger combined = partial.add(xPow3).mod(prime);
 
-		BigInteger root1 = squareMod(combined);
+		BigInteger root1 = squareMod(combined, prime);
 		BigInteger root2 = root1.negate().mod(prime);
 
 		// System.out.println("Root1: " +
@@ -565,6 +610,117 @@ public class SharedSecretCalculation {
 		return null;
 	}
 
+	/**
+	 * Takes an ECDSA_384 X coordinate and computes a valid Y value for that X.
+	 * Will only only return one of the possible Y values.
+	 * 
+	 * https://neuromancer.sk/std/secg/secp384r1
+	 * 
+	 * @param publicKeyX the public key X coordinate
+	 * @return the recomputed Y value for that X
+	 * @throws CoseException if recomputation fails
+	 */
+	static byte[] recomputeEcdsa384YFromX(byte[] publicKeyX) throws CoseException {
+
+		BigInteger x = new BigInteger(1, publicKeyX);
+
+		// secp384r1
+		// y^2 = x^3 + ax + b -> y = +- sqrt(a x + b + x^3)
+		BigInteger prime = new BigInteger(
+				"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff", 16);
+		BigInteger A = new BigInteger(
+				"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffc", 16);
+		BigInteger B = new BigInteger(
+				"b3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef", 16);
+		BigInteger three = new BigInteger("3");
+
+		// x = x.mod(prime); // Seems not needed
+		BigInteger xPow3 = x.modPow(three, prime);
+		BigInteger ax = (A.multiply(x)).mod(prime);
+		// BigInteger combined = (ax.add(B).add(xPow3)).mod(prime);
+		BigInteger partial = ax.add(B).mod(prime);
+		BigInteger combined = partial.add(xPow3).mod(prime);
+
+		BigInteger root1 = squareMod(combined, prime);
+		BigInteger root2 = root1.negate().mod(prime);
+
+		byte[] root1Bytes = root1.toByteArray();
+		byte[] root2Bytes = root2.toByteArray();
+
+		if (root1Bytes.length == 49) {
+			root1Bytes = Arrays.copyOfRange(root1Bytes, 1, 49);
+		}
+		if (root2Bytes.length == 49) {
+			root2Bytes = Arrays.copyOfRange(root2Bytes, 1, 49);
+		}
+
+		byte[] xBytes = x.toByteArray();
+		if (xBytes.length == 49) {
+			xBytes = Arrays.copyOfRange(xBytes, 1, 49);
+		}
+		//
+		// System.out.println("Root1: " + Utils.bytesToHex(root1Bytes));
+		// System.out.println("Root2: " + Utils.bytesToHex(root2Bytes));
+		// System.out.println("X: " + Utils.bytesToHex(xBytes));
+
+		
+		// Now build 2 keys from the potential Y values
+		OneKey possibleKey1 = null;
+		OneKey possibleKey2 = null;
+		try {
+			possibleKey1 = SharedSecretCalculation.buildEcdsa384OneKey(null, xBytes, root1Bytes);
+		} catch (Exception e) {
+			// Failed to build key with this Y, so it won't be used
+		}
+		try {
+			possibleKey2 = SharedSecretCalculation.buildEcdsa384OneKey(null, xBytes, root2Bytes);
+		} catch (Exception e) {
+			// Failed to build key with this Y, so it won't be used
+		}
+
+		// Check if on point (first y)
+		// jdk.crypto.ec/sun.security.ec.ECDHKeyAgreement
+		ECPublicKey keyToTest;
+		BigInteger keyX;
+		BigInteger keyY;
+		BigInteger p = prime;
+		EllipticCurve curve;
+		BigInteger rhs;
+		BigInteger lhs;
+
+		if (possibleKey1 != null) {
+			keyToTest = (ECPublicKey) possibleKey1.AsPublicKey();
+			keyX = keyToTest.getW().getAffineX();
+			keyY = keyToTest.getW().getAffineY();
+			p = prime;
+			curve = keyToTest.getParams().getCurve();
+			rhs = keyX.modPow(BigInteger.valueOf(3), p).add(curve.getA().multiply(x)).add(curve.getB()).mod(p);
+			lhs = keyY.modPow(BigInteger.valueOf(2), p).mod(p);
+			if (!rhs.equals(lhs)) {
+				System.out.println("Key using first Y not on curve!");
+			} else {
+				return possibleKey1.get(KeyKeys.EC2_Y).GetByteString();
+			}
+		}
+
+		// Check if on point (second y)
+		if (possibleKey2 != null) {
+			keyToTest = (ECPublicKey) possibleKey2.AsPublicKey();
+			keyX = keyToTest.getW().getAffineX();
+			keyY = keyToTest.getW().getAffineY();
+			curve = keyToTest.getParams().getCurve();
+			rhs = keyX.modPow(BigInteger.valueOf(3), p).add(curve.getA().multiply(x)).add(curve.getB()).mod(p);
+			lhs = keyY.modPow(BigInteger.valueOf(2), p).mod(p);
+			if (!rhs.equals(lhs)) {
+				System.out.println("Key using second Y not on curve!");
+			} else {
+				return possibleKey2.get(KeyKeys.EC2_Y).GetByteString();
+			}
+		}
+		System.out.println("Found no fitting Y value.");
+		return null;
+	}
+
     /**
      * Calculates prime roots in a field. Only works if p congruent 3 mod 4.
      * 
@@ -573,9 +729,18 @@ public class SharedSecretCalculation {
      * @param val the value to square
      * @return one of the square roots
      */
-	static BigInteger squareMod(BigInteger val) {
+	static BigInteger squareMod(BigInteger val, BigInteger prime) {
 		// root = val^((prime+1) / 4)
-		BigInteger prime = new BigInteger("ffffffff00000001000000000000000000000000ffffffffffffffffffffffff", 16);
+		// BigInteger prime = new
+		// BigInteger("ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
+		// 16);
+
+		BigInteger three = new BigInteger("3");
+		BigInteger four = new BigInteger("4");
+		if (!prime.mod(four).equals(three)) {
+			System.err.println("Invalid prime! p must be congruent 3 mod 4");
+		}
+
 		BigInteger power = prime.add(BigInteger.ONE).divide(new BigInteger("4"));
 
 		return val.modPow(power, prime);
