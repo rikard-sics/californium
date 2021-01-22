@@ -271,8 +271,8 @@ public class EdhocClient {
 		    switch (credType) {
 		    	case Constants.CRED_TYPE_RPK:
 					// Build the related ID_CRED
-		    		// Use 0xa1, 0x04, 0x41, 0x24 as kid for this peer
-				    byte[] idCredKid = new byte[] {(byte) 0xa1, 0x04, 0x41, 0x24};
+		    		// Use 0x24 as kid for the other peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x24
+				    byte[] idCredKid = new byte[] {(byte) 0x24};
 					idCred = Util.buildIdCredKid(idCredKid);
 					// Build the related CRED
 					cred = Util.buildCredRawPublicKey(keyPair, subjectName);
@@ -329,7 +329,8 @@ public class EdhocClient {
 		    switch (credType) {
 			    case Constants.CRED_TYPE_RPK:
 					// Build the related ID_CRED
-					byte[] peerKid = new byte[] {(byte) 0x07}; // Use 0x07 as kid for the other peer
+		    		// Use 0x07 as kid for the other peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x07
+					byte[] peerKid = new byte[] {(byte) 0x07};
 					peerIdCred = Util.buildIdCredKid(peerKid);
 					// Build the related CRED
 					peerCred = Util.buildCredRawPublicKey(peerPublicKey, "");
@@ -532,8 +533,11 @@ public class EdhocClient {
         int responseType = -1;
         byte[] responsePayload = edhocMessageResp.getPayload();
         
+        /* Using this content-format is not mandatory
         if (edhocMessageResp.getOptions().getContentFormat() != Constants.APPLICATION_EDHOC)
         	discontinue = true;
+        */
+        
         if (responsePayload == null)
         	discontinue = true;
         else {
