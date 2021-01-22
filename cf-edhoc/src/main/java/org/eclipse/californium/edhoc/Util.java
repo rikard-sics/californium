@@ -716,7 +716,13 @@ public class Util {
     		return;
     	
     	int connectionIdAsInt = bytesToInt(connectionId);
-    	usedConnectionIds.get(connectionId.length - 1).remove(connectionIdAsInt);
+    	
+    	if (connectionId.length != 0)
+    		usedConnectionIds.get(connectionId.length - 1).remove(connectionIdAsInt);
+    	// else set to false a to-be-introduced flag related to a zero-length connection ID
+    	/*
+    	 * 
+    	 */
     	
     }
     
