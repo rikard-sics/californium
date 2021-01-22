@@ -62,6 +62,7 @@ public class EdhocServer extends CoapServer {
 	private static final boolean debugPrint = true;
 	
 	private static final int COAP_PORT = NetworkConfig.getStandard().getInt(NetworkConfig.Keys.COAP_PORT);
+	// private static final int COAP_PORT = 5690;
 	
 	private final static Provider EdDSA = new EdDSASecurityProvider();
 	
@@ -310,7 +311,8 @@ public class EdhocServer extends CoapServer {
 		    switch (credType) {
 		    	case Constants.CRED_TYPE_RPK:
 					// Build the related ID_CRED
-					byte[] idCredKid = new byte[] {(byte) 0x07}; // Use 0x07 as kid for this peer
+		    		// Use 0x07 as kid for this peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x07
+					byte[] idCredKid = new byte[] {(byte) 0x07};
 					idCred = Util.buildIdCredKid(idCredKid);
 					// Build the related CRED
 					cred = Util.buildCredRawPublicKey(keyPair, subjectName);
@@ -368,8 +370,8 @@ public class EdhocServer extends CoapServer {
 		    switch (credType) {
 		    	case Constants.CRED_TYPE_RPK:
 					// Build the related ID_CRED
-		    		// Use 0xa1, 0x04, 0x41, 0x24 as kid for the other peer
-					byte[] peerKid = new byte[] {(byte) 0xa1, 0x04, 0x41, 0x24};
+		    		// Use 0x24 as kid for the other peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x24
+					byte[] peerKid = new byte[] {(byte) 0x24};
 					CBORObject idCredPeer = Util.buildIdCredKid(peerKid);
 					peerPublicKeys.put(idCredPeer, peerPublicKey);
 					// Build the related CRED
@@ -750,6 +752,9 @@ public class EdhocServer extends CoapServer {
 			        	Util.nicePrint("OSCORE Master Secret", masterSecret);
 			        	Util.nicePrint("OSCORE Master Salt", masterSalt);
 			        }
+			        
+			        if (exchange.advanced().getRequest().isConfirmable())
+			        	exchange.accept();
 					
 				}
 				// An error message has to be returned
