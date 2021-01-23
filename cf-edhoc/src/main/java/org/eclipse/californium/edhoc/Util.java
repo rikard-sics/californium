@@ -469,7 +469,8 @@ public class Util {
 		
 		if (rawByteString.length == 1) {
 			int value = bytesToInt(rawByteString) - 24;
-			return CBORObject.FromObject(value);
+			if (value >= -24 && value <= 23)
+				return CBORObject.FromObject(value);
 		}
 		
 		return byteString;
@@ -498,7 +499,7 @@ public class Util {
 		// The CBOR object is of Major Type "Integer"
 		int value = inputObject.AsInt32() + 24;
 		
-		if(value < 0 || value > 255)
+		if(value < 0 || value > 47)
 			return null;
 		
 		byte[] rawByteString = intToBytes(value);
