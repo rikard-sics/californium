@@ -27,11 +27,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.Random;
 
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.EncryptCommon;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.Bytes;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -259,6 +262,53 @@ public class UtilTest {
 		byte[] myPlaintext = Util.decrypt(idCredX, externalData, myCiphertext, encryptionAlg, iv, symmetricKey);
 
 		Assert.assertArrayEquals(payloadToEncrypt, myPlaintext);
+
+	}
+
+	/**
+	 * Test encryption and decryption with the algorithms AES_CCM_16_64_128,
+	 * AES_CCM_16_128_128, AES_CCM_64_64_128, AES_CCM_64_128_128, AES_GCM_128,
+	 * AES_GCM_192 & AES_GCM_256.
+	 * 
+	 * @throws CoseException on encryption or decryption failure
+	 */
+	@Test
+	public void testEncryptDecryptAlgs() throws CoseException {
+
+		AlgorithmID[] algorithms = new AlgorithmID[] { AlgorithmID.AES_CCM_16_64_128, AlgorithmID.AES_CCM_16_128_128,
+				AlgorithmID.AES_CCM_64_64_128, AlgorithmID.AES_CCM_64_128_128, AlgorithmID.AES_GCM_128,
+				AlgorithmID.AES_GCM_192, AlgorithmID.AES_GCM_256 };
+
+		Random rand = new Random();
+
+		// Set up needed parameters
+		byte[] externalData = new byte[] { (byte) 0xef, (byte) 0xde, (byte) 0xac, (byte) 0x75, (byte) 0x0f,
+				(byte) 0xc5 };
+		byte[] kid = new byte[] { (byte) 0x01 };
+		CBORObject idCredX = CBORObject.NewMap();
+		idCredX.Add(KeyKeys.KeyId, kid);
+		byte[] payloadToEncrypt = new byte[] { (byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0,
+				(byte) 0x5c };
+
+		for (int i = 0; i < algorithms.length; i++) {
+
+			AlgorithmID encryptionAlg = algorithms[i];
+
+			int ivLen = EncryptCommon.ivLength(encryptionAlg);
+			byte[] iv = Bytes.createBytes(rand, ivLen);
+
+			int keyLen = encryptionAlg.getKeySize() / 8;
+			byte[] symmetricKey = Bytes.createBytes(rand, keyLen);
+
+			// Perform the encryption
+			byte[] myCiphertext = Util.encrypt(idCredX, externalData, payloadToEncrypt, encryptionAlg, iv,
+					symmetricKey);
+
+			// Perform decryption
+			byte[] myPlaintext = Util.decrypt(idCredX, externalData, myCiphertext, encryptionAlg, iv, symmetricKey);
+
+			Assert.assertArrayEquals("Failed test for algorithm " + encryptionAlg, payloadToEncrypt, myPlaintext);
+		}
 
 	}
 
