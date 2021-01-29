@@ -878,19 +878,13 @@ public class OneKey {
                     
                     byte[] privateKeyBytes = ASN1.EncodeOctetString(val.GetByteString());
                     byte[] pkcs8 = ASN1.EncodePKCS8(ASN1.AlgorithmIdentifier(oid, null), privateKeyBytes, null);
-                    
-                    
-                    /* ********************************************************************************* */
-                    /* M.T. Explicitly refer to a provider                                               */
-                    Provider EdDSA = new EdDSASecurityProvider();
-        			Security.insertProviderAt(EdDSA, 0);
+
                     KeyFactory fact = null;
 					try {
 						fact = KeyFactory.getInstance(algName, "EdDSA");
 					} catch (NoSuchProviderException e) {
 						throw new CoseException("Unable to instantiate a provider", e);
 					}
-					/* ********************************************************************************* */
 					
                     KeySpec keyspec = new PKCS8EncodedKeySpec(pkcs8);
 
