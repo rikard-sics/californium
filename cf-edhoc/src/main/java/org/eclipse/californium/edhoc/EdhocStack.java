@@ -71,7 +71,7 @@ public class EdhocStack extends BaseCoapStack {
 
 		Layer layers[] = new Layer[] { new ObjectSecurityContextLayer(ctxDb), new ExchangeCleanupLayer(config),
 				new ObserveLayer(config), new BlockwiseLayer(config), reliabilityLayer,
-				new ObjectSecurityLayer(ctxDb), new EdhocLayer(edhocSessions) };
+				new ObjectSecurityLayer(ctxDb), new EdhocLayer(ctxDb, edhocSessions) };
 		setLayers(layers);
 	}
 }
