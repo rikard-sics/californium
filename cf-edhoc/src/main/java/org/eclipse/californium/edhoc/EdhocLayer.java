@@ -29,6 +29,7 @@ import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
+import org.eclipse.californium.oscore.OSCoreCtxDB;
 
 /**
  * 
@@ -48,11 +49,18 @@ public class EdhocLayer extends AbstractLayer {
 	Map<CBORObject, EdhocSession> edhocSessions;
 
 	/**
-	 * Build the EdhocLayer taking as input the map of current EDHOC sessions
+	 * The OSCORE context database
+	 */
+	OSCoreCtxDB ctxDb;
+
+	/**
+	 * Build the EdhocLayer
 	 * 
+	 * @param ctxDb OSCORE context database
 	 * @param edhocSessions map of current EDHOC sessions
 	 */
-	public EdhocLayer(Map<CBORObject, EdhocSession> edhocSessions) {
+	public EdhocLayer(OSCoreCtxDB ctxDb, Map<CBORObject, EdhocSession> edhocSessions) {
+		this.ctxDb = ctxDb;
 		this.edhocSessions = edhocSessions;
 
 		LOGGER.warn("Initializing EDHOC layer");
