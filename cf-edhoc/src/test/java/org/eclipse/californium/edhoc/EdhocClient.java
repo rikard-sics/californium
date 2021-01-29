@@ -41,6 +41,7 @@ import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.oscore.HashMapCtxDB;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
@@ -141,6 +142,13 @@ public class EdhocClient {
 		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		NetworkConfig.setStandard(config);
 
+		// Insert EdDSA security provider
+		Security.insertProviderAt(EdDSA, 1);
+
+		// Enable EDHOC stack with EDHOC and OSCORE layers
+		HashMapCtxDB db = new HashMapCtxDB();
+		EdhocCoapStackFactory.useAsDefault(db, edhocSessions);
+
 		// Use to dynamically generate a key pair
 		// keyPair = Util.generateKeyPair(keyCurve);
 		Util.generateKeyPair(keyCurve);
@@ -237,10 +245,7 @@ public class EdhocClient {
 		
 		
 		try {
-			Provider EdDSA = new EdDSASecurityProvider();
-			Security.insertProviderAt(EdDSA, 0);
-			
-			
+
 			/* Settings for this peer */
 			
 			// Build the OneKey object for the identity key pair of this peer
