@@ -50,6 +50,7 @@ import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
+import org.eclipse.californium.oscore.HashMapCtxDB;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
@@ -124,6 +125,13 @@ public class EdhocServer extends CoapServer {
 	 * Application entry point.
 	 */
 	public static void main(String[] args) {
+
+		// Insert EdDSA security provider
+		Security.insertProviderAt(EdDSA, 1);
+
+		// Enable EDHOC stack with EDHOC and OSCORE layers
+		HashMapCtxDB db = new HashMapCtxDB();
+		EdhocCoapStackFactory.useAsDefault(db, edhocSessions);
 
 		try {
 			// create server
@@ -277,9 +285,6 @@ public class EdhocServer extends CoapServer {
 		}
 		
 		try {
-			Provider EdDSA = new EdDSASecurityProvider();
-			Security.insertProviderAt(EdDSA, 0);
-			
 			
 			/* Settings for this peer */
 			
