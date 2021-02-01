@@ -2252,6 +2252,18 @@ public class MessageProcessor {
 	            	
             	}
             	
+    			// Consistency check of key type and curve against the selected ciphersuite
+            	int selectedCipherSuite = session.getSelectedCiphersuite();
+            	
+            	if (Util.checkDiffieHellmanKeyAgainstCiphersuite(privateKey, selectedCipherSuite) == false) {
+            		System.err.println("Error when computing the Diffie-Hellman Secret");
+            		return null;
+            	}
+            	if (Util.checkDiffieHellmanKeyAgainstCiphersuite(publicKey, selectedCipherSuite) == false) {
+            		System.err.println("Error when computing the Diffie-Hellman Secret");
+            		return null;
+            	}
+            	
             	dhSecret = SharedSecretCalculation.generateSharedSecret(privateKey, publicKey);
             	
                 if (dhSecret == null) {
@@ -2587,7 +2599,16 @@ public class MessageProcessor {
     		// The responder uses signatures as authentication method, then Signature_or_MAC_2 has to be computed
     		try {
     			OneKey identityKey = session.getLongTermKey();
+    			int selectedCipherSuite = session.getSelectedCiphersuite();
+    			
+    			// Consistency check of key type and curve against the selected ciphersuite
+    			if (Util.checkSignatureKeyAgainstCiphersuite(identityKey, selectedCipherSuite) == false) {
+    				System.err.println("Error when signing MAC_2 to produce Signature_or_MAC_2\n");
+    				return null;
+    			}
+
 				signatureOrMac2 = Util.computeSignature(session.getIdCred(), externalData, mac2, identityKey);
+				
 			} catch (CoseException e) {
 				System.err.println("Error when signing MAC_2 to produce Signature_or_MAC_2\n" + e.getMessage());
 				return null;
@@ -2620,7 +2641,16 @@ public class MessageProcessor {
     		// The initiator uses signatures as authentication method, then Signature_or_MAC_3 has to be computed
     		try {
     			OneKey identityKey = session.getLongTermKey();
+    			int selectedCipherSuite = session.getSelectedCiphersuite();
+    			
+    			// Consistency check of key type and curve against the selected ciphersuite
+    			if (Util.checkSignatureKeyAgainstCiphersuite(identityKey, selectedCipherSuite) == false) {
+    				System.err.println("Error when signing MAC_3 to produce Signature_or_MAC_3\n");
+    				return null;
+    			}
+    			
 				signatureOrMac3 = Util.computeSignature(session.getIdCred(), externalData, mac3, identityKey);
+				
 			} catch (CoseException e) {
 				System.err.println("Error when signing MAC_3 to produce Signature_or_MAC_3\n" + e.getMessage());
 				return null;
@@ -2650,9 +2680,19 @@ public class MessageProcessor {
     	}
     	else if (authenticationMethod == Constants.EDHOC_AUTH_METHOD_0 || authenticationMethod == Constants.EDHOC_AUTH_METHOD_2) {
     		// The responder uses signatures as authentication method, then Signature_or_MAC_2 is a signature to verify
+    		
+    		OneKey peerIdentityKey = session.getPeerLongTermPublicKey();
+			int selectedCipherSuite = session.getSelectedCiphersuite();
+			
+			// Consistency check of key type and curve against the selected ciphersuite
+			if (Util.checkSignatureKeyAgainstCiphersuite(peerIdentityKey, selectedCipherSuite) == false) {
+				System.err.println("Error when verifying the signature of Signature_or_MAC_2\n");
+				return false;
+			}
+    		
 			try {
 				return Util.verifySignature(signatureOrMac2, session.getPeerIdCred(),
-						                    externalData, mac2, session.getPeerLongTermPublicKey());
+						                    externalData, mac2, peerIdentityKey);
 			} catch (CoseException e) {
 				System.err.println("Error when verifying the signature of Signature_or_MAC_2\n" + e.getMessage());
 				return false;
@@ -2682,9 +2722,19 @@ public class MessageProcessor {
     	}
     	else if (authenticationMethod == Constants.EDHOC_AUTH_METHOD_0 || authenticationMethod == Constants.EDHOC_AUTH_METHOD_1) {
     		// The initiator uses signatures as authentication method, then Signature_or_MAC_3 is a signature to verify
+
+    		OneKey peerIdentityKey = session.getPeerLongTermPublicKey();
+			int selectedCipherSuite = session.getSelectedCiphersuite();
+			
+			// Consistency check of key type and curve against the selected ciphersuite
+			if (Util.checkSignatureKeyAgainstCiphersuite(peerIdentityKey, selectedCipherSuite) == false) {
+				System.err.println("Error when verifying the signature of Signature_or_MAC_3\n");
+				return false;
+			}
+    		
 			try {
 				return Util.verifySignature(signatureOrMac3, session.getPeerIdCred(),
-						                    externalData, mac3, session.getPeerLongTermPublicKey());
+						                    externalData, mac3, peerIdentityKey);
 			} catch (CoseException e) {
 				System.err.println("Error when verifying the signature of Signature_or_MAC_3\n" + e.getMessage());
 				return false;
