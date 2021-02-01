@@ -962,5 +962,89 @@ public class Util {
         return Util.buildDeterministicCBORMap(labelList, valueList);
 		
 	}
-        
+    
+    /**
+     * Check that a signature key is compliant with the selected cipher suite
+     *  
+     * @param identityKey   The signature key to check against the selected cipher suite
+     * @param selectedCipherSuite   The selected cipher suite used in an EDHOC session
+     * @return True in case the key complies with the selected cipher suite, or false otherwise
+     */
+	public static boolean checkSignatureKeyAgainstCiphersuite(OneKey key, int selectedCipherSuite) {
+		
+		String errorMessage = null;
+				
+		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_1) {
+		    
+			if (key.get(KeyKeys.KeyType) != KeyKeys.KeyType_OKP) {
+				System.err.println("Invalid key type - Expected key type: OKP");
+				return false;
+			}
+				
+			if (key.get(KeyKeys.OKP_Curve) != KeyKeys.OKP_Ed25519) {
+				System.err.println("Invalid OKP curve - Expected curve: Ed25519");
+				return false;
+			}
+			
+		}
+		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_2 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_3) {
+				
+			if (key.get(KeyKeys.KeyType) != KeyKeys.KeyType_EC2) {
+				System.err.println("Invalid key type - Expected key type: EC2");
+				return false;
+			}
+				
+			if (key.get(KeyKeys.EC2_Curve) != KeyKeys.EC2_P256) {
+				System.err.println("Invalid EC2 curve - Expected curve: P-256");
+				return false;
+			}
+				
+		}
+		
+		return true;
+		
+	}
+	
+    /**
+     * Check that a Diffie-Hellman key is compliant with the selected cipher suite
+     *  
+     * @param identityKey   The signature key to check against the selected cipher suite
+     * @param selectedCipherSuite   The selected cipher suite used in an EDHOC session
+     * @return True in case the key complies with the selected cipher suite, or false otherwise
+     */
+	public static boolean checkDiffieHellmanKeyAgainstCiphersuite(OneKey key, int selectedCipherSuite) {
+		
+		String errorMessage = null;
+				
+		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_1) {
+		    
+			if (key.get(KeyKeys.KeyType) != KeyKeys.KeyType_OKP) {
+				System.err.println("Invalid key type - Expected key type: OKP");
+				return false;
+			}
+				
+			if (key.get(KeyKeys.OKP_Curve) != KeyKeys.OKP_X25519) {
+				System.err.println("Invalid OKP curve - Expected curve: Ed25519");
+				return false;
+			}
+			
+		}
+		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_2 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_3) {
+				
+			if (key.get(KeyKeys.KeyType) != KeyKeys.KeyType_EC2) {
+				System.err.println("Invalid key type - Expected key type: EC2");
+				return false;
+			}
+				
+			if (key.get(KeyKeys.EC2_Curve) != KeyKeys.EC2_P256) {
+				System.err.println("Invalid EC2 curve - Expected curve: P-256");
+				return false;
+			}
+				
+		}
+		
+		return true;
+		
+	}
+	
 }
