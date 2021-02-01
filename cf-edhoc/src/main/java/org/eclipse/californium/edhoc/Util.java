@@ -971,8 +971,6 @@ public class Util {
      * @return True in case the key complies with the selected cipher suite, or false otherwise
      */
 	public static boolean checkSignatureKeyAgainstCiphersuite(OneKey key, int selectedCipherSuite) {
-		
-		String errorMessage = null;
 				
 		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_1) {
 		    
@@ -1013,9 +1011,7 @@ public class Util {
      * @return True in case the key complies with the selected cipher suite, or false otherwise
      */
 	public static boolean checkDiffieHellmanKeyAgainstCiphersuite(OneKey key, int selectedCipherSuite) {
-		
-		String errorMessage = null;
-				
+			
 		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_1) {
 		    
 			if (key.get(KeyKeys.KeyType) != KeyKeys.KeyType_OKP) {
