@@ -86,19 +86,20 @@ public class Util {
         msg.SetContent(plaintext);
         
         // Debug print
-        /*
+        
         System.out.println("Protected attributes: " + msg.getProtectedAttributes().toString());
         System.out.println("aad                 : " + Utils.bytesToHex(msg.getExternal()));
         System.out.println("plaintext           : " + Utils.bytesToHex(msg.GetContent()));
-        */
+        
         
         // Perform the encryption
         msg.encrypt(key);
         
         // Debug print
-        /*
+        
         System.out.println("Encrypted content: " + Utils.bytesToHex(msg.getEncryptedContent()));
-        */
+        System.out.println(Utils.bytesToHex(msg.EncodeToBytes()));
+        
         
         return msg.getEncryptedContent();
         
@@ -971,13 +972,14 @@ public class Util {
      * @return True in case the key complies with the selected cipher suite, or false otherwise
      */
 	public static boolean checkSignatureKeyAgainstCiphersuite(OneKey key, int selectedCipherSuite) {
-				
+			
+		
 		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_1) {
-		    
-			if (key.get(KeyKeys.KeyType) != KeyKeys.KeyType_OKP) {
-				System.err.println("Invalid key type - Expected key type: OKP");
-				return false;
-			}
+			
+				if (key.get(KeyKeys.KeyType) != KeyKeys.KeyType_OKP) {
+					System.err.println("Invalid key type - Expected key type: OKP");
+					return false;
+				}
 				
 			if (key.get(KeyKeys.OKP_Curve) != KeyKeys.OKP_Ed25519) {
 				System.err.println("Invalid OKP curve - Expected curve: Ed25519");
@@ -998,7 +1000,7 @@ public class Util {
 			}
 				
 		}
-		
+				
 		return true;
 		
 	}
