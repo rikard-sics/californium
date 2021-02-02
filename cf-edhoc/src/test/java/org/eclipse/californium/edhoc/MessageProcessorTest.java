@@ -4,7 +4,9 @@ import static org.junit.Assert.fail;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.security.Provider;
 import java.security.PublicKey;
+import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -22,6 +24,7 @@ import org.junit.Test;
 
 import com.upokecenter.cbor.CBORObject;
 
+import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 import net.i2p.crypto.eddsa.Utils;
 
 public class MessageProcessorTest {
@@ -30,7 +33,6 @@ public class MessageProcessorTest {
 	 * Tests identification of EDHOC messages. Based on messages from the EDHOC
 	 * test vectors.
 	 * 
-	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#appendix-B.1.1
 	 */
 	@Test
 	public void testMessageType() {
@@ -143,6 +145,44 @@ public class MessageProcessorTest {
 		
 	}
 	
+	/**
+	 * Test writing of message 1 with ciphersuite 2 and method 3.
+	 * 
+	 */
+	@Test
+	public void testWriteMessage1Ciphersuite2Method3() {
+		// First set up the session to use
+		boolean initiator = true;
+		int methodCorr = 13;
+		byte[] connectionId = new byte[] { 0x16 };
+		List<Integer> cipherSuites = new ArrayList<Integer>();
+		cipherSuites.add(2);
+		OneKey ltk = Util.generateKeyPair(KeyKeys.EC2_P256.AsInt32());
+		byte[] ad1 = null;
+		
+		// Just for method compatibility; it is not used for EDHOC Message 1
+		byte[] idCredKid = new byte[] {(byte) 0x24};
+		CBORObject idCred = Util.buildIdCredKid(idCredKid);
+		byte[] cred = Util.buildCredRawPublicKey(ltk, "");
+
+		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, idCred, cred, cipherSuites);
+
+		// Force a specific ephemeral key
+		byte[] privateEkeyBytes = Utils.hexToBytes("0ae799775cb151bfc2548735f44acf1d9429cf9a95ddcd2a139e3a28d863a081");
+		byte[] publicEkeyBytes = Utils.hexToBytes("475776f844979ad0b463c5a6a4343a663d17a3a80e38a81d3e3496f6061fd716");
+		OneKey ek = SharedSecretCalculation.buildEcdsa256OneKey(privateEkeyBytes, publicEkeyBytes, null);
+		session.setEphemeralKey(ek);
+
+		// Now write EDHOC message 1
+		byte[] message1 = MessageProcessor.writeMessage1(session, ad1);
+
+		// Compare with the expected value from the test vectors
+		byte[] expectedMessage1 = Utils
+				.hexToBytes("0d025820475776f844979ad0b463c5a6a4343a663d17a3a80e38a81d3e3496f6061fd71621");
+
+		Assert.assertArrayEquals(expectedMessage1, message1);
+		
+	}
 	
 	/**
 	 * Test writing of message 2 and compare to the test vector in B.1.
@@ -156,6 +196,8 @@ public class MessageProcessorTest {
 		int methodCorr = 1;
 		byte[] ad2 = null;
 		
+		Provider EdDSA = new EdDSASecurityProvider();
+		Security.insertProviderAt(EdDSA, 1);
 		
 		/* Responder information*/
 
@@ -269,7 +311,6 @@ public class MessageProcessorTest {
 	}
 	
 	
-	
 	/**
 	 * Test writing of message 2 and compare to the test vector in B.2.
 	 * 
@@ -351,6 +392,86 @@ public class MessageProcessorTest {
 		
 	}
 	
+	/**
+	 * Test writing of message 2 with ciphersuite 2 and method 3.
+	 * 
+	 */
+	@Test
+	public void testWriteMessage2Ciphersuite2Method3() {
+
+		boolean initiator = false;
+		int methodCorr = 13;
+		byte[] ad2 = null;
+		
+		
+		/* Responder information*/
+
+		// C_R, in plain binary format
+		byte[] connectionIdResponder = new byte[] { 0x20 };
+		
+		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
+		supportedCipherSuites.add(2);
+		
+		// The identity key of the Responder
+		byte[] privateIdentityKeyBytes = Utils.hexToBytes("ec93c2f8a58f123daa982688e384f54c10c50a1d2c90c00304f648e58f14354c");
+		byte[] publicIdentityKeyXBytes = Utils.hexToBytes("6f9702a66602d78f5e81bac1e0af01f8b52810c502e87ebb7c926c07426fd02f");
+		byte[] publicIdentityKeyYBytes = Utils.hexToBytes("C8D33274C71C9B3EE57D842BBF2238B8283CB410ECA216FB72A78EA7A870F800");
+		OneKey identityKey = SharedSecretCalculation.buildEcdsa256OneKey(privateIdentityKeyBytes, publicIdentityKeyXBytes, publicIdentityKeyYBytes);
+		
+		// ID_CRED_R for the identity key of the Responder
+		byte[] idCredKid = new byte[] {(byte) 0x07};
+		CBORObject idCredR = Util.buildIdCredKid(idCredKid);
+		
+		// CRED_R for the identity key of the Responder
+		byte[] credR = Util.buildCredRawPublicKey(identityKey, "");
+		
+		// The ephemeral key of the Responder
+		byte[] privateEphemeralKeyBytes = Utils.hexToBytes("7397ba34a7b60a4d98ef5e91563fc8549f3554494f1febd465360c4b90e74171");
+		byte[] publicEphemeralKeyBytes = Utils.hexToBytes("81df54b3756acfc8a1e9b08ba10de4e7e7dd934587a1ecdb21b92f8f22c3a38d");
+		OneKey ephemeralKey = SharedSecretCalculation.buildEcdsa256OneKey(privateEphemeralKeyBytes, publicEphemeralKeyBytes, null);
+
+		
+		/* Initiator information*/
+		
+		// C_I, in plain binary format
+		byte[] connectionIdInitiator = new byte[] { 0x16 };
+
+		// The ephemeral key of the Initiator
+		byte[] peerEphemeralPublicKeyBytes = Utils.hexToBytes("475776f844979ad0b463c5a6a4343a663d17a3a80e38a81d3e3496f6061fd716");
+		OneKey peerEphemeralPublicKey = SharedSecretCalculation.buildEcdsa256OneKey(null, peerEphemeralPublicKeyBytes, null);
+		
+		
+		/* Set up the session to use */
+		
+		// Create the session
+		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdResponder,
+												identityKey, idCredR, credR, supportedCipherSuites);
+
+		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
+		session.setEphemeralKey(ephemeralKey);
+		session.setPeerEphemeralPublicKey(peerEphemeralPublicKey);
+
+		// Set the selected cipher suite
+		session.setSelectedCiphersuite(2);
+		
+		// Set the Connection Identifier of the peer
+		session.setPeerConnectionId(connectionIdInitiator);
+		
+		// Store the EDHOC Message 1
+		byte[] message1 = Utils.hexToBytes("0d025820475776f844979ad0b463c5a6a4343a663d17a3a80e38a81d3e3496f6061fd71621");
+		session.setMessage1(message1);
+		
+		
+		// Now write EDHOC message 1
+		byte[] message2 = MessageProcessor.writeMessage2(session, ad2);
+
+		// Compare with the expected value from the test vectors
+		byte[] expectedMessage2 = Utils
+				.hexToBytes("582081df54b3756acfc8a1e9b08ba10de4e7e7dd934587a1ecdb21b92f8f22c3a38d084a93b13712a0c0bc9f9f74");
+
+		Assert.assertArrayEquals(expectedMessage2, message2);
+		
+	}
 	
 	/**
 	 * Test writing of message 3 and compare to the test vector in B.1.
@@ -364,6 +485,8 @@ public class MessageProcessorTest {
 		int methodCorr = 1;
 		byte[] ad3 = null;
 		
+		Provider EdDSA = new EdDSASecurityProvider();
+		Security.insertProviderAt(EdDSA, 1);
 		
 		/* Initiator information*/
 
@@ -540,5 +663,99 @@ public class MessageProcessorTest {
 		
 	}
 	
+	/**
+	 * Test writing of message 3 with ciphersuite 2 and method 3.
+	 * 
+	 */
+	@Test
+	public void testWriteMessage3Ciphersuite2Method3() {
+
+		boolean initiator = true;
+		int methodCorr = 13;
+		byte[] ad3 = null;
+		
+		
+		/* Initiator information*/
+		
+		// C_I, in plain binary format
+		byte[] connectionIdInitiator = new byte[] { 0x16 };
+
+		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
+		supportedCipherSuites.add(2);
+		
+		// The identity key of the Initiator
+		byte[] privateIdentityKeyBytes = Utils.hexToBytes("04f347f2bead699adb247344f347f2bdac93c7f2bead6a9d2a9b24754a1e2b62");
+		byte[] publicIdentityKeyXBytes = Utils.hexToBytes("cd4177ba62433375ede279b5e18e8b91bc3ed8f1e174474a26fc0edb44ea5373");
+		byte[] publicIdentityKeyYBytes = Utils.hexToBytes("A0391DE29C5C5BADDA610D4E301EAAA18422367722289CD18CBE6624E89B9CFD");
+		OneKey identityKey = SharedSecretCalculation.buildEcdsa256OneKey(privateIdentityKeyBytes,
+																		 publicIdentityKeyXBytes, publicIdentityKeyYBytes);
+		
+		// ID_CRED_I for the identity key of the Initiator
+		byte[] idCredKid = new byte[] {(byte) 0x24};
+		CBORObject idCredI = Util.buildIdCredKid(idCredKid);
+		
+		// CRED_I for the identity key of the Initiator
+		byte[] credI = Util.buildCredRawPublicKey(identityKey, "");		
+		
+		// The ephemeral key of the Initiator
+		byte[] privateEphemeralKeyBytes = Utils.hexToBytes("0ae799775cb151bfc2548735f44acf1d9429cf9a95ddcd2a139e3a28d863a081");
+		byte[] publicEphemeralKeyBytes = Utils.hexToBytes("475776f844979ad0b463c5a6a4343a663d17a3a80e38a81d3e3496f6061fd716");
+		OneKey ephemeralKey = SharedSecretCalculation.buildEcdsa256OneKey(privateEphemeralKeyBytes,
+				                                                          publicEphemeralKeyBytes, null);
+		
+		
+		/* Responder information*/
+
+		// C_R, in plain binary format
+		byte[] connectionIdResponder = new byte[] { 0x20 };
+		
+		// The ephemeral key of the Responder
+		byte[] peerEphemeralPublicKeyBytes = Utils.hexToBytes("81df54b3756acfc8a1e9b08ba10de4e7e7dd934587a1ecdb21b92f8f22c3a38d");
+		OneKey peerEphemeralPublicKey = SharedSecretCalculation.buildEcdsa256OneKey(null, peerEphemeralPublicKeyBytes, null);
+
+		
+		/* Status from after receiving EDHOC Message 2 */
+		byte[] th2 = Utils.hexToBytes("ce10ae2553fc703715bab97dcf211bfed0a2305c82093d5aa62954c4f7a9a8a3");
+		byte[] ciphertext2 = Utils.hexToBytes("93b13712a0c0bc9f9f74");
+		byte[] prk3e2m = Utils.hexToBytes("80f79d96d715f22481ee8e906aa7f4c1aaa25207437d9a26baee32e393ed72be");
+		
+		
+		
+		/* Set up the session to use */
+		
+		// Create the session
+		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdResponder,
+												identityKey, idCredI, credI, supportedCipherSuites);
+
+		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
+		session.setEphemeralKey(ephemeralKey);
+		session.setPeerEphemeralPublicKey(peerEphemeralPublicKey);
+
+		// Set the selected cipher suite
+		session.setSelectedCiphersuite(2);
+		
+		// Set the Connection Identifier of the peer
+		session.setPeerConnectionId(connectionIdResponder);
+		
+		// Set TH_2 from the previous protocol step
+		session.setTH2(th2);
+		
+		// Set CIPHERTEXT_2 from the previous protocol step
+		session.setCiphertext2(ciphertext2);
+		
+		// Set PRK_3e2m from the previous protocol step
+		session.setPRK3e2m(prk3e2m);
+		
+		
+		// Now write EDHOC message 3
+		byte[] message3 = MessageProcessor.writeMessage3(session, ad3);
+
+		// Compare with the expected value from the test vectors
+		//byte[] expectedMessage3 = Utils.hexToBytes("0852f164a3c8783c07c817d0a545ee499d65276f");
+		byte[] expectedMessage3 = Utils.hexToBytes("0852a7e2f47e7bce019e5bb810de9a6fe26d48a3");
+		
+		Assert.assertArrayEquals(expectedMessage3, message3);
+		
+	}
 	
 }
