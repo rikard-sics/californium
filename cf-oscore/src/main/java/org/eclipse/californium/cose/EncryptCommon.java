@@ -86,7 +86,6 @@ public abstract class EncryptCommon extends Message {
 		if (rgbEncrypt == null)
 			throw new CoseException("No Encrypted Content Specified");
 
-<<<<<<< HEAD
 		validateObjectState(rgbKey);
 
 		switch (alg) {
@@ -112,26 +111,6 @@ public abstract class EncryptCommon extends Message {
 			break;
 		}
 
-=======
-		switch (alg) {
-		case AES_GCM_128:
-		case AES_GCM_192:
-		case AES_GCM_256:
-			AES_GCM_Decrypt(alg, rgbKey);
-			break;
-
-		case AES_CCM_16_64_128:
-		case AES_CCM_16_128_128:
-		case AES_CCM_64_64_128:
-		case AES_CCM_64_128_128:
-			AES_CCM_Decrypt(alg, rgbKey);
-			break;
-
-		default:
-			throw new CoseException("Unsupported Algorithm Specified");
-		}
-
->>>>>>> 9cc04a4f7 (Added support and tests for encryption/decryption with AES GCM)
 		return rgbContent;
 	}
 
@@ -142,7 +121,6 @@ public abstract class EncryptCommon extends Message {
 		if (rgbContent == null)
 			throw new CoseException("No Content Specified");
 
-<<<<<<< HEAD
 		validateObjectState(rgbKey);
 
 		switch (alg) {
@@ -156,32 +134,16 @@ public abstract class EncryptCommon extends Message {
 		case AES_CCM_64_128_256:
 			AES_CCM_Encrypt(alg, rgbKey);
 			break;
-=======
-		switch (alg) {
->>>>>>> 9cc04a4f7 (Added support and tests for encryption/decryption with AES GCM)
 		case AES_GCM_128:
 		case AES_GCM_192:
 		case AES_GCM_256:
 			AES_GCM_Encrypt(alg, rgbKey);
 			break;
-<<<<<<< HEAD
 		case CHACHA20_POLY1305:
 			ChaCha20_Poly1305_Encrypt(alg, rgbKey);
 			break;
 		default:
 			break;
-=======
-
-		case AES_CCM_16_64_128:
-		case AES_CCM_16_128_128:
-		case AES_CCM_64_64_128:
-		case AES_CCM_64_128_128:
-			AES_CCM_Encrypt(alg, rgbKey);
-			break;
-
-		default:
-			throw new CoseException("Unsupported Algorithm Specified");
->>>>>>> 9cc04a4f7 (Added support and tests for encryption/decryption with AES GCM)
 		}
 		
 		ProcessCounterSignatures();
@@ -245,12 +207,7 @@ public abstract class EncryptCommon extends Message {
 	private void AES_CCM_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException {
 		CBORObject iv = findAttribute(HeaderKeys.IV);
 		byte[] aad = getAADBytes();
-<<<<<<< HEAD
 
-=======
-		System.out.println(Utils.bytesToHex(aad));
-		
->>>>>>> 57ecacb23 (Test vectors for Cipher Suite 2, Method 3)
 		try {
 			rgbEncrypt = CCMBlockCipher.encrypt(new SecretKeySpec(rgbKey, AES_SPEC), iv.GetByteString(), aad, GetContent(),
 					alg.getTagSize() / Byte.SIZE);
@@ -263,7 +220,6 @@ public abstract class EncryptCommon extends Message {
 
 	private void AES_GCM_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException {
 		CBORObject iv = findAttribute(HeaderKeys.IV);
-<<<<<<< HEAD
 		byte[] aad = getAADBytes();
 
 		try {
@@ -277,55 +233,12 @@ public abstract class EncryptCommon extends Message {
 			rgbContent = cipher.doFinal(rgbEncrypt);
 		} catch (NoSuchAlgorithmException ex) {
 			throw new CoseException("Algorithm not supported", ex);
-=======
-
-		// validate key
-		if (rgbKey.length != alg.getKeySize() / 8) {
-			throw new CoseException("Key Size is incorrect");
-		}
-
-		// get and validate iv
-		final int ivLen = ivLength(alg);
-		if (iv == null) {
-			throw new CoseException("Missing IV during decryption");
-		}
-		if (iv.getType() != CBORType.ByteString) {
-			throw new CoseException("IV is incorrectly formed");
-		}
-		if (iv.GetByteString().length != ivLen) {
-			throw new CoseException("IV size is incorrect");
-		}
-
-		try {
-			// create and prepare cipher
-			Cipher cipher;
-			cipher = Cipher.getInstance(AES_GCM_SPEC);
-			cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(rgbKey, "AES"),
-					new GCMParameterSpec(alg.getTagSize(), iv.GetByteString()));
-			cipher.updateAAD(getAADBytes());
-
-			// setup plaintext output
-			rgbContent = new byte[cipher.getOutputSize(rgbEncrypt.length)];
-
-			// decryptit!
-			ByteBuffer input = ByteBuffer.wrap(rgbEncrypt);
-			ByteBuffer output = ByteBuffer.wrap(rgbContent);
-			cipher.doFinal(input, output);
-		} catch (NoSuchAlgorithmException ex) {
-			throw new CoseException("Algorithm not supported", ex);
-		} catch (InvalidKeyException ex) {
-			if (ex.getMessage() == "Illegal key size") {
-				throw new CoseException("Unsupported key size", ex);
-			}
-			throw new CoseException("Decryption failure", ex);
->>>>>>> 9cc04a4f7 (Added support and tests for encryption/decryption with AES GCM)
 		} catch (Exception ex) {
 			throw new CoseException("Decryption failure", ex);
 		}
 	}
 
 	private void AES_GCM_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException {
-<<<<<<< HEAD
 		CBORObject iv = findAttribute(HeaderKeys.IV);
 		byte[] aad = getAADBytes();
 
@@ -397,41 +310,6 @@ public abstract class EncryptCommon extends Message {
 			// process the plaintext and generate the ciphertext
 			rgbEncrypt = cipher.doFinal(rgbContent);
 
-=======
-		// validate key
-		if (rgbKey.length != alg.getKeySize() / 8) {
-			throw new CoseException("Key Size is incorrect");
-		}
-
-		// obtain and validate iv
-		final int ivLen = ivLength(alg);
-		CBORObject iv = findAttribute(HeaderKeys.IV);
-		if (iv == null) {
-			// generate IV
-			byte[] tmp = new byte[ivLen];
-			random.nextBytes(tmp);
-			iv = CBORObject.FromObject(tmp);
-			addAttribute(HeaderKeys.IV, iv, PROTECTED);
-		} else {
-			if (iv.getType() != CBORType.ByteString) {
-				throw new CoseException("IV is incorrectly formed");
-			}
-			if (iv.GetByteString().length != ivLen) {
-				throw new CoseException("IV size is incorrect");
-			}
-		}
-
-		try {
-			Cipher cipher = Cipher.getInstance(AES_GCM_SPEC);
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(rgbKey, AES_SPEC),
-					new GCMParameterSpec(alg.getTagSize(), iv.GetByteString()));
-			cipher.updateAAD(getAADBytes());
-
-			rgbEncrypt = new byte[cipher.getOutputSize(rgbContent.length)];
-			ByteBuffer input = ByteBuffer.wrap(rgbContent);
-			ByteBuffer output = ByteBuffer.wrap(rgbEncrypt);
-			cipher.doFinal(input, output);
->>>>>>> 9cc04a4f7 (Added support and tests for encryption/decryption with AES GCM)
 		} catch (NoSuchAlgorithmException ex) {
 			throw new CoseException("Algorithm not supported", ex);
 		} catch (Exception ex) {
@@ -499,7 +377,6 @@ public abstract class EncryptCommon extends Message {
 	 * @param rgbKey the intended key for encryption/decryption
 	 * @throws CoseException if the object state is invalid
 	 */
-<<<<<<< HEAD
 	private void validateObjectState(byte[] rgbKey) throws CoseException {
 		AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
 		int ivLen = getIvLength(alg);
@@ -523,27 +400,10 @@ public abstract class EncryptCommon extends Message {
 		}
 		if (iv.GetByteString().length != ivLen) {
 			throw new CoseException("IV size is incorrect");
-=======
-	public static int ivLength(AlgorithmID alg) {
-		switch (alg) {
-		case AES_CCM_16_64_128:
-		case AES_CCM_16_128_128:
-			return AES_CCM_16_IV_LENGTH;
-		case AES_CCM_64_64_128:
-		case AES_CCM_64_128_128:
-			return AES_CCM_64_IV_LENGTH;
-		case AES_GCM_128:
-		case AES_GCM_192:
-		case AES_GCM_256:
-			return AES_GCM_IV_LENGTH;
-		default:
-			return -1;
->>>>>>> 9cc04a4f7 (Added support and tests for encryption/decryption with AES GCM)
 		}
 	}
 
 	/**
-<<<<<<< HEAD
 	 * Get IV length in bytes.
 	 * 
 	 * @param alg algorithm ID:
@@ -569,20 +429,6 @@ public abstract class EncryptCommon extends Message {
 			return CHACHA_POLY_IV_LENGTH;
 		default:
 			return -1;
-=======
-	 * Check if an algorithm is supported.
-	 *
-	 * TODO: Can be removed if no longer needed?
-	 *
-	 * @param alg the algorithm
-	 * @return if it is supported
-	 */
-	public static boolean isSupportedAes(AlgorithmID alg) {
-		if (ivLength(alg) == -1) {
-			return false;
-		} else {
-			return true;
->>>>>>> 9cc04a4f7 (Added support and tests for encryption/decryption with AES GCM)
 		}
 	}
 }
