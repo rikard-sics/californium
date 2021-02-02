@@ -37,6 +37,8 @@ package org.eclipse.californium.cose;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
+import net.i2p.crypto.eddsa.Utils;
+
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -227,6 +229,7 @@ public abstract class EncryptCommon extends Message {
 		//Modified to use the full AAD here rather than just the external AAD
 		// Tag length (last parameter) was also included
 		byte[] aad = getAADBytes();
+		System.out.println(Utils.bytesToHex(aad));
 		
 		try {
 			rgbEncrypt = CCMBlockCipher.encrypt(new SecretKeySpec(rgbKey, "AES"), iv.GetByteString(), aad, GetContent(),
