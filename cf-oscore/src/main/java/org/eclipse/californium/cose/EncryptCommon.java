@@ -229,7 +229,6 @@ public abstract class EncryptCommon extends Message {
 		//Modified to use the full AAD here rather than just the external AAD
 		// Tag length (last parameter) was also included
 		byte[] aad = getAADBytes();
-		System.out.println(Utils.bytesToHex(aad));
 		
 		try {
 			rgbEncrypt = CCMBlockCipher.encrypt(new SecretKeySpec(rgbKey, "AES"), iv.GetByteString(), aad, GetContent(),

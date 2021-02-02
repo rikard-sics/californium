@@ -86,20 +86,19 @@ public class Util {
         msg.SetContent(plaintext);
         
         // Debug print
-        
+        /*
         System.out.println("Protected attributes: " + msg.getProtectedAttributes().toString());
         System.out.println("aad                 : " + Utils.bytesToHex(msg.getExternal()));
         System.out.println("plaintext           : " + Utils.bytesToHex(msg.GetContent()));
-        
+        */
         
         // Perform the encryption
         msg.encrypt(key);
         
         // Debug print
-        
+        /*
         System.out.println("Encrypted content: " + Utils.bytesToHex(msg.getEncryptedContent()));
-        System.out.println(Utils.bytesToHex(msg.EncodeToBytes()));
-        
+        */
         
         return msg.getEncryptedContent();
         
