@@ -37,6 +37,8 @@ package org.eclipse.californium.cose;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
+import net.i2p.crypto.eddsa.Utils;
+
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -62,7 +64,6 @@ public abstract class EncryptCommon extends Message {
 
 	private final static int AES_CCM_16_IV_LENGTH = 13;
 	private final static int AES_CCM_64_IV_LENGTH = 7;
-<<<<<<< HEAD
 	private final static int AES_GCM_IV_LENGTH = 12;
 	private static final int CHACHA_POLY_IV_LENGTH = 12;
 
@@ -73,12 +74,6 @@ public abstract class EncryptCommon extends Message {
 
 	private static final ThreadLocalCipher AES_GCM_CIPHER = new ThreadLocalCipher(AES_GCM_SPEC);
 	private static final ThreadLocalCipher CHACHA_POLY_CIPHER = new ThreadLocalCipher(CHACHA_POLY_SPEC);
-=======
-
-	private final String AES_SPEC = "AES";
-	private final String AES_GCM_SPEC = AES_SPEC + "/GCM/NoPadding";
-	private final static int AES_GCM_IV_LENGTH = 12;
->>>>>>> 9cc04a4f7 (Added support and tests for encryption/decryption with AES GCM)
 
 	protected String context;
 	protected byte[] rgbEncrypt;
@@ -250,7 +245,12 @@ public abstract class EncryptCommon extends Message {
 	private void AES_CCM_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException {
 		CBORObject iv = findAttribute(HeaderKeys.IV);
 		byte[] aad = getAADBytes();
+<<<<<<< HEAD
 
+=======
+		System.out.println(Utils.bytesToHex(aad));
+		
+>>>>>>> 57ecacb23 (Test vectors for Cipher Suite 2, Method 3)
 		try {
 			rgbEncrypt = CCMBlockCipher.encrypt(new SecretKeySpec(rgbKey, AES_SPEC), iv.GetByteString(), aad, GetContent(),
 					alg.getTagSize() / Byte.SIZE);
