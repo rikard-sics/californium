@@ -567,6 +567,12 @@ public class MessageProcessorTest {
 
 		Assert.assertArrayEquals(expectedMessage3, message3);
 		
+        /* Invoke the EDHOC-Exporter to produce OSCORE input material */
+        byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(session);
+        byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(session);
+       	Util.nicePrint("OSCORE Master Secret", masterSecret);
+        Util.nicePrint("OSCORE Master Salt", masterSalt);
+		
 	}
 	
 	
@@ -584,10 +590,10 @@ public class MessageProcessorTest {
 		
 		
 		/* Initiator information*/
-		
+
 		// C_I, in plain binary format
 		byte[] connectionIdInitiator = new byte[] { 0x16 };
-
+		
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(0);
 		
@@ -630,7 +636,7 @@ public class MessageProcessorTest {
 		/* Set up the session to use */
 		
 		// Create the session
-		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdResponder,
+		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdInitiator,
 												identityKey, idCredI, credI, supportedCipherSuites);
 
 		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
@@ -661,6 +667,12 @@ public class MessageProcessorTest {
 
 		Assert.assertArrayEquals(expectedMessage3, message3);
 		
+        /* Invoke the EDHOC-Exporter to produce OSCORE input material */
+        byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(session);
+        byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(session);
+       	Util.nicePrint("OSCORE Master Secret", masterSecret);
+        Util.nicePrint("OSCORE Master Salt", masterSalt);
+		
 	}
 	
 	/**
@@ -676,10 +688,10 @@ public class MessageProcessorTest {
 		
 		
 		/* Initiator information*/
-		
+
 		// C_I, in plain binary format
 		byte[] connectionIdInitiator = new byte[] { 0x16 };
-
+		
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(2);
 		
@@ -724,7 +736,7 @@ public class MessageProcessorTest {
 		/* Set up the session to use */
 		
 		// Create the session
-		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdResponder,
+		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdInitiator,
 												identityKey, idCredI, credI, supportedCipherSuites);
 
 		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
@@ -751,10 +763,15 @@ public class MessageProcessorTest {
 		byte[] message3 = MessageProcessor.writeMessage3(session, ad3);
 
 		// Compare with the expected value from the test vectors
-		//byte[] expectedMessage3 = Utils.hexToBytes("0852f164a3c8783c07c817d0a545ee499d65276f");
 		byte[] expectedMessage3 = Utils.hexToBytes("0852a7e2f47e7bce019e5bb810de9a6fe26d48a3");
 		
 		Assert.assertArrayEquals(expectedMessage3, message3);
+		
+        /* Invoke the EDHOC-Exporter to produce OSCORE input material */
+        byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(session);
+        byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(session);
+       	Util.nicePrint("OSCORE Master Secret", masterSecret);
+        Util.nicePrint("OSCORE Master Salt", masterSalt);
 		
 	}
 	
