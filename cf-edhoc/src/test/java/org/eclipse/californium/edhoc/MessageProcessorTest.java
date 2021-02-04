@@ -568,8 +568,15 @@ public class MessageProcessorTest {
 		Assert.assertArrayEquals(expectedMessage3, message3);
 		
         /* Invoke the EDHOC-Exporter to produce OSCORE input material */
+		byte[] expectedMasterSecret = Utils.hexToBytes("EB9E7C0816374154C8ECD839845F2562");
+		byte[] expectedMasterSalt = Utils.hexToBytes("BCE4BF914B707DC1");
+		
         byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(session);
         byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(session);
+        
+        Assert.assertArrayEquals(expectedMasterSecret, masterSecret);
+        Assert.assertArrayEquals(expectedMasterSalt, masterSalt);
+        
        	Util.nicePrint("OSCORE Master Secret", masterSecret);
         Util.nicePrint("OSCORE Master Salt", masterSalt);
 		
@@ -668,8 +675,15 @@ public class MessageProcessorTest {
 		Assert.assertArrayEquals(expectedMessage3, message3);
 		
         /* Invoke the EDHOC-Exporter to produce OSCORE input material */
+		byte[] expectedMasterSecret = Utils.hexToBytes("e7aeafdb28574a9f7970f059159dee68");
+		byte[] expectedMasterSalt = Utils.hexToBytes("fb4c673029e2a0a1");
+		
         byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(session);
         byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(session);
+        
+        Assert.assertArrayEquals(expectedMasterSecret, masterSecret);
+        Assert.assertArrayEquals(expectedMasterSalt, masterSalt);
+        
        	Util.nicePrint("OSCORE Master Secret", masterSecret);
         Util.nicePrint("OSCORE Master Salt", masterSalt);
 		
@@ -768,8 +782,15 @@ public class MessageProcessorTest {
 		Assert.assertArrayEquals(expectedMessage3, message3);
 		
         /* Invoke the EDHOC-Exporter to produce OSCORE input material */
+		byte[] expectedMasterSecret = Utils.hexToBytes("63e8b8675f32571915e1d967103e85b3");
+		byte[] expectedMasterSalt = Utils.hexToBytes("dca80650d73224e7");
+		
         byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(session);
         byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(session);
+        
+        Assert.assertArrayEquals(expectedMasterSecret, masterSecret);
+        Assert.assertArrayEquals(expectedMasterSalt, masterSalt);
+        
        	Util.nicePrint("OSCORE Master Secret", masterSecret);
         Util.nicePrint("OSCORE Master Salt", masterSalt);
 		
