@@ -624,6 +624,11 @@ public class EdhocServer extends CoapServer {
 				// Prepare EDHOC Message 2
 				if (nextMessage.length == 0) {
 					
+					// Deliver AD_1 to the application, if present
+					if (processingResult.size() == 2) {
+						processAD1(processingResult.get(1).GetByteString());
+					}
+					
 					session = MessageProcessor.createSessionAsResponder
 							                    (message, keyPair, idCred, cred, supportedCiphersuites, usedConnectionIds);
 					
@@ -645,11 +650,6 @@ public class EdhocServer extends CoapServer {
 					session.setCurrentStep(Constants.EDHOC_AFTER_M2);
 					edhocSessions.put(CBORObject.FromObject(connectionId), session);
 					
-				}
-				
-				// Deliver AD_1 to the application
-				if (processingResult.size() == 2) {
-					processAD1(processingResult.get(1).GetByteString());
 				}
 				
 				int responseType = MessageProcessor.messageType(nextMessage);
@@ -718,23 +718,17 @@ public class EdhocServer extends CoapServer {
 				// A non-zero length response payload would be an EDHOC Error Message
 				nextMessage = processingResult.get(0).GetByteString();
 				
-				// Deliver AD_3 to the application
-				if (nextMessage.length == 0 && processingResult.size() == 3) {
-					// The protocol has successfully completed. Elements of 'processingResult' are:
-					//   i) A zero-length CBOR byte string;
-					//  ii) The Connection Identifier of the Responder, i.e. C_R
-					// iii) Optionally, the Application Data AD_3
-					processAD3(processingResult.get(2).GetByteString());
-				}
-				if (nextMessage.length != 0 && processingResult.size() == 2) {
-					// An EDHOC Error Message has to be sent. Elements of 'processingResult' are:
-					//  i) The EDHOC Error Message, as a CBOR byte string
-					// ii) Optionally, the Application Data AD_3
-					processAD3(processingResult.get(1).GetByteString());
-				}
-				
 				// The protocol has successfully completed
 				if (nextMessage.length == 0) {
+					
+					// Deliver AD_3 to the application, if present
+					if (processingResult.size() == 3) {
+						// Elements of 'processingResult' are:
+						//   i) A zero-length CBOR byte string, indicating successful processing;
+						//  ii) The Connection Identifier of the Responder, i.e. C_R
+						// iii) Optionally, the Application Data AD_3
+						processAD3(processingResult.get(2).GetByteString());
+					}
 					
 					CBORObject cR = processingResult.get(1);
 					EdhocSession mySession = edhocSessions.get(cR);
