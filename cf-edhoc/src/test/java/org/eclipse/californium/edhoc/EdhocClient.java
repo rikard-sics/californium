@@ -627,16 +627,16 @@ public class EdhocClient {
 				return;
 			}
 			
-			// Deliver AD_2 to the application
-			if (processingResult.size() == 2) {
-				processAD2(processingResult.get(1).GetByteString());
-			}
-			
 			// A non-zero length response payload would be an EDHOC Error Message
 			nextPayload = processingResult.get(0).GetByteString();
 
 			// Prepare EDHOC Message 3
 			if (nextPayload.length == 0) {
+				
+				// Deliver AD_2 to the application, if present
+				if (processingResult.size() == 2) {
+					processAD2(processingResult.get(1).GetByteString());
+				}
 				
 				session.setCurrentStep(Constants.EDHOC_AFTER_M2);
 				
