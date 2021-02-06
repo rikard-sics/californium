@@ -469,16 +469,14 @@ public class EdhocSession {
 	}
 	
 	/**
-	 * EDHOC-Exporter-FS interface, to preserve Perfect Forward Secrecy by updating the key PRK_4x3m
-	 * @param label   The label to use to derive the OKM
-	 * @param len   The intended length of the OKM to derive, in bytes
+	 * EDHOC-Rekey-FS function, to preserve Perfect Forward Secrecy by updating the key PRK_4x3m
 	 * @param nonce   The nonce to use for renewing PRK_4x3m
-	 * @return  the application key, or null if the EDHOC execution is not completed yet
+	 * @return  true in case of success, or false if the EDHOC execution is not completed yet
 	 */
-	public byte[] edhocExporterFS(String label, int len, byte[] nonce) throws InvalidKeyException, NoSuchAlgorithmException {
+	public boolean edhocRekeyFS(byte[] nonce) throws InvalidKeyException, NoSuchAlgorithmException {
 		
 		if (this.currentStep != Constants.EDHOC_AFTER_M3)
-			return null;
+			return false;
 		
 		List<CBORObject> myList = new ArrayList<>();
 		myList.add(CBORObject.FromObject("TH_4"));
@@ -487,7 +485,7 @@ public class EdhocSession {
 		byte[] mySequence = Util.buildCBORSequence(myList);
 		this.prk_4x3m = Hkdf.extract(mySequence, this.prk_4x3m);
 		
-		return edhocExporter(label, len);
+		return true;
 		
 	}
 	
