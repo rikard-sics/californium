@@ -786,23 +786,28 @@ public class EdhocServer extends CoapServer {
 	            
 	        	CBORObject[] objectList = MessageProcessor.readErrorMessage(message, null, edhocSessions);
 	        	
-	        	// If the server acts as Responder, the Correlation Method is 1, hence the first element is C_X as C_R.
-	        	// If the server acts as Initiator, the Correlation Method is 2, hence the first element is C_X as C_I.
-	        	CBORObject cX = objectList[0]; 
-	        	EdhocSession mySession = edhocSessions.get(cX);
-	        	CBORObject connectionIdentifier = Util.decodeFromBstrIdentifier(cX);
+	        	if (objectList != null) {
 	        	
-	        	String errMsg = objectList[1].toString();
+		        	// If the server acts as Responder, the Correlation Method is 1, hence the first element is C_X as C_R.
+		        	// If the server acts as Initiator, the Correlation Method is 2, hence the first element is C_X as C_I.
+		        	CBORObject cX = objectList[0]; 
+		        	EdhocSession mySession = edhocSessions.get(cX);
+		        	CBORObject connectionIdentifier = Util.decodeFromBstrIdentifier(cX);
+		        	
+		        	String errMsg = objectList[1].toString();
+		        	
+		        	System.out.println("DIAG_MSG: " + errMsg + "\n");
+		        	
+		        	// The following simply deletes the EDHOC session. However, if the server was the Initiator 
+		        	// and the EDHOC Error Message is a reply to an EDHOC Message 1, it would be fine to prepare a new
+		        	// EDHOC Message 1 right away, keeping the same Connection Identifier C_I and this same session.
+		        	// In fact, the session is marked as "used", hence new ephemeral keys would be generated when
+		        	// preparing a new EDHOC Message 1. 
+		        	
+		        	Util.purgeSession(mySession, connectionIdentifier, edhocSessions, usedConnectionIds);
 	        	
-	        	System.out.println("ERR_MSG: " + errMsg + "\n");
+				}
 	        	
-	        	// The following simply deletes the EDHOC session. However, if the server was the Initiator 
-	        	// and the EDHOC Error Message is a reply to an EDHOC Message 1, it would be fine to prepare a new
-	        	// EDHOC Message 1 right away, keeping the same Connection Identifier C_I and this same session.
-	        	// In fact, the session is marked as "used", hence new ephemeral keys would be generated when
-	        	// preparing a new EDHOC Message 1. 
-	        	
-	        	Util.purgeSession(mySession, connectionIdentifier, edhocSessions, usedConnectionIds);
 	    		return;
 				
 			}

@@ -127,8 +127,6 @@ public class MessageProcessor {
 												List<Set<Integer>> usedConnectionIds,
 												List<Integer> supportedCiphersuites) {
 		
-		boolean hasSuites = false; // Will be set to True if SUITES_I is present and valid for further inspection
-		
 		byte[] ad1 = null; // Will be set if Application Data is present as AD1
 		
 		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
@@ -137,7 +135,7 @@ public class MessageProcessor {
 		byte[] replyPayload = new byte[] {};
 		
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
-		String errMsg = null; // The text string to be possibly returned as ERR_MSG in an EDHOC Error Message
+		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		int correlation = -1; // The correlation method indicated by METHOD_CORR, or left to -1 in case on invalid message
 		CBORObject cI = null; // The Connection Identifier C_I, or left to null in case of invalid message
 		CBORObject suitesR = null; // The SUITE_R element to be possibly returned as SUITES_R in an EDHOC Error Message
@@ -190,8 +188,55 @@ public class MessageProcessor {
 					}
 				}
 		}
+		
+		// Check if the selected ciphersuite is supported
 		if (error == false) {
-			hasSuites = true;
+			int selectedCiphersuite;
+			
+			if (objectListRequest[1].getType() == CBORType.Integer) {
+				selectedCiphersuite = objectListRequest[1].AsInt32();
+				// This peer does not support the selected ciphersuite
+				if (!supportedCiphersuites.contains(Integer.valueOf(selectedCiphersuite))) {
+					errMsg = new String("The selected ciphersuite is not supported");
+					error = true;
+				}
+			}
+			
+			else if (objectListRequest[1].getType() == CBORType.Array) {
+				selectedCiphersuite = objectListRequest[1].get(0).AsInt32();
+				// This peer does not support the selected ciphersuite
+				if (!supportedCiphersuites.contains(Integer.valueOf(selectedCiphersuite))) {
+					errMsg = new String("The selected ciphersuite is not supported");
+					error = true;
+				}
+				
+				if (error == false) {
+					int selectedIndex = -1;
+					// Find the position of the selected ciphersuite in the provided list
+					for (int i = 1; i < objectListRequest[1].size(); i++) {
+						if (objectListRequest[1].get(i).AsInt32() == selectedCiphersuite)
+							selectedIndex = i;
+					}
+					// The selected ciphersuite was not in the provided list
+					if (selectedIndex == -1) {
+						errMsg = new String("The selected ciphersuite is not in the provided list");
+						error = true;
+					}
+					else {
+						for (int i = 1; i < selectedIndex; i++) {
+							int cs = objectListRequest[1].get(i).AsInt32();
+							// This peer supports ciphersuites prior to the selected one in the provided list
+							if (supportedCiphersuites.contains(Integer.valueOf(cs))) {
+								errMsg = new String("Supported ciphersuites prior to the selected one in the provided list");
+								error = true;
+								break;
+							}
+						}
+					}
+				}
+
+			}
+			
 		}
 		
 		// G_X
@@ -230,75 +275,28 @@ public class MessageProcessor {
 			}
 		}
 		
-		// Prepare SUITES_R for a potential EDHOC Error Message to send
-		if (hasSuites == true) {
-			boolean includeSuitesR = false;
-			int selectedCiphersuite;
-			
-			if (objectListRequest[1].getType() == CBORType.Integer) {
-				selectedCiphersuite = objectListRequest[1].AsInt32();
-				// This peer does not support the selected ciphersuite
-				if (!supportedCiphersuites.contains(Integer.valueOf(selectedCiphersuite))) {
-					includeSuitesR = true;
-				}
-			}
-			
-			else if (objectListRequest[1].getType() == CBORType.Array) {
-				selectedCiphersuite = objectListRequest[1].get(0).AsInt32();
-				// This peer does not support the selected ciphersuite
-				if (!supportedCiphersuites.contains(Integer.valueOf(selectedCiphersuite))) {
-					includeSuitesR = true;
-				}
-				
-				if (includeSuitesR == false) {
-					int selectedIndex = -1;
-					// Find the position of the selected ciphersuite in the provided list
-					for (int i = 1; i < objectListRequest[1].size(); i++) {
-						if (objectListRequest[1].get(i).AsInt32() == selectedCiphersuite)
-							selectedIndex = i;
-					}
-					// The selected ciphersuite was not in the provided list
-					if (selectedIndex == -1) {
-						includeSuitesR = true;
-					}
-					else {
-						for (int i = 1; i < selectedIndex; i++) {
-							int cs = objectListRequest[1].get(i).AsInt32();
-							// This peer supports ciphersuites prior to the selected one in the provided list
-							if (supportedCiphersuites.contains(Integer.valueOf(cs))) {
-								includeSuitesR = true;
-								break;
-							}
-						}
-					}
-				}
-
-			}
-			
-			if (includeSuitesR == true) {
-				error = true;
-				// This peer supports only one ciphersuite
-				if (supportedCiphersuites.size() == 1) {
-					int cs = supportedCiphersuites.get(0).intValue();
-					suitesR = CBORObject.FromObject(cs);
-				}
-				// This peer supports multiple ciphersuites
-				else {
-					suitesR = CBORObject.NewArray();
-					for (Integer i : supportedCiphersuites) {
-						suitesR.Add(i.intValue());
-					}
-				}
-				// In either case, any supported ciphersuite from SUITES_I will also be included in SUITES_R
-			}
-			
-		}
-		
-		
 		/* Return an EDHOC Error Message */
 		
-		if (error == true)
+		if (error == true) {
+			
+			// Prepare SUITES_R
+			
+			if (supportedCiphersuites.size() == 1) {
+				int cs = supportedCiphersuites.get(0).intValue();
+				suitesR = CBORObject.FromObject(cs);
+			}
+			// This peer supports multiple ciphersuites
+			else {
+				suitesR = CBORObject.NewArray();
+				for (Integer i : supportedCiphersuites) {
+					suitesR.Add(i.intValue());
+				}
+			}
+			// In either case, any supported ciphersuite from SUITES_I will also be included in SUITES_R
+			
 			return processError(Constants.EDHOC_MESSAGE_1, correlation, cI, errMsg, suitesR);
+			
+		}
 		
 		
 		/* Return an indication to prepare EDHOC Message 2, possibly with the provided Application Data */
@@ -345,7 +343,7 @@ public class MessageProcessor {
 		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
 		
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
-		String errMsg = null; // The text string to be possibly returned as ERR_MSG in an EDHOC Error Message
+		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		int correlation = -1; // The correlation method to retrieve from the session, or left to -1 in case on invalid message
 		CBORObject cR = null; // The Connection Identifier C_R, or left to null in case of invalid message
 		EdhocSession session = null; // The session used for this EDHOC execution
@@ -544,9 +542,6 @@ public class MessageProcessor {
     	}
 		
     	// Compute the outer plaintext
-    	
-    	// The following is as per v -02:   https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#section-4.5
-    	// In version -03, it's unclear how the initiator side should process EDHOC Message 2 when receiving it
     	
     	if (debugPrint) {
     		Util.nicePrint("CIPHERTEXT_2", ciphertext2);
@@ -775,7 +770,7 @@ public class MessageProcessor {
 		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
 		
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
-		String errMsg = null; // The text string to be possibly returned as ERR_MSG in an EDHOC Error Message
+		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		int correlation = -1; // The correlation method to retrieve from the session, or left to -1 in case on invalid message
 		CBORObject cI = null; // The Connection Identifier C_I, or left to null in case of invalid message
 		EdhocSession session = null; // The session used for this EDHOC execution
@@ -1187,7 +1182,7 @@ public class MessageProcessor {
 		boolean initiator = mySession.isInitiator();
 		
 		if (objectList[index].getType() != CBORType.TextString) {
-			System.err.println("Error when processing EDHOC Error Message - Invalid format of ERR_MSG");
+			System.err.println("Error when processing EDHOC Error Message - Invalid format of DIAG_MSG");
 			return null;
 		}
 		
@@ -1539,9 +1534,6 @@ public class MessageProcessor {
         /* End computing the inner COSE object */
     
     	
-    	// The following is as per v -02:   https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#section-4.5
-    	// In version -03, it's unclear how the initiator side should process EDHOC Message 2 when receiving it
-    	
     	/* Start computing CIPHERTEXT_2 */
     
     	// Prepare the plaintext
@@ -1830,7 +1822,8 @@ public class MessageProcessor {
      * @param corr   The used correlation method
      * @param cX   The connection identifier of the intended recipient of the EDHOC Error Message, it can be null
      * @param errMsg   The text string to include in the EDHOC Error Message
-     * @param suitesR   The cipher suite(s) supported by the Responder (only in response to EDHOC Message 1), it can be null
+     * @param suitesR   The cipher suite(s) supported by the Responder, it can be null;
+     *                  (MUST be present in response to EDHOC Message 1)
      * @return  The raw payload to transmit as EDHOC Error Message, or null in case of errors
      */
 	public static byte[] writeErrorMessage(int replyTo, int corr, CBORObject cX, String errMsg, CBORObject suitesR) {
@@ -1841,6 +1834,12 @@ public class MessageProcessor {
 		}
 				
 		if (errMsg == null)
+			return null;
+		
+		if (replyTo != Constants.EDHOC_MESSAGE_1 && errMsg.length() == 0)
+			return null;
+		
+		if (replyTo == Constants.EDHOC_MESSAGE_1 && suitesR == null)
 			return null;
 
 		if (suitesR != null && suitesR.getType() != CBORType.Integer && suitesR.getType() != CBORType.Array)
@@ -1879,7 +1878,7 @@ public class MessageProcessor {
 		}
 
 		
-		// Include ERR_MSG
+		// Include DIAG_MSG
 		objectList.add(CBORObject.FromObject(errMsg));
 		
 
