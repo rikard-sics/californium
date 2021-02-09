@@ -426,13 +426,37 @@ public class SharedSecretCalculation {
 	}
 
 	/**
+	 * Build a COSE OneKey from raw byte arrays containing the public X key and
+	 * the private key. Considers ECDSA_256. Will recompute the Y value
+	 * according to the indicated sign.
+	 * 
+	 * @param privateKey the private key bytes
+	 * @param publicKeyX the public key X parameter bytes
+	 * @param sign the sign of the Y value to be recomputed
+	 * 
+	 * @return a OneKey representing the input material
+	 */
+	static OneKey buildEcdsa256OneKey(byte[] privateKey, byte[] publicKeyX, boolean sign) {
+		// Recalculate Y value if missing
+		byte[] publicKeyY = null;
+		try {
+			publicKeyY = recomputeEcdsaYFromX(publicKeyX, sign);
+		} catch (CoseException e) {
+			System.err.println("Failed to recompute missing Y value: " + e);
+		}
+
+		return buildEcdsa256OneKey(privateKey, publicKeyX, publicKeyY);
+	}
+
+	/**
 	 * Build a COSE OneKey from raw byte arrays containing the public and
 	 * private keys. Considers ECDSA_256.
 	 *
 	 * @param privateKey the private key bytes
 	 * @param publicKeyX the public key X parameter bytes
-	 * @param publicKeyY the public key Y parameter bytes (if none is provided a
-	 *            valid Y will be recomputed)
+	 * @param publicKeyY the public key Y parameter bytes. If none is provided a
+	 *            valid Y will be recomputed. Note that the sign positive Y will
+	 *            always be returned.
 	 * 
 	 * @return a OneKey representing the input material
 	 */
@@ -441,7 +465,7 @@ public class SharedSecretCalculation {
         // Attempt to recalculate Y value if missing
 		if (publicKeyY == null) {
 			try {
-				publicKeyY = recomputeEcdsaYFromX(publicKeyX);
+				publicKeyY = recomputeEcdsaYFromX(publicKeyX, true);
 			} catch (CoseException e) {
 				System.err.println("Failed to recompute missing Y value: " + e);
 			}
@@ -460,7 +484,7 @@ public class SharedSecretCalculation {
 		if (publicKeyY != null)
 			keyMap.Add(KeyKeys.EC2_Y.AsCBOR(), CBORObject.FromObject(rgbY));
 		if (privateKey != null)
-		keyMap.Add(KeyKeys.EC2_D.AsCBOR(), CBORObject.FromObject(rgbD));
+			keyMap.Add(KeyKeys.EC2_D.AsCBOR(), CBORObject.FromObject(rgbD));
 
 		OneKey key = null;
 		try {
@@ -473,25 +497,28 @@ public class SharedSecretCalculation {
 	}
 
 	/**
-     * Takes an ECDSA_256 X coordinate and computes a valid Y value for that X.
-     * Will only only return one of the possible Y values.
-     * 
-     * Resources:
-     * https://github.com/conz27/crypto-test-vectors/blob/master/ecdh.py
-     * https://crypto.stackexchange.com/questions/8914/ecdsa-compressed-public-key-point-back-to-uncompressed-public-key-point
-     * https://asecuritysite.com/encryption/js08
-     * https://bitcoin.stackexchange.com/questions/44024/get-uncompressed-public-key-from-compressed-form
-     * http://www-cs-students.stanford.edu/~tjw/jsbn/ecdh.html
-     * https://tools.ietf.org/html/rfc6090#appendix-C
-     * https://math.stackexchange.com/questions/464253/square-roots-in-finite-fields-i-e-mod-pm
-     * http://hg.openjdk.java.net/jdk/jdk/rev/752e57845ad2#l1.97
-     * jdk.crypto.ec/sun.security.ec.ECDHKeyAgreement
-     * 
-     * @param publicKeyX the public key X coordinate
-     * @return the recomputed Y value for that X
-     * @throws CoseException if recomputation fails
-     */
-    static byte[] recomputeEcdsaYFromX(byte[] publicKeyX) throws CoseException {
+	 * Takes an ECDSA_256 X coordinate and computes a valid Y value for that X.
+	 * Will only only return one of the possible Y values.
+	 * 
+	 * Resources:
+	 * https://github.com/conz27/crypto-test-vectors/blob/master/ecdh.py
+	 * https://crypto.stackexchange.com/questions/8914/ecdsa-compressed-public-key-point-back-to-uncompressed-public-key-point
+	 * https://asecuritysite.com/encryption/js08
+	 * https://bitcoin.stackexchange.com/questions/44024/get-uncompressed-public-key-from-compressed-form
+	 * http://www-cs-students.stanford.edu/~tjw/jsbn/ecdh.html
+	 * https://tools.ietf.org/html/rfc6090#appendix-C
+	 * https://math.stackexchange.com/questions/464253/square-roots-in-finite-fields-i-e-mod-pm
+	 * http://hg.openjdk.java.net/jdk/jdk/rev/752e57845ad2#l1.97
+	 * jdk.crypto.ec/sun.security.ec.ECDHKeyAgreement
+	 * https://www.secg.org/sec1-v2.pdf
+	 * 
+	 * @param publicKeyX the public key X coordinate
+	 * @param sign the sign of the Y coordinate to return
+	 * 
+	 * @return the recomputed Y value for that X
+	 * @throws CoseException if recomputation fails
+	 */
+	static byte[] recomputeEcdsaYFromX(byte[] publicKeyX, boolean sign) throws CoseException {
 
 		// BigInteger x = new BigInteger((publicKeyX));
 		BigInteger x = new BigInteger(1, publicKeyX);
@@ -506,6 +533,9 @@ public class SharedSecretCalculation {
 		BigInteger A = new BigInteger("ffffffff00000001000000000000000000000000fffffffffffffffffffffffc", 16);
 		BigInteger B = new BigInteger("5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b", 16);
 		BigInteger three = new BigInteger("3");
+		BigInteger two = new BigInteger("2");
+		BigInteger zero = new BigInteger("0");
+		BigInteger one = new BigInteger("1");
 
 		// x = x.mod(prime); // Seems not needed
 		BigInteger xPow3 = x.modPow(three, prime);
@@ -516,6 +546,9 @@ public class SharedSecretCalculation {
 
 		BigInteger root1 = squareMod(combined, prime);
 		BigInteger root2 = root1.negate().mod(prime);
+
+		// System.out.println("Root1 sign " + root1.mod(new BigInteger("2")));
+		// System.out.println("Root2 sign " + root2.mod(new BigInteger("2")));
 
 		// System.out.println("Root1: " +
 		// Utils.bytesToHex(root1.toByteArray()));
@@ -567,6 +600,12 @@ public class SharedSecretCalculation {
 			// Failed to build key with this Y, so it won't be used
 		}
 
+		// System.out.println("ONE " +
+		// Utils.bytesToHex(possibleKey1.AsPublicKey().getEncoded()));
+		// System.out.println("TWO " +
+		// Utils.bytesToHex(possibleKey2.AsPublicKey().getEncoded()));
+
+
 		// Check if on point (first y)
 		// jdk.crypto.ec/sun.security.ec.ECDHKeyAgreement
 		ECPublicKey keyToTest;
@@ -577,7 +616,8 @@ public class SharedSecretCalculation {
 		BigInteger rhs;
 		BigInteger lhs;
 
-		if (possibleKey1 != null) {
+		if (possibleKey1 != null
+				&& ((root1.mod(two).equals(zero) && sign == false) || (root1.mod(two).equals(one) && sign == true))) {
 			keyToTest = (ECPublicKey) possibleKey1.AsPublicKey();
 			keyX = keyToTest.getW().getAffineX();
 			keyY = keyToTest.getW().getAffineY();
