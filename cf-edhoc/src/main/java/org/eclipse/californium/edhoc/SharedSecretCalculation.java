@@ -424,20 +424,16 @@ public class SharedSecretCalculation {
 			}
 		}
 
-		byte[] rgbX = publicKeyX;
-		byte[] rgbY = publicKeyY;
-		byte[] rgbD = privateKey;
-
 		CBORObject keyMap = CBORObject.NewMap();
 
 		keyMap.Add(KeyKeys.Algorithm.AsCBOR(), AlgorithmID.ECDSA_384.AsCBOR());
 		keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
 		keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P384);
-		keyMap.Add(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(rgbX));
+		keyMap.Add(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(publicKeyX));
 		if (publicKeyY != null)
-			keyMap.Add(KeyKeys.EC2_Y.AsCBOR(), CBORObject.FromObject(rgbY));
+			keyMap.Add(KeyKeys.EC2_Y.AsCBOR(), CBORObject.FromObject(publicKeyY));
 		if (privateKey != null)
-			keyMap.Add(KeyKeys.EC2_D.AsCBOR(), CBORObject.FromObject(rgbD));
+			keyMap.Add(KeyKeys.EC2_D.AsCBOR(), CBORObject.FromObject(privateKey));
 
 		OneKey key = null;
 		try {
@@ -464,7 +460,7 @@ public class SharedSecretCalculation {
 		// Recalculate Y value
 		byte[] publicKeyY = null;
 		try {
-			publicKeyY = recomputeEcdsaYFromX(publicKeyX, signY);
+			publicKeyY = recomputeEcdsa256YFromX(publicKeyX, signY);
 		} catch (CoseException e) {
 			System.err.println("Failed to recompute missing Y value: " + e);
 		}
@@ -489,26 +485,22 @@ public class SharedSecretCalculation {
         // Attempt to recalculate Y value if missing
 		if (publicKeyY == null) {
 			try {
-				publicKeyY = recomputeEcdsaYFromX(publicKeyX, true);
+				publicKeyY = recomputeEcdsa256YFromX(publicKeyX, true);
 			} catch (CoseException e) {
 				System.err.println("Failed to recompute missing Y value: " + e);
 			}
 		}
-
-		byte[] rgbX = publicKeyX;
-		byte[] rgbY = publicKeyY;
-		byte[] rgbD = privateKey;
 
 		CBORObject keyMap = CBORObject.NewMap();
 		
 		keyMap.Add(KeyKeys.Algorithm.AsCBOR(), AlgorithmID.ECDSA_256.AsCBOR());
 		keyMap.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
 		keyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P256);
-		keyMap.Add(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(rgbX));
+		keyMap.Add(KeyKeys.EC2_X.AsCBOR(), CBORObject.FromObject(publicKeyX));
 		if (publicKeyY != null)
-			keyMap.Add(KeyKeys.EC2_Y.AsCBOR(), CBORObject.FromObject(rgbY));
+			keyMap.Add(KeyKeys.EC2_Y.AsCBOR(), CBORObject.FromObject(publicKeyY));
 		if (privateKey != null)
-			keyMap.Add(KeyKeys.EC2_D.AsCBOR(), CBORObject.FromObject(rgbD));
+			keyMap.Add(KeyKeys.EC2_D.AsCBOR(), CBORObject.FromObject(privateKey));
 
 		OneKey key = null;
 		try {
@@ -542,14 +534,9 @@ public class SharedSecretCalculation {
 	 * @return the recomputed Y value for that X
 	 * @throws CoseException if recomputation fails
 	 */
-	static byte[] recomputeEcdsaYFromX(byte[] publicKeyX, boolean signY) throws CoseException {
+	static byte[] recomputeEcdsa256YFromX(byte[] publicKeyX, boolean signY) throws CoseException {
 
-		// BigInteger x = new BigInteger((publicKeyX));
 		BigInteger x = new BigInteger(1, publicKeyX);
-		// BigInteger x = new BigInteger(publicKeyX); ???
-
-//		System.out.println("x len " + x.toByteArray().length);
-//		System.out.println("x " + Utils.bytesToHex(x.toByteArray()));
 
 		// secp256r1
 		// y^2 = x^3 + ax + b -> y = +- sqrt(a x + b + x^3)
@@ -561,31 +548,18 @@ public class SharedSecretCalculation {
 		BigInteger zero = new BigInteger("0");
 		BigInteger one = new BigInteger("1");
 
-		// x = x.mod(prime); // Seems not needed
 		BigInteger xPow3 = x.modPow(three, prime);
 		BigInteger ax = (A.multiply(x)).mod(prime);
-		// BigInteger combined = (ax.add(B).add(xPow3)).mod(prime);
 		BigInteger partial = ax.add(B).mod(prime);
 		BigInteger combined = partial.add(xPow3).mod(prime);
 
 		BigInteger root1 = squareMod(combined, prime);
 		BigInteger root2 = root1.negate().mod(prime);
 
-		// System.out.println("Root1 sign " + root1.mod(new BigInteger("2")));
-		// System.out.println("Root2 sign " + root2.mod(new BigInteger("2")));
-
 		// System.out.println("Root1: " +
 		// Utils.bytesToHex(root1.toByteArray()));
 		// System.out.println("Root2: " +
 		// Utils.bytesToHex(root2.toByteArray()));
-
-		// Must truncate roots to 32 bytes since they can have leading zeroes
-		// byte[] root1Bytes = Arrays.copyOfRange(root1.toByteArray(),
-		// root1.toByteArray().length - 32,
-		// root1.toByteArray().length);
-		// byte[] root2Bytes = Arrays.copyOfRange(root2.toByteArray(),
-		// root2.toByteArray().length - 32,
-		// root2.toByteArray().length);
 
 		byte[] root1Bytes = root1.toByteArray();
 		byte[] root2Bytes = root2.toByteArray();
@@ -602,14 +576,6 @@ public class SharedSecretCalculation {
 			xBytes = Arrays.copyOfRange(xBytes, 1, 33);
 		}
 
-//		System.out.println("Root1 : " + Utils.bytesToHex(root1Bytes) + " " + root1Bytes.length + " " + root1.signum()
-//				+ " " + (Math.ceil((root1.bitLength() + 1) / 8)));
-//		System.out.println("Root2 : " + Utils.bytesToHex(root2Bytes) + " " + root2Bytes.length + " " + root2.signum()
-//				+ " " + (Math.ceil((root2.bitLength() + 1) / 8)));
-//
-//		System.out.println("x len " + xBytes.length);
-//		System.out.println("x " + Utils.bytesToHex(x.toByteArray()));
-
 		// Now build 2 keys from the potential Y values
 		OneKey possibleKey1 = null;
 		OneKey possibleKey2 = null;
@@ -623,12 +589,6 @@ public class SharedSecretCalculation {
 		} catch (Exception e) {
 			// Failed to build key with this Y, so it won't be used
 		}
-
-		// System.out.println("ONE " +
-		// Utils.bytesToHex(possibleKey1.AsPublicKey().getEncoded()));
-		// System.out.println("TWO " +
-		// Utils.bytesToHex(possibleKey2.AsPublicKey().getEncoded()));
-
 
 		// Check if on point (first y)
 		// jdk.crypto.ec/sun.security.ec.ECDHKeyAgreement
@@ -703,10 +663,8 @@ public class SharedSecretCalculation {
 		BigInteger zero = new BigInteger("0");
 		BigInteger one = new BigInteger("1");
 
-		// x = x.mod(prime); // Seems not needed
 		BigInteger xPow3 = x.modPow(three, prime);
 		BigInteger ax = (A.multiply(x)).mod(prime);
-		// BigInteger combined = (ax.add(B).add(xPow3)).mod(prime);
 		BigInteger partial = ax.add(B).mod(prime);
 		BigInteger combined = partial.add(xPow3).mod(prime);
 
@@ -727,11 +685,10 @@ public class SharedSecretCalculation {
 		if (xBytes.length == 49) {
 			xBytes = Arrays.copyOfRange(xBytes, 1, 49);
 		}
-		//
+
 		// System.out.println("Root1: " + Utils.bytesToHex(root1Bytes));
 		// System.out.println("Root2: " + Utils.bytesToHex(root2Bytes));
 		// System.out.println("X: " + Utils.bytesToHex(xBytes));
-
 		
 		// Now build 2 keys from the potential Y values
 		OneKey possibleKey1 = null;
@@ -800,10 +757,6 @@ public class SharedSecretCalculation {
      * @return one of the square roots
      */
 	static BigInteger squareMod(BigInteger val, BigInteger prime) {
-		// root = val^((prime+1) / 4)
-		// BigInteger prime = new
-		// BigInteger("ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
-		// 16);
 
 		BigInteger three = new BigInteger("3");
 		BigInteger four = new BigInteger("4");
