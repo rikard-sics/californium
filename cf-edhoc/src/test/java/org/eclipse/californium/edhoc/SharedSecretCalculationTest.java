@@ -240,7 +240,7 @@ public class SharedSecretCalculationTest {
 	@Ignore
 	public void testCalculateEcdsaYFromXOld() throws CoseException {
 		BigInteger x = new BigInteger("6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296", 16);
-		byte[] y = SharedSecretCalculation.recomputeEcdsaYFromX(x.toByteArray(), true);
+		byte[] y = SharedSecretCalculation.recomputeEcdsa256YFromX(x.toByteArray(), true);
 
 		BigInteger expectedY = new BigInteger("4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5", 16);
 
@@ -251,7 +251,7 @@ public class SharedSecretCalculationTest {
 
 		//
 		x = new BigInteger("a2339c12d4a03c33546de533268b4ad667debf458b464d77443636440ee7fec3", 16);
-		y = SharedSecretCalculation.recomputeEcdsaYFromX(x.toByteArray(), true);
+		y = SharedSecretCalculation.recomputeEcdsa256YFromX(x.toByteArray(), true);
 
 		expectedY = new BigInteger("ef48a3ab26e20220bcda2c1851076839dae88eae962869a497bf73cb66faf536", 16);
 
@@ -269,7 +269,7 @@ public class SharedSecretCalculationTest {
 		//
 		BigInteger x = new BigInteger(
 				Utils.hexToBytes("6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296"));
-		byte[] y = SharedSecretCalculation.recomputeEcdsaYFromX(x.toByteArray(), true);
+		byte[] y = SharedSecretCalculation.recomputeEcdsa256YFromX(x.toByteArray(), true);
 
 
 		BigInteger expectedY = new BigInteger(
@@ -282,7 +282,7 @@ public class SharedSecretCalculationTest {
 
 		//
 		x = new BigInteger(Utils.hexToBytes("a2339c12d4a03c33546de533268b4ad667debf458b464d77443636440ee7fec3"));
-		y = SharedSecretCalculation.recomputeEcdsaYFromX(x.toByteArray(), false);
+		y = SharedSecretCalculation.recomputeEcdsa256YFromX(x.toByteArray(), false);
 
 		expectedY = new BigInteger(
 				Utils.hexToBytes("ef48a3ab26e20220bcda2c1851076839dae88eae962869a497bf73cb66faf536"));
@@ -294,7 +294,7 @@ public class SharedSecretCalculationTest {
 
 		//
 		x = new BigInteger(Utils.hexToBytes("a28a2edf58025668f724aaf83a50956b7ac1cfbbff79b08c3bf87dfd2828d767"));
-		y = SharedSecretCalculation.recomputeEcdsaYFromX(x.toByteArray(), true);
+		y = SharedSecretCalculation.recomputeEcdsa256YFromX(x.toByteArray(), true);
 
 		expectedY = new BigInteger(
 				Utils.hexToBytes("dfa7bfffd4c766b86abeaf5c99b6e50cb9ccc9d9d00b7ffc7804b0491b67bc03"));
@@ -306,7 +306,7 @@ public class SharedSecretCalculationTest {
 
 		// This test fails but that is because the other possibly Y is found
 		x = new BigInteger(Utils.hexToBytes("7c9e950841d26c8dde8994398b8f5d475a022bc63de7773fcf8d552e01f1ba0a"));
-		y = SharedSecretCalculation.recomputeEcdsaYFromX(x.toByteArray(), true);
+		y = SharedSecretCalculation.recomputeEcdsa256YFromX(x.toByteArray(), true);
 
 		expectedY = new BigInteger(
 				Utils.hexToBytes("cc42b9885c9b3bee0f8d8c57d3a8f6355016c019c4062fa22cff2f209b5cc2e1"));
