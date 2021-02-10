@@ -380,12 +380,36 @@ public class SharedSecretCalculation {
 
 	/**
 	 * Build a COSE OneKey from raw byte arrays containing the public and
+	 * private keys. Considers ECDSA_384. Will recompute the Y value according
+	 * to the indicated sign.
+	 *
+	 * @param privateKey the private key bytes
+	 * @param publicKeyX the public key X parameter bytes
+	 * @param signY the sign of the Y value to be recomputed
+	 * 
+	 * @return a OneKey representing the input material
+	 */
+	static OneKey buildEcdsa384OneKey(byte[] privateKey, byte[] publicKeyX, boolean signY) {
+		// Recalculate Y value
+		byte[] publicKeyY = null;
+		try {
+			publicKeyY = recomputeEcdsa384YFromX(publicKeyX, signY);
+		} catch (CoseException e) {
+			System.err.println("Failed to recompute missing Y value: " + e);
+		}
+
+		return buildEcdsa384OneKey(privateKey, publicKeyX, publicKeyY);
+	}
+
+	/**
+	 * Build a COSE OneKey from raw byte arrays containing the public and
 	 * private keys. Considers ECDSA_384.
 	 *
 	 * @param privateKey the private key bytes
 	 * @param publicKeyX the public key X parameter bytes
-	 * @param publicKeyY the public key Y parameter bytes (if none is provided a
-	 *            valid Y will be recomputed)
+	 * @param publicKeyY the public key Y parameter bytes. If none is provided a
+	 *            valid Y will be recomputed. Note that the sign positive Y will
+	 *            always be returned.
 	 * 
 	 * @return a OneKey representing the input material
 	 */
@@ -394,7 +418,7 @@ public class SharedSecretCalculation {
 		// Attempt to recalculate Y value if missing
 		if (publicKeyY == null) {
 			try {
-				publicKeyY = recomputeEcdsa384YFromX(publicKeyX);
+				publicKeyY = recomputeEcdsa384YFromX(publicKeyX, true);
 			} catch (CoseException e) {
 				System.err.println("Failed to recompute missing Y value: " + e);
 			}
@@ -432,15 +456,15 @@ public class SharedSecretCalculation {
 	 * 
 	 * @param privateKey the private key bytes
 	 * @param publicKeyX the public key X parameter bytes
-	 * @param sign the sign of the Y value to be recomputed
+	 * @param signY the sign of the Y value to be recomputed
 	 * 
 	 * @return a OneKey representing the input material
 	 */
-	static OneKey buildEcdsa256OneKey(byte[] privateKey, byte[] publicKeyX, boolean sign) {
-		// Recalculate Y value if missing
+	static OneKey buildEcdsa256OneKey(byte[] privateKey, byte[] publicKeyX, boolean signY) {
+		// Recalculate Y value
 		byte[] publicKeyY = null;
 		try {
-			publicKeyY = recomputeEcdsaYFromX(publicKeyX, sign);
+			publicKeyY = recomputeEcdsaYFromX(publicKeyX, signY);
 		} catch (CoseException e) {
 			System.err.println("Failed to recompute missing Y value: " + e);
 		}
@@ -513,12 +537,12 @@ public class SharedSecretCalculation {
 	 * https://www.secg.org/sec1-v2.pdf
 	 * 
 	 * @param publicKeyX the public key X coordinate
-	 * @param sign the sign of the Y coordinate to return
+	 * @param signY the sign of the Y coordinate to return
 	 * 
 	 * @return the recomputed Y value for that X
 	 * @throws CoseException if recomputation fails
 	 */
-	static byte[] recomputeEcdsaYFromX(byte[] publicKeyX, boolean sign) throws CoseException {
+	static byte[] recomputeEcdsaYFromX(byte[] publicKeyX, boolean signY) throws CoseException {
 
 		// BigInteger x = new BigInteger((publicKeyX));
 		BigInteger x = new BigInteger(1, publicKeyX);
@@ -617,7 +641,7 @@ public class SharedSecretCalculation {
 		BigInteger lhs;
 
 		if (possibleKey1 != null
-				&& ((root1.mod(two).equals(zero) && sign == false) || (root1.mod(two).equals(one) && sign == true))) {
+				&& ((root1.mod(two).equals(zero) && signY == false) || (root1.mod(two).equals(one) && signY == true))) {
 			keyToTest = (ECPublicKey) possibleKey1.AsPublicKey();
 			keyX = keyToTest.getW().getAffineX();
 			keyY = keyToTest.getW().getAffineY();
@@ -657,10 +681,12 @@ public class SharedSecretCalculation {
 	 * https://neuromancer.sk/std/secg/secp384r1
 	 * 
 	 * @param publicKeyX the public key X coordinate
+	 * @param signY the sign of the Y coordinate to return
+	 * 
 	 * @return the recomputed Y value for that X
 	 * @throws CoseException if recomputation fails
 	 */
-	static byte[] recomputeEcdsa384YFromX(byte[] publicKeyX) throws CoseException {
+	static byte[] recomputeEcdsa384YFromX(byte[] publicKeyX, boolean signY) throws CoseException {
 
 		BigInteger x = new BigInteger(1, publicKeyX);
 
@@ -673,6 +699,9 @@ public class SharedSecretCalculation {
 		BigInteger B = new BigInteger(
 				"b3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef", 16);
 		BigInteger three = new BigInteger("3");
+		BigInteger two = new BigInteger("2");
+		BigInteger zero = new BigInteger("0");
+		BigInteger one = new BigInteger("1");
 
 		// x = x.mod(prime); // Seems not needed
 		BigInteger xPow3 = x.modPow(three, prime);
@@ -728,7 +757,8 @@ public class SharedSecretCalculation {
 		BigInteger rhs;
 		BigInteger lhs;
 
-		if (possibleKey1 != null) {
+		if (possibleKey1 != null
+				&& ((root1.mod(two).equals(zero) && signY == false) || (root1.mod(two).equals(one) && signY == true))) {
 			keyToTest = (ECPublicKey) possibleKey1.AsPublicKey();
 			keyX = keyToTest.getW().getAffineX();
 			keyY = keyToTest.getW().getAffineY();
