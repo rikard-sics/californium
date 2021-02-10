@@ -320,20 +320,26 @@ public class SharedSecretCalculationTest {
 
 	@Test
 	public void testCalculateEcdsa384YFromX() throws CoseException {
-		// OneKey key = OneKey.generateKey(AlgorithmID.ECDSA_384);
-		//
-		// byte[] x = key.get(KeyKeys.EC2_X).GetByteString();
-		// byte[] y_correct = key.get(KeyKeys.EC2_Y).GetByteString();
-		// byte[] y = SharedSecretCalculation.recomputeEcdsa384YFromX(x);
-		//
-		// System.out.println("Calculated Y: " + Utils.bytesToHex(y));
-		// System.out.println("Real Y: " + Utils.bytesToHex(y_correct));
-		// System.out.println("Real X: " + Utils.bytesToHex(x));
+		OneKey key = OneKey.generateKey(AlgorithmID.ECDSA_384);
+
+		byte[] x1 = key.get(KeyKeys.EC2_X).GetByteString();
+		byte[] y_correct = key.get(KeyKeys.EC2_Y).GetByteString();
+		byte[] y_first = SharedSecretCalculation.recomputeEcdsa384YFromX(x1, false);
+		byte[] y_second = SharedSecretCalculation.recomputeEcdsa384YFromX(x1, true);
+
+		System.out.println("Calculated Y: " + Utils.bytesToHex(y_first));
+		System.out.println("Calculated Y: " + Utils.bytesToHex(y_second));
+		System.out.println("Real Y: " + Utils.bytesToHex(y_correct));
+		System.out.println("Real X: " + Utils.bytesToHex(x1));
+
+		if (!Arrays.equals(y_first, y_correct) && !Arrays.equals(y_second, y_correct)) {
+			Assert.fail("None of the calculated Y values matched expected Y");
+		}
 
 		//
 		BigInteger x = new BigInteger(Utils.hexToBytes(
 				"c33dff8fb15eeda94a2563b78180cdc6bf75a413668c0b33895e16140e5046fb8854ba1826dc9994d793853476176e21"));
-		byte[] y = SharedSecretCalculation.recomputeEcdsa384YFromX(x.toByteArray());
+		byte[] y = SharedSecretCalculation.recomputeEcdsa384YFromX(x.toByteArray(), true);
 
 		BigInteger expectedY = new BigInteger(Utils.hexToBytes(
 				"ef79a67b67c5c71b68603f7e319f6579ff7fa17b7277fba2bcae08829a0c90b1bf178170087d0fed7236bad69acb6f5b"));
