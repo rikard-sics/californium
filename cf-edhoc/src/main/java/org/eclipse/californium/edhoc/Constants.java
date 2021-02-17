@@ -48,6 +48,14 @@ public static final int CRED_TYPE_RPK = 0;
 public static final int CRED_TYPE_X5T = 1;
 public static final int CRED_TYPE_X5U = 2;
 
+/**
+ * COSE Header Parameters
+ * https://www.iana.org/assignments/cose/cose.xhtml
+ */
+public static final int COSE_HEADER_PARAM_X5CHAIN = 33;
+public static final int COSE_HEADER_PARAM_X5T = 34;
+public static final int COSE_HEADER_PARAM_X5U = 35;
+
 
 /**
  * EDHOC Message Types
