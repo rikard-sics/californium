@@ -879,6 +879,23 @@ public class Util {
 	}
 	
     /**
+     * Build an ID_CRED using 'x5chain'
+     *  
+     * @param cert   The binary serialization of the x509 certificate
+     * @return The ID_CRED, as a CBOR map
+     */
+	public static CBORObject buildIdCredX5chain(byte[] cert) {
+		
+		CBORObject idCred = CBORObject.NewMap();
+		
+		// Since a single certificate is specified,
+		// the map element encodes it as a CBOR byte string
+		idCred.Add(Constants.COSE_HEADER_PARAM_X5CHAIN, cert);
+		return idCred;
+		
+	}
+	
+    /**
      * Build an ID_CRED using 'x5t'
      *  
      * @param cert   The binary serialization of the x509 certificate
