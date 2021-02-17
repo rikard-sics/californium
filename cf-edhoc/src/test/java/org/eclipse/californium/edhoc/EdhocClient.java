@@ -82,7 +82,7 @@ public class EdhocClient {
     private static CBORObject idCred = null;
     
     // The type of the credential of this peer and the other peer
-    // Possible values: CRED_TYPE_RPK ; CRED_TYPE_X5T ; CRED_TYPE_X5U 
+    // Possible values: CRED_TYPE_RPK ; CRED_TYPE_X5T ; CRED_TYPE_X5U ; CRED_TYPE_X5CHAIN
     private static int credType = Constants.CRED_TYPE_X5T;
     
     // The CRED used for the identity key of this peer
