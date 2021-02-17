@@ -47,6 +47,7 @@ public static final int APPLICATION_EDHOC = 10001;
 public static final int CRED_TYPE_RPK = 0;
 public static final int CRED_TYPE_X5T = 1;
 public static final int CRED_TYPE_X5U = 2;
+public static final int CRED_TYPE_X5CHAIN = 3;
 
 /**
  * COSE Header Parameters
