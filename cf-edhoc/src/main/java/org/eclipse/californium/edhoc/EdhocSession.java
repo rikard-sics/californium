@@ -469,21 +469,16 @@ public class EdhocSession {
 	}
 	
 	/**
-	 * EDHOC-Rekey-FS function, to preserve Perfect Forward Secrecy by updating the key PRK_4x3m
+	 * EDHOC-KeyUpdate function, to preserve Perfect Forward Secrecy by updating the key PRK_4x3m
 	 * @param nonce   The nonce to use for renewing PRK_4x3m
 	 * @return  true in case of success, or false if the EDHOC execution is not completed yet
 	 */
-	public boolean edhocRekeyFS(byte[] nonce) throws InvalidKeyException, NoSuchAlgorithmException {
+	public boolean edhocKeyUpdate(byte[] nonce) throws InvalidKeyException, NoSuchAlgorithmException {
 		
 		if (this.currentStep != Constants.EDHOC_AFTER_M3)
 			return false;
 		
-		List<CBORObject> myList = new ArrayList<>();
-		myList.add(CBORObject.FromObject("TH_4"));
-		myList.add(CBORObject.FromObject(nonce));
-		
-		byte[] mySequence = Util.buildCBORSequence(myList);
-		this.prk_4x3m = Hkdf.extract(mySequence, this.prk_4x3m);
+		this.prk_4x3m = Hkdf.extract(nonce, this.prk_4x3m);
 		
 		return true;
 		
