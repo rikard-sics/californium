@@ -904,7 +904,7 @@ public class Util {
 		System.arraycopy(hash, 0, truncatedHash, 0, 8);
 		idCredElem.Add(truncatedHash);
 		
-		idCred.Add(34, idCredElem);
+		idCred.Add(Constants.COSE_HEADER_PARAM_X5T, idCredElem);
 		return idCred;
 		
 	}
@@ -919,7 +919,7 @@ public class Util {
 		
 		CBORObject idCred = CBORObject.NewMap();
 		
-		idCred.Add(35, uri);
+		idCred.Add(Constants.COSE_HEADER_PARAM_X5U, uri);
 		return idCred;
 		
 	}
