@@ -99,6 +99,8 @@ public class MessageProcessorTest {
 		byte[] message1 = MessageProcessor.writeMessage1(session, ad1);
 
 		// Compare with the expected value from the test vectors
+		
+		// From version -02 of the draft
 		byte[] expectedMessage1 = Utils
 				.hexToBytes("01005820898ff79a02067a16ea1eccb90fa52246f5aa4dd6ec076bba0259d904b7ec8b0c40");
 
@@ -138,6 +140,8 @@ public class MessageProcessorTest {
 		byte[] message1 = MessageProcessor.writeMessage1(session, ad1);
 
 		// Compare with the expected value from the test vectors
+		
+		// From version -02 of the draft
 		byte[] expectedMessage1 = Utils
 				.hexToBytes("0d0058208d3ef56d1b750a4351d68ac250a0e883790efc80a538a444ee9e2b57e2441a7c21");
 
@@ -177,6 +181,8 @@ public class MessageProcessorTest {
 		byte[] message1 = MessageProcessor.writeMessage1(session, ad1);
 
 		// Compare with the expected value from the test vectors
+		
+		// From version -02 of the draft
 		byte[] expectedMessage1 = Utils
 				.hexToBytes("0d025820475776f844979ad0b463c5a6a4343a663d17a3a80e38a81d3e3496f6061fd71621");
 
@@ -303,6 +309,8 @@ public class MessageProcessorTest {
 		byte[] message2 = MessageProcessor.writeMessage2(session, ad2);
 
 		// Compare with the expected value from the test vectors
+		
+		// From version -02 of the draft
 		byte[] expectedMessage2 = Utils
 				.hexToBytes("582071a3d599c21da18902a1aea810b2b6382ccd8d5f9bf0195281754c5ebcaf301e13585099d53801a725bfd6a4e71d0484b755ec383df77a916ec0dbc02bba7c21a200807b4f585f728b671ad678a43aacd33b78ebd566cd004fc6f1d406f01d9704e705b21552a9eb28ea316ab65037d717862e");
 
@@ -385,6 +393,8 @@ public class MessageProcessorTest {
 		byte[] message2 = MessageProcessor.writeMessage2(session, ad2);
 
 		// Compare with the expected value from the test vectors
+		
+		// From version -02 of the draft
 		byte[] expectedMessage2 = Utils
 				.hexToBytes("582052fba0bdc8d953dd86ce1ab2fd7c05a4658c7c30afdbfc3301047069451baf35084adcf6fe9c524c22454deb");
 
@@ -466,6 +476,8 @@ public class MessageProcessorTest {
 		byte[] message2 = MessageProcessor.writeMessage2(session, ad2);
 
 		// Compare with the expected value from the test vectors
+		
+		// From version -02 of the draft
 		byte[] expectedMessage2 = Utils
 				.hexToBytes("582081df54b3756acfc8a1e9b08ba10de4e7e7dd934587a1ecdb21b92f8f22c3a38d084a93b13712a0c0bc9f9f74");
 
@@ -562,17 +574,24 @@ public class MessageProcessorTest {
 		byte[] message3 = MessageProcessor.writeMessage3(session, ad3);
 
 		// Compare with the expected value from the test vectors
+		
+		// From version -02 of the draft
 		byte[] expectedMessage3 = Utils
 				.hexToBytes("1358582d88ff86da47482c0dfa559ac824a4a783d870c9dba47805e8aafbad6974c49646586503fa9bbf3e00012c037eaf56e45e301920839b813a53f6d4c557480f6c797d5b76f0e462f5f57a3db6d2b50c32319f340f4ac5af9a");
 
 		Assert.assertArrayEquals(expectedMessage3, message3);
 		
+		
         /* Invoke the EDHOC-Exporter to produce OSCORE input material */
-		byte[] expectedMasterSecret = Utils.hexToBytes("EB9E7C0816374154C8ECD839845F2562");
-		byte[] expectedMasterSalt = Utils.hexToBytes("BCE4BF914B707DC1");
 		
         byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(session);
         byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(session);
+        
+		// Compare with the expected value from the test vectors
+        
+		// From version -02 of the draft
+		byte[] expectedMasterSecret = Utils.hexToBytes("EB9E7C0816374154C8ECD839845F2562");
+		byte[] expectedMasterSalt = Utils.hexToBytes("BCE4BF914B707DC1");
         
         Assert.assertArrayEquals(expectedMasterSecret, masterSecret);
         Assert.assertArrayEquals(expectedMasterSalt, masterSalt);
@@ -670,16 +689,23 @@ public class MessageProcessorTest {
 		byte[] message3 = MessageProcessor.writeMessage3(session, ad3);
 
 		// Compare with the expected value from the test vectors
+		
+		// From version -02 of the draft
 		byte[] expectedMessage3 = Utils.hexToBytes("085253c3991999a5ffb86921e99b607c067770e0");
 
 		Assert.assertArrayEquals(expectedMessage3, message3);
 		
+		
         /* Invoke the EDHOC-Exporter to produce OSCORE input material */
-		byte[] expectedMasterSecret = Utils.hexToBytes("e7aeafdb28574a9f7970f059159dee68");
-		byte[] expectedMasterSalt = Utils.hexToBytes("fb4c673029e2a0a1");
 		
         byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(session);
         byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(session);
+        
+		// Compare with the expected value from the test vectors
+		
+		// From version -02 of the draft
+		byte[] expectedMasterSecret = Utils.hexToBytes("e7aeafdb28574a9f7970f059159dee68");
+		byte[] expectedMasterSalt = Utils.hexToBytes("fb4c673029e2a0a1");
         
         Assert.assertArrayEquals(expectedMasterSecret, masterSecret);
         Assert.assertArrayEquals(expectedMasterSalt, masterSalt);
@@ -777,16 +803,23 @@ public class MessageProcessorTest {
 		byte[] message3 = MessageProcessor.writeMessage3(session, ad3);
 
 		// Compare with the expected value from the test vectors
+		
+		// From version -02 of the draft
 		byte[] expectedMessage3 = Utils.hexToBytes("0852a7e2f47e7bce019e5bb810de9a6fe26d48a3");
 		
 		Assert.assertArrayEquals(expectedMessage3, message3);
 		
+		
         /* Invoke the EDHOC-Exporter to produce OSCORE input material */
-		byte[] expectedMasterSecret = Utils.hexToBytes("63e8b8675f32571915e1d967103e85b3");
-		byte[] expectedMasterSalt = Utils.hexToBytes("dca80650d73224e7");
 		
         byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(session);
         byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(session);
+        
+		// Compare with the expected value from the test vectors
+		
+		// Compare with the expected value from the test vectors
+		byte[] expectedMasterSecret = Utils.hexToBytes("63e8b8675f32571915e1d967103e85b3");
+		byte[] expectedMasterSalt = Utils.hexToBytes("dca80650d73224e7");
         
         Assert.assertArrayEquals(expectedMasterSecret, masterSecret);
         Assert.assertArrayEquals(expectedMasterSalt, masterSalt);
