@@ -322,6 +322,7 @@ public class EdhocServer extends CoapServer {
 					// Build the related CRED
 					cred = Util.buildCredRawPublicKey(keyPair, subjectName);
 					break;
+		    	case Constants.CRED_TYPE_X5CHAIN:
 		    	case Constants.CRED_TYPE_X5T:
 		    	case Constants.CRED_TYPE_X5U:
 		    		// The x509 certificate of this peer
@@ -329,6 +330,10 @@ public class EdhocServer extends CoapServer {
 		    		// CRED, as serialization of a CBOR byte string wrapping the serialized certificate
 		    		cred = CBORObject.FromObject(serializedCert).EncodeToBytes();
 		    		switch (credType) {
+		    			case Constants.CRED_TYPE_X5CHAIN:
+				    		// ID_CRED for the identity key of this peer, built from the x509 certificate using x5chain
+				    		idCred = Util.buildIdCredX5chain(serializedCert);
+				    		break;
 		    			case Constants.CRED_TYPE_X5T:
 				    		// ID_CRED for the identity key of this peer, built from the x509 certificate using x5t
 				    		idCred = Util.buildIdCredX5t(serializedCert);
@@ -383,6 +388,7 @@ public class EdhocServer extends CoapServer {
 					peerCred = Util.buildCredRawPublicKey(peerPublicKey, "");
 					peerCredentials.put(idCredPeer, CBORObject.FromObject(peerCred));
 					break;
+		    	case Constants.CRED_TYPE_X5CHAIN:
 		    	case Constants.CRED_TYPE_X5T:
 		    	case Constants.CRED_TYPE_X5U:
 		    		// The x509 certificate of the other peer
@@ -390,6 +396,10 @@ public class EdhocServer extends CoapServer {
 		    		// CRED, as serialization of a CBOR byte string wrapping the serialized certificate
 		    		peerCred = CBORObject.FromObject(peerSerializedCert).EncodeToBytes();
 		    		switch (credType) {
+		    			case Constants.CRED_TYPE_X5CHAIN:
+				    		// ID_CRED for the identity key of the other peer, built from the x509 certificate using x5chain
+		    				peerIdCred = Util.buildIdCredX5chain(peerSerializedCert);
+				    		break;
 		    			case Constants.CRED_TYPE_X5T:
 				    		// ID_CRED for the identity key of the other peer, built from the x509 certificate using x5t
 				    		peerIdCred = Util.buildIdCredX5t(peerSerializedCert);
