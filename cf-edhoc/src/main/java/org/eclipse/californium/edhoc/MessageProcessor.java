@@ -532,15 +532,15 @@ public class MessageProcessor {
     		Util.nicePrint("PRK_2e", prk2e);
     	}
     	
-    	// Compute K_2e
-    	byte[] k2e = computeK2e(session, ciphertext2.length);
-    	if (k2e == null) {
-        	errMsg = new String("Error when computing K_2e");
+    	// Compute KEYSTREAM_2
+    	byte[] keystream2 = computeKeystream2(session, ciphertext2.length);
+    	if (keystream2 == null) {
+        	errMsg = new String("Error when computing KEYSTREAM_2");
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
     	}
     	if (debugPrint) {
-    		Util.nicePrint("K_2e", k2e);
+    		Util.nicePrint("KEYSTREAM_2", keystream2);
     	}
 		
     	// Compute the outer plaintext
@@ -548,7 +548,7 @@ public class MessageProcessor {
     	if (debugPrint) {
     		Util.nicePrint("CIPHERTEXT_2", ciphertext2);
     	}
-    	byte[] outerPlaintext = Util.arrayXor(ciphertext2, k2e);
+    	byte[] outerPlaintext = Util.arrayXor(ciphertext2, keystream2);
     	if (debugPrint) {
     		Util.nicePrint("Plaintext retrieved from CIPHERTEXT_2", outerPlaintext);
     	}
@@ -1564,20 +1564,20 @@ public class MessageProcessor {
     	}
     	
     	
-    	// Compute K_2e
-    	byte[] k2e = computeK2e(session, plaintext.length);
-    	if (k2e == null) {
-    		System.err.println("Error when computing K_2e");
+    	// Compute KEYSTREAM_2
+    	byte[] keystream2 = computeKeystream2(session, plaintext.length);
+    	if (keystream2== null) {
+    		System.err.println("Error when computing KEYSTREAM_2");
     		return null;
     	}
     	if (debugPrint) {
-    		Util.nicePrint("K_2e", k2e);
+    		Util.nicePrint("KEYSTREAM_2", keystream2);
     	}
 
     	
     	// Compute CIPHERTEXT_2 and add it to the outer CBOR sequence
     	
-    	byte[] ciphertext2 = Util.arrayXor(plaintext, k2e);
+    	byte[] ciphertext2 = Util.arrayXor(plaintext, keystream2);
     	objectList.add(CBORObject.FromObject(ciphertext2));
     	session.setCiphertext2(ciphertext2);
     	if (debugPrint) {
@@ -2135,25 +2135,25 @@ public class MessageProcessor {
 
 	
     /**
-     *  Compute the key K_2e
+     *  Compute the keystream KEYSTREAM_2
      * @param session   The used EDHOC session
-     * @param length   The desired length in bytes for the key K_2e
-     * @return  The computed key K_2e
+     * @param length   The desired length in bytes for the keystream KEYSTREAM_2
+     * @return  The computed keystream KEYSTREAM_2
      */
-	public static byte[] computeK2e(EdhocSession session, int length) {
+	public static byte[] computeKeystream2(EdhocSession session, int length) {
 		
-		byte[] k2e = new byte[length];
+		byte[] keystream2 = new byte[length];
 		try {
-			k2e = session.edhocKDF(session.getPRK2e(), session.getTH2(), "K_2e", length);
+			keystream2 = session.edhocKDF(session.getPRK2e(), session.getTH2(), "KEYSTREAM_2", length);
 		} catch (InvalidKeyException e) {
-			System.err.println("Error when generating K_2e\n" + e.getMessage());
+			System.err.println("Error when generating KEYSTREAM_2\n" + e.getMessage());
 			return null;
 		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Error when generating K_2e\n" + e.getMessage());
+			System.err.println("Error when generating KEYSTREAM_2\n" + e.getMessage());
 			return null;
 		}
 
-		return k2e;
+		return keystream2;
 		
 	}
 
