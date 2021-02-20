@@ -273,8 +273,8 @@ public class EdhocServer extends CoapServer {
 				}
 		 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
 		 			privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("df69274d713296e246306365372b4683ced5381bfcadcd440a24c391d2fedb94");
-		 			publicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("DBD9DC8CD03FB7C3913511462BB23816477C6BD8D66EF5A1A070AC854ED73FD2");
-					peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("38E5D54563C2B6A4BA26F3015F61BB706E5C2EFDB556D2E1690B97FC3C6DE149");
+		 			publicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
+					peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("38e5d54563c2b6a4ba26f3015f61bb706e5c2efdb556d2e1690b97fc3c6de149");
 		 		}
 		 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
 		 			privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("bb501aac67b9a95f97e0eded6b82a662934fbbfc7ad1b74c1fcad66a079422d0");
@@ -326,7 +326,7 @@ public class EdhocServer extends CoapServer {
 		    	case Constants.CRED_TYPE_X5T:
 		    	case Constants.CRED_TYPE_X5U:
 		    		// The x509 certificate of this peer
-		    		serializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb28f9cf6180b5a6af31e80209a085cfbf95f3fdcf9b18b693d6c0e0d0ffb8e3f9a32a50859ecd0bfcff2c218");
+		    		serializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("c788370016b8965bdb2074bff82e5a20e09bec21f8406e86442b87ec3ff245b70a47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb2");
 		    		// CRED, as serialization of a CBOR byte string wrapping the serialized certificate
 		    		cred = CBORObject.FromObject(serializedCert).EncodeToBytes();
 		    		switch (credType) {
@@ -392,7 +392,7 @@ public class EdhocServer extends CoapServer {
 		    	case Constants.CRED_TYPE_X5T:
 		    	case Constants.CRED_TYPE_X5U:
 		    		// The x509 certificate of the other peer
-		    		peerSerializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("fa34b22a9ca4a1e12924eae1d1766088098449cb848ffc795f88afc49cbe8afdd1ba009f21675e8f6c77a4a2c30195601f6f0a0852978bd43d28207d44486502ff7bdda632c788370016b8965bdb2074bff82e5a20e09bec21f8406e86442b87ec3ff245b7");
+		    		peerSerializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("5413204c3ebc3428a6cf57e24c9def59651770449bce7ec6561e52433aa55e71f1fa34b22a9ca4a1e12924eae1d1766088098449cb848ffc795f88afc49cbe8afdd1ba009f21675e8f6c77a4a2c30195601f6f0a0852978bd43d28207d44486502ff7bdda6");
 		    		// CRED, as serialization of a CBOR byte string wrapping the serialized certificate
 		    		peerCred = CBORObject.FromObject(peerSerializedCert).EncodeToBytes();
 		    		switch (credType) {
