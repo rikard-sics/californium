@@ -1950,7 +1950,7 @@ public class MessageProcessor {
 		int methodCorr = (4 * authenticationMethod) + correlationMethod;
 		
 		//byte[] connectionId = Util.getConnectionId(usedConnectionIds, null);
-		byte[] connectionId = Bytes.EMPTY; // Forced and aligned with the test vector
+		byte[] connectionId = new byte[] {(byte) 0x09}; // Forced and aligned with the test vector
 		
         EdhocSession mySession = new EdhocSession(true, methodCorr, connectionId, keyPair,
         										  idCredI, credI, supportedCiphersuites);
@@ -1996,7 +1996,7 @@ public class MessageProcessor {
 		// Create a new EDHOC session
 		
 		//byte[] connectionId = Util.getConnectionId(usedConnectionIds, null);
-		byte[] connectionId = new byte[] {(byte) 0x2b}; // Forced and aligned with the test vector
+		byte[] connectionId = new byte[] {(byte) 0x00}; // Forced and aligned with the test vector
 		
 		EdhocSession mySession = new EdhocSession(false, methodCorr, connectionId, keyPair,
 												  idCredR, credR, supportedCiphersuites);
