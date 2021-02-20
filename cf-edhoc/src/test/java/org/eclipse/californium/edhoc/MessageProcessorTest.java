@@ -34,6 +34,7 @@ public class MessageProcessorTest {
 	 * test vectors.
 	 * 
 	 */
+	@Ignore
 	@Test
 	public void testMessageType() {
 		byte[] message1 = Utils
@@ -72,6 +73,7 @@ public class MessageProcessorTest {
 	 * 
 	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#appendix-B.1.1
 	 */
+	@Ignore
 	@Test
 	public void testWriteMessage1B1() {
 		// First set up the session to use
@@ -112,6 +114,7 @@ public class MessageProcessorTest {
 	 * 
 	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#appendix-B.2.1
 	 */
+	@Ignore
 	@Test
 	public void testWriteMessage1B2() {
 		// First set up the session to use
@@ -153,6 +156,7 @@ public class MessageProcessorTest {
 	 * Test writing of message 1 with ciphersuite 2 and method 3.
 	 * 
 	 */
+	@Ignore
 	@Test
 	public void testWriteMessage1Ciphersuite2Method3() {
 		// First set up the session to use
@@ -195,6 +199,7 @@ public class MessageProcessorTest {
 	 * 
 	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#appendix-B.1.2
 	 */
+	@Ignore
 	@Test
 	public void testWriteMessage2B1() {
 
@@ -324,6 +329,7 @@ public class MessageProcessorTest {
 	 * 
 	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#appendix-B.2.2
 	 */
+	@Ignore
 	@Test
 	public void testWriteMessage2B2() {
 
@@ -406,6 +412,7 @@ public class MessageProcessorTest {
 	 * Test writing of message 2 with ciphersuite 2 and method 3.
 	 * 
 	 */
+	@Ignore
 	@Test
 	public void testWriteMessage2Ciphersuite2Method3() {
 
@@ -490,6 +497,7 @@ public class MessageProcessorTest {
 	 * 
 	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#appendix-B.1.3
 	 */
+	@Ignore
 	@Test
 	public void testWriteMessage3B1() {
 
@@ -607,6 +615,7 @@ public class MessageProcessorTest {
 	 * 
 	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#appendix-B.2.3
 	 */
+	@Ignore
 	@Test
 	public void testWriteMessage3B2() {
 
@@ -719,6 +728,7 @@ public class MessageProcessorTest {
 	 * Test writing of message 3 with ciphersuite 2 and method 3.
 	 * 
 	 */
+	@Ignore
 	@Test
 	public void testWriteMessage3Ciphersuite2Method3() {
 
