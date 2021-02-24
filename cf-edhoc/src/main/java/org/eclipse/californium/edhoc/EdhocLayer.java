@@ -29,6 +29,7 @@ import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
+import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSCoreCtxDB;
 
 /**
@@ -106,6 +107,22 @@ public class EdhocLayer extends AbstractLayer {
 	@Override
 	public void receiveEmptyMessage(Exchange exchange, EmptyMessage message) {
 		super.receiveEmptyMessage(exchange, message);
+	}
+
+	/**
+	 * Returns the OSCORE Context that was used to protect this outgoing
+	 * exchange (outgoing request or response).
+	 * 
+	 * @param e the exchange
+	 * @return the OSCORE Context used to protect the exchange (if any)
+	 */
+	private OSCoreCtx getContextForOutgoing(Exchange e) {
+		byte[] rid = e.getCryptographicContextID();
+		if (rid == null) {
+			return null;
+		} else {
+			return ctxDb.getContext(rid);
+		}
 	}
 
 }
