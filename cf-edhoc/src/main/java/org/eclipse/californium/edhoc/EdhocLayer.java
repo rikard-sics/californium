@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import org.eclipse.californium.core.coap.EmptyMessage;
@@ -123,6 +124,43 @@ public class EdhocLayer extends AbstractLayer {
 		} else {
 			return ctxDb.getContext(rid);
 		}
+	}
+
+	/**
+	 * Retrieve KID value from an OSCORE option.
+	 * 
+	 * @param oscoreOption the OSCORE option
+	 * @return the KID value
+	 */
+	static byte[] getKid(byte[] oscoreOption) {
+		if (oscoreOption.length == 0) {
+			return null;
+		}
+
+		// Parse the flag byte
+		byte flagByte = oscoreOption[0];
+		int n = flagByte & 0x07;
+		int k = flagByte & 0x08;
+		int h = flagByte & 0x10;
+
+		byte[] kid = null;
+		int index = 1;
+
+		// Partial IV
+		index += n;
+
+		// KID Context
+		if (h != 0) {
+			int s = oscoreOption[index];
+			index += s + 1;
+		}
+
+		// KID
+		if (k != 0) {
+			kid = Arrays.copyOfRange(oscoreOption, index, oscoreOption.length);
+		}
+
+		return kid;
 	}
 
 }
