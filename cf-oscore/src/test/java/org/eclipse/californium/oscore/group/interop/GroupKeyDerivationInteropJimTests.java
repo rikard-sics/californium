@@ -34,8 +34,6 @@ import java.util.Arrays;
 
 import javax.crypto.KeyAgreement;
 
-import org.eclipse.californium.core.CoapClient;
-import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.CoAP.Type;
@@ -49,7 +47,6 @@ import org.eclipse.californium.elements.UdpEndpointContext;
 import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
 import org.eclipse.californium.elements.util.Bytes;
-import org.eclipse.californium.oscore.ByteId;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCtxDB;
 import org.eclipse.californium.oscore.OSException;
@@ -60,7 +57,6 @@ import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
 import org.eclipse.californium.oscore.group.OneKeyDecoder;
 import org.eclipse.californium.oscore.group.SharedSecretCalculation;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -176,9 +172,9 @@ public class GroupKeyDerivationInteropJimTests {
 	/**
 	 * Create a message based on Jim Test 1 Entity 1 data.
 	 * 
-	 * @throws OSException
-	 * @throws IOException
-	 * @throws ConnectorException
+	 * @throws OSException on failure
+	 * @throws IOException on failure
+	 * @throws ConnectorException on failure
 	 */
 	@Test
 	public void testMessage1Creation() throws OSException, ConnectorException, IOException {
@@ -218,13 +214,13 @@ public class GroupKeyDerivationInteropJimTests {
 	 * Create a message based on Jim Test 1 Entity 1 data. From Jims message
 	 * bytes
 	 * 
-	 * @throws OSException
-	 * @throws IOException
-	 * @throws ConnectorException
+	 * @throws OSException on failure
+	 * @throws IOException on failure
+	 * @throws ConnectorException on failure
 	 */
 	@Test
 	public void testMessage1CreationAlt() throws OSException, ConnectorException, IOException {
-		String destinationUri = "coap://127.0.0.1/test";
+		// String destinationUri = "coap://127.0.0.1/test";
 
 		GroupCtx groupCtxJim = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256);
 		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParametersOld.JIM_ENTITY_1_KEY_ECDSA);
