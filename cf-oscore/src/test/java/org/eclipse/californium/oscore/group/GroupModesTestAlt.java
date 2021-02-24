@@ -20,8 +20,13 @@ package org.eclipse.californium.oscore.group;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import java.io.File;
+import java.io.IOException;
+import java.net.BindException;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -49,12 +54,13 @@ import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.OneKey;
-import org.eclipse.californium.elements.Connector;
 import org.eclipse.californium.elements.EndpointContext;
 import org.eclipse.californium.elements.MapBasedEndpointContext;
+import org.eclipse.californium.elements.UDPConnector;
 import org.eclipse.californium.elements.UdpMulticastConnector;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
@@ -67,6 +73,8 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
@@ -82,6 +90,8 @@ import com.upokecenter.cbor.CBORObject;
  * 
  */
 public class GroupModesTestAlt {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(GroupModesTestAlt.class);
 
 	/**
 	 * File name for network configuration.
@@ -102,6 +112,10 @@ public class GroupModesTestAlt {
 		}
 
 	};
+
+	// Use IPv4
+	private static boolean ipv4 = true;
+	private static final boolean LOOPBACK = false;
 
 	/**
 	 * Time to wait for replies to the multicast request
@@ -489,18 +503,11 @@ public class GroupModesTestAlt {
 
 		setServerContext(responsePartialIV, pairwiseResponse);
 
-		// Create server
-		InetSocketAddress localAddress = new InetSocketAddress(0);
-		Connector connector = new UdpMulticastConnector(localAddress, multicastIP);
+		// Create server and multicast configuration
+		CoapServer server = new CoapServer();
 		NetworkConfig config = NetworkConfig.getStandard();
-
-		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
-		builder.setCustomCoapStackArgument(dbServer);
-		builder.setNetworkConfig(config);
-		builder.setConnector(connector);
-		serverEndpoint = builder.build();
-		final CoapServer server = new CoapServer();
-		server.addEndpoint(serverEndpoint);
+		createEndpoints(server, CoAP.DEFAULT_COAP_PORT, CoAP.DEFAULT_COAP_PORT, config);
+		serverEndpoint = server.getEndpoint(CoAP.DEFAULT_COAP_PORT);
 
 		/** --- Resources for tests follow --- **/
 
@@ -558,13 +565,128 @@ public class GroupModesTestAlt {
 		if (endpointContext instanceof MapBasedEndpointContext) {
 			EndpointContext mapEndpointContext = endpointContext;
 			requestIdContext = StringUtil
-					.hex2ByteArray(mapEndpointContext.get(OSCoreEndpointContextInfo.OSCORE_CONTEXT_ID));
+					.hex2ByteArray(mapEndpointContext.getString(OSCoreEndpointContextInfo.OSCORE_CONTEXT_ID));
 		}
 		if (!Arrays.equals(requestIdContext, context_id)) {
 			return false;
 		}
 
 		return true;
+	}
+
+	/**
+	 * From MulticastTestServer
+	 * 
+	 * @param server
+	 * @param unicastPort
+	 * @param multicastPort
+	 * @param config
+	 */
+	private static void createEndpoints(CoapServer server, int unicastPort, int multicastPort, NetworkConfig config) {
+		// UDPConnector udpConnector = new UDPConnector(new
+		// InetSocketAddress(unicastPort));
+		// udpConnector.setReuseAddress(true);
+		// CoapEndpoint coapEndpoint = new
+		// CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector).build();
+
+		NetworkInterface networkInterface = NetworkInterfacesUtil.getMulticastInterface();
+		if (networkInterface == null) {
+			LOGGER.warn("No multicast network-interface found!");
+			throw new Error("No multicast network-interface found!");
+		}
+		LOGGER.info("Multicast Network Interface: {}", networkInterface.getDisplayName());
+
+		UdpMulticastConnector.Builder builder = new UdpMulticastConnector.Builder();
+
+		if (!ipv4 && NetworkInterfacesUtil.isAnyIpv6()) {
+			Inet6Address ipv6 = NetworkInterfacesUtil.getMulticastInterfaceIpv6();
+			LOGGER.info("Multicast: IPv6 Network Address: {}", StringUtil.toString(ipv6));
+			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv6, unicastPort));
+			udpConnector.setReuseAddress(true);
+			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector)
+					.setCustomCoapStackArgument(dbServer).build();
+
+			builder = new UdpMulticastConnector.Builder().setLocalAddress(CoAP.MULTICAST_IPV6_SITELOCAL, multicastPort)
+					.addMulticastGroup(CoAP.MULTICAST_IPV6_SITELOCAL, networkInterface);
+			createReceiver(builder, udpConnector);
+
+			/*
+			 * https://bugs.openjdk.java.net/browse/JDK-8210493 link-local
+			 * multicast is broken
+			 */
+			builder = new UdpMulticastConnector.Builder().setLocalAddress(CoAP.MULTICAST_IPV6_LINKLOCAL, multicastPort)
+					.addMulticastGroup(CoAP.MULTICAST_IPV6_LINKLOCAL, networkInterface);
+			createReceiver(builder, udpConnector);
+
+			server.addEndpoint(coapEndpoint);
+			LOGGER.info("IPv6 - multicast");
+		}
+
+		if (ipv4 && NetworkInterfacesUtil.isAnyIpv4()) {
+			Inet4Address ipv4 = NetworkInterfacesUtil.getMulticastInterfaceIpv4();
+			LOGGER.info("Multicast: IPv4 Network Address: {}", StringUtil.toString(ipv4));
+			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv4, unicastPort));
+			udpConnector.setReuseAddress(true);
+			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector)
+					.setCustomCoapStackArgument(dbServer).build();
+
+			builder = new UdpMulticastConnector.Builder().setLocalAddress(CoAP.MULTICAST_IPV4, multicastPort)
+					.addMulticastGroup(CoAP.MULTICAST_IPV4, networkInterface);
+			createReceiver(builder, udpConnector);
+
+			Inet4Address broadcast = NetworkInterfacesUtil.getBroadcastIpv4();
+			if (broadcast != null) {
+				// windows seems to fail to open a broadcast receiver
+				builder = new UdpMulticastConnector.Builder().setLocalAddress(broadcast, multicastPort);
+				createReceiver(builder, udpConnector);
+			}
+			server.addEndpoint(coapEndpoint);
+			LOGGER.info("IPv4 - multicast");
+		}
+		UDPConnector udpConnector = new UDPConnector(
+				new InetSocketAddress(InetAddress.getLoopbackAddress(), unicastPort));
+		udpConnector.setReuseAddress(true);
+		CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector)
+				.setCustomCoapStackArgument(dbServer).build();
+		server.addEndpoint(coapEndpoint);
+		LOGGER.info("loopback");
+	}
+
+	/**
+	 * From MulticastTestServer
+	 * 
+	 * @param builder
+	 * @param connector
+	 */
+	private static void createReceiver(UdpMulticastConnector.Builder builder, UDPConnector connector) {
+		UdpMulticastConnector multicastConnector = builder.setMulticastReceiver(true).build();
+		multicastConnector.setLoopbackMode(LOOPBACK);
+		try {
+			multicastConnector.start();
+		} catch (BindException ex) {
+			// binding to multicast seems to fail on windows
+			if (builder.getLocalAddress().getAddress().isMulticastAddress()) {
+				int port = builder.getLocalAddress().getPort();
+				builder.setLocalPort(port);
+				multicastConnector = builder.build();
+				multicastConnector.setLoopbackMode(LOOPBACK);
+				try {
+					multicastConnector.start();
+				} catch (IOException e) {
+					e.printStackTrace();
+					multicastConnector = null;
+				}
+			} else {
+				ex.printStackTrace();
+				multicastConnector = null;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			multicastConnector = null;
+		}
+		if (multicastConnector != null && connector != null) {
+			connector.addMulticastReceiver(multicastConnector);
+		}
 	}
 
 }
