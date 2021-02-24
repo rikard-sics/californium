@@ -27,7 +27,6 @@ import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.security.Provider;
 import java.security.Security;
-import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,7 +41,6 @@ import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.EndpointContextMatcherFactory.MatcherMode;
-import org.eclipse.californium.core.network.MulticastReceivers;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
 import org.eclipse.californium.core.server.resources.CoapExchange;
@@ -144,8 +142,6 @@ public class GroupOSCOREInteropServerMcastBW {
 
 	/* --- OSCORE Security Context information --- */
 
-	private static Random random;
-
 	private static int DEFAULT_BLOCK_SIZE = 256;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GroupOSCOREInteropServerMcastBW.class);
@@ -225,9 +221,6 @@ public class GroupOSCOREInteropServerMcastBW {
 			// For pairwise responses:
 			// commonCtx.setPairwiseModeResponses(true);
 		}
-
-		// Initialize random number generator
-		random = new Random();
 
 		NetworkConfig config = NetworkConfig.getStandard();
 
@@ -313,6 +306,14 @@ public class GroupOSCOREInteropServerMcastBW {
 	// CoapEndpoint.Builder().setNetworkConfig(config).setConnector(connector).build();
 	// }
 
+	/**
+	 * From MulticastTestServer
+	 * 
+	 * @param server
+	 * @param unicastPort
+	 * @param multicastPort
+	 * @param config
+	 */
 	private static void createEndpoints(CoapServer server, int unicastPort, int multicastPort, NetworkConfig config) {
 		// UDPConnector udpConnector = new UDPConnector(new
 		// InetSocketAddress(unicastPort));
@@ -339,7 +340,7 @@ public class GroupOSCOREInteropServerMcastBW {
 
 			builder = new UdpMulticastConnector.Builder().setLocalAddress(CoAP.MULTICAST_IPV6_SITELOCAL, multicastPort)
 					.addMulticastGroup(CoAP.MULTICAST_IPV6_SITELOCAL, networkInterface);
-			createReceiver(builder, (MulticastReceivers) coapEndpoint);
+			createReceiver(builder, udpConnector);
 
 			/*
 			 * https://bugs.openjdk.java.net/browse/JDK-8210493 link-local
@@ -347,13 +348,13 @@ public class GroupOSCOREInteropServerMcastBW {
 			 */
 			builder = new UdpMulticastConnector.Builder().setLocalAddress(CoAP.MULTICAST_IPV6_LINKLOCAL, multicastPort)
 					.addMulticastGroup(CoAP.MULTICAST_IPV6_LINKLOCAL, networkInterface);
-			createReceiver(builder, (MulticastReceivers) coapEndpoint);
+			createReceiver(builder, udpConnector);
 
 			server.addEndpoint(coapEndpoint);
 			LOGGER.info("IPv6 - multicast");
 		}
 
-		if (ipv4 || NetworkInterfacesUtil.isAnyIpv4()) {
+		if (ipv4 && NetworkInterfacesUtil.isAnyIpv4()) {
 			Inet4Address ipv4 = NetworkInterfacesUtil.getMulticastInterfaceIpv4();
 			LOGGER.info("Multicast: IPv4 Network Address: {}", StringUtil.toString(ipv4));
 			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv4, unicastPort));
@@ -363,13 +364,13 @@ public class GroupOSCOREInteropServerMcastBW {
 
 			builder = new UdpMulticastConnector.Builder().setLocalAddress(CoAP.MULTICAST_IPV4, multicastPort)
 					.addMulticastGroup(CoAP.MULTICAST_IPV4, networkInterface);
-			createReceiver(builder, (MulticastReceivers) coapEndpoint);
+			createReceiver(builder, udpConnector);
 
 			Inet4Address broadcast = NetworkInterfacesUtil.getBroadcastIpv4();
 			if (broadcast != null) {
 				// windows seems to fail to open a broadcast receiver
 				builder = new UdpMulticastConnector.Builder().setLocalAddress(broadcast, multicastPort);
-				createReceiver(builder, (MulticastReceivers) coapEndpoint);
+				createReceiver(builder, udpConnector);
 			}
 			server.addEndpoint(coapEndpoint);
 			LOGGER.info("IPv4 - multicast");
@@ -383,34 +384,40 @@ public class GroupOSCOREInteropServerMcastBW {
 		LOGGER.info("loopback");
 	}
 
-	private static void createReceiver(UdpMulticastConnector.Builder builder, MulticastReceivers endpoint) {
-		UdpMulticastConnector connector = builder.build();
-		connector.setLoopbackMode(LOOPBACK);
+	/**
+	 * From MulticastTestServer
+	 * 
+	 * @param builder
+	 * @param connector
+	 */
+	private static void createReceiver(UdpMulticastConnector.Builder builder, UDPConnector connector) {
+		UdpMulticastConnector multicastConnector = builder.setMulticastReceiver(true).build();
+		multicastConnector.setLoopbackMode(LOOPBACK);
 		try {
-			connector.start();
+			multicastConnector.start();
 		} catch (BindException ex) {
 			// binding to multicast seems to fail on windows
 			if (builder.getLocalAddress().getAddress().isMulticastAddress()) {
 				int port = builder.getLocalAddress().getPort();
 				builder.setLocalPort(port);
-				connector = builder.build();
-				connector.setLoopbackMode(LOOPBACK);
+				multicastConnector = builder.build();
+				multicastConnector.setLoopbackMode(LOOPBACK);
 				try {
-					connector.start();
+					multicastConnector.start();
 				} catch (IOException e) {
 					e.printStackTrace();
-					connector = null;
+					multicastConnector = null;
 				}
 			} else {
 				ex.printStackTrace();
-				connector = null;
+				multicastConnector = null;
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
-			connector = null;
+			multicastConnector = null;
 		}
-		if (connector != null && endpoint != null) {
-			endpoint.addMulticastReceiver(connector);
+		if (multicastConnector != null && connector != null) {
+			connector.addMulticastReceiver(multicastConnector);
 		}
 	}
 
@@ -710,12 +717,12 @@ public class GroupOSCOREInteropServerMcastBW {
 				// so some tricks are needed)
 				EndpointContext ctx = exchange.advanced().getRequest().getSourceContext();
 				MapBasedEndpointContext mapCtx = (MapBasedEndpointContext) ctx;
-				String reqIdContext = mapCtx.get(OSCoreEndpointContextInfo.OSCORE_CONTEXT_ID);
+				String reqIdContext = mapCtx.getString(OSCoreEndpointContextInfo.OSCORE_CONTEXT_ID);
 				String groupIdContext = Utils.toHexString(group_identifier).replace("[", "").replace("]", "");
 				String responsePayload = "";
 
 				// Get other party KID
-				String yourKID = mapCtx.get(OSCoreEndpointContextInfo.OSCORE_RECIPIENT_ID);
+				String yourKID = mapCtx.getString(OSCoreEndpointContextInfo.OSCORE_RECIPIENT_ID);
 
 				if (!exchange.advanced().getRequest().getOptions().hasOscore()) {
 					// CoAP
@@ -725,7 +732,7 @@ public class GroupOSCOREInteropServerMcastBW {
 					responsePayload = "Response from ID " + id + " with Group OSCORE. You are ID " + yourKID;
 				} else {
 					// OSCORE
-					String mySID = mapCtx.get(OSCoreEndpointContextInfo.OSCORE_SENDER_ID);
+					String mySID = mapCtx.getString(OSCoreEndpointContextInfo.OSCORE_SENDER_ID);
 					responsePayload = "Response from ID " + mySID + " with OSCORE. You are ID " + yourKID;
 				}
 

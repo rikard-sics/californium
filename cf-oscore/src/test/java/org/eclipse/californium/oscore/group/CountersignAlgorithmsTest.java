@@ -445,7 +445,7 @@ public class CountersignAlgorithmsTest {
 		if (endpointContext instanceof MapBasedEndpointContext) {
 			EndpointContext mapEndpointContext = endpointContext;
 			requestIdContext = StringUtil
-					.hex2ByteArray(mapEndpointContext.get(OSCoreEndpointContextInfo.OSCORE_CONTEXT_ID));
+					.hex2ByteArray(mapEndpointContext.getString(OSCoreEndpointContextInfo.OSCORE_CONTEXT_ID));
 		}
 		if (!Arrays.equals(requestIdContext, context_id)) {
 			return false;

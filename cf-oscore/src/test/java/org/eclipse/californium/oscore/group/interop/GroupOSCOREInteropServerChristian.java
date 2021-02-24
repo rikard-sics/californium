@@ -18,8 +18,13 @@ package org.eclipse.californium.oscore.group.interop;
 
 import static org.junit.Assert.assertArrayEquals;
 
+import java.io.IOException;
+import java.net.BindException;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.UnknownHostException;
 import java.security.Provider;
 import java.security.Security;
@@ -37,6 +42,7 @@ import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.network.CoapEndpoint;
+import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.californium.core.network.EndpointContextMatcherFactory.MatcherMode;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
@@ -50,6 +56,8 @@ import org.eclipse.californium.elements.EndpointContext;
 import org.eclipse.californium.elements.MapBasedEndpointContext;
 import org.eclipse.californium.elements.UDPConnector;
 import org.eclipse.californium.elements.UdpMulticastConnector;
+import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
+import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 import org.eclipse.californium.oscore.OSCoreCtx;
@@ -60,6 +68,8 @@ import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
 import org.eclipse.californium.oscore.group.OneKeyDecoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
@@ -67,6 +77,8 @@ import net.i2p.crypto.eddsa.EdDSASecurityProvider;
  * Test receiver using {@link UdpMulticastConnector}.
  */
 public class GroupOSCOREInteropServerChristian {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(GroupOSCOREInteropServerChristian.class);
 
 	/**
 	 * Controls whether or not the receiver will reply to incoming multicast
@@ -97,6 +109,10 @@ public class GroupOSCOREInteropServerChristian {
 	static final InetAddress listenIP = CoAP.MULTICAST_IPV4;
 	// static final InetAddress listenIP = new InetSocketAddress("127.0.0.1",
 	// 0).getAddress();
+
+	// Use IPv4
+	private static boolean ipv4 = true;
+	private static final boolean LOOPBACK = false;
 
 	/**
 	 * Build endpoint to listen on multicast IP.
@@ -221,16 +237,22 @@ public class GroupOSCOREInteropServerChristian {
 				.setLong(Keys.EXCHANGE_LIFETIME, 10 * 1000L).setInt(Keys.MAX_MESSAGE_SIZE, DEFAULT_BLOCK_SIZE)
 				.setInt(Keys.PREFERRED_BLOCK_SIZE, DEFAULT_BLOCK_SIZE).setString(Keys.RESPONSE_MATCHING, mode.name());
 
-		CoapEndpoint endpoint = createEndpoints(config);
-
 		// Case 9: Duplicate server response
 		// endpoint.setDuplicateResponse(true);
 
 		CoapServer server = new CoapServer(config);
-		server.addEndpoint(endpoint);
-		server.add(new OtherOscoreResource());
+
+		Endpoint endpoint = null;
+		if (useMulticast) {
+			createEndpoints(server, listenPort, listenPort, config);
+			endpoint = server.getEndpoint(listenPort);
+		} else {
+			endpoint = createEndpoints(config);
+			server.addEndpoint(endpoint);
+		}
 
 		// Build resource hierarchy
+		server.add(new OtherOscoreResource());
 		CoapResource oscore = new CoapResource("oscore", true);
 		CoapResource oscore_hello = new CoapResource("hello", true);
 
@@ -279,12 +301,9 @@ public class GroupOSCOREInteropServerChristian {
 		}
 
 		Connector connector = null;
-		if (useMulticast) {
-			connector = new UdpMulticastConnector(localAddress, listenIP);
-		} else {
-			InetSocketAddress unicastAddress = new InetSocketAddress(listenIP, listenPort);
-			connector = new UDPConnector(unicastAddress);
-		}
+		InetSocketAddress unicastAddress = new InetSocketAddress(listenIP, listenPort);
+		connector = new UDPConnector(unicastAddress);
+
 		return new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(connector).build();
 	}
 
@@ -586,12 +605,12 @@ public class GroupOSCOREInteropServerChristian {
 				// so some tricks are needed)
 				EndpointContext ctx = exchange.advanced().getRequest().getSourceContext();
 				MapBasedEndpointContext mapCtx = (MapBasedEndpointContext) ctx;
-				String reqIdContext = mapCtx.get(OSCoreEndpointContextInfo.OSCORE_CONTEXT_ID);
+				String reqIdContext = mapCtx.getString(OSCoreEndpointContextInfo.OSCORE_CONTEXT_ID);
 				String groupIdContext = Utils.toHexString(group_identifier).replace("[", "").replace("]", "");
 				String responsePayload = "";
 
 				// Get other party KID
-				String yourKID = mapCtx.get(OSCoreEndpointContextInfo.OSCORE_RECIPIENT_ID);
+				String yourKID = mapCtx.getString(OSCoreEndpointContextInfo.OSCORE_RECIPIENT_ID);
 
 				if (!exchange.advanced().getRequest().getOptions().hasOscore()) {
 					// CoAP
@@ -601,7 +620,7 @@ public class GroupOSCOREInteropServerChristian {
 					responsePayload = "Response from ID " + id + " with Group OSCORE. You are ID " + yourKID;
 				} else {
 					// OSCORE
-					String mySID = mapCtx.get(OSCoreEndpointContextInfo.OSCORE_SENDER_ID);
+					String mySID = mapCtx.getString(OSCoreEndpointContextInfo.OSCORE_SENDER_ID);
 					responsePayload = "Response from ID " + mySID + " with OSCORE. You are ID " + yourKID;
 				}
 
@@ -627,6 +646,125 @@ public class GroupOSCOREInteropServerChristian {
 
 		}
 
+	}
+
+	/**
+	 * Methods below from MulticastTestServer to set up multicast listening.
+	 */
+
+	/**
+	 * From MulticastTestServer
+	 * 
+	 * @param server
+	 * @param unicastPort
+	 * @param multicastPort
+	 * @param config
+	 */
+	private static void createEndpoints(CoapServer server, int unicastPort, int multicastPort, NetworkConfig config) {
+		// UDPConnector udpConnector = new UDPConnector(new
+		// InetSocketAddress(unicastPort));
+		// udpConnector.setReuseAddress(true);
+		// CoapEndpoint coapEndpoint = new
+		// CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector).build();
+
+		NetworkInterface networkInterface = NetworkInterfacesUtil.getMulticastInterface();
+		if (networkInterface == null) {
+			LOGGER.warn("No multicast network-interface found!");
+			throw new Error("No multicast network-interface found!");
+		}
+		LOGGER.info("Multicast Network Interface: {}", networkInterface.getDisplayName());
+
+		UdpMulticastConnector.Builder builder = new UdpMulticastConnector.Builder();
+
+		if (!ipv4 && NetworkInterfacesUtil.isAnyIpv6()) {
+			Inet6Address ipv6 = NetworkInterfacesUtil.getMulticastInterfaceIpv6();
+			LOGGER.info("Multicast: IPv6 Network Address: {}", StringUtil.toString(ipv6));
+			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv6, unicastPort));
+			udpConnector.setReuseAddress(true);
+			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector)
+					.build();
+
+			builder = new UdpMulticastConnector.Builder().setLocalAddress(listenIP, multicastPort)
+					.addMulticastGroup(listenIP, networkInterface);
+			createReceiver(builder, udpConnector);
+
+			/*
+			 * https://bugs.openjdk.java.net/browse/JDK-8210493 link-local
+			 * multicast is broken
+			 */
+			builder = new UdpMulticastConnector.Builder().setLocalAddress(listenIP, multicastPort)
+					.addMulticastGroup(listenIP, networkInterface);
+			createReceiver(builder, udpConnector);
+
+			server.addEndpoint(coapEndpoint);
+			LOGGER.info("IPv6 - multicast");
+		}
+
+		if (ipv4 && NetworkInterfacesUtil.isAnyIpv4()) {
+			Inet4Address ipv4 = NetworkInterfacesUtil.getMulticastInterfaceIpv4();
+			LOGGER.info("Multicast: IPv4 Network Address: {}", StringUtil.toString(ipv4));
+			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv4, unicastPort));
+			udpConnector.setReuseAddress(true);
+			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector)
+					.build();
+
+			builder = new UdpMulticastConnector.Builder().setLocalAddress(listenIP, multicastPort)
+					.addMulticastGroup(listenIP, networkInterface);
+			createReceiver(builder, udpConnector);
+
+			Inet4Address broadcast = NetworkInterfacesUtil.getBroadcastIpv4();
+			if (broadcast != null) {
+				// windows seems to fail to open a broadcast receiver
+				builder = new UdpMulticastConnector.Builder().setLocalAddress(broadcast, multicastPort);
+				createReceiver(builder, udpConnector);
+			}
+			server.addEndpoint(coapEndpoint);
+			LOGGER.info("IPv4 - multicast");
+		}
+		UDPConnector udpConnector = new UDPConnector(
+				new InetSocketAddress(InetAddress.getLoopbackAddress(), unicastPort));
+		udpConnector.setReuseAddress(true);
+		CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector)
+				.build();
+		server.addEndpoint(coapEndpoint);
+		LOGGER.info("loopback");
+	}
+
+	/**
+	 * From MulticastTestServer
+	 * 
+	 * @param builder
+	 * @param connector
+	 */
+	private static void createReceiver(UdpMulticastConnector.Builder builder, UDPConnector connector) {
+		UdpMulticastConnector multicastConnector = builder.setMulticastReceiver(true).build();
+		multicastConnector.setLoopbackMode(LOOPBACK);
+		try {
+			multicastConnector.start();
+		} catch (BindException ex) {
+			// binding to multicast seems to fail on windows
+			if (builder.getLocalAddress().getAddress().isMulticastAddress()) {
+				int port = builder.getLocalAddress().getPort();
+				builder.setLocalPort(port);
+				multicastConnector = builder.build();
+				multicastConnector.setLoopbackMode(LOOPBACK);
+				try {
+					multicastConnector.start();
+				} catch (IOException e) {
+					e.printStackTrace();
+					multicastConnector = null;
+				}
+			} else {
+				ex.printStackTrace();
+				multicastConnector = null;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			multicastConnector = null;
+		}
+		if (multicastConnector != null && connector != null) {
+			connector.addMulticastReceiver(multicastConnector);
+		}
 	}
 
 	private final static String bwPayload = "   The work on Constrained RESTful Environments (CoRE) aims at realizing\n"
