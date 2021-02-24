@@ -18,23 +18,26 @@
 package org.eclipse.californium.oscore.group.interop;
 
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.security.Provider;
 import java.security.Security;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import javax.xml.bind.DatatypeConverter;
 
 import org.eclipse.californium.core.CoapClient;
-import org.eclipse.californium.core.CoapHandler;
+import org.eclipse.californium.core.CoapObserveRelation;
 import org.eclipse.californium.core.CoapResponse;
-import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Request;
-import org.eclipse.californium.core.coap.CoAP.Type;
+import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
@@ -44,12 +47,12 @@ import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 import org.eclipse.californium.oscore.OSException;
 import org.eclipse.californium.oscore.group.GroupCtx;
-
 import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
+import org.eclipse.californium.core.test.CountingCoapHandler;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.OneKey;
@@ -107,6 +110,7 @@ public class MulticastObserveClient {
 	 * Header for network configuration.
 	 */
 	private static final String CONFIG_HEADER = "Californium CoAP Properties file for Multicast Client";
+
 	/**
 	 * Special network configuration defaults handler.
 	 */
@@ -130,14 +134,15 @@ public class MulticastObserveClient {
 	 */
 	// static final InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
+	static final InetAddress multicastIP = new InetSocketAddress("127.0.0.1", 0).getAddress();
+	//static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
 
 	/**
 	 * Port to send to.
 	 */
 	private static final int destinationPort = CoAP.DEFAULT_COAP_PORT;
 
-	// private static int cancelAfterMessages = 20;
+	private static int cancelAfterMessages = 20;
 
 	public static void main(String[] args)
 			throws InterruptedException, ConnectorException, IOException, CoseException, OSException {
@@ -190,133 +195,70 @@ public class MulticastObserveClient {
 	}
 
 	/**
-	 * Tests Observe functionality. Registers to a resource and listens for 10
-	 * notifications. After this the observation is cancelled.
+	 * Tests Observe functionality with OSCORE. Registers to a resource and
+	 * listens for notifications.
+	 * 
+	 * @param requestURI URI of the resource to be observerd
 	 * 
 	 * @throws InterruptedException if sleep fails
 	 */
-	public static void testObserve(String requestURI)
-			throws InterruptedException, ConnectorException, IOException, CoseException, OSException {
+	public static void testObserve(String requestURI) throws InterruptedException {
 
-		// Configure client
 		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		CoapEndpoint endpoint = new CoapEndpoint.Builder().setNetworkConfig(config).build();
 		CoapClient client = new CoapClient();
 		client.setEndpoint(endpoint);
-		client.setURI(requestURI);
 
-		// // Handler for Observe responses
-		// class ObserveHandler implements CoapHandler {
-		//
-		// int count = 1;
-		// int abort = 0;
-		//
-		// // Triggered when a Observe response is received
-		// @Override
-		// public void onLoad(CoapResponse response) {
-		// abort++;
-		//
-		// String content = response.getResponseText();
-		// System.out.println("NOTIFICATION (#" + count + "): " + content);
-		//
-		// count++;
-		// }
-		//
-		// @Override
-		// public void onError() {
-		// System.err.println("Observing failed");
-		// }
-		// }
+		// Handler for Observe responses
+		class ObserveHandler extends CountingCoapHandler {
+
+			// Triggered when a Observe response is received
+			@Override
+			protected void assertLoad(CoapResponse response) {
+
+				String content = response.getResponseText();
+				System.out.println("NOTIFICATION: " + content);
+
+			}
+		}
+
+		ObserveHandler handler = new ObserveHandler();
 
 		// Create request and initiate Observe relationship
-		byte[] token = new byte[8];
-		new Random().nextBytes(token);
+		byte[] token = Bytes.createBytes(new Random(), 8);
 
-		Request r = Request.newGet();
-		if (useOSCORE) {
-			r.getOptions().setOscore(Bytes.EMPTY);
-		}
-		r.setURI(requestURI);
-		r.setType(Type.NON);
+		Request r = createClientRequest(Code.GET, requestURI);
 		r.setToken(token);
 		r.setObserve();
 
-		// Normal way to start observations (for unicast):
-		// @SuppressWarnings("unused")
-		// CoapObserveRelation relation = client.observe(r, handler);
+		@SuppressWarnings("unused")
+		CoapObserveRelation relation = client.observe(r, handler);
 
-		// Start observation with an ObserveHandler:
-		// ObserveHandler handler = new ObserveHandler();
-		// client.advanced(handler, r);
-
-		// Also works to start it with a MultiCoapHandler:
-		client.advanced(handlerMulti, r);
-		while (handlerMulti.waitOn(HANDLER_TIMEOUT)) {
-			;
-		}
-		
-		// // Wait until a certain number of messages have been received
-		// while (handler.count <= cancelAfterMessages) {
-		// Thread.sleep(550);
-		//
-		// // Failsafe to abort test if needed
-		// if (handler.abort > cancelAfterMessages + 10) {
-		// System.exit(0);
-		// break;
-		// }
-		// }
-
-		// Now cancel the Observe and wait for the final response
-		// r = createClientRequest(Code.GET, resourceUri);
-		// r.setToken(token);
-		// r.getOptions().setObserve(1); // Deregister Observe
-		// r.send();
-		//
-		// Response resp = r.waitForResponse(1000);
-		//
-		// String content = resp.getPayloadString();
-		// System.out.println("Response (last): " + content);
+		// Wait until messages have been received
+		assertTrue(handler.waitOnLoadCalls(cancelAfterMessages, 40000, TimeUnit.MILLISECONDS));
 
 		client.shutdown();
 	}
 
-	private static final MultiCoapHandler handlerMulti = new MultiCoapHandler();
+	/**
+	 * Create an OSCORE request to be set from a client to the server
+	 * 
+	 * @param c Code of request
+	 * @param requestURI URI of resource
+	 * @return The request
+	 */
+	private static Request createClientRequest(Code c, String requestURI) {
 
-	private static class MultiCoapHandler implements CoapHandler {
+		Request r = new Request(c);
 
-		private boolean on;
+		r.setConfirmable(true);
+		r.setURI(requestURI);
 
-		public synchronized boolean waitOn(long timeout) {
-			on = false;
-			try {
-				wait(timeout);
-			} catch (InterruptedException e) {
-			}
-			return on;
+		if (useOSCORE) {
+			r.getOptions().setOscore(Bytes.EMPTY); // Use OSCORE
 		}
 
-		private synchronized void on() {
-			on = true;
-			notifyAll();
-		}
-
-		/**
-		 * Handle and parse incoming responses.
-		 */
-		@Override
-		public void onLoad(CoapResponse response) {
-			on();
-
-			// System.out.println("Receiving to: "); //TODO
-			System.out.println("Receiving from: " + response.advanced().getSourceContext().getPeerAddress());
-
-			System.out.println(Utils.prettyPrint(response));
-		}
-
-		@Override
-		public void onError() {
-			System.err.println("error");
-		}
-	};
+		return r;
+	}
 
 }

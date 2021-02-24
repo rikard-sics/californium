@@ -299,6 +299,7 @@ public class GroupInteropRikardEcdsaTests {
 		senderCtxEcdsa.setSenderSeq(0);
 
 		Request request = Request.newGet();
+		request.setMID(1000); // ?
 		request.setType(Type.NON);
 		request.getOptions().setOscore(Bytes.EMPTY);
 		request.setURI(groupEcdsa);
