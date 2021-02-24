@@ -309,6 +309,7 @@ public class GroupOSCOREInteropServer {
 		InetSocketAddress unicastAddress = new InetSocketAddress(listenIP, listenPort);
 		connector = new UDPConnector(unicastAddress, config);
 		return new CoapEndpoint.Builder().setConfiguration(config).setConnector(connector).build();
+
 	}
 
 	/**

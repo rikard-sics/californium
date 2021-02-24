@@ -43,7 +43,7 @@ import org.eclipse.californium.core.server.resources.Resource;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.UDPConnector;
 import org.eclipse.californium.cose.OneKey;
-import org.eclipse.californium.elements.Connector;
+import org.eclipse.californium.elements.UDPConnector;
 import org.eclipse.californium.elements.UdpMulticastConnector;
 import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.elements.util.StringUtil;
@@ -60,7 +60,7 @@ import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 public class GroupOSCOREReceiver {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GroupOSCOREReceiver.class);
-	
+
 	/**
 	 * Controls whether or not the receiver will reply to incoming multicast
 	 * non-confirmable requests.
@@ -92,7 +92,7 @@ public class GroupOSCOREReceiver {
 	// Use IPv4
 	private static boolean ipv4 = true;
 	private static final boolean LOOPBACK = false;
-	
+
 	/**
 	 * Port to listen to.
 	 */
@@ -333,6 +333,7 @@ public class GroupOSCOREReceiver {
 			server.addEndpoint(coapEndpoint);
 			LOGGER.info("IPv6 - multicast");
 		}
+
 
 		if (ipv4 && NetworkInterfacesUtil.isAnyIpv4()) {
 			Inet4Address ipv4 = NetworkInterfacesUtil.getMulticastInterfaceIpv4();
