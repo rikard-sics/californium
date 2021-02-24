@@ -34,7 +34,6 @@ import org.eclipse.californium.core.network.serialization.UdpDataSerializer;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.OneKey;
-import org.eclipse.californium.elements.EndpointContext;
 import org.eclipse.californium.elements.UdpEndpointContext;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
 import org.eclipse.californium.elements.util.Base64;
