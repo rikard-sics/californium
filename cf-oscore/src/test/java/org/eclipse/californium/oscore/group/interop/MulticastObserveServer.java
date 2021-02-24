@@ -17,8 +17,13 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore.group.interop;
 
+import java.io.IOException;
+import java.net.BindException;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.UnknownHostException;
 import java.security.Provider;
 import java.security.Security;
@@ -38,18 +43,24 @@ import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.OneKey;
-import org.eclipse.californium.elements.Connector;
+import org.eclipse.californium.elements.UDPConnector;
 import org.eclipse.californium.elements.UdpMulticastConnector;
+import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
+import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 import org.eclipse.californium.oscore.OSException;
 import org.eclipse.californium.oscore.group.GroupCtx;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 public class MulticastObserveServer {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(MulticastObserveServer.class);
 
 	static boolean useOSCORE = true;
 
@@ -95,6 +106,10 @@ public class MulticastObserveServer {
 	// static final InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
 	static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
+
+	// Use IPv4
+	private static boolean ipv4 = true;
+	private static final boolean LOOPBACK = false;
 
 	/**
 	 * Port to listen on.
@@ -152,7 +167,7 @@ public class MulticastObserveServer {
 	 * 
 	 * @throws InterruptedException if resource update task fails
 	 */
-	public static void createServer() throws InterruptedException, UnknownHostException {
+	public static void createServer() throws InterruptedException {
 
 		Random rand = new Random();
 		final int serverID = rand.nextInt(100);
@@ -161,10 +176,9 @@ public class MulticastObserveServer {
 
 		// Create server
 		NetworkConfig config = NetworkConfig.getStandard();
-		CoapEndpoint endpoint = createEndpoints(config);
 
 		server = new CoapServer(config);
-		server.addEndpoint(endpoint);
+		createEndpoints(server, listenPort, listenPort, config);
 
 		/** --- Resources for Observe tests follow --- **/
 
@@ -231,17 +245,6 @@ public class MulticastObserveServer {
 		server.start();
 	}
 
-	private static CoapEndpoint createEndpoints(NetworkConfig config) throws UnknownHostException {
-		int port = listenPort;
-
-		InetSocketAddress localAddress;
-		// Set the wildcard address (0.0.0.0)
-		localAddress = new InetSocketAddress(port);
-
-		Connector connector = new UdpMulticastConnector(localAddress, multicastIP);
-		return new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(connector).build();
-	}
-
 	// @After
 	// public void after() {
 	// if (null != server) {
@@ -249,4 +252,123 @@ public class MulticastObserveServer {
 	// }
 	// System.out.println("End " + getClass().getSimpleName());
 	// }
+
+	/**
+	 * Methods below from MulticastTestServer to set up multicast listening.
+	 */
+
+	/**
+	 * From MulticastTestServer
+	 * 
+	 * @param server
+	 * @param unicastPort
+	 * @param multicastPort
+	 * @param config
+	 */
+	private static void createEndpoints(CoapServer server, int unicastPort, int multicastPort, NetworkConfig config) {
+		// UDPConnector udpConnector = new UDPConnector(new
+		// InetSocketAddress(unicastPort));
+		// udpConnector.setReuseAddress(true);
+		// CoapEndpoint coapEndpoint = new
+		// CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector).build();
+
+		NetworkInterface networkInterface = NetworkInterfacesUtil.getMulticastInterface();
+		if (networkInterface == null) {
+			LOGGER.warn("No multicast network-interface found!");
+			throw new Error("No multicast network-interface found!");
+		}
+		LOGGER.info("Multicast Network Interface: {}", networkInterface.getDisplayName());
+
+		UdpMulticastConnector.Builder builder = new UdpMulticastConnector.Builder();
+
+		if (!ipv4 && NetworkInterfacesUtil.isAnyIpv6()) {
+			Inet6Address ipv6 = NetworkInterfacesUtil.getMulticastInterfaceIpv6();
+			LOGGER.info("Multicast: IPv6 Network Address: {}", StringUtil.toString(ipv6));
+			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv6, unicastPort));
+			udpConnector.setReuseAddress(true);
+			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector)
+					.build();
+
+			builder = new UdpMulticastConnector.Builder().setLocalAddress(multicastIP, multicastPort)
+					.addMulticastGroup(multicastIP, networkInterface);
+			createReceiver(builder, udpConnector);
+
+			/*
+			 * https://bugs.openjdk.java.net/browse/JDK-8210493 link-local
+			 * multicast is broken
+			 */
+			builder = new UdpMulticastConnector.Builder().setLocalAddress(multicastIP, multicastPort)
+					.addMulticastGroup(multicastIP, networkInterface);
+			createReceiver(builder, udpConnector);
+
+			server.addEndpoint(coapEndpoint);
+			LOGGER.info("IPv6 - multicast");
+		}
+
+		if (ipv4 && NetworkInterfacesUtil.isAnyIpv4()) {
+			Inet4Address ipv4 = NetworkInterfacesUtil.getMulticastInterfaceIpv4();
+			LOGGER.info("Multicast: IPv4 Network Address: {}", StringUtil.toString(ipv4));
+			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv4, unicastPort));
+			udpConnector.setReuseAddress(true);
+			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector)
+					.build();
+
+			builder = new UdpMulticastConnector.Builder().setLocalAddress(multicastIP, multicastPort)
+					.addMulticastGroup(multicastIP, networkInterface);
+			createReceiver(builder, udpConnector);
+
+			Inet4Address broadcast = NetworkInterfacesUtil.getBroadcastIpv4();
+			if (broadcast != null) {
+				// windows seems to fail to open a broadcast receiver
+				builder = new UdpMulticastConnector.Builder().setLocalAddress(broadcast, multicastPort);
+				createReceiver(builder, udpConnector);
+			}
+			server.addEndpoint(coapEndpoint);
+			LOGGER.info("IPv4 - multicast");
+		}
+		UDPConnector udpConnector = new UDPConnector(
+				new InetSocketAddress(InetAddress.getLoopbackAddress(), unicastPort));
+		udpConnector.setReuseAddress(true);
+		CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector)
+				.build();
+		server.addEndpoint(coapEndpoint);
+		LOGGER.info("loopback");
+	}
+
+	/**
+	 * From MulticastTestServer
+	 * 
+	 * @param builder
+	 * @param connector
+	 */
+	private static void createReceiver(UdpMulticastConnector.Builder builder, UDPConnector connector) {
+		UdpMulticastConnector multicastConnector = builder.setMulticastReceiver(true).build();
+		multicastConnector.setLoopbackMode(LOOPBACK);
+		try {
+			multicastConnector.start();
+		} catch (BindException ex) {
+			// binding to multicast seems to fail on windows
+			if (builder.getLocalAddress().getAddress().isMulticastAddress()) {
+				int port = builder.getLocalAddress().getPort();
+				builder.setLocalPort(port);
+				multicastConnector = builder.build();
+				multicastConnector.setLoopbackMode(LOOPBACK);
+				try {
+					multicastConnector.start();
+				} catch (IOException e) {
+					e.printStackTrace();
+					multicastConnector = null;
+				}
+			} else {
+				ex.printStackTrace();
+				multicastConnector = null;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			multicastConnector = null;
+		}
+		if (multicastConnector != null && connector != null) {
+			connector.addMulticastReceiver(multicastConnector);
+		}
+	}
 }
