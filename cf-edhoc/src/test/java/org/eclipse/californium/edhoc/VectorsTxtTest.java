@@ -30,7 +30,6 @@ import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.upokecenter.cbor.CBORObject;
@@ -40,21 +39,21 @@ import net.i2p.crypto.eddsa.Utils;
 /**
  * Class with JUnits to test the extended EDHOC test vectors from:
  * 
- * https://github.com/lake-wg/edhoc/blob/master/test-vectors/vectors.txt
+ * https://github.com/lake-wg/edhoc/blob/master/test-vectors-05/vectors.txt
  *
  */
 public class VectorsTxtTest {
 
 	// Lists and headers for the test vector values
-	static int numberOfVectors = 23;
+	static int numberOfVectors = 16;
 
 	static String newVectorSectionLabel = "Test Vectors for EHDOC";
 
 	static String methodCorrLabel = "METHOD_CORR (4 * method + corr) (int)";
 	static List<Integer> methodCorrList = new ArrayList<Integer>();
 
-	static String uncompressedSuitesILabel = "Uncompressed SUITES_I";
-	static List<byte[]> uncompressedSuitesIList = new ArrayList<byte[]>();
+	static String supportedCipherSuitesLabel = "Supported Cipher Suites";
+	static List<Integer> supportedCipherSuitesList = new ArrayList<Integer>();
 
 	static String initiatorEphemeralPrivateLabel = "X (Initiator's ephemeral private key)";
 	static List<byte[]> initiatorEphemeralPrivateList = new ArrayList<byte[]>();
@@ -93,11 +92,11 @@ public class VectorsTxtTest {
 				int methodCorr = Integer.valueOf(line);
 				methodCorrList.add(currentVector, methodCorr);
 
-			} else if (line.startsWith(uncompressedSuitesILabel)) {
+			} else if (line.startsWith(supportedCipherSuitesLabel)) {
 				line = br.readLine();
 
-				byte[] uncompressedSuitesI = Utils.hexToBytes(line.replace(" ", ""));
-				uncompressedSuitesIList.add(currentVector, uncompressedSuitesI);
+				int supportedCipherSuites = Integer.valueOf(line.replace(" ", ""), 16);
+				supportedCipherSuitesList.add(currentVector, supportedCipherSuites);
 
 			} else if (line.startsWith(initiatorEphemeralPrivateLabel)) {
 				line = br.readLine() + br.readLine();
@@ -137,7 +136,7 @@ public class VectorsTxtTest {
 
 		// Check that all test vectors were read
 		Assert.assertEquals(numberOfVectors, methodCorrList.size());
-		Assert.assertEquals(numberOfVectors, uncompressedSuitesIList.size());
+		Assert.assertEquals(numberOfVectors, supportedCipherSuitesList.size());
 		Assert.assertEquals(numberOfVectors, initiatorEphemeralPrivateList.size());
 		Assert.assertEquals(numberOfVectors, initiatorEphemeralPublicList.size());
 		Assert.assertEquals(numberOfVectors, connectionIdList.size());
@@ -154,6 +153,7 @@ public class VectorsTxtTest {
 	 * @return a list of integers contained
 	 */
 	private static List<Integer> parseUncompressedSuitesI(byte[] uncompressedSuitesI) {
+		System.out.println("Suites: " + Utils.bytesToHex(uncompressedSuitesI));
 		CBORObject cborArray = CBORObject.DecodeFromBytes(uncompressedSuitesI);
 		List<Integer> outputList = new ArrayList<Integer>();
 
@@ -185,7 +185,8 @@ public class VectorsTxtTest {
 		boolean initiator = true;
 		int methodCorr = methodCorrList.get(index);
 		byte[] connectionId = connectionIdList.get(index);
-		List<Integer> cipherSuites = parseUncompressedSuitesI(uncompressedSuitesIList.get(index));
+		List<Integer> cipherSuites = new ArrayList<Integer>();
+		cipherSuites.add(supportedCipherSuitesList.get(index)); // 1 suite only
 		byte[] ad1 = ad1List.get(index);
 		if (ad1.length == 0) { // Consider len 0 ad as null
 			ad1 = null;
@@ -228,149 +229,84 @@ public class VectorsTxtTest {
 		Assert.assertArrayEquals("Failed on test vector " + index, expectedMessage1, message1);
 	}
 
-	@Ignore
 	@Test
 	public void testWriteMessage1Vector00() {
 		testWriteMessage1Vector(0);
 	}
 
-	@Ignore
 	@Test
 	public void testWriteMessage1Vector01() {
 		testWriteMessage1Vector(1);
 	}
 
-	// Fails: Last byte differs
-	@Ignore
 	@Test
 	public void testWriteMessage1Vector02() {
 		testWriteMessage1Vector(2);
 	}
 
-	@Ignore
 	@Test
 	public void testWriteMessage1Vector03() {
 		testWriteMessage1Vector(3);
 	}
 
-	@Ignore
 	@Test
 	public void testWriteMessage1Vector04() {
 		testWriteMessage1Vector(4);
 	}
 
-	@Ignore
 	@Test
 	public void testWriteMessage1Vector05() {
 		testWriteMessage1Vector(5);
 	}
 
-	@Ignore
 	@Test
 	public void testWriteMessage1Vector06() {
 		testWriteMessage1Vector(6);
 	}
 
-	@Ignore
 	@Test
 	public void testWriteMessage1Vector07() {
 		testWriteMessage1Vector(7);
 	}
 
-	@Ignore
 	@Test
 	public void testWriteMessage1Vector08() {
 		testWriteMessage1Vector(8);
 	}
 
-	// Can't test suites encoding
-	@Ignore
 	@Test
 	public void testWriteMessage1Vector09() {
 		testWriteMessage1Vector(9);
 	}
 
-	// Can't test suites encoding
-	@Ignore
 	@Test
 	public void testWriteMessage1Vector10() {
 		testWriteMessage1Vector(10);
 	}
 
-	// Can't test suites encoding
-	@Ignore
 	@Test
 	public void testWriteMessage1Vector11() {
 		testWriteMessage1Vector(11);
 	}
 
-	@Ignore
 	@Test
 	public void testWriteMessage1Vector12() {
 		testWriteMessage1Vector(12);
 	}
 
-	@Ignore
 	@Test
 	public void testWriteMessage1Vector13() {
 		testWriteMessage1Vector(13);
 	}
 
-	@Ignore
 	@Test
 	public void testWriteMessage1Vector14() {
 		testWriteMessage1Vector(14);
 	}
 
-	@Ignore
 	@Test
 	public void testWriteMessage1Vector15() {
 		testWriteMessage1Vector(15);
-	}
-
-	// Fails: Last bytes differs
-	@Ignore
-	@Test
-	public void testWriteMessage1Vector16() {
-		testWriteMessage1Vector(16);
-	}
-
-	@Ignore
-	@Test
-	public void testWriteMessage1Vector17() {
-		testWriteMessage1Vector(17);
-	}
-
-	@Ignore
-	@Test
-	public void testWriteMessage1Vector18() {
-		testWriteMessage1Vector(18);
-	}
-
-	// Fails: Last bytes differs
-	@Ignore
-	@Test
-	public void testWriteMessage1Vector19() {
-		testWriteMessage1Vector(19);
-	}
-
-	@Ignore
-	@Test
-	public void testWriteMessage1Vector20() {
-		testWriteMessage1Vector(20);
-	}
-
-	@Ignore
-	@Test
-	public void testWriteMessage1Vector21() {
-		testWriteMessage1Vector(21);
-	}
-
-	// Fails: Last byte differs
-	@Ignore
-	@Test
-	public void testWriteMessage1Vector22() {
-		testWriteMessage1Vector(22);
 	}
 
 }
