@@ -44,7 +44,8 @@ public class EdhocCoapStackFactory implements CoapStackFactory {
 	@Override
 	// TODO: This method may need updating for the custom argument
 	// This is only for when useAsDefault is not used
-	public CoapStack createCoapStack(String protocol, NetworkConfig config, Outbox outbox, Object customStackArgument) {
+	public CoapStack createCoapStack(String protocol, String tag, NetworkConfig config, Outbox outbox,
+			Object customStackArgument) {
 		if (CoAP.isTcpProtocol(protocol)) {
 			throw new IllegalArgumentException("protocol \"" + protocol + "\" is not supported!");
 		}
@@ -52,7 +53,7 @@ public class EdhocCoapStackFactory implements CoapStackFactory {
 		if (customStackArgument != null) {
 			ctxDb = (OSCoreCtxDB) customStackArgument;
 		}
-		return new EdhocStack(config, outbox, ctxDb, edhocSessions);
+		return new EdhocStack(tag, config, outbox, ctxDb, edhocSessions);
 	}
 
 	/**
