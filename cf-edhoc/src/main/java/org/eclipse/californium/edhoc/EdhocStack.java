@@ -52,13 +52,14 @@ public class EdhocStack extends BaseCoapStack {
 	/**
 	 * Creates a new stack for UDP as the transport.
 	 * 
+	 * @param tag logging tag
 	 * @param config The configuration values to use.
 	 * @param outbox The adapter for submitting outbound messages to the
 	 *            transport.
 	 * @param ctxDb context DB.
 	 * @param edhocSessions map containing EDHOC sessions
 	 */
-	public EdhocStack(final NetworkConfig config, final Outbox outbox, final OSCoreCtxDB ctxDb,
+	public EdhocStack(String tag, final NetworkConfig config, final Outbox outbox, final OSCoreCtxDB ctxDb,
 			Map<CBORObject, EdhocSession> edhocSessions) {
 		super(outbox);
 		ReliabilityLayer reliabilityLayer;
@@ -70,7 +71,7 @@ public class EdhocStack extends BaseCoapStack {
 		}
 
 		Layer layers[] = new Layer[] { new ObjectSecurityContextLayer(ctxDb), new ExchangeCleanupLayer(config),
-				new ObserveLayer(config), new BlockwiseLayer(config), reliabilityLayer,
+				new ObserveLayer(config), new BlockwiseLayer(tag, false, config), reliabilityLayer,
 				new ObjectSecurityLayer(ctxDb), new EdhocLayer(ctxDb, edhocSessions) };
 		setLayers(layers);
 	}
