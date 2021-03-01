@@ -39,6 +39,7 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.EncryptCommon;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.StringUtil;
+import org.eclipse.californium.oscore.group.GroupDeterministicSenderCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
 import org.eclipse.californium.scandium.dtls.cipher.CCMBlockCipher;

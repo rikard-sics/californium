@@ -163,7 +163,7 @@ public class GroupSenderCtx extends OSCoreCtx {
 	 * 
 	 * @return the deterministic sender context
 	 */
-	protected GroupDeterministicSenderCtx getDeterministicSenderCtx() {
+	public GroupDeterministicSenderCtx getDeterministicSenderCtx() {
 		
 		return commonCtx.getDeterministicSenderCtx();
 		

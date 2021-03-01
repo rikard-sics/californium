@@ -29,6 +29,7 @@ import org.eclipse.californium.core.network.serialization.DataSerializer;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.DatagramWriter;
+import org.eclipse.californium.oscore.group.GroupDeterministicSenderCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
 import org.eclipse.californium.oscore.group.OptionEncoder;
@@ -275,15 +276,20 @@ public class OSSerializer {
 	 */
 	public static byte[] updateAADForGroup(OSCoreCtx ctx, byte[] aadBytes, Message message) {
 
-		CBORObject algCountersign;
-		CBORObject parCountersign;
+		CBORObject algCountersign = null;
+		CBORObject parCountersign = null;
 
 		if (ctx instanceof GroupRecipientCtx) {
 			GroupRecipientCtx recipientCtx = (GroupRecipientCtx) ctx;
 			algCountersign = recipientCtx.getAlgCountersign().AsCBOR();
 			parCountersign = CBORObject.FromObject(recipientCtx.getParCountersign());
-		} else {
+		} else if (ctx instanceof GroupSenderCtx) { // DET_REQ (else-if extended here)
 			GroupSenderCtx senderCtx = (GroupSenderCtx) ctx;
+			algCountersign = senderCtx.getAlgCountersign().AsCBOR();
+			parCountersign = CBORObject.FromObject(senderCtx.getParCountersign());
+		} else if (ctx instanceof GroupDeterministicSenderCtx) { // DET_REQ (new case)
+			GroupDeterministicSenderCtx detSenderCtx = (GroupDeterministicSenderCtx) ctx;
+			GroupSenderCtx senderCtx = detSenderCtx.getSenderCtx();
 			algCountersign = senderCtx.getAlgCountersign().AsCBOR();
 			parCountersign = CBORObject.FromObject(senderCtx.getParCountersign());
 		}

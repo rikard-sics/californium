@@ -52,6 +52,11 @@ public class GroupDeterministicSenderCtx extends OSCoreCtx {
 		return this;
 	}
 	
+	@Override
+	public GroupSenderCtx getSenderCtx() {
+		return commonCtx.senderCtx;
+	}
+	
 	/**
 	 * Get the hash algorithm
 	 * 

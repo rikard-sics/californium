@@ -59,7 +59,7 @@ public class RequestEncryptor extends Encryptor {
 		}
 
 		OSCoreCtx ctx = db.getContext(uri);
-
+		
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CTX_NULL);
 			throw new OSException(ErrorDescriptions.CTX_NULL);
@@ -80,11 +80,21 @@ public class RequestEncryptor extends Encryptor {
 		byte[] confidential = OSSerializer.serializeConfidentialData(options, request.getPayload(), realCode);
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
 		byte[] cipherText = encryptAndEncode(enc, ctx, request, false);
+		
+		// DET_REQ
+		// If it is a deterministic request, switch to the Deterministic Sender Context
+		boolean isDetReq = OptionEncoder.getDetReq(request.getOptions().getOscore());
+		if (isDetReq) {
+			ctx = ((GroupSenderCtx) ctx).getDeterministicSenderCtx();
+		}
 		compression(ctx, cipherText, request, false);
 
 		request.setOptions(OptionJuggle.prepareUoptions(request.getOptions()));
 
-		ctx.increaseSenderSeq();
+		// DET_REQ
+		if (!isDetReq) {
+			ctx.increaseSenderSeq();
+		}
 		if (ctx.isGroupContext()) {
 			assert (ctx instanceof GroupSenderCtx);
 		}

@@ -221,6 +221,7 @@ public class GroupCtx {
 				                                                 masterSalt, idContext, hashAlg, this);
 		
 		this.deterministicSenderCtx = deterministicSenderCtx;
+		this.deterministicSenderCtx.setIncludeContextId(true);
 	}
 
 	public GroupDeterministicSenderCtx getDeterministicSenderCtx() {
