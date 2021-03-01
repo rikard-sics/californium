@@ -42,6 +42,26 @@ import com.upokecenter.cbor.CBORObject;
  */
 public class OptionEncoder {
 
+	
+	/**
+	 * Generate an OSCORE option using parameters from the application.
+	 * 
+	 * @param pairwiseMode if pairwise mode is used
+	 * @param contextUri the uri associated with the sender context to use
+	 * @param rid the RID (KID) of the receiver
+	 * @param detReq set to true if the client is sending a deterministic request
+	 * @return the encode option value
+	 */
+	public static byte[] set(boolean pairwiseMode, String contextUri, byte[] rid, boolean detReq) {
+		CBORObject option = CBORObject.NewMap();
+		option.Add(1, pairwiseMode);
+		option.Add(2, contextUri);
+		option.Add(3, rid);
+		option.Add(4, false);
+
+		return option.EncodeToBytes();
+	}
+	
 	/**
 	 * Generate an OSCORE option using parameters from the application.
 	 * 
@@ -55,6 +75,7 @@ public class OptionEncoder {
 		option.Add(1, pairwiseMode);
 		option.Add(2, contextUri);
 		option.Add(3, rid);
+		option.Add(4, false);
 
 		return option.EncodeToBytes();
 	}
@@ -70,7 +91,7 @@ public class OptionEncoder {
 	public static byte[] set(boolean pairwiseMode, String contextUri) {
 		return set(pairwiseMode, contextUri, null);
 	}
-
+	
 	/**
 	 * Get the pairwise mode boolean value from the option.
 	 * 
