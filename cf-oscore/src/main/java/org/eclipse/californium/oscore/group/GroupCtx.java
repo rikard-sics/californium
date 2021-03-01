@@ -605,7 +605,7 @@ public class GroupCtx {
 
 		return sharedSecret;
 	}
-
+	
 	/**
 	 * Get the group encryption key from the common context (used for making a
 	 * keystream to encrypt the signature).
