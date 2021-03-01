@@ -130,6 +130,7 @@ public class GroupOSCORESenderDeterministic {
 	static final String requestPayload = "test";
 
 	/**
+<<<<<<< HEAD
 	 * Unicast address of the proxy, if used
 	 */
 	static final InetAddress proxyIP = new InetSocketAddress("127.0.0.1", 0).getAddress();
@@ -145,6 +146,8 @@ public class GroupOSCORESenderDeterministic {
 	static final String proxyResource = "/coap2coap";
 
 	/**
+=======
+>>>>>>> a9c45cbbc (Added separate Sender and Receiver for deterministic requests)
 	 * ED25519 curve value.
 	 * https://www.iana.org/assignments/cose/cose.xhtml#elliptic-curves
 	 */
