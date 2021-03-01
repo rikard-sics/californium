@@ -1745,9 +1745,6 @@ public final class OptionSet {
 		return this;
 	}
 	
-	
-	
-	
 	/**
 	 * Gets the NoResponse option.
 	 * 
