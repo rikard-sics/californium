@@ -150,6 +150,8 @@ public class GroupOSCORESenderDeterministic {
 
 	private final static byte[] rid0 = new byte[] { (byte) 0xCC }; // Dummy
 
+	private final static byte[] detSid = new byte[] { (byte) 0x37 }; // Sender ID of the deterministic client
+	
 	private final static byte[] group_identifier = new byte[] { 0x44, 0x61, 0x6c }; // GID
 
 	/* --- OSCORE Security Context information --- */
@@ -190,6 +192,9 @@ public class GroupOSCORESenderDeterministic {
 			commonCtx.addRecipientCtx(rid1, REPLAY_WINDOW, rid1_public_key);
 			commonCtx.addRecipientCtx(rid2, REPLAY_WINDOW, rid2_public_key);
 
+			commonCtx.addDeterministicSenderCtx(detSid, "SHA-256");
+			commonCtx.addDeterministicRecipientCtx(detSid, 0, "SHA-256");
+			
 			commonCtx.setResponsesIncludePartialIV(true);
 			commonCtx.setResponsesIncludePartialIV(true);
 
