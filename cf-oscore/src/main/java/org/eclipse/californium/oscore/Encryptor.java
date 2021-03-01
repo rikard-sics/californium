@@ -215,7 +215,7 @@ public abstract class Encryptor {
 					try {
 						String hashAlg = ((GroupDeterministicSenderCtx) ctx).getHashAlg();
 						hash = GroupCtx.computeHash(hashInput, hashAlg);
-					} catch (NoSuchAlgorithmException e) {						
+					} catch (NoSuchAlgorithmException e) {
 						System.err.println("Error while computing the hash for a deterministic request: " + e.getMessage());
 						throw new OSException(e.getMessage());
 					}
@@ -241,12 +241,6 @@ public abstract class Encryptor {
 					aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
 				}
 				
-				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with AAD "
-						+ Utils.toHexString(aad));
-
-				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with nonce "
-						+ Utils.toHexString(nonce));
-
 				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with AAD "
 						+ Utils.toHexString(aad));
 
