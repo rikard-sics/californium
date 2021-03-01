@@ -61,7 +61,7 @@ import net.i2p.crypto.eddsa.EdDSASecurityProvider;
  */
 public class GroupOSCOREReceiverDeterministic {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(GroupOSCOREReceiver.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(GroupOSCOREReceiverDeterministic.class);
 
 	/**
 	 * Controls whether or not the receiver will reply to incoming multicast
@@ -190,7 +190,7 @@ public class GroupOSCOREReceiverDeterministic {
 		CoapServer server = new CoapServer(config);
 		createEndpoints(server, listenPort, listenPort, config);
 		Endpoint endpoint = server.getEndpoint(listenPort);
-		server.add(new HelloWorldResource());
+		server.add(new HelloWorldDeterministicResource());
 
 		// Information about the receiver
 		System.out.println("==================");
@@ -210,12 +210,12 @@ public class GroupOSCOREReceiverDeterministic {
 		server.start();
 	}
 
-	private static class HelloWorldResource extends CoapResource {
+	private static class HelloWorldDeterministicResource extends CoapResource {
 
 		private int id;
 		private int count = 0;
 
-		private HelloWorldResource() {
+		private HelloWorldDeterministicResource() {
 			// set resource identifier
 			super("helloWorld"); // Changed
 
