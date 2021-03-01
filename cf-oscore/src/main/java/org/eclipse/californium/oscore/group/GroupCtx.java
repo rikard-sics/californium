@@ -252,7 +252,6 @@ public class GroupCtx {
 
 		this.groupEncryptionKey = deriveGroupEncryptionKey();
 	}
-	//
 	
 	/**
 	 * Add a deterministic sender context.
@@ -285,7 +284,7 @@ public class GroupCtx {
 	public byte[] getGmPublicKey() {
 		return gmPublicKey;
 	}
-
+	
 	public int getCountersignatureLen() {
 		switch (algSign) {
 		case EDDSA:
