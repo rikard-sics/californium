@@ -1487,7 +1487,7 @@ public final class OptionSet {
 		requestHash = null;
 		return this;
 	}
-	
+
 	/**
 	 * Gets the NoResponse option.
 	 * 
