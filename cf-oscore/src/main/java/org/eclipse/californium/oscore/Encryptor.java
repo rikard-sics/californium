@@ -41,6 +41,8 @@ import org.eclipse.californium.oscore.ContextRederivation.PHASE;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
+import org.eclipse.californium.oscore.group.GroupCtx;
+import org.eclipse.californium.oscore.group.GroupDeterministicSenderCtx;
 import org.eclipse.californium.oscore.group.OptionEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -165,16 +167,7 @@ public abstract class Encryptor {
 						message.getOptions());
 
 			}
-
-			if (isRequest) {
-				System.out.println("Deterministic request: " + isDetReq + "\n");
-			}
-			System.out.println("Encrypting outgoing " + message.getClass().getSimpleName());
-			System.out.println("Key " + Utils.toHexString(ctx.getSenderKey()));
-			System.out.println("PartialIV " + Utils.toHexString(partialIV));
-			System.out.println("Nonce " + Utils.toHexString(nonce));
-			System.out.println("AAD " + Utils.toHexString(aad));
-
+			
 			// Handle Group OSCORE messages
 			boolean groupModeMessage = false;
 			if (ctx.isGroupContext()) {
@@ -193,7 +186,7 @@ public abstract class Encryptor {
 
 				LOGGER.debug("Encrypting outgoing " + message.getClass().getSimpleName()
 						+ " using Group OSCORE. Pairwise mode: " + !groupModeMessage);
-				
+
 				// DET_REQ
 				// If it is a deterministic request, switch to the Deterministic Sender Context
 				if (isRequest && isDetReq) {
@@ -295,7 +288,7 @@ public abstract class Encryptor {
 							LOGGER.error("Error when deriving the deterministic encryption key: " + e.getMessage());
 							throw new OSException(e.getMessage());
 						}
-						
+
 					}
 				} else {
 					// If group mode is used prepare adding the signature
