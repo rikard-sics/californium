@@ -37,6 +37,8 @@ import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
+import net.i2p.crypto.eddsa.Utils;
+
 /**
  * 
  * Implements methods for serializing OSCORE data, creating AAD, reading data
@@ -267,6 +269,7 @@ public class OSSerializer {
 
 	/**
 	 * Update the external AAD for Group OSCORE by adding further parameters.
+	 * TODO: Add also newPartialIV as input parameter.
 	 * 
 	 * @param ctx the context used
 	 * @param aadBytes the current external AAD value
@@ -275,25 +278,37 @@ public class OSSerializer {
 	 */
 	public static byte[] updateAADForGroup(OSCoreCtx ctx, byte[] aadBytes, Message message) {
 
-		CBORObject algCountersign;
-		CBORObject parCountersign;
+		CBORObject algSign;
+		CBORObject algSignEnc;
+		CBORObject algKeyAgreement;
+
+		byte[] senderPublicKey;
+		byte[] gmPublicKey;
 
 		if (ctx instanceof GroupRecipientCtx) {
 			GroupRecipientCtx recipientCtx = (GroupRecipientCtx) ctx;
-			algCountersign = recipientCtx.getAlgCountersign().AsCBOR();
-			parCountersign = CBORObject.FromObject(recipientCtx.getParCountersign());
+			algSign = recipientCtx.getAlgSign().AsCBOR();
+			algSignEnc = recipientCtx.getAlgSignEnc().AsCBOR();
+			algKeyAgreement = recipientCtx.getAlgKeyAgreement().AsCBOR();
+			senderPublicKey = recipientCtx.getPublicKeyRaw();
+			gmPublicKey = recipientCtx.getCommonCtx().getGmPublicKey();
 		} else {
 			GroupSenderCtx senderCtx = (GroupSenderCtx) ctx;
-			algCountersign = senderCtx.getAlgCountersign().AsCBOR();
-			parCountersign = CBORObject.FromObject(senderCtx.getParCountersign());
+			algSign = senderCtx.getAlgSign().AsCBOR();
+			algSignEnc = senderCtx.getAlgSignEnc().AsCBOR();
+			algKeyAgreement = senderCtx.getAlgKeyAgreement().AsCBOR();
+			senderPublicKey = senderCtx.getPublicKeyRaw();
+			gmPublicKey = senderCtx.getCommonCtx().getGmPublicKey();
 		}
 
 		CBORObject groupAadEnc = CBORObject.DecodeFromBytes(aadBytes);
 
-		// Update index 1 which holds the algorithms array
+		// Build index 1 which holds the algorithms array
 		CBORObject algorithms = groupAadEnc.get(1);
-		algorithms.Add(algCountersign);
-		algorithms.Add(parCountersign);
+		algorithms.Add(algSignEnc);
+		algorithms.Add(algSign);
+		algorithms.Add(algKeyAgreement);
+
 		// Add update algorithms array to external AAD (used for encryption)
 		groupAadEnc.set(1, algorithms);
 
@@ -325,6 +340,16 @@ public class OSSerializer {
 
 		// Actually add OSCORE option to external AAD
 		groupAadEnc.Add(oscoreOption);
+
+		// Add the sender public key
+		// System.out.println("Sender public key: " +
+		// Utils.bytesToHex(senderPublicKey));
+		groupAadEnc.Add(CBORObject.FromObject(senderPublicKey));
+
+		// Add the Group Manager's public key
+		// System.out.println("Sender public key: " +
+		// Utils.bytesToHex(senderPublicKey));
+		groupAadEnc.Add(CBORObject.FromObject(gmPublicKey));
 
 		return groupAadEnc.EncodeToBytes();
 	}

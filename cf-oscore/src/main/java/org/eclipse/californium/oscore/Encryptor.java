@@ -27,6 +27,7 @@ import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
+import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.Attribute;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.CounterSign1;
@@ -81,6 +82,7 @@ public abstract class Encryptor {
 			byte[] partialIV = null;
 			byte[] nonce = null;
 			byte[] aad = null;
+			byte[] recipientId = null;
 
 			if (isRequest) {
 				partialIV = OSSerializer.processPartialIV(ctx.getSenderSeq());
@@ -93,9 +95,11 @@ public abstract class Encryptor {
 
 				// TODO: Include KID for responses here too?
 
-				byte[] recipientId = null;
+				recipientId = null;
 				int requestSeq = 0;
 
+				
+				// TODO: Get recipientId and seqNr from message as below
 				if (ctx.isGroupContext() == false) {
 					recipientId = ctx.getRecipientId();
 					requestSeq = ctx.getReceiverSeq();
@@ -170,6 +174,14 @@ public abstract class Encryptor {
 			enc.encrypt(key);
 
 			if (groupModeMessage) {
+				// Encrypt the signature.
+				if (isRequest || newPartialIV) {
+					encryptSignature(enc, (GroupSenderCtx) ctx, partialIV, ctx.getSenderId(), isRequest);
+				} else {
+					encryptSignature(enc, (GroupSenderCtx) ctx, partialIV, recipientId, isRequest);
+				}
+
+				// Append the signature
 				appendSignature(enc);
 			}
 
@@ -348,7 +360,7 @@ public abstract class Encryptor {
 		OneKey senderPrivateKey = senderCtx.getPrivateKey();
 		CounterSign1 sign = new CounterSign1(senderPrivateKey);
 
-		CBORObject signAlg = senderCtx.getAlgCountersign().AsCBOR();
+		CBORObject signAlg = senderCtx.getAlgSign().AsCBOR();
 		try {
 			sign.addAttribute(HeaderKeys.Algorithm, signAlg, Attribute.DO_NOT_SEND);
 		} catch (CoseException e) {
@@ -392,5 +404,57 @@ public abstract class Encryptor {
 		System.out.println("countersignBytes len: " + countersignBytes.length);
 		System.out.println("ciphertext len: " + ciphertext.length);
 		enc.setEncryptedContent(fullPayload);
+	}
+
+	private static void encryptSignature(Encrypt0Message enc, GroupSenderCtx ctx, byte[] partialIV, byte[] kid,
+			boolean isRequest) {
+
+		// Derive the keystream
+		String digest = "";
+		if (ctx.getAlgKeyAgreement().toString().contains("HKDF_256")) {
+			digest = "SHA256";
+		} else if (ctx.getAlgKeyAgreement().toString().contains("HKDF_512")) {
+			digest = "SHA512";
+		}
+
+		CBORObject info = CBORObject.NewArray();
+		int keyLength = ctx.getCommonCtx().getCountersignatureLen();
+
+		info = CBORObject.NewArray();
+		info.Add(kid);
+		info.Add(ctx.getIdContext());
+		info.Add(isRequest);
+		info.Add(keyLength);
+
+		byte[] groupEncryptionKey = ctx.getCommonCtx().getGroupEncryptionKey();
+		byte[] keystream = null;
+		try {
+			keystream = OSCoreCtx.deriveKey(groupEncryptionKey, partialIV, keyLength, digest, info.EncodeToBytes());
+
+		} catch (CoseException e) {
+			System.err.println(e.getMessage());
+		}
+
+		System.out.println("===");
+		System.out.println("E Signature keystream: " + Utils.toHexString(keystream));
+		System.out.println("E groupEncryptionKey: " + Utils.toHexString(groupEncryptionKey));
+		System.out.println("E partialIV: " + Utils.toHexString(partialIV));
+		System.out.println("E kid: " + Utils.toHexString(kid));
+		System.out.println("E IdContext: " + Utils.toHexString(ctx.getIdContext()));
+		System.out.println("E isRequest: " + isRequest);
+		System.out.println("===");
+
+		// Now actually encrypt the signature
+		byte[] countersignBytes = enc.getUnprotectedAttributes().get(HeaderKeys.CounterSignature0.AsCBOR())
+				.GetByteString();
+
+		byte[] encryptedCountersign = new byte[keystream.length];
+		for (int i = 0; i < keystream.length; i++) {
+			encryptedCountersign[i] = (byte) (countersignBytes[i] ^ keystream[i]);
+		}
+
+		// Replace the signature in the Encrypt0 object
+		enc.getUnprotectedAttributes().set(HeaderKeys.CounterSignature0.AsCBOR(),
+				CBORObject.FromObject(encryptedCountersign));
 	}
 }

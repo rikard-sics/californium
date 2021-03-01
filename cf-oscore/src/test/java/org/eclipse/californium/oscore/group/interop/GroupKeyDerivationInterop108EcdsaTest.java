@@ -194,13 +194,13 @@ public class GroupKeyDerivationInterop108EcdsaTest {
 	public void testContextsAlgCountersign() throws OSException {
 		// Check that the contexts use the correct countersignature algorithms
 
-		assertEquals(AlgorithmID.ECDSA_256, senderCtxEcdsa.getAlgCountersign());
-		assertEquals(AlgorithmID.ECDSA_256, recipient1CtxEcdsa.getAlgCountersign());
-		assertEquals(AlgorithmID.ECDSA_256, recipient2CtxEcdsa.getAlgCountersign());
+		assertEquals(AlgorithmID.ECDSA_256, senderCtxEcdsa.getAlgSign());
+		assertEquals(AlgorithmID.ECDSA_256, recipient1CtxEcdsa.getAlgSign());
+		assertEquals(AlgorithmID.ECDSA_256, recipient2CtxEcdsa.getAlgSign());
 
-		assertEquals(AlgorithmID.EDDSA, senderCtxEddsa.getAlgCountersign());
-		assertEquals(AlgorithmID.EDDSA, recipient1CtxEddsa.getAlgCountersign());
-		assertEquals(AlgorithmID.EDDSA, recipient2CtxEddsa.getAlgCountersign());
+		assertEquals(AlgorithmID.EDDSA, senderCtxEddsa.getAlgSign());
+		assertEquals(AlgorithmID.EDDSA, recipient1CtxEddsa.getAlgSign());
+		assertEquals(AlgorithmID.EDDSA, recipient2CtxEddsa.getAlgSign());
 	}
 
 	@Test
@@ -336,7 +336,7 @@ public class GroupKeyDerivationInterop108EcdsaTest {
 
 		// Create context using ECDSA_256
 
-		GroupCtx groupCtxEcdsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256);
+		GroupCtx groupCtxEcdsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256, null);
 
 		OneKey senderFullKey = new OneKey(OneKeyDecoder.parseDiagnosticToCbor(senderFullKeyEcdsa256));
 		groupCtxEcdsa.addSenderCtx(sid, senderFullKey);
@@ -365,7 +365,7 @@ public class GroupKeyDerivationInterop108EcdsaTest {
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 0);
 
-		GroupCtx groupCtxEddsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.EDDSA);
+		GroupCtx groupCtxEddsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.EDDSA, null);
 
 		senderFullKey = new OneKey(OneKeyDecoder.parseDiagnosticToCbor(senderFullKeyEddsa));
 		groupCtxEddsa.addSenderCtx(sid, senderFullKey);

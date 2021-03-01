@@ -25,6 +25,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Provider;
 import java.security.Security;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
@@ -56,7 +61,7 @@ import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 /**
  * Test sender configured to support multicast requests.
  */
-public class GroupOSCOREInteropClient {
+public class GroupOSCOREInteropClientNonTransparentBWAllMcast {
 
 	/**
 	 * File name for network configuration.
@@ -81,7 +86,7 @@ public class GroupOSCOREInteropClient {
 	/**
 	 * Time to wait for replies to the multicast request
 	 */
-	private static final int HANDLER_TIMEOUT = 2000;
+	private static final int HANDLER_TIMEOUT = 800;
 
 	/**
 	 * Whether to use OSCORE or not. (Case 1)
@@ -114,7 +119,7 @@ public class GroupOSCOREInteropClient {
 	static final String requestResource = "/oscore/hello/bw";
 
 	/**
-	 * The method to use for the request.
+	 * The method to use for the request. (Should be GET)
 	 */
 	static final CoAP.Code requestMethod = CoAP.Code.GET;
 
@@ -246,6 +251,38 @@ public class GroupOSCOREInteropClient {
 
 		client.setURI(requestURI);
 
+		// Information about the sender
+		System.out.println("==================");
+		System.out.println("*Interop sender");
+		System.out.println("Uses OSCORE: " + useOSCORE);
+		System.out.println("Request destination: " + requestURI);
+		System.out.println("Request destination port: " + destinationPort);
+		System.out.println("Using multicast: " + destinationIP.isMulticastAddress());
+		// System.out.println("Request method: " + multicastRequest.getCode());
+		System.out.println("Request payload: " + requestPayload);
+		System.out.println("Outgoing port: " + endpoint.getAddress().getPort());
+		System.out.println("==================");
+
+		try {
+			String host = new URI(client.getURI()).getHost();
+			int port = new URI(client.getURI()).getPort();
+			System.out.println("Sending to: " + host + ":" + port);
+		} catch (URISyntaxException e) {
+			System.err.println("Failed to parse destination URI");
+			e.printStackTrace();
+		}
+		System.out.println("Sending from: " + client.getEndpoint().getAddress());
+
+		
+		// //If observe is to be used
+		// if (requestURI.endsWith("observe")) {
+		// multicastRequest.setObserve();
+		// }
+		
+		/* === Sends the initial multicast request */
+		int blockSize = 0;
+		HashMap<String, String> returnedPayloads = new HashMap<String, String>();
+
 		Request multicastRequest = null;
 		if (requestMethod == Code.POST) {
 			multicastRequest = Request.newPost();
@@ -267,39 +304,87 @@ public class GroupOSCOREInteropClient {
 			// multicastRequest.getOptions().setOscore(OptionEncoder.set(true,
 			// requestURI, rid2));
 		}
-
-		// Information about the sender
-		System.out.println("==================");
-		System.out.println("*Interop sender");
-		System.out.println("Uses OSCORE: " + useOSCORE);
-		System.out.println("Request destination: " + requestURI);
-		System.out.println("Request destination port: " + destinationPort);
-		System.out.println("Using multicast: " + destinationIP.isMulticastAddress());
-		System.out.println("Request method: " + multicastRequest.getCode());
-		System.out.println("Request payload: " + requestPayload);
-		System.out.println("Outgoing port: " + endpoint.getAddress().getPort());
-		System.out.println("==================");
-
-		try {
-			String host = new URI(client.getURI()).getHost();
-			int port = new URI(client.getURI()).getPort();
-			System.out.println("Sending to: " + host + ":" + port);
-		} catch (URISyntaxException e) {
-			System.err.println("Failed to parse destination URI");
-			e.printStackTrace();
-		}
-		System.out.println("Sending from: " + client.getEndpoint().getAddress());
+		System.out.println("Initial Multicast Request:");
 		System.out.println(Utils.prettyPrint(multicastRequest));
-		
-		//If observe is to be used
-		if (requestURI.endsWith("observe")) {
-			multicastRequest.setObserve();
-		}
-		
-		// sends a multicast request
+
 		client.advanced(handler, multicastRequest);
 		while (handler.waitOn(HANDLER_TIMEOUT)) {
 			// Wait for responses
+		}
+
+		// Save responses
+		List<CoapResponse> responses = handler.getResponses();
+		for (int i = 0; i < responses.size(); i++) {
+			String senderAddress = responses.get(i).advanced().getSourceContext().toString();
+			String responsePayload = responses.get(i).getResponseText();
+			returnedPayloads.put(senderAddress, responsePayload);
+		}
+
+		// Set the block size based on the responses
+		blockSize = responses.get(0).getOptions().getBlock2().getSize();
+		System.out.println("Block size of first response: " + blockSize);
+
+		// Understand the full size of the resource
+		int nrOfBlocks = (responses.get(0).getOptions().getSize2() / blockSize) + 1;
+
+		// Calculate szx
+		int power = (int) (Math.log(blockSize) / Math.log(2));
+		int szx = power - 4;
+
+		/* === Now send the follow-up multicast requests */
+
+		// Loop over the block to retrieve
+		for (int block = 1; block < nrOfBlocks; block++) {
+
+			multicastRequest = null;
+			if (requestMethod == Code.POST) {
+				multicastRequest = Request.newPost();
+				multicastRequest.setPayload(requestPayload);
+			} else if (requestMethod == Code.GET) {
+				multicastRequest = Request.newGet();
+			}
+
+			// Use non-confirmable for multicast requests
+			if (destinationIP.isMulticastAddress()) {
+				multicastRequest.setType(Type.NON);
+			} else {
+				multicastRequest.setType(Type.CON);
+			}
+
+			if (useOSCORE) {
+				multicastRequest.getOptions().setOscore(Bytes.EMPTY);
+			}
+
+			// Apply block option
+			multicastRequest.getOptions().setBlock2(szx, false, block);
+
+			System.out.println("Follow up Multicast Request:");
+			System.out.println(Utils.prettyPrint(multicastRequest));
+
+			handler.clearResponses();
+			client.advanced(handler, multicastRequest);
+			while (handler.waitOn(HANDLER_TIMEOUT)) {
+				// Wait for responses
+			}
+
+			// Save response payloads
+			responses = handler.getResponses();
+			for (int i = 0; i < responses.size(); i++) {
+				String senderAddress = responses.get(i).advanced().getSourceContext().toString();
+				String responsePayload = responses.get(i).getResponseText();
+				String payloadSoFar = returnedPayloads.get(senderAddress);
+				returnedPayloads.put(senderAddress, payloadSoFar + responsePayload);
+			}
+
+		}
+
+		// Print all payloads
+		System.out.println("Full payloads: ");
+		Iterator<?> it = returnedPayloads.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry<?, ?> pair = (Map.Entry<?, ?>) it.next();
+			System.out.println(pair.getKey() + " =\r\n" + pair.getValue());
+			it.remove(); // avoids a ConcurrentModificationException
 		}
 
 		/** Case 9: Client sends replay **/
@@ -359,7 +444,17 @@ public class GroupOSCOREInteropClient {
 
 	private static class MultiCoapHandler implements CoapHandler {
 
+		List<CoapResponse> responses = new ArrayList<CoapResponse>();
+
 		private boolean on;
+
+		public List<CoapResponse> getResponses() {
+			return responses;
+		}
+
+		public void clearResponses() {
+			responses.clear();
+		}
 
 		public synchronized boolean waitOn(long timeout) {
 			on = false;
@@ -385,6 +480,7 @@ public class GroupOSCOREInteropClient {
 			// System.out.println("Receiving to: "); //TODO
 			System.out.println("Receiving from: " + response.advanced().getSourceContext().getPeerAddress());
 
+			responses.add(response);
 			System.out.println(Utils.prettyPrint(response));
 		}
 

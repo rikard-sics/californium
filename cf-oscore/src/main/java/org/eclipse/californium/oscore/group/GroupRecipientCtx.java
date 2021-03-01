@@ -18,6 +18,7 @@ package org.eclipse.californium.oscore.group;
 
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSException;
 import org.junit.Assert;
@@ -30,17 +31,20 @@ public class GroupRecipientCtx extends OSCoreCtx {
 
 	GroupCtx commonCtx;
 	OneKey otherEndpointPubKey;
+	byte[] otherEndpointPubKeyRaw = Bytes.EMPTY;
 
 	byte[] pairwiseRecipientKey;
 
 	GroupRecipientCtx(byte[] master_secret, boolean client, AlgorithmID alg, byte[] sender_id,
 			byte[] recipient_id, AlgorithmID kdf, Integer replay_size, byte[] master_salt, byte[] contextId,
-			OneKey otherEndpointPubKey, GroupCtx commonCtx) throws OSException {
+			OneKey otherEndpointPubKey, byte[] otherEndpointPubKeyRaw, GroupCtx commonCtx) throws OSException {
 		super(master_secret, client, alg, sender_id, recipient_id, kdf, replay_size, master_salt, contextId);
 
 		this.commonCtx = commonCtx;
 		this.otherEndpointPubKey = otherEndpointPubKey;
-
+		if (otherEndpointPubKeyRaw != null) {
+			this.otherEndpointPubKeyRaw = otherEndpointPubKeyRaw;
+		}
 	}
 
 	/**
@@ -54,6 +58,16 @@ public class GroupRecipientCtx extends OSCoreCtx {
 	}
 
 	/**
+	 * Get the raw bytes of the public key associated to this recipient context,
+	 * meaning the public key of the other endpoint.
+	 * 
+	 * @return the bytes of the public key of the other endpoint
+	 */
+	public byte[] getPublicKeyRaw() {
+		return otherEndpointPubKeyRaw;
+	}
+
+	/**
 	 * Get the pairwise recipient key for this context.
 	 * 
 	 * @return the pairwise recipient key
@@ -63,12 +77,30 @@ public class GroupRecipientCtx extends OSCoreCtx {
 	}
 
 	/**
-	 * Get the alg countersign value.
+	 * Get the alg sign value.
 	 * 
-	 * @return the alg countersign value
+	 * @return the alg sign value
 	 */
-	public AlgorithmID getAlgCountersign() {
-		return commonCtx.algCountersign;
+	public AlgorithmID getAlgSign() {
+		return commonCtx.algSign;
+	}
+
+	/**
+	 * Get the alg sign enc value.
+	 * 
+	 * @return the alg sign enc value
+	 */
+	public AlgorithmID getAlgSignEnc() {
+		return commonCtx.algSignEnc;
+	}
+
+	/**
+	 * Get the alg pairwise key agreement value.
+	 * 
+	 * @return the alg pairwise key agreement value.
+	 */
+	public AlgorithmID getAlgKeyAgreement() {
+		return commonCtx.algKeyAgreement;
 	}
 
 	/**
@@ -116,7 +148,7 @@ public class GroupRecipientCtx extends OSCoreCtx {
 		}
 
 		this.pairwiseRecipientKey = commonCtx.derivePairwiseRecipientKey(this.getRecipientId(), this.getRecipientKey(),
-				this.getPublicKey());
+				this.getPublicKey(), this.getPublicKeyRaw());
 
 	}
 
@@ -130,6 +162,15 @@ public class GroupRecipientCtx extends OSCoreCtx {
 		// stackTraceElements[2].toString());
 		return getSenderCtx().getSenderId();
 		// return sender_id;
+	}
+
+	/**
+	 * Get the common context associated to this GroupSenderCtx.
+	 * 
+	 * @return the common context associated to this GroupSenderCtx
+	 */
+	public GroupCtx getCommonCtx() {
+		return commonCtx;
 	}
 
 	// ------- TODO: Remove methods below -------
