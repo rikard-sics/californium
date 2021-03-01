@@ -66,6 +66,9 @@ public final class OptionNumberRegistry {
 
 	// RFC 8613
 	public static final int OSCORE			= 9;
+	
+	// TODO temporary assignment from the experimental range
+	public static final int REQUEST_HASH    = 65003;
 
 	// RFC 7967
 	public static final int NO_RESPONSE		= 258;
@@ -101,6 +104,9 @@ public final class OptionNumberRegistry {
 		public static final String Object_Security	= "Object-Security";
 
 		public static final String No_Response		= "No-Response";
+
+		public static final String Request_Hash     = "Request-Hash";
+
 	}
 
 	/**
@@ -159,6 +165,7 @@ public final class OptionNumberRegistry {
 		case ETAG:
 		case IF_MATCH:
 		case OSCORE:
+		case REQUEST_HASH:
 			return OptionFormat.OPAQUE;
 		default:
 			CustomOptionNumberRegistry custom = customRegistry;
@@ -317,6 +324,7 @@ public final class OptionNumberRegistry {
 		case SIZE1:
 		case SIZE2:
 		case NO_RESPONSE:
+		case REQUEST_HASH:
 			return true;
 		case ETAG:
 		case IF_MATCH:
@@ -525,6 +533,8 @@ public final class OptionNumberRegistry {
 			return Names.Object_Security;
 		case NO_RESPONSE:
 			return Names.No_Response;
+		case REQUEST_HASH:
+			return Names.Request_Hash;
 		default:
 			CustomOptionNumberRegistry custom = customRegistry;
 			if (custom != null) {
@@ -566,6 +576,7 @@ public final class OptionNumberRegistry {
 		else if (Names.Size1.equals(name))			return SIZE1;
 		else if (Names.Object_Security.equals(name)) return OSCORE;
 		else if (Names.No_Response.equals(name))	return NO_RESPONSE;
+		else if (Names.Request_Hash.equals(name))   return REQUEST_HASH;
 		else {
 			CustomOptionNumberRegistry custom = customRegistry;
 			if (custom != null) {
