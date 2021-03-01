@@ -217,7 +217,7 @@ public class GroupOSCORESenderDeterministic {
 		if (useOSCORE) {
 			//multicastRequest.getOptions().setOscore(Bytes.EMPTY);
 			
-			multicastRequest.getOptions().setOscore(OptionEncoder.set(true, requestURI, rid1, false));
+			multicastRequest.getOptions().setOscore(OptionEncoder.set(true, requestURI, rid1, true));
 			
 			// Set the request to be a deterministic request
 			//multicastRequest.getOptions().setOscore(OptionEncoder.set(true, requestURI, detSid, true));

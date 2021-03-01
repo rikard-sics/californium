@@ -81,8 +81,13 @@ public abstract class Encryptor {
 			byte[] partialIV = null;
 			byte[] nonce = null;
 			byte[] aad = null;
+			
+			boolean isDetReq = false; // Will be set to true in case of a deterministic request
 
 			if (isRequest) {
+				
+				isDetReq = OptionEncoder.getDetReq(message.getOptions().getOscore());
+				
 				partialIV = OSSerializer.processPartialIV(ctx.getSenderSeq());
 				nonce = OSSerializer.nonceGeneration(partialIV, ctx.getSenderId(), ctx.getCommonIV(),
 						ctx.getIVLength());
@@ -122,6 +127,9 @@ public abstract class Encryptor {
 
 			}
 
+			if (isRequest) {
+				System.out.println("Deterministic request: " + isDetReq + "\n");
+			}
 			System.out.println("Encrypting outgoing " + message.getClass().getSimpleName());
 			System.out.println("Key " + Utils.toHexString(ctx.getSenderKey()));
 			System.out.println("PartialIV " + Utils.toHexString(partialIV));

@@ -223,6 +223,12 @@ public class GroupCtx {
 		this.deterministicSenderCtx = deterministicSenderCtx;
 	}
 
+	public GroupDeterministicSenderCtx getDeterministicSenderCtx() {
+		
+		return this.deterministicSenderCtx;
+		
+	}
+	
 	int getCountersignatureLen() {
 		switch (algCountersign) {
 		case EDDSA:
