@@ -57,7 +57,7 @@ public class OptionEncoder {
 		option.Add(1, pairwiseMode);
 		option.Add(2, contextUri);
 		option.Add(3, rid);
-		option.Add(4, false);
+		option.Add(4, detReq);
 
 		return option.EncodeToBytes();
 	}

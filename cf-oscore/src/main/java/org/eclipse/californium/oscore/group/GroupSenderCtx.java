@@ -192,6 +192,17 @@ public class GroupSenderCtx extends OSCoreCtx {
 	protected GroupSenderCtx getSenderCtx() {
 		return this;
 	}
+	
+	/**
+	 * Get a reference to the Deterministic Sender Context
+	 * 
+	 * @return the deterministic sender context
+	 */
+	protected GroupDeterministicSenderCtx getDeterministicSenderCtx() {
+		
+		return commonCtx.getDeterministicSenderCtx();
+		
+	}
 
 	/**
 	 * Get the common context associated to this GroupSenderCtx.
