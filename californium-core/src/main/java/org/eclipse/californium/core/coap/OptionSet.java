@@ -81,6 +81,7 @@ public final class OptionSet {
 	private Integer      size2;
 	private Integer      observe;
 	private byte[]       oscore;
+	private byte[]       requestHash;
 
 	// Arbitrary options
 	private List<Option> others;
@@ -119,6 +120,7 @@ public final class OptionSet {
 		size2               = null;
 		observe             = null;
 		oscore              = null;
+		requestHash         = null;
 
 		others              = null; // new LinkedList<>();
 	}
@@ -158,6 +160,9 @@ public final class OptionSet {
 		if(origin.oscore != null) {
 			oscore          = origin.oscore.clone();
 		}
+		if(origin.requestHash != null) {
+			requestHash     = origin.requestHash.clone();
+		}
 		others              = copyList(origin.others);
 	}
 
@@ -191,6 +196,7 @@ public final class OptionSet {
 		size2 = null;
 		observe = null;
 		oscore = null;
+		requestHash = null;
 		if (others != null)
 			others.clear();
 	}
@@ -1396,7 +1402,7 @@ public final class OptionSet {
 	public boolean hasOscore() {
 		return oscore != null;
 	}
-
+		
 	/**
 	 * Replaces the Oscore option with oscore.
 	 * 
@@ -1421,6 +1427,53 @@ public final class OptionSet {
 		return this;
 	}
 
+	
+	
+	/**
+	 * Gets the byte array value of the Request-Hash option.
+	 * 
+	 * @return the Request-Hash value or null if the option is not present
+	 */
+	public byte[] getRequestHash() {
+		return requestHash;
+	}
+
+	/**
+	 * Checks if the Request-Hash option is present.
+	 * 
+	 * @return {@code true}, if present
+	 */
+	public boolean hasRequestHash() {
+		return requestHash != null;
+	}
+	
+	/**
+	 * Replaces the Request-Hash option with requestHash.
+	 * 
+	 * @param requestHash the new Request-Hash value
+	 * @return this OptionSet for a fluent API.
+	 * @throws NullPointerException if the requestHash is {@code null}
+	 * @throws IllegalArgumentException if the requestHash has more than 255 bytes.
+	 */
+	public OptionSet setRequestHash(byte[] requestHash) {
+		checkOptionValue(OptionNumberRegistry.REQUEST_HASH, requestHash);
+		this.requestHash = requestHash.clone();
+		return this;
+	}
+
+	/**
+	 * Removes the Request-Hash options.
+	 * 
+	 * @return this OptionSet for a fluent API.
+	 */
+	public OptionSet removeRequestHash() {
+		requestHash = null;
+		return this;
+	}
+	
+	
+	
+	
 	/**
 	 * Checks if an arbitrary option is present.
 	 * 
@@ -1512,6 +1565,8 @@ public final class OptionSet {
 			options.add(new Option(OptionNumberRegistry.SIZE2, getSize2()));
 		if (hasOscore())
 			options.add(new Option(OptionNumberRegistry.OSCORE, getOscore()));
+		if (hasRequestHash())
+			options.add(new Option(OptionNumberRegistry.REQUEST_HASH, getRequestHash()));
 
 		if (others != null)
 			options.addAll(others);
@@ -1597,6 +1652,9 @@ public final class OptionSet {
 			break;
 		case OptionNumberRegistry.OSCORE:
 			setOscore(option.getValue());
+			break;
+		case OptionNumberRegistry.REQUEST_HASH:
+			setRequestHash(option.getValue());
 			break;
 		default:
 			getOthersInternal().add(option);

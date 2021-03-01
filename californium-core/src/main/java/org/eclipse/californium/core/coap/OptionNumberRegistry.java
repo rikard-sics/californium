@@ -58,6 +58,9 @@ public final class OptionNumberRegistry {
 
 	//TODO temporary assignment
 	public static final int OSCORE			= 9;
+	
+	// TODO temporary assignment from the experimental range
+	public static final int REQUEST_HASH    = 65003;
 
 	/**
 	 * Option names.
@@ -88,6 +91,8 @@ public final class OptionNumberRegistry {
 		public static final String Size2			= "Size2";
 
 		public static final String Object_Security  = "Object-Security";
+		
+		public static final String Request_Hash     = "Request-Hash";
 	}
 
 	/**
@@ -138,6 +143,7 @@ public final class OptionNumberRegistry {
 		case ETAG:
 		case IF_MATCH:
 		case OSCORE:
+		case REQUEST_HASH:
 			return optionFormats.OPAQUE;
 		default:
 			return optionFormats.UNKNOWN;
@@ -239,6 +245,7 @@ public final class OptionNumberRegistry {
 		case BLOCK2:
 		case SIZE1:
 		case SIZE2:
+		case REQUEST_HASH:
 		default:
 			return true;
 		case ETAG:
@@ -417,6 +424,8 @@ public final class OptionNumberRegistry {
 			return Names.Size1;
 		case OSCORE:
 			return Names.Object_Security;
+		case REQUEST_HASH:
+			return Names.Request_Hash;
 		default:
 			return String.format("Unknown (%d)", optionNumber);
 		}
@@ -443,6 +452,7 @@ public final class OptionNumberRegistry {
 		else if (Names.Size2.equals(name))			return SIZE2;
 		else if (Names.Size1.equals(name))			return SIZE1;
 		else if (Names.Object_Security.equals(name)) return OSCORE;
+		else if (Names.Request_Hash.equals(name))   return REQUEST_HASH;
 		else return UNKNOWN;
 	}
 
