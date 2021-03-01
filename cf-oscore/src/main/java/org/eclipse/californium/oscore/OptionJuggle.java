@@ -87,6 +87,7 @@ public class OptionJuggle {
 		boolean hasProxyScheme = options.hasProxyScheme();
 		boolean hasMaxAge = options.hasMaxAge();
 		boolean hasObserve = options.hasObserve();
+		boolean hasRequestHash = options.hasRequestHash();
 
 		OptionSet ret = new OptionSet();
 
@@ -108,6 +109,10 @@ public class OptionJuggle {
 
 		if (hasObserve) {
 			ret.setObserve(options.getObserve());
+		}
+		
+		if (hasRequestHash) {
+			ret.setRequestHash(options.getRequestHash());
 		}
 
 		if (hasProxyUri) {
