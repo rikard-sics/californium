@@ -172,11 +172,6 @@ public class GroupKeyDerivationInteropJimTests {
 	 * Create a message based on Jim Test 1 Entity 1 data.
 	 * 
 	 * @throws OSException on failure
-<<<<<<< HEAD
-=======
-	 * @throws IOException on failure
-	 * @throws ConnectorException on failure
->>>>>>> 537de5033 (Rebased on latest Californium and fixed issues that occurred)
 	 */
 	@Test
 	public void testMessage1Creation() throws OSException {
