@@ -21,6 +21,8 @@ package org.eclipse.californium.oscore;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
@@ -36,6 +38,8 @@ import org.eclipse.californium.oscore.ContextRederivation.PHASE;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
+import org.eclipse.californium.oscore.group.GroupCtx;
+import org.eclipse.californium.oscore.group.GroupDeterministicSenderCtx;
 import org.eclipse.californium.oscore.group.OptionEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,12 +89,22 @@ public abstract class Encryptor {
 			byte[] nonce = null;
 			byte[] aad = null;
 			byte[] recipientId = null;
-
+			
+			// DET_REQ
 			boolean isDetReq = false; // Will be set to true in case of a deterministic request
+			byte[] hash = null; // Hash of the original CoAP request, to use for building a deterministic request
+			byte[] detKey = null; // Deterministic pairwise sender key, to use for encrypting a deterministic request
+			OSCoreCtx oldCtx = null; // auxiliary variable
 
 			if (isRequest) {
 				
+				// DET_REQ
+				// If it is a deterministic request, switch to the Deterministic Sender Context
 				isDetReq = OptionEncoder.getDetReq(message.getOptions().getOscore());
+				if (isDetReq) {
+					oldCtx = ctx;
+					ctx = ((GroupSenderCtx) ctx).getDeterministicSenderCtx();
+				}
 				
 				partialIV = OSSerializer.processPartialIV(ctx.getSenderSeq());
 				nonce = OSSerializer.nonceGeneration(partialIV, ctx.getSenderId(), ctx.getCommonIV(),
@@ -98,6 +112,12 @@ public abstract class Encryptor {
 				aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), ctx.getSenderSeq(), ctx.getSenderId(), message.getOptions());
 				enc.addAttribute(HeaderKeys.PARTIAL_IV, CBORObject.FromObject(partialIV), Attribute.UNPROTECTED);
 				enc.addAttribute(HeaderKeys.KID, CBORObject.FromObject(ctx.getSenderId()), Attribute.UNPROTECTED);
+				
+				// If it is a deterministic request, switch back to the Sender Context
+				if (isDetReq) {
+					ctx = oldCtx;
+				}
+				
 			} else {
 
 				// TODO: Include KID for responses here too?
@@ -153,9 +173,47 @@ public abstract class Encryptor {
 				LOGGER.debug("Encrypting outgoing " + message.getClass().getSimpleName()
 						+ " using Group OSCORE. Pairwise mode: " + !groupModeMessage);
 
+				// DET_REQ
+				// If it is a deterministic request, switch to the Deterministic Sender Context
+				if (isDetReq) {
+					ctx = ((GroupSenderCtx) ctx).getDeterministicSenderCtx();
+				}
+				
 				// Update external AAD value for Group OSCORE
 				aad = OSSerializer.updateAADForGroup(ctx, aad, message);
-
+				
+				// DET_REQ
+				// Additional steps in case of a deterministic request
+				if (isDetReq) {
+					detKey = ctx.getSenderKey();
+					
+					int hashInputLength = detKey.length + aad.length + enc.GetContent().length;
+					
+					int index = 0;
+					byte[] hashInput = new byte[hashInputLength];
+					System.arraycopy(detKey, 0, hashInput, index, detKey.length);
+					index += detKey.length;
+					System.arraycopy(aad, 0, hashInput, index, aad.length);
+					index += aad.length;
+					System.arraycopy(enc.GetContent(), 0, hashInput, index, enc.GetContent().length);
+					
+					// Compute the hash value
+					try {
+						String hashAlg = ((GroupDeterministicSenderCtx) ctx).getHashAlg();
+						hash = GroupCtx.computeHash(hashInput, hashAlg);
+					} catch (NoSuchAlgorithmException e) {						
+						System.err.println("Error while computing the hash for the a deterministic request: " + e.getMessage());
+						throw new OSException(e.getMessage());
+					}
+					
+					System.out.println("Deterministic Request - Hash value: " + Utils.toHexString(hash) + "\n");
+					
+					message.getOptions().setRequestHash(hash);
+					
+					// TODO Further update the external_aad with the hash value as 'request_kid'
+					
+				}
+				
 				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with AAD "
 						+ Utils.toHexString(aad));
 
@@ -172,9 +230,16 @@ public abstract class Encryptor {
 				if (pairwiseResponse) {
 					key = ((GroupSenderCtx) ctx).getPairwiseSenderKey(OptionJuggle.getRid(correspondingReqOption));
 				} else if (pairwiseRequest) {
-					// Get RID of intended recipient encoded in option
-					byte[] recipientRID = OptionEncoder.getRID(message.getOptions().getOscore());
-					key = ((GroupSenderCtx) ctx).getPairwiseSenderKey(recipientRID);
+					// DET_REQ (extended here)
+					if (!isDetReq) {
+						// Get RID of intended recipient encoded in option
+						byte[] recipientRID = OptionEncoder.getRID(message.getOptions().getOscore());
+						key = ((GroupSenderCtx) ctx).getPairwiseSenderKey(recipientRID);
+					}
+					else {
+						// TODO Derive the proper deterministic pairwise sender key
+						key = detKey;
+					}
 				} else {
 					// If group mode is used prepare adding the signature
 					prepareSignature(enc, ctx, aad, message);
@@ -189,6 +254,18 @@ public abstract class Encryptor {
 				ctx.setNonceHandover(nonce);
 			}
 
+			// DET_REQ
+			if (isRequest) {
+				System.out.println("\nDeterministic request: " + isDetReq + "\n");
+			}
+			// DET_REQ
+			// Moved down here
+			System.out.println("Encrypting outgoing " + message.getClass().getSimpleName());
+			System.out.println("Key " + Utils.toHexString(ctx.getSenderKey()));
+			System.out.println("PartialIV " + Utils.toHexString(partialIV));
+			System.out.println("Nonce " + Utils.toHexString(nonce));
+			System.out.println("AAD " + Utils.toHexString(aad));
+			
 			enc.setExternal(aad);
 			
 			enc.addAttribute(HeaderKeys.IV, CBORObject.FromObject(nonce), Attribute.DO_NOT_SEND);

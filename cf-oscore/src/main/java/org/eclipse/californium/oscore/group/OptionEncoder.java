@@ -136,6 +136,10 @@ public class OptionEncoder {
 	 * @return the value of the detReq; if true, the client is sending a deterministic request
 	 */
 	public static boolean getDetReq(byte[] optionBytes) {
+		if (optionBytes == null || optionBytes.length == 0) {
+			return false;
+		}
+		
 		CBORObject option = CBORObject.DecodeFromBytes(optionBytes);
 		return (option.get(4).AsBoolean());
 	}

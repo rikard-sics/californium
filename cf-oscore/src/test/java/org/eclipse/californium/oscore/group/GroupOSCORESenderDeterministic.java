@@ -87,7 +87,7 @@ public class GroupOSCORESenderDeterministic {
 	/**
 	 * Multicast address to send to (use the first line to set a custom one).
 	 */
-	// static final InetAddress multicastIP = new
+	// static final InetAddress multicastIP = new 
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
 	static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
 
@@ -185,7 +185,7 @@ public class GroupOSCORESenderDeterministic {
 		if (useOSCORE) {
 
 			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign);
-
+			
 			commonCtx.addSenderCtx(sid, sid_private_key);
 
 			commonCtx.addRecipientCtx(rid0, REPLAY_WINDOW, null);
@@ -215,12 +215,15 @@ public class GroupOSCORESenderDeterministic {
 		multicastRequest.setPayload(requestPayload);
 		multicastRequest.setType(Type.NON);
 		if (useOSCORE) {
-			//multicastRequest.getOptions().setOscore(Bytes.EMPTY);
 			
-			multicastRequest.getOptions().setOscore(OptionEncoder.set(true, requestURI, rid1, true));
+			// Protect the request in group modeGroup mode
+			// multicastRequest.getOptions().setOscore(Bytes.EMPTY);
 			
-			// Set the request to be a deterministic request
-			//multicastRequest.getOptions().setOscore(OptionEncoder.set(true, requestURI, detSid, true));
+			// Protect the request in pairwise mode for a particular group member
+			multicastRequest.getOptions().setOscore(OptionEncoder.set(true, requestURI, rid1, false));
+			
+			// Protect the request in pairwise mode as a deterministic request
+			// multicastRequest.getOptions().setOscore(OptionEncoder.set(true, requestURI, null, true));
 		}
 
 		// Information about the sender
