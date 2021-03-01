@@ -86,7 +86,7 @@ public class GroupOSCOREInteropClientNonTransparentBW {
 	/**
 	 * Time to wait for replies to the multicast request
 	 */
-	private static final int HANDLER_TIMEOUT = 500;
+	private static final int HANDLER_TIMEOUT = 800;
 
 	/**
 	 * Whether to use OSCORE or not. (Case 1)
@@ -119,7 +119,7 @@ public class GroupOSCOREInteropClientNonTransparentBW {
 	static final String requestResource = "/oscore/hello/bw";
 
 	/**
-	 * The method to use for the request.
+	 * The method to use for the request. (Should be GET)
 	 */
 	static final CoAP.Code requestMethod = CoAP.Code.GET;
 
@@ -378,9 +378,9 @@ public class GroupOSCOREInteropClientNonTransparentBW {
 
 		// Print all payloads
 		System.out.println("Full payloads: ");
-		Iterator it = returnedPayloads.entrySet().iterator();
+		Iterator<?> it = returnedPayloads.entrySet().iterator();
 		while (it.hasNext()) {
-			Map.Entry pair = (Map.Entry) it.next();
+			Map.Entry<?, ?> pair = (Map.Entry<?, ?>) it.next();
 			System.out.println(pair.getKey() + " =\r\n" + pair.getValue());
 			it.remove(); // avoids a ConcurrentModificationException
 		}
