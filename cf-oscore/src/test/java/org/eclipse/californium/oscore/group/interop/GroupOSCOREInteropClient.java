@@ -21,11 +21,11 @@ import static org.junit.Assert.assertArrayEquals;
 import java.io.File;
 import java.net.Inet6Address;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Provider;
 import java.security.Security;
+
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapResponse;
@@ -37,6 +37,7 @@ import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
+import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
@@ -49,9 +50,8 @@ import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
 import org.eclipse.californium.oscore.group.OneKeyDecoder;
-import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
-import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
+import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 /**
  * Test sender configured to support multicast requests.
@@ -86,20 +86,21 @@ public class GroupOSCOREInteropClient {
 	/**
 	 * Whether to use OSCORE or not. (Case 1)
 	 */
-	static final boolean useOSCORE = true;
+	static final boolean useOSCORE = false;
 
 	/**
 	 * Whether to use Group OSCORE or normal OSCORE.
 	 */
-	static final boolean GroupOSCORE = true;
+	static final boolean GroupOSCORE = false;
 
 	/**
 	 * Multicast address to send to (use the first line to set a custom one).
 	 */
 	// static final InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	// static final InetAddress destinationIP = CoAP.MULTICAST_IPV4;
-	static final InetAddress destinationIP = new InetSocketAddress("127.0.0.1", 0).getAddress();
+	static final InetAddress destinationIP = CoAP.MULTICAST_IPV4;
+	// static final InetAddress destinationIP = new
+	// InetSocketAddress("127.0.0.1", 0).getAddress();
 
 	/**
 	 * Port to send to.
@@ -110,7 +111,7 @@ public class GroupOSCOREInteropClient {
 	 * Resource to perform request against.
 	 */
 	// static final String requestResource = "/test";
-	static final String requestResource = "/oscore/hello/1";
+	static final String requestResource = "/oscore/hello/bw";
 
 	/**
 	 * The method to use for the request.
