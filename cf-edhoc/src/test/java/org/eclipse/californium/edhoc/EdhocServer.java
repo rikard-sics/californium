@@ -267,9 +267,11 @@ public class EdhocServer extends CoapServer {
 			/* Value from the test vectors, as binary serializations */
 			case 1:
 				if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
-					privateKeyBinary = null;
-					publicKeyBinary = null;
-					peerPublicKeyBinary = null;
+					privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("ec93c2f8a58f123daa982688e384f54c10c50a1d2c90c00304f648e58f14354c");
+					publicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("6f9702a66602d78f5e81bac1e0af01f8b52810c502e87ebb7c926c07426fd02f");
+					publicKeyBinaryY = net.i2p.crypto.eddsa.Utils.hexToBytes("C8D33274C71C9B3EE57D842BBF2238B8283CB410ECA216FB72A78EA7A870F800");
+					peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("cd4177ba62433375ede279b5e18e8b91bc3ed8f1e174474a26fc0edb44ea5373");
+					peerPublicKeyBinaryY = net.i2p.crypto.eddsa.Utils.hexToBytes("A0391DE29C5C5BADDA610D4E301EAAA18422367722289CD18CBE6624E89B9CFD");
 				}
 		 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
 		 			privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("df69274d713296e246306365372b4683ced5381bfcadcd440a24c391d2fedb94");
