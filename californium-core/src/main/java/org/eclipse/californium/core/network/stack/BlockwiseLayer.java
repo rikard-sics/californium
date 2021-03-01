@@ -1665,3 +1665,4 @@ public class BlockwiseLayer extends AbstractLayer {
 		return block1Transfers.size() == 0 && block2Transfers.size() == 0;
 	}
 }
+
