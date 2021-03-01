@@ -26,7 +26,10 @@ import java.net.URISyntaxException;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
@@ -276,60 +279,111 @@ public class GroupOSCOREInteropClientNonTransparentBW {
 		// multicastRequest.setObserve();
 		// }
 		
-		// sends a multicast request
+		/* === Sends the initial multicast request */
 		int blockSize = 0;
-		StringBuilder fullPayload = new StringBuilder();
-		for (int i = 0; i < 5; i++) {
+		HashMap<String, String> returnedPayloads = new HashMap<String, String>();
 
-			Request multicastRequest = null;
-			if (requestMethod == Code.POST) {
-				multicastRequest = Request.newPost();
-				multicastRequest.setPayload(requestPayload);
-			} else if (requestMethod == Code.GET) {
-				multicastRequest = Request.newGet();
-			}
-
-			// Use non-confirmable for multicast requests
-			if (destinationIP.isMulticastAddress()) {
-				multicastRequest.setType(Type.NON);
-			} else {
-				multicastRequest.setType(Type.CON);
-			}
-
-			 // After first request apply block options
-			 if (i >= 1) {
-				int power = (int) (Math.log(blockSize) / Math.log(2));
-				int szx = power - 4;
-				multicastRequest.getOptions().setBlock2(szx, false, i);
-			 }
-
-			if (useOSCORE) {
-				multicastRequest.getOptions().setOscore(Bytes.EMPTY);
-				// For pairwise request:
-				// multicastRequest.getOptions().setOscore(OptionEncoder.set(true,
-				// requestURI, rid2));
-			}
-			System.out.println("Request # " + i);
-			System.out.println(Utils.prettyPrint(multicastRequest));
-
-			client.advanced(handler, multicastRequest);
-			while (handler.waitOn(HANDLER_TIMEOUT)) {
-				// Wait for responses
-			}
-
-			List<CoapResponse> responses = handler.getResponses();
-
-			// Set the block size
-			if (i == 0) {
-				blockSize = responses.get(0).getOptions().getBlock2().getSize();
-				System.out.println("Block size of first response: " + blockSize);
-			}
-
-			// Fixme
-			fullPayload.append(responses.get(i).getResponseText());
+		Request multicastRequest = null;
+		if (requestMethod == Code.POST) {
+			multicastRequest = Request.newPost();
+			multicastRequest.setPayload(requestPayload);
+		} else if (requestMethod == Code.GET) {
+			multicastRequest = Request.newGet();
 		}
-		System.out.println("Full payload: ");
-		System.out.println(fullPayload);
+
+		// Use non-confirmable for multicast requests
+		if (destinationIP.isMulticastAddress()) {
+			multicastRequest.setType(Type.NON);
+		} else {
+			multicastRequest.setType(Type.CON);
+		}
+
+		if (useOSCORE) {
+			multicastRequest.getOptions().setOscore(Bytes.EMPTY);
+			// For pairwise request:
+			// multicastRequest.getOptions().setOscore(OptionEncoder.set(true,
+			// requestURI, rid2));
+		}
+		System.out.println("Initial Multicast Request:");
+		System.out.println(Utils.prettyPrint(multicastRequest));
+
+		client.advanced(handler, multicastRequest);
+		while (handler.waitOn(HANDLER_TIMEOUT)) {
+			// Wait for responses
+		}
+
+		// Save responses
+		List<CoapResponse> responses = handler.getResponses();
+		for (int i = 0; i < responses.size(); i++) {
+			String senderAddress = responses.get(i).advanced().getSourceContext().toString();
+			String responsePayload = responses.get(i).getResponseText();
+			returnedPayloads.put(senderAddress, responsePayload);
+		}
+
+		// Set the block size based on the responses
+		blockSize = responses.get(0).getOptions().getBlock2().getSize();
+		System.out.println("Block size of first response: " + blockSize);
+
+		// Understand the full size of the resource
+		int nrOfBlocks = (responses.get(0).getOptions().getSize2() / blockSize) + 1;
+
+		// Calculate szx
+		int power = (int) (Math.log(blockSize) / Math.log(2));
+		int szx = power - 4;
+
+		/* === Now send the follow-up unicast requests */
+
+		// Loop over the block to retrieve
+		for (int block = 1; block < nrOfBlocks; block++) {
+
+			// Loop over the received responses
+			for (int n = 0; n < responses.size(); n++) {
+
+				String senderAddress = responses.get(n).advanced().getSourceContext().toString();
+				CoapClient unicastClient = new CoapClient();
+
+				// Now set request URI to use unicast URI for this server
+				String unicastHost = senderAddress.replace("UDP", "").replace("(", "").replace(")", "");
+				String unicastRequestUri = "coap://" + unicastHost + requestResource;
+				unicastClient.setURI(unicastRequestUri); // FIXME: Supp. IPv6
+
+				Request unicastRequest = null;
+				if (requestMethod == Code.POST) {
+					unicastRequest = Request.newPost();
+					unicastRequest.setPayload(requestPayload);
+				} else if (requestMethod == Code.GET) {
+					unicastRequest = Request.newGet();
+				}
+
+				// Use confirmable for unicast requests
+				unicastRequest.setType(Type.CON);
+
+				if (useOSCORE) {
+					unicastRequest.getOptions().setOscore(Bytes.EMPTY);
+				}
+
+				// Apply block option
+				unicastRequest.getOptions().setBlock2(szx, false, block);
+
+				CoapResponse unicastResp = unicastClient.advanced(unicastRequest);
+				System.out.println(Utils.prettyPrint(unicastResp));
+
+				// Save responses
+				String responsePayload = unicastResp.getResponseText();
+				String payloadSoFar = returnedPayloads.get(senderAddress);
+				returnedPayloads.put(senderAddress, payloadSoFar + responsePayload);
+
+			}
+		}
+
+		// Print all payloads
+		System.out.println("Full payloads: ");
+		Iterator it = returnedPayloads.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry pair = (Map.Entry) it.next();
+			System.out.println(pair.getKey() + " =\r\n" + pair.getValue());
+			it.remove(); // avoids a ConcurrentModificationException
+		}
 
 		/** Case 9: Client sends replay **/
 		// senderCtx.setSenderSeq(0);
