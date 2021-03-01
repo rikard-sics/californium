@@ -243,9 +243,9 @@ public class GroupOSCORESenderDeterministic {
 
 	}
 
-	private static final MultiCoapHandler handler = new MultiCoapHandler();
+	private static final MultiCoapHandlerDeterministic handler = new MultiCoapHandlerDeterministic();
 
-	private static class MultiCoapHandler implements CoapHandler {
+	private static class MultiCoapHandlerDeterministic implements CoapHandler {
 
 		private boolean on;
 
