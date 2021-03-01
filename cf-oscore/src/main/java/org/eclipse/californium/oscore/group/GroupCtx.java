@@ -17,12 +17,17 @@
 package org.eclipse.californium.oscore.group;
 
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
 import javax.crypto.KeyAgreement;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
@@ -586,7 +591,7 @@ public class GroupCtx {
 
 		return sharedSecret;
 	}
-
+	
 	/**
 	 * Get the group encryption key from the common context (used for making a
 	 * keystream to encrypt the signature).
@@ -596,4 +601,78 @@ public class GroupCtx {
 	public byte[] getGroupEncryptionKey() {
 		return groupEncryptionKey;
 	}
+	
+    /**
+     *  Compute a hash value using the specified algorithm 
+     * @param input   The content to hash
+     * @param algorithm   The name of the hash algorithm to use
+     * @return  the computed hash, or null in case of invalid input
+     */
+	public static byte[] computeHash (byte[] input, String algorithm) throws NoSuchAlgorithmException {
+		
+		if (input == null)
+			return null;
+		
+		MessageDigest myDigest;
+		
+		if (algorithm.equals("SHA-256"))
+			myDigest = MessageDigest.getInstance("SHA-256");
+		else if (algorithm.equals("SHA-512"))
+			myDigest = MessageDigest.getInstance("SHA-512");
+		else
+			return null;
+		
+		myDigest.reset();
+		myDigest.update(input);
+		return myDigest.digest();
+		
+	}
+
+	/**
+	 * HKDF Extract-and-Expand.
+	 * 
+	 * @param salt optional salt value
+	 * @param ikm input keying material
+	 * @param info context and application specific information
+	 * @param len length of output keying material in octets
+	 * @return output keying material
+	 * 
+	 * @throws InvalidKeyException if the HMAC procedure fails
+	 * @throws NoSuchAlgorithmException if an unknown HMAC is used
+	 */
+	static byte[] extractExpand(byte[] salt, byte[] ikm, byte[] info, int len)
+			throws InvalidKeyException, NoSuchAlgorithmException {
+
+		final String digest = "SHA256"; // Hash to use
+
+		String HMAC_ALG_NAME = "Hmac" + digest;
+		Mac hmac = Mac.getInstance(HMAC_ALG_NAME);
+		int hashLen = hmac.getMacLength();
+
+		// Perform extract
+		if (salt.length == 0) {
+			salt = new byte[] { 0x00 };
+		}
+		hmac.init(new SecretKeySpec(salt, HMAC_ALG_NAME));
+		byte[] prk = hmac.doFinal(ikm);
+
+		// Perform expand
+		hmac.init(new SecretKeySpec(prk, HMAC_ALG_NAME));
+		int c = (len / hashLen) + 1;
+		byte[] okm = new byte[len];
+		int maxLen = (hashLen * c > len) ? hashLen * c : len;
+		byte[] T = new byte[maxLen];
+		byte[] last = new byte[0];
+		for (int i = 0; i < c; i++) {
+			hmac.reset();
+			hmac.update(last);
+			hmac.update(info);
+			hmac.update((byte) (i + 1));
+			last = hmac.doFinal();
+			System.arraycopy(last, 0, T, i * hashLen, hashLen);
+		}
+		System.arraycopy(T, 0, okm, 0, len);
+		return okm;
+	}
+
 }
