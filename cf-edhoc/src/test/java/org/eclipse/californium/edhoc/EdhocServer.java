@@ -62,8 +62,8 @@ public class EdhocServer extends CoapServer {
 
 	private static final boolean debugPrint = true;
 	
-	private static final int COAP_PORT = NetworkConfig.getStandard().getInt(NetworkConfig.Keys.COAP_PORT);
-	// private static final int COAP_PORT = 5690;
+	//private static final int COAP_PORT = NetworkConfig.getStandard().getInt(NetworkConfig.Keys.COAP_PORT);
+	private static final int COAP_PORT = 5690;
 	
 	private final static Provider EdDSA = new EdDSASecurityProvider();
 	
@@ -83,7 +83,7 @@ public class EdhocServer extends CoapServer {
     
     // The type of the credential of this peer and the other peer
     // Possible values: CRED_TYPE_RPK ; CRED_TYPE_X5T ; CRED_TYPE_X5U ; CRED_TYPE_X5CHAIN
-    private static int credType = Constants.CRED_TYPE_X5T;
+    private static int credType = Constants.CRED_TYPE_X5CHAIN;
     
     // The CRED used for the identity key of this peer
     private static byte[] cred = null;
