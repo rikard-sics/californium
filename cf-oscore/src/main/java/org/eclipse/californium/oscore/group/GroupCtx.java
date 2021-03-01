@@ -63,6 +63,12 @@ public class GroupCtx {
 	// References to the associated recipient contexts
 	public HashMap<ByteId, GroupRecipientCtx> recipientCtxMap;
 
+	// Reference to the associated deterministic sender context
+	GroupDeterministicSenderCtx deterministicSenderCtx;
+	
+	// Reference to the associated deterministic recipient context
+	GroupDeterministicRecipientCtx deterministicRecipientCtx;
+	
 	// References to public keys without existing contexts
 	// (For dynamic context generation)
 	// TODO: Avoid double storage
@@ -148,6 +154,27 @@ public class GroupCtx {
 		recipientCtxMap.put(new ByteId(recipientId), recipientCtx);
 
 	}
+	
+	/**
+	 * Add a deterministic recipient context.
+	 * 
+	 * @param recipientId, i.e. the Sender Id of the deterministic client
+	 * @param hash algorithm
+	 * @throws OSException
+	 */
+	public void addDeterministicRecipientCtx(byte[] recipientId, int replayWindow, String hashAlg) throws OSException {
+		
+		if (deterministicRecipientCtx != null) {
+			throw new OSException("Cannot add more than one Deterministic Recipient Context.");
+		}
+		
+		GroupDeterministicRecipientCtx deterministicRecipientCtx = new GroupDeterministicRecipientCtx(
+				                                                         masterSecret, false, aeadAlg, null, recipientId, hkdfAlg,
+				                                                         replayWindow, masterSalt, idContext, hashAlg, this);
+
+		this.deterministicRecipientCtx = deterministicRecipientCtx;
+
+	}
 
 	/**
 	 * Add a sender context.
@@ -212,7 +239,27 @@ public class GroupCtx {
 
 		this.groupEncryptionKey = deriveGroupEncryptionKey();
 	}
-	//
+	
+	/**
+	 * Add a deterministic sender context.
+	 * 
+	 * @param senderId of the deterministic client
+	 * @param hash algorithm
+	 * @throws OSException
+	 */
+	public void addDeterministicSenderCtx(byte[] senderId, String hashAlg) throws OSException {
+
+		if (deterministicSenderCtx != null) {
+			throw new OSException("Cannot add more than one Deterministic Sender Context.");
+		}
+
+		GroupDeterministicSenderCtx deterministicSenderCtx = new GroupDeterministicSenderCtx(
+				                                                 masterSecret, false, aeadAlg,
+				                                                 senderId, null, hkdfAlg, 0,
+				                                                 masterSalt, idContext, hashAlg, this);
+		
+		this.deterministicSenderCtx = deterministicSenderCtx;
+	}
 
 	/**
 	 * Retrieve the public key for the Group Manager associated to this context.
@@ -347,6 +394,11 @@ public class GroupCtx {
 			recipientCtx.derivePairwiseKey();
 
 			db.addContext(recipientCtx);
+		}
+		
+		// Add the deterministic recipient context
+		if (deterministicRecipientCtx != null) {
+			db.addContext(deterministicRecipientCtx);
 		}
 
 	}

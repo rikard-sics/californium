@@ -167,6 +167,8 @@ public class GroupOSCOREReceiverDeterministic {
 			System.out.println("Starting with sid 0x52.");
 		}
 
+		final byte[] detSid = new byte[] { (byte) 0x37 }; // Sender ID of the deterministic client
+		
 		// If OSCORE is being used set the context information
 		if (useOSCORE) {
 
@@ -176,6 +178,9 @@ public class GroupOSCOREReceiverDeterministic {
 
 			commonCtx.addRecipientCtx(rid1, REPLAY_WINDOW, rid1_public_key);
 
+			commonCtx.addDeterministicSenderCtx(detSid, "SHA-256");
+			commonCtx.addDeterministicRecipientCtx(detSid, 0, "SHA-256");
+			
 			commonCtx.setResponsesIncludePartialIV(true);
 
 			db.addContext(uriLocal, commonCtx);
