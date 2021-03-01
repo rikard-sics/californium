@@ -166,6 +166,9 @@ public abstract class Encryptor {
 
 			}
 
+			if (isRequest) {
+				System.out.println("Deterministic request: " + isDetReq + "\n");
+			}
 			System.out.println("Encrypting outgoing " + message.getClass().getSimpleName());
 			System.out.println("Key " + Utils.toHexString(ctx.getSenderKey()));
 			System.out.println("PartialIV " + Utils.toHexString(partialIV));
