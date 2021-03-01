@@ -73,6 +73,9 @@ public final class OptionNumberRegistry {
 
 	// RFC 8613
 	public static final int OSCORE			= 9;
+	
+	// TODO temporary assignment from the experimental range
+	public static final int REQUEST_HASH    = 65003;
 
 	// RFC 7967
 	public static final int NO_RESPONSE		= 258;
@@ -108,6 +111,9 @@ public final class OptionNumberRegistry {
 		public static final String Object_Security	= "Object-Security";
 
 		public static final String No_Response		= "No-Response";
+
+		public static final String Request_Hash     = "Request-Hash";
+
 	}
 
 	/**
@@ -126,7 +132,6 @@ public final class OptionNumberRegistry {
 		INTEGER, STRING, OPAQUE, UNKNOWN, EMPTY
 	}
 
-	/**
 	 * Checks whether an option is critical.
 	 * 
 	 * @param optionNumber
@@ -207,6 +212,7 @@ public final class OptionNumberRegistry {
 	}
 
 	/**
+
 	 * Checks if is uri option.
 	 * 
 	 * @param optionNumber

@@ -108,6 +108,7 @@ public final class OptionSet {
 	private IntegerOption observe;
 	private OpaqueOption oscore;
 	private NoResponseOption no_response;
+	private OpaqueOption requestHash;
 
 	// Arbitrary options
 	private List<Option> others;
@@ -141,6 +142,7 @@ public final class OptionSet {
 		observe = null;
 		oscore = null;
 		no_response = null;
+		requestHash = null;
 
 		others = null; // new LinkedList<>();
 	}
@@ -178,6 +180,7 @@ public final class OptionSet {
 		observe = origin.observe;
 		oscore = origin.oscore;
 		no_response = origin.no_response;
+		requestHash = origin.requestHash;
 		others = copyList(origin.others);
 	}
 
@@ -207,6 +210,7 @@ public final class OptionSet {
 		observe = null;
 		oscore = null;
 		no_response = null;
+		requestHash = null;
 		clear(others);
 	}
 
@@ -1673,7 +1677,7 @@ public final class OptionSet {
 	public boolean hasOscore() {
 		return oscore != null;
 	}
-
+		
 	/**
 	 * Replaces the Oscore option with oscore.
 	 * 
@@ -1697,6 +1701,53 @@ public final class OptionSet {
 		return this;
 	}
 
+	
+	
+	/**
+	 * Gets the byte array value of the Request-Hash option.
+	 * 
+	 * @return the Request-Hash value or null if the option is not present
+	 */
+	public byte[] getRequestHash() {
+		OpaqueOption option = requestHash;
+		return option == null ? null : option.getValue();
+	}
+
+	/**
+	 * Checks if the Request-Hash option is present.
+	 * 
+	 * @return {@code true}, if present
+	 */
+	public boolean hasRequestHash() {
+		return requestHash != null;
+	}
+	
+	/**
+	 * Replaces the Request-Hash option with requestHash.
+	 * 
+	 * @param requestHash the new Request-Hash value
+	 * @return this OptionSet for a fluent API.
+	 * @throws NullPointerException if the requestHash is {@code null}
+	 * @throws IllegalArgumentException if the requestHash has more than 255 bytes.
+	 */
+	public OptionSet setRequestHash(byte[] requestHash) {
+		this.requestHash = StandardOptionRegistry.REQUEST_HASH.create(requestHash.clone());
+		return this;
+	}
+
+	/**
+	 * Removes the Request-Hash options.
+	 * 
+	 * @return this OptionSet for a fluent API.
+	 */
+	public OptionSet removeRequestHash() {
+		requestHash = null;
+		return this;
+	}
+	
+	
+	
+	
 	/**
 	 * Gets the NoResponse option.
 	 * 
@@ -1873,6 +1924,9 @@ public final class OptionSet {
 		case OptionNumberRegistry.NO_RESPONSE:
 			result = no_response;
 			break;
+		case OptionNumberRegistry.REQUEST_HASH:
+			result = requestHash;
+			break;
 		default:
 			result = getOtherOption(definition);
 		}
@@ -2036,6 +2090,8 @@ public final class OptionSet {
 			options.add(size1);
 		if (hasNoResponse())
 			options.add(no_response);
+		if (hasRequestHash())
+			options.add(requestHash);
 
 		List<Option> others = this.others;
 		if (others != null) {
@@ -2228,6 +2284,13 @@ public final class OptionSet {
 				return this;
 			}
 			no_response = (NoResponseOption) option;
+			break;
+		case OptionNumberRegistry.REQUEST_HASH:
+			if (requestHash != null) {
+				handleAdditionalNonRepeatableOption(option);
+				return this;
+			}
+			requestHash = (OpaqueOption) option;
 			break;
 		default:
 			addOrdered(getOthersInternal(), option);
