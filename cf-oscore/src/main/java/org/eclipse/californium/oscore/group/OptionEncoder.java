@@ -91,7 +91,7 @@ public class OptionEncoder {
 	public static byte[] set(boolean pairwiseMode, String contextUri) {
 		return set(pairwiseMode, contextUri, null);
 	}
-
+	
 	/**
 =======
 >>>>>>> ebfad07c0 (Let application set group-/pairwise-mode on request & add JUnit tests)
