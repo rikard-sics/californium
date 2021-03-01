@@ -221,7 +221,7 @@ public class GroupOSCORESenderDeterministic {
 	private final static byte[] group_identifier = new byte[] { (byte) 0xdd, (byte) 0x11 }; // GID
 	
 	
-	
+
 	/* --- OSCORE Security Context information --- */
 
 	public static void main(String args[]) throws Exception {
