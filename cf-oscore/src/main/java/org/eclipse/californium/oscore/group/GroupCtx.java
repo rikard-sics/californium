@@ -256,7 +256,7 @@ public class GroupCtx {
 
 		this.groupEncryptionKey = deriveGroupEncryptionKey();
 	}
-
+	
 	/**
 	 * Add a deterministic sender context.
 	 * 
