@@ -609,7 +609,7 @@ public class GroupCtx {
 	public byte[] getGroupEncryptionKey() {
 		return groupEncryptionKey;
 	}
-	
+
     /**
      *  Compute a hash value using the specified algorithm 
      * @param input   The content to hash
@@ -682,5 +682,5 @@ public class GroupCtx {
 		System.arraycopy(T, 0, okm, 0, len);
 		return okm;
 	}
-
+	
 }
