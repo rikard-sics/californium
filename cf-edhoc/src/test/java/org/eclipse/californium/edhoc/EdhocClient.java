@@ -225,9 +225,11 @@ public class EdhocClient {
 			/* Value from the test vectors, as binary serializations */
 			case 1:
 				if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
-					privateKeyBinary = null;
-					publicKeyBinary = null;
-					peerPublicKeyBinary = null;
+					privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("04f347f2bead699adb247344f347f2bdac93c7f2bead6a9d2a9b24754a1e2b62");
+					publicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("cd4177ba62433375ede279b5e18e8b91bc3ed8f1e174474a26fc0edb44ea5373");
+					publicKeyBinaryY = net.i2p.crypto.eddsa.Utils.hexToBytes("A0391DE29C5C5BADDA610D4E301EAAA18422367722289CD18CBE6624E89B9CFD");
+					peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("6f9702a66602d78f5e81bac1e0af01f8b52810c502e87ebb7c926c07426fd02f");
+					peerPublicKeyBinaryY = net.i2p.crypto.eddsa.Utils.hexToBytes("C8D33274C71C9B3EE57D842BBF2238B8283CB410ECA216FB72A78EA7A870F800");
 				}
 		 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
 		 			privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("2ffce7a0b2b825d397d0cb54f746e3da3f27596ee06b5371481dc0e012bc34d7");
