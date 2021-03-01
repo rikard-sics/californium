@@ -29,6 +29,7 @@ import org.eclipse.californium.core.network.serialization.DataSerializer;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.DatagramWriter;
+import org.eclipse.californium.oscore.group.GroupDeterministicSenderCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
 import org.eclipse.californium.oscore.group.OptionEncoder;
@@ -278,12 +279,12 @@ public class OSSerializer {
 	 */
 	public static byte[] updateAADForGroup(OSCoreCtx ctx, byte[] aadBytes, Message message) {
 
-		CBORObject algSign;
-		CBORObject algSignEnc;
-		CBORObject algKeyAgreement;
+		CBORObject algSign = null;
+		CBORObject algSignEnc = null;
+		CBORObject algKeyAgreement = null;
 
-		byte[] senderPublicKey;
-		byte[] gmPublicKey;
+		byte[] senderPublicKey = null;
+		byte[] gmPublicKey = null;
 
 		if (ctx instanceof GroupRecipientCtx) {
 			GroupRecipientCtx recipientCtx = (GroupRecipientCtx) ctx;
@@ -292,12 +293,20 @@ public class OSSerializer {
 			algKeyAgreement = recipientCtx.getAlgKeyAgreement().AsCBOR();
 			senderPublicKey = recipientCtx.getPublicKeyRaw();
 			gmPublicKey = recipientCtx.getCommonCtx().getGmPublicKey();
-		} else {
+		} else if (ctx instanceof GroupSenderCtx) { // DET_REQ (else-if extended here)
 			GroupSenderCtx senderCtx = (GroupSenderCtx) ctx;
 			algSign = senderCtx.getAlgSign().AsCBOR();
 			algSignEnc = senderCtx.getAlgSignEnc().AsCBOR();
 			algKeyAgreement = senderCtx.getAlgKeyAgreement().AsCBOR();
 			senderPublicKey = senderCtx.getPublicKeyRaw();
+			gmPublicKey = senderCtx.getCommonCtx().getGmPublicKey();
+		} else if (ctx instanceof GroupDeterministicSenderCtx) { // DET_REQ (new case)
+			GroupDeterministicSenderCtx detSenderCtx = (GroupDeterministicSenderCtx) ctx;
+			GroupSenderCtx senderCtx = detSenderCtx.getSenderCtx();
+			algSign = senderCtx.getAlgSign().AsCBOR();
+			algSignEnc = senderCtx.getAlgSignEnc().AsCBOR();
+			algKeyAgreement = senderCtx.getAlgKeyAgreement().AsCBOR();
+			senderPublicKey = Bytes.EMPTY;
 			gmPublicKey = senderCtx.getCommonCtx().getGmPublicKey();
 		}
 
