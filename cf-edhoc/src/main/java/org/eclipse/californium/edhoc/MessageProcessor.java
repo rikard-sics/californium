@@ -1945,7 +1945,7 @@ public class MessageProcessor {
 		int methodCorr = (4 * authenticationMethod) + correlationMethod;
 		
 		//byte[] connectionId = Util.getConnectionId(usedConnectionIds, null);
-		byte[] connectionId = new byte[] {(byte) 0x09}; // Forced and aligned with the test vector
+		byte[] connectionId = new byte[] {(byte) 0x16}; // Forced and aligned with the test vector
 		
         EdhocSession mySession = new EdhocSession(true, methodCorr, connectionId, keyPair,
         										  idCredI, credI, supportedCiphersuites);
