@@ -784,7 +784,7 @@ public class EdhocServer extends CoapServer {
 						return;
 					}
 					
-					Response myResponse = new Response(ResponseCode.CREATED);
+					Response myResponse = new Response(ResponseCode.CHANGED);
 					myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
 					myResponse.setPayload(nextMessage);
 					
