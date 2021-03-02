@@ -21,6 +21,7 @@ package org.eclipse.californium.oscore;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
 import org.eclipse.californium.core.Utils;
@@ -93,7 +94,7 @@ public abstract class Encryptor {
 			// DET_REQ
 			boolean isDetReq = false; // Will be set to true in case of a deterministic request
 			byte[] hash = null; // Hash of the original CoAP request, to use for building a deterministic request
-			byte[] detKey = null; // Deterministic pairwise sender key, to use for encrypting a deterministic request
+			byte[] detSenderKey = null; // Sender key of the deterministic client
 			OSCoreCtx oldCtx = null; // auxiliary variable
 
 			if (isRequest) {
@@ -185,14 +186,14 @@ public abstract class Encryptor {
 				// DET_REQ
 				// Additional steps in case of a deterministic request
 				if (isDetReq) {
-					detKey = ctx.getSenderKey();
+					detSenderKey = ctx.getSenderKey();
 					
-					int hashInputLength = detKey.length + aad.length + enc.GetContent().length;
+					int hashInputLength = detSenderKey.length + aad.length + enc.GetContent().length;
 					
 					int index = 0;
 					byte[] hashInput = new byte[hashInputLength];
-					System.arraycopy(detKey, 0, hashInput, index, detKey.length);
-					index += detKey.length;
+					System.arraycopy(detSenderKey, 0, hashInput, index, detSenderKey.length);
+					index += detSenderKey.length;
 					System.arraycopy(aad, 0, hashInput, index, aad.length);
 					index += aad.length;
 					System.arraycopy(enc.GetContent(), 0, hashInput, index, enc.GetContent().length);
@@ -210,7 +211,7 @@ public abstract class Encryptor {
 					
 					message.getOptions().setRequestHash(hash);
 					
-					// TODO Further update the external_aad with the hash value as 'request_kid'
+					aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
 					
 				}
 				
@@ -237,8 +238,27 @@ public abstract class Encryptor {
 						key = ((GroupSenderCtx) ctx).getPairwiseSenderKey(recipientRID);
 					}
 					else {
-						// TODO Derive the proper deterministic pairwise sender key
-						key = detKey;
+						// Derive the deterministic encryption key, to use for encrypting the deterministic request
+
+						int keyLength = detSenderKey.length;
+						
+						CBORObject info = CBORObject.NewArray();
+						info.Add(ctx.getSenderId()); // Sender ID of the deterministic client
+						info.Add(ctx.getIdContext());
+						info.Add(ctx.getAlg().AsCBOR());
+						info.Add(CBORObject.FromObject("Key"));
+						info.Add(keyLength);
+						
+						try {
+							key = GroupCtx.extractExpand(detSenderKey, hash, info.EncodeToBytes(), keyLength);
+						} catch (InvalidKeyException e) {
+							LOGGER.error("Error when deriving the deterministic encryption key: " + e.getMessage());
+							throw new OSException(e.getMessage());
+						} catch (NoSuchAlgorithmException e) {
+							LOGGER.error("Error when deriving the deterministic encryption key: " + e.getMessage());
+							throw new OSException(e.getMessage());
+						}
+						
 					}
 				} else {
 					// If group mode is used prepare adding the signature

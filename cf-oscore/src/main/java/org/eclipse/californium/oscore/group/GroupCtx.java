@@ -641,7 +641,7 @@ public class GroupCtx {
 	 * @throws InvalidKeyException if the HMAC procedure fails
 	 * @throws NoSuchAlgorithmException if an unknown HMAC is used
 	 */
-	static byte[] extractExpand(byte[] salt, byte[] ikm, byte[] info, int len)
+	public static byte[] extractExpand(byte[] salt, byte[] ikm, byte[] info, int len)
 			throws InvalidKeyException, NoSuchAlgorithmException {
 
 		final String digest = "SHA256"; // Hash to use
