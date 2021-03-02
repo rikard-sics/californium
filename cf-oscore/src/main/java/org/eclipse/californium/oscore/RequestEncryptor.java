@@ -97,12 +97,21 @@ public class RequestEncryptor extends Encryptor {
 		request.setOptions(OptionJuggle.prepareUoptions(request.getOptions()));
 
 		// DET_REQ
+		// If it is a deterministic request, do not increment the Sender Sequence Number
 		if (!isDetReq) {
 			ctx.increaseSenderSeq();
 		}
+		
+		// DET_REQ
+		// If it is a deterministic request, force the outer code to FETCH
+		if (isDetReq) {
+			request = OptionJuggle.setFakeCodeDeterministicRequest(request);
+		}
+		
 		if (ctx.isGroupContext()) {
 			assert (ctx instanceof GroupSenderCtx);
 		}
+		
 		return request;
 	}
 

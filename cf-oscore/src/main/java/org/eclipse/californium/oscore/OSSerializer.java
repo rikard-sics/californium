@@ -363,4 +363,23 @@ public class OSSerializer {
 		return groupAadEnc.EncodeToBytes();
 	}
 
+	// DET_REQ
+	/**
+	 * Update the external AAD for Group OSCORE, to use for encrypting a deterministic request
+	 * 
+	 * @param hash  the hash value to set as 'request_kid' field of the aad_array
+	 * @param aadBytes  the current external AAD value
+	 * @return the updated external AAD
+	 */
+	public static byte[] updateAADForDeterministicRequest(byte[] hash, byte[] aadBytes) {
+
+		CBORObject groupAadEnc = CBORObject.DecodeFromBytes(aadBytes);
+
+		// Update the element with index 2, i.e.'request_kid', to specify the hash
+		groupAadEnc.set(2, CBORObject.FromObject(hash));
+
+		return groupAadEnc.EncodeToBytes();
+		
+	}
+	
 }

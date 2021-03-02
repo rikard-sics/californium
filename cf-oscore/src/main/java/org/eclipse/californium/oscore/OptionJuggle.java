@@ -207,7 +207,7 @@ public class OptionJuggle {
 	}
 
 	/**
-	 * Sets the fake code in the coap header and returns the real code.
+	 * Sets the fake code in the coap header and returns the updated request.
 	 * 
 	 * @param request the request that receives its fake code.
 	 * @return request with fake code.
@@ -217,19 +217,31 @@ public class OptionJuggle {
 		return requestWithNewCode(request, fakeCode);
 	}
 
+	// DET_REQ
 	/**
-	 * Sets the Request's CoAP Code with realCode
+	 * Sets FETCH as the fake code in the coap header and returns the updated request.
+	 * This is intended to finalize a deterministic request.
+	 * 
+	 * @param request the request that receives FETCH as fake code.
+	 * @return request with FETCH as fake code.
+	 */
+	public static Request setFakeCodeDeterministicRequest(Request request) {
+		return requestWithNewCode(request, Code.FETCH);
+	}
+	
+	/**
+	 * Sets the Request's CoAP Code with realCode and returns the updated request.
 	 * 
 	 * @param request the request that receives its real code
 	 * @param realCode the real code
-	 * @return request with real code.
+	 * @return the request with real code.
 	 */
 	public static Request setRealCodeRequest(Request request, Code realCode) {
 		return requestWithNewCode(request, realCode);
 	}
 
 	/**
-	 * Sets the fake code in the coap header and returns the real code.
+	 * Sets the fake code in the coap header and returns the updated response.
 	 * 
 	 * @param response the response that receives its fake code.
 	 * @return response with fake code.
