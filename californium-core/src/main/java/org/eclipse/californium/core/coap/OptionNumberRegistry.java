@@ -73,7 +73,7 @@ public final class OptionNumberRegistry {
 
 	// RFC 8613
 	public static final int OSCORE			= 9;
-	
+
 	// TODO temporary assignment from the "Specification required" range
 	public static final int REQUEST_HASH    = 548;
 

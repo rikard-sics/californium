@@ -241,7 +241,7 @@ public class OptionJuggle {
 	public static Response setFakeCodeResponseToDeterministicRequest(Response response) {
 		return responseWithNewCode(response, ResponseCode.CONTENT);
 	}
-	
+
 	/**
 	 * Sets the Request's CoAP Code with realCode and returns the updated request.
 	 * 
