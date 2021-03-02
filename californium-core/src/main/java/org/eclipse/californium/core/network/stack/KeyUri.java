@@ -128,9 +128,7 @@ public final class KeyUri {
 		} else {
 			peer = request.getSourceContext();
 		}
-		KeyUri reqUri = new KeyUri(uri, peer.getPeerAddress());
-		System.out.println("KeyUri request: " + reqUri);
-		return reqUri;
+		return new KeyUri(uri, peer.getPeerAddress());
 	}
 
 	/**
@@ -153,9 +151,7 @@ public final class KeyUri {
 		} else {
 			peer = response.getDestinationContext();
 		}
-		KeyUri respUri = new KeyUri(uri, peer.getPeerAddress());
-		System.out.println("KeyUri response: " + respUri);
-		return respUri;
+		return new KeyUri(uri, peer.getPeerAddress());
 	}
 
 }
