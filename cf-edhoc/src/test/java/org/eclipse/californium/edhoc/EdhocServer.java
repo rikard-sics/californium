@@ -428,14 +428,10 @@ public class EdhocServer extends CoapServer {
 		if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
  			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_2);
  			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_3);
- 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
- 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_1);
 		}
  		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32() || keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
  			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
  			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_1);
- 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_2);
- 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_3);
  		}
 				
 	}
@@ -671,7 +667,7 @@ public class EdhocServer extends CoapServer {
 				}
 				
 				if (nextMessage != null) {
-					Response myResponse = new Response(ResponseCode.CREATED);
+					Response myResponse = new Response(ResponseCode.CHANGED);
 					myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
 					myResponse.setPayload(nextMessage);
 					
@@ -764,8 +760,19 @@ public class EdhocServer extends CoapServer {
 			        	Util.nicePrint("OSCORE Master Salt", masterSalt);
 			        }
 			        
+			        
+			        // Just send an empty response back
+			        Response myResponse = new Response(ResponseCode.CHANGED);
+					myResponse.setPayload(nextMessage);
+					
+					exchange.respond(myResponse);
+					return;
+			        
+			        /*
+			        // Alternative sending an empty ACK instead
 			        if (exchange.advanced().getRequest().isConfirmable())
 			        	exchange.accept();
+			        */
 					
 				}
 				// An error message has to be returned
