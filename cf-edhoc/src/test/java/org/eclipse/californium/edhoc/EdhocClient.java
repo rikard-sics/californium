@@ -138,6 +138,8 @@ public class EdhocClient {
 	public static void main(String args[]) {
 		String defaultUri = "coap://localhost/helloWorld";
 		String edhocURI = "coap://localhost/.well-known/edhoc";
+		// String edhocURI = "coap://195.251.58.203:5683/.well-known/edhoc"; // Lidia
+		// String edhocURI = "coap://edhocerver.proxy.rd.coap.amsuess.com/.well-known/edhoc"; // Christian
 		
 		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		NetworkConfig.setStandard(config);
@@ -385,14 +387,10 @@ public class EdhocClient {
 		if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
  			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_2);
  			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_3);
- 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
- 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_1);
 		}
  		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32() || keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
  			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
  			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_1);
- 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_2);
- 			supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_3);
  		}
 				
 	}
