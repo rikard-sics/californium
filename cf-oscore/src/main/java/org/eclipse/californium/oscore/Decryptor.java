@@ -357,7 +357,7 @@ public abstract class Decryptor {
 		// If this is a deterministic request, recompute the hash value,
 		// and compare it against the one in the Request-Hash option
 		if (!groupModeMessage && isRequest && isDetReq) {
-						
+
 			int hashInputLength = detRecipientKey.length + aad.length + plaintext.length;
 			
 			int index = 0;
@@ -377,7 +377,7 @@ public abstract class Decryptor {
 				System.err.println("Error while computing the hash for a deterministic request: " + e.getMessage());
 				throw new OSException(e.getMessage());
 			}
-		
+
 			// Debugging
 			System.out.println("\n");
 			System.out.println("Hash input - Sender Key Deterministic Client: " + Utils.toHexString(detRecipientKey));
