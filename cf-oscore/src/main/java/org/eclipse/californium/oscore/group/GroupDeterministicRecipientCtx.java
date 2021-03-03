@@ -54,8 +54,24 @@ public class GroupDeterministicRecipientCtx extends OSCoreCtx {
 		return hashAlg;
 	}
 	
+	/**
+	 * Get the size of a hash computed with the used 'hash' algorithm, in bytes
+	 * 
+	 * @return the size of the hash in bytes
+	 */
+	public int getHashSize() {
+		int hashSize = 0;
+		
+		switch (this.hashAlg) {
+			case "SHA-256":
+				hashSize = 32;
+		}
+		
+		return hashSize;
+	}
+	
 	@Override
-	protected GroupSenderCtx getSenderCtx() {
+	public GroupSenderCtx getSenderCtx() {
 		return commonCtx.senderCtx;
 	}
 

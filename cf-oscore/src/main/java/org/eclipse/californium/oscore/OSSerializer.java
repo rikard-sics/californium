@@ -29,6 +29,7 @@ import org.eclipse.californium.core.network.serialization.DataSerializer;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.DatagramWriter;
+import org.eclipse.californium.oscore.group.GroupDeterministicRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupDeterministicSenderCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
@@ -290,6 +291,12 @@ public class OSSerializer {
 		} else if (ctx instanceof GroupDeterministicSenderCtx) { // DET_REQ (new case)
 			GroupDeterministicSenderCtx detSenderCtx = (GroupDeterministicSenderCtx) ctx;
 			GroupSenderCtx senderCtx = detSenderCtx.getSenderCtx();
+			algCountersign = senderCtx.getAlgCountersign().AsCBOR();
+			parCountersign = CBORObject.FromObject(senderCtx.getParCountersign());
+		}
+		else if (ctx instanceof GroupDeterministicRecipientCtx) { // DET_REQ (new case)
+			GroupDeterministicRecipientCtx detRecipientCtx = (GroupDeterministicRecipientCtx) ctx;
+			GroupSenderCtx senderCtx = detRecipientCtx.getSenderCtx();
 			algCountersign = senderCtx.getAlgCountersign().AsCBOR();
 			parCountersign = CBORObject.FromObject(senderCtx.getParCountersign());
 		}
