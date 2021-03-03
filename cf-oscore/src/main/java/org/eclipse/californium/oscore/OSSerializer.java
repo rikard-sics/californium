@@ -320,12 +320,6 @@ public class OSSerializer {
 			senderPublicKey = Bytes.EMPTY;
 			gmPublicKey = senderCtx.getCommonCtx().getGmPublicKey();
 		}
-		else if (ctx instanceof GroupDeterministicRecipientCtx) { // DET_REQ (new case)
-			GroupDeterministicRecipientCtx detRecipientCtx = (GroupDeterministicRecipientCtx) ctx;
-			GroupSenderCtx senderCtx = detRecipientCtx.getSenderCtx();
-			algCountersign = senderCtx.getAlgCountersign().AsCBOR();
-			parCountersign = CBORObject.FromObject(senderCtx.getParCountersign());
-		}
 
 		CBORObject groupAadEnc = CBORObject.DecodeFromBytes(aadBytes);
 
