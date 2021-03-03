@@ -353,7 +353,7 @@ public class OptionJuggle {
 	 * @param oscoreOption the OSCORE option
 	 * @return the RID value
 	 */
-	static byte[] getRid(byte[] oscoreOption) {
+	static public byte[] getRid(byte[] oscoreOption) {
 		if (oscoreOption.length == 0) {
 			return null;
 		}
@@ -390,7 +390,7 @@ public class OptionJuggle {
 	 * @param oscoreOption the OSCORE option
 	 * @return the ID Context value
 	 */
-	static byte[] getIDContext(byte[] oscoreOption) {
+	static public byte[] getIDContext(byte[] oscoreOption) {
 		if (oscoreOption.length == 0) {
 			return null;
 		}

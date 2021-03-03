@@ -47,8 +47,12 @@ import org.eclipse.californium.elements.UDPConnector;
 import org.eclipse.californium.elements.UdpMulticastConnector;
 import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.elements.util.StringUtil;
+import org.eclipse.californium.oscore.CoapOSException;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
+import org.eclipse.californium.oscore.OSCoreCtx;
+import org.eclipse.californium.oscore.OSException;
+import org.eclipse.californium.oscore.OptionJuggle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -235,6 +239,28 @@ public class GroupOSCOREReceiverDeterministic {
 		// Added for handling GET
 		@Override
 		public void handleGET(CoapExchange exchange) {
+			
+			System.out.println("GET handler");
+			
+			byte[] requestOscoreOption = exchange.advanced().getCryptographicContextID();
+			
+			byte[] kid = OptionJuggle.getRid(requestOscoreOption);
+			byte[] idContext = OptionJuggle.getIDContext(requestOscoreOption);
+			OSCoreCtx ctx = null;
+			
+			try {
+				ctx = db.getContext(kid, idContext);
+			} catch (CoapOSException e) {
+				LOGGER.error("Error when retrieving an OSCORE Security Context: " + e.getMessage());
+				Response r = Response.createResponse(exchange.advanced().getRequest(), ResponseCode.INTERNAL_SERVER_ERROR);
+			}
+			
+			if (ctx instanceof GroupDeterministicRecipientCtx) {
+				System.out.println("The received request is a deterministic request\n");
+				
+				// Possibly, stop this processing if the handler is not fine with deterministic requests.
+			}
+			
 			handlePOST(exchange);
 		}
 
