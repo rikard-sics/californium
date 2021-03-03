@@ -143,8 +143,6 @@ public abstract class Decryptor {
 					
 					if (hashSize == 0 || hashSize != hash.length) {
 						
-						System.out.println(hashSize + " " + hash.length);
-						
 						LOGGER.error("Decryption failed: invalid hash from the Request-Hash option in deterministic request");
 						throw new OSException(ErrorDescriptions.DECRYPTION_FAILED);
 					}
