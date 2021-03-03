@@ -20,6 +20,8 @@
 package org.eclipse.californium.oscore;
 
 import java.nio.ByteBuffer;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 import org.slf4j.Logger;
@@ -29,6 +31,7 @@ import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
+import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.cose.Encrypt0Message;
 
 import com.upokecenter.cbor.CBORObject;
@@ -39,7 +42,11 @@ import org.eclipse.californium.cose.CounterSign1;
 import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.oscore.group.GroupCtx;
+import org.eclipse.californium.oscore.group.GroupDeterministicRecipientCtx;
+import org.eclipse.californium.oscore.group.GroupDeterministicSenderCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 
 /**
  * 
@@ -82,6 +89,10 @@ public abstract class Decryptor {
 		byte[] nonce = null;
 		byte[] partialIV = null;
 		byte[] aad = null;
+		
+		// DET_REQ
+		boolean isDetReq = false; // Will be set to true in case of a deterministic request
+		byte[] hash = null; // Value of the Request-Hash option, if this is a deterministic request
 
 		CBORObject piv = enc.findAttribute(HeaderKeys.PARTIAL_IV);
 
@@ -96,15 +107,66 @@ public abstract class Decryptor {
 				partialIV = expandToIntSize(partialIV);
 				seq = ByteBuffer.wrap(partialIV).getInt();
 				
-				//Note that the code below can throw an OSException when replays are detected
-				ctx.checkIncomingSeq(seq);
+				// DET_REQ
+				// Understand if the request is a deterministic request. This requires that:
+				// 
+				// 1. The retrieved recipient context is a deterministic recipient context.
+				//    If that is the case, the context being retrieved already implies that
+				//    the 'kid' in the OSCORE option is the Sender ID of the deterministic client.
+				//
+				// 2. The request is protected in pairwise mode.
+				//
+				// 3. The request has FETCH as outer method.
+				//
+				// 4. The hash option is present, and it has a value whose length is consistent with the
+				//    size of a hash computed with the used hash algorithm for the deterministic client
+				if (ctx instanceof GroupDeterministicRecipientCtx) {
+					
+					if (OptionJuggle.getGroupModeBit(message.getOptions().getOscore())) {
+						LOGGER.error("Decryption failed: deterministic request not in pairwise mode");
+						throw new OSException(ErrorDescriptions.DECRYPTION_FAILED);
+					}
+					if (message.getRawCode() != Code.FETCH.value) {
+							LOGGER.error("Decryption failed: no FETCH outer method in deterministic request");
+							throw new OSException(ErrorDescriptions.DECRYPTION_FAILED);
+					}
+					
+					hash = message.getOptions().getRequestHash();
+					 
+					if (hash == null) {
+						LOGGER.error("Decryption failed: no Request-Hash option in deterministic request");
+						throw new OSException(ErrorDescriptions.DECRYPTION_FAILED);
+					}
+					
+					int hashSize = ((GroupDeterministicRecipientCtx) ctx).getHashSize();
+					
+					if (hashSize == 0 || hashSize != hash.length) {
+						
+						System.out.println(hashSize + " " + hash.length);
+						
+						LOGGER.error("Decryption failed: invalid hash from the Request-Hash option in deterministic request");
+						throw new OSException(ErrorDescriptions.DECRYPTION_FAILED);
+					}
+					
+					System.out.println("Deterministic Request - Hash value: " + Utils.toHexString(hash) + "\n");
+					
+					isDetReq = true;
+					
+				}		
+						
+				// DET_REQ
+				// Skip the replay check if this is a deterministic request
+				if (!isDetReq) {
+					//Note that the code below can throw an OSException when replays are detected
+					ctx.checkIncomingSeq(seq);
+				}
 				if (ctx.isGroupContext()) {
 					assert ctx instanceof GroupRecipientCtx;
 				}
 
 				nonce = OSSerializer.nonceGeneration(partialIV, ctx.getRecipientId(), ctx.getCommonIV(),
 						ctx.getIVLength());
-				aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), seq, ctx.getRecipientId(), message.getOptions());
+				aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), seq, ctx.getRecipientId(), message.getOptions());				
 			}
 		} else {
 			if (seqByToken == null) {
@@ -135,24 +197,26 @@ public abstract class Decryptor {
 			aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), seq, ctx.getSenderId(), message.getOptions());
 		}
 
-		System.out.println("Decrypting incoming " + message.getClass().getSimpleName());
-		System.out.println("Key " + Utils.toHexString(ctx.getRecipientKey()));
-		System.out.println("PartialIV " + Utils.toHexString(partialIV));
-		System.out.println("Nonce " + Utils.toHexString(nonce));
-		System.out.println("AAD " + Utils.toHexString(aad));
-
 		byte[] plaintext = null;
 		byte[] key = ctx.getRecipientKey();
-
+		byte[] detRecipientKey = null;
+		
 		// Handle Group OSCORE messages
 		CounterSign1 sign = null;
 		boolean groupModeMessage = OptionJuggle.getGroupModeBit(message.getOptions().getOscore());
-		if (ctx.isGroupContext()) {
+		if (ctx.isGroupContext() || isDetReq) {
 			LOGGER.debug("Decrypting incoming " + message.getClass().getSimpleName()
 					+ " using Group OSCORE. Pairwise mode: " + !groupModeMessage);
 
 			// Update external AAD value for Group OSCORE
 			aad = OSSerializer.updateAADForGroup(ctx, aad, message);
+			
+			// DET_REQ
+			// If this is a deterministic request, update the aad array, by setting
+			// in 'request_kid' the hash retrieved from the Request-Hash option
+			if (isDetReq) {
+				aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
+			}
 
 			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + ", using pairwise mode: "
 					+ !groupModeMessage);
@@ -182,11 +246,46 @@ public abstract class Decryptor {
 
 				sign = prepareCheckSignature(enc, ctx, aad, message);
 			} else {
+				// DET_REQ (extended here)
 				// If this is a pairwise response use the pairwise key
-				key = ((GroupRecipientCtx) ctx).getPairwiseRecipientKey();
+				if (!isDetReq) {
+					key = ((GroupRecipientCtx) ctx).getPairwiseRecipientKey();
+				}
+				else {
+					// Derive the deterministic decryption key, to use for encrypting the deterministic request
+
+					int keyLength = key.length;
+					detRecipientKey = key;
+					
+					CBORObject info = CBORObject.NewArray();
+					info.Add(ctx.getRecipientId()); // Sender ID of the deterministic client
+					info.Add(ctx.getIdContext());
+					info.Add(ctx.getAlg().AsCBOR());
+					info.Add(CBORObject.FromObject("Key"));
+					info.Add(keyLength);
+					
+					try {
+						key = GroupCtx.extractExpand(detRecipientKey, hash, info.EncodeToBytes(), keyLength);
+					} catch (InvalidKeyException e) {
+						LOGGER.error("Error when deriving the deterministic decryption key: " + e.getMessage());
+						throw new OSException(e.getMessage());
+					} catch (NoSuchAlgorithmException e) {
+						LOGGER.error("Error when deriving the deterministic decryption key: " + e.getMessage());
+						throw new OSException(e.getMessage());
+					}
+					
+				}
+				
 			}
 		}
 
+		// DET_REQ (moved down here)
+		System.out.println("Decrypting incoming " + message.getClass().getSimpleName());
+		System.out.println("Key " + Utils.toHexString(key));
+		System.out.println("PartialIV " + Utils.toHexString(partialIV));
+		System.out.println("Nonce " + Utils.toHexString(nonce));
+		System.out.println("AAD " + Utils.toHexString(aad));
+		
 		enc.setExternal(aad);
 
 		// Check signature before decrypting
@@ -206,6 +305,50 @@ public abstract class Decryptor {
 			String details = ErrorDescriptions.DECRYPTION_FAILED + " " + e.getMessage();
 			LOGGER.error(details);
 			throw new OSException(details);
+		}
+
+		if (groupModeMessage) {
+			boolean signatureCorrect = checkSignature(enc, sign);
+			LOGGER.debug("Signature verification succeeded: " + signatureCorrect);
+		}
+		// DET_REQ
+		// If this is a deterministic request, recompute the hash value,
+		// and compare it against the one in the Request-Hash option
+		else if (isDetReq) {
+			
+			// Restore the aad array to its originally intended content,
+			// i.e. the Sender ID of the deterministic client is specified in 'request_kid'
+			aad = OSSerializer.updateAADForDeterministicRequest(ctx.getRecipientId(), aad);
+			
+			int hashInputLength = detRecipientKey.length + aad.length + plaintext.length;
+			
+			int index = 0;
+			byte[] recomputedHash;
+			byte[] hashInput = new byte[hashInputLength];
+			System.arraycopy(detRecipientKey, 0, hashInput, index, detRecipientKey.length);
+			index += detRecipientKey.length;
+			System.arraycopy(aad, 0, hashInput, index, aad.length);
+			index += aad.length;
+			System.arraycopy(plaintext, 0, hashInput, index, plaintext.length);
+			
+			// Compute the hash value
+			try {
+				String hashAlg = ((GroupDeterministicRecipientCtx) ctx).getHashAlg();				
+				recomputedHash = GroupCtx.computeHash(hashInput, hashAlg);
+			} catch (NoSuchAlgorithmException e) {						
+				System.err.println("Error while computing the hash for a deterministic request: " + e.getMessage());
+				throw new OSException(e.getMessage());
+			}
+		
+			System.out.println("Deterministic Request - Recomputed hash value: " + Utils.toHexString(recomputedHash) + "\n");
+			
+			// Compare the hash from the Request-Hash option with the recomputed hash
+			if (!Arrays.equals(hash, recomputedHash)) {
+				LOGGER.error("Decryption failed: The recomputed hash for a deterministic request does not match"
+						+ "with the hash from the Request-Hash option");
+				throw new OSException(ErrorDescriptions.DECRYPTION_FAILED);
+			}
+			
 		}
 
 		return plaintext;
