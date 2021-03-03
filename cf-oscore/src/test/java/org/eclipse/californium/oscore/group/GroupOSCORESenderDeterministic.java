@@ -223,6 +223,8 @@ public class GroupOSCORESenderDeterministic {
 			// multicastRequest.getOptions().setOscore(OptionEncoder.set(true, requestURI, rid1, false));
 			
 			// Protect the request in pairwise mode as a deterministic request
+			multicastRequest = Request.newGet();
+			multicastRequest.setType(Type.NON);
 			multicastRequest.getOptions().setOscore(OptionEncoder.set(true, requestURI, null, true));
 		}
 
