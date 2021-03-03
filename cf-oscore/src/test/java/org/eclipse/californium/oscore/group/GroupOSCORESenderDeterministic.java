@@ -217,15 +217,15 @@ public class GroupOSCORESenderDeterministic {
 		if (useOSCORE) {
 			
 			// Protect the request in group modeGroup mode
-			// multicastRequest.getOptions().setOscore(Bytes.EMPTY);
+			multicastRequest.getOptions().setOscore(Bytes.EMPTY);
 			
 			// Protect the request in pairwise mode for a particular group member
 			// multicastRequest.getOptions().setOscore(OptionEncoder.set(true, requestURI, rid1, false));
 			
 			// Protect the request in pairwise mode as a deterministic request
-			multicastRequest = Request.newGet();
-			multicastRequest.setType(Type.NON);
-			multicastRequest.getOptions().setOscore(OptionEncoder.set(true, requestURI, null, true));
+			// multicastRequest = Request.newGet();
+			// multicastRequest.setType(Type.NON);
+			// multicastRequest.getOptions().setOscore(OptionEncoder.set(true, requestURI, null, true));
 		}
 
 		// Information about the sender

@@ -32,8 +32,10 @@ import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
+import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ContextRederivation.PHASE;
+import org.eclipse.californium.oscore.group.GroupDeterministicRecipientCtx;
 import org.eclipse.californium.oscore.group.OptionEncoder;
 
 /**
@@ -360,6 +362,34 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		super.receiveRequest(exchange, request);
 	}
 
+	// DET_REQ
+	// Return true if the request is a deterministic request, or false otherwise
+	public static boolean isDeterministicRequest(OSCoreCtxDB ctxDb, CoapExchange exchange) {
+		
+		byte[] requestOscoreOption = null;
+		byte[] kid = null;
+		byte[] idContext = null;
+		OSCoreCtx ctx = null;
+		
+		requestOscoreOption = exchange.advanced().getCryptographicContextID();
+		
+		if (requestOscoreOption == null)
+			return false;
+		
+		kid = OptionJuggle.getRid(requestOscoreOption);
+		idContext = OptionJuggle.getIDContext(requestOscoreOption);
+		
+		try {
+			ctx = ctxDb.getContext(kid, idContext);
+		} catch (CoapOSException e) {
+			LOGGER.error("Error when retrieving an OSCORE Security Context: " + e.getMessage());
+			return false;
+		}
+		
+		return ctx instanceof GroupDeterministicRecipientCtx;
+		
+	}
+	
 	//Always accepts unprotected responses, which is needed for reception of error messages
 	@Override
 	public void receiveResponse(Exchange exchange, Response response) {
