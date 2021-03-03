@@ -228,7 +228,7 @@ public abstract class Encryptor {
 					System.out.println("Deterministic Request - Hash value: " + Utils.toHexString(hash) + "\n");
 					
 					message.getOptions().setRequestHash(hash);
-					
+
 				}
 				// If it is a response to a deterministic request, update the external_aad and remove the Request-Hash option
 				if (!isRequest && isDetReq) {

@@ -46,6 +46,7 @@ import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupDeterministicRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 
 /**
  * 
@@ -238,6 +239,13 @@ public abstract class Decryptor {
 
 			// Update external AAD value for Group OSCORE
 			aad = OSSerializer.updateAADForGroup(ctx, aad, message);
+			
+			// DET_REQ
+			// If this is a deterministic request, update the aad array, by setting
+			// in 'request_kid' the hash retrieved from the Request-Hash option
+			if (isDetReq) {
+				aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
+			}
 
 			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + ", using pairwise mode: "
 					+ !groupModeMessage);
