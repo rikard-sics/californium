@@ -45,6 +45,7 @@ import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupDeterministicRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 
 /**
  * 
@@ -212,12 +213,6 @@ public abstract class Decryptor {
 				
 		}
 
-		System.out.println("Decrypting incoming " + message.getClass().getSimpleName());
-		System.out.println("Key " + Utils.toHexString(ctx.getRecipientKey()));
-		System.out.println("PartialIV " + Utils.toHexString(partialIV));
-		System.out.println("Nonce " + Utils.toHexString(nonce));
-		System.out.println("AAD " + Utils.toHexString(aad));
-
 		byte[] plaintext = null;
 		byte[] key = ctx.getRecipientKey();
 		byte[] detRecipientKey = null;
@@ -231,6 +226,13 @@ public abstract class Decryptor {
 
 			// Update external AAD value for Group OSCORE
 			aad = OSSerializer.updateAADForGroup(ctx, aad, message);
+			
+			// DET_REQ
+			// If this is a deterministic request, update the aad array, by setting
+			// in 'request_kid' the hash retrieved from the Request-Hash option
+			if (isDetReq) {
+				aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
+			}
 
 			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + ", using pairwise mode: "
 					+ !groupModeMessage);
@@ -361,7 +363,7 @@ public abstract class Decryptor {
 			System.out.println("\n");
 			System.out.println("Hash input - Sender Key Deterministic Client: " + Utils.toHexString(detRecipientKey));
 			System.out.println("Hash input - Original aad : " + Utils.toHexString(aad));
-			System.out.println("Hash input - COSE Plaintext : " + Utils.toHexString(plaintext));			
+			System.out.println("Hash input - COSE Plaintext : " + Utils.toHexString(plaintext));
 			System.out.println("Deterministic Request - Recomputed hash value: " + Utils.toHexString(recomputedHash) + "\n");
 			
 			// Compare the hash from the Request-Hash option with the recomputed hash
