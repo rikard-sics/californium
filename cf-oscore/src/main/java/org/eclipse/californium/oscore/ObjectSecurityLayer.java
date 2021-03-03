@@ -34,6 +34,7 @@ import java.util.Arrays;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
+import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ContextRederivation.PHASE;
 import org.eclipse.californium.oscore.group.GroupDeterministicRecipientCtx;
