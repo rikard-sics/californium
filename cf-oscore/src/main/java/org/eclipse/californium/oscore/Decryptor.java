@@ -244,7 +244,8 @@ public abstract class Decryptor {
 			// If this is a deterministic request, update the aad array, by setting
 			// in 'request_kid' the hash retrieved from the Request-Hash option
 			if (isDetReq) {
-				aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
+				// TODO moot! remove
+				// aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
 			}
 
 			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + ", using pairwise mode: "
