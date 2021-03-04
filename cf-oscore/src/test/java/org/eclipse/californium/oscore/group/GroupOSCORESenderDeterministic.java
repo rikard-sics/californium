@@ -197,6 +197,8 @@ public class GroupOSCORESenderDeterministic {
 			(byte) 0xC9, (byte) 0x84, (byte) 0x45, (byte) 0x53, (byte) 0xE4, (byte) 0xAD, (byte) 0x4C, (byte) 0x42,
 			(byte) 0xCC, (byte) 0x73, (byte) 0x52, (byte) 0x39 };
 
+	
+	
 	private final static byte[] rid1 = new byte[] { 0x52 }; // Recipient 1
 	private static byte[] rid1_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
 			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A401010327200621582077EC358C1D344E41EE0E87B8383D23A2099ACD39BDF989CE45B52E887463389B");
@@ -221,7 +223,7 @@ public class GroupOSCORESenderDeterministic {
 	private final static byte[] group_identifier = new byte[] { (byte) 0xdd, (byte) 0x11 }; // GID
 	
 	
-
+	
 	/* --- OSCORE Security Context information --- */
 
 	public static void main(String args[]) throws Exception {
@@ -248,6 +250,11 @@ public class GroupOSCORESenderDeterministic {
 		} else {
 			unicastProxyURI = "coap://" + proxyIP.getHostAddress() + ":" + proxyPort + proxyResource;
 		}
+		
+		/*
+		// Test with Christian
+		requestURI = "coap://detsrv.proxy.rd.coap.amsuess.com/.well-known/core";
+		*/
 
 		
 		// Test with Christian
