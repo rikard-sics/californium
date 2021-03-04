@@ -168,7 +168,6 @@ public class GroupOSCORESenderDeterministic {
 			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
 	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
 			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
-	
 
 	/*
 	// Test with Christian
@@ -197,7 +196,6 @@ public class GroupOSCORESenderDeterministic {
 			(byte) 0xC9, (byte) 0x84, (byte) 0x45, (byte) 0x53, (byte) 0xE4, (byte) 0xAD, (byte) 0x4C, (byte) 0x42,
 			(byte) 0xCC, (byte) 0x73, (byte) 0x52, (byte) 0x39 };
 
-	
 	private final static byte[] rid1 = new byte[] { 0x52 }; // Recipient 1
 	private static byte[] rid1_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
 			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A401010327200621582077EC358C1D344E41EE0E87B8383D23A2099ACD39BDF989CE45B52E887463389B");
@@ -244,17 +242,16 @@ public class GroupOSCORESenderDeterministic {
 		} else {
 			unicastRequestURI = "coap://" + unicastIP.getHostAddress() + ":" + destinationPort + requestResource;
 		}
+
 		if (proxyIP instanceof Inet6Address) {
 			unicastProxyURI = "coap://" + "[" + proxyIP.getHostAddress() + "]" + ":" + proxyPort + proxyResource;
 		} else {
 			unicastProxyURI = "coap://" + proxyIP.getHostAddress() + ":" + proxyPort + proxyResource;
 		}
 		
-		
 		// Test with Christian
 		// unicastRequestURI = "coap://detsrv.proxy.rd.coap.amsuess.com/.well-known/core";
 		
-
 		
 		// Test with Christian
 		// unicastRequestURI = "coap://detsrv.proxy.rd.coap.amsuess.com/.well-known/core";

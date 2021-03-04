@@ -249,6 +249,7 @@ public abstract class Encryptor {
 					}
 					message.getOptions().removeRequestHash();
 					aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
+
 				}
 				
 				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with AAD "
