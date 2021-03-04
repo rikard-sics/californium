@@ -105,6 +105,7 @@ public class GroupOSCOREReceiverDeterministic {
 	 * Port to listen to.
 	 */
 	static final int listenPort = CoAP.DEFAULT_COAP_PORT;
+	//static final int listenPort = 5690;
 
 	/**
 	 * ED25519 curve value.
@@ -122,12 +123,23 @@ public class GroupOSCOREReceiverDeterministic {
 	// Group OSCORE specific values for the countersignature (EdDSA)
 	private final static AlgorithmID algCountersign = AlgorithmID.EDDSA;
 
-	// test vector OSCORE draft Appendix C.1.2
 	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
 			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
 	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
 			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
 
+	/*
+	// Test with Christian
+	private final static byte[] master_secret = { (byte) 0x11, (byte) 0x22, (byte) 0x33, (byte) 0x44, (byte) 0x55,
+			                                      (byte) 0x66, (byte) 0x77, (byte) 0x88, (byte) 0x99, (byte) 0x00,
+			                                      (byte) 0xaa, (byte) 0xbb, (byte) 0xcc, (byte) 0xdd, (byte) 0xee,
+			                                      (byte) 0xff };
+	private final static byte[] master_salt =   { (byte) 0x1f, (byte) 0x2e, (byte) 0x3d, (byte) 0x4c, (byte) 0x5b,
+			                                      (byte) 0x6a, (byte) 0x70, (byte) 0x81 };
+	*/
+	
+	
+	
 	private static final int REPLAY_WINDOW = 32;
 
 	/*
@@ -145,8 +157,11 @@ public class GroupOSCOREReceiverDeterministic {
 	private final static String rid1_public_key_string = "pAMnAQEgBiFYIAaekSuDljrMWUG2NUaGfewQbluQUfLuFPO8XMlhrNQ6";
 	private static OneKey rid1_public_key;
 
-	private final static byte[] group_identifier = new byte[] { 0x44, 0x61, 0x6c }; // GID
-
+	private final static byte[] detSid = new byte[] { (byte) 0xdc }; // Sender ID of the deterministic client
+	
+	private final static byte[] group_identifier = new byte[] { (byte) 0xdd, (byte) 0x11 }; // GID
+	
+	
 	/* --- OSCORE Security Context information --- */
 
 	private static Random random;
@@ -172,8 +187,6 @@ public class GroupOSCOREReceiverDeterministic {
 		} else {
 			System.out.println("Starting with sid 0x52.");
 		}
-
-		final byte[] detSid = new byte[] { (byte) 0x37 }; // Sender ID of the deterministic client
 		
 		// If OSCORE is being used set the context information
 		if (useOSCORE) {
