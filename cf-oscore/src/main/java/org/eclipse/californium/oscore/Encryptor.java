@@ -206,12 +206,16 @@ public abstract class Encryptor {
 						throw new OSException(e.getMessage());
 					}
 					
+					System.out.println("Hash input - Sender Key Deterministic Client: " + Utils.toHexString(detSenderKey) + "\n");
+					System.out.println("Hash input - Original aad : " + Utils.toHexString(aad) + "\n");
+					System.out.println("Hash input - COSE Plaintext : " + Utils.toHexString(enc.GetContent()) + "\n");
 					System.out.println("Deterministic Request - Hash value: " + Utils.toHexString(hash) + "\n");
 					
 					message.getOptions().setRequestHash(hash);
 					
 					// Update the aad array, by setting the hash as value of 'request_kid'
-					aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
+					// TODO moot! remove
+					// aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
 					
 				}
 				

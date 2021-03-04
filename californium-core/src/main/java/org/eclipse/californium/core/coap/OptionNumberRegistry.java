@@ -68,7 +68,7 @@ public final class OptionNumberRegistry {
 	public static final int OSCORE			= 9;
 	
 	// TODO temporary assignment from the experimental range
-	public static final int REQUEST_HASH    = 65000;
+	public static final int REQUEST_HASH    = 548;
 
 	// RFC 7967
 	public static final int NO_RESPONSE		= 258;
