@@ -182,10 +182,9 @@ public abstract class Encryptor {
 					pairwiseResponse = false;
 					groupModeMessage = true;
 				}
-
 				LOGGER.debug("Encrypting outgoing " + message.getClass().getSimpleName()
 						+ " using Group OSCORE. Pairwise mode: " + !groupModeMessage);
-
+				
 				// DET_REQ
 				// If it is a deterministic request, switch to the Deterministic Sender Context
 				if (isRequest && isDetReq) {
@@ -249,6 +248,16 @@ public abstract class Encryptor {
 					message.getOptions().removeRequestHash();
 					aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
 
+				}
+				// If it is a response to a deterministic request, update the external_aad and remove the Request-Hash option
+				if (!isRequest && isDetReq) {
+					hash = message.getOptions().getRequestHash();
+					if (hash == null) {
+						LOGGER.error("Error while protecting a response to a deterministic request");
+						throw new OSException("Error while protecting a response to a deterministic request");
+					}
+					message.getOptions().removeRequestHash();
+					aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
 				}
 				
 				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with AAD "
