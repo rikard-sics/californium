@@ -86,6 +86,17 @@ public class ResponseEncryptor extends Encryptor {
 			assert (ctx instanceof GroupSenderCtx);
 
 		}
+		// DET_REQ
+		else if (ctx != null && response.getOptions().getRequestHash() != null) {
+			// This is a response to a deterministic request
+			isDetReq = true;
+			
+			// Retrieve the Sender Context
+			// Note: this is not the _deterministic_ Sender Context
+			ctx = ctx.getSenderCtx();
+			
+			assert (ctx instanceof GroupSenderCtx);
+		}
 
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CTX_NULL);

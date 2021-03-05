@@ -130,7 +130,7 @@ public abstract class Encryptor {
 				if (message.getOptions().getRequestHash() != null) {
 					isDetReq = true;
 				}
-				
+
 				// DET_REQ (extended)
 				// TODO: Get recipientId and seqNr from message as below
 				if (ctx.isGroupContext() == false && isDetReq == false) {
@@ -227,8 +227,19 @@ public abstract class Encryptor {
 					System.out.println("Hash input - COSE Plaintext : " + Utils.toHexString(enc.GetContent()));
 					System.out.println("Deterministic Request - Hash value: " + Utils.toHexString(hash) + "\n");
 					
+					
 					message.getOptions().setRequestHash(hash);
 
+				}
+				// If it is a response to a deterministic request, update the external_aad and remove the Request-Hash option
+				if (!isRequest && isDetReq) {
+					hash = message.getOptions().getRequestHash();
+					if (hash == null) {
+						LOGGER.error("Error while protecting a response to a deterministic request");
+						throw new OSException("Error while protecting a response to a deterministic request");
+					}
+					message.getOptions().removeRequestHash();
+					aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
 				}
 				// If it is a response to a deterministic request, update the external_aad and remove the Request-Hash option
 				if (!isRequest && isDetReq) {
