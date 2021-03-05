@@ -63,7 +63,6 @@
 package org.eclipse.californium.core.network.stack;
 
 import java.util.Iterator;
-import java.util.Random;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -79,7 +78,6 @@ import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
 import org.eclipse.californium.core.network.config.NetworkConfigDefaults;
-import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.LeastRecentlyUsedCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -391,7 +389,7 @@ public class BlockwiseLayer extends AbstractLayer {
 
 		Request requestToSend = request;
 
-		if (isTransparentBlockwiseHandlingEnabled()) {
+		if (isTransparentBlockwiseHandlingEnabled() && !request.isMulticast()) {
 
 			if (isRandomAccess(exchange)) {
 				// This is the case if the user has explicitly added a block
@@ -708,7 +706,7 @@ public class BlockwiseLayer extends AbstractLayer {
 	@Override
 	public void receiveResponse(final Exchange exchange, final Response response) {
 
-		if (isTransparentBlockwiseHandlingEnabled()) {
+		if (isTransparentBlockwiseHandlingEnabled() && !exchange.getRequest().isMulticast()) {
 			if (response.isError()) {
 				LOGGER.debug("{} received error {}:", tag, response);
 				// handle blockwise specific error codes
@@ -1153,7 +1151,6 @@ public class BlockwiseLayer extends AbstractLayer {
 	/**
 	 * Sends request for the next response block.
 	 */
-	Random rand = new Random();
 	private void requestNextBlock(Exchange exchange, Response response, Block2BlockwiseStatus status) {
 		// do late block size negotiation
 		int blockSzx = Math.min(response.getOptions().getBlock2().getSzx(), preferredBlockSzx);
@@ -1164,6 +1161,7 @@ public class BlockwiseLayer extends AbstractLayer {
 
 		try {
 			Request block = status.getNextRequestBlock(blockSzx);
+
 			block.setDestinationContext(status.getFollowUpEndpointContext(response.getSourceContext()));
 
 			/*
@@ -1176,8 +1174,6 @@ public class BlockwiseLayer extends AbstractLayer {
 			if (!response.isNotification()) {
 				block.setToken(response.getToken());
 			}
-
-			block.setToken(Bytes.createBytes(rand, 4));
 
 			if (status.isComplete()) {
 				LOGGER.debug("{}stopped block2 transfer, droping response.", tag);
