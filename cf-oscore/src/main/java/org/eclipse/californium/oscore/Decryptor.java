@@ -239,15 +239,6 @@ public abstract class Decryptor {
 
 			// Update external AAD value for Group OSCORE
 			aad = OSSerializer.updateAADForGroup(ctx, aad, message);
-			
-			// DET_REQ
-			// If this is a deterministic request, update the aad array, by setting
-			// in 'request_kid' the hash retrieved from the Request-Hash option
-			if (isDetReq) {
-				// TODO moot! remove
-				// aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
-				
-			}
 
 			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + ", using pairwise mode: "
 					+ !groupModeMessage);
