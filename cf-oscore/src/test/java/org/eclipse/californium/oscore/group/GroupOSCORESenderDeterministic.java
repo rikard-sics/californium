@@ -65,12 +65,12 @@ public class GroupOSCORESenderDeterministic {
 	/**
 	 * Whether to use the pairwise mode of Group OSCORE or not
 	 */
-	static final boolean pairwiseMode = true;
+	static final boolean pairwiseMode = false;
 	
 	/**
 	 * Whether to send the request as a deterministic request or not
 	 */
-	static final boolean deterministicRequest = true;
+	static final boolean deterministicRequest = false;
 	
 	/**
 	 * File name for network configuration.
@@ -266,7 +266,6 @@ public class GroupOSCORESenderDeterministic {
 		CoapClient client = new CoapClient();
 				
 		if (pairwiseMode) {
-			// client.setURI(unicastRequestURI);
 			client = new CoapClient(unicastRequestURI);
 		}
 		else {
@@ -293,7 +292,6 @@ public class GroupOSCORESenderDeterministic {
 				}
 				else {
 					// Protect the request in pairwise mode as a deterministic request
-					// request = Request.newGet();
 					request = new Request(Code.GET);
 					request.setType(Type.CON);
 					request.getOptions().setOscore(OptionEncoder.set(true, multicastRequestURI, null, true));
@@ -337,6 +335,8 @@ public class GroupOSCORESenderDeterministic {
 		
 		if (pairwiseMode) {
 			
+			// sends a unicast request
+			
 			/*
 			CoapResponse response = client.advanced(request);
 			
@@ -345,12 +345,17 @@ public class GroupOSCORESenderDeterministic {
 			System.out.println(Utils.prettyPrint(response));
 			*/
 			
-			// sends a multicast request
 			client.advanced(handler, request);
 			while (handler.waitOn(HANDLER_TIMEOUT)) {
-				// System.out.println("Sending from: " + client.getEndpoint().getAddress());
 				// Wait for responses
 			}
+			
+			/*
+			client.advanced(handler, request);
+			while (handler.waitOn(HANDLER_TIMEOUT)) {
+				// Wait for responses
+			}
+			*/
 			
 		}
 		else {
@@ -390,9 +395,7 @@ public class GroupOSCORESenderDeterministic {
 		public void onLoad(CoapResponse response) {
 			on();
 
-			// System.out.println("Receiving to: "); //TODO
 			System.out.println("Receiving from: " + response.advanced().getSourceContext().getPeerAddress());
-
 			System.out.println(Utils.prettyPrint(response));
 		}
 
