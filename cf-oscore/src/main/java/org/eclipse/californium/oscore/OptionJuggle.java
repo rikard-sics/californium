@@ -149,6 +149,7 @@ public class OptionJuggle {
 			case OptionNumberRegistry.URI_PORT:
 			case OptionNumberRegistry.PROXY_SCHEME:
 			case OptionNumberRegistry.OSCORE:
+			case OptionNumberRegistry.REQUEST_HASH: // DET_REQ
 				// do not encrypt
 				break;
 			case OptionNumberRegistry.PROXY_URI:
@@ -227,6 +228,18 @@ public class OptionJuggle {
 	 */
 	public static Request setFakeCodeDeterministicRequest(Request request) {
 		return requestWithNewCode(request, Code.FETCH);
+	}
+	
+	// DET_REQ
+	/**
+	 * Sets 2.05 (Content) as the fake code in the coap header and returns the updated response.
+	 * This is intended to finalize a response to a deterministic request.
+	 * 
+	 * @param response the response where to set 2.05 (Content) as fake code.
+	 * @return response with 2.05 as fake code.
+	 */
+	public static Response setFakeCodeResponseToDeterministicRequest(Response response) {
+		return responseWithNewCode(response, ResponseCode.CONTENT);
 	}
 	
 	/**

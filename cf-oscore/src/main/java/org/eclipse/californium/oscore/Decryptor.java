@@ -191,9 +191,29 @@ public abstract class Decryptor {
 						ctx.getIVLength());
 			}
 
+			// DET_REQ
+			// Detect if this is a response to a deterministic request
+			if (message.getOptions().getRequestHash() != null) {
+				isDetReq = true;
+			}
+			
+			byte[] senderId = null;
+			
+			// DET_REQ
+			// If it is a response to a deterministic request, force the Sender ID
+			// of the deterministic client in 'request_kid' of the external_aad
+			if (isDetReq) {
+				GroupCtx groupCtx = ((GroupRecipientCtx) ctx).getCommonCtx();
+				senderId = groupCtx.getDeterministicSenderCtx().getSenderId();
+			}
+			else {
+				senderId = ctx.getSenderId();
+			}
+			
 			//Nonce calculation uses partial IV in response (if present).
 			//AAD calculation always uses partial IV (seq. nr.) of original request.  
-			aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), seq, ctx.getSenderId(), message.getOptions());
+			aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), seq, senderId, message.getOptions());
+				
 		}
 
 		if (ctx.getContextRederivationPhase() == PHASE.SERVER_PHASE_1) {
@@ -228,6 +248,7 @@ public abstract class Decryptor {
 			if (isDetReq) {
 				// TODO moot! remove
 				// aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
+				
 			}
 
 			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + ", using pairwise mode: "
@@ -246,17 +267,29 @@ public abstract class Decryptor {
 
 			// If group mode is used prepare the signature checking
 			if (groupModeMessage) {
+				
+				// DET_REQ
+				// If this is a response to a deterministic request
+				// update the external_aad to the Request-Hash option
+				// as if it was a Class I option; then remove the
+				// option from the response
+				if (!isRequest && isDetReq) {
+					hash = message.getOptions().getRequestHash();
+					aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
+					message.getOptions().removeRequestHash();
+				}
+
 				// Decrypt the signature.
 				if (isRequest || piv != null) {
 					byte[] pivFromMessage = enc.findAttribute(HeaderKeys.PARTIAL_IV).GetByteString();
-					decryptSignature(enc, sign, (GroupRecipientCtx) ctx, pivFromMessage, ctx.getRecipientId(),
-							isRequest);
+					decryptSignature(enc, sign, (GroupRecipientCtx) ctx, pivFromMessage, ctx.getRecipientId(), isRequest);
 				} else {
 					byte[] pivFromOther = OSSerializer.stripZeroes(ByteBuffer.allocate(5).putInt(seq).array());
 					decryptSignature(enc, sign, (GroupRecipientCtx) ctx, pivFromOther, ctx.getSenderId(), isRequest);
 				}
 
 				sign = prepareCheckSignature(enc, ctx, aad, message);
+				
 			} else {
 				// DET_REQ (extended here)
 				// If this is a pairwise response use the pairwise key
@@ -326,7 +359,7 @@ public abstract class Decryptor {
 		// DET_REQ
 		// If this is a deterministic request, recompute the hash value,
 		// and compare it against the one in the Request-Hash option
-		else if (isDetReq) {
+		else if (isRequest && isDetReq) {
 			
 			// Restore the aad array to its originally intended content,
 			// i.e. the Sender ID of the deterministic client is specified in 'request_kid'
@@ -363,7 +396,7 @@ public abstract class Decryptor {
 			}
 			
 		}
-
+		
 		return plaintext;
 	}
 

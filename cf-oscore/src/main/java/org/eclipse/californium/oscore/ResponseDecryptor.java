@@ -167,7 +167,7 @@ public class ResponseDecryptor extends Decryptor {
 
 		//Set information about the OSCORE context used in the endpoint context of this response
 		OSCoreEndpointContextInfo.receivingResponse(ctx, response);
-
+		
 		return response;
 	}
 }
