@@ -233,6 +233,7 @@ public abstract class Decryptor {
 			if (isDetReq) {
 				// TODO moot! remove
 				// aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
+				
 			}
 
 			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + ", using pairwise mode: "
