@@ -246,6 +246,7 @@ public abstract class Decryptor {
 			if (isDetReq) {
 				// TODO moot! remove
 				// aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
+				
 			}
 
 			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + ", using pairwise mode: "
@@ -386,7 +387,6 @@ public abstract class Decryptor {
 						+ "with the hash from the Request-Hash option");
 				throw new OSException(ErrorDescriptions.DECRYPTION_FAILED);
 			}
-
 		}
 		
 		return plaintext;

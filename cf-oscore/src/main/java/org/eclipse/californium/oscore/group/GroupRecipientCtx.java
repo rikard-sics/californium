@@ -50,7 +50,7 @@ public class GroupRecipientCtx extends OSCoreCtx {
 			this.otherEndpointPubKeyRaw = otherEndpointPubKeyRaw;
 		}
 	}
-
+	
 	/**
 	 * Get the public key associated to this recipient context, meaning the
 	 * public key of the other endpoint.
