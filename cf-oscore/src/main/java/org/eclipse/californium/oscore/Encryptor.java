@@ -225,6 +225,7 @@ public abstract class Encryptor {
 					System.out.println("Hash input - COSE Plaintext : " + Utils.toHexString(enc.GetContent()));
 					System.out.println("Deterministic Request - Hash value: " + Utils.toHexString(hash) + "\n");
 					
+					
 					message.getOptions().setRequestHash(hash);
 
 				}

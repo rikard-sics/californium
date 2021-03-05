@@ -80,7 +80,6 @@ public class OptionEncoder {
 	}
 
 	/**
-<<<<<<< HEAD
 	 * Generate an OSCORE option using parameters from the application. Skips
 	 * setting the rid in case it is a group mode request.
 	 * 
@@ -93,8 +92,6 @@ public class OptionEncoder {
 	}
 	
 	/**
-=======
->>>>>>> ebfad07c0 (Let application set group-/pairwise-mode on request & add JUnit tests)
 	 * Get the pairwise mode boolean value from the option.
 	 * 
 	 * @param optionBytes the option
