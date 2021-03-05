@@ -65,7 +65,7 @@ public class GroupOSCORESenderDeterministic {
 	 * Whether to use the pairwise mode of Group OSCORE or not
 >>>>>>> e2a5289f0 (Full exhange deterministic request and related response)
 	 */
-	static final boolean pairwiseMode = true;
+	static final boolean pairwiseMode = false;
 	
 	/**
 	 * Whether to send the request as a deterministic request or not
@@ -75,7 +75,7 @@ public class GroupOSCORESenderDeterministic {
 =======
 >>>>>>> e2a5289f0 (Full exhange deterministic request and related response)
 	 */
-	static final boolean deterministicRequest = true;
+	static final boolean deterministicRequest = false;
 	
 	/**
 <<<<<<< HEAD
