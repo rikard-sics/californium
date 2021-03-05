@@ -453,7 +453,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				// the next processing step to update the external_aad
 				if (isDeterministicRequest(ctxDb, exchange)) {
 					
-					// The Request-Hash previously sent in the Deterministic Request
+					// The Request-Hash previously sent in the Deterministic Request 
 					byte[] hash = exchange.getRequest().getOptions().getRequestHash();
 					
 					if (hash == null) {
@@ -479,7 +479,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					response.getOptions().setRequestHash(hash);
 					
 				}
-				
+
 				response = prepareReceive(ctxDb, response, requestSequenceNumber);
 
 			}
