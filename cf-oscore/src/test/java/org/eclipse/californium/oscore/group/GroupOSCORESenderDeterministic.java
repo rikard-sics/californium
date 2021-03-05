@@ -32,6 +32,7 @@ import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
+import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.network.CoapEndpoint;
@@ -57,13 +58,28 @@ import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
 public class GroupOSCORESenderDeterministic {
 
 	/**
+	 * Whether to use OSCORE or not.
+	 */
+	static final boolean useOSCORE = true;
+	
+	/**
+	 * Whether to use the pairwise mode of Group OSCORE or not
+	 */
+	static final boolean pairwiseMode = true;
+	
+	/**
+	 * Whether to send the request as a deterministic request or not
+	 */
+	static final boolean deterministicRequest = true;
+	
+	/**
 	 * File name for network configuration.
 	 */
-	private static final File CONFIG_FILE = new File("CaliforniumMulticast.properties");
+	private static final File CONFIG_FILE_MULTICAST = new File("CaliforniumMulticast.properties");
 	/**
 	 * Header for network configuration.
 	 */
-	private static final String CONFIG_HEADER = "Californium CoAP Properties file for Multicast Client";
+	private static final String CONFIG_HEADER_MULTICAST = "Californium CoAP Properties file for Multicast Client";
 	/**
 	 * Special network configuration defaults handler.
 	 */
@@ -80,21 +96,6 @@ public class GroupOSCORESenderDeterministic {
 	 * Time to wait for replies to the multicast request
 	 */
 	private static final int HANDLER_TIMEOUT = 2000;
-
-	/**
-	 * Whether to use OSCORE or not.
-	 */
-	static final boolean useOSCORE = true;
-	
-	/**
-	 * Whether to use the pairwise mode of Group OSCORE or not
-	 */
-	static final boolean pairwiseMode = true;
-	
-	/**
-	 * Whether to send the request as a deterministic request or not
-	 */
-	static final boolean deterministicRequest = true;
 
 	/**
 	 * Multicast address to send to (use the first line to set a custom one).
@@ -215,7 +216,7 @@ public class GroupOSCORESenderDeterministic {
 		
 		/*
 		// Test with Christian
-		requestURI = "coap://detsrv.proxy.rd.coap.amsuess.com/.well-known/core";
+		unicastRequestURI = "coap://detsrv.proxy.rd.coap.amsuess.com/.well-known/core";
 		*/
 
 		
@@ -262,17 +263,16 @@ public class GroupOSCORESenderDeterministic {
 			OSCoreCoapStackFactory.useAsDefault(db);
 		}
 
-		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
-
-		CoapEndpoint endpoint = new CoapEndpoint.Builder().setNetworkConfig(config).build();
 		CoapClient client = new CoapClient();
-
-		client.setEndpoint(endpoint);
-
+				
 		if (pairwiseMode) {
-			client.setURI(unicastRequestURI);
+			// client.setURI(unicastRequestURI);
+			client = new CoapClient(unicastRequestURI);
 		}
 		else {
+			NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE_MULTICAST, CONFIG_HEADER_MULTICAST, DEFAULTS);
+			CoapEndpoint endpoint = new CoapEndpoint.Builder().setNetworkConfig(config).build();
+			client.setEndpoint(endpoint);
 			client.setURI(multicastRequestURI);
 		}
 		
@@ -293,7 +293,8 @@ public class GroupOSCORESenderDeterministic {
 				}
 				else {
 					// Protect the request in pairwise mode as a deterministic request
-					request = Request.newGet();
+					// request = Request.newGet();
+					request = new Request(Code.GET);
 					request.setType(Type.CON);
 					request.getOptions().setOscore(OptionEncoder.set(true, multicastRequestURI, null, true));
 				}
@@ -316,7 +317,6 @@ public class GroupOSCORESenderDeterministic {
 		if (!pairwiseMode) {
 			System.out.println("Request payload: " + requestPayload);
 		}
-		System.out.println("Outgoing port: " + endpoint.getAddress().getPort());
 		System.out.println("==================");
 
 		try {
@@ -327,20 +327,36 @@ public class GroupOSCORESenderDeterministic {
 			System.err.println("Failed to parse destination URI");
 			e.printStackTrace();
 		}
-		System.out.println("Sending from: " + client.getEndpoint().getAddress());
+
 		if (!pairwiseMode) {
 			System.out.println(Utils.prettyPrint(request));
 		}
 		else {
 			System.out.println(Utils.prettyPrint(request));
 		}
-
+		
 		if (pairwiseMode) {
-			client.advanced(request);
+			
+			/*
+			CoapResponse response = client.advanced(request);
+			
+			System.out.println("Sending from: " + client.getEndpoint().getAddress());
+			System.out.println("Receiving from: " + response.advanced().getSourceContext().getPeerAddress());
+			System.out.println(Utils.prettyPrint(response));
+			*/
+			
+			// sends a multicast request
+			client.advanced(handler, request);
+			while (handler.waitOn(HANDLER_TIMEOUT)) {
+				// System.out.println("Sending from: " + client.getEndpoint().getAddress());
+				// Wait for responses
+			}
+			
 		}
 		else {
 			// sends a multicast request
 			client.advanced(handler, request);
+			System.out.println("Sending from: " + client.getEndpoint().getAddress());
 			while (handler.waitOn(HANDLER_TIMEOUT)) {
 				// Wait for responses
 			}
@@ -368,9 +384,8 @@ public class GroupOSCORESenderDeterministic {
 			notifyAll();
 		}
 
-		/**
-		 * Handle and parse incoming responses.
-		 */
+		
+		//Handle and parse incoming responses.
 		@Override
 		public void onLoad(CoapResponse response) {
 			on();
@@ -386,4 +401,5 @@ public class GroupOSCORESenderDeterministic {
 			System.err.println("error");
 		}
 	}
+
 }

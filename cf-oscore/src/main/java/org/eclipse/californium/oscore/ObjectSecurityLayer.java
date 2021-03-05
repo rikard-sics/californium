@@ -201,7 +201,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				});
 
 				req = preparedRequest;
-
+				
 			} catch (OSException e) {
 				LOGGER.error("Error sending request: " + e.getMessage());
 				return;
@@ -211,6 +211,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			}
 		}
 		LOGGER.info("Request: " + exchange.getRequest().toString());
+		
+		// This ensures the full request with all its options is stored in the exchange
+		exchange.setRequest(req);
+		
 		super.sendRequest(exchange, req);
 	}
 
@@ -225,6 +229,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		 * response. (They are not encrypted but external unprotected options.)
 		 */
 		boolean outerBlockwise;
+		
+		// DET_REQ
+		boolean isDetReq = false; // Will be set to true in case of a deterministic request
 
 		if (shouldProtectResponse(exchange)) {
 			// If the current block-request still has a non-empty OSCORE option it
@@ -236,9 +243,31 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 			try {
 				OSCoreCtx ctx = ctxDb.getContextByToken(exchange.getCurrentRequest().getToken());
-				addPartialIV = ctx.getResponsesIncludePartialIV() || exchange.getRequest().getOptions().hasObserve();
+				
+				// DET_REQ
+				isDetReq = ctx instanceof GroupDeterministicRecipientCtx;
+				if (isDetReq) {
+					// If the request was a deterministic request,
+					// the response must include the Partial IV
+					addPartialIV = true;
+				}
+				else {
+					addPartialIV = ctx.getResponsesIncludePartialIV() || exchange.getRequest().getOptions().hasObserve();
+				}
 
 				byte[] requestOption = exchange.getCryptographicContextID();
+				// DET_REQ
+				if (isDetReq) {
+					// Retrieve the Request-Hash option from the deterministic request, and
+					// temporarily add it to the response, to make it available to the next processing step
+					byte[] requestHashOption = exchange.getRequest().getOptions().getRequestHash();
+					if (requestHashOption == null) {
+						// This should never happen
+						LOGGER.error("Error while processing the response to a deterministic request");
+						throw new OSException("Error while processing the response to a deterministic request");
+					}
+					response.getOptions().setRequestHash(requestHashOption);
+				}
 				Response preparedResponse = prepareSend(ctxDb, response, ctx, addPartialIV, outerBlockwise,
 						requestOption);
 
@@ -326,14 +355,14 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	// DET_REQ
 	// Return true if the request is a deterministic request, or false otherwise
-	public static boolean isDeterministicRequest(OSCoreCtxDB ctxDb, CoapExchange exchange) {
+	public static boolean isDeterministicRequest(OSCoreCtxDB ctxDb, Exchange exchange) {
 		
 		byte[] requestOscoreOption = null;
 		byte[] kid = null;
 		byte[] idContext = null;
 		OSCoreCtx ctx = null;
 		
-		requestOscoreOption = exchange.advanced().getCryptographicContextID();
+		requestOscoreOption = exchange.getCryptographicContextID();
 		
 		if (requestOscoreOption == null)
 			return false;
@@ -369,7 +398,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			} else if (isProtected(response)) {
 				LOGGER.info("Incoming response is OSCORE protected");
 			}
-
+			
 			// For OSCORE-protected response with the outer block2-option let
 			// them pass through to be re-assembled by the block-wise layer
 			if (response.getOptions().hasBlock2()) {
@@ -378,14 +407,33 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					int maxPayloadSize = getIncomingMaxUnfragSize(response, ctxDb);
 					response.setMaxResourceBodySize(maxPayloadSize);
 				}
-
+				
 				super.receiveResponse(exchange, response);
 				return;
 			}
 
 			//If response is protected with OSCORE parse it first with prepareReceive
 			if (isProtected(response)) {
+				
+				// DET_REQ
+				// If this is a response to a deterministic request, set
+				// an internal-signaling Request-Hash option, to allow
+				// the next processing step to update the external_aad
+				if (isDeterministicRequest(ctxDb, exchange)) {
+					
+					byte[] hash = exchange.getRequest().getOptions().getRequestHash();
+					
+					if (hash == null) {
+						LOGGER.error("Error while decrypting a response to a deterministic request");
+						throw new OSException("Error while decrypting a response to a deterministic request");
+					}
+					
+					response.getOptions().setRequestHash(hash);
+					
+				}
+				
 				response = prepareReceive(ctxDb, response);
+				
 			}
 		} catch (OSException e) {
 			LOGGER.error("Error while receiving OSCore response: " + e.getMessage());

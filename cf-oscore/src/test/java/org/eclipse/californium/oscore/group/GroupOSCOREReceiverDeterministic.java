@@ -257,7 +257,7 @@ public class GroupOSCOREReceiverDeterministic {
 			
 			System.out.println("Reached the GET handler");
 			
-			if (ObjectSecurityLayer.isDeterministicRequest(db, exchange)) {
+			if (ObjectSecurityLayer.isDeterministicRequest(db, exchange.advanced())) {
 				System.out.println("The received request is a deterministic request\n");
 				
 				// Possibly, stop this processing if the handler is not fine with deterministic requests.

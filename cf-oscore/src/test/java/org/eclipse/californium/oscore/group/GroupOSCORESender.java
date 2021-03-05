@@ -211,6 +211,7 @@ public class GroupOSCORESender {
 		multicastRequest.setType(Type.NON);
 		if (useOSCORE) {
 			multicastRequest.getOptions().setOscore(Bytes.EMPTY);
+			// multicastRequest.getOptions().setOscore(OptionEncoder.set(true, requestURI, rid1, false));
 		}
 
 		// Information about the sender

@@ -25,6 +25,7 @@ import org.eclipse.californium.core.coap.BlockOption;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.cose.Encrypt0Message;
+import org.eclipse.californium.oscore.group.GroupDeterministicSenderCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
 
 /**
@@ -54,6 +55,9 @@ public class ResponseEncryptor extends Encryptor {
 	public static Response encrypt(OSCoreCtxDB db, Response response, OSCoreCtx ctx, boolean newPartialIV,
 			boolean outerBlockwise, byte[] requestOption) throws OSException {
 
+		// DET_REQ
+		boolean isDetReq = false; // Will be set to true in case of a deterministic request
+		
 		/*
 		 * For a Group OSCORE context, get the specific Sender Context
 		 * associated to this Recipient Context.
@@ -64,6 +68,17 @@ public class ResponseEncryptor extends Encryptor {
 			newPartialIV |= ctx.getResponsesIncludePartialIV();
 			assert (ctx instanceof GroupSenderCtx);
 
+		}
+		// DET_REQ
+		else if (ctx != null && response.getOptions().getRequestHash() != null) {
+			// This is a response to a deterministic request
+			isDetReq = true;
+			
+			// Retrieve the Sender Context
+			// Note: this is not the _deterministic_ Sender Context
+			ctx = ctx.getSenderCtx();
+			
+			assert (ctx instanceof GroupSenderCtx);
 		}
 
 		if (ctx == null) {
@@ -80,8 +95,18 @@ public class ResponseEncryptor extends Encryptor {
 		}
 
 		int realCode = response.getCode().value;
-		response = OptionJuggle.setFakeCodeResponse(response);
-
+		// DET_REQ
+		if (isDetReq) {
+			// Set fake code 2.05 (Content) if it is a response to a deterministic request
+			response = OptionJuggle.setFakeCodeResponseToDeterministicRequest(response);
+			
+			// The response to a deterministic request includes a Max-Age option
+			response.getOptions().setMaxAge(3600);
+		}
+		else {
+			response = OptionJuggle.setFakeCodeResponse(response);
+		}
+		
 		OptionSet options = response.getOptions();
 
 		// Save block1 option in the case of outer block-wise to re-add later
@@ -90,7 +115,7 @@ public class ResponseEncryptor extends Encryptor {
 			block1Option = options.getBlock1();
 			options.removeBlock1();
 		}
-
+		
 		byte[] confidential = OSSerializer.serializeConfidentialData(options, response.getPayload(), realCode);
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
 		byte[] cipherText = encryptAndEncode(enc, ctx, response, newPartialIV, requestOption);
