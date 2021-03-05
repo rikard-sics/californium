@@ -313,8 +313,11 @@ public class OSSerializer {
 		else if (ctx instanceof GroupDeterministicRecipientCtx) { // DET_REQ (new case)
 			GroupDeterministicRecipientCtx detRecipientCtx = (GroupDeterministicRecipientCtx) ctx;
 			GroupSenderCtx senderCtx = detRecipientCtx.getSenderCtx();
-			algCountersign = senderCtx.getAlgCountersign().AsCBOR();
-			parCountersign = CBORObject.FromObject(senderCtx.getParCountersign());
+			algSign = senderCtx.getAlgSign().AsCBOR();
+			algSignEnc = senderCtx.getAlgSignEnc().AsCBOR();
+			algKeyAgreement = senderCtx.getAlgKeyAgreement().AsCBOR();
+			senderPublicKey = Bytes.EMPTY;
+			gmPublicKey = senderCtx.getCommonCtx().getGmPublicKey();
 		}
 
 		CBORObject groupAadEnc = CBORObject.DecodeFromBytes(aadBytes);
@@ -372,9 +375,11 @@ public class OSSerializer {
 
 	// DET_REQ
 	/**
-	 * Update the external AAD for Group OSCORE, to use for encrypting a deterministic request
+	 * Update the external AAD for Group OSCORE, to use for encrypting a deterministic request.
+	 * This is a temporary hack. The hash should be included by considering the Request-Hash
+	 * option as a Class I option, although only for the AAD and to not send on the wire
 	 * 
-	 * @param hash  the hash value to set as 'request_kid' field of the aad_array
+	 * @param hash  the hash value to set among the 'options' field of the aad_array
 	 * @param aadBytes  the current external AAD value
 	 * @return the updated external AAD
 	 */
@@ -382,9 +387,23 @@ public class OSSerializer {
 
 		CBORObject groupAadEnc = CBORObject.DecodeFromBytes(aadBytes);
 
+		// TODO Moot, remove it!
+		/*
 		// Update the element with index 2, i.e.'request_kid', to specify the hash
 		groupAadEnc.set(2, CBORObject.FromObject(hash));
+		*/
 
+		// This is hardcoded, assuming the hash algorithm to be SHA-256
+		// and the option number of the Request-Hash option to be 548
+		byte[] prefix = { (byte) 0xed, (byte) 0x01, (byte) 0x17, (byte) 0x13 };
+		byte[] options = new byte[prefix.length + hash.length];
+		System.arraycopy(prefix, 0, options, 0, prefix.length);
+		System.arraycopy(hash, 0, options, prefix.length, hash.length);
+		
+		// Update the element with index 4, i.e.'options',
+		// to specify the Request-Hash option as if it was a Class I option
+		groupAadEnc.set(4, CBORObject.FromObject(options));
+		
 		return groupAadEnc.EncodeToBytes();
 		
 	}

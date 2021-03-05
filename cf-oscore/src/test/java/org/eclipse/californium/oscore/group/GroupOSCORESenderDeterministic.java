@@ -25,30 +25,25 @@ import java.net.URISyntaxException;
 import java.security.Provider;
 import java.security.Security;
 
-import javax.xml.bind.DatatypeConverter;
-
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
+import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
+import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.core.network.CoapEndpoint;
-import org.eclipse.californium.core.network.config.NetworkConfig;
-import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
 import org.eclipse.californium.cose.AlgorithmID;
-import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.config.Configuration;
+import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 import org.eclipse.californium.oscore.group.interop.InteropParametersNew;
 
-import com.upokecenter.cbor.CBORObject;
-
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
-
-import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
 
 /**
  * Test sender configured to support multicast requests.
@@ -57,21 +52,47 @@ import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
 public class GroupOSCORESenderDeterministic {
 
 	/**
+	 * Whether to use OSCORE or not.
+	 */
+	static final boolean useOSCORE = true;
+	
+	/**
+	 * Whether to use the pairwise mode of Group OSCORE or not.
+	 * 
+	 * If set to true, the request will be sent over unicast, otherwise over multicast
+	 */
+	static final boolean pairwiseMode = true;
+	
+	/**
+	 * Whether to send the request as a deterministic request or not
+	 * 
+	 * It must be set to false if "pairwiseMode" is set to false
+	 */
+	static final boolean deterministicRequest = true;
+	
+	/**
+	 * Whether to send the request through a proxy or not
+	 * 
+	 * It must be set to false if "pairwiseMode" is set to false
+	 */
+	static final boolean useProxy = false;
+	
+	/**
 	 * File name for network configuration.
 	 */
-	private static final File CONFIG_FILE = new File("CaliforniumMulticast.properties");
+	private static final File CONFIG_FILE_MULTICAST = new File("CaliforniumMulticast.properties");
 	/**
 	 * Header for network configuration.
 	 */
-	private static final String CONFIG_HEADER = "Californium CoAP Properties file for Multicast Client";
+	private static final String CONFIG_HEADER_MULTICAST = "Californium CoAP Properties file for Multicast Client";
 	/**
 	 * Special network configuration defaults handler.
 	 */
-	private static NetworkConfigDefaultHandler DEFAULTS = new NetworkConfigDefaultHandler() {
+	private static DefinitionsProvider DEFAULTS = new DefinitionsProvider() {
 
 		@Override
-		public void applyDefaults(NetworkConfig config) {
-			config.setInt(Keys.MULTICAST_BASE_MID, 65000);
+		public void applyDefinitions(Configuration config) {
+			config.set(CoapConfig.MULTICAST_BASE_MID, 65000);
 		}
 
 	};
@@ -80,21 +101,6 @@ public class GroupOSCORESenderDeterministic {
 	 * Time to wait for replies to the multicast request
 	 */
 	private static final int HANDLER_TIMEOUT = 2000;
-
-	/**
-	 * Whether to use OSCORE or not.
-	 */
-	static final boolean useOSCORE = true;
-	
-	/**
-	 * Whether to use the pairwise mode of Group OSCORE or not
-	 */
-	static final boolean pairwiseMode = true;
-	
-	/**
-	 * Whether to send the request as a deterministic request or not
-	 */
-	static final boolean deterministicRequest = true;
 
 	/**
 	 * Multicast address to send to (use the first line to set a custom one).
@@ -124,6 +130,21 @@ public class GroupOSCORESenderDeterministic {
 	static final String requestPayload = "test";
 
 	/**
+	 * Unicast address of the proxy, if used
+	 */
+	static final InetAddress proxyIP = new InetSocketAddress("127.0.0.1", 0).getAddress();
+	
+	/**
+	 * Port number of the CoAP-to-CoAP proxy
+	 */
+	private static final int proxyPort = 5685;
+	
+	/**
+	 * Resource at the proxy to perform coap2coap forwarding
+	 */
+	static final String proxyResource = "/coap2coap";
+
+	/**
 	 * ED25519 curve value.
 	 * https://www.iana.org/assignments/cose/cose.xhtml#elliptic-curves
 	 */
@@ -137,11 +158,18 @@ public class GroupOSCORESenderDeterministic {
 
 	// Group OSCORE specific values for the countersignature (EdDSA)
 	private final static AlgorithmID algCountersign = AlgorithmID.EDDSA;
+	
+	// Encryption algorithm for when using signatures
+	private final static AlgorithmID algSignEnc = AlgorithmID.AES_CCM_16_64_128;
+	
+	// Algorithm for key agreement
+	private final static AlgorithmID algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
 
 	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
 			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
 	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
 			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
+	
 
 	/*
 	// Test with Christian
@@ -156,23 +184,24 @@ public class GroupOSCORESenderDeterministic {
 	
 	
 	private static final int REPLAY_WINDOW = 32;
-
-	/*
-	 * Rikard: Note regarding countersignature keys. The sid_private_key
-	 * contains both the public and private keys. The rid*_public_key contains
-	 * only the public key. For information on the keys see the Countersign_Keys
-	 * file.
-	 */
+	
+	private final static byte[] gm_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+			"A501781A636F6170733A2F2F6D79736974652E6578616D706C652E636F6D026C67726F75706D616E6167657203781A636F6170733A2F2F646F6D61696E2E6578616D706C652E6F7267041AAB9B154F08A101A4010103272006215820CDE3EFD3BC3F99C9C9EE210415C6CBA55061B5046E963B8A58C9143A61166472");
 
 	private final static byte[] sid = new byte[] { 0x25 };
-	private final static String sid_private_key_string = "pQMnAQEgBiFYIAaekSuDljrMWUG2NUaGfewQbluQUfLuFPO8XMlhrNQ6I1ggZHFNQaJAth2NgjUCcXqwiMn0r2/JhEVT5K1MQsxzUjk=";
-	private static OneKey sid_private_key;
+	private final static byte[] sid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+			"A501781B636F6170733A2F2F746573746572312E6578616D706C652E636F6D02666D796E616D6503781A636F6170733A2F2F68656C6C6F312E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820069E912B83963ACC5941B63546867DEC106E5B9051F2EE14F3BC5CC961ACD43A");
+	private static MultiKey sid_private_key;
+	private static byte[] sid_private_key_bytes = new byte[] { (byte) 0x64, (byte) 0x71, (byte) 0x4D, (byte) 0x41,
+			(byte) 0xA2, (byte) 0x40, (byte) 0xB6, (byte) 0x1D, (byte) 0x8D, (byte) 0x82, (byte) 0x35, (byte) 0x02,
+			(byte) 0x71, (byte) 0x7A, (byte) 0xB0, (byte) 0x88, (byte) 0xC9, (byte) 0xF4, (byte) 0xAF, (byte) 0x6F,
+			(byte) 0xC9, (byte) 0x84, (byte) 0x45, (byte) 0x53, (byte) 0xE4, (byte) 0xAD, (byte) 0x4C, (byte) 0x42,
+			(byte) 0xCC, (byte) 0x73, (byte) 0x52, (byte) 0x39 };
 
-	
-	
 	private final static byte[] rid1 = new byte[] { 0x52 }; // Recipient 1
-	private final static String rid1_public_key_string = "pAMnAQEgBiFYIHfsNYwdNE5B7g6HuDg9I6IJms05vfmJzkW1Loh0Yzib";
-	private static OneKey rid1_public_key;
+	private static byte[] rid1_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A401010327200621582077EC358C1D344E41EE0E87B8383D23A2099ACD39BDF989CE45B52E887463389B");
+	private static MultiKey rid1_public_key;
 	
 	// Test with Christian
 	/*
@@ -182,8 +211,9 @@ public class GroupOSCORESenderDeterministic {
 	
 	
 	private final static byte[] rid2 = new byte[] { 0x77 }; // Recipient 2
-	private final static String rid2_public_key_string = "pAMnAQEgBiFYIBBbjGqMiAGb8MNUWSk0EwuqgAc5nMKsO+hFiEYT1bou";
-	private static OneKey rid2_public_key;
+	private final static byte[] rid2_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820105B8C6A8C88019BF0C354592934130BAA8007399CC2AC3BE845884613D5BA2E");
+	private static MultiKey rid2_public_key;
 
 	private final static byte[] rid0 = new byte[] { (byte) 0xCC }; // Dummy
 
@@ -202,6 +232,8 @@ public class GroupOSCORESenderDeterministic {
 		 */
 		String multicastRequestURI = "";
 		String unicastRequestURI = "";
+		String unicastProxyURI = "";
+
 		if (multicastIP instanceof Inet6Address) {
 			multicastRequestURI = "coap://" + "[" + multicastIP.getHostAddress() + "]" + ":" + destinationPort + requestResource;
 		} else {
@@ -212,12 +244,16 @@ public class GroupOSCORESenderDeterministic {
 		} else {
 			unicastRequestURI = "coap://" + unicastIP.getHostAddress() + ":" + destinationPort + requestResource;
 		}
-		
-		/*
-		// Test with Christian
-		requestURI = "coap://detsrv.proxy.rd.coap.amsuess.com/.well-known/core";
-		*/
+		if (proxyIP instanceof Inet6Address) {
+			unicastProxyURI = "coap://" + "[" + proxyIP.getHostAddress() + "]" + ":" + proxyPort + proxyResource;
+		} else {
+			unicastProxyURI = "coap://" + proxyIP.getHostAddress() + ":" + proxyPort + proxyResource;
+		}
 
+		
+		// Test with Christian
+		// unicastRequestURI = "coap://detsrv.proxy.rd.coap.amsuess.com/.well-known/core";
+		
 		
 		// Install cryptographic providers
 		Provider EdDSA = new EdDSASecurityProvider();
@@ -225,76 +261,77 @@ public class GroupOSCORESenderDeterministic {
 		// InstallCryptoProviders.generateCounterSignKey();
 
 		// Add private & public keys for sender & receiver(s)
-		sid_private_key = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary((sid_private_key_string))));
-		rid1_public_key = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary((rid1_public_key_string))));
-		
+		sid_private_key = new MultiKey(sid_public_key_bytes, sid_private_key_bytes);
+		rid1_public_key = new MultiKey(rid1_public_key_bytes);
+		rid2_public_key = new MultiKey(rid2_public_key_bytes);
 		
 		/*
 		// Test with Christian
-		rid1_public_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_1_KEY_EDDSA);
+			rid1_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+				"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A401010327200621582077EC358C1D344E41EE0E87B8383D23A2099ACD39BDF989CE45B52E887463389B");
+			rid1_public_key = new MultiKey(rid1_public_key_bytes);
 		*/
 		
-		
-		rid2_public_key = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary((rid2_public_key_string))));
-
 		// If OSCORE is being used set the context information
 		if (useOSCORE) {
 
-			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign);
+			byte[] gmPublicKey = gm_public_key_bytes;
+			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign,
+											  algSignEnc, algKeyAgreement, gmPublicKey);
 			
-			commonCtx.addSenderCtx(sid, sid_private_key);
+			commonCtx.addSenderCtxCcs(sid, sid_private_key);
 
-			commonCtx.addRecipientCtx(rid0, REPLAY_WINDOW, null);
-			commonCtx.addRecipientCtx(rid1, REPLAY_WINDOW, rid1_public_key);
-			commonCtx.addRecipientCtx(rid2, REPLAY_WINDOW, rid2_public_key);
+			commonCtx.addRecipientCtxCcs(rid0, REPLAY_WINDOW, null);
+			commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
+			commonCtx.addRecipientCtxCcs(rid2, REPLAY_WINDOW, rid2_public_key);
 
 			commonCtx.addDeterministicSenderCtx(detSid, "SHA-256");
 			commonCtx.addDeterministicRecipientCtx(detSid, 0, "SHA-256");
 			
-			commonCtx.setResponsesIncludePartialIV(true);
-			commonCtx.setResponsesIncludePartialIV(true);
-
 			db.addContext(multicastRequestURI, commonCtx);
 
 			OSCoreCoapStackFactory.useAsDefault(db);
 		}
 
-		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
-
-		CoapEndpoint endpoint = new CoapEndpoint.Builder().setNetworkConfig(config).build();
 		CoapClient client = new CoapClient();
-
-		client.setEndpoint(endpoint);
-
-		if (pairwiseMode) {
-			client.setURI(unicastRequestURI);
+				
+		if (pairwiseMode && useProxy == false) {
+				client.setURI(unicastRequestURI);
 		}
 		else {
+			Configuration config = Configuration.createWithFile(CONFIG_FILE_MULTICAST, CONFIG_HEADER_MULTICAST, DEFAULTS);
+			CoapEndpoint endpoint = new CoapEndpoint.Builder().setConfiguration(config).build();
+			client.setEndpoint(endpoint);
 			client.setURI(multicastRequestURI);
 		}
 		
-		Request request = Request.newPost();
-		request.setPayload(requestPayload);
+		Request request;
+		Code requestCode = Code.POST;
 		if (useOSCORE) {
-			
+
 			if (!pairwiseMode) {
-				// Protect the request in group mode
+				request = Request.newPost();
+				request.setPayload(requestPayload);
 				request.setType(Type.NON);
+				
+				// Protect the request in group mode
 				request.getOptions().setOscore(Bytes.EMPTY);
 			}
 			else {
 				if (!deterministicRequest) {
-					// Protect the request in pairwise mode for a particular group member
+					request = Request.newPost();
+					request.setPayload(requestPayload);
 					request.setType(Type.CON);
+					
+					// Protect the request in pairwise mode for a particular group member
 					request.getOptions().setOscore(OptionEncoder.set(true, multicastRequestURI, rid1, false));
 				}
 				else {
-					// Protect the request in pairwise mode as a deterministic request
-					request = Request.newGet();
+					request = new Request(Code.GET);
 					request.setType(Type.CON);
+					requestCode = Code.GET;
+					
+					// Protect the request in pairwise mode as a deterministic request
 					request.getOptions().setOscore(OptionEncoder.set(true, multicastRequestURI, null, true));
 				}
 				
@@ -313,34 +350,125 @@ public class GroupOSCORESenderDeterministic {
 		}
 		System.out.println("Request destination port: " + destinationPort);
 		System.out.println("Request method: " + request.getCode());
-		if (!pairwiseMode) {
+		if (requestCode != Code.GET && requestCode != Code.DELETE && requestPayload != null) {
 			System.out.println("Request payload: " + requestPayload);
 		}
-		System.out.println("Outgoing port: " + endpoint.getAddress().getPort());
 		System.out.println("==================");
 
 		try {
-			String host = new URI(client.getURI()).getHost();
-			int port = new URI(client.getURI()).getPort();
-			System.out.println("Sending to: " + host + ":" + port);
+			String host;
+			int port;
+			String path;
+			if (useProxy == false) {
+				host = new URI(client.getURI()).getHost();
+				port = new URI(client.getURI()).getPort();
+				path = new URI(client.getURI()).getPath();
+			}
+			else {
+				host = new URI(unicastProxyURI).getHost();
+				port = proxyPort;
+				path = proxyResource;
+			}
+			System.out.println("Sending to: " + host + ":" + port + path);
 		} catch (URISyntaxException e) {
 			System.err.println("Failed to parse destination URI");
 			e.printStackTrace();
 		}
-		System.out.println("Sending from: " + client.getEndpoint().getAddress());
-		if (!pairwiseMode) {
-			System.out.println(Utils.prettyPrint(request));
-		}
-		else {
-			System.out.println(Utils.prettyPrint(request));
-		}
 
-		if (pairwiseMode) {
-			client.advanced(request);
-		}
-		else {
-			// sends a multicast request
+		System.out.println(Utils.prettyPrint(request));
+		
+		if (useOSCORE && pairwiseMode) {
+			
+			// sends a unicast request
+
+			/*
+			CoapResponse response = client.advanced(request);
+			
+			System.out.println("Sending from: " + client.getEndpoint().getAddress());
+			System.out.println("Receiving from: " + response.advanced().getSourceContext().getPeerAddress());
+			System.out.println(Utils.prettyPrint(response));
+			*/
+			
+			if (useProxy == true) {
+				// Use the Proxy-Uri option
+				request.setURI(unicastProxyURI);
+				request.getOptions().setProxyUri(unicastRequestURI);
+				
+				// Placeholder for using Proxy-Scheme instead
+				/*
+				AddressEndpointContext proxy = new AddressEndpointContext(new InetSocketAddress(proxyIP, proxyPort));
+				request.setDestinationContext(proxy);
+				request.setURI(unicastRequestURI);
+				request.setProxyScheme("coap");
+				*/
+			}
+			
+			// Send a first request as prepared above
 			client.advanced(handler, request);
+			while (handler.waitOn(HANDLER_TIMEOUT)) {
+				// Wait for responses
+			}
+			
+			// Prepare a second request, with the same type and payload of the first one
+			requestCode = Code.POST;
+			if (!deterministicRequest) {
+				request = Request.newPost();
+				request.setPayload(requestPayload);
+				request.setType(Type.CON);
+				
+				// Protect the request in pairwise mode for a particular group member
+				request.getOptions().setOscore(OptionEncoder.set(true, multicastRequestURI, rid1, false));
+			}
+			else {
+
+				request = new Request(Code.GET);
+				request.setType(Type.CON);
+				requestCode = Code.GET;
+				
+				// Protect the request in pairwise mode as a deterministic request
+				request.getOptions().setOscore(OptionEncoder.set(true, multicastRequestURI, null, true));
+			}
+			
+			if (useProxy == true) {
+				// Use the Proxy-Uri option
+				request.setURI(unicastProxyURI);
+				request.getOptions().setProxyUri(unicastRequestURI);
+				
+				// Placeholder for using Proxy-Scheme instead
+				/*
+				AddressEndpointContext proxy = new AddressEndpointContext(new InetSocketAddress(proxyIP, proxyPort));
+				request.setDestinationContext(proxy);
+				request.setURI(unicastRequestURI);
+				request.setProxyScheme("coap");
+				*/
+			}
+			
+			// Send the second request
+			client.advanced(handler, request);
+			while (handler.waitOn(HANDLER_TIMEOUT)) {
+				// Wait for responses
+			}
+			
+		}
+		else if (useOSCORE && !pairwiseMode) {
+			// Sends a first multicast request, as prepared above
+			client.advanced(handler, request);
+			System.out.println("Sending from: " + client.getEndpoint().getAddress());
+			while (handler.waitOn(HANDLER_TIMEOUT)) {
+				// Wait for responses
+			}
+			
+			// Prepare a second request, with the same type and payload of the first one
+			request = Request.newPost();
+			request.setPayload(requestPayload);
+			request.setType(Type.NON);
+			
+			// Protect the request in group mode
+			request.getOptions().setOscore(Bytes.EMPTY);
+			
+			// Send the second multicast request, with the same type and payload of the first one 
+			client.advanced(handler, request);
+			System.out.println("Sending from: " + client.getEndpoint().getAddress());
 			while (handler.waitOn(HANDLER_TIMEOUT)) {
 				// Wait for responses
 			}
@@ -368,16 +496,13 @@ public class GroupOSCORESenderDeterministic {
 			notifyAll();
 		}
 
-		/**
-		 * Handle and parse incoming responses.
-		 */
+		
+		//Handle and parse incoming responses.
 		@Override
 		public void onLoad(CoapResponse response) {
 			on();
 
-			// System.out.println("Receiving to: "); //TODO
 			System.out.println("Receiving from: " + response.advanced().getSourceContext().getPeerAddress());
-
 			System.out.println(Utils.prettyPrint(response));
 		}
 
@@ -386,4 +511,5 @@ public class GroupOSCORESenderDeterministic {
 			System.err.println("error");
 		}
 	}
+
 }

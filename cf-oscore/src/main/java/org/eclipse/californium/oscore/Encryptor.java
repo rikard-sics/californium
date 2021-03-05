@@ -124,10 +124,16 @@ public abstract class Encryptor {
 
 				recipientId = null;
 				int requestSeq = 0;
-
 				
+				// DET_REQ
+				// Detect if this is a response to a deterministic request
+				if (message.getOptions().getRequestHash() != null) {
+					isDetReq = true;
+				}
+				
+				// DET_REQ (extended)
 				// TODO: Get recipientId and seqNr from message as below
-				if (ctx.isGroupContext() == false) {
+				if (ctx.isGroupContext() == false && isDetReq == false) {
 					recipientId = ctx.getRecipientId();
 					requestSeq = requestSequenceNr;
 				} else if (ctx.isGroupContext()) {
@@ -170,12 +176,20 @@ public abstract class Encryptor {
 				boolean pairwiseRequest = OptionEncoder.getPairwiseMode(message.getOptions().getOscore()) && isRequest;
 				groupModeMessage = !pairwiseResponse && !pairwiseRequest;
 
+				// DET_REQ
+				if (!isRequest && isDetReq) {
+					// This is a response to a deterministic request.
+					// Hence, the response must be protected in group mode
+					pairwiseResponse = false;
+					groupModeMessage = true;
+				}
+				
 				LOGGER.debug("Encrypting outgoing " + message.getClass().getSimpleName()
 						+ " using Group OSCORE. Pairwise mode: " + !groupModeMessage);
-
+				
 				// DET_REQ
 				// If it is a deterministic request, switch to the Deterministic Sender Context
-				if (isDetReq) {
+				if (isRequest && isDetReq) {
 					ctx = ((GroupSenderCtx) ctx).getDeterministicSenderCtx();
 				}
 				
@@ -184,7 +198,7 @@ public abstract class Encryptor {
 				
 				// DET_REQ
 				// Additional steps in case of a deterministic request
-				if (isDetReq) {
+				if (isRequest && isDetReq) {
 					detSenderKey = ctx.getSenderKey();
 					
 					int hashInputLength = detSenderKey.length + aad.length + enc.GetContent().length;
@@ -206,10 +220,12 @@ public abstract class Encryptor {
 						throw new OSException(e.getMessage());
 					}
 					
+					// Debugging
 					System.out.println("Hash input - Sender Key Deterministic Client: " + Utils.toHexString(detSenderKey) + "\n");
 					System.out.println("Hash input - Original aad : " + Utils.toHexString(aad) + "\n");
 					System.out.println("Hash input - COSE Plaintext : " + Utils.toHexString(enc.GetContent()) + "\n");
 					System.out.println("Deterministic Request - Hash value: " + Utils.toHexString(hash) + "\n");
+					
 					
 					message.getOptions().setRequestHash(hash);
 					
@@ -217,6 +233,16 @@ public abstract class Encryptor {
 					// TODO moot! remove
 					// aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
 					
+				}
+				// If it is a response to a deterministic request, update the external_aad and remove the Request-Hash option
+				if (!isRequest && isDetReq) {
+					hash = message.getOptions().getRequestHash();
+					if (hash == null) {
+						LOGGER.error("Error while protecting a response to a deterministic request");
+						throw new OSException("Error while protecting a response to a deterministic request");
+					}
+					message.getOptions().removeRequestHash();
+					aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
 				}
 				
 				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with AAD "

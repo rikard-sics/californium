@@ -82,6 +82,8 @@ public class GroupCtx {
 	boolean pairwiseModeResponses = false;
 	boolean pairwiseModeRequests = false;
 
+	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
+	
 	/**
 	 * Construct a Group OSCORE context.
 	 * 
@@ -174,13 +176,20 @@ public class GroupCtx {
 		}
 		
 		GroupDeterministicRecipientCtx deterministicRecipientCtx = new GroupDeterministicRecipientCtx(
-				                                                         masterSecret, false, aeadAlg, null, recipientId, hkdfAlg,
-				                                                         replayWindow, masterSalt, idContext, hashAlg, this);
+                masterSecret, false, aeadAlg, null, recipientId, hkdfAlg,
+                replayWindow, masterSalt, idContext, MAX_UNFRAGMENTED_SIZE,
+                hashAlg, this);
 
 		this.deterministicRecipientCtx = deterministicRecipientCtx;
 
 	}
 
+	public GroupDeterministicSenderCtx getDeterministicSenderCtx() {
+		
+		return this.deterministicSenderCtx;
+		
+	}
+	
 	/**
 	 * Add a sender context.
 	 * 
@@ -261,12 +270,13 @@ public class GroupCtx {
 		GroupDeterministicSenderCtx deterministicSenderCtx = new GroupDeterministicSenderCtx(
 				                                                 masterSecret, false, aeadAlg,
 				                                                 senderId, null, hkdfAlg, 0,
-				                                                 masterSalt, idContext, hashAlg, this);
+				                                                 masterSalt, idContext, MAX_UNFRAGMENTED_SIZE,
+				                                                 hashAlg, this);
 		
 		this.deterministicSenderCtx = deterministicSenderCtx;
 		this.deterministicSenderCtx.setIncludeContextId(true);
 	}
-
+	
 	/**
 	 * Retrieve the public key for the Group Manager associated to this context.
 	 * 

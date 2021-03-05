@@ -33,8 +33,8 @@ public class GroupDeterministicRecipientCtx extends OSCoreCtx {
 
 	GroupDeterministicRecipientCtx(byte[] master_secret, boolean client, AlgorithmID alg, byte[] sender_id,
 			byte[] recipient_id, AlgorithmID kdf, Integer replay_size, byte[] master_salt, byte[] contextId,
-			String hashAlg, GroupCtx commonCtx) throws OSException {
-		super(master_secret, client, alg, sender_id, recipient_id, kdf, replay_size, master_salt, contextId);
+			int maxUnfragmentedSize, String hashAlg, GroupCtx commonCtx) throws OSException {
+		super(master_secret, client, alg, sender_id, recipient_id, kdf, replay_size, master_salt, contextId, maxUnfragmentedSize);
 
 		this.commonCtx = commonCtx;
 		this.hashAlg = hashAlg;
