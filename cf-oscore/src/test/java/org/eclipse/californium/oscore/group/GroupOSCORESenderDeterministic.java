@@ -61,14 +61,14 @@ public class GroupOSCORESenderDeterministic {
 	 * 
 	 * If set to true, the request will be sent over unicast, otherwise over multicast
 	 */
-	static final boolean pairwiseMode = true;
+	static final boolean pairwiseMode = false;
 	
 	/**
 	 * Whether to send the request as a deterministic request or not
 	 * 
 	 * It must be set to false if "pairwiseMode" is set to false
 	 */
-	static final boolean deterministicRequest = true;
+	static final boolean deterministicRequest = false;
 	
 	/**
 	 * Whether to send the request through a proxy or not
@@ -448,6 +448,13 @@ public class GroupOSCORESenderDeterministic {
 			while (handler.waitOn(HANDLER_TIMEOUT)) {
 				// Wait for responses
 			}
+			
+			/*
+			client.advanced(handler, request);
+			while (handler.waitOn(HANDLER_TIMEOUT)) {
+				// Wait for responses
+			}
+			*/
 			
 		}
 		else if (useOSCORE && !pairwiseMode) {

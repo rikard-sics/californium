@@ -222,17 +222,13 @@ public abstract class Encryptor {
 					}
 					
 					// Debugging
-					System.out.println("Hash input - Sender Key Deterministic Client: " + Utils.toHexString(detSenderKey) + "\n");
-					System.out.println("Hash input - Original aad : " + Utils.toHexString(aad) + "\n");
-					System.out.println("Hash input - COSE Plaintext : " + Utils.toHexString(enc.GetContent()) + "\n");
+					System.out.println("\n");
+					System.out.println("Hash input - Sender Key Deterministic Client: " + Utils.toHexString(detSenderKey));
+					System.out.println("Hash input - Original aad : " + Utils.toHexString(aad));
+					System.out.println("Hash input - COSE Plaintext : " + Utils.toHexString(enc.GetContent()));
 					System.out.println("Deterministic Request - Hash value: " + Utils.toHexString(hash) + "\n");
 					
-					
 					message.getOptions().setRequestHash(hash);
-					
-					// Update the aad array, by setting the hash as value of 'request_kid'
-					// TODO moot! remove
-					// aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
 					
 				}
 				// If it is a response to a deterministic request, update the external_aad and remove the Request-Hash option
