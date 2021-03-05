@@ -253,7 +253,7 @@ public class GroupOSCORESenderDeterministic {
 		
 		/*
 		// Test with Christian
-		requestURI = "coap://detsrv.proxy.rd.coap.amsuess.com/.well-known/core";
+		unicastRequestURI = "coap://detsrv.proxy.rd.coap.amsuess.com/.well-known/core";
 		*/
 
 		

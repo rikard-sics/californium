@@ -52,6 +52,15 @@ public class GroupRecipientCtx extends OSCoreCtx {
 	}
 
 	/**
+	 * Get the common context associated to this recipient context
+	 * 
+	 * @return the public key of the other endpoint
+	 */
+	public GroupCtx getCommonCtx() {
+		return this.commonCtx;
+	}
+	
+	/**
 	 * Get the public key associated to this recipient context, meaning the
 	 * public key of the other endpoint.
 	 * 
