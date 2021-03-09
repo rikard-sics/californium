@@ -55,6 +55,7 @@ import org.eclipse.californium.oscore.OSCoreCtxDB;
 import org.eclipse.californium.oscore.OSException;
 import org.eclipse.californium.oscore.ObjectSecurityLayer;
 import org.eclipse.californium.oscore.OptionJuggle;
+import org.eclipse.californium.oscore.group.interop.InteropParametersNew;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,7 +106,7 @@ public class GroupOSCOREReceiverDeterministic {
 	 * Port to listen to.
 	 */
 	static final int listenPort = CoAP.DEFAULT_COAP_PORT;
-	//static final int listenPort = 5690;
+	// static final int listenPort = 5690;
 
 	/**
 	 * ED25519 curve value.
@@ -127,6 +128,7 @@ public class GroupOSCOREReceiverDeterministic {
 			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
 	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
 			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
+	
 
 	/*
 	// Test with Christian
@@ -184,8 +186,14 @@ public class GroupOSCOREReceiverDeterministic {
 			sid_private_key_string = "pQMnAQEgBiFYIBBbjGqMiAGb8MNUWSk0EwuqgAc5nMKsO+hFiEYT1bouI1gge/Yvdn7Rz0xgkR/En9/Mub1HzH6fr0HLZjadXIUIsjk=";
 			sid_private_key = new OneKey(
 					CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(sid_private_key_string)));
+			
 		} else {
 			System.out.println("Starting with sid 0x52.");
+			
+			/*
+			// Test with Christian
+			sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_3_KEY_EDDSA);
+			*/
 		}
 		
 		// If OSCORE is being used set the context information
