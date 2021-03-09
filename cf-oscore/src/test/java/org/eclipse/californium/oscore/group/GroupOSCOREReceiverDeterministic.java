@@ -191,6 +191,7 @@ public class GroupOSCOREReceiverDeterministic {
 			
 			/*
 			// Test with Christian
+<<<<<<< HEAD
 			sid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
 					"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820105B8C6A8C88019BF0C354592934130BAA8007399CC2AC3BE845884613D5BA2E");
 			sid_private_key_bytes = new byte[] { 0x7B, (byte) 0xF6, 0x2F, 0x76, 0x7E, (byte) 0xD1, (byte) 0xCF, 0x4C,
@@ -198,6 +199,9 @@ public class GroupOSCOREReceiverDeterministic {
 					(byte) 0xBD, 0x47, (byte) 0xCC, 0x7E, (byte) 0x9F, (byte) 0xAF, 0x41, (byte) 0xCB, 0x66, 0x36,
 					(byte) 0x9D, 0x5C, (byte) 0x85, 0x08, (byte) 0xB2, 0x39 };
 			sid_private_key = new MultiKey(sid_public_key_bytes, sid_private_key_bytes);
+=======
+			sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_3_KEY_EDDSA);
+>>>>>>> 2109b7fbc (code cleaning; adaptations for interop tests)
 			*/
 		}
 		
