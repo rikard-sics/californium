@@ -251,10 +251,10 @@ public class GroupOSCORESenderDeterministic {
 			unicastProxyURI = "coap://" + proxyIP.getHostAddress() + ":" + proxyPort + proxyResource;
 		}
 		
-		/*
+		
 		// Test with Christian
-		unicastRequestURI = "coap://detsrv.proxy.rd.coap.amsuess.com/.well-known/core";
-		*/
+		// unicastRequestURI = "coap://detsrv.proxy.rd.coap.amsuess.com/.well-known/core";
+		
 
 		
 		// Test with Christian
