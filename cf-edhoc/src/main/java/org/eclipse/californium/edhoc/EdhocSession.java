@@ -68,6 +68,9 @@ public class EdhocSession {
 	private byte[] TH3 = null;
 	private byte[] TH4 = null;
 	
+	// EDHOC message_3 , to be used for building an EDHOC+OSCORE request
+	private byte[] message3 = null;
+	
 	public EdhocSession(boolean initiator, int methodCorr, byte[] connectionId, OneKey ltk,
 						CBORObject idCred, byte[] cred, List<Integer> cipherSuites) {
 		
@@ -439,6 +442,35 @@ public class EdhocSession {
 		System.arraycopy(msg, 0, this.message1, 0, msg.length);
 	}
 	
+    /**
+     *  Clean up the stored EDHOC Message 1
+     */
+	public void cleanMessage1() {
+		this.message1 = null;
+	}
+	
+    /**
+     * @return  the EDHOC Message 3
+     */
+	public byte[] getMessage3() {
+		return this.message3;
+	}
+	
+    /**
+     * @param msg   The EDHOC message_3 to store, before an EDHOC+OSCORE request
+     */
+	public void setMessage3(byte[] msg) {
+		this.message3 = new byte[msg.length];
+		System.arraycopy(msg, 0, this.message3, 0, msg.length);
+	}
+	
+    /**
+     *  Clean up the stored EDHOC Message 3
+     */
+	public void cleanMessage3() {
+		this.message3 = null;
+	}
+	
 	/**
 	 * @return  the CIPHERTEXT 2
 	 */
@@ -569,7 +601,6 @@ public class EdhocSession {
 	    return masterSalt;
 		
 	}
-	
 	
     /**
      *  Get the application AEAD algorithm associated to the selected ciphersuite
