@@ -86,6 +86,7 @@ public class OptionJuggle {
 		boolean hasProxyScheme = options.hasProxyScheme();
 		boolean hasMaxAge = options.hasMaxAge();
 		boolean hasObserve = options.hasObserve();
+		boolean hasEdhoc = options.hasEdhoc(); // EDHOC
 
 		OptionSet ret = new OptionSet();
 
@@ -126,6 +127,11 @@ public class OptionJuggle {
 			ret.setOscore(oscore);
 		}
 
+		// EDHOC
+		if (hasEdhoc) {
+			ret.setEdhoc(true);
+		}
+		
 		return ret;
 	}
 
@@ -146,6 +152,7 @@ public class OptionJuggle {
 			case OptionNumberRegistry.URI_PORT:
 			case OptionNumberRegistry.PROXY_SCHEME:
 			case OptionNumberRegistry.OSCORE:
+			case OptionNumberRegistry.EDHOC: // EDHOC
 				// do not encrypt
 				break;
 			case OptionNumberRegistry.PROXY_URI:
