@@ -1618,7 +1618,7 @@ public final class OptionSet {
 
 		// EDHOC
 		if (hasEdhoc())
-			options.add(new Option(OptionNumberRegistry.EDHOC));
+			options.add(new Option(OptionNumberRegistry.EDHOC, Bytes.EMPTY));
 		
 		if (others != null)
 			options.addAll(others);
