@@ -62,6 +62,9 @@ public final class OptionNumberRegistry {
 
 	// RFC 8613
 	public static final int OSCORE			= 9;
+	
+	// EDHOC (temporary assignment)
+	public static final int EDHOC			= 21;
 
 	// RFC 7967
 	public static final int NO_RESPONSE		= 258;
@@ -97,6 +100,9 @@ public final class OptionNumberRegistry {
 		public static final String Object_Security	= "Object-Security";
 
 		public static final String No_Response		= "No-Response";
+		
+		public static final String Edhoc            = "EDHOC";
+		
 	}
 
 	/**
@@ -149,6 +155,8 @@ public final class OptionNumberRegistry {
 		case IF_MATCH:
 		case OSCORE:
 			return OptionFormat.OPAQUE;
+		case EDHOC: // EDHOC
+			return OptionFormat.EMPTY;
 		default:
 			return OptionFormat.UNKNOWN;
 		}
@@ -258,6 +266,7 @@ public final class OptionNumberRegistry {
 		case SIZE1:
 		case SIZE2:
 		case NO_RESPONSE:
+		case EDHOC: // EDHOC
 		default:
 			return true;
 		case ETAG:
@@ -335,6 +344,10 @@ public final class OptionNumberRegistry {
 		case LOCATION_QUERY:
 		case OSCORE:
 			max = 255;
+			break;
+		// EDHOC
+		case EDHOC:
+			max = 0;
 			break;
 
 		case MAX_AGE:
@@ -441,6 +454,8 @@ public final class OptionNumberRegistry {
 			return Names.Object_Security;
 		case NO_RESPONSE:
 			return Names.No_Response;
+		case EDHOC: // EDHOC
+			return Names.Edhoc;
 		default:
 			return String.format("Unknown (%d)", optionNumber);
 		}
@@ -468,6 +483,7 @@ public final class OptionNumberRegistry {
 		else if (Names.Size1.equals(name))			return SIZE1;
 		else if (Names.Object_Security.equals(name)) return OSCORE;
 		else if (Names.No_Response.equals(name))	return NO_RESPONSE;
+		else if (Names.Edhoc.equals(name))          return EDHOC; // EDHOC
 		else return UNKNOWN;
 	}
 
