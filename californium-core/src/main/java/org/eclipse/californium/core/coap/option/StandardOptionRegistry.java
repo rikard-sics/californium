@@ -195,7 +195,13 @@ public class StandardOptionRegistry extends MapBasedOptionRegistry {
 	 * @since 3.9
 	 */
 	public static final OpaqueOptionDefinition REQUEST_TAG = new OpaqueOptionDefinition(292, "Request-Tag", false, 0, 8);
-
+	/**
+	 * @see <a href="https://datatracker.ietf.org/doc/html/draft-ietf-core-oscore-edhoc-10#name-coap-option-numbers-registr"
+	 *      target= "_blank">draft-ietf-core-oscore-edhoc 8.1. EDHOC Option Format</a>
+	 */
+	public static final EmptyOptionDefinition EDHOC = new EmptyOptionDefinition( // EDHOC
+			OptionNumberRegistry.EDHOC, Names.Edhoc);
+	
 	/**
 	 * Registry with all standard options.
 	 */
@@ -204,7 +210,7 @@ public class StandardOptionRegistry extends MapBasedOptionRegistry {
 	private StandardOptionRegistry() {
 		super(IF_MATCH, URI_HOST, ETAG, IF_NONE_MATCH, URI_PORT, LOCATION_PATH, URI_PATH, CONTENT_FORMAT, MAX_AGE,
 				URI_QUERY, ACCEPT, Q_BLOCK_1, LOCATION_QUERY, PROXY_URI, PROXY_SCHEME, SIZE1, OBSERVE, BLOCK1, BLOCK2,
-				SIZE2, Q_BLOCK_2, OSCORE, ECHO, NO_RESPONSE, REQUEST_TAG);
+				SIZE2, Q_BLOCK_2, OSCORE, ECHO, NO_RESPONSE, REQUEST_TAG, EDHOC); // EDHOC
 	}
 
 	/**

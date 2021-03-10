@@ -89,6 +89,7 @@ public final class OptionSet {
 	private Integer observe;
 	private byte[] oscore;
 	private NoResponseOption no_response;
+	private boolean edhoc; // EDHOC
 
 	// Arbitrary options
 	private List<Option> others;
@@ -122,6 +123,7 @@ public final class OptionSet {
 		observe = null;
 		oscore = null;
 		no_response = null;
+		edhoc = false; // EDHOC
 
 		others = null; // new LinkedList<>();
 	}
@@ -161,6 +163,7 @@ public final class OptionSet {
 			oscore = origin.oscore.clone();
 		}
 		no_response = origin.no_response;
+		edhoc = origin.edhoc;  // EDHOC
 		others = copyList(origin.others);
 	}
 
@@ -197,6 +200,7 @@ public final class OptionSet {
 		observe = null;
 		oscore = null;
 		no_response = null;
+		edhoc = false; // EDHOC
 		if (others != null)
 			others.clear();
 	}
@@ -1512,6 +1516,28 @@ public final class OptionSet {
 		oscore = null;
 		return this;
 	}
+	
+	// EDHOC
+	/**
+	 * Checks if the EDHOC option is present.
+	 * 
+	 * @return {@code true}, if present
+	 */
+	public boolean hasEdhoc() {
+		return edhoc;
+	}
+
+	// EDHOC
+	/**
+	 * Sets or unsets the EDHOC option.
+	 * 
+	 * @param present the presence of the option
+	 * @return this OptionSet for a fluent API.
+	 */
+	public OptionSet setEdhoc(boolean present) {
+		edhoc = present;
+		return this;
+	}
 
 	/**
 	 * Gets the NoResponse option.
@@ -1783,6 +1809,10 @@ public final class OptionSet {
 		if (hasNoResponse())
 			options.add(getNoResponse().toOption());
 
+		// EDHOC
+		if (hasEdhoc())
+			options.add(StandardOptionRegistry.EDHOC.create(Bytes.EMPTY));
+		
 		if (others != null)
 			options.addAll(others);
 
@@ -1896,6 +1926,9 @@ public final class OptionSet {
 				break;
 			case OptionNumberRegistry.NO_RESPONSE:
 				setNoResponse(option.getIntegerValue());
+				break;
+			case OptionNumberRegistry.EDHOC: // EDHOC
+				setEdhoc(true);
 				break;
 			default:
 				getOthersInternal().add(option);
