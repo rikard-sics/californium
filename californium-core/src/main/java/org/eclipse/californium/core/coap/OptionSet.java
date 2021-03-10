@@ -108,6 +108,7 @@ public final class OptionSet {
 	private IntegerOption observe;
 	private OpaqueOption oscore;
 	private NoResponseOption no_response;
+	private EmptyOption edhoc; // EDHOC
 
 	// Arbitrary options
 	private List<Option> others;
@@ -141,6 +142,7 @@ public final class OptionSet {
 		observe = null;
 		oscore = null;
 		no_response = null;
+		edhoc = null; // EDHOC
 
 		others = null; // new LinkedList<>();
 	}
@@ -178,6 +180,7 @@ public final class OptionSet {
 		observe = origin.observe;
 		oscore = origin.oscore;
 		no_response = origin.no_response;
+		edhoc = origin.edhoc;  // EDHOC
 		others = copyList(origin.others);
 	}
 
@@ -207,6 +210,7 @@ public final class OptionSet {
 		observe = null;
 		oscore = null;
 		no_response = null;
+		edhoc = null; // EDHOC
 		clear(others);
 	}
 
@@ -1696,6 +1700,36 @@ public final class OptionSet {
 		oscore = null;
 		return this;
 	}
+	
+	// EDHOC
+	/**
+	 * Checks if the EDHOC option is present.
+	 * 
+	 * @return {@code true}, if present
+	 */
+	public boolean hasEdhoc() {
+		return edhoc != null;
+	}
+
+	// EDHOC
+	/**
+	 * Sets the EDHOC option.
+	 * 
+	 * @return this OptionSet for a fluent API.
+	 */
+	public OptionSet setEdhoc() {
+		edhoc = StandardOptionRegistry.EDHOC.create();
+		return this;
+	}
+	/**
+	 * Removes the EDHOC option.
+	 * 
+	 * @return this OptionSet for a fluent API.
+	 */
+	public OptionSet removeEdhoc() {
+		this.edhoc = null;
+		return this;
+	}
 
 	/**
 	 * Gets the NoResponse option.
@@ -2021,6 +2055,8 @@ public final class OptionSet {
 			options.add(accept);
 		if (location_query_list != null)
 			options.addAll(location_query_list);
+		if (hasEdhoc()) // EDHOC
+			options.add(edhoc);
 		if (hasBlock2())
 			options.add(block2);
 		if (hasBlock1())
@@ -2228,6 +2264,13 @@ public final class OptionSet {
 				return this;
 			}
 			no_response = (NoResponseOption) option;
+			break;
+		case OptionNumberRegistry.EDHOC: // EDHOC
+			if (edhoc != null) {
+				handleAdditionalNonRepeatableOption(option);
+				return this;
+			}
+			edhoc = (EmptyOption) option;
 			break;
 		default:
 			addOrdered(getOthersInternal(), option);

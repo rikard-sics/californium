@@ -73,6 +73,9 @@ public final class OptionNumberRegistry {
 
 	// RFC 8613
 	public static final int OSCORE			= 9;
+	
+	// EDHOC (temporary assignment)
+	public static final int EDHOC			= 21;
 
 	// RFC 7967
 	public static final int NO_RESPONSE		= 258;
@@ -108,6 +111,9 @@ public final class OptionNumberRegistry {
 		public static final String Object_Security	= "Object-Security";
 
 		public static final String No_Response		= "No-Response";
+		
+		public static final String Edhoc            = "EDHOC";
+		
 	}
 
 	/**
