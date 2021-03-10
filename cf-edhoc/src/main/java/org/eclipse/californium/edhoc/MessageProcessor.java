@@ -495,6 +495,7 @@ public class MessageProcessor {
 			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
         }
         session.setTH2(th2);
+        session.cleanMessage1();
     	if (debugPrint) {
     		Util.nicePrint("TH_2", th2);
     	}
@@ -1423,6 +1424,7 @@ public class MessageProcessor {
         	return null;
         }
         session.setTH2(th2);
+        session.cleanMessage1();
     	if (debugPrint) {
     		Util.nicePrint("TH_2", th2);
     	}
