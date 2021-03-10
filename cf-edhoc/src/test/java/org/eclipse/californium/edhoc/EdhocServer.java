@@ -70,10 +70,10 @@ public class EdhocServer extends CoapServer {
 	private final static int keyFormat = 1; // 0 is for Base64; 1 is for binary encoding
 	
 	// Uncomment to use an ECDSA key pair with curve P-256 as long-term identity key
-    // private final static int keyCurve = KeyKeys.EC2_P256.AsInt32();
+    private final static int keyCurve = KeyKeys.EC2_P256.AsInt32();
     
     // Uncomment to use an EdDSA key pair with curve Ed25519 for signatures
-    private final static int keyCurve = KeyKeys.OKP_Ed25519.AsInt32();
+    // private final static int keyCurve = KeyKeys.OKP_Ed25519.AsInt32();
     
     // Uncomment to use a Montgomery key pair with curve X25519
 	// private final static int keyCurve = KeyKeys.OKP_X25519.AsInt32();
@@ -83,7 +83,7 @@ public class EdhocServer extends CoapServer {
     
     // The type of the credential of this peer and the other peer
     // Possible values: CRED_TYPE_RPK ; CRED_TYPE_X5T ; CRED_TYPE_X5U ; CRED_TYPE_X5CHAIN
-    private static int credType = Constants.CRED_TYPE_X5T;
+    private static int credType = Constants.CRED_TYPE_X5CHAIN;
     
     // The CRED used for the identity key of this peer
     private static byte[] cred = null;
@@ -133,6 +133,18 @@ public class EdhocServer extends CoapServer {
 		HashMapCtxDB db = new HashMapCtxDB();
 		EdhocCoapStackFactory.useAsDefault(db, edhocSessions);
 
+		// Use to set up hardcoded keys for this peer and the other peer 
+		setupIdentityKeys();
+		
+		// Add the supported ciphersuites
+		setupSupportedCipherSuites();
+		
+    	for (int i = 0; i < 4; i++) {
+        	// Empty sets of assigned Connection Identifiers; one set for each possible size in bytes.
+        	// The set with index 0 refers to Connection Identifiers with size 1 byte
+    		usedConnectionIds.add(new HashSet<Integer>());
+    	}
+		
 		try {
 			// create server
 			boolean udp = true;
@@ -148,18 +160,6 @@ public class EdhocServer extends CoapServer {
 		
 		// Use to dynamically generate a key pair
 		// keyPair = Util.generateKeyPair(keyCurve);
-		
-		// Use to set up hardcoded keys for this peer and the other peer 
-		setupIdentityKeys();
-		
-		// Add the supported ciphersuites
-		setupSupportedCipherSuites();
-		
-    	for (int i = 0; i < 4; i++) {
-        	// Empty sets of assigned Connection Identifiers; one set for each possible size in bytes.
-        	// The set with index 0 refers to Connection Identifiers with size 1 byte
-    		usedConnectionIds.add(new HashSet<Integer>());
-    	}
 		    	
     	// Uncomment to run tests of different cryptographic operations
 		// runTests();		
@@ -329,6 +329,10 @@ public class EdhocServer extends CoapServer {
 		    	case Constants.CRED_TYPE_X5U:
 		    		// The x509 certificate of this peer
 		    		serializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("c788370016b8965bdb2074bff82e5a20e09bec21f8406e86442b87ec3ff245b70a47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb2");
+		    		
+		    		// Test with Peter (real DER certificate for the same identity key)
+		    		// serializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("308202763082021ca00302010202144aebaeff99a7ec4c9b398e007e3074d6d24fd779300a06082a8648ce3d0403023073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c301e170d3231303230393039333131345a170d3232303230393039333131345a3073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c3059301306072a8648ce3d020106082a8648ce3d030107034200040d75040e117b0fed769f235a4c831ff3b6699b8e310af28094fe3baea003b5e9772a4def5d8d4ee362e9ae9ef615215d115341f531338e3fa4030b6257b25d66a3818d30818a301d0603551d0e0416041444f3cf92db3cda030a3faf611872b90c601c0f74301f0603551d2304183016801444f3cf92db3cda030a3faf611872b90c601c0f74300f0603551d130101ff040530030101ff30270603551d250420301e06082b0601050507031c06082b0601050507030106082b06010505070302300e0603551d0f0101ff0404030201f6300a06082a8648ce3d0403020348003045022100ee29fb91849d8f0c617de9f817e016b535cac732235eed8a6711e68a3a634d0802205d1750bc02f0f1dde19a7c48d82fb5442c560d13f3d1a7e99546a6c39a28f38b");
+		    		
 		    		// CRED, as serialization of a CBOR byte string wrapping the serialized certificate
 		    		cred = CBORObject.FromObject(serializedCert).EncodeToBytes();
 		    		switch (credType) {
