@@ -141,7 +141,6 @@ public class EdhocServer extends CoapServer {
 		Security.insertProviderAt(EdDSA, 1);
 
 		// Enable EDHOC stack with EDHOC and OSCORE layers
-		HashMapCtxDB db = new HashMapCtxDB();
 		EdhocCoapStackFactory.useAsDefault(db, edhocSessions);
 
 		// Use to set up hardcoded keys for this peer and the other peer 
