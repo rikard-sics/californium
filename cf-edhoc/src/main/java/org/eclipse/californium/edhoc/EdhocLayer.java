@@ -73,6 +73,10 @@ public class EdhocLayer extends AbstractLayer {
 
 		LOGGER.warn("Sending request through EDHOC layer");
 
+		if (request.getOptions().hasEdhoc()) {
+			LOGGER.warn("Combined EDHOC+OSCORE request");
+		}
+		
 		super.sendRequest(exchange, request);
 	}
 
@@ -89,6 +93,10 @@ public class EdhocLayer extends AbstractLayer {
 
 		LOGGER.warn("Receiving request through EDHOC layer");
 
+		if (request.getOptions().hasEdhoc()) {
+			LOGGER.warn("Combined EDHOC+OSCORE request");
+		}
+		
 		super.receiveRequest(exchange, request);
 	}
 
