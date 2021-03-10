@@ -130,6 +130,9 @@ public class EdhocClient {
 	// The size of the Replay Window to use in an OSCORE Recipient Context
 	private static final int OSCORE_REPLAY_WINDOW = 32;
 	
+	// Set to true if an OSCORE-protected exchange is performed after EDHOC completion
+	private static final boolean POST_EDHOC_EXCHANGE = true;
+	
 	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
 	private static final boolean OSCORE_EDHOC_COMBINED = true;
 	
@@ -142,6 +145,8 @@ public class EdhocClient {
 			config.setInt(Keys.PREFERRED_BLOCK_SIZE, DEFAULT_BLOCK_SIZE);
 		}
 	};
+	
+	private static String helloWorldURI = "coap://localhost/helloWorld";
 	
 	private static String edhocURI = "coap://localhost/.well-known/edhoc";
 	// private static String edhocURI = "coap://195.251.58.203:5683/.well-known/edhoc"; // Lidia
@@ -815,6 +820,26 @@ public class EdhocClient {
 					client.shutdown();
 		    		return;
 		        	
+		        }
+
+				// Send a request protected with the just established Security Context
+		        if (POST_EDHOC_EXCHANGE) {
+					client = new CoapClient(helloWorldURI);
+					Request protectedRequest = Request.newGet();
+					CoapResponse protectedResponse = null;
+					protectedRequest.setType(Type.CON);
+					protectedRequest.getOptions().setOscore(Bytes.EMPTY);
+					try {
+						protectedResponse = client.advanced(protectedRequest);
+					} catch (ConnectorException e) {
+						System.err.println("ConnectorException when sending a protected request\n");
+					} catch (IOException e) {
+						System.err.println("IOException when sending a protected request\n");
+					}
+					byte[] myPayload = protectedResponse.getPayload();
+					if (myPayload != null) {
+						System.out.println(Utils.prettyPrint(protectedResponse));
+					}
 		        }
 				
 			}
