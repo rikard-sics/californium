@@ -23,6 +23,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 
@@ -566,6 +567,49 @@ public class EdhocSession {
 		}
 	    
 	    return masterSalt;
+		
+	}
+	
+	
+    /**
+     *  Get the application AEAD algorithm associated to the selected ciphersuite
+     * @param cipherSuite   The selected ciphersuite
+     * @return  the application AEAD algorithm associated to the selected ciphersuite
+     */
+	public static AlgorithmID getAppAEAD(int cipherSuite) {
+
+		AlgorithmID alg = null;
+	    
+		switch (cipherSuite) {
+			case Constants.EDHOC_CIPHER_SUITE_0:
+			case Constants.EDHOC_CIPHER_SUITE_1:
+			case Constants.EDHOC_CIPHER_SUITE_2:
+			case Constants.EDHOC_CIPHER_SUITE_3:
+				alg = AlgorithmID.AES_CCM_16_64_128;
+		}
+	    
+	    return alg;
+		
+	}
+		
+    /**
+     *  Get the application hkdf algorithm associated to the selected ciphersuite
+     * @param cipherSuite   The selected ciphersuite
+     * @return  the application hkdf algorithm associated to the selected ciphersuite
+     */
+	public static AlgorithmID getAppHkdf(int cipherSuite) {
+
+		AlgorithmID alg = null;
+	    
+		switch (cipherSuite) {
+			case Constants.EDHOC_CIPHER_SUITE_0:
+			case Constants.EDHOC_CIPHER_SUITE_1:
+			case Constants.EDHOC_CIPHER_SUITE_2:
+			case Constants.EDHOC_CIPHER_SUITE_3:
+				alg = AlgorithmID.HKDF_HMAC_SHA_256;
+		}
+	    
+	    return alg;
 		
 	}
 	
