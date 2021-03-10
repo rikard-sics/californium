@@ -130,6 +130,9 @@ public class EdhocClient {
 	// The size of the Replay Window to use in an OSCORE Recipient Context
 	private static final int OSCORE_REPLAY_WINDOW = 32;
 	
+	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
+	private static final boolean OSCORE_EDHOC_COMBINED = true;
+	
 	private static NetworkConfigDefaultHandler DEFAULTS = new NetworkConfigDefaultHandler() {
 
 		@Override
@@ -158,7 +161,6 @@ public class EdhocClient {
 		Security.insertProviderAt(EdDSA, 1);
 
 		// Enable EDHOC stack with EDHOC and OSCORE layers
-		HashMapCtxDB db = new HashMapCtxDB();
 		EdhocCoapStackFactory.useAsDefault(db, edhocSessions);
 
 		// Use to dynamically generate a key pair
@@ -745,7 +747,15 @@ public class EdhocClient {
 					Request edhocMessageReq2 = new Request(Code.POST, Type.CON);
 					edhocMessageReq2.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
 					edhocMessageReq2.setPayload(nextPayload);
+					
+		        	// If EDHOC message_3 has to be combined with the first
+		        	// OSCORE-protected request include the EDHOC option in the request
+		        	if (OSCORE_EDHOC_COMBINED == true && requestType == Constants.EDHOC_MESSAGE_3) {
+		        		edhocMessageReq2.getOptions().setEdhoc(true);
+		        	}
+					
 		        	edhocMessageResp2 = client.advanced(edhocMessageReq2);
+		        	
 				} catch (ConnectorException e) {
 					System.err.println("ConnectorException when sending " + myString + "\n");
 					Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);

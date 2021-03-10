@@ -30,6 +30,8 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.eclipse.californium.elements.util.Bytes;
+
 /**
  * {@code OptionSet} is a collection of all options of a request or a response.
  * {@code OptionSet} provides methods to add, remove and modify all options
@@ -1501,7 +1503,7 @@ public final class OptionSet {
 			for (byte[] value : etag_list)
 				options.add(new Option(OptionNumberRegistry.ETAG, value));
 		if (hasIfNoneMatch())
-			options.add(new Option(OptionNumberRegistry.IF_NONE_MATCH));
+			options.add(new Option(OptionNumberRegistry.IF_NONE_MATCH, Bytes.EMPTY));
 		if (hasUriPort())
 			options.add(new Option(OptionNumberRegistry.URI_PORT, getUriPort()));
 		if (location_path_list != null)
@@ -1543,7 +1545,7 @@ public final class OptionSet {
 
 		// EDHOC
 		if (hasEdhoc())
-			options.add(new Option(OptionNumberRegistry.EDHOC));
+			options.add(new Option(OptionNumberRegistry.EDHOC, Bytes.EMPTY));
 		
 		if (others != null)
 			options.addAll(others);
