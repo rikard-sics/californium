@@ -51,6 +51,8 @@ import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
+import org.eclipse.californium.oscore.OSCoreCtx;
+import org.eclipse.californium.oscore.OSException;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
@@ -120,6 +122,15 @@ public class EdhocServer extends CoapServer {
 	
 	// The correlation method to be indicated in EDHOC message 1 (relevant for the Initiator only)
 	private static int correlationMethod = Constants.EDHOC_CORR_METHOD_1;
+	
+	// The database of OSCORE Security Contexts
+	private final static HashMapCtxDB db = new HashMapCtxDB();
+	
+	// Lookup identifier to be associated with the OSCORE Security Context
+	private final static String uriLocal = "coap://localhost";
+	
+	// The size of the Replay Window to use in an OSCORE Recipient Context
+	private static final int OSCORE_REPLAY_WINDOW = 32;
 	
 	/*
 	 * Application entry point.
@@ -764,6 +775,41 @@ public class EdhocServer extends CoapServer {
 			        	Util.nicePrint("OSCORE Master Salt", masterSalt);
 			        }
 			        
+			        /* Setup the OSCORE Security Context */
+			        
+			        // The Sender ID of this peer is the EDHOC connection identifier of the other peer
+			        byte[] senderId = mySession.getPeerConnectionId();
+			        
+			        // The Recipient ID of this peer is the EDHOC connection identifier of this peer
+			        byte[] recipientId = mySession.getConnectionId();
+			        
+			        int selectedCiphersuite = mySession.getSelectedCiphersuite();
+			        AlgorithmID alg = EdhocSession.getAppAEAD(selectedCiphersuite);
+			        AlgorithmID hkdf = EdhocSession.getAppHkdf(selectedCiphersuite);
+			        
+			        OSCoreCtx ctx = null;
+			        try {
+						ctx = new OSCoreCtx(masterSecret, false, alg, senderId, 
+											recipientId, hkdf, OSCORE_REPLAY_WINDOW, masterSalt, null);
+					} catch (OSException e) {
+						System.err.println("Error when deriving the OSCORE Security Context " 
+					                        + e.getMessage());
+						
+						
+						System.err.println("Error when adding the OSCORE Security Context to the context database ");							
+						Util.purgeSession(mySession, CBORObject.FromObject(mySession.getConnectionId()),
+								          edhocSessions, usedConnectionIds);
+						return;
+					}
+			        
+			        try {
+						db.addContext(uriLocal, ctx);
+					} catch (OSException e) {
+						System.err.println("Error when adding the OSCORE Security Context to the context database ");							
+						Util.purgeSession(mySession, CBORObject.FromObject(mySession.getConnectionId()),
+								          edhocSessions, usedConnectionIds);
+						return;
+					}			        			        
 			        
 			        // Just send an empty response back
 			        Response myResponse = new Response(ResponseCode.CHANGED);
