@@ -42,6 +42,8 @@ import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.HashMapCtxDB;
+import org.eclipse.californium.oscore.OSCoreCtx;
+import org.eclipse.californium.oscore.OSException;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
@@ -51,6 +53,7 @@ import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
 import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
+import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
@@ -121,6 +124,12 @@ public class EdhocClient {
 	// The correlation method to be indicated in EDHOC message 1 (relevant for the Initiator only)
 	private static int correlationMethod = Constants.EDHOC_CORR_METHOD_1;
 		
+	// The database of OSCORE Security Contexts
+	private final static HashMapCtxDB db = new HashMapCtxDB();
+	
+	// The size of the Replay Window to use in an OSCORE Recipient Context
+	private static final int OSCORE_REPLAY_WINDOW = 32;
+	
 	private static NetworkConfigDefaultHandler DEFAULTS = new NetworkConfigDefaultHandler() {
 
 		@Override
@@ -130,6 +139,10 @@ public class EdhocClient {
 			config.setInt(Keys.PREFERRED_BLOCK_SIZE, DEFAULT_BLOCK_SIZE);
 		}
 	};
+	
+	private static String edhocURI = "coap://localhost/.well-known/edhoc";
+	// private static String edhocURI = "coap://195.251.58.203:5683/.well-known/edhoc"; // Lidia
+	// private static String edhocURI = "coap://edhocerver.proxy.rd.coap.amsuess.com/.well-known/edhoc"; // Christian
 
 	/*
 	 * Application entry point.
@@ -137,9 +150,6 @@ public class EdhocClient {
 	 */
 	public static void main(String args[]) {
 		String defaultUri = "coap://localhost/helloWorld";
-		String edhocURI = "coap://localhost/.well-known/edhoc";
-		// String edhocURI = "coap://195.251.58.203:5683/.well-known/edhoc"; // Lidia
-		// String edhocURI = "coap://edhocerver.proxy.rd.coap.amsuess.com/.well-known/edhoc"; // Christian
 		
 		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		NetworkConfig.setStandard(config);
@@ -689,7 +699,38 @@ public class EdhocClient {
 			        	Util.nicePrint("OSCORE Master Secret", masterSecret);
 			        	Util.nicePrint("OSCORE Master Salt", masterSalt);
 			        }
-
+			        
+			        /* Setup the OSCORE Security Context */
+			        
+			        // The Sender ID of this peer is the EDHOC connection identifier of the other peer
+			        byte[] senderId = session.getPeerConnectionId();
+			        
+			        int selectedCiphersuite = session.getSelectedCiphersuite();
+			        AlgorithmID alg = EdhocSession.getAppAEAD(selectedCiphersuite);
+			        AlgorithmID hkdf = EdhocSession.getAppHkdf(selectedCiphersuite);
+			        
+			        OSCoreCtx ctx = null;
+			        try {
+						ctx = new OSCoreCtx(masterSecret, true, alg, senderId, 
+													  connectionId, hkdf, OSCORE_REPLAY_WINDOW, masterSalt, null);
+					} catch (OSException e) {
+						System.err.println("Error when deriving the OSCORE Security Context "
+					                        + e.getMessage());
+						Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+						client.shutdown();
+						return;
+					}
+			        
+			        try {
+						db.addContext(edhocURI, ctx);
+					} catch (OSException e) {
+						System.err.println("Error when adding the OSCORE Security Context to the context database "
+					                        + e.getMessage());
+						Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+						client.shutdown();
+						return;
+					}
+			        
 				}
 				else if (requestType == Constants.EDHOC_ERROR_MESSAGE) {
 			        System.out.println("Sent EDHOC Error Message\n");
