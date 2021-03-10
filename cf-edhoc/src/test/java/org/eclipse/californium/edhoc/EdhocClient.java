@@ -756,7 +756,34 @@ public class EdhocClient {
 		        	// If EDHOC message_3 has to be combined with the first
 		        	// OSCORE-protected request include the EDHOC option in the request
 		        	if (OSCORE_EDHOC_COMBINED == true && requestType == Constants.EDHOC_MESSAGE_3) {
+		        		
+		        		/*
+						client = new CoapClient(helloWorldURI);
+						CoapResponse protectedResponse = null;
+						edhocMessageReq2 = Request.newGet();
+						edhocMessageReq2.setType(Type.CON);
+						edhocMessageReq2.getOptions().setOscore(Bytes.EMPTY);
+						*/
+						
 		        		edhocMessageReq2.getOptions().setEdhoc(true);
+						session.setMessage3(nextPayload);
+
+						/*
+						try {
+							protectedResponse = client.advanced(edhocMessageReq2);
+						} catch (ConnectorException e) {
+							System.err.println("ConnectorException when sending a protected request\n");
+						} catch (IOException e) {
+							System.err.println("IOException when sending a protected request\n");
+						}
+						*/
+						/*
+						byte[] myPayload = protectedResponse.getPayload();
+						if (myPayload != null) {
+							System.out.println(Utils.prettyPrint(protectedResponse));
+						}
+						*/
+						
 		        	}
 					
 		        	edhocMessageResp2 = client.advanced(edhocMessageReq2);

@@ -75,6 +75,29 @@ public class EdhocLayer extends AbstractLayer {
 
 		if (request.getOptions().hasEdhoc()) {
 			LOGGER.warn("Combined EDHOC+OSCORE request");
+			
+			/*
+			// Retrieve the Security Context used to protect the request
+			OSCoreCtx ctx = getContextForOutgoing(exchange);
+			
+			if (ctx == null) {
+				System.out.println("Null");
+			}
+			else {
+				System.out.println("Not Null");
+			}
+			
+			// The connectionIdentifier C_R is the Recipient ID for this peer
+			byte[] cR = ctx.getRecipientId();
+			
+			// Retrieve the EDHOC session associated to C_R
+			EdhocSession session = this.edhocSessions.get(CBORObject.FromObject(cR));
+			
+			byte[] message3 = session.getMessage3();
+			
+			Util.nicePrint("Blah Message 3", message3);
+			*/
+			
 		}
 		
 		super.sendRequest(exchange, request);
