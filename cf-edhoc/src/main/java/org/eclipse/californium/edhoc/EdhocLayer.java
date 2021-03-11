@@ -76,27 +76,57 @@ public class EdhocLayer extends AbstractLayer {
 		if (request.getOptions().hasEdhoc()) {
 			LOGGER.warn("Combined EDHOC+OSCORE request");
 			
-			/*
+			
 			// Retrieve the Security Context used to protect the request
 			OSCoreCtx ctx = getContextForOutgoing(exchange);
 			
+			// DEBUG
+			/*
 			if (ctx == null) {
 				System.out.println("Null");
 			}
 			else {
 				System.out.println("Not Null");
 			}
+			*/
 			
 			// The connectionIdentifier C_R is the Recipient ID for this peer
 			byte[] cR = ctx.getRecipientId();
 			
-			// Retrieve the EDHOC session associated to C_R
+			// Retrieve the EDHOC session associated to C_R and storing EDHOC message_3
 			EdhocSession session = this.edhocSessions.get(CBORObject.FromObject(cR));
-			
+						
+			// Extract CIPHERTEXT_3 as second element of EDHOC message_3
 			byte[] message3 = session.getMessage3();
+			CBORObject[] message3Elements = CBORObject.DecodeSequenceFromBytes(message3);
+			byte[] ciphertext3 = message3Elements[1].GetByteString();
 			
-			Util.nicePrint("Blah Message 3", message3);
-			*/
+			// Original OSCORE payload from the request
+			byte[] oldOscorePayload = request.getPayload();
+			
+			// DEBUG
+			// Util.nicePrint("EDHOC+OSCORE: Message 3", message3);
+			
+			// DEBUG
+			// Util.nicePrint("EDHOC+OSCORE: CIPHERTEXT_3", ciphertext3);
+			
+			// DEBUG
+			// Util.nicePrint("EDHOC+OSCORE: Old OSCORE payload", oldOscorePayload);
+			
+			// Build the new OSCORE payload, as a CBOR sequence of two elements
+			// 1. A CBOR byte string, i.e. EDHOC CIPHERTEXT_3 as is
+			// 2. A CBOR byte string, with value the original OSCORE payload
+			byte[] ciphertext3CBOR = CBORObject.FromObject(ciphertext3).EncodeToBytes();
+			byte[] oldOscorePayloadCBOR = CBORObject.FromObject(oldOscorePayload).EncodeToBytes();
+			byte[] newOscorePayload = new byte[ciphertext3CBOR.length + oldOscorePayloadCBOR.length];
+			System.arraycopy(ciphertext3CBOR, 0, newOscorePayload, 0, ciphertext3CBOR.length);
+			System.arraycopy(oldOscorePayloadCBOR, 0, newOscorePayload, ciphertext3CBOR.length, oldOscorePayloadCBOR.length);
+			
+			// DEBUG
+			Util.nicePrint("EDHOC+OSCORE: New OSCORE payload", newOscorePayload);
+			
+			// Set the new OSCORE payload as payload of the EDHOC+OSCORE request
+			request.setPayload(newOscorePayload);
 			
 		}
 		
