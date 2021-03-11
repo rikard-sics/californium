@@ -921,7 +921,7 @@ public class MessageProcessor {
     	
     	// Parse the outer plaintext as a CBOR sequence
     	CBORObject[] plaintextElementList = CBORObject.DecodeSequenceFromBytes(outerPlaintext);
-	    
+    	
     	error = false;
     	if (plaintextElementList.length != 2 && plaintextElementList.length != 3) {
         	errMsg = new String("Invalid format of the content encrypted as CIPHERTEXT_3");
@@ -953,7 +953,6 @@ public class MessageProcessor {
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
     	}
-    	
     	
     	// Verify that the identity of the Initiator is an allowed identity
     	CBORObject idCredI = CBORObject.NewMap();
@@ -1006,7 +1005,6 @@ public class MessageProcessor {
     	session.setPeerIdCred(idCredI);
     	OneKey peerKey = peerPublicKeys.get(idCredI);
     	session.setPeerLongTermPublicKey(peerKey);
-    	
 
     	/* Start computing the inner COSE object */
     	
