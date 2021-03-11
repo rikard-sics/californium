@@ -750,7 +750,7 @@ public class EdhocClient {
 			        }
 				}
 				
-		        CoapResponse edhocMessageResp2;
+		        CoapResponse edhocMessageResp2 = null;
 		        
 		        try {
 					Request edhocMessageReq2 = new Request(Code.POST, Type.CON);
@@ -761,18 +761,18 @@ public class EdhocClient {
 		        	// OSCORE-protected request include the EDHOC option in the request
 		        	if (OSCORE_EDHOC_COMBINED == true && requestType == Constants.EDHOC_MESSAGE_3) {
 		        		
-		        		/*
+		        		
 						client = new CoapClient(helloWorldURI);
 						CoapResponse protectedResponse = null;
 						edhocMessageReq2 = Request.newGet();
 						edhocMessageReq2.setType(Type.CON);
 						edhocMessageReq2.getOptions().setOscore(Bytes.EMPTY);
-						*/
+						
 						
 		        		edhocMessageReq2.getOptions().setEdhoc(true);
 						session.setMessage3(nextPayload);
 
-						/*
+						
 						try {
 							protectedResponse = client.advanced(edhocMessageReq2);
 						} catch (ConnectorException e) {
@@ -780,7 +780,7 @@ public class EdhocClient {
 						} catch (IOException e) {
 							System.err.println("IOException when sending a protected request\n");
 						}
-						*/
+						
 						/*
 						byte[] myPayload = protectedResponse.getPayload();
 						if (myPayload != null) {
@@ -788,9 +788,12 @@ public class EdhocClient {
 						}
 						*/
 						
+						session.cleanMessage3();
+						
 		        	}
-					
-		        	edhocMessageResp2 = client.advanced(edhocMessageReq2);
+		        	else {
+		        		edhocMessageResp2 = client.advanced(edhocMessageReq2);
+		        	}
 		        	
 				} catch (ConnectorException e) {
 					System.err.println("ConnectorException when sending " + myString + "\n");
