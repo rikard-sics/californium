@@ -73,10 +73,10 @@ public class EdhocClient {
 	private final static int keyFormat = 1; // 0 is for Base64; 1 is for binary encoding
 	
 	// Uncomment to use an ECDSA key pair with curve P-256 as long-term identity key
-    private final static int keyCurve = KeyKeys.EC2_P256.AsInt32();
+    // private final static int keyCurve = KeyKeys.EC2_P256.AsInt32();
     
     // Uncomment to use an EdDSA key pair with curve Ed25519 for signatures
-    // private final static int keyCurve = KeyKeys.OKP_Ed25519.AsInt32();
+    private final static int keyCurve = KeyKeys.OKP_Ed25519.AsInt32();
     
     // Uncomment to use a Montgomery key pair with curve X25519
     // private final static int keyCurve = KeyKeys.OKP_X25519.AsInt32();
@@ -119,7 +119,7 @@ public class EdhocClient {
 	private static List<Integer> supportedCiphersuites = new ArrayList<Integer>();
 	
 	// The authentication method to be indicated in EDHOC message 1 (relevant for the Initiator only)
-	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_3;
+	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
 	
 	// The correlation method to be indicated in EDHOC message 1 (relevant for the Initiator only)
 	private static int correlationMethod = Constants.EDHOC_CORR_METHOD_1;
@@ -134,7 +134,7 @@ public class EdhocClient {
 	private static final boolean POST_EDHOC_EXCHANGE = false;
 	
 	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
-	private static final boolean OSCORE_EDHOC_COMBINED = true;
+	private static final boolean OSCORE_EDHOC_COMBINED = false;
 	
 	private static NetworkConfigDefaultHandler DEFAULTS = new NetworkConfigDefaultHandler() {
 
@@ -166,7 +166,8 @@ public class EdhocClient {
 		Security.insertProviderAt(EdDSA, 1);
 
 		// Enable EDHOC stack with EDHOC and OSCORE layers
-		EdhocCoapStackFactory.useAsDefault(db, edhocSessions, peerPublicKeys, peerCredentials, usedConnectionIds);
+		EdhocCoapStackFactory.useAsDefault(db, edhocSessions, peerPublicKeys, peerCredentials,
+				                           usedConnectionIds, OSCORE_REPLAY_WINDOW);
 
 		// Use to dynamically generate a key pair
 		// keyPair = Util.generateKeyPair(keyCurve);
@@ -780,13 +781,11 @@ public class EdhocClient {
 						} catch (IOException e) {
 							System.err.println("IOException when sending a protected request\n");
 						}
-						
-						/*
+					
 						byte[] myPayload = protectedResponse.getPayload();
 						if (myPayload != null) {
 							System.out.println(Utils.prettyPrint(protectedResponse));
 						}
-						*/
 						
 						session.cleanMessage3();
 						
