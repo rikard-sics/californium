@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Request;
@@ -34,8 +35,11 @@ import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
+import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSCoreCtxDB;
+import org.eclipse.californium.oscore.OSException;
 
 /**
  * 
@@ -50,24 +54,49 @@ public class EdhocLayer extends AbstractLayer {
 	private static final Logger LOGGER = LoggerFactory.getLogger(EdhocLayer.class);
 
 	/**
+	 * The OSCORE context database
+	 */
+	OSCoreCtxDB ctxDb;
+	
+	/**
 	 * Map of existing EDHOC sessions
 	 */
 	Map<CBORObject, EdhocSession> edhocSessions;
 
 	/**
-	 * The OSCORE context database
+	 * Map of the EDHOC peer public keys
 	 */
-	OSCoreCtxDB ctxDb;
+	Map<CBORObject, OneKey> peerPublicKeys;
+	
+	/**
+	 * Map of the EDHOC peer credentials
+	 */
+	Map<CBORObject, CBORObject> peerCredentials;
+	
+	/**
+	 * List of used EDHOC Connection IDs
+	 */
+	List<Set<Integer>> usedConnectionIds;
 
 	/**
 	 * Build the EdhocLayer
 	 * 
 	 * @param ctxDb OSCORE context database
 	 * @param edhocSessions map of current EDHOC sessions
+	 * @param peerPublicKeys map containing the EDHOC peer public keys
+	 * @param peerCredentials map containing the EDHOC peer credentials
+	 * @param usedConnectionIds list containing the used EDHOC connection IDs
 	 */
-	public EdhocLayer(OSCoreCtxDB ctxDb, Map<CBORObject, EdhocSession> edhocSessions) {
+	public EdhocLayer(OSCoreCtxDB ctxDb,
+					  Map<CBORObject, EdhocSession> edhocSessions,
+			          Map<CBORObject, OneKey> peerPublicKeys,
+			          Map<CBORObject, CBORObject> peerCredentials,
+			          List<Set<Integer>> usedConnectionIds) {
 		this.ctxDb = ctxDb;
 		this.edhocSessions = edhocSessions;
+		this.peerPublicKeys = peerPublicKeys;
+		this.peerCredentials = peerCredentials;
+		this.usedConnectionIds = usedConnectionIds;
 
 		LOGGER.warn("Initializing EDHOC layer");
 	}

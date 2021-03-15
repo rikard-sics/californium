@@ -17,7 +17,9 @@
  ******************************************************************************/
 package org.eclipse.californium.edhoc;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.californium.core.coap.CoAP;
@@ -26,6 +28,7 @@ import org.eclipse.californium.core.network.CoapStackFactory;
 import org.eclipse.californium.core.network.Outbox;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.stack.CoapStack;
+import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.oscore.OSCoreCtxDB;
 import org.eclipse.californium.oscore.ObjectSecurityLayer;
 
@@ -40,6 +43,9 @@ public class EdhocCoapStackFactory implements CoapStackFactory {
 	private static AtomicBoolean init = new AtomicBoolean();
 	private static volatile OSCoreCtxDB defaultCtxDb;
 	private static volatile Map<CBORObject, EdhocSession> edhocSessions;
+	private static volatile Map<CBORObject, OneKey> peerPublicKeys;
+	private static volatile Map<CBORObject, CBORObject> peerCredentials;
+	private static volatile List<Set<Integer>> usedConnectionIds;
 
 	@Override
 	// TODO: This method may need updating for the custom argument
@@ -53,7 +59,7 @@ public class EdhocCoapStackFactory implements CoapStackFactory {
 		if (customStackArgument != null) {
 			ctxDb = (OSCoreCtxDB) customStackArgument;
 		}
-		return new EdhocStack(tag, config, outbox, ctxDb, edhocSessions);
+		return new EdhocStack(tag, config, outbox, ctxDb, edhocSessions, peerPublicKeys, peerCredentials, usedConnectionIds);
 	}
 
 	/**
@@ -66,14 +72,28 @@ public class EdhocCoapStackFactory implements CoapStackFactory {
 	 *            argument for {@link EdhocStack}
 	 * @param edhocSessions map containing EDHOC sessions. Passed in as default
 	 *            argument for {@link EdhocStack}
+	 *            
+	 * @param peerPublicKeys map containing the EDHOC peer public keys. Passed in as default
+	 *            argument for {@link EdhocStack}
+	 * @param edhocSessions map containing the EDHOC peer credentials. Passed in as default
+	 *            argument for {@link EdhocStack}
+	 * @param edhocSessions list containing the used EDHOC connection IDs. Passed in as default
+	 *            argument for {@link EdhocStack}
 	 * 
 	 * @see CoapEndpoint#setDefaultCoapStackFactory(CoapStackFactory)
 	 */
-	public static void useAsDefault(OSCoreCtxDB defaultCtxDb, Map<CBORObject, EdhocSession> edhocSessions) {
+	public static void useAsDefault(OSCoreCtxDB defaultCtxDb,
+									Map<CBORObject, EdhocSession> edhocSessions,
+									Map<CBORObject, OneKey> peerPublicKeys,
+									Map<CBORObject, CBORObject> peerCredentials,
+									List<Set<Integer>> usedConnectionIds) {
 		if (init.compareAndSet(false, true)) {
 			CoapEndpoint.setDefaultCoapStackFactory(new EdhocCoapStackFactory());
 		}
 		EdhocCoapStackFactory.defaultCtxDb = defaultCtxDb;
 		EdhocCoapStackFactory.edhocSessions = edhocSessions;
+		EdhocCoapStackFactory.peerPublicKeys = peerPublicKeys;
+		EdhocCoapStackFactory.peerCredentials = peerCredentials;
+		EdhocCoapStackFactory.usedConnectionIds = usedConnectionIds;
 	}
 }
