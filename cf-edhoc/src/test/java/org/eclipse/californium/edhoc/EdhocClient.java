@@ -166,7 +166,7 @@ public class EdhocClient {
 		Security.insertProviderAt(EdDSA, 1);
 
 		// Enable EDHOC stack with EDHOC and OSCORE layers
-		EdhocCoapStackFactory.useAsDefault(db, edhocSessions);
+		EdhocCoapStackFactory.useAsDefault(db, edhocSessions, peerPublicKeys, peerCredentials, usedConnectionIds);
 
 		// Use to dynamically generate a key pair
 		// keyPair = Util.generateKeyPair(keyCurve);
