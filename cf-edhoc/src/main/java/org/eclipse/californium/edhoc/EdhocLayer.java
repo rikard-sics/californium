@@ -201,6 +201,15 @@ public class EdhocLayer extends AbstractLayer {
 		    // Assemble the full EDHOC message_3
 		    byte[] edhocMessage3 = Util.buildCBORSequence(edhocObjectList);
 		    
+		    if (MessageProcessor.messageType(edhocMessage3) != Constants.EDHOC_MESSAGE_3) {
+				String responseString = new String("The EDHOC+OSCORE request did not include a valid EDHOC message_3");
+				errorMessage = responseString.getBytes(Constants.charset);
+				Response errorResponse = new Response(ResponseCode.BAD_REQUEST);
+				errorResponse.setPayload(errorMessage);
+				exchange.sendResponse(errorResponse);
+				return;
+		    }
+		    
 		    // Process EDHOC message_3
 		    
 		}
