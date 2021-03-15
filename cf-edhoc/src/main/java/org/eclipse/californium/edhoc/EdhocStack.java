@@ -22,7 +22,9 @@ import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.californium.core.network.Outbox;
 import org.eclipse.californium.core.network.config.NetworkConfig;
@@ -33,6 +35,7 @@ import org.eclipse.californium.core.network.stack.ExchangeCleanupLayer;
 import org.eclipse.californium.core.network.stack.Layer;
 import org.eclipse.californium.core.network.stack.ObserveLayer;
 import org.eclipse.californium.core.network.stack.ReliabilityLayer;
+import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.oscore.OSCoreCtxDB;
 import org.eclipse.californium.oscore.ObjectSecurityContextLayer;
 import org.eclipse.californium.oscore.ObjectSecurityLayer;
@@ -58,9 +61,14 @@ public class EdhocStack extends BaseCoapStack {
 	 *            transport.
 	 * @param ctxDb context DB.
 	 * @param edhocSessions map containing EDHOC sessions
+	 * @param peerPublicKeys map containing the EDHOC peer public keys
+	 * @param peerCredentials map containing the EDHOC peer credentials
+	 * @param usedConnectionIds list containing the used EDHOC connection IDs
+	 * 
 	 */
 	public EdhocStack(String tag, final NetworkConfig config, final Outbox outbox, final OSCoreCtxDB ctxDb,
-			Map<CBORObject, EdhocSession> edhocSessions) {
+			Map<CBORObject, EdhocSession> edhocSessions, Map<CBORObject, OneKey> peerPublicKeys,
+			Map<CBORObject, CBORObject> peerCredentials, List<Set<Integer>> usedConnectionIds) {
 		super(outbox);
 		ReliabilityLayer reliabilityLayer;
 		if (config.getBoolean(NetworkConfig.Keys.USE_CONGESTION_CONTROL)) {
@@ -71,8 +79,9 @@ public class EdhocStack extends BaseCoapStack {
 		}
 
 		Layer layers[] = new Layer[] { new ObjectSecurityContextLayer(ctxDb), new ExchangeCleanupLayer(config),
-				new ObserveLayer(config), new BlockwiseLayer(tag, false, config), reliabilityLayer,
-				new ObjectSecurityLayer(ctxDb), new EdhocLayer(ctxDb, edhocSessions) };
+				new ObserveLayer(config), new BlockwiseLayer(tag, false, config),
+				reliabilityLayer, new ObjectSecurityLayer(ctxDb),
+				new EdhocLayer(ctxDb, edhocSessions, peerPublicKeys, peerCredentials, usedConnectionIds) };
 		setLayers(layers);
 	}
 }
