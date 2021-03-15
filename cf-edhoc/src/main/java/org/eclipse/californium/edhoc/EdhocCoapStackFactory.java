@@ -46,6 +46,7 @@ public class EdhocCoapStackFactory implements CoapStackFactory {
 	private static volatile Map<CBORObject, OneKey> peerPublicKeys;
 	private static volatile Map<CBORObject, CBORObject> peerCredentials;
 	private static volatile List<Set<Integer>> usedConnectionIds;
+	private static volatile int OSCORE_REPLAY_WINDOW;
 
 	@Override
 	// TODO: This method may need updating for the custom argument
@@ -59,7 +60,8 @@ public class EdhocCoapStackFactory implements CoapStackFactory {
 		if (customStackArgument != null) {
 			ctxDb = (OSCoreCtxDB) customStackArgument;
 		}
-		return new EdhocStack(tag, config, outbox, ctxDb, edhocSessions, peerPublicKeys, peerCredentials, usedConnectionIds);
+		return new EdhocStack(tag, config, outbox, ctxDb, edhocSessions, peerPublicKeys, peerCredentials,
+				              usedConnectionIds, OSCORE_REPLAY_WINDOW);
 	}
 
 	/**
@@ -79,6 +81,8 @@ public class EdhocCoapStackFactory implements CoapStackFactory {
 	 *            argument for {@link EdhocStack}
 	 * @param edhocSessions list containing the used EDHOC connection IDs. Passed in as default
 	 *            argument for {@link EdhocStack}
+	 * @param OSCORE_REPLAY_WINDOW size of the Replay Window to use in an OSCORE Recipient Context. Passed in as default
+	 *            argument for {@link EdhocStack}
 	 * 
 	 * @see CoapEndpoint#setDefaultCoapStackFactory(CoapStackFactory)
 	 */
@@ -86,7 +90,8 @@ public class EdhocCoapStackFactory implements CoapStackFactory {
 									Map<CBORObject, EdhocSession> edhocSessions,
 									Map<CBORObject, OneKey> peerPublicKeys,
 									Map<CBORObject, CBORObject> peerCredentials,
-									List<Set<Integer>> usedConnectionIds) {
+									List<Set<Integer>> usedConnectionIds,
+									int OSCORE_REPLAY_WINDOW) {
 		if (init.compareAndSet(false, true)) {
 			CoapEndpoint.setDefaultCoapStackFactory(new EdhocCoapStackFactory());
 		}
@@ -95,5 +100,6 @@ public class EdhocCoapStackFactory implements CoapStackFactory {
 		EdhocCoapStackFactory.peerPublicKeys = peerPublicKeys;
 		EdhocCoapStackFactory.peerCredentials = peerCredentials;
 		EdhocCoapStackFactory.usedConnectionIds = usedConnectionIds;
+		EdhocCoapStackFactory.OSCORE_REPLAY_WINDOW = OSCORE_REPLAY_WINDOW;
 	}
 }

@@ -72,10 +72,10 @@ public class EdhocServer extends CoapServer {
 	private final static int keyFormat = 1; // 0 is for Base64; 1 is for binary encoding
 	
 	// Uncomment to use an ECDSA key pair with curve P-256 as long-term identity key
-    private final static int keyCurve = KeyKeys.EC2_P256.AsInt32();
+    // private final static int keyCurve = KeyKeys.EC2_P256.AsInt32();
     
     // Uncomment to use an EdDSA key pair with curve Ed25519 for signatures
-    // private final static int keyCurve = KeyKeys.OKP_Ed25519.AsInt32();
+    private final static int keyCurve = KeyKeys.OKP_Ed25519.AsInt32();
     
     // Uncomment to use a Montgomery key pair with curve X25519
 	// private final static int keyCurve = KeyKeys.OKP_X25519.AsInt32();
@@ -141,7 +141,8 @@ public class EdhocServer extends CoapServer {
 		Security.insertProviderAt(EdDSA, 1);
 
 		// Enable EDHOC stack with EDHOC and OSCORE layers
-		EdhocCoapStackFactory.useAsDefault(db, edhocSessions, peerPublicKeys, peerCredentials, usedConnectionIds);
+		EdhocCoapStackFactory.useAsDefault(db, edhocSessions, peerPublicKeys, peerCredentials,
+				                           usedConnectionIds, OSCORE_REPLAY_WINDOW);
 
 		// Use to set up hardcoded keys for this peer and the other peer 
 		setupIdentityKeys();
@@ -744,7 +745,7 @@ public class EdhocServer extends CoapServer {
 				// A non-zero length response payload would be an EDHOC Error Message
 				nextMessage = processingResult.get(0).GetByteString();
 				
-				// The protocol has successfully completed
+				// The EDHOC protocol has successfully completed
 				if (nextMessage.length == 0) {
 					
 					// Deliver AD_3 to the application, if present
@@ -795,22 +796,18 @@ public class EdhocServer extends CoapServer {
 						ctx = new OSCoreCtx(masterSecret, false, alg, senderId, 
 											recipientId, hkdf, OSCORE_REPLAY_WINDOW, masterSalt, null);
 					} catch (OSException e) {
-						System.err.println("Error when deriving the OSCORE Security Context " 
-					                        + e.getMessage());
-						
-						
-						System.err.println("Error when adding the OSCORE Security Context to the context database ");							
-						Util.purgeSession(mySession, CBORObject.FromObject(mySession.getConnectionId()),
-								          edhocSessions, usedConnectionIds);
+						System.err.println("Error when deriving the OSCORE Security Context " + e.getMessage());						
+						Util.purgeSession(mySession,
+										  CBORObject.FromObject(mySession.getConnectionId()), edhocSessions, usedConnectionIds);
 						return;
 					}
 			        
 			        try {
 						db.addContext(uriLocal, ctx);
 					} catch (OSException e) {
-						System.err.println("Error when adding the OSCORE Security Context to the context database ");							
-						Util.purgeSession(mySession, CBORObject.FromObject(mySession.getConnectionId()),
-								          edhocSessions, usedConnectionIds);
+						System.err.println("Error when adding the OSCORE Security Context to the context database " + e.getMessage());							
+						Util.purgeSession(mySession,
+										  CBORObject.FromObject(mySession.getConnectionId()), edhocSessions, usedConnectionIds);
 						return;
 					}			        			        
 			        
@@ -828,7 +825,7 @@ public class EdhocServer extends CoapServer {
 			        */
 					
 				}
-				// An error message has to be returned
+				// An EDHOC error message has to be returned
 				else {
 					int responseType = MessageProcessor.messageType(nextMessage);
 					

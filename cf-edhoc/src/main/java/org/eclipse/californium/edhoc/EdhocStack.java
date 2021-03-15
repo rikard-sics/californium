@@ -64,11 +64,13 @@ public class EdhocStack extends BaseCoapStack {
 	 * @param peerPublicKeys map containing the EDHOC peer public keys
 	 * @param peerCredentials map containing the EDHOC peer credentials
 	 * @param usedConnectionIds list containing the used EDHOC connection IDs
+	 * @param OSCORE_REPLAY_WINDOW size of the Replay Window to use in an OSCORE Recipient Context
 	 * 
 	 */
 	public EdhocStack(String tag, final NetworkConfig config, final Outbox outbox, final OSCoreCtxDB ctxDb,
 			Map<CBORObject, EdhocSession> edhocSessions, Map<CBORObject, OneKey> peerPublicKeys,
-			Map<CBORObject, CBORObject> peerCredentials, List<Set<Integer>> usedConnectionIds) {
+			Map<CBORObject, CBORObject> peerCredentials, List<Set<Integer>> usedConnectionIds,
+			int OSCORE_REPLAY_WINDOW) {
 		super(outbox);
 		ReliabilityLayer reliabilityLayer;
 		if (config.getBoolean(NetworkConfig.Keys.USE_CONGESTION_CONTROL)) {
@@ -81,7 +83,7 @@ public class EdhocStack extends BaseCoapStack {
 		Layer layers[] = new Layer[] { new ObjectSecurityContextLayer(ctxDb), new ExchangeCleanupLayer(config),
 				new ObserveLayer(config), new BlockwiseLayer(tag, false, config),
 				reliabilityLayer, new ObjectSecurityLayer(ctxDb),
-				new EdhocLayer(ctxDb, edhocSessions, peerPublicKeys, peerCredentials, usedConnectionIds) };
+				new EdhocLayer(ctxDb, edhocSessions, peerPublicKeys, peerCredentials, usedConnectionIds, OSCORE_REPLAY_WINDOW) };
 		setLayers(layers);
 	}
 }
