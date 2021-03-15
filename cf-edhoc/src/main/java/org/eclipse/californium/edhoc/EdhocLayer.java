@@ -21,13 +21,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
+import com.upokecenter.cbor.CBORType;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
+import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
 import org.eclipse.californium.oscore.OSCoreCtx;
@@ -146,8 +150,59 @@ public class EdhocLayer extends AbstractLayer {
 
 		LOGGER.warn("Receiving request through EDHOC layer");
 
-		if (request.getOptions().hasEdhoc()) {
+		if (request.getOptions().hasEdhoc() && request.getOptions().hasOscore()) {
 			LOGGER.warn("Combined EDHOC+OSCORE request");
+			
+			
+			boolean error = false;
+			byte[] errorMessage = new byte[] {};
+			
+			// Retrieve the received payload combining EDHOC CIPHERTEXT_3 and the real OSCORE payload
+			byte[] oldPayload = request.getPayload();
+			
+			// CBOR objects included in the received CBOR sequence
+			CBORObject[] receivedOjectList = CBORObject.DecodeSequenceFromBytes(oldPayload);
+			
+			if (receivedOjectList == null || receivedOjectList.length != 2) {
+				error = true;
+			}
+			else if (receivedOjectList[0].getType() != CBORType.ByteString ||
+					 receivedOjectList[1].getType() != CBORType.ByteString) {
+				error = true;
+			}
+			
+			// The EDHOC+OSCORE request is malformed
+			if (error == true) {
+				String responseString = new String("Invalid EDHOC+OSCORE request");
+				errorMessage = responseString.getBytes(Constants.charset);
+				Response errorResponse = new Response(ResponseCode.BAD_REQUEST);
+				errorResponse.setPayload(errorMessage);
+				exchange.sendResponse(errorResponse);
+				return;
+			}
+			
+			// Prepare the actual OSCORE request, by replacing the payload
+			byte[] newPayload = receivedOjectList[1].GetByteString();
+			request.setPayload(newPayload);
+			
+			
+			// Rebuild the full EDHOC message_3
+
+		    List<CBORObject> edhocObjectList = new ArrayList<>();
+		    
+		    // Add C_R, i.e. the 'kid' from the OSCORE option encoded as a bstr_identifier
+			byte[] kid = getKid(request.getOptions().getOscore());
+		    CBORObject cR = Util.encodeToBstrIdentifier(CBORObject.FromObject(kid));
+		    edhocObjectList.add(cR);
+		    
+		    // Add CIPHERTEXT_3, i.e. the CBOR string as is from the received CBOR sequence
+		    edhocObjectList.add(receivedOjectList[0]); // CIPHERTEXT_3
+		    
+		    // Assemble the full EDHOC message_3
+		    byte[] edhocMessage3 = Util.buildCBORSequence(edhocObjectList);
+		    
+		    // Process EDHOC message_3
+		    
 		}
 		
 		super.receiveRequest(exchange, request);

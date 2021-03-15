@@ -134,7 +134,7 @@ public class EdhocClient {
 	private static final boolean POST_EDHOC_EXCHANGE = false;
 	
 	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
-	private static final boolean OSCORE_EDHOC_COMBINED = false;
+	private static final boolean OSCORE_EDHOC_COMBINED = true;
 	
 	private static NetworkConfigDefaultHandler DEFAULTS = new NetworkConfigDefaultHandler() {
 
