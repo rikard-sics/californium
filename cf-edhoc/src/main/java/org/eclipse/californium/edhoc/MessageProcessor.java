@@ -681,8 +681,16 @@ public class MessageProcessor {
     	
     	// Compute MAC_2
     	
+    	CBORObject peerCredentialCBOR = peerCredentials.get(idCredR);
+    	if (peerCredentialCBOR == null) {
+        	errMsg = new String("Unable to retrieve the peer credential");
+        	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
+			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
+    	}
+    	byte[] peerCredential = peerCredentialCBOR.GetByteString();
+    	
     	// Prepare the External Data
-    	byte[] externalData = computeExternalData(th2, peerCredentials.get(idCredR).GetByteString(), ad2);
+    	byte[] externalData = computeExternalData(th2, peerCredential, ad2);
     	if (externalData == null) {
         	errMsg = new String("Error when computing External Data for MAC_2");
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
@@ -1008,9 +1016,16 @@ public class MessageProcessor {
 
     	/* Start computing the inner COSE object */
     	
-        // Compute the external data for the external_aad, as a CBOR sequence
+    	CBORObject peerCredentialCBOR = peerCredentials.get(idCredI);
+    	if (peerCredentialCBOR == null) {
+        	errMsg = new String("Unable to retrieve the peer credential");
+    		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
+    		return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
+    	}
+    	byte[] peerCredential = peerCredentialCBOR.GetByteString();
     	
-    	externalData = computeExternalData(th3, peerCredentials.get(idCredI).GetByteString(), ad3);
+        // Compute the external data for the external_aad, as a CBOR sequence
+    	externalData = computeExternalData(th3, peerCredential, ad3);
     	if (externalData == null) {
     		errMsg = new String("Error when computing the external data for MAC_3");
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
@@ -2384,9 +2399,12 @@ public class MessageProcessor {
      * @param th   The transcript hash TH2 or TH3
      * @param cred   The CRED of the long-term public key of the caller
      * @param ad   Application data specified as AD_2 or AD_3, it can be null
-     * @return  The external data for computing/verifying Signature_or_MAC_2 and Signature_or_MAC_3 
+     * @return  The external data for computing/verifying Signature_or_MAC_2 and Signature_or_MAC_3, or null in case of error
      */
 	public static byte[] computeExternalData(byte[] th, byte[] cred, byte[] ad) {
+		
+		if (th == null || cred == null)
+			return null;
 		
 		List<CBORObject> externalDataList = new ArrayList<>();
 		
