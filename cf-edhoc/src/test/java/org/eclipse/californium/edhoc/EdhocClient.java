@@ -131,10 +131,10 @@ public class EdhocClient {
 	private static final int OSCORE_REPLAY_WINDOW = 32;
 	
 	// Set to true if an OSCORE-protected exchange is performed after EDHOC completion
-	private static final boolean POST_EDHOC_EXCHANGE = false;
+	private static final boolean POST_EDHOC_EXCHANGE = true;
 	
 	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
-	private static final boolean OSCORE_EDHOC_COMBINED = false;
+	private static final boolean OSCORE_EDHOC_COMBINED = true;
 	
 	private static NetworkConfigDefaultHandler DEFAULTS = new NetworkConfigDefaultHandler() {
 

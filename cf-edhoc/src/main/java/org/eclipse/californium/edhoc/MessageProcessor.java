@@ -108,6 +108,7 @@ public class MessageProcessor {
 	
     /**
      *  Process an EDHOC Message 1
+     * @param expectedCorr   The expected Correlation Method to see advertised in EDHOC Message 1 
      * @param sequence   The CBOR sequence used as payload of the EDHOC Message 1
      * @param ltk   The long term identity key
      * @param usedConnectionIds   The collection of Connection Identifiers used by this peer
@@ -122,7 +123,8 @@ public class MessageProcessor {
      *           The second element is optional. If present, it is a CBOR byte string, with value
      *           the application data AD1 to deliver to the application.
      */
-	public static List<CBORObject> readMessage1(byte[] sequence,
+	public static List<CBORObject> readMessage1(int expectedCorr,
+												byte[] sequence,
 												OneKey ltk,
 												List<Set<Integer>> usedConnectionIds,
 												List<Integer> supportedCiphersuites) {
@@ -151,7 +153,11 @@ public class MessageProcessor {
 			error = true;
 		}
 		else {
-			correlation = objectListRequest[0].AsInt32() % 4; 
+			correlation = objectListRequest[0].AsInt32() % 4;
+			if (correlation != expectedCorr) {
+				errMsg = new String("Expected METHOD_CORR " + expectedCorr + " but it was " + correlation);
+				error = true;
+			}
 		}
 		
 		// SUITES_I

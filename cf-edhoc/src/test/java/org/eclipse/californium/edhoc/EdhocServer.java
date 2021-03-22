@@ -636,7 +636,20 @@ public class EdhocServer extends CoapServer {
 			/* Start handling EDHOC Message 1 */
 			
 			if (messageType == Constants.EDHOC_MESSAGE_1) {
-				processingResult = MessageProcessor.readMessage1(message, keyPair, usedConnectionIds, supportedCiphersuites);
+				
+				// Determine the Correlation Method expected to be advertised in EDHOC Message 1
+				int expectedCorr = Constants.EDHOC_CORR_METHOD_0;
+				String scheme = exchange.advanced().getRequest().getScheme();
+				if (scheme.equals("coap") || scheme.equals("coaps")) {
+					expectedCorr = Constants.EDHOC_CORR_METHOD_1; // This peer is the server
+				}
+				if (scheme.equals("coap+tcp") || scheme.equals("coaps+tcp") ||
+					scheme.equals("coap+ws") || scheme.equals("coaps+ws")) {
+					expectedCorr = Constants.EDHOC_CORR_METHOD_3;
+				}
+				
+				processingResult = MessageProcessor.readMessage1(expectedCorr, message, keyPair,
+						                                         usedConnectionIds, supportedCiphersuites);
 
 				if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
 					System.err.println("Internal error when processing EDHOC Message 1");
