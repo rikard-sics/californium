@@ -131,10 +131,10 @@ public class EdhocClient {
 	private static final int OSCORE_REPLAY_WINDOW = 32;
 	
 	// Set to true if an OSCORE-protected exchange is performed after EDHOC completion
-	private static final boolean POST_EDHOC_EXCHANGE = true;
+	private static final boolean POST_EDHOC_EXCHANGE = false;
 	
 	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
-	private static final boolean OSCORE_EDHOC_COMBINED = true;
+	private static final boolean OSCORE_EDHOC_COMBINED = false;
 	
 	private static NetworkConfigDefaultHandler DEFAULTS = new NetworkConfigDefaultHandler() {
 
@@ -744,11 +744,13 @@ public class EdhocClient {
 					}
 			        
 				}
-				else if (requestType == Constants.EDHOC_ERROR_MESSAGE) {
+				else if (requestType == Constants.EDHOC_ERROR_MESSAGE) {			     	
+				    Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			        System.out.println("Sent EDHOC Error Message\n");
 			        if (debugPrint) {
 			        	Util.nicePrint("EDHOC Error Message", nextPayload);
 			        }
+			        
 				}
 				
 		        CoapResponse edhocMessageResp2 = null;

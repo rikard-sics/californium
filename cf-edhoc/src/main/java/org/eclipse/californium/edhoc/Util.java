@@ -865,6 +865,32 @@ public class Util {
 	}
 	
     /**
+     * Build SUITES_R
+     *  
+     * @param supportedCiphersuites   The list of supported ciphersuites for this peer
+     * @return SUITES_R, as a CBOR object
+     */
+	public static CBORObject buildSuitesR(List<Integer> supportedCiphersuites) {
+		
+		CBORObject suitesR;
+		
+		if (supportedCiphersuites.size() == 1) {
+			int cs = supportedCiphersuites.get(0).intValue();
+			suitesR = CBORObject.FromObject(cs);
+		}
+		// This peer supports multiple ciphersuites
+		else {
+			suitesR = CBORObject.NewArray();
+			for (Integer i : supportedCiphersuites) {
+				suitesR.Add(i.intValue());
+			}
+		}
+		
+		return suitesR;
+		
+	}
+	
+    /**
      * Build an ID_CRED using 'kid'
      *  
      * @param kid   The kid to use
