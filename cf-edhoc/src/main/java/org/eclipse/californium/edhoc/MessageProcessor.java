@@ -287,18 +287,8 @@ public class MessageProcessor {
 			
 			// Prepare SUITES_R
 			
-			if (supportedCiphersuites.size() == 1) {
-				int cs = supportedCiphersuites.get(0).intValue();
-				suitesR = CBORObject.FromObject(cs);
-			}
-			// This peer supports multiple ciphersuites
-			else {
-				suitesR = CBORObject.NewArray();
-				for (Integer i : supportedCiphersuites) {
-					suitesR.Add(i.intValue());
-				}
-			}
 			// In either case, any supported ciphersuite from SUITES_I will also be included in SUITES_R
+			suitesR = Util.buildSuitesR(supportedCiphersuites);
 			
 			return processError(Constants.EDHOC_MESSAGE_1, correlation, cI, errMsg, suitesR);
 			
@@ -1380,11 +1370,13 @@ public class MessageProcessor {
      *  Write an EDHOC Message 2
      * @param session   The EDHOC session associated to this EDHOC message
      * @param ad2   The application data, it can be null
-     * @return  The raw payload to transmit as EDHOC Message 2, or null in case of errors
+     * @return  The raw payload to transmit as EDHOC Message 2 or EDHOC Error Message; or null in case of errors
      */
 	public static byte[] writeMessage2(EdhocSession session, byte[] ad2) {
 		
 		List<CBORObject> objectList = new ArrayList<>();
+		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
+		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		
         if (debugPrint) {
         	System.out.println("===================================");
@@ -1440,7 +1432,8 @@ public class MessageProcessor {
         byte[] th2 = computeTH2(session, message1, data2);
         if (th2 == null) {
     		System.err.println("Error when computing TH_2");
-        	return null;
+    		errMsg = new String("Error when computing TH_2");
+    		error = true;
         }
         session.setTH2(th2);
         session.cleanMessage1();
@@ -1453,7 +1446,8 @@ public class MessageProcessor {
     	byte[] externalData = computeExternalData(th2, session.getCred(), ad2);
     	if (externalData == null) {
     		System.err.println("Error when computing the external data for MAC_2");
-    		return null;
+    		errMsg = new String("Error when computing the external data for MAC_2");
+    		error = true;
     	}
     	if (debugPrint) {
     		Util.nicePrint("External Data to compute MAC_2", externalData);
@@ -1476,7 +1470,8 @@ public class MessageProcessor {
     	
         if (dhSecret == null) {
     		System.err.println("Error when computing the Diffie-Hellman Secret");
-    		return null;
+    		errMsg = new String("Error when computing the Diffie-Hellman Secret");
+    		error = true;
         }
         
         if (debugPrint) {
@@ -1488,7 +1483,8 @@ public class MessageProcessor {
     	dhSecret = null;
     	if (prk2e == null) {
     		System.err.println("Error when computing PRK_2e");
-    		return null;
+    		errMsg = new String("Error when computing PRK_2e");
+    		error = true;
     	}
         session.setPRK2e(prk2e);
     	if (debugPrint) {
@@ -1499,7 +1495,8 @@ public class MessageProcessor {
     	prk3e2m = computePRK3e2m(session, prk2e);
     	if (prk3e2m == null) {
     		System.err.println("Error when computing PRK_3e2m");
-    		return null;
+    		errMsg = new String("Error when computing PRK_3e2m");
+    		error = true;
     	}
     	session.setPRK3e2m(prk3e2m);
     	if (debugPrint) {
@@ -1512,7 +1509,8 @@ public class MessageProcessor {
     	byte[] k2m = computeKey(Constants.EDHOC_K_2M, session);
     	if (k2m == null) {
     		System.err.println("Error when computing K_2m");
-    		return null;
+    		errMsg = new String("Error when computing K_2m");
+    		error = true;
     	}
     	if (debugPrint) {
     		Util.nicePrint("K_2m", k2m);
@@ -1521,7 +1519,8 @@ public class MessageProcessor {
     	byte[] iv2m = computeIV(Constants.EDHOC_IV_2M, session);
     	if (iv2m == null) {
     		System.err.println("Error when computing IV_2m");
-    		return null;
+    		errMsg = new String("Error when computing IV_2m");
+    		error = true;
     	}
     	if (debugPrint) {
     		Util.nicePrint("IV_2m", iv2m);
@@ -1533,7 +1532,8 @@ public class MessageProcessor {
     	byte[] mac2 = computeMAC2(session.getSelectedCiphersuite(), session.getIdCred(), externalData, plaintext, k2m, iv2m);
     	if (mac2 == null) {
     		System.err.println("Error when computing MAC_2");
-    		return null;
+    		errMsg = new String("Error when computing MAC_2");
+    		error = true;
     	}
     	if (debugPrint) {
     		Util.nicePrint("MAC_2", mac2);
@@ -1545,7 +1545,8 @@ public class MessageProcessor {
     	byte[] signatureOrMac2 = computeSignatureOrMac2(session, mac2, externalData);
     	if (signatureOrMac2 == null) {
     		System.err.println("Error when computing Signature_or_MAC_2");
-    		return null;
+    		errMsg = new String("Error when computing Signature_or_MAC_2");
+    		error = true;
     	}
     	if (debugPrint) {
     		Util.nicePrint("Signature_or_MAC_2", signatureOrMac2);
@@ -1584,7 +1585,8 @@ public class MessageProcessor {
     	byte[] keystream2 = computeKeystream2(session, plaintext.length);
     	if (keystream2== null) {
     		System.err.println("Error when computing KEYSTREAM_2");
-    		return null;
+    		errMsg = new String("Error when computing KEYSTREAM_2");
+    		error = true;
     	}
     	if (debugPrint) {
     		Util.nicePrint("KEYSTREAM_2", keystream2);
@@ -1603,6 +1605,24 @@ public class MessageProcessor {
     	/* End computing CIPHERTEXT_2 */
     	
     	
+		/* Prepare an EDHOC Error Message */
+		
+		if (error == true) {
+			int correlation = session.getCorrelation();
+			
+			// Prepare C_I
+			CBORObject cI = CBORObject.FromObject(session.getPeerConnectionId());
+			
+			// Prepare SUITES_R
+			List<Integer> supportedCiphersuites = session.getSupportedCipherSuites();
+			CBORObject suitesR = Util.buildSuitesR(supportedCiphersuites);
+			
+			List<CBORObject> processingResult = processError(Constants.EDHOC_MESSAGE_1, correlation, cI, errMsg, suitesR);
+			return processingResult.get(0).GetByteString();
+			
+		}
+    	
+    	
     	/* Prepare EDHOC Message 2 */
     	
     	if (debugPrint) {
@@ -1616,11 +1636,13 @@ public class MessageProcessor {
      *  Write an EDHOC Message 3
      * @param session   The EDHOC session associated to this EDHOC message
      * @param ad3   The application data, it can be null
-     * @return  The raw payload to transmit as EDHOC Message 3, or null in case of errors
+     * @return  The raw payload to transmit as EDHOC Message 3 or EDHOC Error Message; or null in case of errors
      */
 	public static byte[] writeMessage3(EdhocSession session, byte[] ad3) {
 		
 		List<CBORObject> objectList = new ArrayList<>();
+		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
+		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		
         if (debugPrint) {
         	System.out.println("===================================");
@@ -1660,7 +1682,8 @@ public class MessageProcessor {
         byte[] th3 = computeTH3(session, th2SerializedCBOR, ciphertext2SerializedCBOR, data3);
         if (th3 == null) {
         	System.err.println("Error when computing TH_3");
-        	return null;
+    		errMsg = new String("Error when computing TH_3");
+    		error = true;
         }
         session.setTH3(th3);
     	if (debugPrint) {
@@ -1673,7 +1696,8 @@ public class MessageProcessor {
     	byte[] externalData = computeExternalData(th3, session.getCred(), ad3);
     	if (externalData == null) {
     		System.err.println("Error when computing the external data for MAC_3");
-    		return null;
+    		errMsg = new String("Error when computing the external data for MAC_3");
+    		error = true;
     	}
     	if (debugPrint) {
     		Util.nicePrint("External Data to compute MAC_3", externalData);
@@ -1690,7 +1714,8 @@ public class MessageProcessor {
         byte[] prk4x3m = computePRK4x3m(session);
     	if (prk4x3m == null) {
     		System.err.println("Error when computing PRK_4x3m");
-    		return null;
+    		errMsg = new String("Error when computing PRK_4x3m");
+    		error = true;
     	}
     	session.setPRK4x3m(prk4x3m);
     	if (debugPrint) {
@@ -1703,7 +1728,8 @@ public class MessageProcessor {
     	byte[] k3m = computeKey(Constants.EDHOC_K_3M, session);
     	if (k3m == null) {
     		System.err.println("Error when computing K_3m");
-    		return null;
+    		errMsg = new String("Error when computing K_3m");
+    		error = true;
     	}
     	if (debugPrint) {
     		Util.nicePrint("K_3m", k3m);
@@ -1712,7 +1738,8 @@ public class MessageProcessor {
     	byte[] iv3m = computeIV(Constants.EDHOC_IV_3M, session);
     	if (iv3m == null) {
     		System.err.println("Error when computing IV_3m");
-    		return null;
+    		errMsg = new String("Error when computing IV_3m");
+    		error = true;
     	}
     	if (debugPrint) {
     		Util.nicePrint("IV_3m", iv3m);
@@ -1724,7 +1751,8 @@ public class MessageProcessor {
     	byte[] mac3 = computeMAC3(session.getSelectedCiphersuite(), session.getIdCred(), externalData, plaintext, k3m, iv3m);
     	if (mac3 == null) {
     		System.err.println("Error when computing MAC_3");
-    		return null;
+    		errMsg = new String("Error when computing MAC_3");
+    		error = true;
     	}
     	if (debugPrint) {
     		Util.nicePrint("MAC_3", mac3);
@@ -1736,7 +1764,8 @@ public class MessageProcessor {
     	byte[] signatureOrMac3 = computeSignatureOrMac3(session, mac3, externalData);
     	if (signatureOrMac3 == null) {
     		System.err.println("Error when computing Signature_or_MAC_3");
-    		return null;
+    		errMsg = new String("Error when computing Signature_or_MAC_3");
+    		error = true;
     	}
     	if (debugPrint) {
     		Util.nicePrint("Signature_or_MAC_3", signatureOrMac3);
@@ -1753,7 +1782,8 @@ public class MessageProcessor {
     	byte[] k3ae = computeKey(Constants.EDHOC_K_3AE, session);
     	if (k3ae == null) {
     		System.err.println("Error when computing K_3ae");
-    		return null;
+    		errMsg = new String("Error when computing K_3ae");
+    		error = true;
     	}
     	if (debugPrint) {
     		Util.nicePrint("K_3ae", k3ae);
@@ -1762,7 +1792,8 @@ public class MessageProcessor {
     	byte[] iv3ae = computeIV(Constants.EDHOC_IV_3AE, session);
     	if (iv3ae == null) {
     		System.err.println("Error when computing IV_3ae");
-    		return null;
+    		errMsg = new String("Error when computing IV_3ae");
+    		error = true;
     	}
     	if (debugPrint) {
     		Util.nicePrint("IV_3ae", iv3ae);
@@ -1812,12 +1843,15 @@ public class MessageProcessor {
     	byte[] th4 = computeTH4(session, th3SerializedCBOR, ciphertext3SerializedCBOR);
         if (th4 == null) {
         	System.err.println("Error when computing TH_4");
-        	return null;
+    		errMsg = new String("Error when computing TH_4");
+    		error = true;
         }
     	session.setTH4(th4);
     	if (debugPrint) {
     		Util.nicePrint("TH_4", th4);
     	}
+    	
+    	session.setCurrentStep(Constants.EDHOC_AFTER_M3);
     	
     	
     	/* Delete ephemeral keys and other temporary material */
@@ -1825,9 +1859,21 @@ public class MessageProcessor {
     	session.deleteTemporaryMaterial();
     	
     	
-    	/* Prepare EDHOC Message 3 */
+    	/* Prepare an EDHOC Error Message */
+
+    	if (error == true) {
+    	    int correlation = session.getCorrelation();
+    	    
+    	    // Prepare C_R
+    	    CBORObject cR = CBORObject.FromObject(session.getPeerConnectionId());
+    	    
+    	    List<CBORObject> processingResult = processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
+    	    return processingResult.get(0).GetByteString();
+    	    
+    	}
     	
-    	session.setCurrentStep(Constants.EDHOC_AFTER_M3);
+    	
+    	/* Prepare EDHOC Message 3 */
     	
     	if (debugPrint) {
     		Util.nicePrint("EDHOC Message 3", Util.buildCBORSequence(objectList));

@@ -657,6 +657,7 @@ public class EdhocServer extends CoapServer {
 				}
 				
 				EdhocSession session = null;
+				int responseType = -1;
 				
 				// A non-zero length response payload would be an EDHOC Error Message
 				nextMessage = processingResult.get(0).GetByteString();
@@ -686,13 +687,15 @@ public class EdhocServer extends CoapServer {
 						return;
 					}
 					
-					// Add the new session to the list of existing EDHOC sessions
-					session.setCurrentStep(Constants.EDHOC_AFTER_M2);
-					edhocSessions.put(CBORObject.FromObject(connectionId), session);
+					if(MessageProcessor.messageType(nextMessage) == Constants.EDHOC_MESSAGE_2) {
+						// Add the new session to the list of existing EDHOC sessions
+						session.setCurrentStep(Constants.EDHOC_AFTER_M2);
+						edhocSessions.put(CBORObject.FromObject(connectionId), session);
+					}
 					
 				}
 				
-				int responseType = MessageProcessor.messageType(nextMessage);
+				responseType = MessageProcessor.messageType(nextMessage);
 				
 				if (responseType != Constants.EDHOC_MESSAGE_2 && responseType != Constants.EDHOC_ERROR_MESSAGE) {
 					nextMessage = null;
@@ -713,6 +716,16 @@ public class EdhocServer extends CoapServer {
 				        }
 					}
 					if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
+					    
+						if (session != null) {
+							// The reading of EDHOC Message 1 was successful, but the writing of EDHOC Message 2 was not
+							
+							// The session was created, but not added to the list of EDHOC sessions
+							Util.releaseConnectionId(session.getConnectionId(), usedConnectionIds);
+							session.deleteTemporaryMaterial();
+							session = null;
+						}
+						
 				        System.out.println("Sent EDHOC Error Message\n");
 				        if (debugPrint) {
 				        	Util.nicePrint("EDHOC Error Message", nextMessage);
