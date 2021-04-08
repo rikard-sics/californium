@@ -136,6 +136,9 @@ public class EdhocClient {
 	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
 	private static final boolean OSCORE_EDHOC_COMBINED = false;
 	
+	// The collection of applicability statements - The lookup key is the full URI of the EDHOC resource
+	private static Map<String, AppStatement> appStatements = new HashMap<String, AppStatement>();
+	
 	private static NetworkConfigDefaultHandler DEFAULTS = new NetworkConfigDefaultHandler() {
 
 		@Override
@@ -151,14 +154,14 @@ public class EdhocClient {
 	private static String edhocURI = "coap://localhost/.well-known/edhoc";
 	// private static String edhocURI = "coap://195.251.58.203:5683/.well-known/edhoc"; // Lidia
 	// private static String edhocURI = "coap://edhocerver.proxy.rd.coap.amsuess.com/.well-known/edhoc"; // Christian
-
+	
 	/*
 	 * Application entry point.
 	 * 
 	 */
 	public static void main(String args[]) {
 		String defaultUri = "coap://localhost/helloWorld";
-		
+				
 		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		NetworkConfig.setStandard(config);
 
@@ -178,6 +181,12 @@ public class EdhocClient {
 				
 		// Add the supported ciphersuites
 		setupSupportedCipherSuites();
+		
+		// Set the applicability statement
+		// Use of the Null byte as first element of message_1
+		// Use of message_4
+		AppStatement appStatement = new AppStatement(false, false);
+		appStatements.put(edhocURI, appStatement);
 		
     	for (int i = 0; i < 4; i++) {
         	// Empty sets of assigned Connection Identifiers; one set for each possible size in bytes.
@@ -420,7 +429,7 @@ public class EdhocClient {
  		}
 				
 	}
-	
+		
 	private static void helloWorldExchange(final String args[], final URI targetUri) {
 		
 		CoapClient client = new CoapClient(targetUri);
