@@ -116,36 +116,10 @@ public class ContextRederivation {
 		OSCoreCtx newCtx = rederiveWithContextID(ctx, contextID1);
 
 		// In the request include ID1 as a CBOR byte string (bstr)
-		newCtx.setIncludeContextId(getCborBstrBytes(contextID1));
+		newCtx.setIncludeContextId(encodeToCborBstrBytes(contextID1));
 		newCtx.setContextRederivationPhase(ContextRederivation.PHASE.CLIENT_PHASE_1);
 		db.removeContext(ctx);
 		db.addContext(uri, newCtx);
-	}
-
-	/**
-	 * Returns the byte representation of the input Java byte array encoded as a
-	 * CBOR byte string. The input Java array is first made into a CBORObject
-	 * representing a CBOR byte string, the byte representation of this CBOR
-	 * byte string is returned.
-	 * 
-	 * @param array the input Java byte array to encode
-	 */
-	private static byte[] getCborBstrBytes(byte[] array) {
-		CBORObject arrayBstr = CBORObject.FromObject(array);
-		return arrayBstr.EncodeToBytes();
-	}
-
-	/**
-	 * Returns a Java byte array decoded from the input CBOR byte string. The
-	 * input is the bytes of the encoded CBOR byte string, which when decoded
-	 * into a CBORObject represents a CBOR byte string. The contents of this
-	 * CBOR byte string is returned.
-	 * 
-	 * @param bstr a byte array containing the encoded CBOR byte string
-	 */
-	private static byte[] parseCborBstrBytes(byte[] bstr) {
-		CBORObject arrayBstr = CBORObject.DecodeFromBytes(bstr);
-		return arrayBstr.GetByteString();
 	}
 
 	/**
@@ -181,7 +155,7 @@ public class ContextRederivation {
 
 			// The Context ID in the incoming response is identified as R2
 			// It is first decoded as it is a CBOR byte string
-			byte[] contextR2 = parseCborBstrBytes(contextID);
+			byte[] contextR2 = decodeFromCborBstrBytes(contextID);
 
 			// The Context ID of the original request in this exchange is ID1
 			byte[] contextID1 = ctx.getIdContext();
@@ -218,7 +192,7 @@ public class ContextRederivation {
 
 			// The Context ID in the incoming response is identified as R2
 			// It is first decoded as it is a CBOR byte string
-			byte[] contextR2 = parseCborBstrBytes(contextID);
+			byte[] contextR2 = decodeFromCborBstrBytes(contextID);
 
 			// The Context ID of the original request in this exchange is ID1
 			byte[] contextID1 = ctx.getIdContext();
@@ -267,11 +241,10 @@ public class ContextRederivation {
 
 			// Generate a new context with the concatenated Context ID
 			OSCoreCtx newCtx = rederiveWithContextID(ctx, protectContextID);
-			newCtx.setReceiverSeq(0);
 
 			// In the outgoing request from this context, include the Context ID
 			// as a CBOR byte string
-			newCtx.setIncludeContextId(getCborBstrBytes(protectContextID));
+			newCtx.setIncludeContextId(encodeToCborBstrBytes(protectContextID));
 
 			// Indicate that the context re-derivation procedure is ongoing
 			newCtx.setContextRederivationPhase(PHASE.CLIENT_PHASE_3);
@@ -342,7 +315,7 @@ public class ContextRederivation {
 
 			// Generate a new context with the received Context ID, after
 			// decoded from a CBOR byte string
-			byte[] contextIdParsed = parseCborBstrBytes(contextID);
+			byte[] contextIdParsed = decodeFromCborBstrBytes(contextID);
 			OSCoreCtx newCtx = rederiveWithContextID(ctx, contextIdParsed);
 
 			// Set the next phase of the re-derivation procedure
@@ -370,7 +343,7 @@ public class ContextRederivation {
 			// If this is about context re-derivation decode the Context ID as a
 			// CBOR byte string. The Context ID in the request is identified as
 			// ID1.
-			byte[] contextID1 = parseCborBstrBytes(contextID);
+			byte[] contextID1 = decodeFromCborBstrBytes(contextID);
 
 			// Generate a new context with the received Context ID
 			OSCoreCtx newCtx = rederiveWithContextID(ctx, contextID1);
@@ -468,7 +441,7 @@ public class ContextRederivation {
 			// Outgoing response from this context only uses R2 as
 			// Context ID (not concatenated one used to generate the context).
 			// It will be encoded as a CBOR byte string.
-			newCtx.setIncludeContextId(getCborBstrBytes(contextR2));
+			newCtx.setIncludeContextId(encodeToCborBstrBytes(contextR2));
 
 			// Respond with new partial IV
 			newCtx.setResponsesIncludePartialIV(true);
@@ -517,6 +490,32 @@ public class ContextRederivation {
 			throw new OSException(ErrorDescriptions.CONTEXT_REGENERATION_FAILED);
 		}
 		return key;
+	}
+
+	/**
+	 * Returns the byte representation of the input Java byte array encoded as a
+	 * CBOR byte string. The input Java array is first made into a CBORObject
+	 * representing a CBOR byte string, the byte representation of this CBOR
+	 * byte string is returned.
+	 * 
+	 * @param array the input Java byte array to encode
+	 */
+	private static byte[] encodeToCborBstrBytes(byte[] array) {
+		CBORObject arrayBstr = CBORObject.FromObject(array);
+		return arrayBstr.EncodeToBytes();
+	}
+
+	/**
+	 * Returns a Java byte array decoded from the input CBOR byte string. The
+	 * input is the bytes of the encoded CBOR byte string, which when decoded
+	 * into a CBORObject represents a CBOR byte string. The contents of this
+	 * CBOR byte string is returned.
+	 * 
+	 * @param bstr a byte array containing the encoded CBOR byte string
+	 */
+	private static byte[] decodeFromCborBstrBytes(byte[] bstr) {
+		CBORObject arrayBstr = CBORObject.DecodeFromBytes(bstr);
+		return arrayBstr.GetByteString();
 	}
 
 	/**
