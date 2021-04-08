@@ -27,6 +27,7 @@ import org.eclipse.californium.elements.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.upokecenter.cbor.CBORException;
 import com.upokecenter.cbor.CBORObject;
 
 /**
@@ -342,8 +343,16 @@ public class ContextRederivation {
 
 			// If this is about context re-derivation decode the Context ID as a
 			// CBOR byte string. The Context ID in the request is identified as
-			// ID1.
-			byte[] contextID1 = decodeFromCborBstrBytes(contextID);
+			// ID1. If the ID Context in the incoming request is not a CBOR byte
+			// string the re-derivation procedure will be aborted.
+			byte[] contextID1 = null;
+			try {
+				contextID1 = decodeFromCborBstrBytes(contextID);
+			} catch (CBORException e) {
+				LOGGER.debug(
+						"Client initiated context re-derivation not started as ID Context in request is not a CBOR byte string.");
+				return ctx;
+			}
 
 			// Generate a new context with the received Context ID
 			OSCoreCtx newCtx = rederiveWithContextID(ctx, contextID1);
