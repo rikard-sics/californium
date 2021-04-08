@@ -132,6 +132,9 @@ public class EdhocServer extends CoapServer {
 	// The size of the Replay Window to use in an OSCORE Recipient Context
 	private static final int OSCORE_REPLAY_WINDOW = 32;
 	
+	// The collection of applicability statements - The lookup key is the full URI of the EDHOC resource
+	private static Map<String, AppStatement> appStatements = new HashMap<String, AppStatement>();
+	
 	/*
 	 * Application entry point.
 	 */
@@ -149,6 +152,12 @@ public class EdhocServer extends CoapServer {
 		
 		// Add the supported ciphersuites
 		setupSupportedCipherSuites();
+		
+		// Set the applicability statement
+		// Use of the Null byte as first element of message_1
+		// Use of message_4
+		AppStatement appStatement = new AppStatement(false, false);
+		appStatements.put(uriLocal + "/.well-known/edhoc", appStatement);
 		
     	for (int i = 0; i < 4; i++) {
         	// Empty sets of assigned Connection Identifiers; one set for each possible size in bytes.
@@ -605,6 +614,9 @@ public class EdhocServer extends CoapServer {
 			}
 			
 			// The content-format is application/edhoc so an actual EDHOC message is expected to be processed
+			
+			// Retrieve the applicability statement to use
+			AppStatement appStatement = appStatements.get(exchange.advanced().getRequest().getURI());
 			
 			byte[] nextMessage = new byte[] {};
 			
