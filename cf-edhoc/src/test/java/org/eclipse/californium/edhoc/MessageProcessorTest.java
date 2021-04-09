@@ -44,9 +44,19 @@ public class MessageProcessorTest {
 		byte[] message3 = Utils.hexToBytes(
 				"375858f5f6debd8214051cd583c84096c4801debf35b15363dd16ebd8530dfdcfb34fcd2eb6cad1dac66a479fb38deaaf1d30a7e6817a22ab04f3d5b1e972a0d13ea86c66b60514c9657ea89c57b0401edc5aa8bbcab813cc5d6e7");
 
-		Assert.assertEquals(Constants.EDHOC_MESSAGE_1, MessageProcessor.messageType(message1));
-		Assert.assertEquals(Constants.EDHOC_MESSAGE_2, MessageProcessor.messageType(message2));
-		Assert.assertEquals(Constants.EDHOC_MESSAGE_3, MessageProcessor.messageType(message3));
+		// Set the applicability statement
+		// Supported authentication methods
+		// Use of the Null byte as first element of message_1
+		// Use of message_4
+		//
+		Set<Integer> authMethods = new HashSet<Integer>();
+		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
+			authMethods.add(i);
+		AppStatement appStatement = new AppStatement(authMethods, false, false);
+		
+		Assert.assertEquals(Constants.EDHOC_MESSAGE_1, MessageProcessor.messageType(message1, appStatement));
+		Assert.assertEquals(Constants.EDHOC_MESSAGE_2, MessageProcessor.messageType(message2, appStatement));
+		Assert.assertEquals(Constants.EDHOC_MESSAGE_3, MessageProcessor.messageType(message3, appStatement));
 
 		// Error message is not from test vectors
 		CBORObject cx = CBORObject.FromObject(new byte[] { (byte) 0x59, (byte) 0xe9 });
@@ -59,7 +69,7 @@ public class MessageProcessorTest {
 		errorMessageList.add(suitesR);
 		byte[] errorMessage = Util.buildCBORSequence(errorMessageList);
 		
-		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(errorMessage));
+		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(errorMessage, appStatement));
 	}
 
 	/**
