@@ -42,6 +42,7 @@ public class EdhocSession {
 	private byte[] cred; // This is the serialization of a CBOR object
 	private OneKey ephemeralKey;
 	private List<Integer> supportedCiphersuites;
+	private AppStatement appStatement;
 	
 	private int currentStep;
 	private int selectedCiphersuite;
@@ -72,7 +73,7 @@ public class EdhocSession {
 	private byte[] message3 = null;
 	
 	public EdhocSession(boolean initiator, int methodCorr, byte[] connectionId, OneKey ltk,
-						CBORObject idCred, byte[] cred, List<Integer> cipherSuites) {
+						CBORObject idCred, byte[] cred, List<Integer> cipherSuites, AppStatement appStatement) {
 		
 		this.firstUse = true;
 		
@@ -84,6 +85,7 @@ public class EdhocSession {
 		this.idCred = idCred;
 		this.cred = cred;
 		this.supportedCiphersuites = cipherSuites;
+		this.appStatement = appStatement;
 		
 		this.selectedCiphersuite = supportedCiphersuites.get(0);		
 		setEphemeralKey();
@@ -232,6 +234,15 @@ public class EdhocSession {
 		return this.supportedCiphersuites;
 		
 	}
+	
+	/**
+	 * @return  the applicability statement used for this session
+	 */
+	public AppStatement getApplicabilityStatement() {
+
+		return this.appStatement;
+		
+	}	
 	
 	/**
 	 * Set the current step in the execution of the EDHOC protocol
