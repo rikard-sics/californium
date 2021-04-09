@@ -197,7 +197,9 @@ public class VectorsTxtTest {
 		CBORObject idCred = Util.buildIdCredKid(idCredKid);
 		byte[] cred = Util.buildCredRawPublicKey(ltk, "");
 
-		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, idCred, cred, cipherSuites);
+		AppStatement appStatement = new AppStatement(false, false);
+		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk,
+				                                idCred, cred, cipherSuites, appStatement);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = initiatorEphemeralPrivateList.get(index);
