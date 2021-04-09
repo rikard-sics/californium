@@ -45,12 +45,12 @@ public class MessageProcessor {
     /**
      *  Determine the type of a received EDHOC message
      * @param msg   The received EDHOC message, as a CBOR sequence
-     * @param appStatement   The applicability statement to use, it can be null (e.g. for the EDHOC+OSCORE combined request) 
+     * @param appStatement   The applicability statement to use
      * @return  The type of the EDHOC message, or -1 if it not a recognized type
      */
 	public static int messageType(byte[] msg, AppStatement appStatement) {
 		
-		if (msg == null)
+		if (msg == null || appStatement == null)
 			return -1;
 		
 		CBORObject[] myObjects = null;
@@ -65,11 +65,14 @@ public class MessageProcessor {
 		if (myObjects == null)
 			return -1;
 		
-		int count = myObjects.length;
+		boolean useNullByte = appStatement.getUseNullByte();
 		
 		// The biggest message is message_1, which has 6 elements if it includes both
 		// the initial Null byte (according to the applicability statement) and AD_1
-		if (count < 1 || count > 6)
+		int maxSize = useNullByte ? 5 : 6;
+		
+		int count = myObjects.length;
+		if (count < 1 || count > maxSize)
 			return -1;
 		
 		// First check if it is the EDHOC Error Message
@@ -78,23 +81,30 @@ public class MessageProcessor {
 		}
 				
 		// It is not an EDHOC Error Message. Check for other message types.
-
-		if (count == 5)
-			return Constants.EDHOC_MESSAGE_1;
-
-		if (count == 3)
-			return Constants.EDHOC_MESSAGE_2;
 		
-		if (count == 1 || count == 2)
-			return Constants.EDHOC_MESSAGE_3;
-		
-		if (count == 4) {
-			if (myObjects[1].getType() == CBORType.Array || myObjects[1].getType() == CBORType.Integer)
+		// message_1 never starts with the CBOR simple value Null, i.e. the 0xf6 byte
+		if (useNullByte == false) {
+			if (count == 5)
 				return Constants.EDHOC_MESSAGE_1;
-			if (myObjects[1].getType() == CBORType.ByteString)
+	
+			if (count == 3)
 				return Constants.EDHOC_MESSAGE_2;
+			
+			if (count == 1 || count == 2)
+				return Constants.EDHOC_MESSAGE_3;
+			
+			if (count == 4) {
+				if (myObjects[1].getType() == CBORType.Array || myObjects[1].getType() == CBORType.Integer)
+					return Constants.EDHOC_MESSAGE_1;
+				if (myObjects[1].getType() == CBORType.ByteString)
+					return Constants.EDHOC_MESSAGE_2;
+			}
 		}
-		
+		// message_1 always starts with the CBOR simple value Null, i.e. the 0xf6 byte
+		else {
+			// TBD
+		}
+			
 		return -1;
 		
 	}
