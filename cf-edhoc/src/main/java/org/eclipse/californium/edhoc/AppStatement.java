@@ -26,7 +26,7 @@ public class AppStatement {
 	// Supported authentication methods
 	Set<Integer> authMethods = new HashSet<Integer>();
 	
-	// Set to true if the Null byte has to be used as first element of message_1
+	// Set to true if the CBOR simple value Null (i.e., the 0xf6 byte) has to be used as first element of message_1
 	private boolean useNullByte;
 	
 	// Set to true if message_4 has to be sent by the Responder
