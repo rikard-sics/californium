@@ -247,7 +247,7 @@ public static final int EDHOC_AFTER_M1  = 1; // After sending EDHOC Message 1
 
 // Responder steps
 public static final int EDHOC_BEFORE_M2 = 2; // Before sending EDHOC Message 2
-public static final int EDHOC_SENT_M2   = 3; //  After sending EDHOC Message 2
+public static final int EDHOC_SENT_M2   = 3; // After sending EDHOC Message 2
 
 // Common steps
 public static final int EDHOC_AFTER_M2  = 4; // After prepared/processed EDHOC Message 2
