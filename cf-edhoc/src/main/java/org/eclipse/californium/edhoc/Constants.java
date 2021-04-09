@@ -65,6 +65,7 @@ public static final int EDHOC_ERROR_MESSAGE = 0;
 public static final int EDHOC_MESSAGE_1 = 1;
 public static final int EDHOC_MESSAGE_2 = 2;
 public static final int EDHOC_MESSAGE_3 = 3;
+public static final int EDHOC_MESSAGE_4 = 4;
 
 
 /**
@@ -246,9 +247,13 @@ public static final int EDHOC_AFTER_M1  = 1; // After sending EDHOC Message 1
 
 // Responder steps
 public static final int EDHOC_BEFORE_M2 = 2; // Before sending EDHOC Message 2
+public static final int EDHOC_SENT_M2   = 3; //  After sending EDHOC Message 2
 
 // Common steps
-public static final int EDHOC_AFTER_M2  = 3; // After sending/receiving EDHOC Message 2
-public static final int EDHOC_AFTER_M3  = 4; // After sending/receiving EDHOC Message 3
+public static final int EDHOC_AFTER_M2  = 4; // After prepared/processed EDHOC Message 2
+public static final int EDHOC_AFTER_M3  = 5; // After prepared/processed EDHOC Message 3
+
+// Initiator steps
+public static final int EDHOC_SENT_M3   = 6; // After sending EDHOC Message 3
 
 }
