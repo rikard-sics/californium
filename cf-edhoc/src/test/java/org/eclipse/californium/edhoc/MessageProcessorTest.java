@@ -80,7 +80,9 @@ public class MessageProcessorTest {
 		byte[] cred = Utils.hexToBytes("47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb28f9cf6180b5a6af31e80209a085cfbf95f3fdcf9b18b693d6c0e0d0ffb8e3f9a32a50859ecd0bfcff2c218");
 		CBORObject idCred = Util.buildIdCredX5t(cred);
 		
-		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, idCred, cred, cipherSuites);
+		AppStatement appStatement = new AppStatement(false, false);
+		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk,
+				                                idCred, cred, cipherSuites, appStatement);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = Utils.hexToBytes("8f781a095372f85b6d9f6109ae422611734d7dbfa0069a2df2935bb2e053bf35");
@@ -120,7 +122,9 @@ public class MessageProcessorTest {
 		CBORObject idCred = Util.buildIdCredKid(idCredKid);
 		byte[] cred = Util.buildCredRawPublicKey(ltk, "");
 
-		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, idCred, cred, cipherSuites);
+		AppStatement appStatement = new AppStatement(false, false);
+		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk,
+				                                idCred, cred, cipherSuites, appStatement);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = Utils.hexToBytes("ae11a0db863c0227e53992feb8f5924c50d0a7ba6eeab4ad1ff24572f4f57cfa");
@@ -160,7 +164,9 @@ public class MessageProcessorTest {
 		CBORObject idCred = Util.buildIdCredKid(idCredKid);
 		byte[] cred = Util.buildCredRawPublicKey(ltk, "");
 
-		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk, idCred, cred, cipherSuites);
+		AppStatement appStatement = new AppStatement(false, false);
+		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk,
+				                                idCred, cred, cipherSuites, appStatement);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = Utils.hexToBytes("0ae799775cb151bfc2548735f44acf1d9429cf9a95ddcd2a139e3a28d863a081");
@@ -278,8 +284,9 @@ public class MessageProcessorTest {
 		/* Set up the session to use */
 		
 		// Create the session
+		AppStatement appStatement = new AppStatement(false, false);
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdResponder,
-												identityKey, idCredR, credR, supportedCipherSuites);
+												identityKey, idCredR, credR, supportedCipherSuites, appStatement);
 
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -361,8 +368,9 @@ public class MessageProcessorTest {
 		/* Set up the session to use */
 		
 		// Create the session
+		AppStatement appStatement = new AppStatement(false, false);
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdResponder,
-												identityKey, idCredR, credR, supportedCipherSuites);
+												identityKey, idCredR, credR, supportedCipherSuites, appStatement);
 
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -443,8 +451,9 @@ public class MessageProcessorTest {
 		/* Set up the session to use */
 		
 		// Create the session
+		AppStatement appStatement = new AppStatement(false, false);
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdResponder,
-												identityKey, idCredR, credR, supportedCipherSuites);
+												identityKey, idCredR, credR, supportedCipherSuites, appStatement);
 
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -536,8 +545,9 @@ public class MessageProcessorTest {
 		/* Set up the session to use */
 		
 		// Create the session
+		AppStatement appStatement = new AppStatement(false, false);
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdInitiator,
-												identityKey, idCredI, credI, supportedCipherSuites);
+												identityKey, idCredI, credI, supportedCipherSuites, appStatement);
 
 		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -650,8 +660,9 @@ public class MessageProcessorTest {
 		/* Set up the session to use */
 		
 		// Create the session
+		AppStatement appStatement = new AppStatement(false, false);
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdInitiator,
-												identityKey, idCredI, credI, supportedCipherSuites);
+												identityKey, idCredI, credI, supportedCipherSuites, appStatement);
 
 		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -762,8 +773,9 @@ public class MessageProcessorTest {
 		/* Set up the session to use */
 		
 		// Create the session
+		AppStatement appStatement = new AppStatement(false, false);
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdInitiator,
-												identityKey, idCredI, credI, supportedCipherSuites);
+												identityKey, idCredI, credI, supportedCipherSuites, appStatement);
 
 		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
