@@ -45,9 +45,9 @@ public class MessageProcessorTest {
 				"375858f5f6debd8214051cd583c84096c4801debf35b15363dd16ebd8530dfdcfb34fcd2eb6cad1dac66a479fb38deaaf1d30a7e6817a22ab04f3d5b1e972a0d13ea86c66b60514c9657ea89c57b0401edc5aa8bbcab813cc5d6e7");
 
 		// Set the applicability statement
-		// Supported authentication methods
-		// Use of the Null byte as first element of message_1
-		// Use of message_4
+		// - Supported authentication methods
+		// - Use of the CBOR simple value Null (i.e., the 0xf6 byte), as first element of message_1
+		// - Use of message_4 as expected to be sent by the Responder
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
@@ -93,9 +93,9 @@ public class MessageProcessorTest {
 		CBORObject idCred = Util.buildIdCredX5t(cred);
 		
 		// Set the applicability statement
-		// Supported authentication methods
-		// Use of the Null byte as first element of message_1
-		// Use of message_4
+		// - Supported authentication methods
+		// - Use of the CBOR simple value Null (i.e., the 0xf6 byte), as first element of message_1
+		// - Use of message_4 as expected to be sent by the Responder
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
@@ -144,9 +144,9 @@ public class MessageProcessorTest {
 		byte[] cred = Util.buildCredRawPublicKey(ltk, "");
 
 		// Set the applicability statement
-		// Supported authentication methods
-		// Use of the Null byte as first element of message_1
-		// Use of message_4
+		// - Supported authentication methods
+		// - Use of the CBOR simple value Null (i.e., the 0xf6 byte), as first element of message_1
+		// - Use of message_4 as expected to be sent by the Responder
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
@@ -195,9 +195,9 @@ public class MessageProcessorTest {
 		byte[] cred = Util.buildCredRawPublicKey(ltk, "");
 
 		// Set the applicability statement
-		// Supported authentication methods
-		// Use of the Null byte as first element of message_1
-		// Use of message_4
+		// - Supported authentication methods
+		// - Use of the CBOR simple value Null (i.e., the 0xf6 byte), as first element of message_1
+		// - Use of message_4 as expected to be sent by the Responder
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
@@ -323,9 +323,9 @@ public class MessageProcessorTest {
 		/* Set up the session to use */
 		
 		// Set the applicability statement
-		// Supported authentication methods
-		// Use of the Null byte as first element of message_1
-		// Use of message_4
+		// - Supported authentication methods
+		// - Use of the CBOR simple value Null (i.e., the 0xf6 byte), as first element of message_1
+		// - Use of message_4 as expected to be sent by the Responder
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
@@ -416,9 +416,9 @@ public class MessageProcessorTest {
 		/* Set up the session to use */
 		
 		// Set the applicability statement
-		// Supported authentication methods
-		// Use of the Null byte as first element of message_1
-		// Use of message_4
+		// - Supported authentication methods
+		// - Use of the CBOR simple value Null (i.e., the 0xf6 byte), as first element of message_1
+		// - Use of message_4 as expected to be sent by the Responder
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
@@ -508,9 +508,9 @@ public class MessageProcessorTest {
 		/* Set up the session to use */
 
 		// Set the applicability statement
-		// Supported authentication methods
-		// Use of the Null byte as first element of message_1
-		// Use of message_4
+		// - Supported authentication methods
+		// - Use of the CBOR simple value Null (i.e., the 0xf6 byte), as first element of message_1
+		// - Use of message_4 as expected to be sent by the Responder
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
@@ -611,9 +611,9 @@ public class MessageProcessorTest {
 		/* Set up the session to use */
 		
 		// Set the applicability statement
-		// Supported authentication methods
-		// Use of the Null byte as first element of message_1
-		// Use of message_4
+		// - Supported authentication methods
+		// - Use of the CBOR simple value Null (i.e., the 0xf6 byte), as first element of message_1
+		// - Use of message_4 as expected to be sent by the Responder
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
@@ -735,9 +735,9 @@ public class MessageProcessorTest {
 		/* Set up the session to use */
 		
 		// Set the applicability statement
-		// Supported authentication methods
-		// Use of the Null byte as first element of message_1
-		// Use of message_4
+		// - Supported authentication methods
+		// - Use of the CBOR simple value Null (i.e., the 0xf6 byte), as first element of message_1
+		// - Use of message_4 as expected to be sent by the Responder
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
@@ -857,9 +857,9 @@ public class MessageProcessorTest {
 		/* Set up the session to use */
 		
 		// Set the applicability statement
-		// Supported authentication methods
-		// Use of the Null byte as first element of message_1
-		// Use of message_4
+		// - Supported authentication methods
+		// - Use of the CBOR simple value Null (i.e., the 0xf6 byte), as first element of message_1
+		// - Use of message_4 as expected to be sent by the Responder
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )

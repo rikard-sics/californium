@@ -139,7 +139,7 @@ public class EdhocServer extends CoapServer {
 	 * Application entry point.
 	 */
 	public static void main(String[] args) {
-
+		
 		// Insert EdDSA security provider
 		Security.insertProviderAt(EdDSA, 1);
 
@@ -154,9 +154,9 @@ public class EdhocServer extends CoapServer {
 		setupSupportedCipherSuites();
 		
 		// Set the applicability statement
-		// Supported authentication methods
-		// Use of the Null byte as first element of message_1
-		// Use of message_4
+		// - Supported authentication methods
+		// - Use of the CBOR simple value Null (i.e., the 0xf6 byte), as first element of message_1
+		// - Use of message_4 as expected to be sent by the Responder
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
