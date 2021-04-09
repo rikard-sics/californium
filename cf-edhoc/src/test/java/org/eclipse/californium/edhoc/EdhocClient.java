@@ -595,7 +595,7 @@ public class EdhocClient {
         if (responsePayload == null)
         	discontinue = true;
         else {
-        	responseType = MessageProcessor.messageType(responsePayload);
+        	responseType = MessageProcessor.messageType(responsePayload, appStatement);
         	if (responseType != Constants.EDHOC_MESSAGE_2 && responseType != Constants.EDHOC_ERROR_MESSAGE)
         		discontinue = true;
         }
@@ -705,7 +705,7 @@ public class EdhocClient {
 				
 			}
 
-			int requestType = MessageProcessor.messageType(nextPayload);			
+			int requestType = MessageProcessor.messageType(nextPayload, appStatement);			
 			if (requestType != Constants.EDHOC_MESSAGE_3 && responseType != Constants.EDHOC_ERROR_MESSAGE) {
 				nextPayload = null;
 			}
@@ -842,7 +842,7 @@ public class EdhocClient {
 		            if (responsePayload == null)
 		            	discontinue = true;
 		            else {
-		            	responseType = MessageProcessor.messageType(responsePayload);
+		            	responseType = MessageProcessor.messageType(responsePayload, appStatement);
 		            	if (responseType != Constants.EDHOC_ERROR_MESSAGE)
 		            		discontinue = true;
 		            }

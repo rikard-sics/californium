@@ -31,7 +31,6 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
-import org.eclipse.californium.elements.util.Bytes;
 
 import com.upokecenter.cbor.CBORException;
 import com.upokecenter.cbor.CBORObject;
@@ -46,9 +45,10 @@ public class MessageProcessor {
     /**
      *  Determine the type of a received EDHOC message
      * @param msg   The received EDHOC message, as a CBOR sequence
+     * @param appStatement   The applicability statement to use, it can be null (e.g. for the EDHOC+OSCORE combined request) 
      * @return  The type of the EDHOC message, or -1 if it not a recognized type
      */
-	public static int messageType(byte[] msg) {
+	public static int messageType(byte[] msg, AppStatement appStatement) {
 		
 		if (msg == null)
 			return -1;
@@ -67,23 +67,16 @@ public class MessageProcessor {
 		
 		int count = myObjects.length;
 		
-		if (count < 1 || count > 5)
+		// The biggest message is message_1, which has 6 elements if it includes both
+		// the initial Null byte (according to the applicability statement) and AD_1
+		if (count < 1 || count > 6)
 			return -1;
 		
 		// First check if it is the EDHOC Error Message
-		if (count == 1) {
-			if (myObjects[0].getType() == CBORType.TextString)
-				return Constants.EDHOC_ERROR_MESSAGE;
+		if (isErrorMessage(myObjects)) {
+			return Constants.EDHOC_ERROR_MESSAGE;
 		}
-		if (count == 2) {
-			if (myObjects[0].getType() == CBORType.TextString || myObjects[1].getType() == CBORType.TextString)
-				return Constants.EDHOC_ERROR_MESSAGE;
-		}
-		if (count == 3) {
-			if (myObjects[1].getType() == CBORType.TextString)
-				return Constants.EDHOC_ERROR_MESSAGE;
-		}
-		
+				
 		// It is not an EDHOC Error Message. Check for other message types.
 
 		if (count == 5)
@@ -106,6 +99,55 @@ public class MessageProcessor {
 		
 	}
 	
+    /**
+     *  Determine if a message is an EDHOC error message
+     * @param msg   The message to check, as an array of CBOR objects extracted from a CBOR sequence
+     * @return  True if it is an EDHOC error message, or false otherwise
+     */
+	public static boolean isErrorMessage(CBORObject[] myObjects) {
+		
+		int count = myObjects.length;
+
+		if (count == 1) {
+			if (myObjects[0].getType() == CBORType.TextString)
+				return true;
+		}
+		if (count == 2) {
+			if (myObjects[0].getType() == CBORType.TextString || myObjects[1].getType() == CBORType.TextString)
+				return true;
+		}
+		if (count == 3) {
+			if (myObjects[1].getType() == CBORType.TextString)
+				return true;
+		}
+		
+		return false;
+		
+	}
+	
+    /**
+     *  Determine if a message is an EDHOC error message
+     * @param msg   The message to check, as a CBOR sequence
+     * @return  True if it is an EDHOC error message, or false otherwise
+     */
+	public static boolean isErrorMessage(byte[] msg) {
+		
+		CBORObject[] myObjects = null;
+		
+		try {
+			myObjects = CBORObject.DecodeSequenceFromBytes(msg);
+		} catch (CBORException e) {
+			System.err.println("Error while parsing the CBOR sequence\n");
+			return false;
+		}
+		
+		if (myObjects == null)
+			return false;
+		
+		return isErrorMessage(myObjects);
+		
+	}
+		
     /**
      *  Process an EDHOC Message 1
      * @param expectedCorr   The expected Correlation Method to see advertised in EDHOC Message 1 
