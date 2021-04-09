@@ -81,37 +81,34 @@ public class MessageProcessor {
 		}
 				
 		// It is not an EDHOC Error Message. Check for other message types.
+
+		if (count == 1 || count == 2)
+			return Constants.EDHOC_MESSAGE_3;
+		
+		if (count == 3)
+			return Constants.EDHOC_MESSAGE_2;
 		
 		// message_1 never starts with the CBOR simple value Null, i.e. the 0xf6 byte
 		if (useNullByte == false) {
-			if (count == 5)
-				return Constants.EDHOC_MESSAGE_1;
-	
-			if (count == 3)
-				return Constants.EDHOC_MESSAGE_2;
-			
-			if (count == 1 || count == 2)
-				return Constants.EDHOC_MESSAGE_3;
-			
 			if (count == 4) {
 				if (myObjects[1].getType() == CBORType.Array || myObjects[1].getType() == CBORType.Integer)
 					return Constants.EDHOC_MESSAGE_1;
 				if (myObjects[1].getType() == CBORType.ByteString)
 					return Constants.EDHOC_MESSAGE_2;
 			}
+			
+			if (count == 5)
+				return Constants.EDHOC_MESSAGE_1;
 		}
 		// message_1 always starts with the CBOR simple value Null, i.e. the 0xf6 byte
 		else {
+			if (count == 4)
+				return Constants.EDHOC_MESSAGE_2;
+			
 			if (count == 5 || count == 6) {
 				if (myObjects[0].equals(CBORObject.Null))
 					return Constants.EDHOC_MESSAGE_1;
 			}
-			
-			if (count == 1 || count == 2)
-				return Constants.EDHOC_MESSAGE_3;
-			
-			if (count == 3 || count == 4)
-				return Constants.EDHOC_MESSAGE_2;
 			
 		}
 			
