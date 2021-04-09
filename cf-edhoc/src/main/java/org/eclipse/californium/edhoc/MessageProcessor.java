@@ -69,7 +69,7 @@ public class MessageProcessor {
 		
 		// The biggest message is message_1, which has 6 elements if it includes both
 		// the initial Null byte (according to the applicability statement) and AD_1
-		int maxSize = useNullByte ? 5 : 6;
+		int maxSize = useNullByte ? 6 : 5;
 		
 		int count = myObjects.length;
 		if (count < 1 || count > maxSize)
@@ -102,7 +102,17 @@ public class MessageProcessor {
 		}
 		// message_1 always starts with the CBOR simple value Null, i.e. the 0xf6 byte
 		else {
-			// TBD
+			if (count == 5 || count == 6) {
+				if (myObjects[0].equals(CBORObject.Null))
+					return Constants.EDHOC_MESSAGE_1;
+			}
+			
+			if (count == 1 || count == 2)
+				return Constants.EDHOC_MESSAGE_3;
+			
+			if (count == 3 || count == 4)
+				return Constants.EDHOC_MESSAGE_2;
+			
 		}
 			
 		return -1;
@@ -195,60 +205,84 @@ public class MessageProcessor {
 		
 
 		CBORObject[] objectListRequest = CBORObject.DecodeSequenceFromBytes(sequence);
+		int index = -1;
+		int maxSize = 5;
 		
 		/* Consistency checks */
 		
-		// METHOD_CORR
-		if (objectListRequest[0].getType() != CBORType.Integer) {
-			errMsg = new String("METHOD_CORR must be an integer");
+    	if (appStatement == null) {
+			errMsg = new String("Impossible to retrieve the applicability statement");
 			error = true;
-		}
-		else {
-			// Check that the indicated correlation method is as expected
-			int methodCorr = objectListRequest[0].AsInt32(); 
-			correlation = methodCorr % 4;
-			if (correlation != expectedCorr) {
-				errMsg = new String("Expected correlation method " + expectedCorr + " but it was " + correlation);
+    	}
+    	else {
+            // If indicated in the applicability statement, the first element
+            // of message_1 is the CBOR simple value Null, i.e. the byte 0xf6
+	    	if (appStatement.getUseNullByte()) {
+	    		maxSize = 6;
+	    		index++;
+	    		if (!objectListRequest[index].equals(CBORObject.Null)) {
+	    			errMsg = new String("The first element must be the CBOR simple value Null");
+	    			error = true;
+	    		}
+	        }
+    	}
+		
+    	
+		// METHOD_CORR
+    	index++;
+    	if (error == false) {
+			if (objectListRequest[index].getType() != CBORType.Integer) {
+				errMsg = new String("METHOD_CORR must be an integer");
 				error = true;
 			}
-			// Check that the indicated authentication method is supported
-		    if (error = false) {
-		    	int method = methodCorr / 4;
-		    	if (!appStatement.isAuthMethodSupported(method)) {
-					errMsg = new String("Authentication method " + method + " is not supported");
+			else {
+				// Check that the indicated correlation method is as expected
+				int methodCorr = objectListRequest[index].AsInt32(); 
+				correlation = methodCorr % 4;
+				if (correlation != expectedCorr) {
+					errMsg = new String("Expected correlation method " + expectedCorr + " but it was " + correlation);
 					error = true;
-		    	}
-		    	
-		    }
+				}
+				// Check that the indicated authentication method is supported
+				else {
+			    	int method = methodCorr / 4;
+			    	if (!appStatement.isAuthMethodSupported(method)) {
+						errMsg = new String("Authentication method " + method + " is not supported");
+						error = true;
+			    	}
+			    	
+			    }
+			}
 		}
 		
 		// SUITES_I
+		index++;
 		if (error == false &&
-			objectListRequest[1].getType() != CBORType.Integer &&
-			objectListRequest[1].getType() != CBORType.Array) {
+			objectListRequest[index].getType() != CBORType.Integer &&
+			objectListRequest[index].getType() != CBORType.Array) {
 				errMsg = new String("SUITES_I must be an integer or an array");
 				error = true;
 		}
 		if (error == false &&
-			objectListRequest[1].getType() == CBORType.Integer &&
-			objectListRequest[1].AsInt32() < 0) {
+			objectListRequest[index].getType() == CBORType.Integer &&
+			objectListRequest[index].AsInt32() < 0) {
 				errMsg = new String("SUITES_I as an integer must be greater than 0");
 				error = true;
 		}
 		if (error == false &&
-			objectListRequest[1].getType() == CBORType.Array) {
-				if (objectListRequest[1].size() < 2) {
+			objectListRequest[index].getType() == CBORType.Array) {
+				if (objectListRequest[index].size() < 2) {
 					errMsg = new String("SUITES_I as an array must have at least 2 elements");
 					error = true;
 				}
 				else {
-					for (int i = 0; i < objectListRequest[1].size(); i++) {
-						if(objectListRequest[1].get(i).getType() != CBORType.Integer) {
+					for (int i = 0; i < objectListRequest[index].size(); i++) {
+						if(objectListRequest[index].get(i).getType() != CBORType.Integer) {
 							errMsg = new String("SUITES_I as an array must have integers as elements");
 							error = true;
 							break;
 						}
-						if(objectListRequest[1].get(i).AsInt32() < 0) {
+						if(objectListRequest[index].get(i).AsInt32() < 0) {
 							errMsg = new String("SUITES_I as an array must have integers greater than 0");
 							error = true;
 							break;
@@ -261,8 +295,8 @@ public class MessageProcessor {
 		if (error == false) {
 			int selectedCiphersuite;
 			
-			if (objectListRequest[1].getType() == CBORType.Integer) {
-				selectedCiphersuite = objectListRequest[1].AsInt32();
+			if (objectListRequest[index].getType() == CBORType.Integer) {
+				selectedCiphersuite = objectListRequest[index].AsInt32();
 				// This peer does not support the selected ciphersuite
 				if (!supportedCiphersuites.contains(Integer.valueOf(selectedCiphersuite))) {
 					errMsg = new String("The selected ciphersuite is not supported");
@@ -270,19 +304,19 @@ public class MessageProcessor {
 				}
 			}
 			
-			else if (objectListRequest[1].getType() == CBORType.Array) {
-				selectedCiphersuite = objectListRequest[1].get(0).AsInt32();
+			else if (objectListRequest[index].getType() == CBORType.Array) {
+				selectedCiphersuite = objectListRequest[index].get(0).AsInt32();
 				// This peer does not support the selected ciphersuite
 				if (!supportedCiphersuites.contains(Integer.valueOf(selectedCiphersuite))) {
 					errMsg = new String("The selected ciphersuite is not supported");
 					error = true;
 				}
 				
-				if (error == false) {
+				else {
 					int selectedIndex = -1;
 					// Find the position of the selected ciphersuite in the provided list
-					for (int i = 1; i < objectListRequest[1].size(); i++) {
-						if (objectListRequest[1].get(i).AsInt32() == selectedCiphersuite)
+					for (int i = 1; i < objectListRequest[index].size(); i++) {
+						if (objectListRequest[index].get(i).AsInt32() == selectedCiphersuite)
 							selectedIndex = i;
 					}
 					// The selected ciphersuite was not in the provided list
@@ -308,35 +342,38 @@ public class MessageProcessor {
 		}
 		
 		// G_X
+		index++;
 		if (error == false &&
-			objectListRequest[2].getType() != CBORType.ByteString) {
+			objectListRequest[index].getType() != CBORType.ByteString) {
 				errMsg = new String("G_X must be a byte string");
 				error = true;
 		}
 		
 		// C_I
+		index++;
 		if (error == false &&
-			objectListRequest[3].getType() != CBORType.ByteString &&
-			objectListRequest[3].getType() != CBORType.Integer) {
+			objectListRequest[index].getType() != CBORType.ByteString &&
+			objectListRequest[index].getType() != CBORType.Integer) {
 				errMsg = new String("C_I must be a byte string or an integer");
 				error = true;
 		}
-		if (error == false && Util.decodeFromBstrIdentifier(objectListRequest[3]) == null) {
+		if (error == false && Util.decodeFromBstrIdentifier(objectListRequest[index]) == null) {
 			errMsg = new String("C_I must be encoded as a valid bstr_identifier");
 			error = true;
 		}
 		else {
-			cI = objectListRequest[3];
+			cI = objectListRequest[index];
 		}
 		
 		// AD_1
-		if (error == false && objectListRequest.length == 5) {
-			if (objectListRequest[4].getType() != CBORType.ByteString) {
+		index++;
+		if (error == false && objectListRequest.length == maxSize) {
+			if (objectListRequest[index].getType() != CBORType.ByteString) {
 				errMsg = new String("AD_1 must be a byte string");
 				error = true;
 			}
 			else {
-    			CBORObject ad1CBOR = objectListRequest[4];
+    			CBORObject ad1CBOR = objectListRequest[index];
     			int length = ad1CBOR.GetByteString().length; 
     			ad1 = new byte[length];
     			System.arraycopy(ad1CBOR.GetByteString(), 0, ad1, 0, length);
@@ -1307,6 +1344,17 @@ public class MessageProcessor {
         // Prepare the list of CBOR objects to build the CBOR sequence
         List<CBORObject> objectList = new ArrayList<>();
         
+        // If indicated in the applicability statement, the first element
+        // of message_1 is the CBOR simple value Null, i.e. the byte 0xf6
+        AppStatement appStatement = session.getApplicabilityStatement(); 
+    	if (appStatement == null) {
+    		System.err.println("Impossible to retrieve the applicability statement");
+    		return null;
+    	}
+        if (appStatement.getUseNullByte()) {
+        	objectList.add(CBORObject.Null);
+        }
+        
         // METHOD_CORR as CBOR integer
         int methodCorr = session.getMethodCorr();
         objectList.add(CBORObject.FromObject(methodCorr));
@@ -2101,24 +2149,37 @@ public class MessageProcessor {
 			  									  AppStatement appStatement) {
 		
 		CBORObject[] objectListMessage1 = CBORObject.DecodeSequenceFromBytes(message1);
+		int index = -1;
+		int maxSize = 5;
 		
 		// Retrieve elements from EDHOC Message 1
 		
+	    // If indicated in the applicability statement, the first element
+	    // of message_1 is the CBOR simple value Null, i.e. the byte 0xf6
+	    if (appStatement.getUseNullByte()) {
+	        maxSize = 6;
+	        index++;
+	    }
+		
 		// METHOD_CORR
-		int methodCorr = objectListMessage1[0].AsInt32();
+	    index++;
+		int methodCorr = objectListMessage1[index].AsInt32();
 		
 		// Selected ciphersuites from SUITES_I
+		index++;
 		int selectedCipherSuite = -1;
-		if (objectListMessage1[1].getType() == CBORType.Integer)
-			selectedCipherSuite = objectListMessage1[1].AsInt32();
-		else if (objectListMessage1[1].getType() == CBORType.Array)
-			selectedCipherSuite = objectListMessage1[1].get(0).AsInt32();
+		if (objectListMessage1[index].getType() == CBORType.Integer)
+			selectedCipherSuite = objectListMessage1[index].AsInt32();
+		else if (objectListMessage1[index].getType() == CBORType.Array)
+			selectedCipherSuite = objectListMessage1[index].get(0).AsInt32();
 		
 		// G_X
-		byte[] gX = objectListMessage1[2].GetByteString();
+		index++;
+		byte[] gX = objectListMessage1[index].GetByteString();
 		
 		// C_I
-		byte[] cI = Util.decodeFromBstrIdentifier(objectListMessage1[3]).GetByteString();
+		index++;
+		byte[] cI = Util.decodeFromBstrIdentifier(objectListMessage1[index]).GetByteString();
 		
 		
 		// Create a new EDHOC session
