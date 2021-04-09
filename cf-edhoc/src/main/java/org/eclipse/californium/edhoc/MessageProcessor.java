@@ -223,7 +223,7 @@ public class MessageProcessor {
 		
 		if (connectionIdentifier != null) {
 		
-			EdhocSession session = edhocSessions.get(connectionIdentifier);
+			EdhocSession session = edhocSessions.get(CBORObject.FromObject(connectionIdentifier));
 			
 			if (session != null) {
 				boolean initiator = session.isInitiator();
