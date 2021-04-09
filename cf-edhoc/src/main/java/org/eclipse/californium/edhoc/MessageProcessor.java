@@ -186,7 +186,6 @@ public class MessageProcessor {
 	public static int distinguishMessage3and4(CBORObject[] myObjects, boolean isReq,
 			                                  Map<CBORObject, EdhocSession> edhocSessions, byte[] cX) {
 		
-		int messageType = -1;
 		byte[] connectionIdentifier = null;
 		int count = myObjects.length;
 		
@@ -239,7 +238,7 @@ public class MessageProcessor {
 		
 		}
 		
-		return messageType;
+		return -1;
 		
 	}
 	
