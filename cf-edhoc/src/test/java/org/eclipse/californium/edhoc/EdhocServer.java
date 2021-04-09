@@ -154,9 +154,14 @@ public class EdhocServer extends CoapServer {
 		setupSupportedCipherSuites();
 		
 		// Set the applicability statement
+		// Supported authentication methods
 		// Use of the Null byte as first element of message_1
 		// Use of message_4
-		AppStatement appStatement = new AppStatement(false, false);
+		//
+		Set<Integer> authMethods = new HashSet<Integer>();
+		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
+			authMethods.add(i);
+		AppStatement appStatement = new AppStatement(authMethods, false, false);
 		appStatements.put(uriLocal + "/.well-known/edhoc", appStatement);
 		
     	for (int i = 0; i < 4; i++) {
@@ -660,7 +665,7 @@ public class EdhocServer extends CoapServer {
 				}
 				
 				processingResult = MessageProcessor.readMessage1(expectedCorr, message, keyPair,
-						                                         usedConnectionIds, supportedCiphersuites);
+						                               usedConnectionIds, supportedCiphersuites, appStatement);
 
 				if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
 					System.err.println("Internal error when processing EDHOC Message 1");
