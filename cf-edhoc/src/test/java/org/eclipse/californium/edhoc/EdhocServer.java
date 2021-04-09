@@ -651,13 +651,12 @@ public class EdhocServer extends CoapServer {
 				
 				// Determine the Correlation Method expected to be advertised in EDHOC Message 1
 				int expectedCorr = Constants.EDHOC_CORR_METHOD_0;
+				
 				String scheme = exchange.advanced().getRequest().getScheme();
-				if (scheme.equals("coap") || scheme.equals("coaps")) {
-					expectedCorr = Constants.EDHOC_CORR_METHOD_1; // This peer is the server
-				}
-				if (scheme.equals("coap+tcp") || scheme.equals("coaps+tcp") ||
+				if (scheme.equals("coap") || scheme.equals("coaps") ||
+					scheme.equals("coap+tcp") || scheme.equals("coaps+tcp") ||
 					scheme.equals("coap+ws") || scheme.equals("coaps+ws")) {
-					expectedCorr = Constants.EDHOC_CORR_METHOD_3;
+					expectedCorr = Constants.EDHOC_CORR_METHOD_1; // This peer is the server
 				}
 				
 				processingResult = MessageProcessor.readMessage1(expectedCorr, message, keyPair,
