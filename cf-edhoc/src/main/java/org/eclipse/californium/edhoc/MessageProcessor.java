@@ -113,9 +113,7 @@ public class MessageProcessor {
      * @param ltk   The long term identity key
      * @param usedConnectionIds   The collection of Connection Identifiers used by this peer
      * @param supportedCipherSuites   The list of cipher suites supported by this peer 
-     * @param edhocSessions   The EDHOC sessions of this peer 
-     *                        The map label is C_X, i.e. the connection identifier
-     *                        offered to the other peer in the session, as a bstr_identifier
+     * @param appStatement   The applicability statement to use
      * @return   A list of CBOR Objects including up to two elements.
      *           The first element is always present. It it is a CBOR byte string, with value either:
      *              i) a zero length byte string, indicating that the EDHOC Message 2 can be prepared; or
@@ -127,7 +125,8 @@ public class MessageProcessor {
 												byte[] sequence,
 												OneKey ltk,
 												List<Set<Integer>> usedConnectionIds,
-												List<Integer> supportedCiphersuites) {
+												List<Integer> supportedCiphersuites,
+												AppStatement appStatement) {
 		
 		byte[] ad1 = null; // Will be set if Application Data is present as AD1
 		
@@ -153,11 +152,22 @@ public class MessageProcessor {
 			error = true;
 		}
 		else {
-			correlation = objectListRequest[0].AsInt32() % 4;
+			// Check that the indicated correlation method is as expected
+			int methodCorr = objectListRequest[0].AsInt32(); 
+			correlation = methodCorr % 4;
 			if (correlation != expectedCorr) {
-				errMsg = new String("Expected METHOD_CORR " + expectedCorr + " but it was " + correlation);
+				errMsg = new String("Expected correlation method " + expectedCorr + " but it was " + correlation);
 				error = true;
 			}
+			// Check that the indicated authentication method is supported
+		    if (error = false) {
+		    	int method = methodCorr / 4;
+		    	if (!appStatement.isAuthMethodSupported(method)) {
+					errMsg = new String("Authentication method " + method + " is not supported");
+					error = true;
+		    	}
+		    	
+		    }
 		}
 		
 		// SUITES_I
@@ -1931,7 +1941,7 @@ public class MessageProcessor {
 					includeIdentifier = true;
 				}
 			}
-			else if (replyTo != Constants.EDHOC_MESSAGE_2) {
+			else if (replyTo == Constants.EDHOC_MESSAGE_2) {
 				if (corr == Constants.EDHOC_CORR_METHOD_0 || corr == Constants.EDHOC_CORR_METHOD_1) {
 					includeIdentifier = true;
 				}

@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -197,7 +198,16 @@ public class VectorsTxtTest {
 		CBORObject idCred = Util.buildIdCredKid(idCredKid);
 		byte[] cred = Util.buildCredRawPublicKey(ltk, "");
 
-		AppStatement appStatement = new AppStatement(false, false);
+		// Set the applicability statement
+		// Supported authentication methods
+		// Use of the Null byte as first element of message_1
+		// Use of message_4
+		//
+		Set<Integer> authMethods = new HashSet<Integer>();
+		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
+			authMethods.add(i);
+		AppStatement appStatement = new AppStatement(authMethods, false, false);
+		
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk,
 				                                idCred, cred, cipherSuites, appStatement);
 
