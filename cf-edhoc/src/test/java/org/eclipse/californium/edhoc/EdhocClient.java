@@ -535,8 +535,12 @@ public class EdhocClient {
 		// Possibly specify application data for AD_1, or null if none have to be provided
 		byte[] ad1 = null;
         
+		String uriAsString = targetUri.toString();
+		AppStatement appStatement = appStatements.get(uriAsString);
+		
 		EdhocSession session = MessageProcessor.createSessionAsInitiator
-                (authenticationMethod, correlationMethod, keyPair, idCred, cred, subjectName, supportedCiphersuites, usedConnectionIds);
+                (authenticationMethod, correlationMethod, keyPair, idCred, cred, subjectName,
+                 supportedCiphersuites, usedConnectionIds, appStatement);
 		
 		// At this point, the initiator may overwrite the information in the EDHOC session about the supported ciphersuites
 		// and the selected ciphersuite, based on a previously received EDHOC Error Message

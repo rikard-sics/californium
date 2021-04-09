@@ -682,8 +682,8 @@ public class EdhocServer extends CoapServer {
 						processAD1(processingResult.get(1).GetByteString());
 					}
 					
-					session = MessageProcessor.createSessionAsResponder
-							                    (message, keyPair, idCred, cred, supportedCiphersuites, usedConnectionIds);
+					session = MessageProcessor.createSessionAsResponder(message, keyPair, idCred, cred,
+							                                  supportedCiphersuites, usedConnectionIds, appStatement);
 					
 					// Compute the EDHOC Message 2
 					nextMessage = MessageProcessor.writeMessage2(session, ad2);
