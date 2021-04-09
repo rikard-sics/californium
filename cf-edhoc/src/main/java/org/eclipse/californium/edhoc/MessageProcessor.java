@@ -82,8 +82,18 @@ public class MessageProcessor {
 				
 		// It is not an EDHOC Error Message. Check for other message types.
 
-		if (count == 1 || count == 2)
+		// It can be be message_3 or message_4
+		if (count == 1 || count == 2) {
+			
+			// TODO Actual distinction between message_3 and message_4
+			/*
+			int messageType = -1;
+			
+			return messageType;
+			*/
+			
 			return Constants.EDHOC_MESSAGE_3;
+		}
 		
 		if (count == 3)
 			return Constants.EDHOC_MESSAGE_2;
@@ -118,7 +128,7 @@ public class MessageProcessor {
 	
     /**
      *  Determine if a message is an EDHOC error message
-     * @param msg   The message to check, as an array of CBOR objects extracted from a CBOR sequence
+     * @param myObjects   The message to check, as an array of CBOR objects extracted from a CBOR sequence
      * @return  True if it is an EDHOC error message, or false otherwise
      */
 	public static boolean isErrorMessage(CBORObject[] myObjects) {
@@ -164,7 +174,75 @@ public class MessageProcessor {
 		return isErrorMessage(myObjects);
 		
 	}
+	
+    /**
+     *  Determine if it is an EDHOC message_3 or message_4
+     * @param myObjects   The message to check, as an array of CBOR objects extracted from a CBOR sequence
+     * @param isReq   True is the EDHOC message to parse is a CoAP request, false if it is a CoAP response
+     * @param edhocSessions   The list of active EDHOC sessions of the recipient
+     * @param cX   The connection identifier of this peer, it can be null and then it has to be retrieved from the message
+     * @return  The type of the parsed EDHOC message, or -1 in case of error
+     */
+	public static int distinguishMessage3and4(CBORObject[] myObjects, boolean isReq, Map<CBORObject,
+			                                                  EdhocSession> edhocSessions, byte[] cX) {
 		
+		int messageType = -1;
+		byte[] connectionIdentifier = null;
+		int count = myObjects.length;
+		
+		// With Correlation Method 1
+		// message_3 is a request [C_R, ENC]
+		// message_4 is a response [ENC]
+		
+		// With Correlation Method 2
+		// message_3 is a response [ENC]
+		// message_4 is a request [C_I, ENC]
+		
+		if (count == 1 && isReq == true)
+			return -1;
+		
+		if (count == 2 && isReq == false)
+			return -1;
+		
+		// It is a response, the Connection Identifier must have been provided
+		if (count == 1) {
+			connectionIdentifier = cX;
+		}
+		
+		// It is a request, the Connection Identifier is the first element of the message
+		if (count == 2) {
+			if (myObjects[0].getType() == CBORType.ByteString ||
+				myObjects[0].getType() == CBORType.Integer)  {
+					CBORObject connectionIdentifierCBOR = Util.decodeFromBstrIdentifier(myObjects[0]);
+					
+					if (connectionIdentifierCBOR != null) {
+						connectionIdentifier = connectionIdentifierCBOR.GetByteString();
+					}
+				}
+		}
+		
+		if (connectionIdentifier != null) {
+		
+			EdhocSession session = edhocSessions.get(connectionIdentifier);
+			
+			if (session != null) {
+				boolean initiator = session.isInitiator();
+				int currentStep = session.getCurrentStep();
+				
+				if (initiator == true && currentStep == Constants.EDHOC_SENT_M3)
+					return Constants.EDHOC_MESSAGE_4;
+				
+				if (initiator == false && currentStep == Constants.EDHOC_SENT_M2)
+					return Constants.EDHOC_MESSAGE_3;
+
+			}
+		
+		}
+		
+		return messageType;
+		
+	}
+	
     /**
      *  Process an EDHOC Message 1
      * @param expectedCorr   The expected Correlation Method to see advertised in EDHOC Message 1 
@@ -925,7 +1003,7 @@ public class MessageProcessor {
 				errMsg = new String("EDHOC Message 3 is intended only to a Responder");
 				error = true;
 			}
-			else if (session.getCurrentStep() != Constants.EDHOC_AFTER_M2) {
+			else if (session.getCurrentStep() != Constants.EDHOC_SENT_M2) {
 				errMsg = new String("The protocol state is not waiting for an EDHOC Message 3");
 				error = true;
 			}

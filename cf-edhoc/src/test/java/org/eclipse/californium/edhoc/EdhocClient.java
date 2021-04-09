@@ -796,6 +796,7 @@ public class EdhocClient {
 						
 						try {
 							protectedResponse = client.advanced(edhocMessageReq2);
+							session.setCurrentStep(Constants.EDHOC_SENT_M3);
 						} catch (ConnectorException e) {
 							System.err.println("ConnectorException when sending a protected request\n");
 						} catch (IOException e) {
@@ -812,6 +813,7 @@ public class EdhocClient {
 		        	}
 		        	else {
 		        		edhocMessageResp2 = client.advanced(edhocMessageReq2);
+		        		session.setCurrentStep(Constants.EDHOC_SENT_M3);
 		        	}
 		        	
 				} catch (ConnectorException e) {
