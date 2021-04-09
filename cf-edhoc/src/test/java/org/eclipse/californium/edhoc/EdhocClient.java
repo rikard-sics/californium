@@ -183,9 +183,14 @@ public class EdhocClient {
 		setupSupportedCipherSuites();
 		
 		// Set the applicability statement
+		// Supported authentication methods
 		// Use of the Null byte as first element of message_1
 		// Use of message_4
-		AppStatement appStatement = new AppStatement(false, false);
+		//
+		Set<Integer> authMethods = new HashSet<Integer>();
+		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
+			authMethods.add(i);
+		AppStatement appStatement = new AppStatement(authMethods, false, false);
 		appStatements.put(edhocURI, appStatement);
 		
     	for (int i = 0; i < 4; i++) {
