@@ -233,12 +233,6 @@ public class EdhocLayer extends AbstractLayer {
 		    // Assemble the full EDHOC message_3
 		    byte[] edhocMessage3 = Util.buildCBORSequence(edhocObjectList);
 		    
-		    if (MessageProcessor.messageType(edhocMessage3) != Constants.EDHOC_MESSAGE_3) {
-				String responseString = new String("The EDHOC+OSCORE request did not include a valid EDHOC message_3");
-				sendErrorResponse(exchange, responseString, ResponseCode.BAD_REQUEST);
-				return;
-		    }
-		    
 			if (debugPrint) {
 				Util.nicePrint("EDHOC+OSCORE: rebuilt EDHOC message_3", edhocMessage3);
 			}
@@ -342,9 +336,8 @@ public class EdhocLayer extends AbstractLayer {
 			}
 			// An EDHOC error message has to be returned
 			else {
-				int responseType = MessageProcessor.messageType(nextMessage);
 				
-				if (responseType != Constants.EDHOC_ERROR_MESSAGE) {
+				if (!MessageProcessor.isErrorMessage(nextMessage)) {
 					System.err.println("Inconsistent state before sending EDHOC Error Message");
 					String responseString = new String("Inconsistent state before sending EDHOC Error Message");
 					sendErrorResponse(exchange, responseString, ResponseCode.INTERNAL_SERVER_ERROR);
