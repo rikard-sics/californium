@@ -68,6 +68,14 @@ public static final int EDHOC_MESSAGE_3 = 3;
 
 
 /**
+ * EDHOC Error Codes
+ */
+public static final int ERR_CODE_SUCCESS = -1;
+public static final int ERR_CODE_UNSPECIFIED = 0;
+public static final int ERR_CODE_WRONG_SELECTED_CIPHER_SUITE = 1;
+
+
+/**
  * EDHOC authentication methods
  * 
  * +-------+---------------+---------------+
