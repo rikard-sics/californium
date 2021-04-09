@@ -183,8 +183,8 @@ public class MessageProcessor {
      * @param cX   The connection identifier of this peer, it can be null and then it has to be retrieved from the message
      * @return  The type of the parsed EDHOC message, or -1 in case of error
      */
-	public static int distinguishMessage3and4(CBORObject[] myObjects, boolean isReq, Map<CBORObject,
-			                                                  EdhocSession> edhocSessions, byte[] cX) {
+	public static int distinguishMessage3and4(CBORObject[] myObjects, boolean isReq,
+			                                  Map<CBORObject, EdhocSession> edhocSessions, byte[] cX) {
 		
 		int messageType = -1;
 		byte[] connectionIdentifier = null;
