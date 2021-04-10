@@ -151,13 +151,19 @@ public class MessageProcessorTest {
 		errorMessageList.add(suitesR);
 		byte[] errorMessage = Util.buildCBORSequence(errorMessageList);
 		
-		// Test from the point of view of the Initiator as Client, receiving an EDHOC error message as a response
+		// Test from the point of view of the Initiator as Client, receiving an EDHOC error message as an incoming response
 		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
 				            errorMessage, false, edhocSessions, connectionIdInitiator, appStatement));
+		// Test from the point of view of the Initiator as Client, receiving an EDHOC error message as an outgoing request
+		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
+				            errorMessage, true, edhocSessions, connectionIdInitiator, appStatement));
 		
-		// Test from the point of view of the Responder as Server, receiving an EDHOC error message as a request
+		// Test from the point of view of the Responder as Server, receiving an EDHOC error message as an incoming request
 		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
 	                        errorMessage, true, edhocSessions, null, appStatement));
+		// Test from the point of view of the Responder as Server, receiving an EDHOC error message as an outgoing response
+		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
+	                        errorMessage, false, edhocSessions, connectionIdResponder, appStatement));
 		
 	}
 
