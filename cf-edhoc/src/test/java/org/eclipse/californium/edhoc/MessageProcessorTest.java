@@ -11,8 +11,10 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.californium.cose.AlgorithmID;
@@ -44,6 +46,11 @@ public class MessageProcessorTest {
 		byte[] message3 = Utils.hexToBytes(
 				"375858f5f6debd8214051cd583c84096c4801debf35b15363dd16ebd8530dfdcfb34fcd2eb6cad1dac66a479fb38deaaf1d30a7e6817a22ab04f3d5b1e972a0d13ea86c66b60514c9657ea89c57b0401edc5aa8bbcab813cc5d6e7");
 
+		Map<CBORObject, EdhocSession> edhocSessions = new HashMap<CBORObject, EdhocSession>();
+		
+		Provider EdDSA = new EdDSASecurityProvider();
+		Security.insertProviderAt(EdDSA, 1);
+
 		// Set the applicability statement
 		// - Supported authentication methods
 		// - Use of the CBOR simple value Null (i.e., the 0xf6 byte), as first element of message_1
@@ -54,10 +61,85 @@ public class MessageProcessorTest {
 			authMethods.add(i);
 		AppStatement appStatement = new AppStatement(authMethods, false, false);
 		
-		Assert.assertEquals(Constants.EDHOC_MESSAGE_1, MessageProcessor.messageType(message1, appStatement));
-		Assert.assertEquals(Constants.EDHOC_MESSAGE_2, MessageProcessor.messageType(message2, appStatement));
-		Assert.assertEquals(Constants.EDHOC_MESSAGE_3, MessageProcessor.messageType(message3, appStatement));
+		int methodCorr = 1;
+		
+		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
+		supportedCipherSuites.add(0);
+		
+		/* Initiator information*/
 
+		// C_I, in plain binary format
+		byte[] connectionIdInitiator = new byte[] { 0x09 };
+		
+		// The identity key of the Initiator
+		byte[] privateIdentityKeyBytesInit = Utils.hexToBytes("2ffce7a0b2b825d397d0cb54f746e3da3f27596ee06b5371481dc0e012bc34d7");
+		byte[] publicIdentityKeyBytesInit = Utils.hexToBytes("38e5d54563c2b6a4ba26f3015f61bb706e5c2efdb556d2e1690b97fc3c6de149");
+		OneKey identityKeyInit = SharedSecretCalculation.buildEd25519OneKey(privateIdentityKeyBytesInit, publicIdentityKeyBytesInit);
+		
+		// The x509 certificate of the Initiator
+		byte[] serializedCertInit = Utils.hexToBytes("5413204c3ebc3428a6cf57e24c9def59651770449bce7ec6561e52433aa55e71f1fa34b22a9ca4a1e12924eae1d1766088098449cb848ffc795f88afc49cbe8afdd1ba009f21675e8f6c77a4a2c30195601f6f0a0852978bd43d28207d44486502ff7bdda6");
+		
+		// CRED_I, as serialization of a CBOR byte string wrapping the serialized certificate
+		byte[] credI = CBORObject.FromObject(serializedCertInit).EncodeToBytes();
+		
+		// ID_CRED_I for the identity key of the initiator, built from the x509 certificate using x5t
+		CBORObject idCredI = Util.buildIdCredX5t(serializedCertInit);
+
+		// Create the session for the Initiator (with only the minimal set of information required for this test)
+		boolean initiator = true;
+		EdhocSession sessionInitiator = new EdhocSession(initiator, methodCorr, connectionIdInitiator,
+												identityKeyInit, idCredI, credI, supportedCipherSuites, appStatement);
+		
+		edhocSessions.put(CBORObject.FromObject(connectionIdInitiator), sessionInitiator);
+
+		
+		/* Responder information*/
+		
+		// C_R, in plain binary format
+		byte[] connectionIdResponder = new byte[] { 0x00 };
+		
+		// The identity key of the Responder
+		byte[] privateIdentityKeyBytesResp = Utils.hexToBytes("df69274d713296e246306365372b4683ced5381bfcadcd440a24c391d2fedb94");
+		byte[] publicIdentityKeyBytesResp = Utils.hexToBytes("dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
+		OneKey identityKeyResp = SharedSecretCalculation.buildEd25519OneKey(privateIdentityKeyBytesResp, publicIdentityKeyBytesResp);
+		
+		// The x509 certificate of the Responder
+		byte[] serializedCertResp = Utils.hexToBytes("c788370016b8965bdb2074bff82e5a20e09bec21f8406e86442b87ec3ff245b70a47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb2");
+		
+		// CRED_R, as serialization of a CBOR byte string wrapping the serialized certificate
+		byte[] credR = CBORObject.FromObject(serializedCertResp).EncodeToBytes();
+		
+		// ID_CRED_R for the identity key of the Responder, built from the x509 certificate using x5t
+		CBORObject idCredR = Util.buildIdCredX5t(serializedCertResp);
+
+		// Create the session for the Responder (with only the minimal set of information required for this test)
+		initiator = false;
+		EdhocSession sessionResponder = new EdhocSession(initiator, methodCorr, connectionIdResponder,
+												identityKeyResp, idCredR, credR, supportedCipherSuites, appStatement);
+		
+		edhocSessions.put(CBORObject.FromObject(connectionIdResponder), sessionResponder);
+		
+		
+		// Test from the point of view of the Initiator as Client
+		Assert.assertEquals(Constants.EDHOC_MESSAGE_1, MessageProcessor.messageType(
+				message1, true, edhocSessions, connectionIdInitiator, appStatement));
+		Assert.assertEquals(Constants.EDHOC_MESSAGE_2, MessageProcessor.messageType(
+				message2, false, edhocSessions,connectionIdInitiator, appStatement));
+		sessionInitiator.setCurrentStep(Constants.EDHOC_AFTER_M3);
+		Assert.assertEquals(Constants.EDHOC_MESSAGE_3, MessageProcessor.messageType(
+				message3, true, edhocSessions, connectionIdInitiator, appStatement));
+
+		
+		// Test from the point of view of the Responder as Server
+		Assert.assertEquals(Constants.EDHOC_MESSAGE_1, MessageProcessor.messageType(
+				message1, true, edhocSessions, null, appStatement));
+		Assert.assertEquals(Constants.EDHOC_MESSAGE_2, MessageProcessor.messageType(
+				message2, false, edhocSessions, connectionIdResponder, appStatement));
+		sessionResponder.setCurrentStep(Constants.EDHOC_SENT_M2);
+		Assert.assertEquals(Constants.EDHOC_MESSAGE_3, MessageProcessor.messageType(
+				message3, true, edhocSessions, null, appStatement));
+		
+		
 		// Error message is not from test vectors
 		CBORObject cx = CBORObject.FromObject(new byte[] { (byte) 0x59, (byte) 0xe9 });
 		CBORObject errMsg = CBORObject.FromObject("Something went wrong");
@@ -69,7 +151,14 @@ public class MessageProcessorTest {
 		errorMessageList.add(suitesR);
 		byte[] errorMessage = Util.buildCBORSequence(errorMessageList);
 		
-		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(errorMessage, appStatement));
+		// Test from the point of view of the Initiator as Client, receiving an EDHOC error message as a response
+		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
+				            errorMessage, false, edhocSessions, connectionIdInitiator, appStatement));
+		
+		// Test from the point of view of the Responder as Server, receiving an EDHOC error message as a request
+		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
+	                        errorMessage, true, edhocSessions, null, appStatement));
+		
 	}
 
 	/**

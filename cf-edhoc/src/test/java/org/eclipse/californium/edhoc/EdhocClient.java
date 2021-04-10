@@ -64,8 +64,8 @@ public class EdhocClient {
 	
 	private static final File CONFIG_FILE = new File("Californium.properties");
 	private static final String CONFIG_HEADER = "Californium CoAP Properties file for Fileclient";
-	private static final int DEFAULT_MAX_RESOURCE_SIZE = 2 * 1024 * 1024; // 2
-																			// MB
+	private static final int DEFAULT_MAX_RESOURCE_SIZE = 2 * 1024 * 1024; // 2 MB
+
 	private static final int DEFAULT_BLOCK_SIZE = 512;
 	
 	private final static Provider EdDSA = new EdDSASecurityProvider();
@@ -595,7 +595,7 @@ public class EdhocClient {
         if (responsePayload == null)
         	discontinue = true;
         else {
-        	responseType = MessageProcessor.messageType(responsePayload, appStatement);
+        	responseType = MessageProcessor.messageType(responsePayload, false, edhocSessions, connectionId, appStatement);
         	if (responseType != Constants.EDHOC_MESSAGE_2 && responseType != Constants.EDHOC_ERROR_MESSAGE)
         		discontinue = true;
         }
@@ -705,7 +705,7 @@ public class EdhocClient {
 				
 			}
 
-			int requestType = MessageProcessor.messageType(nextPayload, appStatement);			
+			int requestType = MessageProcessor.messageType(nextPayload, true, edhocSessions, connectionId,  appStatement);			
 			if (requestType != Constants.EDHOC_MESSAGE_3 && responseType != Constants.EDHOC_ERROR_MESSAGE) {
 				nextPayload = null;
 			}
@@ -844,7 +844,8 @@ public class EdhocClient {
 		            if (responsePayload == null)
 		            	discontinue = true;
 		            else {
-		            	responseType = MessageProcessor.messageType(responsePayload, appStatement);
+		            	responseType = MessageProcessor.messageType(responsePayload, false,
+		            			                                    edhocSessions, connectionId, appStatement);
 		            	if (responseType != Constants.EDHOC_ERROR_MESSAGE)
 		            		discontinue = true;
 		            }
