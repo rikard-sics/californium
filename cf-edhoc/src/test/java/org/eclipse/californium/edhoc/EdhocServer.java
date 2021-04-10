@@ -626,7 +626,7 @@ public class EdhocServer extends CoapServer {
 			byte[] nextMessage = new byte[] {};
 			
 			byte[] message = exchange.getRequestPayload();
-			int messageType = MessageProcessor.messageType(message, appStatement);
+			int messageType = MessageProcessor.messageType(message, true, edhocSessions, null, appStatement);
 			
 			// Invalid EDHOC message type
 			if (messageType == -1) {
@@ -703,7 +703,8 @@ public class EdhocServer extends CoapServer {
 						return;
 					}
 					
-					if(MessageProcessor.messageType(nextMessage, appStatement) == Constants.EDHOC_MESSAGE_2) {
+					if(MessageProcessor.messageType(nextMessage, false, edhocSessions,
+							                        connectionId, appStatement) == Constants.EDHOC_MESSAGE_2) {
 						// Add the new session to the list of existing EDHOC sessions
 						session.setCurrentStep(Constants.EDHOC_AFTER_M2);
 						edhocSessions.put(CBORObject.FromObject(connectionId), session);
@@ -711,7 +712,8 @@ public class EdhocServer extends CoapServer {
 					
 				}
 				
-				responseType = MessageProcessor.messageType(nextMessage, appStatement);
+				responseType = MessageProcessor.messageType(nextMessage, false, edhocSessions,
+						                                    session.getConnectionId(), appStatement);
 				
 				if (responseType != Constants.EDHOC_MESSAGE_2 && responseType != Constants.EDHOC_ERROR_MESSAGE) {
 					nextMessage = null;
@@ -787,6 +789,8 @@ public class EdhocServer extends CoapServer {
 					return;
 				}
 				
+				EdhocSession mySession = null;
+				
 				// A non-zero length response payload would be an EDHOC Error Message
 				nextMessage = processingResult.get(0).GetByteString();
 				
@@ -803,7 +807,7 @@ public class EdhocServer extends CoapServer {
 					}
 					
 					CBORObject cR = processingResult.get(1);
-					EdhocSession mySession = edhocSessions.get(cR);
+					mySession = edhocSessions.get(cR);
 					
 					if (mySession == null) {
 						System.err.println("Inconsistent state before sending EDHOC Message 3");
@@ -872,7 +876,8 @@ public class EdhocServer extends CoapServer {
 				}
 				// An EDHOC error message has to be returned
 				else {
-					int responseType = MessageProcessor.messageType(nextMessage, appStatement);
+					int responseType = MessageProcessor.messageType(nextMessage, false, edhocSessions,
+							                                        mySession.getConnectionId(), appStatement);
 					
 					if (responseType != Constants.EDHOC_ERROR_MESSAGE) {
 						System.err.println("Inconsistent state before sending EDHOC Error Message");	

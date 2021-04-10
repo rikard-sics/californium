@@ -45,10 +45,14 @@ public class MessageProcessor {
     /**
      *  Determine the type of a received EDHOC message
      * @param msg   The received EDHOC message, as a CBOR sequence
+     * @param isReq   True is the EDHOC message to parse is a CoAP request, false if it is a CoAP response
+     * @param edhocSessions   The list of active EDHOC sessions of the recipient
+     * @param cX   The connection identifier of this peer, it can be null and then it has to be retrieved from the message
      * @param appStatement   The applicability statement to use
      * @return  The type of the EDHOC message, or -1 if it not a recognized type
      */
-	public static int messageType(byte[] msg, AppStatement appStatement) {
+	public static int messageType(byte[] msg, boolean isReq, Map<CBORObject, EdhocSession> edhocSessions,
+			                      byte[] cX, AppStatement appStatement) {
 		
 		if (msg == null || appStatement == null)
 			return -1;
@@ -84,15 +88,7 @@ public class MessageProcessor {
 
 		// It can be be message_3 or message_4
 		if (count == 1 || count == 2) {
-			
-			// TODO Actual distinction between message_3 and message_4
-			/*
-			int messageType = -1;
-			
-			return messageType;
-			*/
-			
-			return Constants.EDHOC_MESSAGE_3;
+			return distinguishMessage3and4(myObjects, isReq, edhocSessions, cX);
 		}
 		
 		if (count == 3)
@@ -183,7 +179,7 @@ public class MessageProcessor {
      * @param cX   The connection identifier of this peer, it can be null and then it has to be retrieved from the message
      * @return  The type of the parsed EDHOC message, or -1 in case of error
      */
-	public static int distinguishMessage3and4(CBORObject[] myObjects, boolean isReq,
+	private static int distinguishMessage3and4(CBORObject[] myObjects, boolean isReq,
 			                                  Map<CBORObject, EdhocSession> edhocSessions, byte[] cX) {
 		
 		byte[] connectionIdentifier = null;
@@ -203,13 +199,15 @@ public class MessageProcessor {
 		if (count == 2 && isReq == false)
 			return -1;
 		
-		// It is a response, the Connection Identifier must have been provided
-		if (count == 1) {
+		// Use the provided Connection Identifier to retrieve the EDHOC session.
+		// This is the case for an incoming response message and for an outgoing request/response message
+		if (cX != null) {
 			connectionIdentifier = cX;
 		}
 		
-		// It is a request, the Connection Identifier is the first element of the message
-		if (count == 2) {
+		// The Connection Identifier to retrieve the EDHOC session was not provided.
+		// This is the case for an incoming request message, where the Connection Identifier is the first element
+		if (cX == null && count == 2) {
 			if (myObjects[0].getType() == CBORType.ByteString ||
 				myObjects[0].getType() == CBORType.Integer)  {
 					CBORObject connectionIdentifierCBOR = Util.decodeFromBstrIdentifier(myObjects[0]);
@@ -223,17 +221,52 @@ public class MessageProcessor {
 		if (connectionIdentifier != null) {
 		
 			EdhocSession session = edhocSessions.get(CBORObject.FromObject(connectionIdentifier));
-			
+		
 			if (session != null) {
 				boolean initiator = session.isInitiator();
 				int currentStep = session.getCurrentStep();
+				int correlationMethod = session.getCorrelation();
 				
-				if (initiator == true && currentStep == Constants.EDHOC_SENT_M3)
-					return Constants.EDHOC_MESSAGE_4;
-				
-				if (initiator == false && currentStep == Constants.EDHOC_SENT_M2)
-					return Constants.EDHOC_MESSAGE_3;
+				// Take the point of view of the Initiator
+				if (initiator == true) {
+					
+					// The Initiator is the Client
+					if (correlationMethod == Constants.EDHOC_CORR_METHOD_1) {
+						if (isReq == true && currentStep == Constants.EDHOC_AFTER_M3)
+							return Constants.EDHOC_MESSAGE_3;
+						if (isReq == false && currentStep == Constants.EDHOC_SENT_M3)
+							return Constants.EDHOC_MESSAGE_4;
+					}
+					// The Initiator is the Server
+					if (correlationMethod == Constants.EDHOC_CORR_METHOD_2) {
+						if (isReq == false && currentStep == Constants.EDHOC_AFTER_M3)
+							return Constants.EDHOC_MESSAGE_3;
+						if (isReq == true && currentStep == Constants.EDHOC_SENT_M3)
+							return Constants.EDHOC_MESSAGE_4;
+					}
 
+				}
+				
+				// Take the point of view of the Responder
+				if (initiator == false) {					
+
+					// The Responder is the Server
+					if (correlationMethod == Constants.EDHOC_CORR_METHOD_1) {
+						if (isReq == true && currentStep == Constants.EDHOC_SENT_M2)
+							return Constants.EDHOC_MESSAGE_3;
+						if (isReq == false && currentStep == Constants.EDHOC_AFTER_M4)
+							return Constants.EDHOC_MESSAGE_4;
+					}
+					// The Responder is the Client
+					if (correlationMethod == Constants.EDHOC_CORR_METHOD_2) {
+						if (isReq == false && currentStep == Constants.EDHOC_SENT_M2)
+							return Constants.EDHOC_MESSAGE_3;
+						if (isReq == true && currentStep == Constants.EDHOC_AFTER_M4)
+							return Constants.EDHOC_MESSAGE_4;
+					}
+				
+				}
+				
 			}
 		
 		}
