@@ -45,7 +45,7 @@ public class MessageProcessor {
     /**
      *  Determine the type of a received EDHOC message
      * @param msg   The received EDHOC message, as a CBOR sequence
-     * @param isReq   True is the EDHOC message to parse is a CoAP request, false if it is a CoAP response
+     * @param isReq   True if the EDHOC message to parse is a CoAP request, false if it is a CoAP response
      * @param edhocSessions   The list of active EDHOC sessions of the recipient
      * @param cX   The connection identifier of this peer, it can be null and then it has to be retrieved from the message
      * @param appStatement   The applicability statement to use
@@ -174,7 +174,7 @@ public class MessageProcessor {
     /**
      *  Determine if it is an EDHOC message_3 or message_4
      * @param myObjects   The message to check, as an array of CBOR objects extracted from a CBOR sequence
-     * @param isReq   True is the EDHOC message to parse is a CoAP request, false if it is a CoAP response
+     * @param isReq   True if the EDHOC message to parse is a CoAP request, false if it is a CoAP response
      * @param edhocSessions   The list of active EDHOC sessions of the recipient
      * @param cX   The connection identifier of this peer, it can be null and then it has to be retrieved from the message
      * @return  The type of the parsed EDHOC message, or -1 in case of error
