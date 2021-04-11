@@ -700,11 +700,11 @@ public class MessageProcessor {
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
         }
-        session.setTH2(th2);
-        session.cleanMessage1();
-    	if (debugPrint) {
+        else if (debugPrint) {
     		Util.nicePrint("TH_2", th2);
     	}
+        session.setTH2(th2);
+        session.cleanMessage1();
         
         
         // Compute the key material
@@ -720,7 +720,7 @@ public class MessageProcessor {
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
     	}
-        if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("G_XY", dhSecret);
     	}
         
@@ -732,10 +732,10 @@ public class MessageProcessor {
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
     	}
-    	session.setPRK2e(prk2e);
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("PRK_2e", prk2e);
     	}
+    	session.setPRK2e(prk2e);
     	
     	// Compute KEYSTREAM_2
     	byte[] keystream2 = computeKeystream2(session, ciphertext2.length);
@@ -744,17 +744,17 @@ public class MessageProcessor {
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("KEYSTREAM_2", keystream2);
     	}
 		
     	// Compute the outer plaintext
     	
-    	if (debugPrint) {
+    	if (debugPrint && ciphertext2 != null) {
     		Util.nicePrint("CIPHERTEXT_2", ciphertext2);
     	}
     	byte[] outerPlaintext = Util.arrayXor(ciphertext2, keystream2);
-    	if (debugPrint) {
+    	if (debugPrint && outerPlaintext != null) {
     		Util.nicePrint("Plaintext retrieved from CIPHERTEXT_2", outerPlaintext);
     	}
     	
@@ -854,12 +854,10 @@ public class MessageProcessor {
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
     	}
-    	else {
-    		session.setPRK3e2m(prk3e2m);
-	    	if (debugPrint) {
+    	else if (debugPrint) {
 	    		Util.nicePrint("PRK_3e2m", prk3e2m);
-	    	}
     	}
+    	session.setPRK3e2m(prk3e2m);
     	
     	
     	// Compute K_2m and IV_2m to protect the inner COSE object
@@ -870,7 +868,7 @@ public class MessageProcessor {
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("K_2m", k2m);
     	}
 
@@ -880,7 +878,7 @@ public class MessageProcessor {
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("IV_2m", iv2m);
     	}
     	
@@ -902,7 +900,7 @@ public class MessageProcessor {
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("External Data to compute MAC_2", externalData);
     	}
     	
@@ -919,7 +917,7 @@ public class MessageProcessor {
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("MAC_2", mac2);
     	}
         
@@ -927,7 +925,7 @@ public class MessageProcessor {
     	// Verify Signature_or_MAC_2
     	
     	byte[] signatureOrMac2 = plaintextElementList[1].GetByteString();
-    	if (debugPrint) {
+    	if (debugPrint && signatureOrMac2 != null) {
     		Util.nicePrint("Signature_or_MAC_2", signatureOrMac2);
     	}
         
@@ -1092,10 +1090,10 @@ public class MessageProcessor {
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
         }
-        session.setTH3(th3);
-    	if (debugPrint) {
+        else if (debugPrint) {
     		Util.nicePrint("TH_3", th3);
     	}
+        session.setTH3(th3);
 		
 		
     	// Compute K_3ae and IV_3ae to protect the outer COSE object
@@ -1105,7 +1103,7 @@ public class MessageProcessor {
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("K_3ae", k3ae);
     	}
     	
@@ -1115,7 +1113,7 @@ public class MessageProcessor {
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("IV_3ae", iv3ae);
     	}
     	
@@ -1125,7 +1123,7 @@ public class MessageProcessor {
     	
     	// Compute the outer plaintext
     	
-    	if (debugPrint) {
+    	if (debugPrint && ciphertext3 != null) {
     		Util.nicePrint("CIPHERTEXT_3", ciphertext3);
     	}
 
@@ -1135,7 +1133,7 @@ public class MessageProcessor {
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("Plaintext retrieved from CIPHERTEXT_3", outerPlaintext);
     	}
     	
@@ -1243,7 +1241,7 @@ public class MessageProcessor {
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
     		return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("External Data to compute MAC_3", externalData);
     	}
     	
@@ -1260,10 +1258,10 @@ public class MessageProcessor {
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
     	}
-    	session.setPRK4x3m(prk4x3m);
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("PRK_4x3m", prk4x3m);
     	}
+    	session.setPRK4x3m(prk4x3m);
         
     	
     	// Compute K_3m and IV_3m to protect the inner COSE object
@@ -1274,7 +1272,7 @@ public class MessageProcessor {
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("K_3m", k3m);
     	}
     	
@@ -1284,7 +1282,7 @@ public class MessageProcessor {
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("IV_3m", iv3m);
     	}
     	
@@ -1297,7 +1295,7 @@ public class MessageProcessor {
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("MAC_3", mac3);
     	}
     	
@@ -1305,7 +1303,7 @@ public class MessageProcessor {
     	// Verify Signature_or_MAC_3
     	
     	byte[] signatureOrMac3 = plaintextElementList[1].GetByteString();
-    	if (debugPrint) {
+    	if (debugPrint && signatureOrMac3 != null) {
     		Util.nicePrint("Signature_or_MAC_3", signatureOrMac3);
     	}
     	if (!verifySignatureOrMac3(session, signatureOrMac3, externalData, mac3)) {
@@ -1325,10 +1323,10 @@ public class MessageProcessor {
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
         	return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
         }
-        session.setTH4(th4);
-    	if (debugPrint) {
+        else if (debugPrint) {
     		Util.nicePrint("TH_4", th4);
     	}
+        session.setTH4(th4);
     	
     	
     	/* Delete ephemeral keys and other temporary material */
@@ -1489,7 +1487,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing the external data for MAC_4");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("External Data to compute MAC_4", externalData);
     	}
     	
@@ -1509,7 +1507,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing K_4m");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("K_4m", k4m);
     	}
 
@@ -1519,7 +1517,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing IV_4m");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("IV_4m", iv4m);
     	}
         
@@ -1532,7 +1530,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing MAC_4");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("MAC_4", recomputedMac4);
     	}
     	
@@ -1866,11 +1864,11 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing TH_2");
     		error = true;
         }
-        session.setTH2(th2);
-        session.cleanMessage1();
-    	if (debugPrint) {
+        else if (debugPrint) {
     		Util.nicePrint("TH_2", th2);
     	}
+        session.setTH2(th2);
+        session.cleanMessage1();
         
         
         // Compute the external data for the external_aad, as a CBOR sequence
@@ -1880,7 +1878,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing the external data for MAC_2");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("External Data to compute MAC_2", externalData);
     	}
         
@@ -1904,8 +1902,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing the Diffie-Hellman Secret");
     		error = true;
         }
-        
-        if (debugPrint) {
+        else if (debugPrint) {
     		Util.nicePrint("G_XY", dhSecret);
     	}
         
@@ -1917,10 +1914,10 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing PRK_2e");
     		error = true;
     	}
-        session.setPRK2e(prk2e);
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("PRK_2e", prk2e);
     	}
+        session.setPRK2e(prk2e);
         
         // Compute PRK_3e2m
     	prk3e2m = computePRK3e2m(session, prk2e);
@@ -1929,10 +1926,10 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing PRK_3e2m");
     		error = true;
     	}
-    	session.setPRK3e2m(prk3e2m);
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("PRK_3e2m", prk3e2m);
     	}
+    	session.setPRK3e2m(prk3e2m);
         
     	
     	// Compute K_2m and IV_2m to protect the inner COSE object    	
@@ -1943,7 +1940,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing K_2m");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("K_2m", k2m);
     	}
     	
@@ -1953,7 +1950,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing IV_2m");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("IV_2m", iv2m);
     	}
     	
@@ -1966,7 +1963,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing MAC_2");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("MAC_2", mac2);
     	}
     	
@@ -1979,7 +1976,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing Signature_or_MAC_2");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("Signature_or_MAC_2", signatureOrMac2);
     	}
     	
@@ -2007,7 +2004,7 @@ public class MessageProcessor {
         	plaintextElementList.add(CBORObject.FromObject(ad2));
     	}
     	plaintext = Util.buildCBORSequence(plaintextElementList);
-    	if (debugPrint) {
+    	if (debugPrint && plaintext != null) {
     		Util.nicePrint("Plaintext to compute CIPHERTEXT_2", plaintext);
     	}
     	
@@ -2019,7 +2016,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing KEYSTREAM_2");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("KEYSTREAM_2", keystream2);
     	}
 
@@ -2029,7 +2026,7 @@ public class MessageProcessor {
     	byte[] ciphertext2 = Util.arrayXor(plaintext, keystream2);
     	objectList.add(CBORObject.FromObject(ciphertext2));
     	session.setCiphertext2(ciphertext2);
-    	if (debugPrint) {
+    	if (debugPrint && ciphertext2 != null) {
     		Util.nicePrint("CIPHERTEXT_2", ciphertext2);
     	}
     	        
@@ -2116,10 +2113,10 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing TH_3");
     		error = true;
         }
-        session.setTH3(th3);
-    	if (debugPrint) {
+        else if (debugPrint) {
     		Util.nicePrint("TH_3", th3);
     	}
+        session.setTH3(th3);
 		
     	
         // Compute the external data for the external_aad, as a CBOR sequence
@@ -2130,7 +2127,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing the external data for MAC_3");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("External Data to compute MAC_3", externalData);
     	}
 		
@@ -2148,10 +2145,10 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing PRK_4x3m");
     		error = true;
     	}
-    	session.setPRK4x3m(prk4x3m);
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("PRK_4x3m", prk4x3m);
     	}
+    	session.setPRK4x3m(prk4x3m);
         
     	
     	// Compute K_3m and IV_3m to protect the inner COSE object
@@ -2162,7 +2159,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing K_3m");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("K_3m", k3m);
     	}
 
@@ -2172,7 +2169,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing IV_3m");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("IV_3m", iv3m);
     	}
         
@@ -2185,7 +2182,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing MAC_3");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("MAC_3", mac3);
     	}
     	
@@ -2198,7 +2195,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing Signature_or_MAC_3");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("Signature_or_MAC_3", signatureOrMac3);
     	}
     	
@@ -2216,7 +2213,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing K_3ae");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("K_3ae", k3ae);
     	}
     	
@@ -2226,7 +2223,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing IV_3ae");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("IV_3ae", iv3ae);
     	}
     	    	
@@ -2251,7 +2248,7 @@ public class MessageProcessor {
         	plaintextElementList.add(CBORObject.FromObject(ad3));
     	}
     	plaintext = Util.buildCBORSequence(plaintextElementList);
-    	if (debugPrint) {
+    	if (debugPrint && plaintext != null) {
     		Util.nicePrint("Plaintext to compute CIPHERTEXT_3", plaintext);
     	}
     	
@@ -2260,7 +2257,7 @@ public class MessageProcessor {
     	
     	byte[] ciphertext3 = computeCiphertext3(session, externalData, plaintext, k3ae, iv3ae);
     	objectList.add(CBORObject.FromObject(ciphertext3));
-    	if (debugPrint) {
+    	if (debugPrint && ciphertext3 != null) {
     		Util.nicePrint("CIPHERTEXT_3", ciphertext3);
     	}
     	
@@ -2277,10 +2274,10 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing TH_4");
     		error = true;
         }
-    	session.setTH4(th4);
-    	if (debugPrint) {
+        else if (debugPrint) {
     		Util.nicePrint("TH_4", th4);
     	}
+    	session.setTH4(th4);
     	
     	session.setCurrentStep(Constants.EDHOC_AFTER_M3);
     	
@@ -2361,7 +2358,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing the external data for MAC_4");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("External Data to compute MAC_4", externalData);
     	}
     	
@@ -2381,7 +2378,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing K_4m");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("K_4m", k4m);
     	}
 
@@ -2391,7 +2388,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing IV_4m");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("IV_4m", iv4m);
     	}
         
@@ -2404,7 +2401,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing MAC_4");
     		error = true;
     	}
-    	if (debugPrint) {
+    	else if (debugPrint) {
     		Util.nicePrint("MAC_4", mac4);
     	}
     	
