@@ -236,6 +236,19 @@ public class EdhocLayer extends AbstractLayer {
 			if (debugPrint) {
 				Util.nicePrint("EDHOC+OSCORE: rebuilt EDHOC message_3", edhocMessage3);
 			}
+			
+    		// The combined request cannot be used if the Responder has to send message_4
+			EdhocSession mySession = edhocSessions.get(CBORObject.FromObject(kid));
+    		if (mySession == null) {
+				System.err.println("Unable to retrieve the EDHOC session when receiving an EDHOC+OSCORE request\n");
+    			Util.purgeSession(mySession, CBORObject.FromObject(kid), edhocSessions, usedConnectionIds);
+            	return;
+    		}
+    		if (mySession.getApplicabilityStatement().getUseMessage4() == true) {
+				System.err.println("Cannot receive the combined EDHOC+OSCORE request if message_4 is expected\n");
+    			Util.purgeSession(mySession, CBORObject.FromObject(kid), edhocSessions, usedConnectionIds);
+            	return;
+    		}
 		    
 			
 		    // Process EDHOC message_3
@@ -270,7 +283,7 @@ public class EdhocLayer extends AbstractLayer {
 				}
 				
 				cR = processingResult.get(1);
-				EdhocSession mySession = edhocSessions.get(cR);
+				mySession = edhocSessions.get(cR);
 				
 				if (mySession == null) {
 					System.err.println("Inconsistent state before sending EDHOC Message 3");

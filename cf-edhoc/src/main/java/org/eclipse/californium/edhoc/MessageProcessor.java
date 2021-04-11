@@ -1368,8 +1368,9 @@ public class MessageProcessor {
      *              i) a zero length byte string, indicating that the EDHOC Message 4 was correct; or
      *             ii) a non-zero length byte string as the EDHOC Error Message to be sent.
      */
-	public static List<CBORObject> readMessage4(byte[] sequence, CBORObject cI, Map<CBORObject,
-			                                    EdhocSession> edhocSessions, List<Set<Integer>> usedConnectionIds) {
+	public static List<CBORObject> readMessage4(byte[] sequence, CBORObject cI,
+			                                    Map<CBORObject,EdhocSession> edhocSessions,
+			                                    List<Set<Integer>> usedConnectionIds) {
 		
 		if (sequence == null || edhocSessions == null || usedConnectionIds == null)
 			return null;
