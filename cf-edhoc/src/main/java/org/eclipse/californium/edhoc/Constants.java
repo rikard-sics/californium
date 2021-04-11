@@ -244,20 +244,21 @@ public static final int EDHOC_IV_3AE = 2; // Key IV_3ae
 // Initiator steps
 public static final int EDHOC_BEFORE_M1 = 0; // Before preparing/processing EDHOC Message 1
 public static final int EDHOC_AFTER_M1  = 1; // After preparing/processing EDHOC Message 1
+public static final int EDHOC_SENT_M1   = 2; // After sending EDHOC Message 1
 
 // Responder steps
-public static final int EDHOC_BEFORE_M2 = 2; // Before preparing/processing EDHOC Message 2
-public static final int EDHOC_SENT_M2   = 3; // After sending EDHOC Message 2
+public static final int EDHOC_BEFORE_M2 = 3; // Before preparing/processing EDHOC Message 2
+public static final int EDHOC_SENT_M2   = 4; // After sending EDHOC Message 2
 
 // Common steps
-public static final int EDHOC_AFTER_M2  = 4; // After preparing/processing EDHOC Message 2
-public static final int EDHOC_AFTER_M3  = 5; // After preparing/processing EDHOC Message 3
-public static final int EDHOC_AFTER_M4  = 6; // After preparing/processing EDHOC Message 4
+public static final int EDHOC_AFTER_M2  = 5; // After preparing/processing EDHOC Message 2
+public static final int EDHOC_AFTER_M3  = 6; // After preparing/processing EDHOC Message 3
+public static final int EDHOC_AFTER_M4  = 7; // After preparing/processing EDHOC Message 4
 
 // Initiator steps
-public static final int EDHOC_SENT_M3   = 7; // After sending EDHOC Message 3
+public static final int EDHOC_SENT_M3   = 8; // After sending EDHOC Message 3
 
 // Responder steps
-public static final int EDHOC_SENT_M4   = 8; // After sending EDHOC Message 4
+public static final int EDHOC_SENT_M4   = 9; // After sending EDHOC Message 4
 
 }

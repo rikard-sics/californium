@@ -561,8 +561,8 @@ public class EdhocClient {
 		}
 		
 		// Add the new session to the list of existing EDHOC sessions
-		session.setMessage1(nextPayload);
 		session.setCurrentStep(Constants.EDHOC_AFTER_M1);
+		session.setMessage1(nextPayload);
 		byte[] connectionId = session.getConnectionId();
 		edhocSessions.put(CBORObject.FromObject(connectionId), session);
 		
@@ -576,6 +576,7 @@ public class EdhocClient {
         CoapResponse edhocMessageResp;
         try {
         	edhocMessageResp = client.advanced(edhocMessageReq);
+        	session.setCurrentStep(Constants.EDHOC_SENT_M1);
 		} catch (ConnectorException e) {
 			System.err.println("ConnectorException when sending EDHOC Message 1");
 			Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
@@ -782,17 +783,14 @@ public class EdhocClient {
 		        	// OSCORE-protected request include the EDHOC option in the request
 		        	if (OSCORE_EDHOC_COMBINED == true && requestType == Constants.EDHOC_MESSAGE_3) {
 		        		
-		        		
 						client = new CoapClient(helloWorldURI);
 						CoapResponse protectedResponse = null;
 						edhocMessageReq2 = Request.newGet();
 						edhocMessageReq2.setType(Type.CON);
 						edhocMessageReq2.getOptions().setOscore(Bytes.EMPTY);
 						
-						
 		        		edhocMessageReq2.getOptions().setEdhoc(true);
 						session.setMessage3(nextPayload);
-
 						
 						try {
 							protectedResponse = client.advanced(edhocMessageReq2);
