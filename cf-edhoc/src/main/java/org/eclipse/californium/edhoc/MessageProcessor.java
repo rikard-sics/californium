@@ -599,7 +599,7 @@ public class MessageProcessor {
 				errMsg = new String("EDHOC Message 2 is intended only to an Initiator");
 				error = true;
 			}
-			else if (session.getCurrentStep() != Constants.EDHOC_AFTER_M1) {
+			else if (session.getCurrentStep() != Constants.EDHOC_SENT_M1) {
 				errMsg = new String("The protocol state is not waiting for an EDHOC Message 2");
 				error = true;
 			}
