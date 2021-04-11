@@ -575,8 +575,8 @@ public class EdhocClient {
         
         CoapResponse edhocMessageResp;
         try {
-        	edhocMessageResp = client.advanced(edhocMessageReq);
         	session.setCurrentStep(Constants.EDHOC_SENT_M1);
+        	edhocMessageResp = client.advanced(edhocMessageReq);
 		} catch (ConnectorException e) {
 			System.err.println("ConnectorException when sending EDHOC Message 1");
 			Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
@@ -824,8 +824,8 @@ public class EdhocClient {
 						
 		        	}
 		        	else {
-		        		edhocMessageResp2 = client.advanced(edhocMessageReq2);
 		        		session.setCurrentStep(Constants.EDHOC_SENT_M3);
+		        		edhocMessageResp2 = client.advanced(edhocMessageReq2);
 		        	}
 		        	
 				} catch (ConnectorException e) {

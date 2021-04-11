@@ -751,10 +751,11 @@ public class EdhocServer extends CoapServer {
 				        }
 					}
 					
-					exchange.respond(myResponse);
 					if (responseType == Constants.EDHOC_MESSAGE_2) {
 						session.setCurrentStep(Constants.EDHOC_SENT_M2);
 					}
+					exchange.respond(myResponse);
+
 					return;
 				}
 				else {
@@ -907,8 +908,8 @@ public class EdhocServer extends CoapServer {
 							
 							if (responseType == Constants.EDHOC_MESSAGE_4) {
 
-								exchange.respond(myResponse);
 						        mySession.setCurrentStep(Constants.EDHOC_SENT_M4);
+								exchange.respond(myResponse);
 						        
 						        System.out.println("Sent EDHOC Message 4\n");
 						        if (debugPrint) {
