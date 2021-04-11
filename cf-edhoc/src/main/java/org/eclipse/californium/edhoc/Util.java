@@ -50,7 +50,7 @@ public class Util {
 
     /**
      *  Compute a ciphertext using the COSE Encrypt0 object
-     * @param idCredX   The ID of the public credential of the encrypter, as a CBOR map 
+     * @param idCredX   The ID of the public credential of the encrypter as a CBOR map, or null for computing MAC_4 
      * @param externalData   The data to use as external_aad
      * @param plaintext   The plaintext to encrypt
      * @param alg   The encryption algorithm to use
@@ -58,22 +58,26 @@ public class Util {
      * @param key   The symmetric key to use for encrypting
      * @return  the computed ciphertext, or null in case of invalid input
      */
-	public static byte[] encrypt (CBORObject idCredX, byte[] externalData, byte[] plaintext, AlgorithmID alg, byte[] iv, byte[] key)
-			                               throws CoseException {
+	public static byte[] encrypt (CBORObject idCredX, byte[] externalData, byte[] plaintext,
+			                      AlgorithmID alg, byte[] iv, byte[] key) throws CoseException {
         
-		if(idCredX == null || externalData == null || plaintext == null || iv == null || key == null)
+		if(externalData == null || plaintext == null || iv == null || key == null)
         	return null;       
 		
-        // The ID of the public credential has to be a CBOR map ...
-        if(idCredX.getType() != CBORType.Map)
+        // The ID of the public credential has to be a CBOR map, except for computing MAC_4
+        if(idCredX != null && idCredX.getType() != CBORType.Map)
         	return null;
-        
+                
         Encrypt0Message msg = new Encrypt0Message();
         
         // Set the protected header of the COSE object
-        for(CBORObject label : idCredX.getKeys()) {
-            // All good if the map has only one element, otherwise it needs to be rebuilt deterministically
-        	msg.addAttribute(label, idCredX.get(label), Attribute.PROTECTED);
+        
+        // The ID of the public credential is a CBOR map, except for computing MAC_4 in which case the Protected bucket is empty
+        if(idCredX != null) {        
+	        for(CBORObject label : idCredX.getKeys()) {
+	            // All good if the map has only one element, otherwise it needs to be rebuilt deterministically
+	        	msg.addAttribute(label, idCredX.get(label), Attribute.PROTECTED);
+	        }
         }
         
         msg.addAttribute(HeaderKeys.Algorithm, alg.AsCBOR(), Attribute.DO_NOT_SEND);

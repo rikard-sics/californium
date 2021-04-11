@@ -2100,6 +2100,145 @@ public class MessageProcessor {
 		
 	}
 	
+	
+	
+	
+	
+	
+
+    /**
+     *  Write an EDHOC Message 4
+     * @param session   The EDHOC session associated to this EDHOC message
+     * @return  The raw payload to transmit as EDHOC Message 4 or EDHOC Error Message; or null in case of errors
+     */
+	public static byte[] writeMessage4(EdhocSession session) {
+		
+		List<CBORObject> objectList = new ArrayList<>();
+		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
+		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
+		
+        if (debugPrint) {
+        	System.out.println("===================================");
+        	System.out.println("Start processing EDHOC Message 4:\n");
+        }
+		
+        /* Start preparing data_4 */
+		
+		// C_I as a bstr_identifier
+		int correlationMethod = session.getCorrelation();
+		if (correlationMethod == Constants.EDHOC_CORR_METHOD_0 || correlationMethod == Constants.EDHOC_CORR_METHOD_2) {
+			CBORObject cI = CBORObject.FromObject(session.getPeerConnectionId());
+			objectList.add(Util.encodeToBstrIdentifier(cI));
+	        if (debugPrint) {
+	        	CBORObject obj = CBORObject.FromObject(Util.encodeToBstrIdentifier(cI));
+	        	byte[] objBytes = obj.EncodeToBytes();
+	        	Util.nicePrint("C_I", objBytes);
+	        }
+		}
+        
+		/* End preparing data_4 */
+		
+		
+		/* Start computing the inner COSE object */
+		
+        // Compute the external data for the external_aad
+		
+        byte[] th4 = session.getTH4(); // TH_4 as plain bytes
+    	byte[] externalData = null;
+    	externalData = CBORObject.FromObject(th4).EncodeToBytes();
+
+    	if (externalData == null) {
+    		System.err.println("Error when computing the external data for MAC_4");
+    		errMsg = new String("Error when computing the external data for MAC_4");
+    		error = true;
+    	}
+    	if (debugPrint) {
+    		Util.nicePrint("External Data to compute MAC_4", externalData);
+    	}
+    	
+
+        // Prepare the plaintext, as empty
+        
+        byte[] plaintext = new byte[] {};
+    	
+        
+        // Compute the key material
+      
+    	// Compute K_4m and IV_4m to protect the inner COSE object
+    	
+    	byte[] k4m = computeKey(Constants.EDHOC_K_4M, session);
+    	if (k4m == null) {
+    		System.err.println("Error when computing K_4m");
+    		errMsg = new String("Error when computing K_4m");
+    		error = true;
+    	}
+    	if (debugPrint) {
+    		Util.nicePrint("K_4m", k4m);
+    	}
+
+    	byte[] iv4m = computeIV(Constants.EDHOC_IV_4M, session);
+    	if (iv4m == null) {
+    		System.err.println("Error when computing IV_4m");
+    		errMsg = new String("Error when computing IV_4m");
+    		error = true;
+    	}
+    	if (debugPrint) {
+    		Util.nicePrint("IV_4m", iv4m);
+    	}
+        
+		
+    	// Encrypt the inner COSE object and take the ciphertext as MAC_4
+
+    	byte[] mac4 = computeMAC4(session.getSelectedCiphersuite(), externalData, plaintext, k4m, iv4m);
+    	if (mac4 == null) {
+    		System.err.println("Error when computing MAC_4");
+    		errMsg = new String("Error when computing MAC_4");
+    		error = true;
+    	}
+    	if (debugPrint) {
+    		Util.nicePrint("MAC_4", mac4);
+    	}
+    	
+        /* End computing the inner COSE object */
+
+    	
+    	/* Prepare an EDHOC Error Message */
+
+    	if (error == true) {
+    	    int correlation = session.getCorrelation();
+    	    
+    	    // Prepare C_I
+    	    CBORObject cI = CBORObject.FromObject(session.getPeerConnectionId());
+    	    
+    	    List<CBORObject> processingResult = processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
+    	    return processingResult.get(0).GetByteString();
+    	    
+    	}
+    	
+    	
+    	/* Prepare EDHOC Message 4 */
+    	
+    	objectList.add(CBORObject.FromObject(mac4));
+    	if (debugPrint) {
+    		Util.nicePrint("EDHOC Message 4", Util.buildCBORSequence(objectList));
+    	}
+    	
+    	session.setCurrentStep(Constants.EDHOC_AFTER_M4);
+    	
+        return Util.buildCBORSequence(objectList);
+		
+	}
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
     /**
      *  Write an EDHOC Error Message
      * @param replyTo   The message to which this EDHOC Error Message is intended to reply to
@@ -2360,6 +2499,10 @@ public class MessageProcessor {
 	            	label = new String("K_3ae");
 	                key = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), label, keyLength);
 	                break;
+	            case Constants.EDHOC_K_4M:
+	            	label = new String("EDHOC_message_4_Key");
+	                key = session.edhocExporter(label, keyLength);
+	                break;
 	            default:
 	            	key = null;
 	            	break;
@@ -2412,6 +2555,10 @@ public class MessageProcessor {
             case Constants.EDHOC_IV_3AE:
             	label = new String("IV_3ae");
                 iv = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), label, ivLength);
+                break;
+            case Constants.EDHOC_IV_4M:
+            	label = new String("EDHOC_message_4_Nonce");
+                iv = session.edhocExporter(label, ivLength);
                 break;
             default:
             	iv = null;
@@ -2712,6 +2859,20 @@ public class MessageProcessor {
 		
 	}
 	
+    /**
+     *  Compute External_Data_4 for computing/verifying MAC_4
+     * @param th   The transcript hash TH4
+     * @return  The external data for computing/verifying MAC_4, or null in case of error
+     */
+	public static byte[] computeExternalData(byte[] th) {
+		
+		if (th == null)
+			return null;
+		
+		// TH4 is the only element to consider 
+        return CBORObject.FromObject(th).EncodeToBytes();
+        
+	}
 	
     /**
      *  Compute MAC_2
@@ -2787,6 +2948,52 @@ public class MessageProcessor {
 		return mac3;
 		
 	}
+	
+	
+	
+	
+	
+	
+    /**
+     *  Compute MAC_4
+     * @param session   The used EDHOC session
+     * @param externalData   The External Data for the encryption process
+     * @param plaintext   The plaintext to encrypt
+     * @param k4m   The encryption key
+     * @param iv4m   The initialization vector
+     * @return  The computed MAC_4
+     */
+	public static byte[] computeMAC4(int selectedCiphersuite, byte[] externalData,
+			                         byte[] plaintext, byte[] k4m, byte[] iv4m) {
+		
+		
+    	AlgorithmID alg = null;
+    	byte[] mac4 = null;
+    	switch (selectedCiphersuite) {
+    		case Constants.EDHOC_CIPHER_SUITE_0:
+    		case Constants.EDHOC_CIPHER_SUITE_2:
+    			alg = AlgorithmID.AES_CCM_16_64_128;
+    			break;
+    		case Constants.EDHOC_CIPHER_SUITE_1:
+    		case Constants.EDHOC_CIPHER_SUITE_3:
+    			alg = AlgorithmID.AES_CCM_16_128_128;
+    			break;
+    	}
+    	try {
+			mac4 = Util.encrypt(null, externalData, plaintext, alg, iv4m, k4m);
+		} catch (CoseException e) {
+			System.err.println("Error when computing MAC_4\n" + e.getMessage());
+			return null;
+		}
+		
+		return mac4;
+		
+	}
+	
+	
+	
+	
+	
 	
 	
     /**
