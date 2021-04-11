@@ -783,6 +783,14 @@ public class EdhocClient {
 		        	// OSCORE-protected request include the EDHOC option in the request
 		        	if (OSCORE_EDHOC_COMBINED == true && requestType == Constants.EDHOC_MESSAGE_3) {
 		        		
+		        		// The combined request cannot be used if the Responder has to send message_4
+		        		if (session.getApplicabilityStatement().getUseMessage4() == true) {
+							System.err.println("Cannot send the combined EDHOC+OSCORE request if message_4 is expected\n");
+			    			Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+			            	client.shutdown();
+			            	return;
+		        		}
+		        		
 						client = new CoapClient(helloWorldURI);
 						CoapResponse protectedResponse = null;
 						edhocMessageReq2 = Request.newGet();
@@ -797,8 +805,14 @@ public class EdhocClient {
 							session.setCurrentStep(Constants.EDHOC_SENT_M3);
 						} catch (ConnectorException e) {
 							System.err.println("ConnectorException when sending a protected request\n");
+			    			Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+			            	client.shutdown();
+			            	return;
 						} catch (IOException e) {
 							System.err.println("IOException when sending a protected request\n");
+			    			Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+			            	client.shutdown();
+			            	return;
 						}
 					
 						byte[] myPayload = protectedResponse.getPayload();
@@ -834,9 +848,11 @@ public class EdhocClient {
 		        	processResponseAfterEdhoc(edhocMessageResp2);
 		        	
 		        }
-		        else if (edhocMessageResp2 != null) { // Only an EDHOC Error Message is a legitimate EDHOC message at this point
+		        // Only an EDHOC message_4 or an EDHOC Error Message is legitimate at this point
+		        else if (edhocMessageResp2 != null) {
 		        	
 		        	responseType = -1;
+		        	boolean expectMessage4 = session.getApplicabilityStatement().getUseMessage4();
 		            responsePayload = edhocMessageResp2.getPayload();
 		            
 		            if (responsePayload == null)
@@ -844,8 +860,22 @@ public class EdhocClient {
 		            else {
 		            	responseType = MessageProcessor.messageType(responsePayload, false,
 		            			                                    edhocSessions, connectionId, appStatement);
-		            	if (responseType != Constants.EDHOC_ERROR_MESSAGE)
-		            		discontinue = true;
+		            	
+		            	// It is always consistent to receive an Error Message
+		            	if (responseType != Constants.EDHOC_ERROR_MESSAGE) {
+		            		
+		            		if (responseType == Constants.EDHOC_MESSAGE_4) {
+		            			if (expectMessage4 == false)
+		            				discontinue = true;
+		            			// Else it is fine, i.e. it is message_4 and it is expected
+		            		}
+		            		else {
+		            			// Any other message than message_4 and Error Message
+		            			discontinue = true;
+		            		}
+		            		
+		            	}
+
 		            }
 		            if (discontinue == true) {
 		            	System.err.println("Received invalid reply to EDHOC Message 3");
@@ -854,26 +884,79 @@ public class EdhocClient {
 		            	return;
 		            }
 		    		
-		    		System.out.println("Determined EDHOC message type: EDHOC Error Message\n");
+					myString = (responseType == Constants.EDHOC_MESSAGE_4) ? "EDHOC Message 4" : "EDHOC Error Message";
+		            
+		    		System.out.println("Determined EDHOC message type: " + myString + "\n");
 		            Util.nicePrint("EDHOC message " + responseType, responsePayload);
 		            
-		        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload, cI, edhocSessions);
-		        	
-		        	if (objectList != null) {
-		        		
-				    	// This execution flow has the client as Initiator. Consistently, the Correlation Method is 1.
-				    	// Hence, there is no C_I included, and the first element of the EDHOC Error Message is DIAG_MSG.
-			        	String errMsg = objectList[0].toString();
+		            
+		            if (responseType == Constants.EDHOC_MESSAGE_4) {
+		            	processingResult = MessageProcessor.readMessage4(responsePayload, cI,
+		            			                                                          edhocSessions, usedConnectionIds);
+		            	
+						if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
+							System.err.println("Internal error when processing EDHOC Message 4");
+							Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+			            	client.shutdown();
+			            	return;
+						}
+						
+						// A non-zero length response payload would be an EDHOC Error Message
+						byte[] nextMessage = processingResult.get(0).GetByteString();
+						
+						// The EDHOC message_4 was successfully processed
+						if (nextMessage.length == 0) {
+							
+							// If message_4 was a Confirmable response, send an empty ACK
+							
+					        if (edhocMessageResp2.advanced().isConfirmable()) {
+					        	edhocMessageResp2.advanced().acknowledge();
+					        }
+							
+						}
+						// An EDHOC error message has to be returned in response to EDHOC message_4
+						else {
+							
+							Request edhocMessageReq3 = new Request(Code.POST, Type.CON);
+							edhocMessageReq3.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
+							edhocMessageReq3.setPayload(nextMessage);
+							
+					        try {
+					        	edhocMessageResp = client.advanced(edhocMessageReq3);
+							} catch (ConnectorException e) {
+								System.err.println("ConnectorException when sending EDHOC Error Message");
+								Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+								client.shutdown();
+								return;
+							} catch (IOException e) {
+								System.err.println("IOException when sending EDHOC Error Message");
+								Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+								client.shutdown();
+								return;
+							}
+						}
+		            	
+		            }
+		            else if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
+			        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload, cI, edhocSessions);
 			        	
-			        	System.out.println("DIAG_MSG: " + errMsg + "\n");
-			        			        	
-			        	Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
-		        	
-		        	}
-		        	
-					client.shutdown();
-		    		return;
-		        	
+			        	if (objectList != null) {
+			        		
+					    	// This execution flow has the client as Initiator. Consistently, the Correlation Method is 1.
+					    	// Hence, there is no C_I included, and the first element of the EDHOC Error Message is DIAG_MSG.
+				        	String errMsg = objectList[0].toString();
+				        	
+				        	System.out.println("DIAG_MSG: " + errMsg + "\n");
+				        			        	
+				        	Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+			        	
+			        	}
+			        	
+						client.shutdown();
+			    		return;
+		    		
+		            }
+		    		
 		        }
 
 				// Send a request protected with the just established Security Context
