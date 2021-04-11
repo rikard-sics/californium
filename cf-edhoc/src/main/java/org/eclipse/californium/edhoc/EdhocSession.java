@@ -507,7 +507,7 @@ public class EdhocSession {
 	 */
 	public byte[] edhocExporter(String label, int len) throws InvalidKeyException, NoSuchAlgorithmException {
 		
-		if (this.currentStep != Constants.EDHOC_AFTER_M3 && this.currentStep != Constants.EDHOC_SENT_M4)
+		if (this.currentStep != Constants.EDHOC_AFTER_M3 && this.currentStep != Constants.EDHOC_SENT_M3)
 			return null;
 		
 		return edhocKDF(this.prk_4x3m, this.TH4, label, len);

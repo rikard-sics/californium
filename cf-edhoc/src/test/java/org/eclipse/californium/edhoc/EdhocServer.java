@@ -38,6 +38,7 @@ import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.network.CoapEndpoint;
@@ -860,38 +861,91 @@ public class EdhocServer extends CoapServer {
 						return;
 					}			        			        
 			        
-			        // Just send an empty response back
+			        // Prepare the response to send back
 			        Response myResponse = new Response(ResponseCode.CHANGED);
-					myResponse.setPayload(nextMessage);
-					
-					exchange.respond(myResponse);
-					return;
 			        
-			        /*
-			        // Alternative sending an empty ACK instead
-			        if (exchange.advanced().getRequest().isConfirmable())
-			        	exchange.accept();
-			        */
-					
-				}
-				// An EDHOC error message has to be returned
-				else {
-					int responseType = MessageProcessor.messageType(nextMessage, false, edhocSessions, null, appStatement);
-					
-					if (responseType != Constants.EDHOC_ERROR_MESSAGE) {
-						System.err.println("Inconsistent state before sending EDHOC Error Message");	
+			        if (mySession.getApplicabilityStatement().getUseMessage4() == false) {
+				        // Just send an empty response back
+			        	
+						myResponse.setPayload(nextMessage);
+						exchange.respond(myResponse);
 						return;
+						
+				        /*
+				        // Alternative sending an empty ACK instead
+				        if (exchange.advanced().getRequest().isConfirmable())
+				        	exchange.accept();
+				        */
+						
+			        }
+			        else {
+			        	// message_4 has to be sent to the Initiator
+			        	
+						// Compute the EDHOC Message 4
+						byte[] connectionId = mySession.getConnectionId();
+						nextMessage = MessageProcessor.writeMessage4(mySession);
+						
+						// Deallocate the assigned Connection Identifier for this peer
+						if (nextMessage == null || mySession.getCurrentStep() != Constants.EDHOC_AFTER_M4) {
+							System.err.println("Inconsistent state before sending EDHOC Message 4");
+							Util.purgeSession(mySession, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+							return;
+						}
+						
+						int responseType = MessageProcessor.messageType(nextMessage, false, edhocSessions,
+                                													 connectionId, appStatement);
+
+						if (responseType == Constants.EDHOC_MESSAGE_4 || responseType == Constants.EDHOC_ERROR_MESSAGE) {
+							
+							myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
+							myResponse.setConfirmable(true);
+							myResponse.setPayload(nextMessage);
+							
+							String myString = (responseType == Constants.EDHOC_MESSAGE_4) ?
+									                             "EDHOC Message 4" : "EDHOC Error Message";
+							System.out.println("Response type: " + myString + "\n");
+							
+							if (responseType == Constants.EDHOC_MESSAGE_4) {
+
+								exchange.respond(myResponse);
+						        mySession.setCurrentStep(Constants.EDHOC_SENT_M4);
+						        
+						        System.out.println("Sent EDHOC Message 4\n");
+						        if (debugPrint) {
+						        	Util.nicePrint("EDHOC Message 4", nextMessage);
+						        }
+						        
+							}
+							
+							if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
+						        
+						        sendErrorMessage(exchange, nextMessage, appStatement);
+						        Util.purgeSession(mySession, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+						        
+						        System.out.println("Sent EDHOC Error Message\n");
+						        if (debugPrint) {
+						        	Util.nicePrint("EDHOC Error Message", nextMessage);
+						        }
+						        
+							}
+							return;
+						}
+						else {
+							System.err.println("Inconsistent state before sending EDHOC Message 4");
+							Util.purgeSession(mySession, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+							return;
+						}
+						
 					}
-					
-					Response myResponse = new Response(ResponseCode.CHANGED);
-					myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
-					myResponse.setPayload(nextMessage);
-					
-					exchange.respond(myResponse);
-					return;
-					
+						
+				}
+				// An EDHOC error message has to be returned in response to EDHOC message_3
+				// The session has been possibly purged while attempting to process message_3
+				else {
+					sendErrorMessage(exchange, nextMessage, appStatement);
 				}
 				
+				return;
 				
 			}
 			
@@ -931,6 +985,23 @@ public class EdhocServer extends CoapServer {
 			}
 			
 
+		}
+		
+		private void sendErrorMessage(CoapExchange exchange, byte[] nextMessage, AppStatement appStatement) {
+			
+			int responseType = MessageProcessor.messageType(nextMessage, false, edhocSessions, null, appStatement);
+			
+			if (responseType != Constants.EDHOC_ERROR_MESSAGE) {
+				System.err.println("Inconsistent state before sending EDHOC Error Message");	
+				return;
+			}
+			
+			Response myResponse = new Response(ResponseCode.CHANGED);
+			myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
+			myResponse.setPayload(nextMessage);
+			
+			exchange.respond(myResponse);
+			
 		}
 		
 	}
