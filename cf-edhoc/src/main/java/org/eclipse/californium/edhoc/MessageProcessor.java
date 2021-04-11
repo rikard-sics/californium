@@ -297,6 +297,9 @@ public class MessageProcessor {
 												List<Integer> supportedCiphersuites,
 												AppStatement appStatement) {
 		
+		if (sequence == null || ltk == null || usedConnectionIds == null || supportedCiphersuites == null)
+				return null;
+		
 		byte[] ad1 = null; // Will be set if Application Data is present as AD1
 		
 		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
@@ -535,7 +538,8 @@ public class MessageProcessor {
 			                                    EdhocSession> edhocSessions, Map<CBORObject, OneKey> peerPublicKeys,
 			                                    Map<CBORObject, CBORObject> peerCredentials, List<Set<Integer>> usedConnectionIds) {
 		
-		if (sequence == null || edhocSessions == null)
+		if (sequence == null || edhocSessions == null ||
+		    peerPublicKeys == null || peerCredentials == null || usedConnectionIds == null)
 			return null;
 		
 		CBORObject connectionIdentifier = null; // The Connection Identifier C_I
@@ -971,7 +975,8 @@ public class MessageProcessor {
             								EdhocSession> edhocSessions, Map<CBORObject, OneKey> peerPublicKeys,
             								Map<CBORObject, CBORObject> peerCredentials, List<Set<Integer>> usedConnectionIds) {
 		
-		if (sequence == null || edhocSessions == null)
+		if (sequence == null || edhocSessions == null ||
+			peerPublicKeys == null || peerCredentials == null || usedConnectionIds == null)
 			return null;
 		
 		CBORObject connectionIdentifier = null; // The Connection Identifier C_R
@@ -1041,9 +1046,14 @@ public class MessageProcessor {
 			}
 			else {
 				correlation = session.getCorrelation();
-				cI = CBORObject.FromObject(session.getPeerConnectionId());
 			}
 		}
+		
+		if (session != null) {
+			if (session.getPeerConnectionId() != null)
+				cI = CBORObject.FromObject(session.getPeerConnectionId());
+		}
+		
 		
 		// CIPHERTEXT_3
 		byte[] ciphertext3 = null;
@@ -1346,6 +1356,209 @@ public class MessageProcessor {
 		return processingResult;
 		
 	}
+	
+	
+    /**
+     *  Process an EDHOC Message 4
+     * @param sequence   The CBOR sequence used as payload of the EDHOC Message 4
+     * @param cI   The connection identifier of the Initiator; set to null if expected in the EDHOC Message 4
+     * @param edhocSessions   The list of active EDHOC sessions of the recipient
+     * @param usedConnectionIds   The collection of already allocated Connection Identifiers
+     * @return   A list of CBOR Objects including one element, i.e. a CBOR byte string, with value either:
+     *              i) a zero length byte string, indicating that the EDHOC Message 4 was correct; or
+     *             ii) a non-zero length byte string as the EDHOC Error Message to be sent.
+     */
+	public static List<CBORObject> readMessage4(byte[] sequence, CBORObject cI, Map<CBORObject,
+			                                    EdhocSession> edhocSessions, List<Set<Integer>> usedConnectionIds) {
+		
+		if (sequence == null || edhocSessions == null || usedConnectionIds == null)
+			return null;
+		
+		CBORObject connectionIdentifier = null; // The Connection Identifier C_I
+		
+		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
+		
+		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
+		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
+		int correlation = -1; // The correlation method to retrieve from the session, or left to -1 in case on invalid message
+		CBORObject cR = null; // The Connection Identifier C_R, or left to null in case of invalid message
+		EdhocSession session = null; // The session used for this EDHOC execution
+		
+		CBORObject[] objectListRequest = CBORObject.DecodeSequenceFromBytes(sequence);
+		
+		/* Consistency checks */
+		
+		int index = 0;
+		
+		if (cI == null && objectListRequest.length != 2) {
+			errMsg = new String("C_I must be specified");
+			error = true;
+		}
+		
+		if (error == false && cI != null && objectListRequest.length != 1) {
+			errMsg = new String("C_I must not be specified");
+			error = true;
+		}
+		
+		// C_I is present as first element
+		if (error == false && cI == null) {
+			if (error == false && objectListRequest[index].getType() != CBORType.ByteString &&
+				objectListRequest[index].getType() != CBORType.Integer)  {
+					errMsg = new String("C_I must be a byte string or an integer");
+					error = true;
+			}
+			
+			if (error == false && Util.decodeFromBstrIdentifier(objectListRequest[index]) == null) {
+				errMsg = new String("C_I must be encoded as a valid bstr_identifier");
+				error = true;
+			}
+			else {
+				connectionIdentifier = Util.decodeFromBstrIdentifier(objectListRequest[index]);
+				index++;
+			}
+		}
+		
+		if (error == false && cI != null) {
+			connectionIdentifier = Util.decodeFromBstrIdentifier(cI);
+		}
+		
+		if (error == false) {
+			session = edhocSessions.get(connectionIdentifier);
+			
+			if (session == null) {
+				errMsg = new String("EDHOC session not found");
+				error = true;
+			}
+			else if (session.isInitiator() == false) {
+				errMsg = new String("EDHOC Message 4 is intended only to an Initiator");
+				error = true;
+			}
+			else if (session.getApplicabilityStatement().getUseMessage4() == false) {
+				errMsg = new String("EDHOC Message 4 is not used for this applicability statement");
+				error = true;
+			}
+			else if (session.getCurrentStep() != Constants.EDHOC_SENT_M3) {
+				errMsg = new String("The protocol state is not waiting for an EDHOC Message 4");
+				error = true;
+			}
+			else {
+				correlation = session.getCorrelation();
+			}
+		}
+		
+		if (session != null) {
+			if (session.getPeerConnectionId() != null)
+				cR = CBORObject.FromObject(session.getPeerConnectionId());
+		}
+		
+		
+		// MAC_4
+		byte[] mac4 = null;
+		if (error == false && objectListRequest[index].getType() != CBORType.ByteString) {
+			errMsg = new String("MAC_4 must be a byte string");
+			error = true;
+		}
+		else {
+			mac4 = objectListRequest[index].GetByteString();
+			if (mac4 == null) {
+				errMsg = new String("Error when retrieving MAC_4");
+				error = true;
+			}
+		}
+		
+		
+		/* Return an EDHOC Error Message */
+		
+		if (error == true) {
+			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
+			return processError(Constants.EDHOC_MESSAGE_4, correlation, cR, errMsg, null);
+		}
+		
+		
+		/* Start recomputing MAC_4 */
+		
+        // Compute the external data for the external_aad
+		
+        byte[] th4 = session.getTH4(); // TH_4 as plain bytes
+    	byte[] externalData = null;
+    	externalData = CBORObject.FromObject(th4).EncodeToBytes();
+
+    	if (externalData == null) {
+    		System.err.println("Error when computing the external data for MAC_4");
+    		errMsg = new String("Error when computing the external data for MAC_4");
+    		error = true;
+    	}
+    	if (debugPrint) {
+    		Util.nicePrint("External Data to compute MAC_4", externalData);
+    	}
+    	
+
+        // Prepare the plaintext, as empty
+        
+        byte[] plaintext = new byte[] {};
+    	
+        
+        // Compute the key material
+      
+    	// Compute K_4m and IV_4m to protect the inner COSE object
+    	
+    	byte[] k4m = computeKey(Constants.EDHOC_K_4M, session);
+    	if (k4m == null) {
+    		System.err.println("Error when computing K_4m");
+    		errMsg = new String("Error when computing K_4m");
+    		error = true;
+    	}
+    	if (debugPrint) {
+    		Util.nicePrint("K_4m", k4m);
+    	}
+
+    	byte[] iv4m = computeIV(Constants.EDHOC_IV_4M, session);
+    	if (iv4m == null) {
+    		System.err.println("Error when computing IV_4m");
+    		errMsg = new String("Error when computing IV_4m");
+    		error = true;
+    	}
+    	if (debugPrint) {
+    		Util.nicePrint("IV_4m", iv4m);
+    	}
+        
+		
+    	// Encrypt the inner COSE object and take the ciphertext as MAC_4
+
+    	byte[] recomputedMac4 = computeMAC4(session.getSelectedCiphersuite(), externalData, plaintext, k4m, iv4m);
+    	if (recomputedMac4 == null) {
+    		System.err.println("Error when computing MAC_4");
+    		errMsg = new String("Error when computing MAC_4");
+    		error = true;
+    	}
+    	if (debugPrint) {
+    		Util.nicePrint("MAC_4", recomputedMac4);
+    	}
+    	
+        /* End recomputing MAC_4 */
+    	
+    	
+    	// Verify MAC_4
+    	
+    	if (!Arrays.equals(recomputedMac4, mac4)) {
+        	errMsg = new String("Error when verifying MAC_4");
+        	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
+			return processError(Constants.EDHOC_MESSAGE_4, correlation, cR, errMsg, null);
+    	}
+		
+		/* Return an indication that message_4 is fine */
+		
+		// A CBOR byte string with zero length, indicating that the EDHOC Message 3 can be prepared
+		byte[] reply = new byte[] {};
+		processingResult.add(CBORObject.FromObject(reply));
+				
+    	session.setCurrentStep(Constants.EDHOC_AFTER_M4);
+		
+		System.out.println("Completed processing of EDHOC Message 4");
+		return processingResult;
+		
+	}
+	
 	
     /**
      *  Parse an EDHOC Error Message
@@ -2101,11 +2314,6 @@ public class MessageProcessor {
 	}
 	
 	
-	
-	
-	
-	
-
     /**
      *  Write an EDHOC Message 4
      * @param session   The EDHOC session associated to this EDHOC message
@@ -2229,15 +2437,6 @@ public class MessageProcessor {
 		
 	}
 
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	
     /**
      *  Write an EDHOC Error Message
@@ -3167,7 +3366,7 @@ public class MessageProcessor {
     /**
      *  Verify Signature_or_MAC_2, when this contains an actual signature - Only for the Initiator
      * @param session   The used EDHOC session
-     * @param signature   The signature value specified as Signature_or_MAC_2
+     * @param signatureOrMac2   The signature value specified as Signature_or_MAC_2
      * @param externalData   The external data for the possible signature process, it can be null
      * @param mac2   The MAC_2 whose signature has to be verified
      * @return  True in case of successful verification, false otherwise
@@ -3209,7 +3408,7 @@ public class MessageProcessor {
     /**
      *  Verify Signature_or_MAC_3, when this contains an actual signature - Only for the Responder
      * @param session   The used EDHOC session
-     * @param signature   The signature value specified as Signature_or_MAC_3
+     * @param signatureOrMac3   The signature value specified as Signature_or_MAC_3
      * @param externalData   The external data for the possible signature process, it can be null
      * @param mac3   The MAC_3 whose signature has to be verified
      * @return  True in case of successful verification, false otherwise
