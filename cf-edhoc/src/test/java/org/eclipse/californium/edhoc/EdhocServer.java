@@ -730,9 +730,6 @@ public class EdhocServer extends CoapServer {
 					
 					if (responseType == Constants.EDHOC_MESSAGE_2) {
 				        System.out.println("Sent EDHOC Message 2\n");
-				        if (debugPrint) {
-				        	Util.nicePrint("EDHOC Message 2", nextMessage);
-				        }
 					}
 					if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
 					    
@@ -912,9 +909,6 @@ public class EdhocServer extends CoapServer {
 								exchange.respond(myResponse);
 						        
 						        System.out.println("Sent EDHOC Message 4\n");
-						        if (debugPrint) {
-						        	Util.nicePrint("EDHOC Message 4", nextMessage);
-						        }
 						        
 							}
 							

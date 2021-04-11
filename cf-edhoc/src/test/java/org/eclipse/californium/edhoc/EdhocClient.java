@@ -571,7 +571,6 @@ public class EdhocClient {
 		edhocMessageReq.setPayload(nextPayload);
 		
         System.out.println("Sent EDHOC Message 1\n");
-        Util.nicePrint("EDHOC message 1", nextPayload);
         
         CoapResponse edhocMessageResp;
         try {
@@ -719,9 +718,6 @@ public class EdhocClient {
 				if (requestType == Constants.EDHOC_MESSAGE_3) {
 			        
 			        System.out.println("Sent EDHOC Message 3\n");
-			        if (debugPrint) {
-			        	Util.nicePrint("EDHOC Message 3", nextPayload);
-			        }
 					
 			        /* Invoke the EDHOC-Exporter to produce OSCORE input material */
 			        byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(session);
