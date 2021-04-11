@@ -90,6 +90,8 @@ public class EdhocSession {
 		this.selectedCiphersuite = supportedCiphersuites.get(0);		
 		setEphemeralKey();
 		
+		this.peerConnectionId = null;
+		
 		currentStep = initiator ? Constants.EDHOC_BEFORE_M1 : Constants.EDHOC_BEFORE_M2;
 		
 	}
