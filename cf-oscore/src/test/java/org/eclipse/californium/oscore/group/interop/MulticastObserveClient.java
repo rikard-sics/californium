@@ -33,11 +33,14 @@ import java.util.concurrent.TimeUnit;
 import javax.xml.bind.DatatypeConverter;
 
 import org.eclipse.californium.core.CoapClient;
+import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapObserveRelation;
 import org.eclipse.californium.core.CoapResponse;
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.CoAP.Code;
+import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
@@ -47,6 +50,7 @@ import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 import org.eclipse.californium.oscore.OSException;
 import org.eclipse.californium.oscore.group.GroupCtx;
+
 import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
@@ -124,18 +128,19 @@ public class MulticastObserveClient {
 	};
 
 	/**
-	 * Time to wait for replies to the multicast request
+	 * Time to wait for replies to the multicast request. In this case, it is
+	 * the full time period to keep observing.
 	 */
-	@SuppressWarnings("unused")
-	private static final int HANDLER_TIMEOUT = 2000;
+	private static final int HANDLER_TIMEOUT = 2 * 60 * 1000;
 
 	/**
 	 * Multicast address to send to (use the first line to set a custom one).
 	 */
 	// static final InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	static final InetAddress multicastIP = new InetSocketAddress("127.0.0.1", 0).getAddress();
-	//static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
+	// static final InetAddress multicastIP = new InetSocketAddress("127.0.0.1",
+	// 0).getAddress();
+	static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
 
 	/**
 	 * Port to send to.
@@ -231,13 +236,64 @@ public class MulticastObserveClient {
 		r.setToken(token);
 		r.setObserve();
 
-		@SuppressWarnings("unused")
-		CoapObserveRelation relation = client.observe(r, handler);
+		/* == Using Observe Handler == */
+		/*
+		 * CoapObserveRelation relation = client.observe(r, handler);
+		 * 
+		 * // Wait until messages have been received
+		 * assertTrue(handler.waitOnLoadCalls(cancelAfterMessages, 40000,
+		 * TimeUnit.MILLISECONDS));
+		 */
+		/* == End Using Observe Handler == */
 
-		// Wait until messages have been received
-		assertTrue(handler.waitOnLoadCalls(cancelAfterMessages, 40000, TimeUnit.MILLISECONDS));
+		/* == Using Multicast Handler == */
+		client.setURI(requestURI);
+		client.advanced(mcastHandler, r);
+		while (mcastHandler.waitOn(HANDLER_TIMEOUT)) {
+			// Wait for responses
+		}
+		/* == End Using Multicast Handler == */
 
 		client.shutdown();
+	}
+
+	private static final MultiCoapHandler mcastHandler = new MultiCoapHandler();
+
+	private static class MultiCoapHandler implements CoapHandler {
+
+		private boolean on;
+
+		public synchronized boolean waitOn(long timeout) {
+			on = false;
+			try {
+				wait(timeout);
+			} catch (InterruptedException e) {
+			}
+			return on;
+		}
+
+		private synchronized void on() {
+			on = true;
+			notifyAll();
+		}
+
+		/**
+		 * Handle and parse incoming responses.
+		 */
+		@Override
+		public void onLoad(CoapResponse response) {
+			on();
+
+			// System.out.println("Receiving to: "); //TODO
+			System.out.println("Receiving from: " + response.advanced().getSourceContext().getPeerAddress());
+
+			System.out.println(Utils.prettyPrint(response));
+		}
+
+		@Override
+		public void onError() {
+			System.err.println("error");
+		}
 	}
 
 	/**
@@ -253,6 +309,10 @@ public class MulticastObserveClient {
 
 		r.setConfirmable(true);
 		r.setURI(requestURI);
+
+		if (multicastIP.isMulticastAddress()) {
+			r.setType(Type.NON);
+		}
 
 		if (useOSCORE) {
 			r.getOptions().setOscore(Bytes.EMPTY); // Use OSCORE
