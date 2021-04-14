@@ -647,8 +647,20 @@ public class EdhocServer extends CoapServer {
 			
 			// The received message is an actual EDHOC message
 			
-			System.out.println("Determined EDHOC message type: " + messageType + "\n");
-			Util.nicePrint("EDHOC message " + messageType, message);
+			String typeName = "";
+			switch (messageType) {
+				case Constants.EDHOC_ERROR_MESSAGE:
+					typeName = new String("EDHOC Error Message");
+					break;
+				case Constants.EDHOC_MESSAGE_1:
+				case Constants.EDHOC_MESSAGE_2:
+				case Constants.EDHOC_MESSAGE_3:
+				case Constants.EDHOC_MESSAGE_4:
+					typeName = new String("EDHOC Message " + messageType);
+					break;		
+			}
+			System.out.println("Determined EDHOC message type: " + typeName + "\n");
+			Util.nicePrint(typeName, message);
 
 			
 			/* Start handling EDHOC Message 1 */
@@ -947,9 +959,6 @@ public class EdhocServer extends CoapServer {
 			
 			/* Start handling EDHOC Error Message */
 			if (messageType == Constants.EDHOC_ERROR_MESSAGE) {
-				
-	    		System.out.println("Determined EDHOC message type: EDHOC Error Message\n");
-	            Util.nicePrint("EDHOC message " + messageType, message);
 	            
 	        	CBORObject[] objectList = MessageProcessor.readErrorMessage(message, null, edhocSessions);
 	        	
@@ -972,6 +981,10 @@ public class EdhocServer extends CoapServer {
 		        	// preparing a new EDHOC Message 1. 
 		        	
 		        	Util.purgeSession(mySession, connectionIdentifier, edhocSessions, usedConnectionIds);
+		        	
+		        	// If the request is confirmable, send an empty ack
+			        if (exchange.advanced().getRequest().isConfirmable())
+			        	exchange.accept();
 	        	
 				}
 	        	
