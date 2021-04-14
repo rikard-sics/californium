@@ -930,7 +930,7 @@ public class MessageProcessor {
     	}
         
     	if (!verifySignatureOrMac2(session, signatureOrMac2, externalData, mac2)) {
-        	errMsg = new String("Error when verifying the signature of Signature_or_MAC_2");
+        	errMsg = new String("Error when verifying Signature_or_MAC_2");
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null);
     	}
@@ -1307,7 +1307,7 @@ public class MessageProcessor {
     		Util.nicePrint("Signature_or_MAC_3", signatureOrMac3);
     	}
     	if (!verifySignatureOrMac3(session, signatureOrMac3, externalData, mac3)) {
-        	errMsg = new String("Error when verifying the signature of Signature_or_MAC_3");
+        	errMsg = new String("Error when verifying Signature_or_MAC_3");
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null);
     	}
