@@ -709,15 +709,14 @@ public class EdhocClient {
 				
 			}
 
-			int requestType = MessageProcessor.messageType(nextPayload, true, edhocSessions, connectionId,  appStatement);			
-			if (requestType != Constants.EDHOC_MESSAGE_3 && responseType != Constants.EDHOC_ERROR_MESSAGE) {
+			int requestType = MessageProcessor.messageType(nextPayload, true, edhocSessions, connectionId,  appStatement);
+		
+			if (requestType != Constants.EDHOC_MESSAGE_3 && requestType != Constants.EDHOC_ERROR_MESSAGE) {
 				nextPayload = null;
 			}
 			
 			if (nextPayload != null) {
-				
 				myString = (requestType == Constants.EDHOC_MESSAGE_3) ? "EDHOC Message 3" : "EDHOC Error Message";
-				System.out.println("Request type: " + myString + "\n");
 				
 				if (requestType == Constants.EDHOC_MESSAGE_3) {
 			        
@@ -850,6 +849,7 @@ public class EdhocClient {
 		        	else {
 		        		session.setCurrentStep(Constants.EDHOC_SENT_M3);
 		        		edhocMessageResp2 = client.advanced(edhocMessageReq2);
+		        		
 		        	}
 		        	
 				} catch (ConnectorException e) {
@@ -917,8 +917,20 @@ public class EdhocClient {
 		    		
 					myString = (responseType == Constants.EDHOC_MESSAGE_4) ? "EDHOC Message 4" : "EDHOC Error Message";
 		            
-		    		System.out.println("Determined EDHOC message type: " + myString + "\n");
-		            Util.nicePrint("EDHOC message " + responseType, responsePayload);
+					String typeName = "";
+					switch (responseType) {
+						case Constants.EDHOC_ERROR_MESSAGE:
+							typeName = new String("EDHOC Error Message");
+							break;
+						case Constants.EDHOC_MESSAGE_1:
+						case Constants.EDHOC_MESSAGE_2:
+						case Constants.EDHOC_MESSAGE_3:
+						case Constants.EDHOC_MESSAGE_4:
+							typeName = new String("EDHOC Message " + responseType);
+							break;		
+					}
+		    		System.out.println("Determined EDHOC message type: " + typeName + "\n");
+		            Util.nicePrint(typeName, responsePayload);
 		            
 		            
 		            if (responseType == Constants.EDHOC_MESSAGE_4) {

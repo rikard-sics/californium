@@ -1598,7 +1598,7 @@ public class MessageProcessor {
 		// The connection identifier is expected as first element in the EDHOC Error Message
 		else {
 			
-			if (objectList[index].getType() == CBORType.ByteString) {
+			if (objectList[index].getType() == CBORType.ByteString || objectList[index].getType() == CBORType.Integer) {
 				mySession = edhocSessions.get(Util.decodeFromBstrIdentifier(objectList[index]));
 				index++;		
 			}
