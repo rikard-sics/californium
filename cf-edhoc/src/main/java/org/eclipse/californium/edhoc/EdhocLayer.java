@@ -23,6 +23,8 @@ import org.slf4j.LoggerFactory;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
+import net.i2p.crypto.eddsa.Utils;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -237,16 +239,25 @@ public class EdhocLayer extends AbstractLayer {
 				Util.nicePrint("EDHOC+OSCORE: rebuilt EDHOC message_3", edhocMessage3);
 			}
 			
-    		// The combined request cannot be used if the Responder has to send message_4
 			EdhocSession mySession = edhocSessions.get(CBORObject.FromObject(kid));
+			
+			// EDHOC session not found
     		if (mySession == null) {
 				System.err.println("Unable to retrieve the EDHOC session when receiving an EDHOC+OSCORE request\n");
-    			Util.purgeSession(mySession, CBORObject.FromObject(kid), edhocSessions, usedConnectionIds);
             	return;
     		}
+    		
+    		// The combined request cannot be used if the Responder has to send message_4
     		if (mySession.getApplicabilityStatement().getUseMessage4() == true) {
 				System.err.println("Cannot receive the combined EDHOC+OSCORE request if message_4 is expected\n");
     			Util.purgeSession(mySession, CBORObject.FromObject(kid), edhocSessions, usedConnectionIds);
+    			
+    			String errMsg = new String("Cannot receive the combined EDHOC+OSCORE request if message_4 is expected");
+    			byte[] nextMessage = MessageProcessor.writeErrorMessage(Constants.EDHOC_MESSAGE_3,
+                        Constants.EDHOC_CORR_METHOD_1,
+                        null, errMsg, null);
+				ResponseCode responseCode = ResponseCode.BAD_REQUEST;
+    			sendErrorMessage(exchange, nextMessage, responseCode);
             	return;
     		}
 		    
@@ -349,18 +360,8 @@ public class EdhocLayer extends AbstractLayer {
 			}
 			// An EDHOC error message has to be returned
 			else {
-				
-				if (!MessageProcessor.isErrorMessage(nextMessage)) {
-					System.err.println("Inconsistent state before sending EDHOC Error Message");
-					String responseString = new String("Inconsistent state before sending EDHOC Error Message");
-					sendErrorResponse(exchange, responseString, ResponseCode.INTERNAL_SERVER_ERROR);
-					return;
-				}
-				
-				Response myResponse = new Response(ResponseCode.BAD_REQUEST); // This deviates from the EDHOC document
-				myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
-				myResponse.setPayload(nextMessage);
-				exchange.sendResponse(myResponse);
+				ResponseCode responseCode = ResponseCode.BAD_REQUEST;
+				sendErrorMessage(exchange, nextMessage, responseCode);
 				return;
 			
 			}
@@ -463,4 +464,25 @@ public class EdhocLayer extends AbstractLayer {
 		exchange.sendResponse(errorResponse);
 		
 	}
+	
+	/*
+	 * Send an EDHOC Error Message in response to the received EDHOC+OSCORE request
+	 */
+	private void sendErrorMessage(Exchange exchange, byte[] nextMessage, ResponseCode responseCode) {
+		
+		if (!MessageProcessor.isErrorMessage(nextMessage)) {
+			System.err.println("Inconsistent state before sending EDHOC Error Message");
+			String responseString = new String("Inconsistent state before sending EDHOC Error Message");
+			sendErrorResponse(exchange, responseString, ResponseCode.INTERNAL_SERVER_ERROR);
+			return;
+		}
+		
+		Response myResponse = new Response(responseCode); // Using an error response code deviates from the EDHOC document
+		myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
+		myResponse.setPayload(nextMessage);
+		exchange.sendResponse(myResponse);
+		return;
+		
+	}
+	
 }
