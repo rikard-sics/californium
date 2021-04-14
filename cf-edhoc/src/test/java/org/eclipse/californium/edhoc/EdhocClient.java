@@ -271,8 +271,7 @@ public class EdhocClient {
 				}
 		 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
 		 			privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("2ffce7a0b2b825d397d0cb54f746e3da3f27596ee06b5371481dc0e012bc34d7");
-					publicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("38e5d54563c2b6a4ba26f3015f61bb706e5c2efdb556d2e1690b97fc3c6de149");					
-		 			
+					publicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("38e5d54563c2b6a4ba26f3015f61bb706e5c2efdb556d2e1690b97fc3c6de149");
 					peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
 		 		}
 		 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
