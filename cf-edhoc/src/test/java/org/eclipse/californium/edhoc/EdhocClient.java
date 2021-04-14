@@ -153,8 +153,11 @@ public class EdhocClient {
 	private static String helloWorldURI = "coap://localhost/helloWorld";
 	
 	private static String edhocURI = "coap://localhost/.well-known/edhoc";
+	// private static String edhocURI = "coap://51.75.194.248/.well-known/edhoc"; // Timothy
+	// private static String edhocURI = "coap://54.93.59.163/.well-known/edhoc"; // Stefan
 	// private static String edhocURI = "coap://195.251.58.203:5683/.well-known/edhoc"; // Lidia
-	// private static String edhocURI = "coap://edhocerver.proxy.rd.coap.amsuess.com/.well-known/edhoc"; // Christian
+	// private static String edhocURI = "coap://hephaistos.proxy.rd.coap.amsuess.com:1234/.well-known/edhoc"; // Christian
+	
 	
 	/*
 	 * Application entry point.
@@ -269,12 +272,13 @@ public class EdhocClient {
 		 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
 		 			privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("2ffce7a0b2b825d397d0cb54f746e3da3f27596ee06b5371481dc0e012bc34d7");
 					publicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("38e5d54563c2b6a4ba26f3015f61bb706e5c2efdb556d2e1690b97fc3c6de149");					
-		 			peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
+		 			
+					peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
 		 		}
 		 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
 		 			privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("2bbea655c23371c329cfbd3b1f02c6c062033837b8b59099a4436f666081b08e");
 					publicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("2c440cc121f8d7f24c3b0e41aedafe9caa4f4e7abb835ec30f1de88adb96ff71");
-		 			peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
+					peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
 		 		}
 				break;
 		
@@ -313,7 +317,7 @@ public class EdhocClient {
 		    switch (credType) {
 		    	case Constants.CRED_TYPE_RPK:
 					// Build the related ID_CRED
-		    		// Use 0x24 as kid for the other peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x24
+		    		// Use 0x24 as kid for this peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x24
 				    byte[] idCredKid = new byte[] {(byte) 0x24};
 					idCred = Util.buildIdCredKid(idCredKid);
 					// Build the related CRED
