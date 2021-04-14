@@ -66,7 +66,7 @@ public class EdhocServer extends CoapServer {
 	private static final boolean debugPrint = true;
 	
 	private static final int COAP_PORT = NetworkConfig.getStandard().getInt(NetworkConfig.Keys.COAP_PORT);
-	// private static final int COAP_PORT = 5690;
+	//private static final int COAP_PORT = 5690;
 	
 	private final static Provider EdDSA = new EdDSASecurityProvider();
 	
