@@ -1540,14 +1540,22 @@ public class MessageProcessor {
     	// Verify MAC_4
     	
     	if (!Arrays.equals(recomputedMac4, mac4)) {
-        	errMsg = new String("Error when verifying MAC_4");
+    		System.err.println("Error when verifying MAC_4");
+    		errMsg = new String("Error when computing MAC_4");
+    		error = true;
+    	}
+    	
+    	
+    	// Return an EDHOC Error Message
+    	if (error == true) {
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(Constants.EDHOC_MESSAGE_4, correlation, cR, errMsg, null);
     	}
+    	
 		
 		/* Return an indication that message_4 is fine */
 		
-		// A CBOR byte string with zero length, indicating that the EDHOC Message 3 can be prepared
+		// A CBOR byte string with zero length, indicating that the EDHOC Message 4 is fine
 		byte[] reply = new byte[] {};
 		processingResult.add(CBORObject.FromObject(reply));
 				
