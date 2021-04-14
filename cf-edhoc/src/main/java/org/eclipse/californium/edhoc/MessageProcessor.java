@@ -2449,7 +2449,7 @@ public class MessageProcessor {
 	public static byte[] writeErrorMessage(int replyTo, int corr, CBORObject cX, String errMsg, CBORObject suitesR) {
 		
 		if (replyTo != Constants.EDHOC_MESSAGE_1 && replyTo != Constants.EDHOC_MESSAGE_2 &&
-			replyTo != Constants.EDHOC_MESSAGE_3) {
+			replyTo != Constants.EDHOC_MESSAGE_3 && replyTo != Constants.EDHOC_MESSAGE_4) {
 				   return null;
 		}
 				
@@ -2516,6 +2516,7 @@ public class MessageProcessor {
 		payload = Util.buildCBORSequence(objectList);
 		
 		System.out.println("Completed preparation of EDHOC Error Message");
+		
 		return payload;
 		
 	}
