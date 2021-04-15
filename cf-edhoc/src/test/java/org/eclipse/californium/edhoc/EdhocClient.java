@@ -51,6 +51,7 @@ import com.upokecenter.cbor.CBORType;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
+import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
 import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
@@ -847,6 +848,16 @@ public class EdhocClient {
 						
 		        	}
 		        	else {
+		        		
+		        		// The request to send is an EDHOC Error Mssage
+		        		if (requestType == Constants.EDHOC_ERROR_MESSAGE) {
+		        			edhocMessageReq2.setConfirmable(true);
+		        			edhocMessageReq2.setURI(targetUri);
+		        			edhocMessageReq2.send();
+		        			client.shutdown();
+							return;
+		        		}
+		        		
 		        		session.setCurrentStep(Constants.EDHOC_SENT_M3);
 		        		edhocMessageResp2 = client.advanced(edhocMessageReq2);
 		        		
