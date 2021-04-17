@@ -1624,7 +1624,7 @@ public class MessageProcessor {
 		
 		index++;
 		
-		if (initiator == true && mySession.getCurrentStep() == Constants.EDHOC_AFTER_M1) {
+		if (initiator == true && mySession.getCurrentStep() == Constants.EDHOC_SENT_M1) {
 			
 			if (objectList.length == index){
 				System.err.println("Error when processing EDHOC Error Message - SUITES_R expected but not included");
@@ -2602,14 +2602,12 @@ public class MessageProcessor {
 		
 		CBORObject[] objectListMessage1 = CBORObject.DecodeSequenceFromBytes(message1);
 		int index = -1;
-		int maxSize = 5;
 		
 		// Retrieve elements from EDHOC Message 1
 		
 	    // If indicated in the applicability statement, the first element
 	    // of message_1 is the CBOR simple value Null, i.e. the byte 0xf6
 	    if (appStatement.getUseNullByte()) {
-	        maxSize = 6;
 	        index++;
 	    }
 		
