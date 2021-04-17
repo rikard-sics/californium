@@ -13,8 +13,9 @@
  * This class is based on org.eclipse.californium.examples.GETClient
  * 
  * Contributors: 
- *    Rikard Höglund (RISE)
  *    Marco Tiloca (RISE)
+ *    Rikard Höglund (RISE)
+ *    
  ******************************************************************************/
 package org.eclipse.californium.edhoc;
 
@@ -51,7 +52,6 @@ import com.upokecenter.cbor.CBORType;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
-import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
 import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
