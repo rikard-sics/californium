@@ -20,7 +20,6 @@ package org.eclipse.californium.edhoc;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.californium.cose.AlgorithmID;
