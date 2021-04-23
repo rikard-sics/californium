@@ -164,3 +164,4 @@ public class ExampleCoapServer {
 		new ExampleCoapServer(config, port);
 	}
 }
+
