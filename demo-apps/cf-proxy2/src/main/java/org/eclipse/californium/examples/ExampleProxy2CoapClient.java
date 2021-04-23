@@ -246,3 +246,4 @@ public class ExampleProxy2CoapClient {
 		client.shutdown();
 	}
 }
+
