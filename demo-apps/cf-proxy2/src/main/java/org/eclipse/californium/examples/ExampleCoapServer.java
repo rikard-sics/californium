@@ -27,6 +27,14 @@ import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
 import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
 import org.eclipse.californium.core.server.resources.CoapExchange;
+import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.elements.EndpointContext;
+import org.eclipse.californium.elements.MapBasedEndpointContext;
+import org.eclipse.californium.oscore.HashMapCtxDB;
+import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
+import org.eclipse.californium.oscore.OSCoreCtx;
+import org.eclipse.californium.oscore.OSCoreEndpointContextInfo;
+import org.eclipse.californium.oscore.OSException;
 
 /**
  * Example CoAP server for proxy demonstration.
@@ -34,6 +42,20 @@ import org.eclipse.californium.core.server.resources.CoapExchange;
  * {@link coap://localhost:5683/coap-target}
  */
 public class ExampleCoapServer {
+
+	private final static HashMapCtxDB db = new HashMapCtxDB();
+	private final static String uriLocal = "coap://localhost";
+	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
+	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
+
+	// test vector OSCORE draft Appendix C.1.2
+	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
+	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
+			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
+	private final static byte[] sid = new byte[] { 0x01 };
+	private final static byte[] rid = new byte[0];
+
 	/**
 	 * File name for network configuration.
 	 */
@@ -61,6 +83,16 @@ public class ExampleCoapServer {
 	private CoapServer coapServer;
 
 	public ExampleCoapServer(NetworkConfig config, final int port) throws IOException {
+
+		try {
+			OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, null);
+			db.addContext(uriLocal, ctx);
+			OSCoreCoapStackFactory.useAsDefault(db);
+		} catch (OSException e) {
+			System.err.println("Failed to add OSCORE context: " + e);
+			e.printStackTrace();
+		}
+
 		String path = RESOURCE;
 		if (path.startsWith("/")) {
 			path = path.substring(1);
@@ -73,6 +105,24 @@ public class ExampleCoapServer {
 
 			@Override
 			public void handleGET(CoapExchange exchange) {
+				System.out.println("=== Receiving incoming request ===");
+
+				System.out.println("Receiving to: " + exchange.advanced().getEndpoint().getAddress());
+				System.out.println("Receiving from: " + exchange.getSourceAddress() + ":" + exchange.getSourcePort());
+				System.out.println("Request URI: " + exchange.advanced().getCurrentRequest().getURI());
+
+				MapBasedEndpointContext mapCtx = (MapBasedEndpointContext) exchange.advanced().getRequest()
+						.getSourceContext();
+				String reqKid = mapCtx.getString(OSCoreEndpointContextInfo.OSCORE_RECIPIENT_ID);
+				System.out.print("Incoming request uses OSCORE: ");
+				if(reqKid != null) {
+					System.out.println("true");
+				} else {
+					System.out.println("false");
+				}
+
+				System.out.println("=== End Receiving incoming request ===");
+
 				exchange.setMaxAge(15);
 				exchange.respond(ResponseCode.CONTENT,
 						"Hi! I am the coap server on port " + port + ". Request " + counter.incrementAndGet() + ".",
