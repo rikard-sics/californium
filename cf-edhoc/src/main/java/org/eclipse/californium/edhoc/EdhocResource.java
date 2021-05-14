@@ -129,8 +129,6 @@ class EdhocResource extends CoapResource {
 			}
 			
 			processingResult = MessageProcessor.readMessage1(expectedCorr, message,
-															 edhocServer.getKeyPair(),
-															 edhocServer.getUsedConnectionIds(),
 															 edhocServer.getSupportedCiphersuites(),
 															 appStatement);
 

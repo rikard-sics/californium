@@ -279,8 +279,6 @@ public class MessageProcessor {
      *  Process an EDHOC Message 1
      * @param expectedCorr   The expected Correlation Method to see advertised in EDHOC Message 1 
      * @param sequence   The CBOR sequence used as payload of the EDHOC Message 1
-     * @param ltk   The long term identity key
-     * @param usedConnectionIds   The collection of Connection Identifiers used by this peer
      * @param supportedCipherSuites   The list of cipher suites supported by this peer 
      * @param appStatement   The applicability statement to use
      * @return   A list of CBOR Objects including up to two elements.
@@ -292,12 +290,10 @@ public class MessageProcessor {
      */
 	public static List<CBORObject> readMessage1(int expectedCorr,
 												byte[] sequence,
-												OneKey ltk,
-												List<Set<Integer>> usedConnectionIds,
 												List<Integer> supportedCiphersuites,
 												AppStatement appStatement) {
 		
-		if (sequence == null || ltk == null || usedConnectionIds == null || supportedCiphersuites == null)
+		if (sequence == null || supportedCiphersuites == null)
 				return null;
 		
 		byte[] ad1 = null; // Will be set if Application Data is present as AD1
@@ -2562,15 +2558,15 @@ public class MessageProcessor {
      * @param keyPair   The identity key of the Initiator
      * @param idCredI   ID_CRED_I for the identity key of the Initiator
      * @param credI   CRED_I for the identity key of the Initiator
-     * @param subjectName   The subject name for the identity key of the Initiator
      * @param supportedCipherSuites   The list of ciphersuites supported by the Initiator
      * @param usedConnectionIds   The list of allocated Connection Identifiers for the Initiator
      * @param appStatement   The applicability statement used for this session
      * @return  The newly created EDHOC session
      */
 	public static EdhocSession createSessionAsInitiator(int authenticationMethod, int correlationMethod,
-												  OneKey keyPair, CBORObject idCredI, byte[] credI, String subjectName,
-			  									  List<Integer> supportedCiphersuites, List<Set<Integer>> usedConnectionIds,
+												  OneKey keyPair, CBORObject idCredI, byte[] credI,
+			  									  List<Integer> supportedCiphersuites,
+			  									  List<Set<Integer>> usedConnectionIds,
 			  									  AppStatement appStatement) {
 		
 		int methodCorr = (4 * authenticationMethod) + correlationMethod;
