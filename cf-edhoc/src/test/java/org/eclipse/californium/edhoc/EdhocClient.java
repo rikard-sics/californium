@@ -549,7 +549,7 @@ public class EdhocClient {
 		AppStatement appStatement = appStatements.get(uriAsString);
 		
 		EdhocSession session = MessageProcessor.createSessionAsInitiator
-                (authenticationMethod, correlationMethod, keyPair, idCred, cred, subjectName,
+                (authenticationMethod, correlationMethod, keyPair, idCred, cred,
                  supportedCiphersuites, usedConnectionIds, appStatement);
 		
 		// At this point, the initiator may overwrite the information in the EDHOC session about the supported ciphersuites
