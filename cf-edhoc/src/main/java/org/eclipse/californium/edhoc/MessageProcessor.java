@@ -80,41 +80,82 @@ public class MessageProcessor {
 		if (count < 1 || count > maxSize)
 			return -1;
 		
-		// First check if it is the EDHOC Error Message
-		if (isErrorMessage(myObjects)) {
+		// First check if it is an EDHOC Error Message
+		boolean correlationFlag = appStatement.getCorrelation();
+		
+		if (isErrorMessage(myObjects, isReq, correlationFlag)) {
 			return Constants.EDHOC_ERROR_MESSAGE;
 		}
 				
 		// It is not an EDHOC Error Message. Check for other message types.
 
-		// It can be be message_3 or message_4
-		if (count == 1 || count == 2) {
-			return distinguishMessage3and4(myObjects, isReq, edhocSessions, cX);
-		}
 		
-		if (count == 3)
-			return Constants.EDHOC_MESSAGE_2;
+		if (correlationFlag == true) {
+		// The used correlation is 1 or 2
 		
-		// message_1 never starts with the CBOR simple value Null, i.e. the 0xf6 byte
-		if (useNullByte == false) {
-			if (count == 4) {
-				if (myObjects[1].getType() == CBORType.Array || myObjects[1].getType() == CBORType.Integer)
-					return Constants.EDHOC_MESSAGE_1;
-				if (myObjects[1].getType() == CBORType.ByteString)
-					return Constants.EDHOC_MESSAGE_2;
+			// It can be be message_3 or message_4
+			if (count == 1 || count == 2) {
+				return distinguishMessage3and4(myObjects, isReq, edhocSessions, cX, correlationFlag);
 			}
 			
-			if (count == 5)
-				return Constants.EDHOC_MESSAGE_1;
-		}
-		// message_1 always starts with the CBOR simple value Null, i.e. the 0xf6 byte
-		else {
-			if (count == 4)
+			if (count == 3)
 				return Constants.EDHOC_MESSAGE_2;
 			
-			if (count == 5 || count == 6) {
-				if (myObjects[0].equals(CBORObject.Null))
+			// message_1 never starts with the CBOR simple value Null, i.e. the 0xf6 byte
+			if (useNullByte == false) {
+				if (count == 4) {
+					if (myObjects[1].getType() == CBORType.Array || myObjects[1].getType() == CBORType.Integer)
+						return Constants.EDHOC_MESSAGE_1;
+					if (myObjects[1].getType() == CBORType.ByteString)
+						return Constants.EDHOC_MESSAGE_2;
+				}
+				
+				if (count == 5)
 					return Constants.EDHOC_MESSAGE_1;
+			}
+			// message_1 always starts with the CBOR simple value Null, i.e. the 0xf6 byte
+			else {
+				if (count == 4)
+					return Constants.EDHOC_MESSAGE_2;
+				
+				if (count == 5 || count == 6) {
+					if (myObjects[0].equals(CBORObject.Null))
+						return Constants.EDHOC_MESSAGE_1;
+				}
+				
+			}
+		
+		}
+		else {
+		// The used correlation is 0
+		
+			// It can be be message_3 or message_4
+			if (count == 2) {
+				return distinguishMessage3and4(myObjects, isReq, edhocSessions, cX, correlationFlag);
+			}
+			
+			// message_1 never starts with the CBOR simple value Null, i.e. the 0xf6 byte
+			if (useNullByte == false) {
+				if (count == 4) {
+					if (myObjects[1].getType() == CBORType.Array || myObjects[1].getType() == CBORType.Integer)
+						return Constants.EDHOC_MESSAGE_1;
+					if (myObjects[1].getType() == CBORType.ByteString)
+						return Constants.EDHOC_MESSAGE_2;
+				}
+				
+				if (count == 5)
+					return Constants.EDHOC_MESSAGE_1;
+			}
+			// message_1 always starts with the CBOR simple value Null, i.e. the 0xf6 byte
+			else {
+				if (count == 4)
+					return Constants.EDHOC_MESSAGE_2;
+				
+				if (count == 5 || count == 6) {
+					if (myObjects[0].equals(CBORObject.Null))
+						return Constants.EDHOC_MESSAGE_1;
+				}
+				
 			}
 			
 		}
@@ -126,23 +167,39 @@ public class MessageProcessor {
     /**
      *  Determine if a message is an EDHOC error message
      * @param myObjects   The message to check, as an array of CBOR objects extracted from a CBOR sequence
+     * @param isReq   True if the message is a request, false otherwise
+     * @param correlationFlag   True if the used correlation is 1 or 2, false if it is 0
      * @return  True if it is an EDHOC error message, or false otherwise
      */
-	public static boolean isErrorMessage(CBORObject[] myObjects) {
+	public static boolean isErrorMessage(CBORObject[] myObjects, boolean isReq, boolean correlationFlag) {
 		
 		int count = myObjects.length;
 
-		if (count == 1) {
-			if (myObjects[0].getType() == CBORType.TextString)
-				return true;
+		if (correlationFlag == true) {
+		// The used correlation is 1 or 2
+		
+			if (count == 1) {
+				if (myObjects[0].getType() == CBORType.TextString)
+					return true;
+			}
+			if (count == 2) {
+				if (myObjects[0].getType() == CBORType.TextString || myObjects[1].getType() == CBORType.TextString)
+					return true;
+			}
+			if (count == 3) {
+				if (myObjects[1].getType() == CBORType.TextString)
+					return true;
+			}
+		
 		}
-		if (count == 2) {
-			if (myObjects[0].getType() == CBORType.TextString || myObjects[1].getType() == CBORType.TextString)
-				return true;
-		}
-		if (count == 3) {
-			if (myObjects[1].getType() == CBORType.TextString)
-				return true;
+		else {
+		// The used correlation is 0
+			
+			if (count == 2 || count == 3) {
+				if (myObjects[1].getType() == CBORType.TextString)
+					return true;
+			}
+			
 		}
 		
 		return false;
@@ -152,9 +209,11 @@ public class MessageProcessor {
     /**
      *  Determine if a message is an EDHOC error message
      * @param msg   The message to check, as a CBOR sequence
+     * @param isReq   True if the message is a request, false otherwise
+     * @param correlationFlag   True if the used correlation is 1 or 2, false if it is 0
      * @return  True if it is an EDHOC error message, or false otherwise
      */
-	public static boolean isErrorMessage(byte[] msg) {
+	public static boolean isErrorMessage(byte[] msg, boolean isReq, boolean correlationFlag) {
 		
 		CBORObject[] myObjects = null;
 		
@@ -168,7 +227,7 @@ public class MessageProcessor {
 		if (myObjects == null)
 			return false;
 		
-		return isErrorMessage(myObjects);
+		return isErrorMessage(myObjects, isReq, correlationFlag);
 		
 	}
 	
@@ -178,10 +237,12 @@ public class MessageProcessor {
      * @param isReq   True if the EDHOC message to parse is a CoAP request, false if it is a CoAP response
      * @param edhocSessions   The list of active EDHOC sessions of the recipient
      * @param cX   The connection identifier of this peer, it can be null and then it has to be retrieved from the message
+     * @param correlationFlag   True if the used correlation is 1 or 2, false if it is 0
      * @return  The type of the parsed EDHOC message, or -1 in case of error
      */
 	private static int distinguishMessage3and4(CBORObject[] myObjects, boolean isReq,
-			                                  Map<CBORObject, EdhocSession> edhocSessions, byte[] cX) {
+			                                  Map<CBORObject, EdhocSession> edhocSessions,
+			                                  byte[] cX, boolean correlationFlag) {
 		
 		byte[] connectionIdentifier = null;
 		int count = myObjects.length;
@@ -194,11 +255,19 @@ public class MessageProcessor {
 		// message_3 is a response [ENC]
 		// message_4 is a request [C_I, ENC]
 		
-		if (count == 1 && isReq == true)
-			return -1;
-		
-		if (count == 2 && isReq == false)
-			return -1;
+		if (correlationFlag == true) {
+		// The used correlation is 1 or 2
+			if (count == 1 && isReq == true)
+				return -1;
+			
+			if (count == 2 && isReq == false)
+				return -1;
+		}
+		else {
+		// The used correlation is 0
+			if (count != 2)
+				return -1;
+		}
 		
 		// Use the provided Connection Identifier to retrieve the EDHOC session.
 		// This is the case for an incoming response message and for an outgoing request/response message
@@ -226,20 +295,20 @@ public class MessageProcessor {
 			if (session != null) {
 				boolean initiator = session.isInitiator();
 				int currentStep = session.getCurrentStep();
-				int correlationMethod = session.getCorrelation();
+				int correlation = session.getCorrelation();
 				
 				// Take the point of view of the Initiator
 				if (initiator == true) {
 					
 					// The Initiator is the Client
-					if (correlationMethod == Constants.EDHOC_CORR_1) {
+					if (correlation == Constants.EDHOC_CORR_1) {
 						if (isReq == true && currentStep == Constants.EDHOC_AFTER_M3)
 							return Constants.EDHOC_MESSAGE_3;
 						if (isReq == false && currentStep == Constants.EDHOC_SENT_M3)
 							return Constants.EDHOC_MESSAGE_4;
 					}
 					// The Initiator is the Server
-					if (correlationMethod == Constants.EDHOC_CORR_2) {
+					if (correlation == Constants.EDHOC_CORR_2) {
 						if (isReq == false && currentStep == Constants.EDHOC_AFTER_M3)
 							return Constants.EDHOC_MESSAGE_3;
 						if (isReq == true && currentStep == Constants.EDHOC_SENT_M3)
@@ -252,14 +321,14 @@ public class MessageProcessor {
 				if (initiator == false) {					
 
 					// The Responder is the Server
-					if (correlationMethod == Constants.EDHOC_CORR_1) {
+					if (correlation == Constants.EDHOC_CORR_1) {
 						if (isReq == true && currentStep == Constants.EDHOC_SENT_M2)
 							return Constants.EDHOC_MESSAGE_3;
 						if (isReq == false && currentStep == Constants.EDHOC_AFTER_M4)
 							return Constants.EDHOC_MESSAGE_4;
 					}
 					// The Responder is the Client
-					if (correlationMethod == Constants.EDHOC_CORR_2) {
+					if (correlation == Constants.EDHOC_CORR_2) {
 						if (isReq == false && currentStep == Constants.EDHOC_SENT_M2)
 							return Constants.EDHOC_MESSAGE_3;
 						if (isReq == true && currentStep == Constants.EDHOC_AFTER_M4)

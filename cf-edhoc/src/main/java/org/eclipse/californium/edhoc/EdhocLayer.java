@@ -184,7 +184,6 @@ public class EdhocLayer extends AbstractLayer {
 			
 			
 			boolean error = false;
-			byte[] errorMessage = new byte[] {};
 			
 			// Retrieve the received payload combining EDHOC CIPHERTEXT_3 and the real OSCORE payload
 			byte[] oldPayload = request.getPayload();
@@ -203,10 +202,8 @@ public class EdhocLayer extends AbstractLayer {
 			// The EDHOC+OSCORE request is malformed
 			if (error == true) {
 				String responseString = new String("Invalid EDHOC+OSCORE request");
-				errorMessage = responseString.getBytes(Constants.charset);
-				Response errorResponse = new Response(ResponseCode.BAD_REQUEST);
-				errorResponse.setPayload(errorMessage);
-				exchange.sendResponse(errorResponse);
+				System.err.println(responseString);
+				sendErrorResponse(exchange, responseString, ResponseCode.BAD_REQUEST);
 				return;
 			}
 			
@@ -243,9 +240,13 @@ public class EdhocLayer extends AbstractLayer {
 			
 			// EDHOC session not found
     		if (mySession == null) {
-				System.err.println("Unable to retrieve the EDHOC session when receiving an EDHOC+OSCORE request\n");
+    			String responseString = new String("Unable to retrieve the EDHOC session when receiving an EDHOC+OSCORE request\n");
+				System.err.println(responseString);
+				sendErrorResponse(exchange, responseString, ResponseCode.BAD_REQUEST);
             	return;
     		}
+    		
+    		int correlation = mySession.getCorrelation();
     		
     		// The combined request cannot be used if the Responder has to send message_4
     		if (mySession.getApplicabilityStatement().getUseMessage4() == true) {
@@ -254,10 +255,9 @@ public class EdhocLayer extends AbstractLayer {
     			
     			String errMsg = new String("Cannot receive the combined EDHOC+OSCORE request if message_4 is expected");
     			byte[] nextMessage = MessageProcessor.writeErrorMessage(Constants.EDHOC_MESSAGE_3,
-												                        Constants.EDHOC_CORR_1,
-												                        null, errMsg, null);
+												                        correlation, null, errMsg, null);
 				ResponseCode responseCode = ResponseCode.BAD_REQUEST;
-    			sendErrorMessage(exchange, nextMessage, responseCode);
+    			sendErrorMessage(exchange, nextMessage, responseCode, correlation);
             	return;
     		}
 		    
@@ -271,8 +271,8 @@ public class EdhocLayer extends AbstractLayer {
                     peerCredentials, usedConnectionIds);
 
 			if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
-				System.err.println("Internal error when processing EDHOC Message 3");
 				String responseString = new String("Internal error when processing EDHOC Message 3");
+				System.err.println(responseString);				
 				sendErrorResponse(exchange, responseString, ResponseCode.INTERNAL_SERVER_ERROR);
 				return;
 			}
@@ -335,22 +335,22 @@ public class EdhocLayer extends AbstractLayer {
 				try {
 					ctx = new OSCoreCtx(masterSecret, false, alg, senderId, 
 					recipientId, hkdf, OSCORE_REPLAY_WINDOW, masterSalt, null);
-				} catch (OSException e) {
-					System.err.println("Error when deriving the OSCORE Security Context " + e.getMessage());							
+				} catch (OSException e) {							
 					Util.purgeSession(mySession,
 									  CBORObject.FromObject(mySession.getConnectionId()), edhocSessions, usedConnectionIds);
 					String responseString = new String("Error when deriving the OSCORE Security Context");
+					System.err.println(responseString + " " + e.getMessage());
 					sendErrorResponse(exchange, responseString, ResponseCode.INTERNAL_SERVER_ERROR);
 					return;
 				}
 				
 				try {
 					ctxDb.addContext(uriLocal, ctx);
-				} catch (OSException e) {
-					System.err.println("Error when adding the OSCORE Security Context to the context database " + e.getMessage());							
+				} catch (OSException e) {							
 					Util.purgeSession(mySession,
 									  CBORObject.FromObject(mySession.getConnectionId()), edhocSessions, usedConnectionIds);
 					String responseString = new String("Error when adding the OSCORE Security Context to the context database");
+					System.err.println(responseString + " " + e.getMessage());
 					sendErrorResponse(exchange, responseString, ResponseCode.INTERNAL_SERVER_ERROR);
 					return;
 				}			        			        
@@ -362,7 +362,7 @@ public class EdhocLayer extends AbstractLayer {
 			else {
 				int responseCodeValue = processingResult.get(1).AsInt32();
 				ResponseCode responseCode = ResponseCode.valueOf(responseCodeValue);
-				sendErrorMessage(exchange, nextMessage, responseCode);
+				sendErrorMessage(exchange, nextMessage, responseCode, correlation);
 				return;
 			
 			}
@@ -469,9 +469,13 @@ public class EdhocLayer extends AbstractLayer {
 	/*
 	 * Send an EDHOC Error Message in response to the received EDHOC+OSCORE request
 	 */
-	private void sendErrorMessage(Exchange exchange, byte[] nextMessage, ResponseCode responseCode) {
-		
-		if (!MessageProcessor.isErrorMessage(nextMessage)) {
+	private void sendErrorMessage(Exchange exchange, byte[] nextMessage, ResponseCode responseCode, int correlation) {
+
+		// Most likely, the used correlation is 1, hence the flag is set to true
+		// (Note that correlation 2 is just not applicable when using the EDHOC+OSCORE request)
+		boolean correlationFlag = (correlation == Constants.EDHOC_CORR_0) ? false : true;
+	
+		if (!MessageProcessor.isErrorMessage(nextMessage, false, correlationFlag)) {
 			System.err.println("Inconsistent state before sending EDHOC Error Message");
 			String responseString = new String("Inconsistent state before sending EDHOC Error Message");
 			sendErrorResponse(exchange, responseString, ResponseCode.INTERNAL_SERVER_ERROR);
