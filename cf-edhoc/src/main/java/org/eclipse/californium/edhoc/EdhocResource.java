@@ -479,8 +479,9 @@ class EdhocResource extends CoapResource {
         	
         	if (objectList != null) {
         	
-	        	// If the server acts as Responder, Correlation is 1, hence the first element is C_X as C_R.
-	        	// If the server acts as Initiator, Correlation is 2, hence the first element is C_X as C_I.
+	        	// If Correlation is 0, the first element C_X is always present.
+	        	// If Correlation is 1, the server acts as Responder, hence the first element is C_X is present as C_R.
+	        	// If Correlation is 2, the server acts as Initiator, hence the first element is C_X is present as C_I.
 	        	CBORObject cX = objectList[0]; 
 	        	EdhocSession mySession = edhocEndpointInfo.getEdhocSessions().get(cX);
 	        	CBORObject connectionIdentifier = Util.decodeFromBstrIdentifier(cX);
