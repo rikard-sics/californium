@@ -97,7 +97,7 @@ public static final int EDHOC_AUTH_METHOD_3 = 3;
 
 
 /**
- * EDHOC correlation methods
+ * EDHOC correlations
  * 
  * +-------+-------------------------------------------+
  * | Value | Description                               |
@@ -110,10 +110,10 @@ public static final int EDHOC_AUTH_METHOD_3 = 3;
  * 
  */
 
-public static final int EDHOC_CORR_METHOD_0 = 0;
-public static final int EDHOC_CORR_METHOD_1 = 1;
-public static final int EDHOC_CORR_METHOD_2 = 2;
-public static final int EDHOC_CORR_METHOD_3 = 3;
+public static final int EDHOC_CORR_0 = 0;
+public static final int EDHOC_CORR_1 = 1;
+public static final int EDHOC_CORR_2 = 2;
+public static final int EDHOC_CORR_3 = 3;
 
 
 /**

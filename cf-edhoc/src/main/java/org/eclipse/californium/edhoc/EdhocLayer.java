@@ -254,8 +254,8 @@ public class EdhocLayer extends AbstractLayer {
     			
     			String errMsg = new String("Cannot receive the combined EDHOC+OSCORE request if message_4 is expected");
     			byte[] nextMessage = MessageProcessor.writeErrorMessage(Constants.EDHOC_MESSAGE_3,
-                        Constants.EDHOC_CORR_METHOD_1,
-                        null, errMsg, null);
+												                        Constants.EDHOC_CORR_1,
+												                        null, errMsg, null);
 				ResponseCode responseCode = ResponseCode.BAD_REQUEST;
     			sendErrorMessage(exchange, nextMessage, responseCode);
             	return;
