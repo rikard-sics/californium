@@ -122,10 +122,7 @@ public class EdhocClient {
 	
 	// The authentication method to be indicated in EDHOC message 1 (relevant for the Initiator only)
 	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
-	
-	// The correlation method to be indicated in EDHOC message 1 (relevant for the Initiator only)
-	private static int correlationMethod = Constants.EDHOC_CORR_METHOD_1;
-		
+			
 	// The database of OSCORE Security Contexts
 	private final static HashMapCtxDB db = new HashMapCtxDB();
 	
@@ -188,6 +185,7 @@ public class EdhocClient {
 		setupSupportedCipherSuites();
 		
 		// Set the applicability statement
+		// - Supported correlation 1 and 2		
 		// - Supported authentication methods
 		// - Use of the CBOR simple value Null (i.e., the 0xf6 byte), as first element of message_1
 		// - Use of message_4 as expected to be sent by the Responder
@@ -195,7 +193,8 @@ public class EdhocClient {
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
 			authMethods.add(i);
-		AppStatement appStatement = new AppStatement(authMethods, false, false);
+		AppStatement appStatement = new AppStatement(true, authMethods, false, false);
+		
 		appStatements.put(edhocURI, appStatement);
 		
     	for (int i = 0; i < 4; i++) {
@@ -228,8 +227,13 @@ public class EdhocClient {
 			System.err.println("Invalid URI: " + e.getMessage());
 			System.exit(-1);
 		}
-		// EDHOC execution with signature key
-		edhocExchangeAsInitiator(args, uri);
+		// Prepare the set of information for this EDHOC endpoint
+		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCred, cred, keyPair, peerPublicKeys,
+																	peerCredentials, edhocSessions, usedConnectionIds,
+																	supportedCiphersuites, db, edhocURI,
+																	OSCORE_REPLAY_WINDOW, appStatements);
+		
+		edhocExchangeAsInitiator(args, uri, edhocEndpointInfo);
 
 	}
 	
@@ -476,7 +480,7 @@ public class EdhocClient {
 		
 	}
 	
-	private static void edhocExchangeAsInitiator(final String args[], final URI targetUri) {
+	private static void edhocExchangeAsInitiator(final String args[], final URI targetUri, EdhocEndpointInfo edhocEndpointInfo) {
 		
 		CoapClient client = new CoapClient(targetUri);
 		
@@ -546,11 +550,12 @@ public class EdhocClient {
 		byte[] ad1 = null;
         
 		String uriAsString = targetUri.toString();
-		AppStatement appStatement = appStatements.get(uriAsString);
+		AppStatement appStatement = edhocEndpointInfo.getAppStatements().get(uriAsString);
 		
-		EdhocSession session = MessageProcessor.createSessionAsInitiator
-                (authenticationMethod, correlationMethod, keyPair, idCred, cred,
-                 supportedCiphersuites, usedConnectionIds, appStatement);
+		int correlation = appStatement.getCorrelation() ? Constants.EDHOC_CORR_1 : Constants.EDHOC_CORR_0;
+		EdhocSession session = MessageProcessor.createSessionAsInitiator(authenticationMethod, correlation,
+                 edhocEndpointInfo.getKeyPair(), edhocEndpointInfo.getIdCred(), edhocEndpointInfo.getCred(),
+                 edhocEndpointInfo.getSupportedCiphersuites(), edhocEndpointInfo.getUsedConnectionIds(), appStatement);
 		
 		// At this point, the initiator may overwrite the information in the EDHOC session about the supported ciphersuites
 		// and the selected ciphersuite, based on a previously received EDHOC Error Message
@@ -618,7 +623,7 @@ public class EdhocClient {
         
 		/* Process the received response */
         
-        // Since the Correlation Method 1 is used, this response relates to the previous request through the CoAP Token
+        // Since Correlation 1 is used, this response relates to the previous request through the CoAP Token
         // Hence, the Initiator knows what session to refer to, from which the correct C_I can be retrieved
     	CBORObject connectionIdentifier = CBORObject.FromObject(session.getConnectionId());
     	CBORObject cI = Util.encodeToBstrIdentifier(connectionIdentifier);
@@ -634,7 +639,7 @@ public class EdhocClient {
         	
         	if (objectList != null) {
         	
-		    	// This execution flow has the client as Initiator. Consistently, the Correlation Method is 1.
+		    	// This execution flow has the client as Initiator. Consistently, Correlation is 1.
 		    	// Hence, there is no C_I included, and the first element of the EDHOC Error Message is DIAG_MSG.
 		    	String errMsg = objectList[0].toString();
 		    	
@@ -1072,7 +1077,7 @@ public class EdhocClient {
 		
     	if (objectList != null) {
     		
-	    	// This execution flow has the client as Initiator. Consistently, the Correlation Method is 1.
+	    	// This execution flow has the client as Initiator. Consistently, Correlation is 1.
 	    	// Hence, there is no C_I included, and the first element of the EDHOC Error Message is DIAG_MSG.
         	String errMsg = objectList[0].toString();
         	
