@@ -597,7 +597,7 @@ public class EdhocClient {
 			client.shutdown();
 			return;
 		}
-		
+        
         boolean discontinue = false;
         int responseType = -1;
         byte[] responsePayload = edhocMessageResp.getPayload();
@@ -611,7 +611,7 @@ public class EdhocClient {
         }
         if (discontinue == true) {
         	System.err.println("Received invalid reply to EDHOC Message 1");
-			Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+        	Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
         	client.shutdown();
         	return;
         }
