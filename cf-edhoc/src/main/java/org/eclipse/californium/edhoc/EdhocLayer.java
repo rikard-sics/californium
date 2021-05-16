@@ -360,7 +360,8 @@ public class EdhocLayer extends AbstractLayer {
 			}
 			// An EDHOC error message has to be returned
 			else {
-				ResponseCode responseCode = ResponseCode.BAD_REQUEST;
+				int responseCodeValue = processingResult.get(1).AsInt32();
+				ResponseCode responseCode = ResponseCode.valueOf(responseCodeValue);
 				sendErrorMessage(exchange, nextMessage, responseCode);
 				return;
 			
@@ -477,7 +478,7 @@ public class EdhocLayer extends AbstractLayer {
 			return;
 		}
 		
-		Response myResponse = new Response(responseCode); // Using an error response code deviates from the EDHOC document
+		Response myResponse = new Response(responseCode);
 		myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
 		myResponse.setPayload(nextMessage);
 		exchange.sendResponse(myResponse);
