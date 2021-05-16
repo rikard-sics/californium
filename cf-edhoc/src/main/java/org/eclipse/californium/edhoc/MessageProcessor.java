@@ -185,11 +185,11 @@ public class MessageProcessor {
 		byte[] connectionIdentifier = null;
 		int count = myObjects.length;
 		
-		// With Correlation Method 1
+		// With Correlation 1
 		// message_3 is a request [C_R, ENC]
 		// message_4 is a response [ENC]
 		
-		// With Correlation Method 2
+		// With Correlation 2
 		// message_3 is a response [ENC]
 		// message_4 is a request [C_I, ENC]
 		
@@ -231,14 +231,14 @@ public class MessageProcessor {
 				if (initiator == true) {
 					
 					// The Initiator is the Client
-					if (correlationMethod == Constants.EDHOC_CORR_METHOD_1) {
+					if (correlationMethod == Constants.EDHOC_CORR_1) {
 						if (isReq == true && currentStep == Constants.EDHOC_AFTER_M3)
 							return Constants.EDHOC_MESSAGE_3;
 						if (isReq == false && currentStep == Constants.EDHOC_SENT_M3)
 							return Constants.EDHOC_MESSAGE_4;
 					}
 					// The Initiator is the Server
-					if (correlationMethod == Constants.EDHOC_CORR_METHOD_2) {
+					if (correlationMethod == Constants.EDHOC_CORR_2) {
 						if (isReq == false && currentStep == Constants.EDHOC_AFTER_M3)
 							return Constants.EDHOC_MESSAGE_3;
 						if (isReq == true && currentStep == Constants.EDHOC_SENT_M3)
@@ -251,14 +251,14 @@ public class MessageProcessor {
 				if (initiator == false) {					
 
 					// The Responder is the Server
-					if (correlationMethod == Constants.EDHOC_CORR_METHOD_1) {
+					if (correlationMethod == Constants.EDHOC_CORR_1) {
 						if (isReq == true && currentStep == Constants.EDHOC_SENT_M2)
 							return Constants.EDHOC_MESSAGE_3;
 						if (isReq == false && currentStep == Constants.EDHOC_AFTER_M4)
 							return Constants.EDHOC_MESSAGE_4;
 					}
 					// The Responder is the Client
-					if (correlationMethod == Constants.EDHOC_CORR_METHOD_2) {
+					if (correlationMethod == Constants.EDHOC_CORR_2) {
 						if (isReq == false && currentStep == Constants.EDHOC_SENT_M2)
 							return Constants.EDHOC_MESSAGE_3;
 						if (isReq == true && currentStep == Constants.EDHOC_AFTER_M4)
@@ -277,7 +277,7 @@ public class MessageProcessor {
 	
     /**
      *  Process an EDHOC Message 1
-     * @param expectedCorr   The expected Correlation Method to see advertised in EDHOC Message 1 
+     * @param expectedCorr   The expected Correlation to see advertised in EDHOC Message 1 
      * @param sequence   The CBOR sequence used as payload of the EDHOC Message 1
      * @param supportedCipherSuites   The list of cipher suites supported by this peer 
      * @param appStatement   The applicability statement to use
@@ -305,7 +305,7 @@ public class MessageProcessor {
 		
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
-		int correlation = -1; // The correlation method indicated by METHOD_CORR, or left to -1 in case on invalid message
+		int correlation = -1; // The correlation indicated by METHOD_CORR, or left to -1 in case on invalid message
 		CBORObject cI = null; // The Connection Identifier C_I, or left to null in case of invalid message
 		CBORObject suitesR = null; // The SUITE_R element to be possibly returned as SUITES_R in an EDHOC Error Message
 		
@@ -342,11 +342,11 @@ public class MessageProcessor {
 				error = true;
 			}
 			else {
-				// Check that the indicated correlation method is as expected
+				// Check that the indicated correlation is as expected
 				int methodCorr = objectListRequest[index].AsInt32(); 
 				correlation = methodCorr % 4;
 				if (correlation != expectedCorr) {
-					errMsg = new String("Expected correlation method " + expectedCorr + " but it was " + correlation);
+					errMsg = new String("Expected correlation " + expectedCorr + " but it was " + correlation);
 					error = true;
 				}
 				// Check that the indicated authentication method is supported
@@ -546,7 +546,7 @@ public class MessageProcessor {
 		
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
-		int correlation = -1; // The correlation method to retrieve from the session, or left to -1 in case on invalid message
+		int correlation = -1; // The correlation to retrieve from the session, or left to -1 in case on invalid message
 		CBORObject cR = null; // The Connection Identifier C_R, or left to null in case of invalid message
 		EdhocSession session = null; // The session used for this EDHOC execution
 		
@@ -981,7 +981,7 @@ public class MessageProcessor {
 		
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
-		int correlation = -1; // The correlation method to retrieve from the session, or left to -1 in case on invalid message
+		int correlation = -1; // The correlation to retrieve from the session, or left to -1 in case on invalid message
 		CBORObject cI = null; // The Connection Identifier C_I, or left to null in case of invalid message
 		EdhocSession session = null; // The session used for this EDHOC execution
 		
@@ -1375,7 +1375,7 @@ public class MessageProcessor {
 		
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
-		int correlation = -1; // The correlation method to retrieve from the session, or left to -1 in case on invalid message
+		int correlation = -1; // The correlation to retrieve from the session, or left to -1 in case on invalid message
 		CBORObject cR = null; // The Connection Identifier C_R, or left to null in case of invalid message
 		EdhocSession session = null; // The session used for this EDHOC execution
 		
@@ -1820,7 +1820,7 @@ public class MessageProcessor {
         
 		// C_I as a bstr_identifier
 		int correlationMethod = session.getCorrelation();
-		if (correlationMethod == Constants.EDHOC_CORR_METHOD_0 || correlationMethod == Constants.EDHOC_CORR_METHOD_2) {
+		if (correlationMethod == Constants.EDHOC_CORR_0 || correlationMethod == Constants.EDHOC_CORR_2) {
 			CBORObject cI = CBORObject.FromObject(session.getPeerConnectionId());
 			objectList.add(Util.encodeToBstrIdentifier(cI));
 	        if (debugPrint) {
@@ -2085,7 +2085,7 @@ public class MessageProcessor {
 		
 		// C_R as a bstr_identifier
 		int correlationMethod = session.getCorrelation();
-		if (correlationMethod == Constants.EDHOC_CORR_METHOD_0 || correlationMethod == Constants.EDHOC_CORR_METHOD_1) {
+		if (correlationMethod == Constants.EDHOC_CORR_0 || correlationMethod == Constants.EDHOC_CORR_1) {
 			CBORObject cR = CBORObject.FromObject(session.getPeerConnectionId());
 			objectList.add(Util.encodeToBstrIdentifier(cR));
 	        if (debugPrint) {
@@ -2336,7 +2336,7 @@ public class MessageProcessor {
 		
 		// C_I as a bstr_identifier
 		int correlationMethod = session.getCorrelation();
-		if (correlationMethod == Constants.EDHOC_CORR_METHOD_0 || correlationMethod == Constants.EDHOC_CORR_METHOD_2) {
+		if (correlationMethod == Constants.EDHOC_CORR_0 || correlationMethod == Constants.EDHOC_CORR_2) {
 			CBORObject cI = CBORObject.FromObject(session.getPeerConnectionId());
 			objectList.add(Util.encodeToBstrIdentifier(cI));
 	        if (debugPrint) {
@@ -2443,7 +2443,7 @@ public class MessageProcessor {
     /**
      *  Write an EDHOC Error Message
      * @param replyTo   The message to which this EDHOC Error Message is intended to reply to
-     * @param corr   The used correlation method
+     * @param corr   The used correlation
      * @param cX   The connection identifier of the intended recipient of the EDHOC Error Message, it can be null
      * @param errMsg   The text string to include in the EDHOC Error Message
      * @param suitesR   The cipher suite(s) supported by the Responder, it can be null;
@@ -2484,12 +2484,12 @@ public class MessageProcessor {
 		if (cX != null) {
 			
 			if (replyTo == Constants.EDHOC_MESSAGE_1 || replyTo == Constants.EDHOC_MESSAGE_3) {
-				if (corr == Constants.EDHOC_CORR_METHOD_0 || corr == Constants.EDHOC_CORR_METHOD_2) {
+				if (corr == Constants.EDHOC_CORR_0 || corr == Constants.EDHOC_CORR_2) {
 					includeIdentifier = true;
 				}
 			}
 			else if (replyTo == Constants.EDHOC_MESSAGE_2) {
-				if (corr == Constants.EDHOC_CORR_METHOD_0 || corr == Constants.EDHOC_CORR_METHOD_1) {
+				if (corr == Constants.EDHOC_CORR_0 || corr == Constants.EDHOC_CORR_1) {
 					includeIdentifier = true;
 				}
 			}
@@ -2529,7 +2529,7 @@ public class MessageProcessor {
     /**
      *  Prepare a list of CBOR objects to return, anticipating the sending of an EDHOC Error Message
      * @param replyTo   The message to which this EDHOC Error Message is intended to reply to
-     * @param corr   The used correlation method
+     * @param corr   The used correlation
      * @param cX   The connection identifier of the intended recipient of the EDHOC Error Message, it can be null
      * @param errMsg   The text string to include in the EDHOC Error Message
      * @param suitesR   The cipher suite(s) supported by the Responder (only in response to EDHOC Message 1), it can be null
@@ -2554,7 +2554,7 @@ public class MessageProcessor {
     /**
      *  Create a new EDHOC session as an Initiator
      * @param authenticationMethod   The authentication method signaled by the Initiator
-     * @param correlationMethod   The correlation method signaled by the Initiator
+     * @param correlationMethod   The correlation signaled by the Initiator
      * @param keyPair   The identity key of the Initiator
      * @param idCredI   ID_CRED_I for the identity key of the Initiator
      * @param credI   CRED_I for the identity key of the Initiator

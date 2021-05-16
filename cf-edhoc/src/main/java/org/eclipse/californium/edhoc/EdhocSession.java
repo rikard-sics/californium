@@ -137,14 +137,14 @@ public class EdhocSession {
 	}
 	
 	/**
-	 * @return  the correlation method
+	 * @return  the correlation
 	 */
 	public int getCorrelation() {
 		return this.correlation;
 	}
 	
 	/**
-	 * @return  the integer value combining the authentication method and correlation method
+	 * @return  the integer value combining the authentication method and correlation
 	 */
 	public int getMethodCorr() {
 		return (4 * this.method) + this.correlation;
