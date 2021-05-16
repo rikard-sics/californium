@@ -110,9 +110,6 @@ public class EdhocServer extends CoapServer {
 	// The authentication method to be indicated in EDHOC message 1 (relevant for the Initiator only)
 	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
 	
-	// The correlation method to be indicated in EDHOC message 1 (relevant for the Initiator only)
-	private static int correlationMethod = Constants.EDHOC_CORR_METHOD_1;
-	
 	// The database of OSCORE Security Contexts
 	private final static HashMapCtxDB db = new HashMapCtxDB();
 	
@@ -144,14 +141,16 @@ public class EdhocServer extends CoapServer {
 		setupSupportedCipherSuites();
 		
 		// Set the applicability statement
+		// - Supported correlation 1 and 2
 		// - Supported authentication methods
 		// - Use of the CBOR simple value Null (i.e., the 0xf6 byte), as first element of message_1
 		// - Use of message_4 as expected to be sent by the Responder
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
-		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
+		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++)
 			authMethods.add(i);
-		AppStatement appStatement = new AppStatement(authMethods, false, false);
+		AppStatement appStatement = new AppStatement(true, authMethods, false, false);
+		
 		appStatements.put(uriLocal + "/.well-known/edhoc", appStatement);
 		
     	for (int i = 0; i < 4; i++) {
@@ -210,8 +209,15 @@ public class EdhocServer extends CoapServer {
 		CoapResource wellKnownResource = new WellKnown();
 		add(wellKnownResource);
 		
+		// prepare the set of information for this EDHOC endpoint
+		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCred, cred, keyPair, peerPublicKeys,
+																	peerCredentials, edhocSessions, usedConnectionIds,
+																	supportedCiphersuites, db, uriLocal,
+																	OSCORE_REPLAY_WINDOW, appStatements);
+		
 		// provide an instance of a .well-known/edhoc resource
-		CoapResource edhocResource = new EdhocResource(this);
+		CoapResource edhocResource = new EdhocResource("edhoc", edhocEndpointInfo);
+		
 		wellKnownResource.add(edhocResource);
 
 	}
@@ -423,67 +429,7 @@ public class EdhocServer extends CoapServer {
 		}
 		
 	}
-	
-	//Return a reference to the set of EDHOC sessions
-	Map<CBORObject, EdhocSession> getEdhocSessions() {
-		return edhocSessions;
-	}
-
-	// Return a reference to the set of Applicability Statements
-	Map<String, AppStatement> getAppStatements() {
-		return appStatements;
-	}
-	
-	// Return the identity key pair
-	OneKey getKeyPair() {
-		return keyPair;
-	}
-	
-	// Return the ID_CRED used by this peer
-	CBORObject getIdCred() {
-		return idCred;
-	}
-	
-	// Return the CRED used by this peer
-	byte[] getCred() {
-		return cred;
-	}
-	
-	// Return the set of peer public keys
-	Map<CBORObject, OneKey> getPeerPublicKeys() {
-		return peerPublicKeys;
-	}
-	
-	// Return the set of peer credentials
-	Map<CBORObject, CBORObject> getPeerCredentials() {
-		return peerCredentials;
-	}
-	
-	// Return the default OSCORE Replay Window size
-	int getOscoreReplayWindow() {
-		return OSCORE_REPLAY_WINDOW;
-	}
-	
-	// Return the database of OSCORE Security Context
-	HashMapCtxDB getOscoreDb() {
-		return db;
-	}
-	
-	// Return the local URI for this server
-	String getUriLocal() {
-		return uriLocal;
-	}
-	
-	// Return the set of supported ciphersuites
-	List<Integer> getSupportedCiphersuites() {
-		return supportedCiphersuites;
-	}
-	
-	// Return the set of used Connection Identifiers
-	List<Set<Integer>> getUsedConnectionIds() {
-		return usedConnectionIds;
-	}
-	
+		
 	/*
 	 * Definition of the Hello-World Resource
 	 */

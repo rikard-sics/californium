@@ -17,12 +17,6 @@ import com.upokecenter.cbor.CBORObject;
  * For an EDHOC client, one instance is used for one or many EDHOC sessions with the EDHOC resource of a server.
  */
 public class EdhocEndpointInfo {
-
-	// The authentication method to be indicated in EDHOC message 1 (relevant for the Initiator only)
-	private int authenticationMethod;
-	
-	// The correlation to be indicated in EDHOC message 1 (relevant for the Initiator only)
-	private int correlation;
 	
     // The ID_CRED used for the identity key of this peer
     private CBORObject idCred;
@@ -67,14 +61,12 @@ public class EdhocEndpointInfo {
 	private Map<String, AppStatement> appStatements;
 	
 	
-	public EdhocEndpointInfo(int authenticationMethod, int correlation, CBORObject idCred,
+	public EdhocEndpointInfo(CBORObject idCred,
 							 byte[] cred, OneKey keyPair, Map<CBORObject, OneKey> peerPublicKeys,
 							 Map<CBORObject, CBORObject> peerCredentials, Map<CBORObject, EdhocSession> edhocSessions,
 							 List<Set<Integer>> usedConnectionIds, List<Integer> supportedCiphersuites, HashMapCtxDB db,
 							 String uri, int OSCORE_REPLAY_WINDOW, Map<String, AppStatement> appStatements) {
-		
-		this.authenticationMethod = authenticationMethod;
-		this.correlation = correlation;
+				
 		this.idCred = idCred;
 		this.cred = cred;
 		this.keyPair = keyPair;
@@ -88,16 +80,6 @@ public class EdhocEndpointInfo {
 		this.OSCORE_REPLAY_WINDOW = OSCORE_REPLAY_WINDOW;
 		this.appStatements = appStatements;
 		
-	}
-	
-	//Return the authentication method to use (relevant for the Initiator only)
-	public int getAuthenticationMethod() {
-		return authenticationMethod;
-	}
-	
-	//Return the correlation to use (relevant for the Initiator only)
-	public int getCorrelation() {
-		return correlation;
 	}
 	
 	//Return a reference to the set of EDHOC sessions
