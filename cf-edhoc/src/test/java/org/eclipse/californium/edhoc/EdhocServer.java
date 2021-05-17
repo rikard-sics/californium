@@ -62,7 +62,7 @@ public class EdhocServer extends CoapServer {
 	private final static int keyFormat = 1; // 0 is for Base64; 1 is for binary encoding
 	
 	// Uncomment to use an ECDSA key pair with curve P-256 as long-term identity key
-    //private final static int keyCurve = KeyKeys.EC2_P256.AsInt32();
+    // private final static int keyCurve = KeyKeys.EC2_P256.AsInt32();
     
     // Uncomment to use an EdDSA key pair with curve Ed25519 for signatures
     private final static int keyCurve = KeyKeys.OKP_Ed25519.AsInt32();

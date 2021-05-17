@@ -490,7 +490,7 @@ public class Util {
      */
 	public static CBORObject decodeFromBstrIdentifier (CBORObject inputObject) {
 		
-		if (inputObject.getType() != CBORType.ByteString && inputObject.getType() != CBORType.Integer)
+		if (inputObject == null ||  inputObject.getType() != CBORType.ByteString && inputObject.getType() != CBORType.Integer)
 			return null;
 		
 		if (inputObject.getType() == CBORType.ByteString) {
