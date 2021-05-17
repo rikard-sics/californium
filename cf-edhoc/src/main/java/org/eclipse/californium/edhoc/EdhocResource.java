@@ -479,16 +479,42 @@ class EdhocResource extends CoapResource {
         	
         	if (objectList != null) {
         	
-	        	// If Correlation is 0, the first element C_X is always present.
+	        	// If Correlation is 0, the first element is C_X is always present.
 	        	// If Correlation is 1, the server acts as Responder, hence the first element is C_X is present as C_R.
 	        	// If Correlation is 2, the server acts as Initiator, hence the first element is C_X is present as C_I.
 	        	CBORObject cX = objectList[0]; 
-	        	EdhocSession mySession = edhocEndpointInfo.getEdhocSessions().get(cX);
 	        	CBORObject connectionIdentifier = Util.decodeFromBstrIdentifier(cX);
 	        	
-	        	String errMsg = objectList[1].toString();
+	    		if (connectionIdentifier == null) {
+	    			System.err.println("Malformed or invalid connection identifier in EDHOC Error Message");
+	    			return;
+	    		}
 	        	
-	        	System.out.println("DIAG_MSG: " + errMsg + "\n");
+	        	// Retrieve ERR_CODE
+	        	int errorCode = objectList[1].AsInt32();
+	        	System.out.println("ERR_CODE: " + errorCode + "\n");
+	        	
+	        	// Retrieve ERR_INFO
+	    		if (errorCode == Constants.ERR_CODE_SUCCESS) {
+	    			System.out.println("Success\n");
+	    		}
+	    		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED) {
+		        	String errMsg = objectList[2].toString();
+		        	System.out.println("DIAG_MSG: " + errMsg + "\n");
+	    		}
+	    		else if (errorCode == Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE) {
+	    			CBORObject suitesR = objectList[2];
+					if (suitesR.getType() == CBORType.Integer) {
+			        	System.out.println("SUITES_R: " + suitesR.AsInt32() + "\n");
+					}
+					else if (suitesR.getType() == CBORType.Array) {
+						System.out.print("SUITES_R: [ " );
+						for (int i = 0; i < suitesR.size(); i++) {
+							System.out.print(suitesR.get(i).AsInt32() + " " );
+						}
+						System.out.println("]\n");
+					}
+	    		}
 	        	
 	        	// The following simply deletes the EDHOC session. However, if the server was the Initiator 
 	        	// and the EDHOC Error Message is a reply to an EDHOC Message 1, it would be fine to prepare a new
@@ -496,6 +522,12 @@ class EdhocResource extends CoapResource {
 	        	// In fact, the session is marked as "used", hence new ephemeral keys would be generated when
 	        	// preparing a new EDHOC Message 1. 
 	        	
+	        	EdhocSession mySession = edhocEndpointInfo.getEdhocSessions().get(connectionIdentifier);
+	    		if (mySession == null) {
+	    			System.err.println("EDHOC session to delete not found");
+	    			return;
+	    		}
+	    		
 	        	Util.purgeSession(mySession, connectionIdentifier,
 	        					  edhocEndpointInfo.getEdhocSessions(),
 	        					  edhocEndpointInfo.getUsedConnectionIds());
