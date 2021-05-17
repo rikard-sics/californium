@@ -841,7 +841,7 @@ public class EdhocClient {
 				            		System.err.println("Received an EDHOC Error Message");
 						        	CBORObject[] objectList = MessageProcessor.readErrorMessage(myPayload,
 						        			 													cI, edhocSessions);
-						        	processErrorMessageAsResponse(objectList);
+						        	processErrorMessageAsResponse(objectList, correlation, CBORObject.FromObject(connectionId));
 				            		
 				            	}
 			            	
@@ -920,7 +920,7 @@ public class EdhocClient {
 		            	else {
 		            		System.err.println("Received an EDHOC Error Message");
 				        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload, cI, edhocSessions);
-				        	processErrorMessageAsResponse(objectList);
+				        	processErrorMessageAsResponse(objectList, correlation, cI);
 				        	discontinue = true;
 		            	}
 
@@ -1000,7 +1000,7 @@ public class EdhocClient {
 		            	System.err.println("Received an EDHOC Error Message");
 			        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload, cI, edhocSessions);
 			        	
-			        	processErrorMessageAsResponse(objectList);
+			        	processErrorMessageAsResponse(objectList, correlation, cI);
 			        	Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
 			        	
 						client.shutdown();
@@ -1073,16 +1073,62 @@ public class EdhocClient {
 	/*
 	 * Process an EDHOC Error Message as a CoAP response
 	 */
-	private static void processErrorMessageAsResponse(CBORObject[] objectList) {
+	private static void processErrorMessageAsResponse(CBORObject[] objectList, int correlation, CBORObject connectionId) {
 		
     	if (objectList != null) {
     		
-	    	// This execution flow has the client as Initiator. Consistently, Correlation is 1.
-	    	// Hence, there is no C_I included, and the first element of the EDHOC Error Message is DIAG_MSG.
-        	String errMsg = objectList[0].toString();
+    		int index = 0;
+        	CBORObject cX = null; // The actual bstr_identifier
+    		
+    		if (correlation == Constants.EDHOC_CORR_0) {
+    			// Retrieve C_X as first element
+    			cX = objectList[0];
+    			index++;
+    		}
+    		else {
+    			cX = connectionId;
+    		}
+    		
+        	// Retrieve ERR_CODE
+        	int errorCode = objectList[index].AsInt32();
+        	index++;
+        	System.out.println("ERR_CODE: " + errorCode + "\n");
         	
-        	System.out.println("DIAG_MSG: " + errMsg + "\n");
+        	// Retrieve ERR_INFO
+    		if (errorCode == Constants.ERR_CODE_SUCCESS) {
+    			System.out.println("Success\n");
+    		}
+    		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED) {
+	        	String errMsg = objectList[index].toString();
+	        	System.out.println("DIAG_MSG: " + errMsg + "\n");
+    		}
+    		else if (errorCode == Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE) {
+    			CBORObject suitesR = objectList[index];
+				if (suitesR.getType() == CBORType.Integer) {
+		        	System.out.println("SUITES_R: " + suitesR.AsInt32() + "\n");
+				}
+				else if (suitesR.getType() == CBORType.Array) {
+					System.out.print("SUITES_R: [ " );
+					for (int i = 0; i < suitesR.size(); i++) {
+						System.out.print(suitesR.get(i).AsInt32() + " " );
+					}
+					System.out.println("]\n");
+				}
+    		}
+    		
+    		if (cX == null) {
+    			System.err.println("Unavailable connection identifier to delete EDHOC session");
+    			return;
+    		}
     	
+    		CBORObject connectionIdentifier = Util.decodeFromBstrIdentifier(cX);
+    		EdhocSession session = edhocSessions.get(connectionIdentifier);
+    		if (session == null) {
+    			System.err.println("EDHOC session to delete not found");
+    			return;
+    		}
+    	
+    		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
     	}
 		
 	}
