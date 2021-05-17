@@ -141,29 +141,40 @@ public class MessageProcessorTest {
 		
 		
 		// Error message is not from test vectors
-		CBORObject cx = CBORObject.FromObject(new byte[] { (byte) 0x59, (byte) 0xe9 });
+		CBORObject cX = CBORObject.FromObject(new byte[] { (byte) 0x59, (byte) 0xe9 });
 		CBORObject errMsg = CBORObject.FromObject("Something went wrong");
 		CBORObject suitesR = CBORObject.FromObject(1);
+		List<CBORObject> errorMessageList;
 		
-		List<CBORObject> errorMessageList = new ArrayList<CBORObject>();
-		errorMessageList.add(cx);
+		// Test for an EDHOC error message as an incoming/outgoing response
+		errorMessageList = new ArrayList<CBORObject>();
+		errorMessageList.add(CBORObject.FromObject(Constants.ERR_CODE_UNSPECIFIED));
 		errorMessageList.add(errMsg);
-		errorMessageList.add(suitesR);
 		byte[] errorMessage = Util.buildCBORSequence(errorMessageList);
-		
-		// Test from the point of view of the Initiator as Client, receiving an EDHOC error message as an incoming response
 		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
 				            errorMessage, false, edhocSessions, connectionIdInitiator, appStatement));
-		// Test from the point of view of the Initiator as Client, receiving an EDHOC error message as an outgoing request
+		errorMessageList = new ArrayList<CBORObject>();
+		errorMessageList.add(CBORObject.FromObject(Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE));
+		errorMessageList.add(suitesR);
+		errorMessage = Util.buildCBORSequence(errorMessageList);
+		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
+				            errorMessage, false, edhocSessions, connectionIdInitiator, appStatement));
+		
+		// Test for an EDHOC error message as an incoming/outgoing request
+		errorMessageList = new ArrayList<CBORObject>();
+		errorMessageList.add(cX);
+		errorMessageList.add(CBORObject.FromObject(Constants.ERR_CODE_UNSPECIFIED));
+		errorMessageList.add(errMsg);
+		errorMessage = Util.buildCBORSequence(errorMessageList);
 		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
 				            errorMessage, true, edhocSessions, connectionIdInitiator, appStatement));
-		
-		// Test from the point of view of the Responder as Server, receiving an EDHOC error message as an incoming request
+		errorMessageList = new ArrayList<CBORObject>();
+		errorMessageList.add(cX);
+		errorMessageList.add(CBORObject.FromObject(Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE));
+		errorMessageList.add(suitesR);
+		errorMessage = Util.buildCBORSequence(errorMessageList);
 		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
-	                        errorMessage, true, edhocSessions, null, appStatement));
-		// Test from the point of view of the Responder as Server, receiving an EDHOC error message as an outgoing response
-		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
-	                        errorMessage, false, edhocSessions, connectionIdResponder, appStatement));
+				            errorMessage, true, edhocSessions, connectionIdInitiator, appStatement));
 		
 	}
 

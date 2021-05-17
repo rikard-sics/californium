@@ -178,16 +178,13 @@ public class MessageProcessor {
 		if (correlationFlag == true) {
 		// The used correlation is 1 or 2
 		
-			if (count == 1) {
-				if (myObjects[0].getType() == CBORType.TextString)
+			if (count == 2 && isReq == false) {
+				if (myObjects[0].getType() == CBORType.Integer)
 					return true;
 			}
-			if (count == 2) {
-				if (myObjects[0].getType() == CBORType.TextString || myObjects[1].getType() == CBORType.TextString)
-					return true;
-			}
-			if (count == 3) {
-				if (myObjects[1].getType() == CBORType.TextString)
+			
+			if (count == 3 && isReq == true) {
+				if (myObjects[1].getType() == CBORType.Integer)
 					return true;
 			}
 		
@@ -195,10 +192,8 @@ public class MessageProcessor {
 		else {
 		// The used correlation is 0
 			
-			if (count == 2 || count == 3) {
-				if (myObjects[1].getType() == CBORType.TextString)
-					return true;
-			}
+			if (count == 3 && myObjects[1].getType() == CBORType.Integer)
+				return true;
 			
 		}
 		
@@ -378,6 +373,7 @@ public class MessageProcessor {
 		byte[] replyPayload = new byte[] {};
 		
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
+		int errorCode = Constants.ERR_CODE_UNSPECIFIED; // The error code to use for the EDHOC Error Message
 		ResponseCode responseCode = null; // Will be set to the CoAP response code to use for the EDHOC Error Message
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		int correlation = -1; // The correlation indicated by METHOD_CORR, or left to -1 in case on invalid message
@@ -491,6 +487,7 @@ public class MessageProcessor {
 				// This peer does not support the selected ciphersuite
 				if (!supportedCiphersuites.contains(Integer.valueOf(selectedCiphersuite))) {
 					errMsg = new String("The selected ciphersuite is not supported");
+					errorCode = Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE;
 					responseCode = ResponseCode.BAD_REQUEST;
 					error = true;
 				}
@@ -501,6 +498,7 @@ public class MessageProcessor {
 				// This peer does not support the selected ciphersuite
 				if (!supportedCiphersuites.contains(Integer.valueOf(selectedCiphersuite))) {
 					errMsg = new String("The selected ciphersuite is not supported");
+					errorCode = Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE;
 					responseCode = ResponseCode.BAD_REQUEST;
 					error = true;
 				}
@@ -515,6 +513,7 @@ public class MessageProcessor {
 					// The selected ciphersuite was not in the provided list
 					if (selectedIndex == -1) {
 						errMsg = new String("The selected ciphersuite is not in the provided list");
+						errorCode = Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE;
 						responseCode = ResponseCode.BAD_REQUEST;
 						error = true;
 					}
@@ -524,6 +523,7 @@ public class MessageProcessor {
 							// This peer supports ciphersuites prior to the selected one in the provided list
 							if (supportedCiphersuites.contains(Integer.valueOf(cs))) {
 								errMsg = new String("Supported ciphersuites prior to the selected one in the provided list");
+								errorCode = Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE;
 								responseCode = ResponseCode.BAD_REQUEST;
 								error = true;
 								break;
@@ -588,7 +588,7 @@ public class MessageProcessor {
 			// In either case, any supported ciphersuite from SUITES_I will also be included in SUITES_R
 			suitesR = Util.buildSuitesR(supportedCiphersuites);
 			
-			return processError(Constants.EDHOC_MESSAGE_1, correlation, cI, errMsg, suitesR, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_1, correlation, cI, errMsg, suitesR, responseCode);
 			
 		}
 		
@@ -642,6 +642,7 @@ public class MessageProcessor {
 		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
 		
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
+		int errorCode = Constants.ERR_CODE_UNSPECIFIED; // The error code to use for the EDHOC Error Message
 		ResponseCode responseCode = null; // Will be set to the CoAP response code to use for the EDHOC Error Message
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		int correlation = -1; // The correlation to retrieve from the session, or left to -1 in case on invalid message
@@ -784,7 +785,7 @@ public class MessageProcessor {
 		
 		if (error == true) {
 			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
 		}
 		
 		
@@ -804,7 +805,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing TH2");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
         }
         else if (debugPrint) {
     		Util.nicePrint("TH_2", th2);
@@ -825,7 +826,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing the Diffie-Hellman secret G_XY");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("G_XY", dhSecret);
@@ -838,7 +839,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing PRK_2e");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("PRK_2e", prk2e);
@@ -851,7 +852,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing KEYSTREAM_2");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("KEYSTREAM_2", keystream2);
@@ -903,7 +904,7 @@ public class MessageProcessor {
     	}
     	if (error == true) {
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
     	}
     	
     	
@@ -955,7 +956,7 @@ public class MessageProcessor {
     	
     	if (error == true) {
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
     	}
     	
     	session.setPeerIdCred(idCredR);
@@ -969,7 +970,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing PRK_3e2m");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
     	}
     	else if (debugPrint) {
 	    		Util.nicePrint("PRK_3e2m", prk3e2m);
@@ -984,7 +985,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing K_2M");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("K_2m", k2m);
@@ -995,7 +996,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing IV_2M");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("IV_2m", iv2m);
@@ -1009,7 +1010,7 @@ public class MessageProcessor {
         	errMsg = new String("Unable to retrieve the peer credential");
         	responseCode = ResponseCode.BAD_REQUEST;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
     	}
     	byte[] peerCredential = peerCredentialCBOR.GetByteString();
     	
@@ -1019,7 +1020,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing External Data for MAC_2");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("External Data to compute MAC_2", externalData);
@@ -1037,7 +1038,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing MAC_2");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("MAC_2", mac2);
@@ -1055,7 +1056,7 @@ public class MessageProcessor {
         	errMsg = new String("Non valid Signature_or_MAC_2");
         	responseCode = ResponseCode.BAD_REQUEST;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
     	}
 		
 		/* Return an indication to prepare EDHOC Message 3, possibly with the provided Application Data */
@@ -1112,6 +1113,7 @@ public class MessageProcessor {
 		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
 		
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
+		int errorCode = Constants.ERR_CODE_UNSPECIFIED; // The error code to use for the EDHOC Error Message
 		ResponseCode responseCode = null; // Will be set to the CoAP response code to use for the EDHOC Error Message
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		int correlation = -1; // The correlation to retrieve from the session, or left to -1 in case on invalid message
@@ -1205,7 +1207,7 @@ public class MessageProcessor {
 		
 		if (error == true) {
 			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
 		}
 		
 		
@@ -1226,7 +1228,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing TH3");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
         }
         else if (debugPrint) {
     		Util.nicePrint("TH_3", th3);
@@ -1240,7 +1242,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing TH3");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("K_3ae", k3ae);
@@ -1251,7 +1253,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing IV_3ae");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("IV_3ae", iv3ae);
@@ -1272,7 +1274,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when decrypting CIPHERTEXT_3");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("Plaintext retrieved from CIPHERTEXT_3", outerPlaintext);
@@ -1314,7 +1316,7 @@ public class MessageProcessor {
     	}
     	if (error == true) {
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
     	}
     	
     	// Verify that the identity of the Initiator is an allowed identity
@@ -1365,7 +1367,7 @@ public class MessageProcessor {
     	
     	if (error == true) {
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
     	}
     	
     	session.setPeerIdCred(idCredI);
@@ -1379,7 +1381,7 @@ public class MessageProcessor {
         	errMsg = new String("Unable to retrieve the peer credential");
         	responseCode = ResponseCode.BAD_REQUEST;
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-    		return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+    		return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
     	}
     	byte[] peerCredential = peerCredentialCBOR.GetByteString();
     	
@@ -1389,7 +1391,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing the external data for MAC_3");
     		responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-    		return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+    		return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("External Data to compute MAC_3", externalData);
@@ -1407,7 +1409,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing PRK_4x3m");
     		responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("PRK_4x3m", prk4x3m);
@@ -1422,7 +1424,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing K_3m");
     		responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("K_3m", k3m);
@@ -1433,7 +1435,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing IV_3m");
     		responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("IV_3m", iv3m);
@@ -1447,7 +1449,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing MAC_3");
     		responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("MAC_3", mac3);
@@ -1464,7 +1466,7 @@ public class MessageProcessor {
         	errMsg = new String("Non valid Signature_or_MAC_3");
         	responseCode = ResponseCode.BAD_REQUEST;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
     	}
     	
     	
@@ -1477,7 +1479,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing TH_4");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-        	return processError(Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+        	return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
         }
         else if (debugPrint) {
     		Util.nicePrint("TH_4", th4);
@@ -1539,6 +1541,7 @@ public class MessageProcessor {
 		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
 		
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
+		int errorCode = Constants.ERR_CODE_UNSPECIFIED; // The error code to use for the EDHOC Error Message
 		ResponseCode responseCode = null; // Will be set to the CoAP response code to use for the EDHOC Error Message
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		int correlation = -1; // The correlation to retrieve from the session, or left to -1 in case on invalid message
@@ -1642,7 +1645,7 @@ public class MessageProcessor {
 		
 		if (error == true) {
 			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_4, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_4, correlation, cR, errMsg, null, responseCode);
 		}
 		
 		
@@ -1721,7 +1724,7 @@ public class MessageProcessor {
     	// Return an EDHOC Error Message
     	if (error == true) {
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(Constants.EDHOC_MESSAGE_4, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_4, correlation, cR, errMsg, null, responseCode);
     	}
     	
 		
@@ -1789,42 +1792,59 @@ public class MessageProcessor {
 		
 		boolean initiator = mySession.isInitiator();
 		
-		if (objectList[index].getType() != CBORType.TextString) {
-			System.err.println("Error when processing EDHOC Error Message - Invalid format of DIAG_MSG");
+		if (objectList[index].getType() != CBORType.Integer) {
+			System.err.println("Error when processing EDHOC Error Message - Invalid format of ERR_CODE");
 			return null;
 		}
 		
+		// Retrieve ERR_CODE
+		int errorCode = objectList[index].AsInt32();
 		index++;
 		
-		if (initiator == true && mySession.getCurrentStep() == Constants.EDHOC_SENT_M1) {
-			
-			if (objectList.length == index){
-				System.err.println("Error when processing EDHOC Error Message - SUITES_R expected but not included");
+		// Check that the rest of the message is consistent
+		if (objectList.length == index){
+			System.err.println("Error when processing EDHOC Error Message - ERR_INFO expected but not included");
+			return null;
+		}
+		if (objectList.length > (index + 1)){
+			System.err.println("Error when processing EDHOC Error Message - Unexpected parameters following ERR_INFO");
+			return null;
+		}
+		if (errorCode == Constants.ERR_CODE_SUCCESS) {
+			// Do nothing
+		}
+		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED) {
+			if (objectList[index].getType() != CBORType.TextString) {
+				System.err.println("Error when processing EDHOC Error Message - Invalid format of DIAG_MSG");
 				return null;
 			}
-			
-			if (objectList.length > (index + 1)){
-				System.err.println("Error when processing EDHOC Error Message - Unexpected parameters following SUITES_R");
-				return null;
-			}
-			
-			if (objectList[index].getType() != CBORType.Array &&  objectList[index].getType() != CBORType.Integer) {
-				System.err.println("Error when processing EDHOC Error Message - Invalid format for SUITES_R");
-				return null;
-			}
-			
-			if (objectList[index].getType() != CBORType.Array) {
-				for (int i = 0; i < objectList[index].size(); i++) {
-					if (objectList[index].get(i).getType() != CBORType.Integer) {
-						System.err.println("Error when processing EDHOC Error Message - Invalid format for elements of SUITES_R");
-						return null;
+		}
+		else if (errorCode == Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE) {
+			if (initiator == true && mySession.getCurrentStep() == Constants.EDHOC_SENT_M1) {
+				if (objectList[index].getType() != CBORType.Array && objectList[index].getType() != CBORType.Integer) {
+					System.err.println("Error when processing EDHOC Error Message - Invalid format for SUITES_R");
+					return null;
+				}
+				if (objectList[index].getType() == CBORType.Array) {
+					for (int i = 0; i < objectList[index].size(); i++) {
+						if (objectList[index].get(i).getType() != CBORType.Integer) {
+							System.err.println("Error when processing EDHOC Error Message - Invalid format for elements of SUITES_R");
+							return null;
+						}
 					}
 				}
 			}
+			else {
+				System.err.println("Unexpected EDHOC Error Message with Error Code " +
+								    Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE +
+								    " (Wrong selected cipher suite)");
+				return null;
+			}
 			
 		}
-		else if (objectList.length != index){
-			System.err.println("Error when processing EDHOC Error Message - SUITES_R included while not pertinent");
+		else {
+			// Unknown error code
+			System.err.println("Unknown error code in EDHOC Error Message: " + errorCode);
 			return null;
 		}
 		
@@ -1985,6 +2005,7 @@ public class MessageProcessor {
 		
 		List<CBORObject> objectList = new ArrayList<>();
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
+		int errorCode = Constants.ERR_CODE_UNSPECIFIED; // The error code to use for the EDHOC Error Message
 		ResponseCode responseCode = null; // Will be set to the CoAP response code to use for the EDHOC Error Message
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		
@@ -2226,7 +2247,7 @@ public class MessageProcessor {
 			List<Integer> supportedCiphersuites = session.getSupportedCipherSuites();
 			CBORObject suitesR = Util.buildSuitesR(supportedCiphersuites);
 			
-			List<CBORObject> processingResult = processError(Constants.EDHOC_MESSAGE_1, correlation,
+			List<CBORObject> processingResult = processError(errorCode, Constants.EDHOC_MESSAGE_1, correlation,
 															 cI, errMsg, suitesR, responseCode);
 			return processingResult.get(0).GetByteString();
 			
@@ -2252,6 +2273,7 @@ public class MessageProcessor {
 		
 		List<CBORObject> objectList = new ArrayList<>();
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
+		int errorCode = Constants.ERR_CODE_UNSPECIFIED; // The error code to use for the EDHOC Error Message
 		ResponseCode responseCode = null; // Will be set to the CoAP response code to use for the EDHOC Error Message
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		
@@ -2478,7 +2500,7 @@ public class MessageProcessor {
     	    // Prepare C_R
     	    CBORObject cR = CBORObject.FromObject(session.getPeerConnectionId());
     	    
-    	    List<CBORObject> processingResult = processError(Constants.EDHOC_MESSAGE_2, correlation,
+    	    List<CBORObject> processingResult = processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation,
     	    												 cR, errMsg, null, responseCode);
     	    return processingResult.get(0).GetByteString();
     	    
@@ -2505,6 +2527,7 @@ public class MessageProcessor {
 		
 		List<CBORObject> objectList = new ArrayList<>();
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
+		int errorCode = Constants.ERR_CODE_UNSPECIFIED; // The error code to use for the EDHOC Error Message
 		ResponseCode responseCode = null; // Will be set to the CoAP response code to use for the EDHOC Error Message
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		
@@ -2601,7 +2624,7 @@ public class MessageProcessor {
     	    // Prepare C_I
     	    CBORObject cI = CBORObject.FromObject(session.getPeerConnectionId());
     	    
-    	    List<CBORObject> processingResult = processError(Constants.EDHOC_MESSAGE_3, correlation,
+    	    List<CBORObject> processingResult = processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation,
     	    												 cI, errMsg, null, responseCode);
     	    return processingResult.get(0).GetByteString();
     	    
@@ -2624,6 +2647,7 @@ public class MessageProcessor {
 	
     /**
      *  Write an EDHOC Error Message
+     * @param errorCode   The error code for the EDHOC Error Message
      * @param replyTo   The message to which this EDHOC Error Message is intended to reply to
      * @param corr   The used correlation
      * @param cX   The connection identifier of the intended recipient of the EDHOC Error Message, it can be null
@@ -2632,22 +2656,14 @@ public class MessageProcessor {
      *                  (MUST be present in response to EDHOC Message 1)
      * @return  The raw payload to transmit as EDHOC Error Message, or null in case of errors
      */
-	public static byte[] writeErrorMessage(int replyTo, int corr, CBORObject cX, String errMsg, CBORObject suitesR) {
+	public static byte[] writeErrorMessage(int errorCode, int replyTo, int corr,
+			                               CBORObject cX, String errMsg, CBORObject suitesR) {
 		
 		if (replyTo != Constants.EDHOC_MESSAGE_1 && replyTo != Constants.EDHOC_MESSAGE_2 &&
 			replyTo != Constants.EDHOC_MESSAGE_3 && replyTo != Constants.EDHOC_MESSAGE_4) {
 				   return null;
 		}
-				
-		if (errMsg == null)
-			return null;
 		
-		if (replyTo != Constants.EDHOC_MESSAGE_1 && errMsg.length() == 0)
-			return null;
-		
-		if (replyTo == Constants.EDHOC_MESSAGE_1 && suitesR == null)
-			return null;
-
 		if (suitesR != null && suitesR.getType() != CBORType.Integer && suitesR.getType() != CBORType.Array)
 			return null;
 		
@@ -2670,7 +2686,7 @@ public class MessageProcessor {
 					includeIdentifier = true;
 				}
 			}
-			else if (replyTo == Constants.EDHOC_MESSAGE_2) {
+			else if (replyTo == Constants.EDHOC_MESSAGE_2 || replyTo == Constants.EDHOC_MESSAGE_4) {
 				if (corr == Constants.EDHOC_CORR_0 || corr == Constants.EDHOC_CORR_1) {
 					includeIdentifier = true;
 				}
@@ -2683,18 +2699,24 @@ public class MessageProcessor {
 			
 		}
 
+		// Include ERR_CODE
+		objectList.add(CBORObject.FromObject(errorCode));
 		
-		// Include DIAG_MSG
-		objectList.add(CBORObject.FromObject(errMsg));
-		
-
-		// Possibly include SUITES_R - This implies that EDHOC Message 1 was good enough and yielding a suite negotiation
-		if (replyTo == Constants.EDHOC_MESSAGE_1) {
+		// Include ERR_INFO
+		if (errorCode == Constants.ERR_CODE_UNSPECIFIED) {
+			if (errMsg == null)
+				return null;
 			
-			if (suitesR != null) {
+			// Include DIAG_MSG
+			objectList.add(CBORObject.FromObject(errMsg));
+		}
+		else if (errorCode == Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE) {
+			if (replyTo != Constants.EDHOC_MESSAGE_1)
+				return null;
+			
+			// Possibly include SUITES_R - This implies that EDHOC Message 1 was good enough and yielding a suite negotiation
+			if (suitesR != null)
 				objectList.add(suitesR);
-			}
-			
 		}
 		
 		
@@ -2710,6 +2732,7 @@ public class MessageProcessor {
 	
     /**
      *  Prepare a list of CBOR objects to return, anticipating the sending of an EDHOC Error Message
+     * @param errorCode   The error code for the EDHOC Error Message
      * @param replyTo   The message to which this EDHOC Error Message is intended to reply to
      * @param corr   The used correlation
      * @param cX   The connection identifier of the intended recipient of the EDHOC Error Message, it can be null
@@ -2717,12 +2740,12 @@ public class MessageProcessor {
      * @param suitesR   The cipher suite(s) supported by the Responder (only in response to EDHOC Message 1), it can be null
      * @return  A list of CBOR objects, including the EDHOC Error Message and the CoAP response code to use
      */
-	public static List<CBORObject> processError(int replyTo, int corr, CBORObject cX, String errMsg,
+	public static List<CBORObject> processError(int errorCode, int replyTo, int corr, CBORObject cX, String errMsg,
 											    CBORObject suitesR, ResponseCode responseCode) {
 		
 		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
 		
-		byte[] replyPayload = writeErrorMessage(replyTo, corr, cX, errMsg, suitesR);
+		byte[] replyPayload = writeErrorMessage(errorCode, replyTo, corr, cX, errMsg, suitesR);
 		
 		// EDHOC Error Message, as a CBOR byte string
 		processingResult.add(CBORObject.FromObject(replyPayload));
