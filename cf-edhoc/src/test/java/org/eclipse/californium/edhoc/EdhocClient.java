@@ -546,8 +546,8 @@ public class EdhocClient {
 		
 		/* Prepare and send EDHOC Message 1 */
 		
-		// Possibly specify application data for AD_1, or null if none have to be provided
-		byte[] ad1 = null;
+		// Possibly specify external authorization data for EAD_1, or null if none have to be provided
+		byte[] ead1 = null;
         
 		String uriAsString = targetUri.toString();
 		AppStatement appStatement = edhocEndpointInfo.getAppStatements().get(uriAsString);
@@ -560,7 +560,7 @@ public class EdhocClient {
 		// At this point, the initiator may overwrite the information in the EDHOC session about the supported ciphersuites
 		// and the selected ciphersuite, based on a previously received EDHOC Error Message
 		
-        byte[] nextPayload = MessageProcessor.writeMessage1(session, ad1);
+        byte[] nextPayload = MessageProcessor.writeMessage1(session, ead1);
         
 		if (nextPayload == null || session.getCurrentStep() != Constants.EDHOC_BEFORE_M1) {
 			System.err.println("Inconsistent state before sending EDHOC Message 1");
@@ -676,8 +676,8 @@ public class EdhocClient {
         	
         	List<CBORObject> processingResult = new ArrayList<CBORObject>();
 			
-			// Possibly specify application data for AD_3, or null if none have to be provided
-			byte[] ad3 = null;
+			// Possibly specify external authorization data for EAD_3, or null if none have to be provided
+			byte[] ead3 = null;
 			
 			/* Start handling EDHOC Message 2 */
 			
@@ -697,14 +697,14 @@ public class EdhocClient {
 			// Prepare EDHOC Message 3
 			if (nextPayload.length == 0) {
 				
-				// Deliver AD_2 to the application, if present
+				// Deliver EAD_2 to the application, if present
 				if (processingResult.size() == 2) {
-					processAD2(processingResult.get(1).GetByteString());
+					processEAD2(processingResult.get(1).GetByteString());
 				}
 				
 				session.setCurrentStep(Constants.EDHOC_AFTER_M2);
 				
-				nextPayload = MessageProcessor.writeMessage3(session, ad3);
+				nextPayload = MessageProcessor.writeMessage3(session, ead3);
 		        
 				if (nextPayload == null || session.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
 					System.err.println("Inconsistent state before sending EDHOC Message 3");
@@ -1039,27 +1039,27 @@ public class EdhocClient {
 	}
 	
 	/*
-	 * Process application data conveyed in AD_1 in EDHOC Message 1
+	 * Process external authorization data conveyed in EAD_1 in EDHOC Message 1
 	 */
-	private static void processAD1(byte[] ad1) {
+	private static void processEAD1(byte[] ead1) {
 		// Do nothing
-		System.out.println("Entered processAD1()");
+		System.out.println("Entered processEAD1()");
 	}
 	
 	/*
-	 * Process application data conveyed in AD_2 in EDHOC Message 2
+	 * Process external authorization data conveyed in EAD_2 in EDHOC Message 2
 	 */
-	private static void processAD2(byte[] ad2) {
+	private static void processEAD2(byte[] ead2) {
 		// Do nothing
-		System.out.println("Entered processAD2()");
+		System.out.println("Entered processEAD2()");
 	}
 	
 	/*
-	 * Process application data conveyed in AD_3 in EDHOC Message 3
+	 * Process external authorization data conveyed in EAD_3 in EDHOC Message 3
 	 */
-	private static void processAD3(byte[] ad3) {
+	private static void processEAD3(byte[] ead3) {
 		// Do nothing
-		System.out.println("Entered processAD3()");
+		System.out.println("Entered processEAD3()");
 	}
 	
 	/*

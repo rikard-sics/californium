@@ -290,7 +290,7 @@ public class EdhocLayer extends AbstractLayer {
 					// Elements of 'processingResult' are:
 					//   i) A zero-length CBOR byte string, indicating successful processing;
 					//  ii) The Connection Identifier of the Responder, i.e. C_R
-					// iii) Optionally, the Application Data AD_3
+					// iii) Optionally, the External Authorization Data EAD_3
 					processAD3(processingResult.get(2).GetByteString());
 				}
 				
@@ -445,11 +445,11 @@ public class EdhocLayer extends AbstractLayer {
 	}
 	
 	/*
-	 * Process application data conveyed in AD_3 in EDHOC Message 3
+	 * Process external authorization data conveyed in EAD_3 in EDHOC Message 3
 	 */
-	private void processAD3(byte[] ad3) {
+	private void processAD3(byte[] ead3) {
 		// Do nothing
-		System.out.println("Entered processAD3()");
+		System.out.println("Entered processEAD3()");
 	}
 	
 	
