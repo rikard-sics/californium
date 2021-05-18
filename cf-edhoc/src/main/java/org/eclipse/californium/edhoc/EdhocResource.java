@@ -108,8 +108,8 @@ class EdhocResource extends CoapResource {
 		
 		List<CBORObject> processingResult = new ArrayList<CBORObject>();
 		
-		// Possibly specify application data for AD_2, or null if none have to be provided
-		byte[] ad2 = null;		
+		// Possibly specify external authorization data for EAD_2, or null if none have to be provided
+		byte[] ead2 = null;		
 		
 		// The received message is an actual EDHOC message
 		
@@ -160,7 +160,7 @@ class EdhocResource extends CoapResource {
 			// Prepare EDHOC Message 2
 			if (nextMessage.length == 0) {
 				
-				// Deliver AD_1 to the application, if present
+				// Deliver EAD_1 to the application, if present
 				if (processingResult.size() == 2) {
 					processAD1(processingResult.get(1).GetByteString());
 				}
@@ -171,7 +171,7 @@ class EdhocResource extends CoapResource {
 																    edhocEndpointInfo.getUsedConnectionIds(), appStatement);
 				
 				// Compute the EDHOC Message 2
-				nextMessage = MessageProcessor.writeMessage2(session, ad2);
+				nextMessage = MessageProcessor.writeMessage2(session, ead2);
 
 				byte[] connectionId = session.getConnectionId();
 				
@@ -306,12 +306,12 @@ class EdhocResource extends CoapResource {
 			// The EDHOC protocol has successfully completed
 			if (nextMessage.length == 0) {
 				
-				// Deliver AD_3 to the application, if present
+				// Deliver EAD_3 to the application, if present
 				if (processingResult.size() == 3) {
 					// Elements of 'processingResult' are:
 					//   i) A zero-length CBOR byte string, indicating successful processing;
 					//  ii) The Connection Identifier of the Responder, i.e. C_R
-					// iii) Optionally, the Application Data AD_3
+					// iii) Optionally, the External Authorization Data EAD_3
 					processAD3(processingResult.get(2).GetByteString());
 				}
 				
@@ -565,27 +565,27 @@ class EdhocResource extends CoapResource {
 	}
 	
 	/*
-	 * Process application data conveyed in AD_1 in EDHOC Message 1
+	 * Process external authorization data conveyed in EAD_1 in EDHOC Message 1
 	 */
-	private void processAD1(byte[] ad1) {
+	private void processAD1(byte[] ead1) {
 		// Do nothing
-		System.out.println("Entered processAD1()");
+		System.out.println("Entered processEAD1()");
 	}
 	
 	/*
-	 * Process application data conveyed in AD_2 in EDHOC Message 2
+	 * Process external authorization data conveyed in EAD_2 in EDHOC Message 2
 	 */
-	private void processAD2(byte[] ad2) {
+	private void processAD2(byte[] ead2) {
 		// Do nothing
-		System.out.println("Entered processAD2()");
+		System.out.println("Entered processEAD2()");
 	}
 	
 	/*
-	 * Process application data conveyed in AD_3 in EDHOC Message 3
+	 * Process external authorization data conveyed in EAD_3 in EDHOC Message 3
 	 */
-	private void processAD3(byte[] ad3) {
+	private void processAD3(byte[] ead3) {
 		// Do nothing
-		System.out.println("Entered processAD3()");
+		System.out.println("Entered processEAD3()");
 	}
 	
 	/*

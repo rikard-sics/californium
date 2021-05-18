@@ -73,7 +73,7 @@ public class MessageProcessor {
 		boolean useNullByte = appStatement.getUseNullByte();
 		
 		// The biggest message is message_1, which has 6 elements if it includes both
-		// the initial Null byte (according to the applicability statement) and AD_1
+		// the initial Null byte (according to the applicability statement) and EAD_1
 		int maxSize = useNullByte ? 6 : 5;
 		
 		int count = myObjects.length;
@@ -353,7 +353,7 @@ public class MessageProcessor {
      *             ii) a non-zero length byte string as the EDHOC Error Message to be sent.
      *             
      *           In case (i), the second element is optionally present as a CBOR byte string,
-     *           with value the application data AD1 to deliver to the application.
+     *           with value the external authorization data EAD1 to deliver to the application.
      *           In case (ii), the second element is present as a CBOR integer,
      *           with value the CoAP response code to use for the EDHOC Error Message.
      */
@@ -365,7 +365,7 @@ public class MessageProcessor {
 		if (sequence == null || supportedCiphersuites == null)
 				return null;
 		
-		byte[] ad1 = null; // Will be set if Application Data is present as AD1
+		byte[] ead1 = null; // Will be set if External Authorization Data is present as EAD1
 		
 		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
 		
@@ -574,8 +574,8 @@ public class MessageProcessor {
 			else {
     			CBORObject ad1CBOR = objectListRequest[index];
     			int length = ad1CBOR.GetByteString().length; 
-    			ad1 = new byte[length];
-    			System.arraycopy(ad1CBOR.GetByteString(), 0, ad1, 0, length);
+    			ead1 = new byte[length];
+    			System.arraycopy(ad1CBOR.GetByteString(), 0, ead1, 0, length);
 			}
 		}
 		
@@ -593,14 +593,14 @@ public class MessageProcessor {
 		}
 		
 		
-		/* Return an indication to prepare EDHOC Message 2, possibly with the provided Application Data */
+		/* Return an indication to prepare EDHOC Message 2, possibly with the provided External Authorization Data */
 		
 		// A CBOR byte string with zero length, indicating that the EDHOC Message 2 can be prepared
 		processingResult.add(CBORObject.FromObject(replyPayload));
 		
-		// Application Data from AD_1 (if present), as a CBOR byte string
-		if (ad1 != null) {
-			processingResult.add(CBORObject.FromObject(ad1));
+		// External Authorization Data from EAD_1 (if present), as a CBOR byte string
+		if (ead1 != null) {
+			processingResult.add(CBORObject.FromObject(ead1));
 		}
 		
 		System.out.println("Completed processing of EDHOC Message 1");
@@ -623,7 +623,7 @@ public class MessageProcessor {
      *             ii) a non-zero length byte string as the EDHOC Error Message to be sent.
      *             
  	 *           In case (i), the second element is optionally present as a CBOR byte string,
-	 *           with value the application data AD2 to deliver to the application.
+	 *           with value the external authorization EAD2 to deliver to the application.
 	 *           In case (ii), the second element is present as a CBOR integer,
 	 *           with value the CoAP response code to use for the EDHOC Error Message.
      */
@@ -637,7 +637,7 @@ public class MessageProcessor {
 		
 		CBORObject connectionIdentifier = null; // The Connection Identifier C_I
 		
-		byte[] ad2 = null; // Will be set if Application Data is present as AD2
+		byte[] ead2 = null; // Will be set if External Authorization Data is present as EAD2
 		
 		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
 		
@@ -898,8 +898,8 @@ public class MessageProcessor {
     		else {
     			CBORObject ad2CBOR = plaintextElementList[2];
     			int length = ad2CBOR.GetByteString().length; 
-    			ad2 = new byte[length];
-    			System.arraycopy(ad2CBOR.GetByteString(), 0, ad2, 0, length);
+    			ead2 = new byte[length];
+    			System.arraycopy(ad2CBOR.GetByteString(), 0, ead2, 0, length);
     		}
     	}
     	if (error == true) {
@@ -1015,7 +1015,7 @@ public class MessageProcessor {
     	byte[] peerCredential = peerCredentialCBOR.GetByteString();
     	
     	// Prepare the External Data
-    	byte[] externalData = computeExternalData(th2, peerCredential, ad2);
+    	byte[] externalData = computeExternalData(th2, peerCredential, ead2);
     	if (externalData == null) {
         	errMsg = new String("Error when computing External Data for MAC_2");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
@@ -1059,15 +1059,15 @@ public class MessageProcessor {
 			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
     	}
 		
-		/* Return an indication to prepare EDHOC Message 3, possibly with the provided Application Data */
+		/* Return an indication to prepare EDHOC Message 3, possibly with the provided External Authorization Data */
 		
 		// A CBOR byte string with zero length, indicating that the EDHOC Message 3 can be prepared
 		byte[] reply = new byte[] {};
 		processingResult.add(CBORObject.FromObject(reply));
 		
-		// Application Data from AD_2 (if present), as a CBOR byte string
-		if (ad2 != null) {
-			processingResult.add(CBORObject.FromObject(ad2));
+		// External Authorization from EAD_2 (if present), as a CBOR byte string
+		if (ead2 != null) {
+			processingResult.add(CBORObject.FromObject(ead2));
 		}
 		
 		System.out.println("Completed processing of EDHOC Message 2");
@@ -1096,7 +1096,7 @@ public class MessageProcessor {
      *           with value the CoAP response code to use for the EDHOC Error Message.
      *           
      *           The third element is optional and relevant only in case (i). If present,
-     *           it is a CBOR byte string, with value the application data AD3 to deliver to the application.
+     *           it is a CBOR byte string, with value the external authorization data EAD3 to deliver to the application.
      */
 	public static List<CBORObject> readMessage3(byte[] sequence, CBORObject cR, Map<CBORObject,
             								EdhocSession> edhocSessions, Map<CBORObject, OneKey> peerPublicKeys,
@@ -1108,7 +1108,7 @@ public class MessageProcessor {
 		
 		CBORObject connectionIdentifier = null; // The Connection Identifier C_R
 		
-		byte[] ad3 = null; // Will be set if Application Data is present as AD3
+		byte[] ead3 = null; // Will be set if External Authorization Data is present as EAD3
 		
 		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
 		
@@ -1310,8 +1310,8 @@ public class MessageProcessor {
     		else {
     			CBORObject ad3CBOR = plaintextElementList[2];
     			int length = ad3CBOR.GetByteString().length; 
-    			ad3 = new byte[length];
-    			System.arraycopy(ad3CBOR.GetByteString(), 0, ad3, 0, length);
+    			ead3 = new byte[length];
+    			System.arraycopy(ad3CBOR.GetByteString(), 0, ead3, 0, length);
     		}
     	}
     	if (error == true) {
@@ -1386,7 +1386,7 @@ public class MessageProcessor {
     	byte[] peerCredential = peerCredentialCBOR.GetByteString();
     	
         // Compute the external data for the external_aad, as a CBOR sequence
-    	externalData = computeExternalData(th3, peerCredential, ad3);
+    	externalData = computeExternalData(th3, peerCredential, ead3);
     	if (externalData == null) {
     		errMsg = new String("Error when computing the external data for MAC_3");
     		responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
@@ -1492,7 +1492,7 @@ public class MessageProcessor {
     	session.deleteTemporaryMaterial();
     	
     	
-		/* Return an indication that the protocol is completed, possibly with the provided Application Data */
+		/* Return an indication that the protocol is completed, possibly with the provided External Authorization Data */
 		
 		// A CBOR byte string with zero length, indicating that the protocol has successfully completed
 		byte[] reply = new byte[] {};
@@ -1501,9 +1501,9 @@ public class MessageProcessor {
 		// The Connection Identifier C_R used by the Responder
 		processingResult.add(connectionIdentifier);
 		
-		// Application Data from AD_3 (if present), as a CBOR byte string
-		if (ad3 != null) {
-			processingResult.add(CBORObject.FromObject(ad3));
+		// External Authorization Data from EAD_3 (if present), as a CBOR byte string
+		if (ead3 != null) {
+			processingResult.add(CBORObject.FromObject(ead3));
 		}
 		
 		session.setCurrentStep(Constants.EDHOC_AFTER_M3);
@@ -1855,10 +1855,10 @@ public class MessageProcessor {
     /**
      *  Write an EDHOC Message 1
      * @param session   The EDHOC session associated to this EDHOC message
-     * @param ad1   The application data, it can be null
+     * @param ead1   The External Authorization Data, it can be null
      * @return  The raw payload to transmit as EDHOC Message 1, or null in case of errors
      */
-	public static byte[] writeMessage1(EdhocSession session, byte[] ad1) {
+	public static byte[] writeMessage1(EdhocSession session, byte[] ead1) {
 		
         // Prepare the list of CBOR objects to build the CBOR sequence
         List<CBORObject> objectList = new ArrayList<>();
@@ -1972,9 +1972,9 @@ public class MessageProcessor {
         	Util.nicePrint("C_I", objBytes);
         }
         
-        // AD_1 as a CBOR byte string (if provided)
-        if (ad1 != null) {
-        	objectList.add(CBORObject.FromObject(ad1));
+        // EAD_1 as a CBOR byte string (if provided)
+        if (ead1 != null) {
+        	objectList.add(CBORObject.FromObject(ead1));
         }
         if (debugPrint) {
         	System.out.println("===================================");
@@ -1998,7 +1998,7 @@ public class MessageProcessor {
     /**
      *  Write an EDHOC Message 2
      * @param session   The EDHOC session associated to this EDHOC message
-     * @param ad2   The application data, it can be null
+     * @param ead2   The external authorization data, it can be null
      * @return  The raw payload to transmit as EDHOC Message 2 or EDHOC Error Message; or null in case of errors
      */
 	public static byte[] writeMessage2(EdhocSession session, byte[] ad2) {
@@ -2266,7 +2266,7 @@ public class MessageProcessor {
     /**
      *  Write an EDHOC Message 3
      * @param session   The EDHOC session associated to this EDHOC message
-     * @param ad3   The application data, it can be null
+     * @param ad3   The external authorization data, it can be null
      * @return  The raw payload to transmit as EDHOC Message 3 or EDHOC Error Message; or null in case of errors
      */
 	public static byte[] writeMessage3(EdhocSession session, byte[] ad3) {
@@ -3242,10 +3242,10 @@ public class MessageProcessor {
      *  Compute External_Data_2 / External_Data_3 for computing/verifying Signature_or_MAC_2 and Signature_or_MAC_3
      * @param th   The transcript hash TH2 or TH3
      * @param cred   The CRED of the long-term public key of the caller
-     * @param ad   Application data specified as AD_2 or AD_3, it can be null
+     * @param ad   External Authorization Data specified as EAD_2 or EAD_3, it can be null
      * @return  The external data for computing/verifying Signature_or_MAC_2 and Signature_or_MAC_3, or null in case of error
      */
-	public static byte[] computeExternalData(byte[] th, byte[] cred, byte[] ad) {
+	public static byte[] computeExternalData(byte[] th, byte[] cred, byte[] ead) {
 		
 		if (th == null || cred == null)
 			return null;
@@ -3260,9 +3260,9 @@ public class MessageProcessor {
         byte[] credSerializedCBOR = cred;
         externalDataList.add(CBORObject.FromObject(credSerializedCBOR));
         
-        // AD_2 / AD_3 is the third element of the CBOR Sequence (if provided)
-        if (ad != null) {
-            byte[] adSerializedCBOR = CBORObject.FromObject(ad).EncodeToBytes();
+        // EAD_2 / EAD_3 is the third element of the CBOR Sequence (if provided)
+        if (ead != null) {
+            byte[] adSerializedCBOR = CBORObject.FromObject(ead).EncodeToBytes();
             externalDataList.add(CBORObject.FromObject(adSerializedCBOR)); 
         }
 		
