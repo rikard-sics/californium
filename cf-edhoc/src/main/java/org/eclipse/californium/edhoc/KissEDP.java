@@ -5,7 +5,7 @@ package org.eclipse.californium.edhoc;
  * 
  */
 
-public class KissEPD implements EPD {
+public class KissEDP implements EDP {
 
 	// Process the External Authorization Data EAD_1 from EDHOC message_1
 	@Override

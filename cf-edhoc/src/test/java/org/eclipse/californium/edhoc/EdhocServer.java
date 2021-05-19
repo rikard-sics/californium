@@ -210,13 +210,13 @@ public class EdhocServer extends CoapServer {
 		add(wellKnownResource);
 		
 		// Specify the processor of External Authorization Data
-		KissEPD epd = new KissEPD();
+		KissEDP edp = new KissEDP();
 		
 		// prepare the set of information for this EDHOC endpoint
 		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCred, cred, keyPair, peerPublicKeys,
 																	peerCredentials, edhocSessions, usedConnectionIds,
 																	supportedCiphersuites, db, uriLocal,
-																	OSCORE_REPLAY_WINDOW, appStatements, epd);
+																	OSCORE_REPLAY_WINDOW, appStatements, edp);
 		
 		// provide an instance of a .well-known/edhoc resource
 		CoapResource edhocResource = new EdhocResource("edhoc", edhocEndpointInfo);

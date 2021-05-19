@@ -291,7 +291,7 @@ public class EdhocLayer extends AbstractLayer {
 					//   i) A zero-length CBOR byte string, indicating successful processing;
 					//  ii) The Connection Identifier of the Responder, i.e. C_R
 					// iii) Optionally, the External Authorization Data EAD_3
-					mySession.getEPD().processEAD3(processingResult.get(2).GetByteString());
+					mySession.getEDP().processEAD3(processingResult.get(2).GetByteString());
 				}
 				
 				cR = processingResult.get(1);
