@@ -4,7 +4,7 @@ package org.eclipse.californium.edhoc;
  * An interface to process External Authorization Data
  */
 
-public interface EPD {
+public interface EDP {
 	
 	// Process the External Authorization Data EAD_1 from EDHOC message_1
 	public abstract void processEAD1(byte[] ead1);
