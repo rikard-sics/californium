@@ -61,14 +61,14 @@ public class EdhocEndpointInfo {
 	private Map<String, AppStatement> appStatements;
 	
 	// The processor of External Authorization Data
-	private EPD epd;
+	private EDP edp;
 	
 	
 	public EdhocEndpointInfo(CBORObject idCred,
 							 byte[] cred, OneKey keyPair, Map<CBORObject, OneKey> peerPublicKeys,
 							 Map<CBORObject, CBORObject> peerCredentials, Map<CBORObject, EdhocSession> edhocSessions,
 							 List<Set<Integer>> usedConnectionIds, List<Integer> supportedCiphersuites, HashMapCtxDB db,
-							 String uri, int OSCORE_REPLAY_WINDOW, Map<String, AppStatement> appStatements, EPD epd) {
+							 String uri, int OSCORE_REPLAY_WINDOW, Map<String, AppStatement> appStatements, EDP edp) {
 				
 		this.idCred = idCred;
 		this.cred = cred;
@@ -82,7 +82,7 @@ public class EdhocEndpointInfo {
 		this.uri = uri;
 		this.OSCORE_REPLAY_WINDOW = OSCORE_REPLAY_WINDOW;
 		this.appStatements = appStatements;
-		this.epd = epd;
+		this.edp = edp;
 		
 	}
 	
@@ -97,8 +97,8 @@ public class EdhocEndpointInfo {
 	}
 	
 	// Return a reference to the processor of External Authorization Data
-	public EPD getEpd() {
-		return epd;
+	public EDP getEdp() {
+		return edp;
 	}
 	
 	// Return the identity key pair
