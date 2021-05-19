@@ -209,8 +209,11 @@ public class VectorsTxtTest {
 			authMethods.add(i);
 		AppStatement appStatement = new AppStatement(true, authMethods, false, false);
 		
+		// Specify the processor of External Authorization Data
+		KissEPD epd = new KissEPD();
+		
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk,
-				                                idCred, cred, cipherSuites, appStatement);
+				                                idCred, cred, cipherSuites, appStatement, epd);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = initiatorEphemeralPrivateList.get(index);
