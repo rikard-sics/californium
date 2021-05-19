@@ -87,8 +87,9 @@ public class MessageProcessorTest {
 
 		// Create the session for the Initiator (with only the minimal set of information required for this test)
 		boolean initiator = true;
+		KissEPD epd = new KissEPD();
 		EdhocSession sessionInitiator = new EdhocSession(initiator, methodCorr, connectionIdInitiator,
-												identityKeyInit, idCredI, credI, supportedCipherSuites, appStatement);
+												identityKeyInit, idCredI, credI, supportedCipherSuites, appStatement, epd);
 		
 		edhocSessions.put(CBORObject.FromObject(connectionIdInitiator), sessionInitiator);
 
@@ -114,8 +115,9 @@ public class MessageProcessorTest {
 
 		// Create the session for the Responder (with only the minimal set of information required for this test)
 		initiator = false;
+		KissEPD epd2 = new KissEPD();
 		EdhocSession sessionResponder = new EdhocSession(initiator, methodCorr, connectionIdResponder,
-												identityKeyResp, idCredR, credR, supportedCipherSuites, appStatement);
+												identityKeyResp, idCredR, credR, supportedCipherSuites, appStatement, epd2);
 		
 		edhocSessions.put(CBORObject.FromObject(connectionIdResponder), sessionResponder);
 		
@@ -209,8 +211,11 @@ public class MessageProcessorTest {
 			authMethods.add(i);
 		AppStatement appStatement = new AppStatement(true, authMethods, false, false);
 		
+		// Specify the processor of External Authorization Data
+		KissEPD epd = new KissEPD();
+		
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk,
-				                                idCred, cred, cipherSuites, appStatement);
+				                                idCred, cred, cipherSuites, appStatement, epd);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = Utils.hexToBytes("8f781a095372f85b6d9f6109ae422611734d7dbfa0069a2df2935bb2e053bf35");
@@ -261,8 +266,11 @@ public class MessageProcessorTest {
 			authMethods.add(i);
 		AppStatement appStatement = new AppStatement(true, authMethods, false, false);
 		
+		// Specify the processor of External Authorization Data
+		KissEPD epd = new KissEPD();
+		
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk,
-				                                idCred, cred, cipherSuites, appStatement);
+				                                idCred, cred, cipherSuites, appStatement, epd);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = Utils.hexToBytes("ae11a0db863c0227e53992feb8f5924c50d0a7ba6eeab4ad1ff24572f4f57cfa");
@@ -313,8 +321,11 @@ public class MessageProcessorTest {
 			authMethods.add(i);
 		AppStatement appStatement = new AppStatement(true, authMethods, false, false);
 		
+		// Specify the processor of External Authorization Data
+		KissEPD epd = new KissEPD();
+		
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk,
-				                                idCred, cred, cipherSuites, appStatement);
+				                                idCred, cred, cipherSuites, appStatement, epd);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = Utils.hexToBytes("0ae799775cb151bfc2548735f44acf1d9429cf9a95ddcd2a139e3a28d863a081");
@@ -442,9 +453,12 @@ public class MessageProcessorTest {
 			authMethods.add(i);
 		AppStatement appStatement = new AppStatement(true, authMethods, false, false);
 		
+		// Specify the processor of External Authorization Data
+		KissEPD epd = new KissEPD();
+		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdResponder,
-												identityKey, idCredR, credR, supportedCipherSuites, appStatement);
+												identityKey, idCredR, credR, supportedCipherSuites, appStatement, epd);
 
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -536,9 +550,12 @@ public class MessageProcessorTest {
 			authMethods.add(i);
 		AppStatement appStatement = new AppStatement(true, authMethods, false, false);
 		
+		// Specify the processor of External Authorization Data
+		KissEPD epd = new KissEPD();
+		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdResponder,
-												identityKey, idCredR, credR, supportedCipherSuites, appStatement);
+												identityKey, idCredR, credR, supportedCipherSuites, appStatement, epd);
 
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -629,9 +646,12 @@ public class MessageProcessorTest {
 			authMethods.add(i);
 		AppStatement appStatement = new AppStatement(true, authMethods, false, false);
 		
+		// Specify the processor of External Authorization Data
+		KissEPD epd = new KissEPD();
+		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdResponder,
-												identityKey, idCredR, credR, supportedCipherSuites, appStatement);
+												identityKey, idCredR, credR, supportedCipherSuites, appStatement, epd);
 
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -733,9 +753,12 @@ public class MessageProcessorTest {
 			authMethods.add(i);
 		AppStatement appStatement = new AppStatement(true, authMethods, false, false);
 		
+		// Specify the processor of External Authorization Data
+		KissEPD epd = new KissEPD();
+		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdInitiator,
-												identityKey, idCredI, credI, supportedCipherSuites, appStatement);
+												identityKey, idCredI, credI, supportedCipherSuites, appStatement, epd);
 
 		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -858,9 +881,12 @@ public class MessageProcessorTest {
 			authMethods.add(i);
 		AppStatement appStatement = new AppStatement(true, authMethods, false, false);
 		
+		// Specify the processor of External Authorization Data
+		KissEPD epd = new KissEPD();
+		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdInitiator,
-												identityKey, idCredI, credI, supportedCipherSuites, appStatement);
+												identityKey, idCredI, credI, supportedCipherSuites, appStatement, epd);
 
 		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -981,9 +1007,12 @@ public class MessageProcessorTest {
 			authMethods.add(i);
 		AppStatement appStatement = new AppStatement(true, authMethods, false, false);
 		
+		// Specify the processor of External Authorization Data
+		KissEPD epd = new KissEPD();
+		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionIdInitiator,
-												identityKey, idCredI, credI, supportedCipherSuites, appStatement);
+												identityKey, idCredI, credI, supportedCipherSuites, appStatement, epd);
 
 		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);

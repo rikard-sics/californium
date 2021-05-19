@@ -43,6 +43,13 @@ public class EdhocSession {
 	private List<Integer> supportedCiphersuites;
 	private AppStatement appStatement;
 	
+	// The processor to use for External Authorization Data.
+	//
+	// It is required to be also in the EDHOC session, to be accessible
+	// also by the EDHOC layer, when receiving an EDHOC+OSCORE request
+	// targeting a different resource than an EDHOC resource. 
+	private EPD epd;
+	
 	private int currentStep;
 	private int selectedCiphersuite;
 	
@@ -72,7 +79,8 @@ public class EdhocSession {
 	private byte[] message3 = null;
 	
 	public EdhocSession(boolean initiator, int methodCorr, byte[] connectionId, OneKey ltk,
-						CBORObject idCred, byte[] cred, List<Integer> cipherSuites, AppStatement appStatement) {
+						CBORObject idCred, byte[] cred, List<Integer> cipherSuites,
+						AppStatement appStatement, EPD epd) {
 		
 		this.firstUse = true;
 		
@@ -85,6 +93,7 @@ public class EdhocSession {
 		this.cred = cred;
 		this.supportedCiphersuites = cipherSuites;
 		this.appStatement = appStatement;
+		this.epd = epd;
 		
 		this.selectedCiphersuite = supportedCiphersuites.get(0);		
 		setEphemeralKey();
@@ -243,7 +252,16 @@ public class EdhocSession {
 
 		return this.appStatement;
 		
-	}	
+	}
+	
+	/**
+	 * @return  the processor of External Authorization Data used for this session
+	 */
+	public EPD getEPD() {
+		
+		return this.epd;
+		
+	}
 	
 	/**
 	 * Set the current step in the execution of the EDHOC protocol
