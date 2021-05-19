@@ -125,11 +125,11 @@ public class EdhocLayer extends AbstractLayer {
 			// Retrieve the Security Context used to protect the request
 			OSCoreCtx ctx = getContextForOutgoing(exchange);
 			
-			// The connectionIdentifier C_R is the Recipient ID for this peer
-			byte[] cR = ctx.getRecipientId();
+			// The connectionIdentifier C_I is the Recipient ID for this peer
+			byte[] cI = ctx.getRecipientId();
 			
 			// Retrieve the EDHOC session associated to C_R and storing EDHOC message_3
-			EdhocSession session = this.edhocSessions.get(CBORObject.FromObject(cR));
+			EdhocSession session = this.edhocSessions.get(CBORObject.FromObject(cI));
 						
 			// Extract CIPHERTEXT_3 as second element of EDHOC message_3
 			byte[] message3 = session.getMessage3();
