@@ -210,7 +210,7 @@ public class VectorsTxtTest {
 		AppStatement appStatement = new AppStatement(true, authMethods, false, false);
 		
 		// Specify the processor of External Authorization Data
-		KissEPD epd = new KissEPD();
+		KissEDP epd = new KissEDP();
 		
 		EdhocSession session = new EdhocSession(initiator, methodCorr, connectionId, ltk,
 				                                idCred, cred, cipherSuites, appStatement, epd);

@@ -229,13 +229,13 @@ public class EdhocClient {
 		}
 		
 		// Specify the processor of External Authorization Data
-		KissEPD epd = new KissEPD();
+		KissEDP edp = new KissEDP();
 		
 		// Prepare the set of information for this EDHOC endpoint
 		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCred, cred, keyPair, peerPublicKeys,
 																	peerCredentials, edhocSessions, usedConnectionIds,
 																	supportedCiphersuites, db, edhocURI,
-																	OSCORE_REPLAY_WINDOW, appStatements, epd);
+																	OSCORE_REPLAY_WINDOW, appStatements, edp);
 		
 		edhocExchangeAsInitiator(args, uri, edhocEndpointInfo);
 
@@ -560,7 +560,7 @@ public class EdhocClient {
 		EdhocSession session = MessageProcessor.createSessionAsInitiator(authenticationMethod, correlation,
                  edhocEndpointInfo.getKeyPair(), edhocEndpointInfo.getIdCred(), edhocEndpointInfo.getCred(),
                  edhocEndpointInfo.getSupportedCiphersuites(), edhocEndpointInfo.getUsedConnectionIds(),
-                 appStatement, edhocEndpointInfo.getEpd());
+                 appStatement, edhocEndpointInfo.getEdp());
 		
 		// At this point, the initiator may overwrite the information in the EDHOC session about the supported ciphersuites
 		// and the selected ciphersuite, based on a previously received EDHOC Error Message
@@ -704,7 +704,7 @@ public class EdhocClient {
 				
 				// Deliver EAD_2 to the application, if present
 				if (processingResult.size() == 2) {
-					edhocEndpointInfo.getEpd().processEAD2(processingResult.get(1).GetByteString());
+					edhocEndpointInfo.getEdp().processEAD2(processingResult.get(1).GetByteString());
 				}
 				
 				session.setCurrentStep(Constants.EDHOC_AFTER_M2);
