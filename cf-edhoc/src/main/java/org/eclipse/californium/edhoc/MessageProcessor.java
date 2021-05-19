@@ -2779,7 +2779,7 @@ public class MessageProcessor {
 												  OneKey keyPair, CBORObject idCredI, byte[] credI,
 			  									  List<Integer> supportedCiphersuites,
 			  									  List<Set<Integer>> usedConnectionIds,
-			  									  AppStatement appStatement, EPD epd) {
+			  									  AppStatement appStatement, EDP epd) {
 		
 		int methodCorr = (4 * authenticationMethod) + correlationMethod;
 		
@@ -2807,7 +2807,7 @@ public class MessageProcessor {
      */
 	public static EdhocSession createSessionAsResponder(byte[] message1, OneKey keyPair, CBORObject idCredR, byte[] credR,
 			  									  List<Integer> supportedCiphersuites, List<Set<Integer>> usedConnectionIds,
-			  									  AppStatement appStatement, EPD epd) {
+			  									  AppStatement appStatement, EDP epd) {
 		
 		CBORObject[] objectListMessage1 = CBORObject.DecodeSequenceFromBytes(message1);
 		int index = -1;

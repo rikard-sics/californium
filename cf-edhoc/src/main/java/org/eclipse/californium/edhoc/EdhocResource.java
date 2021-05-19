@@ -162,14 +162,14 @@ class EdhocResource extends CoapResource {
 				
 				// Deliver EAD_1 to the application, if present
 				if (processingResult.size() == 2) {
-					edhocEndpointInfo.getEpd().processEAD1(processingResult.get(1).GetByteString());
+					edhocEndpointInfo.getEdp().processEAD1(processingResult.get(1).GetByteString());
 				}
 				
 				session = MessageProcessor.createSessionAsResponder(message, edhocEndpointInfo.getKeyPair(),
 																    edhocEndpointInfo.getIdCred(), edhocEndpointInfo.getCred(),
 																    edhocEndpointInfo.getSupportedCiphersuites(),
 																    edhocEndpointInfo.getUsedConnectionIds(),
-																    appStatement, edhocEndpointInfo.getEpd());
+																    appStatement, edhocEndpointInfo.getEdp());
 				
 				// Compute the EDHOC Message 2
 				nextMessage = MessageProcessor.writeMessage2(session, ead2);
@@ -313,7 +313,7 @@ class EdhocResource extends CoapResource {
 					//   i) A zero-length CBOR byte string, indicating successful processing;
 					//  ii) The Connection Identifier of the Responder, i.e. C_R
 					// iii) Optionally, the External Authorization Data EAD_3
-					edhocEndpointInfo.getEpd().processEAD3(processingResult.get(2).GetByteString());
+					edhocEndpointInfo.getEdp().processEAD3(processingResult.get(2).GetByteString());
 				}
 				
 				CBORObject cR = processingResult.get(1);
