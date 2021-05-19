@@ -2772,13 +2772,14 @@ public class MessageProcessor {
      * @param supportedCipherSuites   The list of ciphersuites supported by the Initiator
      * @param usedConnectionIds   The list of allocated Connection Identifiers for the Initiator
      * @param appStatement   The applicability statement used for this session
+     * @param epd   The processor of External Authentication Data used for this session
      * @return  The newly created EDHOC session
      */
 	public static EdhocSession createSessionAsInitiator(int authenticationMethod, int correlationMethod,
 												  OneKey keyPair, CBORObject idCredI, byte[] credI,
 			  									  List<Integer> supportedCiphersuites,
 			  									  List<Set<Integer>> usedConnectionIds,
-			  									  AppStatement appStatement) {
+			  									  AppStatement appStatement, EPD epd) {
 		
 		int methodCorr = (4 * authenticationMethod) + correlationMethod;
 		
@@ -2786,7 +2787,7 @@ public class MessageProcessor {
 		byte[] connectionId = new byte[] {(byte) 0x16}; // Forced and aligned with the test vector
 		
         EdhocSession mySession = new EdhocSession(true, methodCorr, connectionId, keyPair,
-        										  idCredI, credI, supportedCiphersuites, appStatement);
+        										  idCredI, credI, supportedCiphersuites, appStatement, epd);
 		
 		return mySession;
 		
@@ -2801,11 +2802,12 @@ public class MessageProcessor {
      * @param supportedCipherSuites   The list of ciphersuites supported by the Responder
      * @param usedConnectionIds   The list of allocated Connection Identifiers for the Responder
      * @param appStatement   The applicability statement used for this session
+     * @param epd   The processor of External Authentication Data used for this session
      * @return  The newly created EDHOC session
      */
 	public static EdhocSession createSessionAsResponder(byte[] message1, OneKey keyPair, CBORObject idCredR, byte[] credR,
 			  									  List<Integer> supportedCiphersuites, List<Set<Integer>> usedConnectionIds,
-			  									  AppStatement appStatement) {
+			  									  AppStatement appStatement, EPD epd) {
 		
 		CBORObject[] objectListMessage1 = CBORObject.DecodeSequenceFromBytes(message1);
 		int index = -1;
@@ -2845,7 +2847,7 @@ public class MessageProcessor {
 		byte[] connectionId = new byte[] {(byte) 0x00}; // Forced and aligned with the test vector
 		
 		EdhocSession mySession = new EdhocSession(false, methodCorr, connectionId, keyPair,
-												  idCredR, credR, supportedCiphersuites, appStatement);
+												  idCredR, credR, supportedCiphersuites, appStatement, epd);
 		
 		// Set the selected cipher suite
 		mySession.setSelectedCiphersuite(selectedCipherSuite);

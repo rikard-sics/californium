@@ -291,7 +291,7 @@ public class EdhocLayer extends AbstractLayer {
 					//   i) A zero-length CBOR byte string, indicating successful processing;
 					//  ii) The Connection Identifier of the Responder, i.e. C_R
 					// iii) Optionally, the External Authorization Data EAD_3
-					processAD3(processingResult.get(2).GetByteString());
+					mySession.getEPD().processEAD3(processingResult.get(2).GetByteString());
 				}
 				
 				cR = processingResult.get(1);
@@ -442,16 +442,7 @@ public class EdhocLayer extends AbstractLayer {
 		}
 
 		return kid;
-	}
-	
-	/*
-	 * Process external authorization data conveyed in EAD_3 in EDHOC Message 3
-	 */
-	private void processAD3(byte[] ead3) {
-		// Do nothing
-		System.out.println("Entered processEAD3()");
-	}
-	
+	}	
 	
 	/*
 	 * Send a CoAP error message in response to the received EDHOC+OSCORE request
