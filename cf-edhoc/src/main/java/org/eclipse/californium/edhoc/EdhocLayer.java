@@ -130,7 +130,19 @@ public class EdhocLayer extends AbstractLayer {
 			
 			// Retrieve the EDHOC session associated to C_R and storing EDHOC message_3
 			EdhocSession session = this.edhocSessions.get(CBORObject.FromObject(cI));
-						
+			
+			// Consistency checks
+			if (session == null) {
+				System.err.println("Unable to retrieve the EDHOC session when sending an EDHOC+OSCORE request\n");
+				return;
+			}
+			if (!session.isInitiator() || session.getCurrentStep() != Constants.EDHOC_SENT_M3 ||		
+					!Arrays.equals(session.getPeerConnectionId(), ctx.getSenderId())) {
+				
+				System.err.println("Retrieved inconsistent EDHOC session when sending an EDHOC+OSCORE request");
+				return;
+			}
+			
 			// Extract CIPHERTEXT_3 as second element of EDHOC message_3
 			byte[] message3 = session.getMessage3();
 			CBORObject[] message3Elements = CBORObject.DecodeSequenceFromBytes(message3);
@@ -190,7 +202,7 @@ public class EdhocLayer extends AbstractLayer {
 			
 			// CBOR objects included in the received CBOR sequence
 			CBORObject[] receivedOjectList = CBORObject.DecodeSequenceFromBytes(oldPayload);
-			
+						
 			if (receivedOjectList == null || receivedOjectList.length != 2) {
 				error = true;
 			}
@@ -238,13 +250,19 @@ public class EdhocLayer extends AbstractLayer {
 			
 			EdhocSession mySession = edhocSessions.get(CBORObject.FromObject(kid));
 			
-			// EDHOC session not found
+			// Consistency checks
     		if (mySession == null) {
     			String responseString = new String("Unable to retrieve the EDHOC session when receiving an EDHOC+OSCORE request\n");
 				System.err.println(responseString);
 				sendErrorResponse(exchange, responseString, ResponseCode.BAD_REQUEST);
             	return;
     		}
+			if (mySession.isInitiator() || mySession.getCurrentStep() != Constants.EDHOC_SENT_M2 ||		
+					!Arrays.equals(mySession.getConnectionId(), kid)) {
+				
+				System.err.println("Retrieved inconsistent EDHOC session when receiving an EDHOC+OSCORE request");
+				return;
+			}
     		
     		int correlation = mySession.getCorrelation();
     		
