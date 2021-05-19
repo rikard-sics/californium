@@ -237,7 +237,11 @@ public class EdhocClient {
 																	supportedCiphersuites, db, edhocURI,
 																	OSCORE_REPLAY_WINDOW, appStatements, edp);
 		
-		edhocExchangeAsInitiator(args, uri, edhocEndpointInfo);
+		// Possibly specify external authorization data for EAD_1, or null if none have to be provided
+		// The first element of EAD is always a CBOR integer, followed by one or multiple additional elements 
+		CBORObject[] ead1 = null;
+		
+		edhocExchangeAsInitiator(args, uri, edhocEndpointInfo, ead1);
 
 	}
 	
@@ -484,7 +488,8 @@ public class EdhocClient {
 		
 	}
 	
-	private static void edhocExchangeAsInitiator(final String args[], final URI targetUri, EdhocEndpointInfo edhocEndpointInfo) {
+	private static void edhocExchangeAsInitiator(final String args[], final URI targetUri,
+												 EdhocEndpointInfo edhocEndpointInfo, CBORObject[] ead1) {
 		
 		CoapClient client = new CoapClient(targetUri);
 		
@@ -550,9 +555,6 @@ public class EdhocClient {
 		
 		/* Prepare and send EDHOC Message 1 */
 		
-		// Possibly specify external authorization data for EAD_1, or null if none have to be provided
-		byte[] ead1 = null;
-        
 		String uriAsString = targetUri.toString();
 		AppStatement appStatement = edhocEndpointInfo.getAppStatements().get(uriAsString);
 		
@@ -682,7 +684,8 @@ public class EdhocClient {
         	List<CBORObject> processingResult = new ArrayList<CBORObject>();
 			
 			// Possibly specify external authorization data for EAD_3, or null if none have to be provided
-			byte[] ead3 = null;
+        	// The first element of EAD is always a CBOR integer, followed by one or multiple additional elements
+			CBORObject[] ead3 = null;
 			
 			/* Start handling EDHOC Message 2 */
 			
@@ -703,8 +706,14 @@ public class EdhocClient {
 			if (nextPayload.length == 0) {
 				
 				// Deliver EAD_2 to the application, if present
-				if (processingResult.size() == 2) {
-					edhocEndpointInfo.getEdp().processEAD2(processingResult.get(1).GetByteString());
+				if (processingResult.size() == 2 && processingResult.get(1).getType() == CBORType.Array) {
+				    // This inspected element of 'processing_result' should really be a CBOR Array at this point
+				    int length = processingResult.get(1).size();
+				    CBORObject[] ead2 = new CBORObject[length];
+				    for (int i = 0; i < length; i++) {
+				        ead2[i] = processingResult.get(1).get(i);
+				    }
+				    edhocEndpointInfo.getEdp().processEAD2(ead2);
 				}
 				
 				session.setCurrentStep(Constants.EDHOC_AFTER_M2);
