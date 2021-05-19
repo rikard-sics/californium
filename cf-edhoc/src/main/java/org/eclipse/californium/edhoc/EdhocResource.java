@@ -109,7 +109,8 @@ class EdhocResource extends CoapResource {
 		List<CBORObject> processingResult = new ArrayList<CBORObject>();
 		
 		// Possibly specify external authorization data for EAD_2, or null if none have to be provided
-		byte[] ead2 = null;		
+		// The first element of EAD is always a CBOR integer, followed by one or multiple additional elements 
+		CBORObject[] ead2 = null;		
 		
 		// The received message is an actual EDHOC message
 		
@@ -161,8 +162,14 @@ class EdhocResource extends CoapResource {
 			if (nextMessage.length == 0) {
 				
 				// Deliver EAD_1 to the application, if present
-				if (processingResult.size() == 2) {
-					edhocEndpointInfo.getEdp().processEAD1(processingResult.get(1).GetByteString());
+				if (processingResult.size() == 2 && processingResult.get(1).getType() == CBORType.Array) {
+					// This inspected element of 'processing_result' should really be a CBOR Array at this point
+					int length = processingResult.get(1).size();
+					CBORObject[] ead1 = new CBORObject[length];
+					for (int i = 0; i < length; i++) {
+						ead1[i] = processingResult.get(1).get(i);
+					}
+					edhocEndpointInfo.getEdp().processEAD1(ead1);
 				}
 				
 				session = MessageProcessor.createSessionAsResponder(message, edhocEndpointInfo.getKeyPair(),
@@ -308,12 +315,19 @@ class EdhocResource extends CoapResource {
 			if (nextMessage.length == 0) {
 				
 				// Deliver EAD_3 to the application, if present
-				if (processingResult.size() == 3) {
+				if (processingResult.size() == 3 && processingResult.get(2).getType() == CBORType.Array) {
 					// Elements of 'processingResult' are:
 					//   i) A zero-length CBOR byte string, indicating successful processing;
 					//  ii) The Connection Identifier of the Responder, i.e. C_R
-					// iii) Optionally, the External Authorization Data EAD_3
-					edhocEndpointInfo.getEdp().processEAD3(processingResult.get(2).GetByteString());
+					// iii) Optionally, the External Authorization Data EAD_3, as elements of a CBOR array
+					
+					// This inspected element of 'processingResult' should really be a CBOR Array at this point
+					int length = processingResult.get(2).size();
+					CBORObject[] ead3 = new CBORObject[length];
+					for (int i = 0; i < length; i++) {
+						ead3[i] = processingResult.get(2).get(i);
+					}
+					edhocEndpointInfo.getEdp().processEAD3(ead3);
 				}
 				
 				CBORObject cR = processingResult.get(1);
