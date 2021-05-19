@@ -60,12 +60,15 @@ public class EdhocEndpointInfo {
 	// The collection of applicability statements - The lookup key is the full URI of the EDHOC resource
 	private Map<String, AppStatement> appStatements;
 	
+	// The processor of External Authorization Data
+	private EPD epd;
+	
 	
 	public EdhocEndpointInfo(CBORObject idCred,
 							 byte[] cred, OneKey keyPair, Map<CBORObject, OneKey> peerPublicKeys,
 							 Map<CBORObject, CBORObject> peerCredentials, Map<CBORObject, EdhocSession> edhocSessions,
 							 List<Set<Integer>> usedConnectionIds, List<Integer> supportedCiphersuites, HashMapCtxDB db,
-							 String uri, int OSCORE_REPLAY_WINDOW, Map<String, AppStatement> appStatements) {
+							 String uri, int OSCORE_REPLAY_WINDOW, Map<String, AppStatement> appStatements, EPD epd) {
 				
 		this.idCred = idCred;
 		this.cred = cred;
@@ -79,6 +82,7 @@ public class EdhocEndpointInfo {
 		this.uri = uri;
 		this.OSCORE_REPLAY_WINDOW = OSCORE_REPLAY_WINDOW;
 		this.appStatements = appStatements;
+		this.epd = epd;
 		
 	}
 	
@@ -92,11 +96,15 @@ public class EdhocEndpointInfo {
 		return appStatements;
 	}
 	
+	// Return a reference to the processor of External Authorization Data
+	public EPD getEpd() {
+		return epd;
+	}
+	
 	// Return the identity key pair
 	public OneKey getKeyPair() {
 		return keyPair;
 	}
-	
 	
 	// Return the ID_CRED used by this peer
 	public CBORObject getIdCred() {

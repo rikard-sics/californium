@@ -196,7 +196,7 @@ public class EdhocClient {
 		AppStatement appStatement = new AppStatement(true, authMethods, false, false);
 		
 		appStatements.put(edhocURI, appStatement);
-		
+				
     	for (int i = 0; i < 4; i++) {
         	// Empty sets of assigned Connection Identifiers; one set for each possible size in bytes.
         	// The set with index 0 refers to Connection Identifiers with size 1 byte
@@ -227,11 +227,15 @@ public class EdhocClient {
 			System.err.println("Invalid URI: " + e.getMessage());
 			System.exit(-1);
 		}
+		
+		// Specify the processor of External Authorization Data
+		KissEPD epd = new KissEPD();
+		
 		// Prepare the set of information for this EDHOC endpoint
 		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCred, cred, keyPair, peerPublicKeys,
 																	peerCredentials, edhocSessions, usedConnectionIds,
 																	supportedCiphersuites, db, edhocURI,
-																	OSCORE_REPLAY_WINDOW, appStatements);
+																	OSCORE_REPLAY_WINDOW, appStatements, epd);
 		
 		edhocExchangeAsInitiator(args, uri, edhocEndpointInfo);
 
@@ -555,7 +559,8 @@ public class EdhocClient {
 		int correlation = appStatement.getCorrelation() ? Constants.EDHOC_CORR_1 : Constants.EDHOC_CORR_0;
 		EdhocSession session = MessageProcessor.createSessionAsInitiator(authenticationMethod, correlation,
                  edhocEndpointInfo.getKeyPair(), edhocEndpointInfo.getIdCred(), edhocEndpointInfo.getCred(),
-                 edhocEndpointInfo.getSupportedCiphersuites(), edhocEndpointInfo.getUsedConnectionIds(), appStatement);
+                 edhocEndpointInfo.getSupportedCiphersuites(), edhocEndpointInfo.getUsedConnectionIds(),
+                 appStatement, edhocEndpointInfo.getEpd());
 		
 		// At this point, the initiator may overwrite the information in the EDHOC session about the supported ciphersuites
 		// and the selected ciphersuite, based on a previously received EDHOC Error Message
@@ -699,7 +704,7 @@ public class EdhocClient {
 				
 				// Deliver EAD_2 to the application, if present
 				if (processingResult.size() == 2) {
-					processEAD2(processingResult.get(1).GetByteString());
+					edhocEndpointInfo.getEpd().processEAD2(processingResult.get(1).GetByteString());
 				}
 				
 				session.setCurrentStep(Constants.EDHOC_AFTER_M2);
@@ -1036,30 +1041,6 @@ public class EdhocClient {
         
 		client.shutdown();
 		
-	}
-	
-	/*
-	 * Process external authorization data conveyed in EAD_1 in EDHOC Message 1
-	 */
-	private static void processEAD1(byte[] ead1) {
-		// Do nothing
-		System.out.println("Entered processEAD1()");
-	}
-	
-	/*
-	 * Process external authorization data conveyed in EAD_2 in EDHOC Message 2
-	 */
-	private static void processEAD2(byte[] ead2) {
-		// Do nothing
-		System.out.println("Entered processEAD2()");
-	}
-	
-	/*
-	 * Process external authorization data conveyed in EAD_3 in EDHOC Message 3
-	 */
-	private static void processEAD3(byte[] ead3) {
-		// Do nothing
-		System.out.println("Entered processEAD3()");
 	}
 	
 	/*
