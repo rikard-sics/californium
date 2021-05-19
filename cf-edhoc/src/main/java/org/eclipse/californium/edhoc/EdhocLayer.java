@@ -286,12 +286,19 @@ public class EdhocLayer extends AbstractLayer {
 			if (nextMessage.length == 0) {
 			
 				// Deliver AD_3 to the application, if present
-				if (processingResult.size() == 3) {
+				if (processingResult.size() == 3 && processingResult.get(2).getType() == CBORType.Array) {
 					// Elements of 'processingResult' are:
 					//   i) A zero-length CBOR byte string, indicating successful processing;
 					//  ii) The Connection Identifier of the Responder, i.e. C_R
-					// iii) Optionally, the External Authorization Data EAD_3
-					mySession.getEDP().processEAD3(processingResult.get(2).GetByteString());
+					// iii) Optionally, the External Authorization Data EAD_3, as elements of a CBOR array
+					
+					// This inspected element of 'processingResult' should really be a CBOR Array at this point
+					int length = processingResult.get(2).size();
+					CBORObject[] ead3 = new CBORObject[length];
+					for (int i = 0; i < length; i++) {
+						ead3[i] = processingResult.get(2).get(i);
+					}
+					mySession.getEdp().processEAD3(ead3);
 				}
 				
 				cR = processingResult.get(1);

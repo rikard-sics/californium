@@ -194,7 +194,7 @@ public class MessageProcessorTest {
 		List<Integer> cipherSuites = new ArrayList<Integer>();
 		cipherSuites.add(0);
 		OneKey ltk = Util.generateKeyPair(KeyKeys.OKP_Ed25519.AsInt32());
-		byte[] ad1 = null;
+		CBORObject[] ead1 = null;
 		
 		// Just for method compatibility; it is not used for EDHOC Message 1
 		byte[] cred = Utils.hexToBytes("47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb28f9cf6180b5a6af31e80209a085cfbf95f3fdcf9b18b693d6c0e0d0ffb8e3f9a32a50859ecd0bfcff2c218");
@@ -224,7 +224,7 @@ public class MessageProcessorTest {
 		session.setEphemeralKey(ek);
 
 		// Now write EDHOC message 1
-		byte[] message1 = MessageProcessor.writeMessage1(session, ad1);
+		byte[] message1 = MessageProcessor.writeMessage1(session, ead1);
 
 		// Compare with the expected value from the test vectors
 
@@ -248,7 +248,7 @@ public class MessageProcessorTest {
 		List<Integer> cipherSuites = new ArrayList<Integer>();
 		cipherSuites.add(0);
 		OneKey ltk = Util.generateKeyPair(KeyKeys.OKP_X25519.AsInt32());
-		byte[] ad1 = null;
+		CBORObject[] ead1 = null;
 		
 		// Just for method compatibility; it is not used for EDHOC Message 1
 		byte[] idCredKid = new byte[] {(byte) 0x24};
@@ -279,7 +279,7 @@ public class MessageProcessorTest {
 		session.setEphemeralKey(ek);
 
 		// Now write EDHOC message 1
-		byte[] message1 = MessageProcessor.writeMessage1(session, ad1);
+		byte[] message1 = MessageProcessor.writeMessage1(session, ead1);
 
 		// Compare with the expected value from the test vectors
 		
@@ -303,7 +303,7 @@ public class MessageProcessorTest {
 		List<Integer> cipherSuites = new ArrayList<Integer>();
 		cipherSuites.add(2);
 		OneKey ltk = Util.generateKeyPair(KeyKeys.EC2_P256.AsInt32());
-		byte[] ad1 = null;
+		CBORObject[] ead1 = null;
 		
 		// Just for method compatibility; it is not used for EDHOC Message 1
 		byte[] idCredKid = new byte[] {(byte) 0x23};
@@ -334,7 +334,7 @@ public class MessageProcessorTest {
 		session.setEphemeralKey(ek);
 
 		// Now write EDHOC message 1
-		byte[] message1 = MessageProcessor.writeMessage1(session, ad1);
+		byte[] message1 = MessageProcessor.writeMessage1(session, ead1);
 
 		// Compare with the expected value from the test vectors
 		
@@ -356,7 +356,7 @@ public class MessageProcessorTest {
 
 		boolean initiator = false;
 		int methodCorr = 1;
-		byte[] ad2 = null;
+		CBORObject[] ead2 = null;
 		
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 1);
@@ -476,7 +476,7 @@ public class MessageProcessorTest {
 		
 		
 		// Now write EDHOC message 2
-		byte[] message2 = MessageProcessor.writeMessage2(session, ad2);
+		byte[] message2 = MessageProcessor.writeMessage2(session, ead2);
 
 		// Compare with the expected value from the test vectors
 		
@@ -498,7 +498,7 @@ public class MessageProcessorTest {
 
 		boolean initiator = false;
 		int methodCorr = 13;
-		byte[] ad2 = null;
+		CBORObject[] ead2 = null;
 		
 		
 		/* Responder information*/
@@ -573,7 +573,7 @@ public class MessageProcessorTest {
 		
 		
 		// Now write EDHOC message 2
-		byte[] message2 = MessageProcessor.writeMessage2(session, ad2);
+		byte[] message2 = MessageProcessor.writeMessage2(session, ead2);
 
 		// Compare with the expected value from the test vectors
 		
@@ -593,7 +593,7 @@ public class MessageProcessorTest {
 
 		boolean initiator = false;
 		int methodCorr = 13;
-		byte[] ad2 = null;
+		CBORObject[] ead2 = null;
 		
 		
 		/* Responder information*/
@@ -669,7 +669,7 @@ public class MessageProcessorTest {
 		
 		
 		// Now write EDHOC message 2
-		byte[] message2 = MessageProcessor.writeMessage2(session, ad2);
+		byte[] message2 = MessageProcessor.writeMessage2(session, ead2);
 
 		// Compare with the expected value from the test vectors
 		
@@ -691,7 +691,7 @@ public class MessageProcessorTest {
 
 		boolean initiator = true;
 		int methodCorr = 1;
-		byte[] ad3 = null;
+		CBORObject[] ead3 = null;
 		
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 1);
@@ -781,7 +781,7 @@ public class MessageProcessorTest {
 		
 		
 		// Now write EDHOC message 3
-		byte[] message3 = MessageProcessor.writeMessage3(session, ad3);
+		byte[] message3 = MessageProcessor.writeMessage3(session, ead3);
 
 		// Compare with the expected value from the test vectors
 		
@@ -821,7 +821,7 @@ public class MessageProcessorTest {
 
 		boolean initiator = true;
 		int methodCorr = 13;
-		byte[] ad3 = null;
+		CBORObject[] ead3 = null;
 		
 		
 		/* Initiator information*/
@@ -909,7 +909,7 @@ public class MessageProcessorTest {
 		
 		
 		// Now write EDHOC message 3
-		byte[] message3 = MessageProcessor.writeMessage3(session, ad3);
+		byte[] message3 = MessageProcessor.writeMessage3(session, ead3);
 
 		// Compare with the expected value from the test vectors
 		
@@ -946,7 +946,7 @@ public class MessageProcessorTest {
 
 		boolean initiator = true;
 		int methodCorr = 13;
-		byte[] ad3 = null;
+		CBORObject[] ead3 = null;
 		
 		
 		/* Initiator information*/
@@ -1035,7 +1035,7 @@ public class MessageProcessorTest {
 		
 		
 		// Now write EDHOC message 3
-		byte[] message3 = MessageProcessor.writeMessage3(session, ad3);
+		byte[] message3 = MessageProcessor.writeMessage3(session, ead3);
 
 		// Compare with the expected value from the test vectors
 		

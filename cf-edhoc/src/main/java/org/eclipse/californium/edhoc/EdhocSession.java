@@ -257,7 +257,7 @@ public class EdhocSession {
 	/**
 	 * @return  the processor of External Authorization Data used for this session
 	 */
-	public EDP getEDP() {
+	public EDP getEdp() {
 		
 		return this.edp;
 		
