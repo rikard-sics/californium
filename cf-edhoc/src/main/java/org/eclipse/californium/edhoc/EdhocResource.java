@@ -225,6 +225,18 @@ class EdhocResource extends CoapResource {
 				if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
 					int responseCodeValue = processingResult.get(1).AsInt32();
 					responseCode = ResponseCode.valueOf(responseCodeValue);
+					
+					// If the Error Message was generated while reading EDHOC Message 1,
+					// deliver EAD_1 to the application, if any was present in EDHOC Message 1
+					if (processingResult.size() == 3 && processingResult.get(2).getType() == CBORType.Array) {
+					    // This inspected element of 'processing_result' should really be a CBOR Array at this point
+					    int length = processingResult.get(2).size();
+					    CBORObject[] ead1 = new CBORObject[length];
+					    for (int i = 0; i < length; i++) {
+					        ead1[i] = processingResult.get(2).get(i);
+					    }
+					    edhocEndpointInfo.getEdp().processEAD1(ead1);
+					}
 				}
 
 				Response myResponse = new Response(responseCode);
@@ -477,6 +489,19 @@ class EdhocResource extends CoapResource {
 			// An EDHOC error message has to be returned in response to EDHOC message_3
 			// The session has been possibly purged while attempting to process message_3
 			else {
+				
+				// An Error Message was generated while reading EDHOC Message 3. Hence,
+				// deliver EAD_3 to the application, if any was present in EDHOC Message 3
+				if (processingResult.size() == 3 && processingResult.get(2).getType() == CBORType.Array) {
+				    // This inspected element of 'processing_result' should really be a CBOR Array at this point
+				    int length = processingResult.get(2).size();
+				    CBORObject[] ead3 = new CBORObject[length];
+				    for (int i = 0; i < length; i++) {
+				        ead3[i] = processingResult.get(2).get(i);
+				    }
+				    edhocEndpointInfo.getEdp().processEAD3(ead3);
+				}
+				
 				int responseCodeValue = processingResult.get(1).AsInt32();
 				ResponseCode responseCode = ResponseCode.valueOf(responseCodeValue);
 				sendErrorMessage(exchange, nextMessage, appStatement, responseCode);
