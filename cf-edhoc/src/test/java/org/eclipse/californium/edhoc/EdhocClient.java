@@ -978,7 +978,7 @@ public class EdhocClient {
 		            
 		            if (responseType == Constants.EDHOC_MESSAGE_4) {
 		            	processingResult = MessageProcessor.readMessage4(responsePayload, cI,
-		            			                                                          edhocSessions, usedConnectionIds);
+		            			                                         edhocSessions, usedConnectionIds);
 		            	
 						if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
 							System.err.println("Internal error when processing EDHOC Message 4");
@@ -993,6 +993,17 @@ public class EdhocClient {
 						// The EDHOC message_4 was successfully processed
 						if (nextMessage.length == 0) {
 							
+							// Deliver EAD_4 to the application, if present
+							if (processingResult.size() == 2 && processingResult.get(1).getType() == CBORType.Array) {
+							    // This inspected element of 'processing_result' should really be a CBOR Array at this point
+							    int length = processingResult.get(1).size();
+							    CBORObject[] ead4 = new CBORObject[length];
+							    for (int i = 0; i < length; i++) {
+							        ead4[i] = processingResult.get(1).get(i);
+							    }
+							    edhocEndpointInfo.getEdp().processEAD4(ead4);
+							}
+							
 							// If message_4 was a Confirmable response, send an empty ACK
 							
 					        if (edhocMessageResp2.advanced().isConfirmable()) {
@@ -1002,6 +1013,17 @@ public class EdhocClient {
 						}
 						// An EDHOC error message has to be returned in response to EDHOC message_4
 						else {
+							
+							// Deliver EAD_4 to the application, if any was present in EDHOC Message 4
+							if (processingResult.size() == 3 && processingResult.get(2).getType() == CBORType.Array) {
+							    // This inspected element of 'processing_result' should really be a CBOR Array at this point
+							    int length = processingResult.get(2).size();
+							    CBORObject[] ead4 = new CBORObject[length];
+							    for (int i = 0; i < length; i++) {
+							        ead4[i] = processingResult.get(2).get(i);
+							    }
+							    edhocEndpointInfo.getEdp().processEAD4(ead4);
+							}
 							
 							Request edhocMessageReq3 = new Request(Code.POST, Type.CON);
 							edhocMessageReq3.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);

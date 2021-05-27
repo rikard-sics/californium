@@ -49,6 +49,19 @@ public class KissEDP implements EDP {
 		System.out.println("EAD3 has type: " + eadType + "\n");
 	}
 	
+	// Process the External Authorization Data EAD_4 from EDHOC message_4
+	@Override
+	public void processEAD4(CBORObject[] ead4) {
+
+		System.out.println("Entered processEAD4()");
+		if (!consistencyCheck(ead4)) {
+			System.out.println("Malformed or invalid EAD4");
+		}
+		
+		int eadType = ead4[0].AsInt32();
+		System.out.println("EAD4 has type: " + eadType + "\n");
+	}
+	
 	// Perform common consistency checks on the External Authorization Data
 	@Override
 	public boolean consistencyCheck(CBORObject[] ead) {
