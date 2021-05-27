@@ -358,7 +358,7 @@ public class MessageProcessor {
      * @param sequence   The CBOR sequence used as payload of the EDHOC Message 1
      * @param supportedCipherSuites   The list of cipher suites supported by this peer 
      * @param appStatement   The applicability statement to use
-     * @return   A list of CBOR Objects including up to two elements.
+     * @return   A list of CBOR Objects including up to three elements.
      * 
      *           The first element is a CBOR byte string, with value either:
      *              i) a zero length byte string, indicating that the EDHOC Message 2 can be prepared; or
@@ -366,8 +366,11 @@ public class MessageProcessor {
      *             
      *           In case (i), the second element is optionally present as a CBOR array, with elements
      *           the same elements of the external authorization data EAD1 to deliver to the application.
-     *           In case (ii), the second element is present as a CBOR integer,
-     *           with value the CoAP response code to use for the EDHOC Error Message.
+     *           
+     *           In case (ii), the second element is a CBOR integer, with value the CoAP response code
+     *           to use for the EDHOC Error Message, if this is a CoAP response. The third element is optionally
+     *           present as a CBOR array, with elements the same elements of the external authorization data EAD1
+     *           to deliver to the application.
      */
 	public static List<CBORObject> readMessage1(int expectedCorr,
 												byte[] sequence,
@@ -605,7 +608,7 @@ public class MessageProcessor {
 			// In either case, any supported ciphersuite from SUITES_I will also be included in SUITES_R
 			suitesR = Util.buildSuitesR(supportedCiphersuites);
 			
-			return processError(errorCode, Constants.EDHOC_MESSAGE_1, correlation, cI, errMsg, suitesR, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_1, correlation, cI, errMsg, suitesR, responseCode, ead1);
 			
 		}
 		
@@ -637,16 +640,19 @@ public class MessageProcessor {
      * @param peerPublicKeys   The list of the long-term public keys of authorized peers
      * @param peerCredentials   The list of CRED of the long-term public keys of authorized peers
      * @param usedConnectionIds   The collection of already allocated Connection Identifiers
-     * @return   A list of CBOR Objects including up to two elements.
+     * @return   A list of CBOR Objects including up to three elements.
      * 
-     *           The first element is always present. It it is a CBOR byte string, with value either:
+     *           The first element is a CBOR byte string, with value either:
      *              i) a zero length byte string, indicating that the EDHOC Message 3 can be prepared; or
      *             ii) a non-zero length byte string as the EDHOC Error Message to be sent.
      *             
      *           In case (i), the second element is optionally present as a CBOR array, with elements
-     *           the same elements of the external authorization data EAD1 to deliver to the application.
-	 *           In case (ii), the second element is present as a CBOR integer,
-	 *           with value the CoAP response code to use for the EDHOC Error Message.
+     *           the same elements of the external authorization data EAD2 to deliver to the application.
+     *           
+     *           In case (ii), the second element is a CBOR integer, with value the CoAP response code
+     *           to use for the EDHOC Error Message, if this is a CoAP response. The third element is optionally
+     *           present as a CBOR array, with elements the same elements of the external authorization data EAD2
+     *           to deliver to the application.
      */
 	public static List<CBORObject> readMessage2(byte[] sequence, CBORObject cI, Map<CBORObject,
 			                                    EdhocSession> edhocSessions, Map<CBORObject, OneKey> peerPublicKeys,
@@ -806,7 +812,7 @@ public class MessageProcessor {
 		
 		if (error == true) {
 			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode, ead2);
 		}
 		
 		
@@ -826,7 +832,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing TH2");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode, ead2);
         }
         else if (debugPrint) {
     		Util.nicePrint("TH_2", th2);
@@ -847,7 +853,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing the Diffie-Hellman secret G_XY");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode, ead2);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("G_XY", dhSecret);
@@ -860,7 +866,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing PRK_2e");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode, ead2);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("PRK_2e", prk2e);
@@ -873,7 +879,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing KEYSTREAM_2");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode, ead2);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("KEYSTREAM_2", keystream2);
@@ -929,7 +935,7 @@ public class MessageProcessor {
     	}
     	if (error == true) {
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode, ead2);
     	}
     	
     	
@@ -981,7 +987,7 @@ public class MessageProcessor {
     	
     	if (error == true) {
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode, ead2);
     	}
     	
     	session.setPeerIdCred(idCredR);
@@ -995,7 +1001,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing PRK_3e2m");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode, ead2);
     	}
     	else if (debugPrint) {
 	    		Util.nicePrint("PRK_3e2m", prk3e2m);
@@ -1010,7 +1016,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing K_2M");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode, ead2);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("K_2m", k2m);
@@ -1021,7 +1027,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing IV_2M");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode, ead2);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("IV_2m", iv2m);
@@ -1035,7 +1041,7 @@ public class MessageProcessor {
         	errMsg = new String("Unable to retrieve the peer credential");
         	responseCode = ResponseCode.BAD_REQUEST;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode, ead2);
     	}
     	byte[] peerCredential = peerCredentialCBOR.GetByteString();
     	
@@ -1045,7 +1051,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing External Data for MAC_2");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode, ead2);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("External Data to compute MAC_2", externalData);
@@ -1063,7 +1069,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing MAC_2");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode, ead2);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("MAC_2", mac2);
@@ -1081,7 +1087,7 @@ public class MessageProcessor {
         	errMsg = new String("Non valid Signature_or_MAC_2");
         	responseCode = ResponseCode.BAD_REQUEST;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation, cR, errMsg, null, responseCode, ead2);
     	}
 		
 		/* Return an indication to prepare EDHOC Message 3, possibly with the provided External Authorization Data */
@@ -1114,17 +1120,17 @@ public class MessageProcessor {
      * @param usedConnectionIds   The collection of already allocated Connection Identifiers
      * @return   A list of CBOR Objects including up to three elements.
      * 
-     *           The first element is always present. It it is a CBOR byte string, with value either:
-     *              i) a zero length byte string, indicating that the protocol has successfully completed; or
+     *           The first element is a CBOR byte string, with value either:
+     *              i) a zero length byte string, indicating that the EDHOC message_3 was successfully processed; or
      *             ii) a non-zero length byte string as the EDHOC Error Message to be sent.
      *           
-     *           In case (i), the second element is a CBOR byte string, and is relevant only if the protocol
-     *           has successfully completed. In such a case, it specifies  the Connection Identifier
+     *           In case (i), the second element is a CBOR byte string, specifying the Connection Identifier
      *           of the Responder in the used EDHOC session, i.e. C_R.
-     *           In case (ii), the second element is present as a CBOR integer,
-     *           with value the CoAP response code to use for the EDHOC Error Message.
      *           
-     *           The third element is optional and relevant only in case (i). If present, it is a CBOR array,
+     *           In case (ii), the second element is a CBOR integer, with value the CoAP response code
+     *           to use for the EDHOC Error Message, if this is a CoAP response.
+     *           
+     *           The third element is optionally present in both cases (i) and (ii). If present, it is a CBOR array,
      *           with elements the same elements of the external authorization data EAD1 to deliver to the application.
      */
 	public static List<CBORObject> readMessage3(byte[] sequence, CBORObject cR, Map<CBORObject,
@@ -1236,7 +1242,7 @@ public class MessageProcessor {
 		
 		if (error == true) {
 			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode, ead3);
 		}
 		
 		
@@ -1257,7 +1263,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing TH3");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode, ead3);
         }
         else if (debugPrint) {
     		Util.nicePrint("TH_3", th3);
@@ -1271,7 +1277,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing TH3");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode, ead3);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("K_3ae", k3ae);
@@ -1282,7 +1288,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing IV_3ae");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode, ead3);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("IV_3ae", iv3ae);
@@ -1303,7 +1309,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when decrypting CIPHERTEXT_3");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode, ead3);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("Plaintext retrieved from CIPHERTEXT_3", outerPlaintext);
@@ -1349,7 +1355,7 @@ public class MessageProcessor {
     	}
     	if (error == true) {
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode, ead3);
     	}
     	
     	// Verify that the identity of the Initiator is an allowed identity
@@ -1400,7 +1406,7 @@ public class MessageProcessor {
     	
     	if (error == true) {
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode, ead3);
     	}
     	
     	session.setPeerIdCred(idCredI);
@@ -1414,7 +1420,7 @@ public class MessageProcessor {
         	errMsg = new String("Unable to retrieve the peer credential");
         	responseCode = ResponseCode.BAD_REQUEST;
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-    		return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+    		return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode, ead3);
     	}
     	byte[] peerCredential = peerCredentialCBOR.GetByteString();
     	
@@ -1424,7 +1430,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing the external data for MAC_3");
     		responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-    		return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+    		return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode, ead3);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("External Data to compute MAC_3", externalData);
@@ -1442,7 +1448,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing PRK_4x3m");
     		responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode, ead3);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("PRK_4x3m", prk4x3m);
@@ -1457,7 +1463,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing K_3m");
     		responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode, ead3);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("K_3m", k3m);
@@ -1468,7 +1474,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing IV_3m");
     		responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode, ead3);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("IV_3m", iv3m);
@@ -1482,7 +1488,7 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing MAC_3");
     		responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode, ead3);
     	}
     	else if (debugPrint) {
     		Util.nicePrint("MAC_3", mac3);
@@ -1499,7 +1505,7 @@ public class MessageProcessor {
         	errMsg = new String("Non valid Signature_or_MAC_3");
         	responseCode = ResponseCode.BAD_REQUEST;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode, ead3);
     	}
     	
     	
@@ -1512,7 +1518,7 @@ public class MessageProcessor {
         	errMsg = new String("Error when computing TH_4");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-        	return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode);
+        	return processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation, cI, errMsg, null, responseCode, ead3);
         }
         else if (debugPrint) {
     		Util.nicePrint("TH_4", th4);
@@ -1574,6 +1580,8 @@ public class MessageProcessor {
 			return null;
 		
 		CBORObject connectionIdentifier = null; // The Connection Identifier C_I
+		
+		CBORObject[] ead4 = null; // Will be set if External Authorization Data is present as EAD4
 		
 		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
 		
@@ -1682,7 +1690,7 @@ public class MessageProcessor {
 		
 		if (error == true) {
 			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_4, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_4, correlation, cR, errMsg, null, responseCode, ead4);
 		}
 		
 		
@@ -1761,7 +1769,7 @@ public class MessageProcessor {
     	// Return an EDHOC Error Message
     	if (error == true) {
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_4, correlation, cR, errMsg, null, responseCode);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_4, correlation, cR, errMsg, null, responseCode, ead4);
     	}
     	
 		
@@ -2287,7 +2295,7 @@ public class MessageProcessor {
 			CBORObject suitesR = Util.buildSuitesR(supportedCiphersuites);
 			
 			List<CBORObject> processingResult = processError(errorCode, Constants.EDHOC_MESSAGE_1, correlation,
-															 cI, errMsg, suitesR, responseCode);
+															 cI, errMsg, suitesR, responseCode, null);
 			return processingResult.get(0).GetByteString();
 			
 		}
@@ -2541,7 +2549,7 @@ public class MessageProcessor {
     	    CBORObject cR = CBORObject.FromObject(session.getPeerConnectionId());
     	    
     	    List<CBORObject> processingResult = processError(errorCode, Constants.EDHOC_MESSAGE_2, correlation,
-    	    												 cR, errMsg, null, responseCode);
+    	    												 cR, errMsg, null, responseCode, null);
     	    return processingResult.get(0).GetByteString();
     	    
     	}
@@ -2665,7 +2673,7 @@ public class MessageProcessor {
     	    CBORObject cI = CBORObject.FromObject(session.getPeerConnectionId());
     	    
     	    List<CBORObject> processingResult = processError(errorCode, Constants.EDHOC_MESSAGE_3, correlation,
-    	    												 cI, errMsg, null, responseCode);
+    	    												 cI, errMsg, null, responseCode, null);
     	    return processingResult.get(0).GetByteString();
     	    
     	}
@@ -2778,10 +2786,11 @@ public class MessageProcessor {
      * @param cX   The connection identifier of the intended recipient of the EDHOC Error Message, it can be null
      * @param errMsg   The text string to include in the EDHOC Error Message
      * @param suitesR   The cipher suite(s) supported by the Responder (only in response to EDHOC Message 1), it can be null
+     * @param ead   The external authorization data from the latest incoming message, it can be null
      * @return  A list of CBOR objects, including the EDHOC Error Message and the CoAP response code to use
      */
 	public static List<CBORObject> processError(int errorCode, int replyTo, int corr, CBORObject cX, String errMsg,
-											    CBORObject suitesR, ResponseCode responseCode) {
+											    CBORObject suitesR, ResponseCode responseCode, CBORObject[] ead) {
 		
 		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
 		
@@ -2795,6 +2804,15 @@ public class MessageProcessor {
 		
 		if (errMsg != null) {
 			System.err.println(errMsg);
+		}
+		
+		// External Authorization Data (if present)
+		if (ead != null) {
+		    CBORObject eadArray = CBORObject.NewArray();
+		    for (int i = 0; i < ead.length; i++) {
+		        eadArray.Add(ead[i]);
+		    }
+		    processingResult.add(eadArray);
 		}
 		
 		return processingResult;
