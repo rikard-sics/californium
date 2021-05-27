@@ -782,7 +782,20 @@ public class EdhocClient {
 					}
 			        
 				}
-				else if (requestType == Constants.EDHOC_ERROR_MESSAGE) {			     	
+				else if (requestType == Constants.EDHOC_ERROR_MESSAGE) {
+					
+					// If the Error Message was generated while reading EDHOC Message 2,
+					// deliver EAD_2 to the application, if any was present in EDHOC Message 2
+					if (processingResult.size() == 3 && processingResult.get(2).getType() == CBORType.Array) {
+					    // This inspected element of 'processing_result' should really be a CBOR Array at this point
+					    int length = processingResult.get(2).size();
+					    CBORObject[] ead2 = new CBORObject[length];
+					    for (int i = 0; i < length; i++) {
+					        ead2[i] = processingResult.get(2).get(i);
+					    }
+					    edhocEndpointInfo.getEdp().processEAD2(ead2);
+					}
+					
 				    Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			        System.out.println("Sent EDHOC Error Message\n");
 			        if (debugPrint) {
