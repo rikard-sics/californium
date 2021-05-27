@@ -654,7 +654,7 @@ public class EdhocSession {
 	}
 		
     /**
-     *  Get the application hkdf algorithm associated to the selected ciphersuite
+     *  Get the application HKDF algorithm associated to the application hash algorithm of the selected ciphersuite
      * @param cipherSuite   The selected ciphersuite
      * @return  the application hkdf algorithm associated to the selected ciphersuite
      */
