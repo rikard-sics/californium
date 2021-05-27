@@ -120,23 +120,23 @@ public static final int EDHOC_CORR_3 = 3;
  * EDHOC cipher suites
  * 
  * Value: 0
- * Array: 10, 5, 4, -8, 6, 10, 5
- * Desc: AES-CCM-16-64-128, SHA-256, X25519, EdDSA, Ed25519,
+ * Array: 10, -16, 4, -8, 10, -16
+ * Desc: AES-CCM-16-64-128, SHA-256, X25519, EdDSA,
  *       AES-CCM-16-64-128, SHA-256
    
  * Value: 1
- * Array: 30, 5, 4, -8, 6, 10, 5
- * Desc: AES-CCM-16-128-128, SHA-256, X25519, EdDSA, Ed25519,
+ * Array: 30, -16, 4, -8, 10, -16
+ * Desc: AES-CCM-16-128-128, SHA-256, X25519, EdDSA,
  *       AES-CCM-16-64-128, SHA-256
 
  * Value: 2
- * Array: 10, 5, 1, -7, 1, 10, 5
- * Desc: AES-CCM-16-64-128, SHA-256, P-256, ES256, P-256,
+ * Array: 10, -16, 1, -7, 10, -16
+ * Desc: AES-CCM-16-64-128, SHA-256, P-256, ES256,
  *       AES-CCM-16-64-128, SHA-256
 
  * Value: 3
- * Array: 30, 5, 1, -7, 1, 10, 5
- * Desc: AES-CCM-16-128-128, SHA-256, P-256, ES256, P-256,
+ * Array: 30, -16, 1, -7, 10, -16
+ * Desc: AES-CCM-16-128-128, SHA-256, P-256, ES256,
  *       AES-CCM-16-64-128, SHA-256
  * 
  */
@@ -168,7 +168,7 @@ public static final String[] EDHOC_HASH_ALGS = {
 };
 
 /**
- * The EDHOC ECDH curves associated to each ciphersuite
+ * The EDHOC key exchange algorithm (ECDH curve) associated to each ciphersuite
  */
 public static final String[] EDHOC_ECDH_CURVES = {
 		"X25519",  // cipher suite 0
@@ -188,7 +188,10 @@ public static final String[] EDHOC_SIGN_ALGS = {
 };
 
 /**
- * The EDHOC signature algorithm curves associated to each ciphersuite
+ * The EDHOC signature curve associated to each ciphersuite
+ * 
+ * This is implicitly assumed from the pair EDHOC key exchange algorithm
+ * (ECDH curve) and EDHOC signature algorithm for a certain ciphersuite 
  */
 public static final String[] EDHOC_SIGN_ALG_CURVES = {
 		"Ed25519",  // cipher suite 0
