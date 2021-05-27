@@ -17,6 +17,9 @@ public interface EDP {
 	// Process the External Authorization Data EAD_3 from EDHOC message_3
 	public abstract void processEAD3(CBORObject[] ead3);
 	
+	// Process the External Authorization Data EAD_4 from EDHOC message_4
+	public abstract void processEAD4(CBORObject[] ead4);
+	
 	// Perform common consistency checks on the External Authorization Data
 	public abstract boolean consistencyCheck(CBORObject[] ead);
 	
