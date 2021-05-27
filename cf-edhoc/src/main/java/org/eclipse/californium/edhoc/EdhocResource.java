@@ -421,9 +421,13 @@ class EdhocResource extends CoapResource {
 		        else {
 		        	// message_4 has to be sent to the Initiator
 		        	
+					// Possibly specify external authorization data for EAD_4, or null if none have to be provided
+		        	// The first element of EAD is always a CBOR integer, followed by one or multiple additional elements
+					CBORObject[] ead4 = null;
+		        	
 					// Compute the EDHOC Message 4
 					byte[] connectionId = mySession.getConnectionId();
-					nextMessage = MessageProcessor.writeMessage4(mySession);
+					nextMessage = MessageProcessor.writeMessage4(mySession, ead4);
 					
 					// Deallocate the assigned Connection Identifier for this peer
 					if (nextMessage == null || mySession.getCurrentStep() != Constants.EDHOC_AFTER_M4) {

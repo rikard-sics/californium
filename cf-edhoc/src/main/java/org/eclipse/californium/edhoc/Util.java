@@ -50,7 +50,8 @@ public class Util {
 
     /**
      *  Compute a ciphertext using the COSE Encrypt0 object
-     * @param idCredX   The ID of the public credential of the encrypter as a CBOR map, or null for computing MAC_4 
+     * @param idCredX   The ID of the public credential of the encrypter as a CBOR map,
+     *                  or null for computing CIPHERTEXT_3 and CIPHERTEXT_4 
      * @param externalData   The data to use as external_aad
      * @param plaintext   The plaintext to encrypt
      * @param alg   The encryption algorithm to use
