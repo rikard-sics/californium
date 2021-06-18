@@ -373,6 +373,14 @@ public abstract class EncryptCommon extends Message {
 	}
 
 	public boolean validate(CounterSign1 countersignature) throws CoseException {
+
+		// Fix issue with rgbProtected being NULL instead of empty CBOR bstr
+		// when doing verification before decryption.
+		if (objProtected.size() == 0)
+			rgbProtected = new byte[0];
+		else
+			rgbProtected = objProtected.EncodeToBytes();
+
 		return countersignature.validate(rgbProtected, rgbEncrypt);
 	}
 
