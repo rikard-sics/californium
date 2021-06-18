@@ -169,7 +169,13 @@ public abstract class Decryptor {
 		}
 
 		enc.setExternal(aad);
-			
+
+		// Check signature before decrypting
+		if (groupModeMessage) {
+			boolean signatureCorrect = checkSignature(enc, sign);
+			LOGGER.debug("Signature verification succeeded: " + signatureCorrect);
+		}
+
 		try {
 			// TODO: Get and set Recipient ID (KID) here too?
 			enc.addAttribute(HeaderKeys.Algorithm, ctx.getAlg().AsCBOR(), Attribute.DO_NOT_SEND);
@@ -179,11 +185,6 @@ public abstract class Decryptor {
 		} catch (CoseException e) {
 			LOGGER.error(ErrorDescriptions.DECRYPTION_FAILED + " " + e.getMessage());
 			throw new OSException(ErrorDescriptions.DECRYPTION_FAILED + " " + e.getMessage());
-		}
-
-		if (groupModeMessage) {
-			boolean signatureCorrect = checkSignature(enc, sign);
-			LOGGER.debug("Signature verification succeeded: " + signatureCorrect);
 		}
 
 		return plaintext;
