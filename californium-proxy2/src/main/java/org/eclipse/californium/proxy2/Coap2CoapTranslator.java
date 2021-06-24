@@ -91,19 +91,6 @@ public class Coap2CoapTranslator extends CoapUriTranslator {
 		// set the proxy-uri as the outgoing uri
 		outgoingRequest.setURI(destination);
 
-		// RH: if destination is multicast use NON
-		// TODO: move to ProxyCoapClientResource?
-		InetAddress add = null;
-		try {
-			add = InetAddress.getByName(destination.getHost());
-		} catch (UnknownHostException e) {
-			System.err.println("Failed to parse request URI into an InetAddress: " + e);
-			e.printStackTrace();
-		}
-		if (add.isMulticastAddress()) {
-			outgoingRequest.setType(Type.NON);
-		}
-
 		LOGGER.debug("Incoming request translated correctly");
 		return outgoingRequest;
 	}
