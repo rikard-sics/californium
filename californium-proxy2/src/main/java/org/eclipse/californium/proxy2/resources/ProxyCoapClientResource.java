@@ -124,9 +124,7 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 			if (accept) {
 				exchange.sendAccept();
 			}
-
-			outgoingRequest
-					.addMessageObserver(
+			outgoingRequest.addMessageObserver(
 							new ProxySendResponseMessageObserver(translator, exchange, cacheKey, cache, this));
 
 			/* --- RH: Handle multicast requests --- */
