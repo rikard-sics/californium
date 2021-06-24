@@ -16,15 +16,24 @@
 
 package org.eclipse.californium.proxy2.resources;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
+import org.eclipse.californium.core.coap.CoAP.Type;
+import org.eclipse.californium.core.CoapClient;
+import org.eclipse.californium.core.CoapHandler;
+import org.eclipse.californium.core.CoapResponse;
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
@@ -43,6 +52,13 @@ import org.slf4j.LoggerFactory;
 public class ProxyCoapClientResource extends ProxyCoapResource {
 
 	static final Logger LOGGER = LoggerFactory.getLogger(ProxyCoapClientResource.class);
+
+	/**
+	 * Time to wait for replies to the multicast request
+	 * 
+	 * RH: FIXME: Take from new option
+	 */
+	private static final int HANDLER_TIMEOUT = 1000;
 
 	/**
 	 * Maps scheme to client endpoints.
@@ -108,10 +124,43 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 			if (accept) {
 				exchange.sendAccept();
 			}
-			outgoingRequest.addMessageObserver(
-					new ProxySendResponseMessageObserver(translator, exchange, cacheKey, cache, this));
-			ClientEndpoints endpoints = mapSchemeToEndpoints.get(outgoingRequest.getScheme());
-			endpoints.sendRequest(outgoingRequest);
+
+			outgoingRequest
+					.addMessageObserver(new ProxySendResponseMessageObserver(translator, exchange, cacheKey, cache));
+
+			/* --- RH: Handle multicast requests --- */
+
+			// If destination is multicast use NON
+			InetAddress add = null;
+			try {
+				add = InetAddress.getByName(destination.getHost());
+			} catch (UnknownHostException e) {
+				System.err.println("Failed to parse request URI into an InetAddress: " + e);
+				e.printStackTrace();
+			}
+			if (add.isMulticastAddress()) {
+				outgoingRequest.setType(Type.NON);
+
+				// Send using multicast handler
+				CoapClient client = new CoapClient();
+				// client.setEndpoint(endpoint); // Needed?
+				client.setURI(destination.toString());
+
+				handler.clearResponses();
+				client.advanced(handler, outgoingRequest);
+				// RH: Needed to use the handler at all? Since it seems to
+				// handle responses coming in individually in onResponse
+				while (handler.waitOn(HANDLER_TIMEOUT)) {
+					// Wait for responses
+				}
+			}
+
+			/* --- End Handle multicast requests --- */
+
+			if (!add.isMulticastAddress()) {
+				ClientEndpoints endpoints = mapSchemeToEndpoints.get(outgoingRequest.getScheme());
+				endpoints.sendRequest(outgoingRequest);
+			}
 		} catch (TranslationException e) {
 			LOGGER.debug("Proxy-uri option malformed: {}", e.getMessage());
 			Response response = new Response(Coap2CoapTranslator.STATUS_FIELD_MALFORMED);
@@ -192,6 +241,58 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 
 		private void fail(ResponseCode response) {
 			incomingExchange.sendResponse(new Response(response));
+		}
+	}
+
+	/*** RH: Multicast handler for sending multicast requests ***/
+
+	private static final MultiCoapHandler handler = new MultiCoapHandler();
+
+	private static class MultiCoapHandler implements CoapHandler {
+
+		List<CoapResponse> responses = new ArrayList<CoapResponse>();
+
+		private boolean on;
+
+		public List<CoapResponse> getResponses() {
+			return responses;
+		}
+
+		public void clearResponses() {
+			responses.clear();
+		}
+
+		public synchronized boolean waitOn(long timeout) {
+			on = false;
+			try {
+				wait(timeout);
+			} catch (InterruptedException e) {
+			}
+			return on;
+		}
+
+		private synchronized void on() {
+			on = true;
+			notifyAll();
+		}
+
+		/**
+		 * Handle and parse incoming responses.
+		 */
+		@Override
+		public void onLoad(CoapResponse response) {
+			on();
+
+			// System.out.println("Receiving to: "); //TODO
+			System.out.println("Receiving from: " + response.advanced().getSourceContext().getPeerAddress());
+
+			responses.add(response);
+			System.out.println(Utils.prettyPrint(response));
+		}
+
+		@Override
+		public void onError() {
+			System.err.println("error");
 		}
 	}
 }
