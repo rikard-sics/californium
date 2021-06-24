@@ -108,7 +108,7 @@ public class ExampleProxy2CoapClient {
 		URI proxyUri = null;
 		try {
 			OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, null);
-			db.addContext("coap://localhost", ctx);
+			db.addContext(uriLocal, ctx);
 			OSCoreCoapStackFactory.useAsDefault(db);
 			proxyUri = new URI("coap", "localhost", null, null);
 		} catch (OSException | URISyntaxException e) {
@@ -175,9 +175,14 @@ public class ExampleProxy2CoapClient {
 		System.out.println("Reverse-Proxy: " + request.getURI());
 		request(client, request);
 
-		//
+		// RH: Newly added tests below
+
+		System.out.println("");
+		System.out.println("*** New tests below ***");
+		System.out.println("");
 
 		// OSCORE proxy request - use Proxy-URI, and destination to proxy
+		System.out.println("Request A");
 		request = Request.newGet();
 		request.getOptions().setOscore(Bytes.EMPTY);
 		// request.setDestinationContext(proxy); // Doesn't work for OSCORE
@@ -188,31 +193,42 @@ public class ExampleProxy2CoapClient {
 
 		// CoAP proxy request - use Proxy-URI, and destination to proxy
 		// (Same as above without OSCORE)
+		System.out.println("Request B");
 		request = Request.newGet();
-		// request.setDestinationContext(proxy); // Doesn't work for OSCORE
 		request.setURI(proxyUri.toString());
 		request.getOptions().setProxyUri("coap://localhost:5685/coap-target");
 		System.out.println("Proxy-URI: " + request.getOptions().getProxyUri());
 		request(client, request);
 
-		// CoAP proxy request - use Proxy-URI, and destination to proxy
-		// (Same as above)
+		// CoAP proxy request - use Proxy-Scheme
+		// Uri-Host is a unicast address
+		System.out.println("Request C");
 		request = Request.newGet();
-		// request.setDestinationContext(proxy); // Doesn't work for OSCORE
-		request.setURI(proxyUri.toString());
-		request.getOptions().setProxyUri("coap://localhost:5685/coap-target");
-		System.out.println("Proxy-URI: " + request.getOptions().getProxyUri());
+		request.setDestinationContext(proxy);
+		request.setURI("coap://localhost:5685/coap-target");
+		request.setProxyScheme("coap");
+		System.out.println("Proxy-Scheme: " + request.getOptions().getProxyScheme());
+		System.out.println("Uri: " + request.getURI());
 		request(client, request);
 
-		//
-
 		// CoAP proxy request - use Proxy-URI, and destination to proxy
-		// (Same as above without OSCORE)
+		// Proxy-Uri is a multicast address
+		System.out.println("Request D");
 		request = Request.newGet();
-		// request.setDestinationContext(proxy); // Doesn't work for OSCORE
 		request.setURI(proxyUri.toString());
 		request.getOptions().setProxyUri("coap://224.0.1.187:5685/coap-target");
 		System.out.println("Proxy-URI: " + request.getOptions().getProxyUri());
+		request(client, request);
+
+		// CoAP proxy request - use Proxy-Scheme
+		// Uri-Host is a multicast address
+		System.out.println("Request E");
+		request = Request.newGet();
+		request.setDestinationContext(proxy);
+		request.setURI("coap://224.0.1.187:5685/coap-target");
+		request.setProxyScheme("coap");
+		System.out.println("Proxy-Scheme: " + request.getOptions().getProxyScheme());
+		System.out.println("Uri: " + request.getURI());
 		request(client, request);
 
 		client.shutdown();
