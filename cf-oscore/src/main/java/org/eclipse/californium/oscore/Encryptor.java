@@ -545,13 +545,6 @@ public abstract class Encryptor {
 	private static void encryptSignature(Encrypt0Message enc, GroupSenderCtx ctx, byte[] partialIV, byte[] kid,
 			boolean isRequest) {
 
-		// The Partial IV needs to be padded to 5 bytes. This is because the
-		// padding is not done until nonce generation which happens after this.
-		int zeroes = 5 - partialIV.length;
-		if (zeroes > 0) {
-			partialIV = OSSerializer.leftPaddingZeroes(partialIV, zeroes);
-		}
-
 		// Derive the keystream
 		String digest = "";
 		if (ctx.getAlgKeyAgreement().toString().contains("HKDF_256")) {
