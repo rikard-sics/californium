@@ -39,7 +39,6 @@ import org.eclipse.californium.oscore.ContextRederivation.PHASE;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
-import org.eclipse.californium.oscore.group.GroupSenderCtx;
 
 /**
  * 
@@ -170,9 +169,12 @@ public abstract class Decryptor {
 			if (groupModeMessage) {
 				// Decrypt the signature.
 				if (isRequest || piv != null) {
-					decryptSignature(enc, sign, (GroupRecipientCtx) ctx, partialIV, ctx.getRecipientId(), isRequest);
+					byte[] pivFromMessage = enc.findAttribute(HeaderKeys.PARTIAL_IV).GetByteString();
+					decryptSignature(enc, sign, (GroupRecipientCtx) ctx, pivFromMessage, ctx.getRecipientId(),
+							isRequest);
 				} else {
-					decryptSignature(enc, sign, (GroupRecipientCtx) ctx, partialIV, ctx.getSenderId(), isRequest);
+					byte[] pivFromOther = OSSerializer.stripZeroes(ByteBuffer.allocate(5).putInt(seq).array());
+					decryptSignature(enc, sign, (GroupRecipientCtx) ctx, pivFromOther, ctx.getSenderId(), isRequest);
 				}
 
 				sign = prepareCheckSignature(enc, ctx, aad, message);
@@ -402,13 +404,6 @@ public abstract class Decryptor {
 	private static void decryptSignature(Encrypt0Message enc, CounterSign1 sign, GroupRecipientCtx ctx,
 			byte[] partialIV,
 			byte[] kid, boolean isRequest) {
-
-		// The Partial IV needs to be padded to 5 bytes. This is because the
-		// padding is not done until nonce generation which happens after this.
-		int zeroes = 5 - partialIV.length;
-		if (zeroes > 0) {
-			partialIV = OSSerializer.leftPaddingZeroes(partialIV, zeroes);
-		}
 
 		// Derive the keystream
 		String digest = "SHA256"; // FIXME, see below also
