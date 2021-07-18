@@ -28,6 +28,7 @@ import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ByteId;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCtx;
@@ -52,6 +53,7 @@ public class GroupCtx {
 	int[][] parCountersign;
 	AlgorithmID algSecret;
 	int[][] parSecret;
+	byte[] groupEncryptionKey;
 
 	// Reference to the associated sender context
 	GroupSenderCtx senderCtx;
@@ -103,7 +105,6 @@ public class GroupCtx {
 		} else {
 			this.parSecret = new int[][] { countersign_alg_capab, new int[] { 1, 4 } };
 		}
-
 	}
 
 	/**
@@ -132,7 +133,6 @@ public class GroupCtx {
 
 		recipientCtxMap = new HashMap<ByteId, GroupRecipientCtx>();
 		publicKeysMap = new HashMap<ByteId, OneKey>();
-
 	}
 
 
@@ -168,9 +168,11 @@ public class GroupCtx {
 		GroupSenderCtx senderCtx = new GroupSenderCtx(masterSecret, false, aeadAlg, senderId, null, hkdfAlg, 0,
 				masterSalt, idContext, ownPrivateKey, this);
 		this.senderCtx = senderCtx;
+
+		this.groupEncryptionKey = deriveGroupEncryptionKey();
 	}
 
-	int getCountersignatureLen() {
+	public int getCountersignatureLen() {
 		switch (algCountersign) {
 		case EDDSA:
 		case ECDSA_256:
@@ -296,6 +298,33 @@ public class GroupCtx {
 			db.addContext(recipientCtx);
 		}
 
+	}
+
+	// TODO: Merge with below?
+	byte[] deriveGroupEncryptionKey() {
+
+		String digest = "SHA256"; // FIXME, see below also
+		CBORObject info = CBORObject.NewArray();
+		int keyLength = 32; // FIXME
+
+		// Then derive the group encryption key
+		info = CBORObject.NewArray();
+		info.Add(Bytes.EMPTY);
+		info.Add(this.idContext);
+		info.Add(this.aeadAlg.AsCBOR());
+		info.Add(CBORObject.FromObject("Group Encryption Key"));
+		info.Add(keyLength);
+
+		byte[] groupEncryptionKey = null;
+		try {
+			groupEncryptionKey = OSCoreCtx.deriveKey(senderCtx.getMasterSecret(), senderCtx.getSalt(), keyLength,
+					digest, info.EncodeToBytes());
+
+		} catch (CoseException e) {
+			System.err.println(e.getMessage());
+		}
+
+		return groupEncryptionKey;
 	}
 
 	// TODO: Merge with below?
@@ -429,4 +458,13 @@ public class GroupCtx {
 		return sharedSecret;
 	}
 
+	/**
+	 * Get the group encryption key from the common context (used for making a
+	 * keystream to encrypt the signature).
+	 * 
+	 * @return the group encryption key
+	 */
+	public byte[] getGroupEncryptionKey() {
+		return groupEncryptionKey;
+	}
 }
