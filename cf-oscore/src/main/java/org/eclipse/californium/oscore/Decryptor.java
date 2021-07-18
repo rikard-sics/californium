@@ -46,6 +46,7 @@ import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupDeterministicRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
+import org.eclipse.californium.oscore.group.GroupSenderCtx;
 
 /**
  * 
@@ -170,6 +171,7 @@ public abstract class Decryptor {
 				LOGGER.error("Decryption failed: the arrived response is not connected to a request we sent");
 				throw new OSException(ErrorDescriptions.DECRYPTION_FAILED);
 			}
+
 			//Sequence number taken from original request
 			seq = seqByToken;
 
@@ -579,6 +581,13 @@ public abstract class Decryptor {
 			byte[] partialIV,
 			byte[] kid, boolean isRequest) {
 
+		// The Partial IV needs to be padded to 5 bytes. This is because the
+		// padding is not done until nonce generation which happens after this.
+		int zeroes = 5 - partialIV.length;
+		if (zeroes > 0) {
+			partialIV = OSSerializer.leftPaddingZeroes(partialIV, zeroes);
+		}
+
 		// Derive the keystream
 		String digest = "";
 		if (ctx.getAlgKeyAgreement().toString().contains("HKDF_256")) {
@@ -586,7 +595,6 @@ public abstract class Decryptor {
 		} else if (ctx.getAlgKeyAgreement().toString().contains("HKDF_512")) {
 			digest = "SHA512";
 		}
-
 		CBORObject info = CBORObject.NewArray();
 		int keyLength = ctx.getCommonCtx().getCountersignatureLen();
 

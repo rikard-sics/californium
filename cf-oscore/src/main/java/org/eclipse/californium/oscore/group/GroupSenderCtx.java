@@ -214,6 +214,15 @@ public class GroupSenderCtx extends OSCoreCtx {
 		return commonCtx;
 	}
 
+	/**
+	 * Get the common context associated to this GroupSenderCtx.
+	 * 
+	 * @return the common context associated to this GroupSenderCtx
+	 */
+	public GroupCtx getCommonCtx() {
+		return commonCtx;
+	}
+
 	// ------- TODO: Remove methods below -------
 
 	public OneKey getPublicKey() {
