@@ -36,7 +36,9 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.CounterSign1;
 import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
+import org.eclipse.californium.oscore.group.GroupSenderCtx;
 
 /**
  * 
@@ -80,9 +82,9 @@ public abstract class Decryptor {
 		byte[] partialIV = null;
 		byte[] aad = null;
 
-		if (isRequest) {
+		CBORObject piv = enc.findAttribute(HeaderKeys.PARTIAL_IV);
 
-			CBORObject piv = enc.findAttribute(HeaderKeys.PARTIAL_IV);
+		if (isRequest) {
 
 			if (piv == null) {
 				LOGGER.error("Decryption failed: no partialIV in request");
@@ -108,8 +110,6 @@ public abstract class Decryptor {
 				LOGGER.error("Decryption failed: the arrived response is not connected to a request we sent");
 				throw new OSException(ErrorDescriptions.DECRYPTION_FAILED);
 			}
-
-			CBORObject piv = enc.findAttribute(HeaderKeys.PARTIAL_IV);
 		
 			//Sequence number taken from original request
 			seq = seqByToken;
@@ -161,6 +161,13 @@ public abstract class Decryptor {
 
 			// If group mode is used prepare the signature checking
 			if (groupModeMessage) {
+				// Decrypt the signature.
+				if (isRequest || piv != null) {
+					decryptSignature(enc, sign, (GroupRecipientCtx) ctx, partialIV, ctx.getRecipientId(), isRequest);
+				} else {
+					decryptSignature(enc, sign, (GroupRecipientCtx) ctx, partialIV, ctx.getSenderId(), isRequest);
+				}
+
 				sign = prepareCheckSignature(enc, ctx, aad, message);
 			} else {
 				// If this is a pairwise response use the pairwise key
@@ -172,6 +179,7 @@ public abstract class Decryptor {
 
 		// Check signature before decrypting
 		if (groupModeMessage) {
+			// Verify the signature
 			boolean signatureCorrect = checkSignature(enc, sign);
 			LOGGER.debug("Signature verification succeeded: " + signatureCorrect);
 		}
@@ -382,5 +390,66 @@ public abstract class Decryptor {
 		}
 
 		return sign;
+	}
+
+	private static void decryptSignature(Encrypt0Message enc, CounterSign1 sign, GroupRecipientCtx ctx,
+			byte[] partialIV,
+			byte[] kid, boolean isRequest) {
+
+		// The Partial IV needs to be padded to 5 bytes. This is because the
+		// padding is not done until nonce generation which happens after this.
+		int zeroes = 5 - partialIV.length;
+		if (zeroes > 0) {
+			partialIV = OSSerializer.leftPaddingZeroes(partialIV, zeroes);
+		}
+
+		// Derive the keystream
+		String digest = "SHA256"; // FIXME, see below also
+		CBORObject info = CBORObject.NewArray();
+		int keyLength = ctx.getCommonCtx().getCountersignatureLen();
+
+		info = CBORObject.NewArray();
+		info.Add(kid);
+		info.Add(ctx.getIdContext());
+		info.Add(isRequest);
+		info.Add(keyLength);
+
+		byte[] groupEncryptionKey = ctx.getCommonCtx().getGroupEncryptionKey();
+		byte[] keystream = null;
+		try {
+			keystream = OSCoreCtx.deriveKey(groupEncryptionKey, partialIV, keyLength, digest, info.EncodeToBytes());
+
+		} catch (CoseException e) {
+			System.err.println(e.getMessage());
+		}
+
+		System.out.println("===");
+		System.out.println("D Signature keystream: " + Utils.toHexString(keystream));
+		System.out.println("D groupEncryptionKey: " + Utils.toHexString(groupEncryptionKey));
+		System.out.println("D partialIV: " + Utils.toHexString(partialIV));
+		System.out.println("D kid: " + Utils.toHexString(kid));
+		System.out.println("D IdContext: " + Utils.toHexString(ctx.getIdContext()));
+		System.out.println("D isRequest: " + isRequest);
+		System.out.println("===");
+
+		// Now actually decrypt the signature
+		byte[] full_payload = null;
+		try {
+			full_payload = enc.getEncryptedContent();
+		} catch (CoseException e) {
+			LOGGER.error("Countersignature verification procedure failed.");
+			e.printStackTrace();
+		}
+		byte[] countersignBytes = Arrays.copyOfRange(full_payload, full_payload.length - keyLength,
+				full_payload.length);
+		byte[] ciphertext = Arrays.copyOfRange(full_payload, 0, full_payload.length - keyLength);
+
+		byte[] decryptedCountersign = new byte[keystream.length];
+		for (int i = 0; i < keystream.length; i++) {
+			decryptedCountersign[i] = (byte) (countersignBytes[i] ^ keystream[i]);
+		}
+
+		// Replace the signature in the Encrypt0 object
+		enc.setEncryptedContent(Bytes.concatenate(ciphertext, decryptedCountersign));
 	}
 }
