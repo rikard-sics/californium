@@ -116,6 +116,20 @@ public class GroupCtx {
 
 		// Default since not indicated
 		this.algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
+
+		// Set the par countersign value
+		int[] countersign_alg_capab = getCountersignAlgCapab(algCountersign);
+		int[] countersign_key_type_capab = getCountersignKeyTypeCapab(algCountersign);
+		this.parCountersign = new int[][] { countersign_alg_capab, countersign_key_type_capab };
+
+		// Set the alg secret and par secret values
+		this.algSecret = AlgorithmID.ECDH_SS_HKDF_256;
+		if (algCountersign == AlgorithmID.ECDSA_256 || algCountersign == AlgorithmID.ECDSA_384
+				|| algCountersign == AlgorithmID.ECDSA_512) {
+			this.parSecret = new int[][] { countersign_alg_capab, countersign_key_type_capab };
+		} else {
+			this.parSecret = new int[][] { countersign_alg_capab, new int[] { 1, 4 } };
+		}
 	}
 
 	/**
@@ -146,7 +160,6 @@ public class GroupCtx {
 
 		recipientCtxMap = new HashMap<ByteId, GroupRecipientCtx>();
 		publicKeysMap = new HashMap<ByteId, OneKey>();
-
 	}
 
 	/**
@@ -686,5 +699,5 @@ public class GroupCtx {
 		System.arraycopy(T, 0, okm, 0, len);
 		return okm;
 	}
-	
+
 }
