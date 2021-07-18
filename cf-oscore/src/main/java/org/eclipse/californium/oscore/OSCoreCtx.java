@@ -20,7 +20,7 @@
 package org.eclipse.californium.oscore;
 
 import java.security.GeneralSecurityException;
->>>>>>> fa4b0e2dc (Initial commit of Group OSCORE code)
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import javax.crypto.Mac;
@@ -848,9 +848,10 @@ public class OSCoreCtx {
 
 			// Perform expand
 			hmac.init(new SecretKeySpec(rgbExtract, HMAC_ALG_NAME));
-			int c = ((cbitKey + 7) / 8 + hashLen - 1) / hashLen;
+			int c = (cbitKey / hashLen) + 1;
 			byte[] rgbOut = new byte[cbitKey];
-			byte[] T = new byte[hashLen * c];
+			int maxLen = (hashLen * c > cbitKey) ? hashLen * c : cbitKey;
+			byte[] T = new byte[maxLen];
 			byte[] last = new byte[0];
 			for (int i = 0; i < c; i++) {
 				hmac.reset();
@@ -862,7 +863,7 @@ public class OSCoreCtx {
 			}
 			System.arraycopy(T, 0, rgbOut, 0, cbitKey);
 			return rgbOut;
-		} catch (NoSuchAlgorithmException ex) {
+		} catch (NoSuchAlgorithmException | InvalidKeyException ex) {
 			throw new CoseException("Algorithm not supported", ex);
 		} catch (Exception ex) {
 			throw new CoseException("Derivation failure", ex);
