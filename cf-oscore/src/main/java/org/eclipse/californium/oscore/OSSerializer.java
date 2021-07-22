@@ -37,6 +37,8 @@ import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
+import net.i2p.crypto.eddsa.Utils;
+
 /**
  * 
  * Implements methods for serializing OSCORE data, creating AAD, reading data
@@ -277,15 +279,18 @@ public class OSSerializer {
 
 		CBORObject algCountersign;
 		CBORObject parCountersign;
+		byte[] senderPublicKey;
 
 		if (ctx instanceof GroupRecipientCtx) {
 			GroupRecipientCtx recipientCtx = (GroupRecipientCtx) ctx;
 			algCountersign = recipientCtx.getAlgCountersign().AsCBOR();
 			parCountersign = CBORObject.FromObject(recipientCtx.getParCountersign());
+			senderPublicKey = recipientCtx.getPublicKeyRaw();
 		} else {
 			GroupSenderCtx senderCtx = (GroupSenderCtx) ctx;
 			algCountersign = senderCtx.getAlgCountersign().AsCBOR();
 			parCountersign = CBORObject.FromObject(senderCtx.getParCountersign());
+			senderPublicKey = senderCtx.getPublicKeyRaw();
 		}
 
 		CBORObject groupAadEnc = CBORObject.DecodeFromBytes(aadBytes);
@@ -325,6 +330,10 @@ public class OSSerializer {
 
 		// Actually add OSCORE option to external AAD
 		groupAadEnc.Add(oscoreOption);
+
+		// Add the sender public key
+		System.out.println("Sender public key: " + Utils.bytesToHex(senderPublicKey));
+		groupAadEnc.Add(CBORObject.FromObject(senderPublicKey));
 
 		return groupAadEnc.EncodeToBytes();
 	}

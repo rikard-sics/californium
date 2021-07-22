@@ -37,16 +37,18 @@ public class GroupSenderCtx extends OSCoreCtx {
 
 	GroupCtx commonCtx;
 	OneKey ownPrivateKey;
+	byte[] ownPublicKeyRaw;
 
 	HashMap<ByteId, byte[]> pairwiseSenderKeys;
 
 	GroupSenderCtx(byte[] master_secret, boolean client, AlgorithmID alg, byte[] sender_id, byte[] recipient_id,
 			AlgorithmID kdf, Integer replay_size, byte[] master_salt, byte[] contextId, OneKey ownPrivateKey,
-			GroupCtx commonCtx) throws OSException {
+			byte[] ownPublicKeyRaw, GroupCtx commonCtx) throws OSException {
 		super(master_secret, client, alg, sender_id, recipient_id, kdf, replay_size, master_salt, contextId);
 
 		this.commonCtx = commonCtx;
 		this.ownPrivateKey = ownPrivateKey;
+		this.ownPublicKeyRaw = ownPublicKeyRaw;
 
 		pairwiseSenderKeys = new HashMap<ByteId, byte[]>();
 	}
@@ -151,6 +153,16 @@ public class GroupSenderCtx extends OSCoreCtx {
 	 */
 	public OneKey getPrivateKey() {
 		return ownPrivateKey;
+	}
+
+	/**
+	 * Get the raw bytes of the public key associated to this sender context,
+	 * meaning your own public key.
+	 * 
+	 * @return the bytes of the public key
+	 */
+	public byte[] getPublicKeyRaw() {
+		return ownPublicKeyRaw;
 	}
 
 	@Override
