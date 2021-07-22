@@ -30,17 +30,18 @@ public class GroupRecipientCtx extends OSCoreCtx {
 
 	GroupCtx commonCtx;
 	OneKey otherEndpointPubKey;
+	byte[] otherEndpointPubKeyRaw;
 
 	byte[] pairwiseRecipientKey;
 
 	GroupRecipientCtx(byte[] master_secret, boolean client, AlgorithmID alg, byte[] sender_id,
 			byte[] recipient_id, AlgorithmID kdf, Integer replay_size, byte[] master_salt, byte[] contextId,
-			OneKey otherEndpointPubKey, GroupCtx commonCtx) throws OSException {
+			OneKey otherEndpointPubKey, byte[] otherEndpointPubKeyRaw, GroupCtx commonCtx) throws OSException {
 		super(master_secret, client, alg, sender_id, recipient_id, kdf, replay_size, master_salt, contextId);
 
 		this.commonCtx = commonCtx;
 		this.otherEndpointPubKey = otherEndpointPubKey;
-
+		this.otherEndpointPubKeyRaw = otherEndpointPubKeyRaw;
 	}
 
 	/**
@@ -51,6 +52,16 @@ public class GroupRecipientCtx extends OSCoreCtx {
 	 */
 	public OneKey getPublicKey() {
 		return otherEndpointPubKey;
+	}
+
+	/**
+	 * Get the raw bytes of the public key associated to this recipient context,
+	 * meaning the public key of the other endpoint.
+	 * 
+	 * @return the bytes of the public key of the other endpoint
+	 */
+	public byte[] getPublicKeyRaw() {
+		return otherEndpointPubKeyRaw;
 	}
 
 	/**
