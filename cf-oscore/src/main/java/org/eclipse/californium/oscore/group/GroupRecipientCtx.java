@@ -41,8 +41,7 @@ public class GroupRecipientCtx extends OSCoreCtx {
 			OneKey otherEndpointPubKey, byte[] otherEndpointPubKeyRaw, GroupCtx commonCtx) throws OSException {
 		
 		// Build OSCORE Context using OSCoreCtx constructor
-		super(master_secret, client, alg, sender_id, recipient_id, kdf, replay_size, master_salt, contextId,
-				DEFAULT_MAX_UNFRAGMENTED_SIZE);
+		super(master_secret, client, alg, sender_id, recipient_id, kdf, replay_size, master_salt, contextId, DEFAULT_MAX_UNFRAGMENTED_SIZE);
 
 		this.commonCtx = commonCtx;
 		this.otherEndpointPubKey = otherEndpointPubKey;
@@ -61,6 +60,16 @@ public class GroupRecipientCtx extends OSCoreCtx {
 		return otherEndpointPubKey;
 	}
 	
+	/**
+	 * Get the raw bytes of the public key associated to this recipient context,
+	 * meaning the public key of the other endpoint.
+	 * 
+	 * @return the bytes of the public key of the other endpoint
+	 */
+	public byte[] getPublicKeyRaw() {
+		return otherEndpointPubKeyRaw;
+	}
+
 	/**
 	 * Get the raw bytes of the public key associated to this recipient context,
 	 * meaning the public key of the other endpoint.
