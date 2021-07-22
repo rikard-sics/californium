@@ -146,7 +146,8 @@ public class GroupCtx {
 	 */
 	public void addRecipientCtx(byte[] recipientId, int replayWindow, OneKey otherEndpointPubKey) throws OSException {
 		GroupRecipientCtx recipientCtx = new GroupRecipientCtx(masterSecret, false, aeadAlg, null, recipientId, hkdfAlg,
-				replayWindow, masterSalt, idContext, otherEndpointPubKey, this);
+				replayWindow, masterSalt, idContext, otherEndpointPubKey,
+				/* FIXME */ null, this);
 
 		recipientCtxMap.put(new ByteId(recipientId), recipientCtx);
 
@@ -166,11 +167,56 @@ public class GroupCtx {
 		}
 
 		GroupSenderCtx senderCtx = new GroupSenderCtx(masterSecret, false, aeadAlg, senderId, null, hkdfAlg, 0,
-				masterSalt, idContext, ownPrivateKey, this);
+				masterSalt, idContext, ownPrivateKey, /* FIXME */ null, this);
 		this.senderCtx = senderCtx;
 
 		this.groupEncryptionKey = deriveGroupEncryptionKey();
 	}
+
+	//
+	/**
+	 * Add a recipient context.
+	 * 
+	 * @param recipientId
+	 * @param replayWindow
+	 * @param otherEndpointPubKey
+	 * @throws OSException
+	 */
+	public void addRecipientCtx(byte[] recipientId, int replayWindow, MultiKey otherEndpointPubKey, int dummy)
+			throws OSException {
+		GroupRecipientCtx recipientCtx;
+		if (otherEndpointPubKey != null) {
+			recipientCtx = new GroupRecipientCtx(masterSecret, false, aeadAlg, null, recipientId, hkdfAlg, replayWindow,
+					masterSalt, idContext, otherEndpointPubKey.getCoseKey(), otherEndpointPubKey.getRawKey(), this);
+		} else {
+			recipientCtx = new GroupRecipientCtx(masterSecret, false, aeadAlg, null, recipientId, hkdfAlg, replayWindow,
+					masterSalt, idContext, null, null, this);
+		}
+
+		recipientCtxMap.put(new ByteId(recipientId), recipientCtx);
+
+	}
+
+	/**
+	 * Add a sender context.
+	 * 
+	 * @param senderId
+	 * @param ownPrivateKey
+	 * @throws OSException
+	 */
+	public void addSenderCtx(byte[] senderId, MultiKey ownPrivateKey, int dummy) throws OSException {
+
+		if (senderCtx != null) {
+			throw new OSException("Cannot add more than one Sender Context.");
+		}
+
+		GroupSenderCtx senderCtx = new GroupSenderCtx(masterSecret, false, aeadAlg, senderId, null, hkdfAlg, 0,
+				masterSalt, idContext, ownPrivateKey.getCoseKey(), ownPrivateKey.getRawKey(), this);
+		this.senderCtx = senderCtx;
+
+		this.groupEncryptionKey = deriveGroupEncryptionKey();
+	}
+	//
 
 	public int getCountersignatureLen() {
 		switch (algCountersign) {

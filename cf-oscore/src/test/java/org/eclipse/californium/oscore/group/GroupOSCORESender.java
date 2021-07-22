@@ -138,15 +138,15 @@ public class GroupOSCORESender {
 
 	private final static byte[] sid = new byte[] { 0x25 };
 	private final static String sid_private_key_string = "pQMnAQEgBiFYIAaekSuDljrMWUG2NUaGfewQbluQUfLuFPO8XMlhrNQ6I1ggZHFNQaJAth2NgjUCcXqwiMn0r2/JhEVT5K1MQsxzUjk=";
-	private static OneKey sid_private_key;
+	private static MultiKey sid_private_key;
 
 	private final static byte[] rid1 = new byte[] { 0x52 }; // Recipient 1
-	private final static String rid1_public_key_string = "pAMnAQEgBiFYIHfsNYwdNE5B7g6HuDg9I6IJms05vfmJzkW1Loh0Yzib";
-	private static OneKey rid1_public_key;
+	private final static String rid1_public_key_string = "pQF4GmNvYXBzOi8vc2VydmVyLmV4YW1wbGUuY29tAmZzZW5kZXIDeBpjb2FwczovL2NsaWVudC5leGFtcGxlLm9yZwQacABLTwihAaQDJwEBIAYhWCB37DWMHTROQe4Oh7g4PSOiCZrNOb35ic5FtS6IdGM4mw==";
+	private static MultiKey rid1_public_key;
 
 	private final static byte[] rid2 = new byte[] { 0x77 }; // Recipient 2
 	private final static String rid2_public_key_string = "pAMnAQEgBiFYIBBbjGqMiAGb8MNUWSk0EwuqgAc5nMKsO+hFiEYT1bou";
-	private static OneKey rid2_public_key;
+	private static MultiKey rid2_public_key;
 
 	private final static byte[] rid0 = new byte[] { (byte) 0xCC }; // Dummy
 
@@ -172,23 +172,20 @@ public class GroupOSCORESender {
 		// InstallCryptoProviders.generateCounterSignKey();
 
 		// Add private & public keys for sender & receiver(s)
-		sid_private_key = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary((sid_private_key_string))));
-		rid1_public_key = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary((rid1_public_key_string))));
-		rid2_public_key = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary((rid2_public_key_string))));
+		sid_private_key = new MultiKey(DatatypeConverter.parseBase64Binary(sid_private_key_string));
+		rid1_public_key = new MultiKey(DatatypeConverter.parseBase64Binary(rid1_public_key_string));
+		rid2_public_key = new MultiKey(DatatypeConverter.parseBase64Binary(rid2_public_key_string));
 
 		// If OSCORE is being used set the context information
 		if (useOSCORE) {
 
 			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign);
 
-			commonCtx.addSenderCtx(sid, sid_private_key);
+			commonCtx.addSenderCtx(sid, sid_private_key, 1);
 
-			commonCtx.addRecipientCtx(rid0, REPLAY_WINDOW, null);
-			commonCtx.addRecipientCtx(rid1, REPLAY_WINDOW, rid1_public_key);
-			commonCtx.addRecipientCtx(rid2, REPLAY_WINDOW, rid2_public_key);
+			commonCtx.addRecipientCtx(rid0, REPLAY_WINDOW, null, 1);
+			commonCtx.addRecipientCtx(rid1, REPLAY_WINDOW, rid1_public_key, 1);
+			commonCtx.addRecipientCtx(rid2, REPLAY_WINDOW, rid2_public_key, 1);
 
 			commonCtx.setResponsesIncludePartialIV(true);
 			commonCtx.setResponsesIncludePartialIV(true);
