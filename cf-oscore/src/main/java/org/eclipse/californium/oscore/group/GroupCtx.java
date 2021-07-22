@@ -172,8 +172,7 @@ public class GroupCtx {
 	 */
 	public void addRecipientCtx(byte[] recipientId, int replayWindow, OneKey otherEndpointPubKey) throws OSException {
 		GroupRecipientCtx recipientCtx = new GroupRecipientCtx(masterSecret, false, aeadAlg, null, recipientId, hkdfAlg,
-				replayWindow, masterSalt, idContext, otherEndpointPubKey,
-				null, this);
+				replayWindow, masterSalt, idContext, otherEndpointPubKey, null, this);
 
 		recipientCtxMap.put(new ByteId(recipientId), recipientCtx);
 
@@ -252,7 +251,6 @@ public class GroupCtx {
 	 * @throws OSException
 	 */
 	public void addSenderCtxCcs(byte[] senderId, MultiKey ownPrivateKey) throws OSException {
-
 		if (senderCtx != null) {
 			throw new OSException("Cannot add more than one Sender Context.");
 		}
@@ -301,7 +299,7 @@ public class GroupCtx {
 	public byte[] getGmPublicKey() {
 		return gmPublicKey;
 	}
-	
+
 	public int getCountersignatureLen() {
 		switch (algSign) {
 		case EDDSA:

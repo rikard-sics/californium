@@ -132,6 +132,7 @@ public class GroupOSCOREReceiver {
 			"A501781A636F6170733A2F2F6D79736974652E6578616D706C652E636F6D026C67726F75706D616E6167657203781A636F6170733A2F2F646F6D61696E2E6578616D706C652E6F7267041AAB9B154F08A101A4010103272006215820CDE3EFD3BC3F99C9C9EE210415C6CBA55061B5046E963B8A58C9143A61166472");
 
 	private static byte[] sid = new byte[] { 0x52 };
+<<<<<<< HEAD
 	private static byte[] sid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
 			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A401010327200621582077EC358C1D344E41EE0E87B8383D23A2099ACD39BDF989CE45B52E887463389B");
 	private static byte[] sid_private_key_bytes = new byte[] { (byte) 0x85, 0x7E, (byte) 0xB6, 0x1D, 0x3F, 0x6D, 0x70,
@@ -143,6 +144,17 @@ public class GroupOSCOREReceiver {
 	private final static byte[] rid1 = new byte[] { 0x25 };
 	private final static byte[] rid1_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
 			"A501781B636F6170733A2F2F746573746572312E6578616D706C652E636F6D02666D796E616D6503781A636F6170733A2F2F68656C6C6F312E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820069E912B83963ACC5941B63546867DEC106E5B9051F2EE14F3BC5CC961ACD43A");
+=======
+	private static String sid_public_key_string = "pQF4GmNvYXBzOi8vc2VydmVyLmV4YW1wbGUuY29tAmZzZW5kZXIDeBpjb2FwczovL2NsaWVudC5leGFtcGxlLm9yZwQacABLTwihAaQDJwEBIAYhWCB37DWMHTROQe4Oh7g4PSOiCZrNOb35ic5FtS6IdGM4mw==";
+	private static byte[] sid_private_key_bytes = new byte[] { (byte) 0x85, 0x7E, (byte) 0xB6, 0x1D, 0x3F, 0x6D, 0x70,
+			(byte) 0xA2, 0x78, (byte) 0xA3, 0x67, 0x40, (byte) 0xD1, 0x32, (byte) 0xC0, (byte) 0x99, (byte) 0xF6, 0x28,
+			(byte) 0x80, (byte) 0xED, 0x49, 0x7E, 0x27, (byte) 0xBD, (byte) 0xFD, 0x46, (byte) 0x85, (byte) 0xFA,
+			0x1A, 0x30, 0x4F, 0x26 };
+	private static MultiKey sid_private_key;
+
+	private final static byte[] rid1 = new byte[] { 0x25 };
+	private final static String rid1_public_key_string = "pAMnAQEgBiFYIAaekSuDljrMWUG2NUaGfewQbluQUfLuFPO8XMlhrNQ6";
+>>>>>>> 25d39dc9f (CWT claims set as key format and inclusion of public key in external_aad)
 	private static MultiKey rid1_public_key;
 
 	private final static byte[] group_identifier = new byte[] { 0x44, 0x61, 0x6c }; // GID
@@ -156,21 +168,42 @@ public class GroupOSCOREReceiver {
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 1);
 
+		// byte[] key = net.i2p.crypto.eddsa.Utils.hexToBytes(
+		// "A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D027734322D35302D33312D46462D45462D33372D33322D333903781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A401022001215820D7CC072DE2205BDC1537A543D53C60A6ACB62ECCD890C7FA27C9E354089BBE13225820F95E1D4B851A2CC80FFF87D8E23F22AFB725D535E515D020731E79A3B4E47120");
+		// MultiKey test = new MultiKey(key);
+		// byte[] key2 =
+		// DatatypeConverter.parseBase64Binary(sid_private_key_string);
+		// MultiKey test2 = new MultiKey(key2);
+
 		// Set sender & receiver keys for countersignatures
+<<<<<<< HEAD
 		sid_private_key = new MultiKey(sid_public_key_bytes, sid_private_key_bytes);
 		rid1_public_key = new MultiKey(rid1_public_key_bytes);
+=======
+		sid_private_key = new MultiKey(DatatypeConverter.parseBase64Binary(sid_public_key_string),
+				sid_private_key_bytes);
+		rid1_public_key = new MultiKey(DatatypeConverter.parseBase64Binary(rid1_public_key_string));
+>>>>>>> 25d39dc9f (CWT claims set as key format and inclusion of public key in external_aad)
 
 		// Check command line arguments (flag to use different sid and sid key)
 		if (args.length != 0) {
 			System.out.println("Starting with alternative sid 0x77.");
 			sid = new byte[] { 0x77 };
+<<<<<<< HEAD
 			sid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
 					"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820105B8C6A8C88019BF0C354592934130BAA8007399CC2AC3BE845884613D5BA2E");
+=======
+			sid_public_key_string = "pQF4GmNvYXBzOi8vc2VydmVyLmV4YW1wbGUuY29tAmZzZW5kZXIDeBpjb2FwczovL2NsaWVudC5leGFtcGxlLm9yZwQacABLTwihAaQDJwEBIAYhWCAQW4xqjIgBm/DDVFkpNBMLqoAHOZzCrDvoRYhGE9W6Lg==";
+>>>>>>> 25d39dc9f (CWT claims set as key format and inclusion of public key in external_aad)
 			sid_private_key_bytes = new byte[] { 0x7B, (byte) 0xF6, 0x2F, 0x76, 0x7E, (byte) 0xD1, (byte) 0xCF, 0x4C,
 					0x60, (byte) 0x91, 0x1F, (byte) 0xC4, (byte) 0x9F, (byte) 0xDF, (byte) 0xCC, (byte) 0xB9,
 					(byte) 0xBD, 0x47, (byte) 0xCC, 0x7E, (byte) 0x9F, (byte) 0xAF, 0x41, (byte) 0xCB, 0x66, 0x36,
 					(byte) 0x9D, 0x5C, (byte) 0x85, 0x08, (byte) 0xB2, 0x39 };
+<<<<<<< HEAD
 			sid_private_key = new MultiKey(sid_public_key_bytes, sid_private_key_bytes);
+=======
+			sid_private_key = new MultiKey(DatatypeConverter.parseBase64Binary(sid_public_key_string));
+>>>>>>> 25d39dc9f (CWT claims set as key format and inclusion of public key in external_aad)
 		} else {
 			System.out.println("Starting with sid 0x52.");
 		}
@@ -182,9 +215,15 @@ public class GroupOSCOREReceiver {
 			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign,
 					algSignEnc, algKeyAgreement, gmPublicKey);
 
+<<<<<<< HEAD
 			commonCtx.addSenderCtxCcs(sid, sid_private_key);
 
 			commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
+=======
+			commonCtx.addSenderCtx(sid, sid_private_key, 1);
+
+			commonCtx.addRecipientCtx(rid1, REPLAY_WINDOW, rid1_public_key, 1);
+>>>>>>> 25d39dc9f (CWT claims set as key format and inclusion of public key in external_aad)
 
 			commonCtx.setResponsesIncludePartialIV(true);
 

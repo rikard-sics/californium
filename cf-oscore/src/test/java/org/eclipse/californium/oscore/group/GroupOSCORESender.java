@@ -134,6 +134,7 @@ public class GroupOSCORESender {
 			"A501781A636F6170733A2F2F6D79736974652E6578616D706C652E636F6D026C67726F75706D616E6167657203781A636F6170733A2F2F646F6D61696E2E6578616D706C652E6F7267041AAB9B154F08A101A4010103272006215820CDE3EFD3BC3F99C9C9EE210415C6CBA55061B5046E963B8A58C9143A61166472");
 
 	private final static byte[] sid = new byte[] { 0x25 };
+<<<<<<< HEAD
 
 	private final static byte[] sid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
 			"A501781B636F6170733A2F2F746573746572312E6578616D706C652E636F6D02666D796E616D6503781A636F6170733A2F2F68656C6C6F312E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820069E912B83963ACC5941B63546867DEC106E5B9051F2EE14F3BC5CC961ACD43A");
@@ -152,6 +153,17 @@ public class GroupOSCORESender {
 	private final static byte[] rid2 = new byte[] { 0x77 }; // Recipient 2
 	private final static byte[] rid2_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
 			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820105B8C6A8C88019BF0C354592934130BAA8007399CC2AC3BE845884613D5BA2E");
+=======
+	private final static String sid_private_key_string = "pQMnAQEgBiFYIAaekSuDljrMWUG2NUaGfewQbluQUfLuFPO8XMlhrNQ6I1ggZHFNQaJAth2NgjUCcXqwiMn0r2/JhEVT5K1MQsxzUjk=";
+	private static MultiKey sid_private_key;
+
+	private final static byte[] rid1 = new byte[] { 0x52 }; // Recipient 1
+	private final static String rid1_public_key_string = "pQF4GmNvYXBzOi8vc2VydmVyLmV4YW1wbGUuY29tAmZzZW5kZXIDeBpjb2FwczovL2NsaWVudC5leGFtcGxlLm9yZwQacABLTwihAaQDJwEBIAYhWCB37DWMHTROQe4Oh7g4PSOiCZrNOb35ic5FtS6IdGM4mw==";
+	private static MultiKey rid1_public_key;
+
+	private final static byte[] rid2 = new byte[] { 0x77 }; // Recipient 2
+	private final static String rid2_public_key_string = "pAMnAQEgBiFYIBBbjGqMiAGb8MNUWSk0EwuqgAc5nMKsO+hFiEYT1bou";
+>>>>>>> 25d39dc9f (CWT claims set as key format and inclusion of public key in external_aad)
 	private static MultiKey rid2_public_key;
 
 	private final static byte[] rid0 = new byte[] { (byte) 0xCC }; // Dummy
@@ -178,9 +190,15 @@ public class GroupOSCORESender {
 		// InstallCryptoProviders.generateCounterSignKey();
 
 		// Add private & public keys for sender & receiver(s)
+<<<<<<< HEAD
 		sid_private_key = new MultiKey(sid_public_key_bytes, sid_private_key_bytes);
 		rid1_public_key = new MultiKey(rid1_public_key_bytes);
 		rid2_public_key = new MultiKey(rid2_public_key_bytes);
+=======
+		sid_private_key = new MultiKey(DatatypeConverter.parseBase64Binary(sid_private_key_string));
+		rid1_public_key = new MultiKey(DatatypeConverter.parseBase64Binary(rid1_public_key_string));
+		rid2_public_key = new MultiKey(DatatypeConverter.parseBase64Binary(rid2_public_key_string));
+>>>>>>> 25d39dc9f (CWT claims set as key format and inclusion of public key in external_aad)
 
 		// If OSCORE is being used set the context information
 		if (useOSCORE) {
@@ -189,11 +207,19 @@ public class GroupOSCORESender {
 			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign,
 					algSignEnc, algKeyAgreement, gmPublicKey);
 
+<<<<<<< HEAD
 			commonCtx.addSenderCtxCcs(sid, sid_private_key);
 
 			commonCtx.addRecipientCtxCcs(rid0, REPLAY_WINDOW, null);
 			commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
 			commonCtx.addRecipientCtxCcs(rid2, REPLAY_WINDOW, rid2_public_key);
+=======
+			commonCtx.addSenderCtx(sid, sid_private_key, 1);
+
+			commonCtx.addRecipientCtx(rid0, REPLAY_WINDOW, null, 1);
+			commonCtx.addRecipientCtx(rid1, REPLAY_WINDOW, rid1_public_key, 1);
+			commonCtx.addRecipientCtx(rid2, REPLAY_WINDOW, rid2_public_key, 1);
+>>>>>>> 25d39dc9f (CWT claims set as key format and inclusion of public key in external_aad)
 
 			commonCtx.setResponsesIncludePartialIV(true);
 			commonCtx.setResponsesIncludePartialIV(true);

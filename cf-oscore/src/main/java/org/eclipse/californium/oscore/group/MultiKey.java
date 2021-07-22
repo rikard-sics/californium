@@ -8,6 +8,8 @@ import org.eclipse.californium.elements.util.Bytes;
 
 import com.upokecenter.cbor.CBORObject;
 
+import net.i2p.crypto.eddsa.Utils;
+
 //TODO: Need clone?
 public class MultiKey {
 
@@ -76,6 +78,7 @@ public class MultiKey {
 			// Save private key and strip from byte array if present
 			byte[] privateKey = null;
 			if (cborKey.get(-4) != null) {
+
 				// System.out.println("Has private part");
 
 				privateKey = cborKey.get(-4).GetByteString();

@@ -325,7 +325,7 @@ public class OSSerializer {
 			senderPublicKey = Bytes.EMPTY;
 			gmPublicKey = senderCtx.getCommonCtx().getGmPublicKey();
 		}
-
+			
 		CBORObject groupAadEnc = CBORObject.DecodeFromBytes(aadBytes);
 
 		// Build index 1 which holds the algorithms array
