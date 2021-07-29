@@ -140,7 +140,7 @@ public class GroupOSCOREReceiver {
 	private static MultiKey sid_private_key;
 
 	private final static byte[] rid1 = new byte[] { 0x25 };
-	private final static String rid1_public_key_string = "pAMnAQEgBiFYIAaekSuDljrMWUG2NUaGfewQbluQUfLuFPO8XMlhrNQ6";
+	private final static String rid1_public_key_string = "pQF4G2NvYXBzOi8vdGVzdGVyMS5leGFtcGxlLmNvbQJmbXluYW1lA3gaY29hcHM6Ly9oZWxsbzEuZXhhbXBsZS5vcmcEGnAAS08IoQGkAycBASAGIVggBp6RK4OWOsxZQbY1RoZ97BBuW5BR8u4U87xcyWGs1Do=";
 	private static MultiKey rid1_public_key;
 
 	private final static byte[] group_identifier = new byte[] { 0x44, 0x61, 0x6c }; // GID
@@ -153,13 +153,6 @@ public class GroupOSCOREReceiver {
 		// Install cryptographic providers
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 0);
-
-		// byte[] key = net.i2p.crypto.eddsa.Utils.hexToBytes(
-		// "A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D027734322D35302D33312D46462D45462D33372D33322D333903781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A401022001215820D7CC072DE2205BDC1537A543D53C60A6ACB62ECCD890C7FA27C9E354089BBE13225820F95E1D4B851A2CC80FFF87D8E23F22AFB725D535E515D020731E79A3B4E47120");
-		// MultiKey test = new MultiKey(key);
-		// byte[] key2 =
-		// DatatypeConverter.parseBase64Binary(sid_private_key_string);
-		// MultiKey test2 = new MultiKey(key2);
 
 		// Set sender & receiver keys for countersignatures
 		sid_private_key = new MultiKey(DatatypeConverter.parseBase64Binary(sid_public_key_string),
@@ -175,7 +168,8 @@ public class GroupOSCOREReceiver {
 					0x60, (byte) 0x91, 0x1F, (byte) 0xC4, (byte) 0x9F, (byte) 0xDF, (byte) 0xCC, (byte) 0xB9,
 					(byte) 0xBD, 0x47, (byte) 0xCC, 0x7E, (byte) 0x9F, (byte) 0xAF, 0x41, (byte) 0xCB, 0x66, 0x36,
 					(byte) 0x9D, 0x5C, (byte) 0x85, 0x08, (byte) 0xB2, 0x39 };
-			sid_private_key = new MultiKey(DatatypeConverter.parseBase64Binary(sid_public_key_string));
+			sid_private_key = new MultiKey(DatatypeConverter.parseBase64Binary(sid_public_key_string),
+					sid_private_key_bytes);
 		} else {
 			System.out.println("Starting with sid 0x52.");
 		}
