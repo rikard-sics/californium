@@ -280,17 +280,20 @@ public class OSSerializer {
 		CBORObject algCountersign;
 		CBORObject parCountersign;
 		byte[] senderPublicKey;
+		byte[] gmPublicKey;
 
 		if (ctx instanceof GroupRecipientCtx) {
 			GroupRecipientCtx recipientCtx = (GroupRecipientCtx) ctx;
 			algCountersign = recipientCtx.getAlgCountersign().AsCBOR();
 			parCountersign = CBORObject.FromObject(recipientCtx.getParCountersign());
 			senderPublicKey = recipientCtx.getPublicKeyRaw();
+			gmPublicKey = recipientCtx.getCommonCtx().getGmPublicKey();
 		} else {
 			GroupSenderCtx senderCtx = (GroupSenderCtx) ctx;
 			algCountersign = senderCtx.getAlgCountersign().AsCBOR();
 			parCountersign = CBORObject.FromObject(senderCtx.getParCountersign());
 			senderPublicKey = senderCtx.getPublicKeyRaw();
+			gmPublicKey = senderCtx.getCommonCtx().getGmPublicKey();
 		}
 
 		CBORObject groupAadEnc = CBORObject.DecodeFromBytes(aadBytes);
@@ -332,8 +335,14 @@ public class OSSerializer {
 		groupAadEnc.Add(oscoreOption);
 
 		// Add the sender public key
-		System.out.println("Sender public key: " + Utils.bytesToHex(senderPublicKey));
+		// System.out.println("Sender public key: " +
+		// Utils.bytesToHex(senderPublicKey));
 		groupAadEnc.Add(CBORObject.FromObject(senderPublicKey));
+
+		// Add the Group Manager's public key
+		// System.out.println("Sender public key: " +
+		// Utils.bytesToHex(senderPublicKey));
+		groupAadEnc.Add(CBORObject.FromObject(gmPublicKey));
 
 		return groupAadEnc.EncodeToBytes();
 	}
