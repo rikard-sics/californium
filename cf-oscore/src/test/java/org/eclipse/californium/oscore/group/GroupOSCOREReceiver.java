@@ -124,12 +124,7 @@ public class GroupOSCOREReceiver {
 
 	private static final int REPLAY_WINDOW = 32;
 
-	/*
-	 * Rikard: Note regarding countersignature keys. The sid_private_key
-	 * contains both the public and private keys. The rid*_public_key contains
-	 * only the public key. For information on the keys see the Countersign_Keys
-	 * file.
-	 */
+	private final static String gm_public_key_string = "pQF4GmNvYXBzOi8vbXlzaXRlLmV4YW1wbGUuY29tAmxncm91cG1hbmFnZXIDeBpjb2FwczovL2RvbWFpbi5leGFtcGxlLm9yZwQaq5sVTwihAaQDJwEBIAYhWCDN4+/TvD+ZycnuIQQVxsulUGG1BG6WO4pYyRQ6YRZkcg==";
 
 	private static byte[] sid = new byte[] { 0x52 };
 	private static String sid_public_key_string = "pQF4GmNvYXBzOi8vc2VydmVyLmV4YW1wbGUuY29tAmZzZW5kZXIDeBpjb2FwczovL2NsaWVudC5leGFtcGxlLm9yZwQacABLTwihAaQDJwEBIAYhWCB37DWMHTROQe4Oh7g4PSOiCZrNOb35ic5FtS6IdGM4mw==";
@@ -177,7 +172,9 @@ public class GroupOSCOREReceiver {
 		// If OSCORE is being used set the context information
 		if (useOSCORE) {
 
-			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign);
+			byte[] gmPublicKey = DatatypeConverter.parseBase64Binary(gm_public_key_string);
+			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign,
+					gmPublicKey);
 
 			commonCtx.addSenderCtx(sid, sid_private_key, 1);
 

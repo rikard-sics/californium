@@ -126,6 +126,10 @@ public class CountersignAlgorithmsTest {
 			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
 	private final static byte[] context_id = { 0x74, 0x65, 0x73, 0x74, 0x74, 0x65, 0x73, 0x74 };
 
+	// Key for the GM
+	private static String gmPublicKeyString = "pQF4GmNvYXBzOi8vbXlzaXRlLmV4YW1wbGUuY29tAmxncm91cG1hbmFnZXIDeBpjb2FwczovL2RvbWFpbi5leGFtcGxlLm9yZwQaq5sVTwihAaQDJwEBIAYhWCDN4+/TvD+ZycnuIQQVxsulUGG1BG6WO4pYyRQ6YRZkcg==";
+	private static byte[] gmPublicKey = DatatypeConverter.parseBase64Binary(gmPublicKeyString);
+
 	// Keys for client and server
 	private static String clientKeyEcdsa256 = "pgECI1gg2qPzgLjNqAaJWnjh9trtVjX2Gp2mbzyAQLSJt9LD2j8iWCDe8qCLkQ59ZOIwmFVk2oGtfoz4epMe/Fg2nvKQwkQ+XiFYIKb0PXRXX/6hU45EpcXUAQPufU03fkYA+W6gPoiZ+d0YIAEDJg==";
 	private static String serverKeyEcdsa256 = "pgECI1ggP2Jr+HhJPSq1U6SebYmOj5EtwhswehlvWwHBFbxJ0ckiWCCukpflkrMHKW6aNaku7GO2ieP3YO5B5/mqGWBIJUEpIyFYIH+jx7yPzktyM/dG/WmygfEk8XYsIFcKgR2TlvKd5+SRIAEDJg==";
@@ -327,7 +331,8 @@ public class CountersignAlgorithmsTest {
 		byte[] sid = new byte[] { 0x25 };
 		byte[] rid1 = new byte[] { 0x77 };
 
-		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign);
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
+				gmPublicKey);
 
 		OneKey clientFullKey = clientKey;
 		commonCtx.addSenderCtx(sid, clientFullKey);
@@ -357,7 +362,8 @@ public class CountersignAlgorithmsTest {
 		byte[] sid = new byte[] { 0x77 };
 		byte[] rid = new byte[] { 0x25 };
 
-		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign);
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
+				gmPublicKey);
 
 		OneKey serverFullKey = serverKey;
 		commonCtx.addSenderCtx(sid, serverFullKey);
