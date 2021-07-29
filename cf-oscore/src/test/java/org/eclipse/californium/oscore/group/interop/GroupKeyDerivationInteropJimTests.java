@@ -180,7 +180,7 @@ public class GroupKeyDerivationInteropJimTests {
 	public void testMessage1Creation() throws OSException, ConnectorException, IOException {
 		String destinationUri = "coap://127.0.0.1/test";
 
-		GroupCtx groupCtxJim = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256);
+		GroupCtx groupCtxJim = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256, null);
 		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParametersOld.JIM_ENTITY_1_KEY_ECDSA);
 		groupCtxJim.addSenderCtx(InteropParametersOld.JIM_ENTITY_1_KID, senderFullKey);
 		db.addContext(destinationUri, groupCtxJim);
@@ -222,7 +222,7 @@ public class GroupKeyDerivationInteropJimTests {
 	public void testMessage1CreationAlt() throws OSException, ConnectorException, IOException {
 		// String destinationUri = "coap://127.0.0.1/test";
 
-		GroupCtx groupCtxJim = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256);
+		GroupCtx groupCtxJim = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256, null);
 		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParametersOld.JIM_ENTITY_1_KEY_ECDSA);
 		groupCtxJim.addSenderCtx(InteropParametersOld.JIM_ENTITY_1_KID, senderFullKey);
 
@@ -277,7 +277,7 @@ public class GroupKeyDerivationInteropJimTests {
 		// --- Try decryption ---
 		String destinationUri = "coap://127.0.0.1/test";
 
-		GroupCtx groupCtxJim = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256);
+		GroupCtx groupCtxJim = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256, null);
 		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParametersOld.RIKARD_ENTITY_2_KEY_ECDSA);
 		groupCtxJim.addSenderCtx(InteropParametersOld.RIKARD_ENTITY_2_KID, senderFullKey);
 		groupCtxJim.addRecipientCtx(InteropParametersOld.JIM_ENTITY_1_KID, REPLAY_WINDOW,
@@ -321,7 +321,7 @@ public class GroupKeyDerivationInteropJimTests {
 	public void testSharedSecretECDSA()
 			throws OSException, CoseException, NoSuchAlgorithmException, InvalidKeyException {
 
-		GroupCtx groupCtxJim = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256);
+		GroupCtx groupCtxJim = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256, null);
 
 		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParametersOld.JIM_ENTITY_1_KEY_ECDSA);
 		groupCtxJim.addSenderCtx(InteropParametersOld.JIM_ENTITY_1_KID, senderFullKey);
@@ -566,7 +566,7 @@ public class GroupKeyDerivationInteropJimTests {
 
 		// Create context using ECDSA_256
 
-		GroupCtx groupCtxEcdsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256);
+		GroupCtx groupCtxEcdsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256, null);
 
 		OneKey senderFullKey = new OneKey(OneKeyDecoder.parseDiagnosticToCbor(senderFullKeyEcdsa256));
 		groupCtxEcdsa.addSenderCtx(sid, senderFullKey);
@@ -595,7 +595,7 @@ public class GroupKeyDerivationInteropJimTests {
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 0);
 
-		GroupCtx groupCtxEddsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.EDDSA);
+		GroupCtx groupCtxEddsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.EDDSA, null);
 
 		senderFullKey = new OneKey(OneKeyDecoder.parseDiagnosticToCbor(senderFullKeyEddsa));
 		groupCtxEddsa.addSenderCtx(sid, senderFullKey);

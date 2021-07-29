@@ -194,7 +194,7 @@ public class GroupOSCOREInteropClient {
 		GroupRecipientCtx recipient2Ctx;
 		if (useOSCORE) {
 
-			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign);
+			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign, null);
 
 			commonCtx.addSenderCtx(sid, sid_private_key);
 
