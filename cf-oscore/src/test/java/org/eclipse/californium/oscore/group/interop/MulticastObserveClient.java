@@ -180,7 +180,7 @@ public class MulticastObserveClient {
 			rid2_public_key = new OneKey(
 					CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary((rid2_public_key_string))));
 
-			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign);
+			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign, null);
 
 			commonCtx.addSenderCtx(sid, sid_private_key);
 
