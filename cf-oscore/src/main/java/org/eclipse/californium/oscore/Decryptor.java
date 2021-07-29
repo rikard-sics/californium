@@ -159,6 +159,8 @@ public abstract class Decryptor {
 			// Update external AAD value for Group OSCORE
 			aad = OSSerializer.updateAADForGroup(ctx, aad, message);
 
+			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + ", using pairwise mode: "
+					+ !groupModeMessage);
 			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + " with AAD "
 					+ Utils.toHexString(aad));
 

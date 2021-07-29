@@ -374,7 +374,8 @@ public class GroupCtx {
 	}
 
 	// TODO: Merge with below?
-	byte[] derivePairwiseSenderKey(byte[] recipientId, byte[] recipientKey, OneKey recipientPublicKey) {
+	byte[] derivePairwiseSenderKey(byte[] recipientId, byte[] recipientKey, OneKey recipientPublicKey,
+			byte[] recipientPublicKeyRaw) {
 
 		// TODO: Move? See below also
 		if (recipientPublicKey == null || senderCtx.getPrivateKey() == null) {
@@ -404,9 +405,12 @@ public class GroupCtx {
 		info.Add(CBORObject.FromObject("Key"));
 		info.Add(this.aeadAlg.getKeySize() / 8);
 
+		byte[] keysConcatenated = Bytes.concatenate(senderCtx.getPublicKeyRaw(), recipientPublicKeyRaw);
+		byte[] ikmSender = Bytes.concatenate(keysConcatenated, sharedSecret);
+
 		byte[] pairwiseSenderKey = null;
 		try {
-			pairwiseSenderKey = OSCoreCtx.deriveKey(sharedSecret, senderCtx.getSenderKey(), keyLength, digest,
+			pairwiseSenderKey = OSCoreCtx.deriveKey(ikmSender, senderCtx.getSenderKey(), keyLength, digest,
 					info.EncodeToBytes());
 
 		} catch (CoseException e) {
@@ -416,7 +420,8 @@ public class GroupCtx {
 		return pairwiseSenderKey;
 	}
 
-	byte[] derivePairwiseRecipientKey(byte[] recipientId, byte[] recipientKey, OneKey recipientPublicKey) {
+	byte[] derivePairwiseRecipientKey(byte[] recipientId, byte[] recipientKey, OneKey recipientPublicKey,
+			byte[] recipientPublicKeyRaw) {
 
 		if (recipientPublicKey == null || senderCtx.getPrivateKey() == null) {
 			return null;
@@ -447,8 +452,11 @@ public class GroupCtx {
 			System.err.println("Error: Unknown countersignature!");
 		}
 
+		byte[] keysConcatenated = Bytes.concatenate(recipientPublicKeyRaw, senderCtx.getPublicKeyRaw());
+		byte[] ikmRecipient = Bytes.concatenate(keysConcatenated, sharedSecret);
+
 		try {
-			pairwiseRecipientKey = OSCoreCtx.deriveKey(sharedSecret, recipientKey, keyLength, digest,
+			pairwiseRecipientKey = OSCoreCtx.deriveKey(ikmRecipient, recipientKey, keyLength, digest,
 					info.EncodeToBytes());
 
 		} catch (CoseException e) {
