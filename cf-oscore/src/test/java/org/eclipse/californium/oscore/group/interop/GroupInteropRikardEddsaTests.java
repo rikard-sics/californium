@@ -250,7 +250,7 @@ public class GroupInteropRikardEddsaTests {
 		// --- Try decryption ---
 		String destinationUri = "coap://127.0.0.1/test";
 
-		GroupCtx groupCtxRikard = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.EDDSA);
+		GroupCtx groupCtxRikard = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.EDDSA, null);
 		// Dummy values for pretend sender
 		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(recipient2PublicKeyEddsa);
 		groupCtxRikard.addSenderCtx(new byte[] { 0x11, 0x22 }, senderFullKey);
@@ -348,7 +348,7 @@ public class GroupInteropRikardEddsaTests {
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 0);
 
-		GroupCtx groupCtxEddsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.EDDSA);
+		GroupCtx groupCtxEddsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.EDDSA, null);
 
 		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(senderFullKeyEddsa);
 		groupCtxEddsa.addSenderCtx(sid, senderFullKey);
