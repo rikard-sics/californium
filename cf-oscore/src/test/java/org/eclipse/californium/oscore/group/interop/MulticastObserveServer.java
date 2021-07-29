@@ -146,7 +146,7 @@ public class MulticastObserveServer {
 				System.out.println("Starting with sid 0x52.");
 			}
 
-			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign);
+			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign, null);
 
 			commonCtx.addSenderCtx(sid, sid_private_key);
 
