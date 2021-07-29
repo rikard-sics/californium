@@ -18,6 +18,7 @@ package org.eclipse.californium.oscore.group;
 
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSException;
 import org.junit.Assert;
@@ -30,7 +31,7 @@ public class GroupRecipientCtx extends OSCoreCtx {
 
 	GroupCtx commonCtx;
 	OneKey otherEndpointPubKey;
-	byte[] otherEndpointPubKeyRaw;
+	byte[] otherEndpointPubKeyRaw = Bytes.EMPTY;
 
 	byte[] pairwiseRecipientKey;
 
@@ -41,7 +42,9 @@ public class GroupRecipientCtx extends OSCoreCtx {
 
 		this.commonCtx = commonCtx;
 		this.otherEndpointPubKey = otherEndpointPubKey;
-		this.otherEndpointPubKeyRaw = otherEndpointPubKeyRaw;
+		if (otherEndpointPubKeyRaw != null) {
+			this.otherEndpointPubKeyRaw = otherEndpointPubKeyRaw;
+		}
 	}
 
 	/**
@@ -127,7 +130,7 @@ public class GroupRecipientCtx extends OSCoreCtx {
 		}
 
 		this.pairwiseRecipientKey = commonCtx.derivePairwiseRecipientKey(this.getRecipientId(), this.getRecipientKey(),
-				this.getPublicKey());
+				this.getPublicKey(), this.getPublicKeyRaw());
 
 	}
 
