@@ -8,8 +8,6 @@ import org.eclipse.californium.elements.util.Bytes;
 
 import com.upokecenter.cbor.CBORObject;
 
-import net.i2p.crypto.eddsa.Utils;
-
 //TODO: Need clone?
 public class MultiKey {
 
