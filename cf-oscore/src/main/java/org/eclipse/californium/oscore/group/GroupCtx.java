@@ -54,6 +54,7 @@ public class GroupCtx {
 	AlgorithmID algSecret;
 	int[][] parSecret;
 	byte[] groupEncryptionKey;
+	byte[] gmPublicKey;
 
 	// Reference to the associated sender context
 	GroupSenderCtx senderCtx;
@@ -78,9 +79,10 @@ public class GroupCtx {
 	 * @param hkdfAlg
 	 * @param idContext
 	 * @param algCountersign
+	 * @param gmPublicKey
 	 */
 	public GroupCtx(byte[] masterSecret, byte[] masterSalt, AlgorithmID aeadAlg, AlgorithmID hkdfAlg, byte[] idContext,
-			AlgorithmID algCountersign) {
+			AlgorithmID algCountersign, byte[] gmPublicKey) {
 
 		this.masterSecret = masterSecret;
 		this.masterSalt = masterSalt;
@@ -88,6 +90,7 @@ public class GroupCtx {
 		this.hkdfAlg = hkdfAlg;
 		this.idContext = idContext;
 		this.algCountersign = algCountersign;
+		this.gmPublicKey = gmPublicKey;
 
 		recipientCtxMap = new HashMap<ByteId, GroupRecipientCtx>();
 		publicKeysMap = new HashMap<ByteId, OneKey>();
@@ -119,9 +122,10 @@ public class GroupCtx {
 	 * @param algCountersign
 	 * @param parCountersign
 	 * @param parCountersignKey
+	 * @param gmPublicKey
 	 */
 	public GroupCtx(byte[] masterSecret, byte[] masterSalt, AlgorithmID aeadAlg, AlgorithmID hkdfAlg, byte[] idContext,
-			AlgorithmID algCountersign, int[][] parCountersign, int[] parCountersignKey) {
+			AlgorithmID algCountersign, int[][] parCountersign, int[] parCountersignKey, byte[] gmPublicKey) {
 
 		this.masterSecret = masterSecret;
 		this.masterSalt = masterSalt;
@@ -130,6 +134,7 @@ public class GroupCtx {
 		this.idContext = idContext;
 		this.algCountersign = algCountersign;
 		this.parCountersign = parCountersign;
+		this.gmPublicKey = gmPublicKey;
 
 		recipientCtxMap = new HashMap<ByteId, GroupRecipientCtx>();
 		publicKeysMap = new HashMap<ByteId, OneKey>();
@@ -217,6 +222,15 @@ public class GroupCtx {
 		this.groupEncryptionKey = deriveGroupEncryptionKey();
 	}
 	//
+
+	/**
+	 * Retrieve the public key for the Group Manager associated to this context.
+	 * 
+	 * @return the public key for the GM for this context
+	 */
+	public byte[] getGmPublicKey() {
+		return gmPublicKey;
+	}
 
 	public int getCountersignatureLen() {
 		switch (algCountersign) {
