@@ -37,12 +37,9 @@ import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
 import org.eclipse.californium.cose.AlgorithmID;
-import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
-
-import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
@@ -137,15 +134,20 @@ public class GroupOSCORESender {
 	 */
 
 	private final static byte[] sid = new byte[] { 0x25 };
-	private final static String sid_private_key_string = "pQMnAQEgBiFYIAaekSuDljrMWUG2NUaGfewQbluQUfLuFPO8XMlhrNQ6I1ggZHFNQaJAth2NgjUCcXqwiMn0r2/JhEVT5K1MQsxzUjk=";
+	private final static String sid_private_key_string = "pQF4G2NvYXBzOi8vdGVzdGVyMS5leGFtcGxlLmNvbQJmbXluYW1lA3gaY29hcHM6Ly9oZWxsbzEuZXhhbXBsZS5vcmcEGnAAS08IoQGkAycBASAGIVggBp6RK4OWOsxZQbY1RoZ97BBuW5BR8u4U87xcyWGs1Do=";
 	private static MultiKey sid_private_key;
+	private static byte[] sid_private_key_bytes = new byte[] { (byte) 0x64, (byte) 0x71, (byte) 0x4D, (byte) 0x41,
+			(byte) 0xA2, (byte) 0x40, (byte) 0xB6, (byte) 0x1D, (byte) 0x8D, (byte) 0x82, (byte) 0x35, (byte) 0x02,
+			(byte) 0x71, (byte) 0x7A, (byte) 0xB0, (byte) 0x88, (byte) 0xC9, (byte) 0xF4, (byte) 0xAF, (byte) 0x6F,
+			(byte) 0xC9, (byte) 0x84, (byte) 0x45, (byte) 0x53, (byte) 0xE4, (byte) 0xAD, (byte) 0x4C, (byte) 0x42,
+			(byte) 0xCC, (byte) 0x73, (byte) 0x52, (byte) 0x39 };
 
 	private final static byte[] rid1 = new byte[] { 0x52 }; // Recipient 1
 	private final static String rid1_public_key_string = "pQF4GmNvYXBzOi8vc2VydmVyLmV4YW1wbGUuY29tAmZzZW5kZXIDeBpjb2FwczovL2NsaWVudC5leGFtcGxlLm9yZwQacABLTwihAaQDJwEBIAYhWCB37DWMHTROQe4Oh7g4PSOiCZrNOb35ic5FtS6IdGM4mw==";
 	private static MultiKey rid1_public_key;
 
 	private final static byte[] rid2 = new byte[] { 0x77 }; // Recipient 2
-	private final static String rid2_public_key_string = "pAMnAQEgBiFYIBBbjGqMiAGb8MNUWSk0EwuqgAc5nMKsO+hFiEYT1bou";
+	private final static String rid2_public_key_string = "pQF4GmNvYXBzOi8vc2VydmVyLmV4YW1wbGUuY29tAmZzZW5kZXIDeBpjb2FwczovL2NsaWVudC5leGFtcGxlLm9yZwQacABLTwihAaQDJwEBIAYhWCAQW4xqjIgBm/DDVFkpNBMLqoAHOZzCrDvoRYhGE9W6Lg==";
 	private static MultiKey rid2_public_key;
 
 	private final static byte[] rid0 = new byte[] { (byte) 0xCC }; // Dummy
@@ -172,7 +174,8 @@ public class GroupOSCORESender {
 		// InstallCryptoProviders.generateCounterSignKey();
 
 		// Add private & public keys for sender & receiver(s)
-		sid_private_key = new MultiKey(DatatypeConverter.parseBase64Binary(sid_private_key_string));
+		sid_private_key = new MultiKey(DatatypeConverter.parseBase64Binary(sid_private_key_string),
+				sid_private_key_bytes);
 		rid1_public_key = new MultiKey(DatatypeConverter.parseBase64Binary(rid1_public_key_string));
 		rid2_public_key = new MultiKey(DatatypeConverter.parseBase64Binary(rid2_public_key_string));
 
@@ -207,7 +210,12 @@ public class GroupOSCORESender {
 		multicastRequest.setPayload(requestPayload);
 		multicastRequest.setType(Type.NON);
 		if (useOSCORE) {
+			// For group mode request
 			multicastRequest.getOptions().setOscore(Bytes.EMPTY);
+
+			// For pairwise request:
+			// multicastRequest.getOptions().setOscore(OptionEncoder.set(true,
+			// requestURI, rid1));
 		}
 
 		// Information about the sender
