@@ -82,6 +82,10 @@ public class GroupKeyDerivationTest {
 	private final static byte[] master_salt = Utils.hexToBytes("9e7ca92223786340");
 	private final static byte[] context_id = Utils.hexToBytes("37cbf3210017a2d3");
 
+	// Key for the GM
+	private static String gmPublicKeyString = "pQF4GmNvYXBzOi8vbXlzaXRlLmV4YW1wbGUuY29tAmxncm91cG1hbmFnZXIDeBpjb2FwczovL2RvbWFpbi5leGFtcGxlLm9yZwQaq5sVTwihAaQDJwEBIAYhWCDN4+/TvD+ZycnuIQQVxsulUGG1BG6WO4pYyRQ6YRZkcg==";
+	private static byte[] gmPublicKey = DatatypeConverter.parseBase64Binary(gmPublicKeyString);
+
 	// Keys for sender and recipients
 	private static String senderFullKeyEcdsa256 = "pgECI1gglNzgRMuHlfN2GkwWR4NdyWHxtOLRb2MS91r01cs9U40iWCAZbxTFset0hvgSSr5uXDkA8XW1yDxdTu73tsjbHZZwIiFYIPK3Cfi/BEfAQ4AflFK1LHPTDDAjAGZliQ0TJsQWcDbAIAEDJg==";
 	private static String recipient1PublicKeyEcdsa256 = "pQECIlggOAOKygJds3bh3MY/dNuDmsrNO+jq2f3HRi49ZgOdDichWCB4RLBsbGo77cB6XmhKXAtwLIAh9WEBUr5AmArevy4OPCABAyY=";
@@ -312,7 +316,8 @@ public class GroupKeyDerivationTest {
 
 		// Create context using ECDSA_256
 
-		GroupCtx groupCtxEcdsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256);
+		GroupCtx groupCtxEcdsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256,
+				gmPublicKey);
 
 		OneKey senderFullKey = new OneKey(
 				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(senderFullKeyEcdsa256)));
@@ -342,7 +347,8 @@ public class GroupKeyDerivationTest {
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 0);
 
-		GroupCtx groupCtxEddsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.EDDSA);
+		GroupCtx groupCtxEddsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.EDDSA,
+				gmPublicKey);
 
 		senderFullKey = new OneKey(CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(senderFullKeyEddsa)));
 		groupCtxEddsa.addSenderCtx(sid, senderFullKey);
