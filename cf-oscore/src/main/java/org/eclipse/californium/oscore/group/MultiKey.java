@@ -8,8 +8,6 @@ import org.eclipse.californium.elements.util.Bytes;
 
 import com.upokecenter.cbor.CBORObject;
 
-import net.i2p.crypto.eddsa.Utils;
-
 //TODO: Need clone?
 public class MultiKey {
 
@@ -47,13 +45,13 @@ public class MultiKey {
 		// CWT claims set
 		if (cborKey.get(8) != null && cborKey.get(8).get(1) != null) {
 
-			System.out.println("*CWT claims set");
+			// System.out.println("*CWT claims set");
 
-			System.out.println(cborKey.toString());
+			// System.out.println(cborKey.toString());
 
 			CBORObject test2 = cborKey.get(8);
 
-			System.out.println(test2.toString());
+			// System.out.println(test2.toString());
 
 			CBORObject test3 = test2.get(1);
 			// Add private key
@@ -61,7 +59,7 @@ public class MultiKey {
 				test3.Add(CBORObject.FromObject(-4), CBORObject.FromObject(privateKeyOnly));
 			}
 
-			System.out.println(test3.toString());
+			// System.out.println(test3.toString());
 
 			try {
 				keyy = new OneKey(test3);
@@ -72,13 +70,13 @@ public class MultiKey {
 		} else {
 			// COSE Key
 
-			System.out.println("*COSE Key");
-			System.out.println(cborKey.toString());
+			// System.out.println("*COSE Key");
+			// System.out.println(cborKey.toString());
 
 			// Save private key and strip from byte array if present
 			byte[] privateKey = null;
 			if (cborKey.get(-4) != null) {
-				System.out.println("Has private part");
+				// System.out.println("Has private part");
 
 				privateKey = cborKey.get(-4).GetByteString();
 				// cborKey.Remove(CBORObject.FromObject(-4));
@@ -88,13 +86,13 @@ public class MultiKey {
 
 				int index = indexOf(rawKeyBytes, privateBytes);
 
-				System.out.println("index: " + index);
+				// System.out.println("index: " + index);
 
 				byte[] part1 = Arrays.copyOf(rawKeyBytes, index);
 				byte[] part2 = Arrays.copyOfRange(rawKeyBytes, index + privateBytes.length, rawKeyBytes.length);
 
-				System.out.println("Part 1: " + Utils.bytesToHex(part1));
-				System.out.println("Part 2: " + Utils.bytesToHex(part2));
+				// System.out.println("Part 1: " + Utils.bytesToHex(part1));
+				// System.out.println("Part 2: " + Utils.bytesToHex(part2));
 
 				this.rawKeyBytes = Bytes.concatenate(part1, part2);
 				this.rawKeyBytes[0]--; // Reduce array length

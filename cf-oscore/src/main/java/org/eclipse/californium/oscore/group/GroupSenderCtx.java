@@ -24,6 +24,7 @@ import javax.xml.bind.DatatypeConverter;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ByteId;
 import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSException;
@@ -37,7 +38,7 @@ public class GroupSenderCtx extends OSCoreCtx {
 
 	GroupCtx commonCtx;
 	OneKey ownPrivateKey;
-	byte[] ownPublicKeyRaw;
+	byte[] ownPublicKeyRaw = Bytes.EMPTY;
 
 	HashMap<ByteId, byte[]> pairwiseSenderKeys;
 
@@ -48,7 +49,9 @@ public class GroupSenderCtx extends OSCoreCtx {
 
 		this.commonCtx = commonCtx;
 		this.ownPrivateKey = ownPrivateKey;
-		this.ownPublicKeyRaw = ownPublicKeyRaw;
+		if (ownPublicKeyRaw != null) {
+			this.ownPublicKeyRaw = ownPublicKeyRaw;
+		}
 
 		pairwiseSenderKeys = new HashMap<ByteId, byte[]>();
 	}
@@ -70,7 +73,7 @@ public class GroupSenderCtx extends OSCoreCtx {
 			}
 
 			byte[] pairwiseSenderKey = commonCtx.derivePairwiseSenderKey(recipientCtx.getRecipientId(),
-					recipientCtx.getRecipientKey(), recipientCtx.getPublicKey());
+					recipientCtx.getRecipientKey(), recipientCtx.getPublicKey(), recipientCtx.getPublicKeyRaw());
 			pairwiseSenderKeys.put(rid, pairwiseSenderKey);
 
 		}
