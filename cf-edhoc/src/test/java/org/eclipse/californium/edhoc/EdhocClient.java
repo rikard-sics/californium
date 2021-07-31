@@ -185,15 +185,13 @@ public class EdhocClient {
 		setupSupportedCipherSuites();
 		
 		// Set the applicability statement
-		// - Supported correlation 1 and 2		
 		// - Supported authentication methods
-		// - Use of the CBOR simple value Null (i.e., the 0xf6 byte), as first element of message_1
 		// - Use of message_4 as expected to be sent by the Responder
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
 			authMethods.add(i);
-		AppStatement appStatement = new AppStatement(true, authMethods, false, false);
+		AppStatement appStatement = new AppStatement(authMethods, false);
 		
 		appStatements.put(edhocURI, appStatement);
 				
@@ -533,7 +531,6 @@ public class EdhocClient {
 		
 		Request edhocMessage1 = new Request(Code.POST, Type.CON);
 		edhocMessage1.setPayload(requestPayload);
-		edhocMessage1.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
 		
         // Submit the request
         System.out.println("\nSent EDHOC Message1\n");
@@ -558,8 +555,7 @@ public class EdhocClient {
 		String uriAsString = targetUri.toString();
 		AppStatement appStatement = edhocEndpointInfo.getAppStatements().get(uriAsString);
 		
-		int correlation = appStatement.getCorrelation() ? Constants.EDHOC_CORR_1 : Constants.EDHOC_CORR_0;
-		EdhocSession session = MessageProcessor.createSessionAsInitiator(authenticationMethod, correlation,
+		EdhocSession session = MessageProcessor.createSessionAsInitiator(authenticationMethod,
                  edhocEndpointInfo.getKeyPair(), edhocEndpointInfo.getIdCred(), edhocEndpointInfo.getCred(),
                  edhocEndpointInfo.getSupportedCiphersuites(), edhocEndpointInfo.getUsedConnectionIds(),
                  appStatement, edhocEndpointInfo.getEdp());
@@ -584,7 +580,6 @@ public class EdhocClient {
 		edhocSessions.put(CBORObject.FromObject(connectionId), session);
 		
 		Request edhocMessageReq = new Request(Code.POST, Type.CON);
-		edhocMessageReq.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
 		edhocMessageReq.setPayload(nextPayload);
 		
         System.out.println("Sent EDHOC Message 1\n");
@@ -689,7 +684,7 @@ public class EdhocClient {
 			
 			/* Start handling EDHOC Message 2 */
 			
-			processingResult = MessageProcessor.readMessage2(responsePayload, cI, edhocSessions, peerPublicKeys,
+			processingResult = MessageProcessor.readMessage2(responsePayload, false, cI, edhocSessions, peerPublicKeys,
 					                                         peerCredentials, usedConnectionIds);
 			
 			if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
@@ -808,7 +803,6 @@ public class EdhocClient {
 		        
 		        try {
 					Request edhocMessageReq2 = new Request(Code.POST, Type.CON);
-					edhocMessageReq2.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
 					edhocMessageReq2.setPayload(nextPayload);
 					
 		        	// If EDHOC message_3 has to be combined with the first
@@ -868,7 +862,7 @@ public class EdhocClient {
 				            		System.err.println("Received an EDHOC Error Message");
 						        	CBORObject[] objectList = MessageProcessor.readErrorMessage(myPayload,
 						        			 													cI, edhocSessions);
-						        	processErrorMessageAsResponse(objectList, correlation, CBORObject.FromObject(connectionId));
+						        	processErrorMessageAsResponse(objectList, CBORObject.FromObject(connectionId));
 				            		
 				            	}
 			            	
@@ -947,7 +941,7 @@ public class EdhocClient {
 		            	else {
 		            		System.err.println("Received an EDHOC Error Message");
 				        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload, cI, edhocSessions);
-				        	processErrorMessageAsResponse(objectList, correlation, cI);
+				        	processErrorMessageAsResponse(objectList, cI);
 				        	discontinue = true;
 		            	}
 
@@ -977,7 +971,7 @@ public class EdhocClient {
 		            
 		            
 		            if (responseType == Constants.EDHOC_MESSAGE_4) {
-		            	processingResult = MessageProcessor.readMessage4(responsePayload, cI,
+		            	processingResult = MessageProcessor.readMessage4(responsePayload, false, cI,
 		            			                                         edhocSessions, usedConnectionIds);
 		            	
 						if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
@@ -1026,7 +1020,6 @@ public class EdhocClient {
 							}
 							
 							Request edhocMessageReq3 = new Request(Code.POST, Type.CON);
-							edhocMessageReq3.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
 							edhocMessageReq3.setPayload(nextMessage);
 							
 					        try {
@@ -1049,7 +1042,7 @@ public class EdhocClient {
 		            	System.err.println("Received an EDHOC Error Message");
 			        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload, cI, edhocSessions);
 			        	
-			        	processErrorMessageAsResponse(objectList, correlation, cI);
+			        	processErrorMessageAsResponse(objectList, cI);
 			        	Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
 			        	
 						client.shutdown();
@@ -1098,21 +1091,11 @@ public class EdhocClient {
 	/*
 	 * Process an EDHOC Error Message as a CoAP response
 	 */
-	private static void processErrorMessageAsResponse(CBORObject[] objectList, int correlation, CBORObject connectionId) {
+	private static void processErrorMessageAsResponse(CBORObject[] objectList, CBORObject connectionId) {
 		
     	if (objectList != null) {
     		
     		int index = 0;
-        	CBORObject cX = null; // The actual bstr_identifier
-    		
-    		if (correlation == Constants.EDHOC_CORR_0) {
-    			// Retrieve C_X as first element
-    			cX = objectList[0];
-    			index++;
-    		}
-    		else {
-    			cX = connectionId;
-    		}
     		
         	// Retrieve ERR_CODE
         	int errorCode = objectList[index].AsInt32();
@@ -1141,12 +1124,12 @@ public class EdhocClient {
 				}
     		}
     		
-    		if (cX == null) {
+    		if (connectionId == null) {
     			System.err.println("Unavailable connection identifier to delete EDHOC session");
     			return;
     		}
     	
-    		CBORObject connectionIdentifier = Util.decodeFromBstrIdentifier(cX);
+    		CBORObject connectionIdentifier = Util.decodeFromBstrIdentifier(connectionId);
     		EdhocSession session = edhocSessions.get(connectionIdentifier);
     		if (session == null) {
     			System.err.println("EDHOC session to delete not found");
