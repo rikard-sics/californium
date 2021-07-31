@@ -263,9 +263,7 @@ public class EdhocLayer extends AbstractLayer {
 				System.err.println("Retrieved inconsistent EDHOC session when receiving an EDHOC+OSCORE request");
 				return;
 			}
-    		
-    		int correlation = mySession.getCorrelation();
-    		
+    		    		
     		// The combined request cannot be used if the Responder has to send message_4
     		if (mySession.getApplicabilityStatement().getUseMessage4() == true) {
 				System.err.println("Cannot receive the combined EDHOC+OSCORE request if message_4 is expected\n");
@@ -274,9 +272,9 @@ public class EdhocLayer extends AbstractLayer {
     			String errMsg = new String("Cannot receive the combined EDHOC+OSCORE request if message_4 is expected");
     			byte[] nextMessage = MessageProcessor.writeErrorMessage(Constants.ERR_CODE_UNSPECIFIED,
     																	Constants.EDHOC_MESSAGE_3,
-												                        correlation, null, errMsg, null);
+												                        false, null, errMsg, null);
 				ResponseCode responseCode = ResponseCode.BAD_REQUEST;
-    			sendErrorMessage(exchange, nextMessage, responseCode, correlation);
+    			sendErrorMessage(exchange, nextMessage, responseCode);
             	return;
     		}
 		    
@@ -286,7 +284,7 @@ public class EdhocLayer extends AbstractLayer {
 		    List<CBORObject> processingResult = new ArrayList<CBORObject>();
 			byte[] nextMessage = new byte[] {};
 		    
-			processingResult = MessageProcessor.readMessage3(edhocMessage3, null, edhocSessions, peerPublicKeys,
+			processingResult = MessageProcessor.readMessage3(edhocMessage3, true, null, edhocSessions, peerPublicKeys,
                     peerCredentials, usedConnectionIds);
 
 			if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
@@ -388,7 +386,7 @@ public class EdhocLayer extends AbstractLayer {
 			else {
 				int responseCodeValue = processingResult.get(1).AsInt32();
 				ResponseCode responseCode = ResponseCode.valueOf(responseCodeValue);
-				sendErrorMessage(exchange, nextMessage, responseCode, correlation);
+				sendErrorMessage(exchange, nextMessage, responseCode);
 				return;
 			
 			}
@@ -486,13 +484,9 @@ public class EdhocLayer extends AbstractLayer {
 	/*
 	 * Send an EDHOC Error Message in response to the received EDHOC+OSCORE request
 	 */
-	private void sendErrorMessage(Exchange exchange, byte[] nextMessage, ResponseCode responseCode, int correlation) {
-
-		// Most likely, the used correlation is 1, hence the flag is set to true
-		// (Note that correlation 2 is just not applicable when using the EDHOC+OSCORE request)
-		boolean correlationFlag = (correlation == Constants.EDHOC_CORR_0) ? false : true;
+	private void sendErrorMessage(Exchange exchange, byte[] nextMessage, ResponseCode responseCode) {
 	
-		if (!MessageProcessor.isErrorMessage(nextMessage, false, correlationFlag)) {
+		if (!MessageProcessor.isErrorMessage(nextMessage, false)) {
 			System.err.println("Inconsistent state before sending EDHOC Error Message");
 			String responseString = new String("Inconsistent state before sending EDHOC Error Message");
 			sendErrorResponse(exchange, responseString, ResponseCode.INTERNAL_SERVER_ERROR);
