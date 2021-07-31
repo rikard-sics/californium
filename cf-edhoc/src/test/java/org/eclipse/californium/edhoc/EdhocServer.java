@@ -141,15 +141,13 @@ public class EdhocServer extends CoapServer {
 		setupSupportedCipherSuites();
 		
 		// Set the applicability statement
-		// - Supported correlation 1 and 2
 		// - Supported authentication methods
-		// - Use of the CBOR simple value Null (i.e., the 0xf6 byte), as first element of message_1
 		// - Use of message_4 as expected to be sent by the Responder
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++)
 			authMethods.add(i);
-		AppStatement appStatement = new AppStatement(true, authMethods, false, false);
+		AppStatement appStatement = new AppStatement(authMethods, false);
 		
 		appStatements.put(uriLocal + "/.well-known/edhoc", appStatement);
 		
