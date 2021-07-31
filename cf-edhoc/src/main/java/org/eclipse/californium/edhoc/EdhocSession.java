@@ -33,8 +33,8 @@ public class EdhocSession {
 	private boolean firstUse;
 	
 	private boolean initiator;
+	private boolean clientInitiated;
 	private int method;
-	private int correlation;
 	private byte[] connectionId;
 	private OneKey longTermKey;
 	private CBORObject idCred;
@@ -78,15 +78,15 @@ public class EdhocSession {
 	// EDHOC message_3 , to be used for building an EDHOC+OSCORE request
 	private byte[] message3 = null;
 	
-	public EdhocSession(boolean initiator, int methodCorr, byte[] connectionId, OneKey ltk,
+	public EdhocSession(boolean initiator, boolean clientInitiated, int method, byte[] connectionId, OneKey ltk,
 						CBORObject idCred, byte[] cred, List<Integer> cipherSuites,
 						AppStatement appStatement, EDP edp) {
 		
 		this.firstUse = true;
 		
 		this.initiator = initiator;
-		this.method = methodCorr / 4;
-		this.correlation = methodCorr % 4;
+		this.clientInitiated = clientInitiated;
+		this.method = method;
 		this.connectionId = connectionId;
 		this.longTermKey = ltk;
 		this.idCred = idCred;
@@ -146,19 +146,12 @@ public class EdhocSession {
 	}
 	
 	/**
-	 * @return  the correlation
+	 * @return  True if the CoAP client is the initiator, or False otherwise 
 	 */
-	public int getCorrelation() {
-		return this.correlation;
+	public boolean isClientInitiated() {
+		return this.clientInitiated;
 	}
-	
-	/**
-	 * @return  the integer value combining the authentication method and correlation
-	 */
-	public int getMethodCorr() {
-		return (4 * this.method) + this.correlation;
-	}
-	
+		
 	/**
 	 * @return  the Connection Identifier of this peer
 	 */
