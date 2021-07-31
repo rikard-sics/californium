@@ -97,26 +97,6 @@ public static final int EDHOC_AUTH_METHOD_3 = 3;
 
 
 /**
- * EDHOC correlations
- * 
- * +-------+-------------------------------------------+
- * | Value | Description                               |
- * +-------+-------------------------------------------+
- * |   0   | No message correlation is possible        |
- * |   1   | Correlation between Message1 and Message2 |
- * |   2   | Correlation between Message2 and Message3 |
- * |   3   | Full message correlation is possible      |
- * +-------+-------------------------------------------+
- * 
- */
-
-public static final int EDHOC_CORR_0 = 0;
-public static final int EDHOC_CORR_1 = 1;
-public static final int EDHOC_CORR_2 = 2;
-public static final int EDHOC_CORR_3 = 3;
-
-
-/**
  * EDHOC cipher suites
  * 
  * Value: 0

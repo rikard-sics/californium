@@ -82,16 +82,32 @@ class EdhocResource extends CoapResource {
 			return;
 			
 		}
+
+		byte[] message = exchange.getRequestPayload();
 		
-		if (exchange.getRequestOptions().getContentFormat() != Constants.APPLICATION_EDHOC) {
-			// Then the server can start acting as Initiator and send an EDHOC Message 1 as a CoAP response
-			processNonEdhocMessage(exchange, appStatement);	
+		if ((message == null && !exchange.getRequestOptions().hasContentFormat()) ||
+			(message != null && exchange.getRequestOptions().hasContentFormat() &&
+			 exchange.getRequestOptions().getContentFormat() != Constants.APPLICATION_EDHOC)) {
+			// The server can start acting as Initiator and send an EDHOC Message 1 as a CoAP response
+			processNonEdhocMessage(exchange, appStatement);
+			return;
 		}
 		
-		// The content-format is application/edhoc so an actual EDHOC message is expected to be processed
+		if (message == null || exchange.getRequestOptions().hasContentFormat()) {
+			String responseString = new String("Error when receiving a request to the EDHOC resource"
+					+ "EDHOC message_1 must be included in a request without content-format");
+			System.err.println(responseString);
 			
-		byte[] message = exchange.getRequestPayload();
-		int messageType = MessageProcessor.messageType(message, true, edhocEndpointInfo.getEdhocSessions(), null, appStatement);
+			nextMessage = responseString.getBytes(Constants.charset);
+			Response genericErrorResponse = new Response(ResponseCode.BAD_REQUEST);
+			genericErrorResponse.setPayload(nextMessage);
+			exchange.respond(genericErrorResponse);
+			return;
+		}
+
+		int messageType = MessageProcessor.messageType(message, true,
+				                                       edhocEndpointInfo.getEdhocSessions(),
+				                                       null, appStatement);
 		
 		// Invalid EDHOC message type
 		if (messageType == -1) {
@@ -134,10 +150,7 @@ class EdhocResource extends CoapResource {
 		
 		if (messageType == Constants.EDHOC_MESSAGE_1) {
 			
-			// Determine the Correlation expected to be advertised in EDHOC Message 1			
-			int expectedCorr = appStatement.getCorrelation() ? Constants.EDHOC_CORR_1 : Constants.EDHOC_CORR_0;
-			
-			processingResult = MessageProcessor.readMessage1(expectedCorr, message,
+			processingResult = MessageProcessor.readMessage1(message, true,
 															 edhocEndpointInfo.getSupportedCiphersuites(),
 															 appStatement);
 
@@ -172,7 +185,7 @@ class EdhocResource extends CoapResource {
 					edhocEndpointInfo.getEdp().processEAD1(ead1);
 				}
 				
-				session = MessageProcessor.createSessionAsResponder(message, edhocEndpointInfo.getKeyPair(),
+				session = MessageProcessor.createSessionAsResponder(message, true, edhocEndpointInfo.getKeyPair(),
 																    edhocEndpointInfo.getIdCred(), edhocEndpointInfo.getCred(),
 																    edhocEndpointInfo.getSupportedCiphersuites(),
 																    edhocEndpointInfo.getUsedConnectionIds(),
@@ -307,7 +320,7 @@ class EdhocResource extends CoapResource {
 		
 		if (messageType == Constants.EDHOC_MESSAGE_3) {
 			
-			processingResult = MessageProcessor.readMessage3(message, null,
+			processingResult = MessageProcessor.readMessage3(message, true, null,
 															 edhocEndpointInfo.getEdhocSessions(),
 															 edhocEndpointInfo.getPeerPublicKeys(),
 															 edhocEndpointInfo.getPeerCredentials(),
@@ -589,7 +602,8 @@ class EdhocResource extends CoapResource {
 
 	}
 	
-	private void sendErrorMessage(CoapExchange exchange, byte[] nextMessage, AppStatement appStatement, ResponseCode responseCode) {
+	private void sendErrorMessage(CoapExchange exchange, byte[] nextMessage,
+			                      AppStatement appStatement, ResponseCode responseCode) {
 		
 		int responseType = MessageProcessor.messageType(nextMessage, false,
 														edhocEndpointInfo.getEdhocSessions(),
@@ -609,15 +623,13 @@ class EdhocResource extends CoapResource {
 	}
 	
 	/*
-	 * Process a request targeting the EDHOC resource with content-format different than application/edhoc
+	 * Process a "trigger request" targeting the EDHOC resource
 	 */
 	private void processNonEdhocMessage(CoapExchange request, AppStatement appStatement) {
 		// Do nothing
 		System.out.println("Entered processNonEdhocMessage()");
 		
 		// Here the server can start acting as Initiator and send an EDHOC Message 1 as a CoAP response
-		
-		// The correlation to use is either 0 or 2, depending on the applicability statement for this EDHOC resource
 	}
 	
 }
