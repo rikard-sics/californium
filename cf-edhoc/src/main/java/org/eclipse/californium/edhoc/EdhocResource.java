@@ -211,12 +211,9 @@ class EdhocResource extends CoapResource {
 					return;
 				}
 				
-				if(MessageProcessor.messageType(nextMessage, false, edhocEndpointInfo.getEdhocSessions(),
-						                        connectionId, appStatement) == Constants.EDHOC_MESSAGE_2) {
-					// Add the new session to the list of existing EDHOC sessions
-					session.setCurrentStep(Constants.EDHOC_AFTER_M2);
-					edhocEndpointInfo.getEdhocSessions().put(CBORObject.FromObject(connectionId), session);
-				}
+				// Add the new session to the list of existing EDHOC sessions
+				session.setCurrentStep(Constants.EDHOC_AFTER_M2);
+				edhocEndpointInfo.getEdhocSessions().put(CBORObject.FromObject(connectionId), session);
 				
 			}
 			
@@ -291,7 +288,7 @@ class EdhocResource extends CoapResource {
 																 edhocEndpointInfo.getEdhocSessions(),
 																 edhocEndpointInfo.getUsedConnectionIds());
 				
-				String responseString = new String("Inconsistent state before after processing EDHOC Message 1");
+				String responseString = new String("Inconsistent state after processing EDHOC Message 2");
 				System.err.println(responseString);
 				nextMessage = responseString.getBytes(Constants.charset);
 				Response genericErrorResponse = new Response(ResponseCode.INTERNAL_SERVER_ERROR);
