@@ -641,7 +641,7 @@ public class EdhocClient {
         	
         	if (objectList != null) {
         	
-		    	// This execution flow has the client as Initiator. Consistently, Correlation is 1.
+		    	// This execution flow has the client as Initiator.
 		    	// Hence, there is no C_I included, and the first element of the EDHOC Error Message is DIAG_MSG.
 		    	String errMsg = objectList[0].toString();
 		    	

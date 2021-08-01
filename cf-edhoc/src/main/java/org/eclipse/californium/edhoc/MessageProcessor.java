@@ -311,11 +311,11 @@ public class MessageProcessor {
     	}
 		
     	
-		// METHOD_CORR
+		// METHOD
     	index++;
     	if (error == false) {
 			if (objectListRequest[index].getType() != CBORType.Integer) {
-				errMsg = new String("METHOD_CORR must be an integer");
+				errMsg = new String("METHOD must be an integer");
 				responseCode = ResponseCode.BAD_REQUEST;
 				error = true;
 			}
