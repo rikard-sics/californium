@@ -89,17 +89,21 @@ public class MessageProcessor {
 				return Constants.EDHOC_ERROR_MESSAGE;
 			}
 			
-			// The Connection Identifier to retrieve the EDHOC session was not provided.
-			// It is present in the message as first element of the CBOR sequence.
-			
-		    if (elem.getType() == CBORType.ByteString ||
-		        elem.getType() == CBORType.Integer)  {
-		            CBORObject connectionIdentifierCBOR = Util.decodeFromBstrIdentifier(myObjects[0]);
-		            
-		            if (connectionIdentifierCBOR != null) {
-		                connectionIdentifier = connectionIdentifierCBOR.GetByteString();
-		            }
-		    }
+			if (cX != null) {
+				connectionIdentifier = cX;
+			}
+			else {
+				// The Connection Identifier to retrieve the EDHOC session was not provided.
+				// It is present in the message as first element of the CBOR sequence.
+				
+			    if (elem.getType() == CBORType.ByteString || elem.getType() == CBORType.Integer) {
+			            
+			    		CBORObject connectionIdentifierCBOR = Util.decodeFromBstrIdentifier(myObjects[0]);			            
+			            if (connectionIdentifierCBOR != null)
+			                connectionIdentifier = connectionIdentifierCBOR.GetByteString();
+			            
+			    }
+			}
 		}
 		
 		if (isReq == false) {
@@ -116,14 +120,14 @@ public class MessageProcessor {
 		}
 
 	    if (connectionIdentifier != null) {
-
+	    	
 	        EdhocSession session = edhocSessions.get(CBORObject.FromObject(connectionIdentifier));
-
+	        
 	        if (session != null) {
 	            boolean initiator = session.isInitiator();
 	            int currentStep = session.getCurrentStep();
 	            boolean clientInitiated = session.isClientInitiated();
-	            
+	            	            
 	            // Take the point of view of the Initiator
 	            if (initiator == true) {
 	                
@@ -503,7 +507,7 @@ public class MessageProcessor {
 			processingResult.add(eadArray);
 		}
 		
-		System.out.println("Completed processing of EDHOC Message 1");
+		System.out.println("\nCompleted processing of EDHOC Message 1");
 		return processingResult;
 		
 	}
@@ -999,7 +1003,7 @@ public class MessageProcessor {
 		    processingResult.add(eadArray);
 		}
 		
-		System.out.println("Completed processing of EDHOC Message 2");
+		System.out.println("\nCompleted processing of EDHOC Message 2");
 		return processingResult;
 		
 	}
@@ -1461,7 +1465,7 @@ public class MessageProcessor {
 		
 		session.setCurrentStep(Constants.EDHOC_AFTER_M3);
 		
-		System.out.println("Completed processing of EDHOC Message 3\n");
+		System.out.println("\nCompleted processing of EDHOC Message 3\n");
 		return processingResult;
 		
 	}
@@ -1733,7 +1737,7 @@ public class MessageProcessor {
 				
     	session.setCurrentStep(Constants.EDHOC_AFTER_M4);
 		
-		System.out.println("Completed processing of EDHOC Message 4");
+		System.out.println("\nCompleted processing of EDHOC Message 4");
 		return processingResult;
 		
 	}

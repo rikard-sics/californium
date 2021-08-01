@@ -625,7 +625,7 @@ public class EdhocClient {
         
 		/* Process the received response */
         
-        // Since Correlation 1 is used, this response relates to the previous request through the CoAP Token
+        // This response relates to the previous request through the CoAP Token.
         // Hence, the Initiator knows what session to refer to, from which the correct C_I can be retrieved
     	CBORObject connectionIdentifier = CBORObject.FromObject(session.getConnectionId());
     	CBORObject cI = Util.encodeToBstrIdentifier(connectionIdentifier);
@@ -725,7 +725,7 @@ public class EdhocClient {
 			}
 
 			int requestType = MessageProcessor.messageType(nextPayload, true, edhocSessions, connectionId,  appStatement);
-		
+			
 			if (requestType != Constants.EDHOC_MESSAGE_3 && requestType != Constants.EDHOC_ERROR_MESSAGE) {
 				nextPayload = null;
 			}
