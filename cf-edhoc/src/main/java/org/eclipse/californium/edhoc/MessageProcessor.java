@@ -2915,24 +2915,25 @@ public class MessageProcessor {
 	    
 	    key = new byte[keyLength];
 	    String label = null;
+	    byte[] emptyArray = new byte[0];
 	    
 	    try {
 	        switch(keyName) {
 	            case Constants.EDHOC_K_2M:
 	            	label = new String("K_2m");
-	                key = session.edhocKDF(session.getPRK3e2m(), session.getTH2(), label, keyLength);
+	                key = session.edhocKDF(session.getPRK3e2m(), session.getTH2(), label, emptyArray, keyLength);
 	                break;
 	            case Constants.EDHOC_K_3M:
 	            	label = new String("K_3m");
-	                key = session.edhocKDF(session.getPRK4x3m(), session.getTH3(), label, keyLength);
+	                key = session.edhocKDF(session.getPRK4x3m(), session.getTH3(), label, emptyArray, keyLength);
 	                break;
 	            case Constants.EDHOC_K_3AE:
 	            	label = new String("K_3ae");
-	                key = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), label, keyLength);
+	                key = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), label, emptyArray, keyLength);
 	                break;
 	            case Constants.EDHOC_K_4AE:
 	            	label = new String("EDHOC_message_4_Key");
-	                key = session.edhocExporter(label, keyLength);
+	                key = session.edhocExporter(label, emptyArray, keyLength);
 	                break;
 	            default:
 	            	key = null;
@@ -2972,24 +2973,25 @@ public class MessageProcessor {
 	    
 	    iv = new byte[ivLength];
 	    String label = null;
+	    byte[] emptyArray = new byte[0];
 	    
 	    try {
 	        switch(ivName) {
             case Constants.EDHOC_IV_2M:
             	label = new String("IV_2m");
-                iv = session.edhocKDF(session.getPRK3e2m(), session.getTH2(), label, ivLength);
+                iv = session.edhocKDF(session.getPRK3e2m(), session.getTH2(), label, emptyArray, ivLength);
                 break;
             case Constants.EDHOC_IV_3M:
             	label = new String("IV_3m");
-                iv = session.edhocKDF(session.getPRK4x3m(), session.getTH3(), label, ivLength);
+                iv = session.edhocKDF(session.getPRK4x3m(), session.getTH3(), label, emptyArray, ivLength);
                 break;
             case Constants.EDHOC_IV_3AE:
             	label = new String("IV_3ae");
-                iv = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), label, ivLength);
+                iv = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), label, emptyArray, ivLength);
                 break;
             case Constants.EDHOC_IV_4AE:
             	label = new String("EDHOC_message_4_Nonce");
-                iv = session.edhocExporter(label, ivLength);
+                iv = session.edhocExporter(label, emptyArray, ivLength);
                 break;
             default:
             	iv = null;
@@ -3018,7 +3020,8 @@ public class MessageProcessor {
 		
 		byte[] keystream2 = new byte[length];
 		try {
-			keystream2 = session.edhocKDF(session.getPRK2e(), session.getTH2(), "KEYSTREAM_2", length);
+			byte[] emptyArray = new byte[0];
+			keystream2 = session.edhocKDF(session.getPRK2e(), session.getTH2(), "KEYSTREAM_2", emptyArray, length);
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when generating KEYSTREAM_2\n" + e.getMessage());
 			return null;
