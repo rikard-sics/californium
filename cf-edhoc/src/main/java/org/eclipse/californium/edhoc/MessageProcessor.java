@@ -1156,13 +1156,9 @@ public class MessageProcessor {
         byte[] th2 = session.getTH2(); // TH_2 as plain bytes
         byte[] th2SerializedCBOR = CBORObject.FromObject(th2).EncodeToBytes();
         byte[] ciphertext2 = session.getCiphertext2(); // CIPHERTEXT_2 as plain bytes
-        byte[] ciphertext2SerializedCBOR = CBORObject.FromObject(ciphertext2).EncodeToBytes(); 
-        List<CBORObject> objectListData3 = new ArrayList<>();
-        for (int i = 0; i < objectListRequest.length - 1; i++)
-        	objectListData3.add(objectListRequest[i]);
-        byte[] data3 = Util.buildCBORSequence(objectListData3); // data_3 as a CBOR sequence
+        byte[] ciphertext2SerializedCBOR = CBORObject.FromObject(ciphertext2).EncodeToBytes();
         
-        byte[] th3 = computeTH3(session, th2SerializedCBOR, ciphertext2SerializedCBOR, data3);
+        byte[] th3 = computeTH3(session, th2SerializedCBOR, ciphertext2SerializedCBOR);
         if (th3 == null) {
         	errMsg = new String("Error when computing TH3");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
@@ -2308,13 +2304,9 @@ public class MessageProcessor {
         byte[] th2 = session.getTH2(); // TH_2 as plain bytes
         byte[] th2SerializedCBOR = CBORObject.FromObject(th2).EncodeToBytes();
         byte[] ciphertext2 = session.getCiphertext2(); // CIPHERTEXT_2 as plain bytes
-        byte[] ciphertext2SerializedCBOR = CBORObject.FromObject(ciphertext2).EncodeToBytes(); 
-        byte[] data3 = null;
-        if (objectList.size() > 0) {
-        	data3 = Util.buildCBORSequence(objectList); // data_3 as a CBOR sequence
-        }
+        byte[] ciphertext2SerializedCBOR = CBORObject.FromObject(ciphertext2).EncodeToBytes();
 
-        byte[] th3 = computeTH3(session, th2SerializedCBOR, ciphertext2SerializedCBOR, data3);
+        byte[] th3 = computeTH3(session, th2SerializedCBOR, ciphertext2SerializedCBOR);
         if (th3 == null) {
         	System.err.println("Error when computing TH_3");
     		errMsg = new String("Error when computing TH_3");
@@ -3766,15 +3758,12 @@ public class MessageProcessor {
      * @param session   The used EDHOC session
      * @param th2   The transcript hash TH2, as a serialized CBOR byte string
      * @param ciphertext2   The CIPHERTEXT_2 from EDHOC Message 2, as a serialized CBOR byte string
-     * @param data3   The data_3 information from the EDHOC Message 3, as a serialized CBOR byte string. It can be null
      * @return  The computed TH3
      */
-	public static byte[] computeTH3(EdhocSession session, byte[] th2, byte[] ciphertext2, byte[] data3) {
+	public static byte[] computeTH3(EdhocSession session, byte[] th2, byte[] ciphertext2) {
 	
         byte[] th3 = null;
         int inputLength = th2.length + ciphertext2.length;
-        if (data3 != null)
-        	inputLength += data3.length;
         
         String hashAlgorithm = null;
         int selectedCiphersuite = session.getSelectedCiphersuite();
@@ -3792,10 +3781,6 @@ public class MessageProcessor {
         System.arraycopy(th2, 0, hashInput, offset, th2.length);
         offset += th2.length;
         System.arraycopy(ciphertext2, 0, hashInput, offset, ciphertext2.length);
-        if (data3 != null) {
-        	offset += ciphertext2.length;
-            System.arraycopy(data3, 0, hashInput, offset, data3.length);
-        }
         try {
 			th3 = Util.computeHash(hashInput, hashAlgorithm);
 		} catch (NoSuchAlgorithmException e) {
