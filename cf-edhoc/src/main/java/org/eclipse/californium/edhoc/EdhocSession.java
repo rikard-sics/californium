@@ -60,8 +60,8 @@ public class EdhocSession {
 	private OneKey peerLongTermPublicKey = null;
 	private OneKey peerEphemeralPublicKey = null;
 	
-	// Stored EDHOC Message 1
-	private byte[] message1 = null;
+	// Stored hash of EDHOC Message 1
+	private byte[] hashMessage1 = null;
 	
 	// Stored CIPHERTEXT 2
 	private byte[] ciphertext2 = null;
@@ -452,25 +452,53 @@ public class EdhocSession {
 	}
 
 	/**
-	 * @return  the EDHOC Message 1
+	 * @return  the hash of EDHOC Message 1
 	 */
-	public byte[] getMessage1() {
-		return this.message1;
+	public byte[] getHashMessage1() {
+		return this.hashMessage1;
 	}
 	
 	/**
-	 * @param msg  an EDHOC Message 1 to store for later computation of TH2
+	 * @param msg  an EDHOC Message 1 of which to store the hash for later computation of TH2
+	 * @return  true in case of success, or false in case of error 
 	 */
-	public void setMessage1(byte[] msg) {
-		this.message1 = new byte[msg.length];
-		System.arraycopy(msg, 0, this.message1, 0, msg.length);
+	public boolean setHashMessage1(byte[] msg) {
+		
+		byte[] hash = null;
+		String hashAlgorithm = null;
+		
+		int selectedCiphersuite = getSelectedCiphersuite();
+		switch (selectedCiphersuite) {
+		    case Constants.EDHOC_CIPHER_SUITE_0:
+		    case Constants.EDHOC_CIPHER_SUITE_1:
+		    case Constants.EDHOC_CIPHER_SUITE_2:
+		    case Constants.EDHOC_CIPHER_SUITE_3:
+		        hashAlgorithm = "SHA-256";
+		        break;
+		}
+
+		try {
+			hash = Util.computeHash(msg, hashAlgorithm);
+		} catch (NoSuchAlgorithmException e) {
+		    System.err.println("Invalid hash algorithm when computing the hash of EDHOC Message 1\n" + e.getMessage());
+		    return false;
+		}
+		
+		if (hash == null) {
+		    System.err.println("Error when computing the hash of EDHOC Message 1\n");
+			return false;
+		}
+		
+		this.hashMessage1 = new byte[hash.length];
+		System.arraycopy(hash, 0, this.hashMessage1, 0, hash.length);
+		return true;
 	}
 	
     /**
-     *  Clean up the stored EDHOC Message 1
+     *  Clean up the stored hash of EDHOC Message 1
      */
 	public void cleanMessage1() {
-		this.message1 = null;
+		this.hashMessage1 = null;
 	}
 	
     /**

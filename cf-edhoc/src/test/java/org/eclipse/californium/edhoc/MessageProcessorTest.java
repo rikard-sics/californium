@@ -468,7 +468,7 @@ public class MessageProcessorTest {
 		
 		// Store the EDHOC Message 1
 		byte[] message1 = Utils.hexToBytes("01005820898ff79a02067a16ea1eccb90fa52246f5aa4dd6ec076bba0259d904b7ec8b0c2e");
-		session.setMessage1(message1);
+		session.setHashMessage1(message1);
 		
 		
 		// Now write EDHOC message 2
@@ -564,7 +564,7 @@ public class MessageProcessorTest {
 		
 		// Store the EDHOC Message 1
 		byte[] message1 = Utils.hexToBytes("0d0058208d3ef56d1b750a4351d68ac250a0e883790efc80a538a444ee9e2b57e2441a7c21");
-		session.setMessage1(message1);
+		session.setHashMessage1(message1);
 		
 		
 		// Now write EDHOC message 2
@@ -659,7 +659,7 @@ public class MessageProcessorTest {
 		
 		// Store the EDHOC Message 1
 		byte[] message1 = Utils.hexToBytes("0d025820475776f844979ad0b463c5a6a4343a663d17a3a80e38a81d3e3496f6061fd71621");
-		session.setMessage1(message1);
+		session.setHashMessage1(message1);
 		
 		
 		// Now write EDHOC message 2
