@@ -575,7 +575,7 @@ public class EdhocClient {
 		
 		// Add the new session to the list of existing EDHOC sessions
 		session.setCurrentStep(Constants.EDHOC_AFTER_M1);
-		session.setMessage1(nextPayload);
+		session.setHashMessage1(nextPayload);
 		byte[] connectionId = session.getConnectionId();
 		edhocSessions.put(CBORObject.FromObject(connectionId), session);
 		
