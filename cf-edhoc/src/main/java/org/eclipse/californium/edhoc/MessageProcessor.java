@@ -628,6 +628,7 @@ public class MessageProcessor {
 		}
 		
 		// G_Y
+		byte[] gY = null;
 		if (error == false && objectListRequest[index].getType() != CBORType.ByteString) {
 				errMsg = new String("G_Y must be a byte string");
 				responseCode = ResponseCode.BAD_REQUEST;
@@ -637,7 +638,7 @@ public class MessageProcessor {
 			// Set the ephemeral public key of the Responder
 			OneKey peerEphemeralKey = null;
 			
-			byte[] gY = objectListRequest[index].GetByteString();
+			gY = objectListRequest[index].GetByteString();
 	    	if (debugPrint) {
 	    		Util.nicePrint("G_Y", gY);
 	    	}
@@ -668,8 +669,9 @@ public class MessageProcessor {
 		
 		
 		// C_R
+		CBORObject encodedCR = objectListRequest[index]; // C_R as a bstr_identifier sent on the wire
 		if (error == false) {
-			cR = Util.decodeFromBstrIdentifier(objectListRequest[index]);
+			cR = Util.decodeFromBstrIdentifier(encodedCR);
 			
 			if (cR == null) {
 				errMsg = new String("Invalid format for the Connection Identifier C_R");
@@ -714,9 +716,10 @@ public class MessageProcessor {
         for (int i = 0; i < objectListRequest.length - 1; i++)
         	objectListData2.add(objectListRequest[i]);
         byte[] hashMessage1SerializedCBOR = CBORObject.FromObject(hashMessage1).EncodeToBytes();
-        byte[] data2 = Util.buildCBORSequence(objectListData2); // data_2 as a CBOR sequence
+        byte[] gYSerializedCBOR = CBORObject.FromObject(gY).EncodeToBytes();
+        byte[] cRSerializedCBOR = encodedCR.EncodeToBytes();
         
-        th2 = computeTH2(session, hashMessage1SerializedCBOR, data2);
+        th2 = computeTH2(session, hashMessage1SerializedCBOR, gYSerializedCBOR, cRSerializedCBOR);
         if (th2 == null) {
         	errMsg = new String("Error when computing TH2");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
@@ -2058,9 +2061,10 @@ public class MessageProcessor {
         
         byte[] hashMessage1 = session.getHashMessage1(); // the hash of message_1, as plain bytes
         byte[] hashMessage1SerializedCBOR = CBORObject.FromObject(hashMessage1).EncodeToBytes();
-        byte[] data2 = Util.buildCBORSequence(objectList); // data_2 as a CBOR sequence
+        byte[] gYSerializedCBOR = gY.EncodeToBytes();
+        byte[] cRSerializedCBOR = obj.EncodeToBytes();
         
-        byte[] th2 = computeTH2(session, hashMessage1SerializedCBOR, data2);
+        byte[] th2 = computeTH2(session, hashMessage1SerializedCBOR, gYSerializedCBOR, cRSerializedCBOR);
         if (th2 == null) {
     		System.err.println("Error when computing TH_2");
     		errMsg = new String("Error when computing TH_2");
@@ -3721,10 +3725,11 @@ public class MessageProcessor {
      *  Compute the transcript hash TH2
      * @param session   The used EDHOC session
      * @param message1   The hash of EDHOC Message 1, as a serialized CBOR byte string
-     * @param data2   The data_2 information from the EDHOC Message 2, as a serialized CBOR sequence
+     * @param gY   The G_Y ephemeral key from the EDHOC Message 2, as a serialized CBOR byte string
+     * @param cR   The C_R connection identifier from the EDHOC Message 2, as a serialized CBOR Object
      * @return  The computed TH2
      */
-	public static byte[] computeTH2(EdhocSession session, byte[] hashMessage1, byte[] data2) {
+	public static byte[] computeTH2(EdhocSession session, byte[] hashMessage1, byte[] gY, byte[] cR) {
 	
         byte[] th2 = null;
         
@@ -3739,9 +3744,13 @@ public class MessageProcessor {
         		break;
         }
         
-        byte[] hashInput = new byte[hashMessage1.length + data2.length];
+        int offset = 0;
+        byte[] hashInput = new byte[hashMessage1.length + gY.length + cR.length];
         System.arraycopy(hashMessage1, 0, hashInput, 0, hashMessage1.length);
-        System.arraycopy(data2, 0, hashInput, hashMessage1.length, data2.length);
+        offset += hashMessage1.length;
+        System.arraycopy(gY, 0, hashInput, offset, gY.length);
+        offset += gY.length;
+        System.arraycopy(cR, 0, hashInput, offset, cR.length);
         try {
 			th2 = Util.computeHash(hashInput, hashAlgorithm);
 		} catch (NoSuchAlgorithmException e) {
