@@ -709,13 +709,14 @@ public class MessageProcessor {
         // Compute TH2
 		
         byte[] th2 = null;
-        byte[] message1 = session.getMessage1(); // message_1 as a CBOR sequence
+        byte[] hashMessage1 = session.getHashMessage1(); // the hash of message_1, as plain bytes
         List<CBORObject> objectListData2 = new ArrayList<>();
         for (int i = 0; i < objectListRequest.length - 1; i++)
         	objectListData2.add(objectListRequest[i]);
+        byte[] hashMessage1SerializedCBOR = CBORObject.FromObject(hashMessage1).EncodeToBytes();
         byte[] data2 = Util.buildCBORSequence(objectListData2); // data_2 as a CBOR sequence
         
-        th2 = computeTH2(session, message1, data2);
+        th2 = computeTH2(session, hashMessage1SerializedCBOR, data2);
         if (th2 == null) {
         	errMsg = new String("Error when computing TH2");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
@@ -2055,10 +2056,11 @@ public class MessageProcessor {
         
         // Compute TH_2
         
-        byte[] message1 = session.getMessage1(); // message_1 as a CBOR sequence
+        byte[] hashMessage1 = session.getHashMessage1(); // the hash of message_1, as plain bytes
+        byte[] hashMessage1SerializedCBOR = CBORObject.FromObject(hashMessage1).EncodeToBytes();
         byte[] data2 = Util.buildCBORSequence(objectList); // data_2 as a CBOR sequence
         
-        byte[] th2 = computeTH2(session, message1, data2);
+        byte[] th2 = computeTH2(session, hashMessage1SerializedCBOR, data2);
         if (th2 == null) {
     		System.err.println("Error when computing TH_2");
     		errMsg = new String("Error when computing TH_2");
@@ -2876,8 +2878,8 @@ public class MessageProcessor {
 		}
 		mySession.setPeerEphemeralPublicKey(peerEphemeralKey);
 				
-		// Store the EDHOC Message 1
-		mySession.setMessage1(message1);
+		// Compute and store the hash of EDHOC Message 1
+		mySession.setHashMessage1(message1);
 		
 		return mySession;
 		
@@ -3718,11 +3720,11 @@ public class MessageProcessor {
     /**
      *  Compute the transcript hash TH2
      * @param session   The used EDHOC session
-     * @param message1   The payload of the EDHOC Message 1, as a serialized CBOR byte string
-     * @param data2   The data_2 information from the EDHOC Message 2, as a serialized CBOR byte string
+     * @param message1   The hash of EDHOC Message 1, as a serialized CBOR byte string
+     * @param data2   The data_2 information from the EDHOC Message 2, as a serialized CBOR sequence
      * @return  The computed TH2
      */
-	public static byte[] computeTH2(EdhocSession session, byte[] message1, byte[] data2) {
+	public static byte[] computeTH2(EdhocSession session, byte[] hashMessage1, byte[] data2) {
 	
         byte[] th2 = null;
         
@@ -3737,9 +3739,9 @@ public class MessageProcessor {
         		break;
         }
         
-        byte[] hashInput = new byte[message1.length + data2.length];
-        System.arraycopy(message1, 0, hashInput, 0, message1.length);
-        System.arraycopy(data2, 0, hashInput, message1.length, data2.length);
+        byte[] hashInput = new byte[hashMessage1.length + data2.length];
+        System.arraycopy(hashMessage1, 0, hashInput, 0, hashMessage1.length);
+        System.arraycopy(data2, 0, hashInput, hashMessage1.length, data2.length);
         try {
 			th2 = Util.computeHash(hashInput, hashAlgorithm);
 		} catch (NoSuchAlgorithmException e) {
