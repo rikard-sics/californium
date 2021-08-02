@@ -571,13 +571,13 @@ public class MessageProcessor {
 		
 		/* Consistency checks */
 		
-		if (error == false && cI == null && objectListRequest.length != 4) {
+		if (error == false && cI == null && objectListRequest.length != 3) {
 			errMsg = new String("C_I must be specified");
 			responseCode = ResponseCode.BAD_REQUEST;
 			error = true;
 		}
 		
-		if (error == false && cI != null && objectListRequest.length != 3) {
+		if (error == false && cI != null && objectListRequest.length != 2) {
 			errMsg = new String("C_I must not be specified");
 			responseCode = ResponseCode.BAD_REQUEST;
 			error = true;
@@ -627,21 +627,42 @@ public class MessageProcessor {
 			}
 		}
 		
-		// G_Y
+		// G_Y | CIPHERTEXT_2
 		byte[] gY = null;
+		byte[] ciphertext2 = null;
+		byte[] gY_Ciphertext2 = null;
+		int gYLength = 0;
+		int ciphetertext2Length = 0;
 		if (error == false && objectListRequest[index].getType() != CBORType.ByteString) {
-				errMsg = new String("G_Y must be a byte string");
+				errMsg = new String("(G_Y | CIPHERTEXT_2) must be a byte string");
 				responseCode = ResponseCode.BAD_REQUEST;
 				error = true;
 		}
 		if (error == false) {
-			// Set the ephemeral public key of the Responder
-			OneKey peerEphemeralKey = null;
+			gY_Ciphertext2 = objectListRequest[index].GetByteString();
 			
-			gY = objectListRequest[index].GetByteString();
+			gYLength = EdhocSession.getEphermeralKeyLength(session.getSelectedCiphersuite());
+			ciphetertext2Length = gY_Ciphertext2.length - gYLength;
+			
+			if (ciphetertext2Length <= 0) {
+				errMsg = new String("(G_Y | CIPHERTEXT_2) has an inconsistent size");
+				responseCode = ResponseCode.BAD_REQUEST;
+				error = true;
+			}
+				
+		}
+		if (error == false) {
+			
+			// G_Y
+			gY = new byte[gYLength];
+			System.arraycopy(gY_Ciphertext2, 0, gY, 0, gYLength);
 	    	if (debugPrint) {
 	    		Util.nicePrint("G_Y", gY);
 	    	}
+			
+			// Set the ephemeral public key of the Responder
+			OneKey peerEphemeralKey = null;
+			
 			int selectedCipherSuite = session.getSelectedCiphersuite();
 			
 			if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_0 ||
@@ -663,14 +684,26 @@ public class MessageProcessor {
 		    	if (debugPrint) {
 		    		Util.nicePrint("PeerEphemeralKey", peerEphemeralKey.AsCBOR().EncodeToBytes());
 		    	}
-				index++;
 			}
+			
+			
+			// CIPHERTEXT_2
+			ciphertext2 = new byte[ciphetertext2Length];
+			System.arraycopy(gY_Ciphertext2, gYLength, ciphertext2, 0, ciphetertext2Length);
+			session.setCiphertext2(ciphertext2);
+			
+			
+			// Move to the next element of the CBOR sequence, i.e., C_R 
+			index++;
+			
 		}
 		
 		
-		// C_R
-		CBORObject encodedCR = objectListRequest[index]; // C_R as a bstr_identifier sent on the wire
+		CBORObject encodedCR = null; // C_R as a bstr_identifier sent on the wire
+		
+		// C_R		
 		if (error == false) {
+			encodedCR = objectListRequest[index];
 			cR = Util.decodeFromBstrIdentifier(encodedCR);
 			
 			if (cR == null) {
@@ -680,21 +713,7 @@ public class MessageProcessor {
 			}
 			else {
 				session.setPeerConnectionId(cR.GetByteString());
-				index++;
 			}
-		}
-		
-		
-		// CIPHERTEXT_2
-		byte[] ciphertext2 = null;
-		if (error == false && objectListRequest[index].getType() != CBORType.ByteString) {
-			errMsg = new String("CIPHERTEXT_2 must be a byte string");
-			responseCode = ResponseCode.BAD_REQUEST;
-			error = true;
-		}
-		else {
-			ciphertext2 = objectListRequest[index].GetByteString();
-			session.setCiphertext2(ciphertext2);
 		}
 		
 		
@@ -2017,7 +2036,6 @@ public class MessageProcessor {
         	System.out.println("Start processing EDHOC Message 2:\n");
         }
 		
-        /* Start preparing data_2 */
         
         // C_I as a bstr_identifier, if EDHOC message_2 is transported in a CoAP request
 		if (!session.isClientInitiated()) {
@@ -2039,20 +2057,16 @@ public class MessageProcessor {
 		else if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_2 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_3) {
 			gY = session.getEphemeralKey().PublicKey().get(KeyKeys.EC2_X);
 		}
-		objectList.add(gY);
-        if (debugPrint) {
-        	Util.nicePrint("G_Y", gY.GetByteString());
-        }
+    	if (debugPrint) {
+    	    Util.nicePrint("G_Y", gY.EncodeToBytes());
+    	}
 		
 		// C_R as a bstr_identifier
 		CBORObject cR = CBORObject.FromObject(session.getConnectionId());
-		CBORObject obj = Util.encodeToBstrIdentifier(cR);
-		objectList.add(obj);
-        if (debugPrint) {
-        	Util.nicePrint("C_R", obj.EncodeToBytes());
-        }
-		
-        /* End preparing data_2 */
+		CBORObject cRCBOR = Util.encodeToBstrIdentifier(cR);
+    	if (debugPrint) {
+    	    Util.nicePrint("C_R", cRCBOR.EncodeToBytes());
+    	}
         
         
         /* Start computing the inner COSE object */
@@ -2062,7 +2076,7 @@ public class MessageProcessor {
         byte[] hashMessage1 = session.getHashMessage1(); // the hash of message_1, as plain bytes
         byte[] hashMessage1SerializedCBOR = CBORObject.FromObject(hashMessage1).EncodeToBytes();
         byte[] gYSerializedCBOR = gY.EncodeToBytes();
-        byte[] cRSerializedCBOR = obj.EncodeToBytes();
+        byte[] cRSerializedCBOR = cRCBOR.EncodeToBytes();
         
         byte[] th2 = computeTH2(session, hashMessage1SerializedCBOR, gYSerializedCBOR, cRSerializedCBOR);
         if (th2 == null) {
@@ -2228,16 +2242,32 @@ public class MessageProcessor {
     	}
 
     	
-    	// Compute CIPHERTEXT_2 and add it to the outer CBOR sequence
-    	
+    	// Compute CIPHERTEXT_2
     	byte[] ciphertext2 = Util.arrayXor(plaintext, keystream2);
-    	objectList.add(CBORObject.FromObject(ciphertext2));
     	session.setCiphertext2(ciphertext2);
     	if (debugPrint && ciphertext2 != null) {
     		Util.nicePrint("CIPHERTEXT_2", ciphertext2);
     	}
-    	        
+
     	/* End computing CIPHERTEXT_2 */
+    	
+    	
+    	// Finish building the outer CBOR sequence
+    	
+    	// Concatenate G_Y with CIPHERTEXT_2
+    	byte[] gY_Ciphertext2 = new byte[gY.GetByteString().length + ciphertext2.length];
+    	System.arraycopy(gY.GetByteString(), 0, gY_Ciphertext2, 0, gY.GetByteString().length);
+    	System.arraycopy(ciphertext2, 0, gY_Ciphertext2, gY.GetByteString().length, ciphertext2.length);
+    	
+    	// Wrap the result in a single CBOR byte string, included in the outer CBOR sequence of EDHOC Message 2
+    	objectList.add(CBORObject.FromObject(gY_Ciphertext2));
+    	if (debugPrint) {
+    	    Util.nicePrint("G_Y | CIPHERTEXT_2", gY_Ciphertext2);
+    	}
+    	
+    	// The outer CBOR sequence finishes with the connection identifier C_R
+    	objectList.add(cRCBOR);
+
     	
     	
 		/* Prepare an EDHOC Error Message */
