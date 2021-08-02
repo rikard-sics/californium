@@ -713,6 +713,29 @@ public class EdhocSession {
 	}
 	
     /**
+     *  Get the length (in bytes) of the ephemeral keys for the EDHOC key exchange algorithm
+     *  (ECDH curve) associated to the selected ciphersuite
+     * @param cipherSuite   The selected ciphersuite
+     * @return  the length (in bytes) of the ephemeral keys for the EDHOC key exchange algorithm
+     *          (ECDH curve) associated to the selected ciphersuite
+     */
+	public static int getEphermeralKeyLength(int cipherSuite) {
+
+		int keyLength = 0;
+	    
+		switch (cipherSuite) {
+			case Constants.EDHOC_CIPHER_SUITE_0:
+			case Constants.EDHOC_CIPHER_SUITE_1:
+			case Constants.EDHOC_CIPHER_SUITE_2:
+			case Constants.EDHOC_CIPHER_SUITE_3:
+				keyLength = 32;
+		}
+	    
+	    return keyLength;
+		
+	}
+	
+    /**
      *  Get the application AEAD algorithm associated to the selected ciphersuite
      * @param cipherSuite   The selected ciphersuite
      * @return  the application AEAD algorithm associated to the selected ciphersuite
