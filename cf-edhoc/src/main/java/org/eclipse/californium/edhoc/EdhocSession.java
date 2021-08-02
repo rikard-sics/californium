@@ -468,14 +468,7 @@ public class EdhocSession {
 		String hashAlgorithm = null;
 		
 		int selectedCiphersuite = getSelectedCiphersuite();
-		switch (selectedCiphersuite) {
-		    case Constants.EDHOC_CIPHER_SUITE_0:
-		    case Constants.EDHOC_CIPHER_SUITE_1:
-		    case Constants.EDHOC_CIPHER_SUITE_2:
-		    case Constants.EDHOC_CIPHER_SUITE_3:
-		        hashAlgorithm = "SHA-256";
-		        break;
-		}
+		hashAlgorithm = getEdhocHashAlg(selectedCiphersuite);
 
 		try {
 			hash = Util.computeHash(msg, hashAlgorithm);
@@ -634,17 +627,10 @@ public class EdhocSession {
      */
 	public static byte[] getMasterSecretOSCORE(EdhocSession session) {
 
-	    int keyLength = 0;
 	    byte[] masterSecret = null;
 	    int selectedCiphersuite = session.getSelectedCiphersuite();
 	    
-	    switch (selectedCiphersuite) {
-	    	case Constants.EDHOC_CIPHER_SUITE_0:
-	    	case Constants.EDHOC_CIPHER_SUITE_1:
-	    	case Constants.EDHOC_CIPHER_SUITE_2:
-	    	case Constants.EDHOC_CIPHER_SUITE_3:
-	    		keyLength = 16;
-	    }
+	    int keyLength = getKeyLengthAppAEAD(selectedCiphersuite);
 	    byte[] emptyArray = new byte[0];
 	    
 	    try {
@@ -682,6 +668,51 @@ public class EdhocSession {
 	}
 	
     /**
+     *  Get the EDHOC AEAD algorithm associated to the selected ciphersuite
+     * @param cipherSuite   The selected ciphersuite
+     * @return  the EDHOC AEAD algorithm associated to the selected ciphersuite
+     */
+	public static AlgorithmID getEdhocAEADAlg(int cipherSuite) {
+
+		AlgorithmID alg = null;
+	    
+    	switch (cipherSuite) {
+			case Constants.EDHOC_CIPHER_SUITE_0:
+			case Constants.EDHOC_CIPHER_SUITE_2:
+				alg = AlgorithmID.AES_CCM_16_64_128;
+				break;
+			case Constants.EDHOC_CIPHER_SUITE_1:
+			case Constants.EDHOC_CIPHER_SUITE_3:
+				alg = AlgorithmID.AES_CCM_16_128_128;
+				break;
+		}
+	    
+	    return alg;
+		
+	}
+	
+    /**
+     *  Get the EDHOC Hash algorithm associated to the selected ciphersuite
+     * @param cipherSuite   The selected ciphersuite
+     * @return  the EDHOC Hash algorithm associated to the selected ciphersuite
+     */
+	public static String getEdhocHashAlg(int cipherSuite) {
+
+		String hashAlg = null;
+	    
+		switch (cipherSuite) {
+			case Constants.EDHOC_CIPHER_SUITE_0:
+			case Constants.EDHOC_CIPHER_SUITE_1:
+			case Constants.EDHOC_CIPHER_SUITE_2:
+			case Constants.EDHOC_CIPHER_SUITE_3:
+				hashAlg = "SHA-256";
+		}
+	    
+	    return hashAlg;
+		
+	}
+	
+    /**
      *  Get the application AEAD algorithm associated to the selected ciphersuite
      * @param cipherSuite   The selected ciphersuite
      * @return  the application AEAD algorithm associated to the selected ciphersuite
@@ -701,7 +732,28 @@ public class EdhocSession {
 	    return alg;
 		
 	}
+	
+    /**
+     *  Get the key length (in bytes) for application AEAD algorithm associated to the selected ciphersuite
+     * @param cipherSuite   The selected ciphersuite
+     * @return  the key length (in bytes) for the application AEAD algorithm associated to the selected ciphersuite
+     */
+	public static int getKeyLengthAppAEAD(int cipherSuite) {
+
+		int keyLength = 0;
+	    
+		switch (cipherSuite) {
+	    	case Constants.EDHOC_CIPHER_SUITE_0:
+	    	case Constants.EDHOC_CIPHER_SUITE_1:
+	    	case Constants.EDHOC_CIPHER_SUITE_2:
+	    	case Constants.EDHOC_CIPHER_SUITE_3:
+	    		keyLength = 16;
+		}
+	    
+	    return keyLength;
 		
+	}
+	
     /**
      *  Get the application HKDF algorithm associated to the application hash algorithm of the selected ciphersuite
      * @param cipherSuite   The selected ciphersuite

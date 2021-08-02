@@ -3328,18 +3328,8 @@ public class MessageProcessor {
 			                         byte[] plaintext, byte[] k2m, byte[] iv2m) {
 		
 		
-    	AlgorithmID alg = null;
     	byte[] mac2 = null;
-    	switch (selectedCiphersuite) {
-    		case Constants.EDHOC_CIPHER_SUITE_0:
-    		case Constants.EDHOC_CIPHER_SUITE_2:
-    			alg = AlgorithmID.AES_CCM_16_64_128;
-    			break;
-    		case Constants.EDHOC_CIPHER_SUITE_1:
-    		case Constants.EDHOC_CIPHER_SUITE_3:
-    			alg = AlgorithmID.AES_CCM_16_128_128;
-    			break;
-    	}
+    	AlgorithmID alg = EdhocSession.getEdhocAEADAlg(selectedCiphersuite);
     	try {
 			mac2 = Util.encrypt(idCredR, externalData, plaintext, alg, iv2m, k2m);
 		} catch (CoseException e) {
@@ -3366,18 +3356,8 @@ public class MessageProcessor {
 			                         byte[] plaintext, byte[] k3m, byte[] iv3m) {
 		
 		
-    	AlgorithmID alg = null;
     	byte[] mac3 = null;
-    	switch (selectedCiphersuite) {
-    		case Constants.EDHOC_CIPHER_SUITE_0:
-    		case Constants.EDHOC_CIPHER_SUITE_2:
-    			alg = AlgorithmID.AES_CCM_16_64_128;
-    			break;
-    		case Constants.EDHOC_CIPHER_SUITE_1:
-    		case Constants.EDHOC_CIPHER_SUITE_3:
-    			alg = AlgorithmID.AES_CCM_16_128_128;
-    			break;
-    	}
+    	AlgorithmID alg = EdhocSession.getEdhocAEADAlg(selectedCiphersuite);
     	try {
 			mac3 = Util.encrypt(idCredI, externalData, plaintext, alg, iv3m, k3m);
 		} catch (CoseException e) {
@@ -3402,20 +3382,11 @@ public class MessageProcessor {
 	public static byte[] computeCiphertext3(EdhocSession session, byte[] externalData,
 			                                byte[] plaintext, byte[] k3ae, byte[] iv3ae) {
 		
-    	AlgorithmID alg = null;
+    	
     	byte[] ciphertext3 = null;
     	
     	int selectedCiphersuite = session.getSelectedCiphersuite();
-    	switch (selectedCiphersuite) {
-    		case Constants.EDHOC_CIPHER_SUITE_0:
-    		case Constants.EDHOC_CIPHER_SUITE_2:
-    			alg = AlgorithmID.AES_CCM_16_64_128;
-    			break;
-    		case Constants.EDHOC_CIPHER_SUITE_1:
-    		case Constants.EDHOC_CIPHER_SUITE_3:
-    			alg = AlgorithmID.AES_CCM_16_128_128;
-    			break;
-    	}
+    	AlgorithmID alg = EdhocSession.getEdhocAEADAlg(selectedCiphersuite);
     	
     	try {
     		ciphertext3 = Util.encrypt(null, externalData, plaintext, alg, iv3ae, k3ae);
@@ -3442,20 +3413,10 @@ public class MessageProcessor {
 			                         		byte[] plaintext, byte[] k4m, byte[] iv4m) {
 		
 		
-    	AlgorithmID alg = null;
     	byte[] ciphertext4 = null;
     	
     	int selectedCiphersuite = session.getSelectedCiphersuite();
-    	switch (selectedCiphersuite) {
-    		case Constants.EDHOC_CIPHER_SUITE_0:
-    		case Constants.EDHOC_CIPHER_SUITE_2:
-    			alg = AlgorithmID.AES_CCM_16_64_128;
-    			break;
-    		case Constants.EDHOC_CIPHER_SUITE_1:
-    		case Constants.EDHOC_CIPHER_SUITE_3:
-    			alg = AlgorithmID.AES_CCM_16_128_128;
-    			break;
-    	}
+    	AlgorithmID alg = EdhocSession.getEdhocAEADAlg(selectedCiphersuite);
     	
     	try {
 			ciphertext4 = Util.encrypt(null, externalData, plaintext, alg, iv4m, k4m);
@@ -3481,20 +3442,10 @@ public class MessageProcessor {
 	public static byte[] decryptCiphertext3(EdhocSession session, byte[] externalData,
 			                                byte[] ciphertext, byte[] k3ae, byte[] iv3ae) {
 		
-    	AlgorithmID alg = null;
     	byte[] plaintext = null;
     	
     	int selectedCiphersuite = session.getSelectedCiphersuite();
-    	switch (selectedCiphersuite) {
-    		case Constants.EDHOC_CIPHER_SUITE_0:
-    		case Constants.EDHOC_CIPHER_SUITE_2:
-    			alg = AlgorithmID.AES_CCM_16_64_128;
-    			break;
-    		case Constants.EDHOC_CIPHER_SUITE_1:
-    		case Constants.EDHOC_CIPHER_SUITE_3:
-    			alg = AlgorithmID.AES_CCM_16_128_128;
-    			break;
-    	}
+    	AlgorithmID alg = EdhocSession.getEdhocAEADAlg(selectedCiphersuite);
     	
     	// Prepare the empty content for the COSE protected header
     	CBORObject emptyMap = CBORObject.NewMap();
@@ -3523,20 +3474,10 @@ public class MessageProcessor {
 	public static byte[] decryptCiphertext4(EdhocSession session, byte[] externalData,
 			                                byte[] ciphertext, byte[] k4ae, byte[] iv4ae) {
 		
-    	AlgorithmID alg = null;
     	byte[] plaintext = null;
     	
     	int selectedCiphersuite = session.getSelectedCiphersuite();
-    	switch (selectedCiphersuite) {
-    		case Constants.EDHOC_CIPHER_SUITE_0:
-    		case Constants.EDHOC_CIPHER_SUITE_2:
-    			alg = AlgorithmID.AES_CCM_16_64_128;
-    			break;
-    		case Constants.EDHOC_CIPHER_SUITE_1:
-    		case Constants.EDHOC_CIPHER_SUITE_3:
-    			alg = AlgorithmID.AES_CCM_16_128_128;
-    			break;
-    	}
+    	AlgorithmID alg = EdhocSession.getEdhocAEADAlg(selectedCiphersuite);
     	
     	// Prepare the empty content for the COSE protected header
     	CBORObject emptyMap = CBORObject.NewMap();
@@ -3733,16 +3674,8 @@ public class MessageProcessor {
 	
         byte[] th2 = null;
         
-        String hashAlgorithm = null;
         int selectedCiphersuite = session.getSelectedCiphersuite();
-        switch (selectedCiphersuite) {
-        	case Constants.EDHOC_CIPHER_SUITE_0:
-        	case Constants.EDHOC_CIPHER_SUITE_1:
-        	case Constants.EDHOC_CIPHER_SUITE_2:
-        	case Constants.EDHOC_CIPHER_SUITE_3:
-        		hashAlgorithm = "SHA-256";
-        		break;
-        }
+        String hashAlgorithm = EdhocSession.getEdhocHashAlg(selectedCiphersuite);
         
         int offset = 0;
         byte[] hashInput = new byte[hashMessage1.length + gY.length + cR.length];
@@ -3776,16 +3709,8 @@ public class MessageProcessor {
         byte[] th3 = null;
         int inputLength = th2.length + ciphertext2.length;
         
-        String hashAlgorithm = null;
         int selectedCiphersuite = session.getSelectedCiphersuite();
-        switch (selectedCiphersuite) {
-        	case Constants.EDHOC_CIPHER_SUITE_0:
-        	case Constants.EDHOC_CIPHER_SUITE_1:
-        	case Constants.EDHOC_CIPHER_SUITE_2:
-        	case Constants.EDHOC_CIPHER_SUITE_3:
-        		hashAlgorithm = "SHA-256";
-        		break;
-        }
+        String hashAlgorithm = EdhocSession.getEdhocHashAlg(selectedCiphersuite);
         
         int offset = 0;
         byte[] hashInput = new byte[inputLength];
@@ -3817,16 +3742,8 @@ public class MessageProcessor {
         byte[] th4 = null;
         int inputLength = th3.length + ciphertext3.length;
         
-        String hashAlgorithm = null;
         int selectedCiphersuite = session.getSelectedCiphersuite();
-        switch (selectedCiphersuite) {
-        	case Constants.EDHOC_CIPHER_SUITE_0:
-        	case Constants.EDHOC_CIPHER_SUITE_1:
-        	case Constants.EDHOC_CIPHER_SUITE_2:
-        	case Constants.EDHOC_CIPHER_SUITE_3:
-        		hashAlgorithm = "SHA-256";
-        		break;
-        }
+        String hashAlgorithm = EdhocSession.getEdhocHashAlg(selectedCiphersuite);
         
         byte[] hashInput = new byte[inputLength];
         System.arraycopy(th3, 0, hashInput, 0, th3.length);
