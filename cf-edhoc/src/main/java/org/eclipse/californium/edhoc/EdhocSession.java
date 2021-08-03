@@ -697,6 +697,79 @@ public class EdhocSession {
 	}
 	
     /**
+     *  Convert an OSCORE Sender/Recipient ID to an EDHOC Connection Identifier
+     * @param oscoreId   The OSCORE Sender/Recipient ID
+     * @return  the EDHOC Connection Identifier as a CBOR Object, or null in case of error
+     */
+	public static CBORObject oscoreToEdhocId(byte[] oscoreId) {
+
+		if (oscoreId == null)
+			return null;
+		
+		CBORObject edhocId = null;
+		int oscoreIdLength = oscoreId.length;
+		
+		if (oscoreIdLength == 0) {
+			byte[] emptyArray = new byte[0];
+			edhocId = CBORObject.FromObject(emptyArray);
+		}
+		else if (oscoreIdLength > 5) {
+			edhocId = CBORObject.FromObject(oscoreId);
+		}
+		else {
+			boolean useInteger = false;
+			
+			// Check the first byte of the OSCORE ID, to determine
+			// if it happens to be the encoding of a CBOR integer
+			byte[] selection = new byte[1];		
+			System.arraycopy(oscoreId, 0, selection, 0, 1);
+			int value = Util.bytesToInt(selection);
+			
+			switch (oscoreIdLength) {
+				case 1:
+					if ( (value >= 0 && value <= 23) || (value >= 32 && value <= 55) )
+						useInteger = true;
+					break;
+				case 2:
+					if (value == 24 || value == 56)
+						useInteger = true;
+					break;
+				case 3:
+					if (value == 25 || value == 57)
+						useInteger = true;
+					break;
+				case 4:
+					if (value == 26 || value == 58)
+						useInteger = true;
+					break;
+				case 5:
+					if (value == 27 || value == 59)
+						useInteger = true;
+					break;
+			}
+			
+			if (useInteger == true) {
+				edhocId = CBORObject.DecodeFromBytes(oscoreId);
+			}
+			else {
+				edhocId = CBORObject.FromObject(oscoreId);
+			}
+			
+		}
+		
+		
+		
+		if (edhocId.getType()== CBORType.Integer)
+			oscoreId = edhocId.EncodeToBytes();
+		
+		if (edhocId.getType()== CBORType.ByteString)
+			oscoreId = edhocId.GetByteString();
+		
+		return edhocId;
+		
+	}
+	
+    /**
      *  Get the EDHOC AEAD algorithm associated to the selected ciphersuite
      * @param cipherSuite   The selected ciphersuite
      * @return  the EDHOC AEAD algorithm associated to the selected ciphersuite
