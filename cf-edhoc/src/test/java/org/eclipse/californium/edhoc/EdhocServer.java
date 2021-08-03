@@ -93,7 +93,7 @@ public class EdhocServer extends CoapServer {
 	// CRED of the long-term public keys of authorized peers
 	// The map label is a CBOR Map used as ID_CRED_X
 	// The map value is a CBOR byte string, with value the serialization of CRED
-	// (i.e. the serialization of what the other peer stores as CRED in its Session)
+	// (i.e. what the other peer stores as CRED in its Session)
 	private static Map<CBORObject, CBORObject> peerCredentials = new HashMap<CBORObject, CBORObject>();
 
 	// Existing EDHOC Sessions, including completed ones
