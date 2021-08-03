@@ -768,7 +768,6 @@ public class EdhocSession {
 						// Values -65536 ... 65535 must rather be encoded as a (1+2) CBOR integer
 						// Values -4294967296 ... 4294967295 must be encoded as a (1+4) CBOR integer
 						
-						// The Java integer type
 						if (edhocId.AsInt64Value() < -4294967296L || edhocId.AsInt32() > 4294967295L)
 							useInteger = true; // The EDHOC Connection identifier can be a CBOR integer
 					}
