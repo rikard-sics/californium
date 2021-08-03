@@ -2812,22 +2812,16 @@ public class MessageProcessor {
 	    
 	    byte[] key = new byte[keyLength];
 	    String label = null;
-	    byte[] emptyArray = new byte[0];
-	    List<CBORObject> objectList = new ArrayList<>();
-	    byte[] labelContext = null;
 	    
 	    try {
 	        switch(keyName) {
 	            case Constants.EDHOC_K_3AE:
 	            	label = new String("K_3ae");
-	            	objectList.add(CBORObject.FromObject(label));
-	            	objectList.add(CBORObject.FromObject(emptyArray));
-	            	labelContext = Util.buildCBORSequence(objectList);
-	                key = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), labelContext, keyLength);
+	                key = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), label, null, keyLength);
 	                break;
 	            case Constants.EDHOC_K_4AE:
 	            	label = new String("EDHOC_message_4_Key");
-	                key = session.edhocExporter(label, emptyArray, keyLength);
+	                key = session.edhocExporter(label, null, keyLength);
 	                break;
 	            default:
 	            	key = null;
@@ -2859,22 +2853,16 @@ public class MessageProcessor {
 	    
 	    byte[] iv = new byte[ivLength];
 	    String label = null;
-	    byte[] emptyArray = new byte[0];
-	    List<CBORObject> objectList = new ArrayList<>();
-	    byte[] labelContext = null;
 	    
 	    try {
 	        switch(ivName) {
             case Constants.EDHOC_IV_3AE:
             	label = new String("IV_3ae");
-            	objectList.add(CBORObject.FromObject(label));
-            	objectList.add(CBORObject.FromObject(emptyArray));
-            	labelContext = Util.buildCBORSequence(objectList);
-                iv = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), labelContext, ivLength);
+                iv = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), label, null, ivLength);
                 break;
             case Constants.EDHOC_IV_4AE:
             	label = new String("EDHOC_message_4_Nonce");
-                iv = session.edhocExporter(label, emptyArray, ivLength);
+                iv = session.edhocExporter(label, null, ivLength);
                 break;
             default:
             	iv = null;
@@ -2900,19 +2888,10 @@ public class MessageProcessor {
      * @return  The computed keystream KEYSTREAM_2
      */
 	public static byte[] computeKeystream2(EdhocSession session, int length) {
-	    
-		String label = new String("KEYSTREAM_2");
-		byte[] emptyArray = new byte[0];
-		
-	    List<CBORObject> objectList = new ArrayList<>();
-	    byte[] labelContext = null;
-    	objectList.add(CBORObject.FromObject(label));
-    	objectList.add(CBORObject.FromObject(emptyArray));
-    	labelContext = Util.buildCBORSequence(objectList);
     	
 		byte[] keystream2 = new byte[length];
 		try {
-			keystream2 = session.edhocKDF(session.getPRK2e(), session.getTH2(), labelContext, length);
+			keystream2 = session.edhocKDF(session.getPRK2e(), session.getTH2(), "KEYSTREAM_2", null, length);
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when generating KEYSTREAM_2\n" + e.getMessage());
 			return null;
@@ -3222,17 +3201,15 @@ public class MessageProcessor {
 	public static byte[] computeMAC2(EdhocSession session, byte[] prk3e2m, byte[] th2,
 			                         CBORObject idCredR, byte[] credR, CBORObject[] ead2) {
 		
-		// Build the CBOR sequence for 'label_context' :
-		// ( "MAC_2", ID_CRED_R, CRED_R, ? EAD_2 )
+		// Build the CBOR sequence for 'context': ( ID_CRED_R, CRED_R, ? EAD_2 )
     	List<CBORObject> objectList = new ArrayList<>();
-    	objectList.add(CBORObject.FromObject("MAC_2"));
     	objectList.add(idCredR);
     	objectList.add(CBORObject.FromObject(credR));
     	if (ead2 != null) {
 	    	for (int i = 0; i < ead2.length; i++)
 	        	objectList.add(ead2[i]);
     	}
-    	byte[] labelContext = Util.buildCBORSequence(objectList);
+    	byte[] context = Util.buildCBORSequence(objectList);
     	
     	int macLength = 0;
     	int method = session.getMethod();
@@ -3246,7 +3223,7 @@ public class MessageProcessor {
     	
     	byte[] mac2 = new byte[macLength];
     	try {
-			mac2 = session.edhocKDF(prk3e2m, th2, labelContext, macLength);
+			mac2 = session.edhocKDF(prk3e2m, th2, "MAC_2", context, macLength);
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when computing MAC_2\n" + e.getMessage());
 		} catch (NoSuchAlgorithmException e) {
@@ -3272,17 +3249,15 @@ public class MessageProcessor {
             						 CBORObject idCredI, byte[] credI, CBORObject[] ead3) {
 		
 		
-		// Build the CBOR sequence for 'label_context' :
-		// ( "MAC_3", ID_CRED_I, CRED_I, ? EAD_3 )
+		// Build the CBOR sequence for 'context': ( ID_CRED_I, CRED_I, ? EAD_3 )
     	List<CBORObject> objectList = new ArrayList<>();
-    	objectList.add(CBORObject.FromObject("MAC_3"));
     	objectList.add(idCredI);
     	objectList.add(CBORObject.FromObject(credI));
     	if (ead3 != null) {
 	    	for (int i = 0; i < ead3.length; i++)
 	        	objectList.add(ead3[i]);
     	}
-    	byte[] labelContext = Util.buildCBORSequence(objectList);
+    	byte[] context = Util.buildCBORSequence(objectList);
     	
     	int macLength = 0;
     	int method = session.getMethod();
@@ -3296,7 +3271,7 @@ public class MessageProcessor {
     	
     	byte[] mac3 = new byte[macLength];
     	try {
-			mac3 = session.edhocKDF(prk4x3m, th3, labelContext, macLength);
+			mac3 = session.edhocKDF(prk4x3m, th3, "MAC_3", context, macLength);
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when computing MAC_3\n" + e.getMessage());
 		} catch (NoSuchAlgorithmException e) {
