@@ -730,32 +730,26 @@ public class EdhocSession {
 					if (value == 25 || value == 57)
 						useInteger = true;
 					break;
-				case 4:
+				case 5:
 					if (value == 26 || value == 58)
 						useInteger = true;
 					break;
-				case 5:
+				case 9:
 					if (value == 27 || value == 59)
 						useInteger = true;
 					break;
 			}
 			
 			if (useInteger == true) {
+				// The EDHOC Connection identifier is a CBOR integer
 				edhocId = CBORObject.DecodeFromBytes(oscoreId);
 			}
 			else {
+				// The EDHOC Connection identifier is a CBOR byte string
 				edhocId = CBORObject.FromObject(oscoreId);
 			}
 			
 		}
-		
-		
-		
-		if (edhocId.getType()== CBORType.Integer)
-			oscoreId = edhocId.EncodeToBytes();
-		
-		if (edhocId.getType()== CBORType.ByteString)
-			oscoreId = edhocId.GetByteString();
 		
 		return edhocId;
 		
