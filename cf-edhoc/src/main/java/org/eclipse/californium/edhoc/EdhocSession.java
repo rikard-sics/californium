@@ -20,10 +20,8 @@ package org.eclipse.californium.edhoc;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
@@ -678,8 +676,31 @@ public class EdhocSession {
 
 		byte[] oscoreId = null;
 		
-		if (edhocId.getType()== CBORType.Integer)
+		if (edhocId.getType()== CBORType.Integer) {
+			
 			oscoreId = edhocId.EncodeToBytes();
+			
+			// Check compliancy with deterministic CBOR
+			switch (oscoreId.length) {
+				case 2:
+					if (edhocId.AsInt32() >= -24 || edhocId.AsInt32() <= 23)
+						oscoreId = null;
+					break;
+				case 3:
+					if (edhocId.AsInt32() >= -256 || edhocId.AsInt32() <= 255)
+						oscoreId = null;
+					break;
+				case 5:
+					if (edhocId.AsInt32() >= -65536 || edhocId.AsInt32() <= 65535)
+						oscoreId = null;
+					break;
+				case 9:
+					if (edhocId.AsInt64Value() >= -4294967296L || edhocId.AsInt64Value() <= 4294967295L)
+						oscoreId = null;
+					break;
+			}
+
+		}
 		
 		if (edhocId.getType()== CBORType.ByteString)
 			oscoreId = edhocId.GetByteString();
@@ -702,10 +723,13 @@ public class EdhocSession {
 		int oscoreIdLength = oscoreId.length;
 		
 		if (oscoreIdLength == 0) {
+			// The EDHOC Connection identifier is a CBOR byte string
 			byte[] emptyArray = new byte[0];
 			edhocId = CBORObject.FromObject(emptyArray);
 		}
-		else if (oscoreIdLength > 5) {
+		else if (oscoreIdLength == 4 || oscoreIdLength == 6 ||
+				 oscoreIdLength == 7 || oscoreIdLength == 8 || oscoreIdLength > 9) {
+			// The EDHOC Connection identifier is a CBOR byte string
 			edhocId = CBORObject.FromObject(oscoreId);
 		}
 		else {
@@ -719,13 +743,14 @@ public class EdhocSession {
 			
 			switch (oscoreIdLength) {
 				case 1: // (1+0) CBOR integer
-					if ( (value >= 0 && value <= 23) || (value >= 32 && value <= 55) ) {
+					if ( (value >= 0 && value <= 23) ||  // 0x00-0x17 or 0x20-0x37
+						 (value >= 32 && value <= 55) ) {
 						edhocId = CBORObject.DecodeFromBytes(oscoreId);
 						useInteger = true; // The EDHOC Connection identifier can be a CBOR integer
 					}
 					break;
 				case 2: // (1+1) CBOR integer
-					if (value == 24 || value == 56) {
+					if (value == 24 || value == 56) { // 0x18 or 0x38
 						edhocId = CBORObject.DecodeFromBytes(oscoreId);
 						
 						// Comply with deterministic CBOR
@@ -735,7 +760,7 @@ public class EdhocSession {
 					}
 					break;
 				case 3: // (1+2) CBOR integer
-					if (value == 25 || value == 57) {
+					if (value == 25 || value == 57) { // 0x19 or 0x39
 						edhocId = CBORObject.DecodeFromBytes(oscoreId);
 						
 						// Comply with deterministic CBOR
@@ -746,7 +771,7 @@ public class EdhocSession {
 					}
 					break;
 				case 5: // (1+4) CBOR integer
-					if (value == 26 || value == 58) {
+					if (value == 26 || value == 58) { // 0x1A or 0x3A
 						edhocId = CBORObject.DecodeFromBytes(oscoreId);
 						
 						// Comply with deterministic CBOR
@@ -759,7 +784,7 @@ public class EdhocSession {
 					break;
 				
 				case 9: // (1+8) CBOR integer
-					if (value == 27 || value == 59) {
+					if (value == 27 || value == 59) { // 0x1B or 0x3B
 						edhocId = CBORObject.DecodeFromBytes(oscoreId);
 						
 						// Comply with deterministic CBOR
