@@ -930,32 +930,7 @@ public class MessageProcessor {
     	session.setPRK3e2m(prk3e2m);
     	
     	
-    	// Compute K_2m and IV_2m to protect the inner COSE object
-
-    	byte[] k2m = computeKey(Constants.EDHOC_K_2M, session);
-    	if (k2m == null) {
-        	errMsg = new String("Error when computing K_2M");
-        	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
-        	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_2, !isReq, cR, errMsg, null, responseCode, ead2);
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("K_2m", k2m);
-    	}
-
-    	byte[] iv2m = computeIV(Constants.EDHOC_IV_2M, session);
-    	if (iv2m == null) {
-        	errMsg = new String("Error when computing IV_2M");
-        	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
-        	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_2, !isReq, cR, errMsg, null, responseCode, ead2);
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("IV_2m", iv2m);
-    	}
-    	
-    	
-    	// Compute MAC_2
+    	/* Start verifying Signature_or_MAC_2 */
     	
     	CBORObject peerCredentialCBOR = peerCredentials.get(idCredR);
     	if (peerCredentialCBOR == null) {
@@ -966,26 +941,8 @@ public class MessageProcessor {
     	}
     	byte[] peerCredential = peerCredentialCBOR.GetByteString();
     	
-    	// Prepare the External Data
-    	byte[] externalData = computeExternalData(th2, peerCredential, ead2);
-    	if (externalData == null) {
-        	errMsg = new String("Error when computing External Data for MAC_2");
-        	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
-        	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_2, !isReq, cR, errMsg, null, responseCode, ead2);
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("External Data to compute MAC_2", externalData);
-    	}
-    	
-        // Prepare the inner plaintext, as empty
-        byte[] innerPlaintext = new byte[] {};
-        
-        
-    	// Encrypt the inner COSE object and take the ciphertext as MAC_2
-
-    	byte[] mac2 = computeMAC2(session.getSelectedCiphersuite(), idCredR,
-    			                  externalData, innerPlaintext, k2m, iv2m);
+    	// Compute MAC_2
+    	byte[] mac2 = computeMAC2(session, prk3e2m, th2, idCredR, peerCredential, ead2);
     	if (mac2 == null) {
         	errMsg = new String("Error when computing MAC_2");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
@@ -995,22 +952,35 @@ public class MessageProcessor {
     	else if (debugPrint) {
     		Util.nicePrint("MAC_2", mac2);
     	}
-        
-    	
+            	
     	// Verify Signature_or_MAC_2
-    	
     	byte[] signatureOrMac2 = plaintextElementList[1].GetByteString();
     	if (debugPrint && signatureOrMac2 != null) {
     		Util.nicePrint("Signature_or_MAC_2", signatureOrMac2);
     	}
         
+    	// Prepare the External Data, as a CBOR sequence
+    	byte[] externalData = computeExternalData(th2, peerCredential, ead2);
+    	if (externalData == null) {
+        	errMsg = new String("Error when computing External Data for MAC_2");
+        	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
+        	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, !isReq, cR, errMsg, null, responseCode, ead2);
+    	}
+    	else if (debugPrint) {
+    		Util.nicePrint("External Data to verify Signature_or_MAC_2", externalData);
+    	}
+    	
     	if (!verifySignatureOrMac2(session, signatureOrMac2, externalData, mac2)) {
         	errMsg = new String("Non valid Signature_or_MAC_2");
         	responseCode = ResponseCode.BAD_REQUEST;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(errorCode, Constants.EDHOC_MESSAGE_2, !isReq, cR, errMsg, null, responseCode, ead2);
     	}
+    	
+    	/* End verifying Signature_or_MAC_2 */
 		
+    	
 		/* Return an indication to prepare EDHOC Message 3, possibly with the provided External Authorization Data */
 		
 		// A CBOR byte string with zero length, indicating that the EDHOC Message 3 can be prepared
@@ -1346,8 +1316,6 @@ public class MessageProcessor {
     	OneKey peerKey = peerPublicKeys.get(idCredI);
     	session.setPeerLongTermPublicKey(peerKey);
 
-    	/* Start computing the inner COSE object */
-    	
     	CBORObject peerCredentialCBOR = peerCredentials.get(idCredI);
     	if (peerCredentialCBOR == null) {
         	errMsg = new String("Unable to retrieve the peer credential");
@@ -1357,25 +1325,7 @@ public class MessageProcessor {
     	}
     	byte[] peerCredential = peerCredentialCBOR.GetByteString();
     	
-        // Compute the external data for the external_aad, as a CBOR sequence
-    	externalData = computeExternalData(th3, peerCredential, ead3);
-    	if (externalData == null) {
-    		errMsg = new String("Error when computing the external data for MAC_3");
-    		responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
-    		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-    		return processError(errorCode, Constants.EDHOC_MESSAGE_3, !isReq, cI, errMsg, null, responseCode, ead3);
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("External Data to compute MAC_3", externalData);
-    	}
-    	
-        // Prepare the plaintext, as empty
-        
-        byte[] plaintext = new byte[] {};
-        
-        
         // Compute the key material
-        
         byte[] prk4x3m = computePRK4x3m(session);
     	if (prk4x3m == null) {
     		errMsg = new String("Error when computing PRK_4x3m");
@@ -1387,36 +1337,12 @@ public class MessageProcessor {
     		Util.nicePrint("PRK_4x3m", prk4x3m);
     	}
     	session.setPRK4x3m(prk4x3m);
-        
-    	
-    	// Compute K_3m and IV_3m to protect the inner COSE object
 
-    	byte[] k3m = computeKey(Constants.EDHOC_K_3M, session);
-    	if (k3m == null) {
-    		errMsg = new String("Error when computing K_3m");
-    		responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
-    		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_3, !isReq, cI, errMsg, null, responseCode, ead3);
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("K_3m", k3m);
-    	}
     	
-    	byte[] iv3m = computeIV(Constants.EDHOC_IV_3M, session);
-    	if (iv3m == null) {
-    		errMsg = new String("Error when computing IV_3m");
-    		responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
-    		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_3, !isReq, cI, errMsg, null, responseCode, ead3);
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("IV_3m", iv3m);
-    	}
-    	
-    	
-    	// Encrypt the inner COSE object and take the ciphertext as MAC_3
+    	/* Start verifying Signature_or_MAC_3 */
 
-    	byte[] mac3 = computeMAC3(session.getSelectedCiphersuite(), idCredI, externalData, plaintext, k3m, iv3m);
+    	// Compute MAC_3
+    	byte[] mac3 = computeMAC3(session, prk4x3m, th3, idCredI, peerCredential, ead3);
     	if (mac3 == null) {
     		errMsg = new String("Error when computing MAC_3");
     		responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
@@ -1434,12 +1360,27 @@ public class MessageProcessor {
     	if (debugPrint && signatureOrMac3 != null) {
     		Util.nicePrint("Signature_or_MAC_3", signatureOrMac3);
     	}
+    	
+        // Compute the external data, as a CBOR sequence
+    	externalData = computeExternalData(th3, peerCredential, ead3);
+    	if (externalData == null) {
+    		errMsg = new String("Error when computing the external data for MAC_3");
+    		responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
+    		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
+    		return processError(errorCode, Constants.EDHOC_MESSAGE_3, !isReq, cI, errMsg, null, responseCode, ead3);
+    	}
+    	else if (debugPrint) {
+    		Util.nicePrint("External Data to verify Signature_or_MAC_3", externalData);
+    	}
+    	
     	if (!verifySignatureOrMac3(session, signatureOrMac3, externalData, mac3)) {
         	errMsg = new String("Non valid Signature_or_MAC_3");
         	responseCode = ResponseCode.BAD_REQUEST;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(errorCode, Constants.EDHOC_MESSAGE_3, !isReq, cI, errMsg, null, responseCode, ead3);
     	}
+    	
+    	/* End verifying Signature_or_MAC_3 */
     	
     	
     	/* Compute TH4 */
@@ -2068,9 +2009,6 @@ public class MessageProcessor {
     	    Util.nicePrint("C_R", cRCBOR.EncodeToBytes());
     	}
         
-        
-        /* Start computing the inner COSE object */
-        
         // Compute TH_2
         
         byte[] hashMessage1 = session.getHashMessage1(); // the hash of message_1, as plain bytes
@@ -2090,24 +2028,7 @@ public class MessageProcessor {
         session.setTH2(th2);
         session.cleanMessage1();
         
-        
-        // Compute the external data for the external_aad, as a CBOR sequence
-    	byte[] externalData = computeExternalData(th2, session.getCred(), ead2);
-    	if (externalData == null) {
-    		System.err.println("Error when computing the external data for MAC_2");
-    		errMsg = new String("Error when computing the external data for MAC_2");
-    		error = true;
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("External Data to compute MAC_2", externalData);
-    	}
-        
-    	
-        // Prepare the plaintext, as empty
-        
-        byte[] plaintext = new byte[] {};
-        
-        
+
         // Compute the key material
         
         byte[] prk2e = null;
@@ -2150,34 +2071,12 @@ public class MessageProcessor {
     		Util.nicePrint("PRK_3e2m", prk3e2m);
     	}
     	session.setPRK3e2m(prk3e2m);
+    	
         
+    	/* Start computing Signature_or_MAC_2 */    	
     	
-    	// Compute K_2m and IV_2m to protect the inner COSE object    	
-
-    	byte[] k2m = computeKey(Constants.EDHOC_K_2M, session);
-    	if (k2m == null) {
-    		System.err.println("Error when computing K_2m");
-    		errMsg = new String("Error when computing K_2m");
-    		error = true;
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("K_2m", k2m);
-    	}
-    	
-    	byte[] iv2m = computeIV(Constants.EDHOC_IV_2M, session);
-    	if (iv2m == null) {
-    		System.err.println("Error when computing IV_2m");
-    		errMsg = new String("Error when computing IV_2m");
-    		error = true;
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("IV_2m", iv2m);
-    	}
-    	
-    	
-    	// Encrypt the inner COSE object and take the ciphertext as MAC_2
-
-    	byte[] mac2 = computeMAC2(session.getSelectedCiphersuite(), session.getIdCred(), externalData, plaintext, k2m, iv2m);
+    	// Compute MAC_2
+    	byte[] mac2 = computeMAC2(session, prk3e2m, th2, session.getIdCred(), session.getCred(), ead2);
     	if (mac2 == null) {
     		System.err.println("Error when computing MAC_2");
     		errMsg = new String("Error when computing MAC_2");
@@ -2190,6 +2089,17 @@ public class MessageProcessor {
     	
     	// Compute Signature_or_MAC_2
     	
+        // Compute the external data for the external_aad, as a CBOR sequence
+    	byte[] externalData = computeExternalData(th2, session.getCred(), ead2);
+    	if (externalData == null) {
+    		System.err.println("Error when computing the external data for MAC_2");
+    		errMsg = new String("Error when computing the external data for MAC_2");
+    		error = true;
+    	}
+    	else if (debugPrint) {
+    		Util.nicePrint("External Data to compute MAC_2", externalData);
+    	}
+    	
     	byte[] signatureOrMac2 = computeSignatureOrMac2(session, mac2, externalData);
     	if (signatureOrMac2 == null) {
     		System.err.println("Error when computing Signature_or_MAC_2");
@@ -2200,8 +2110,7 @@ public class MessageProcessor {
     		Util.nicePrint("Signature_or_MAC_2", signatureOrMac2);
     	}
     	
-    	
-        /* End computing the inner COSE object */
+    	/* End computing Signature_or_MAC_2 */ 
     
     	
     	/* Start computing CIPHERTEXT_2 */
@@ -2224,7 +2133,7 @@ public class MessageProcessor {
     		for (int i = 0; i < ead2.length; i++)
     			plaintextElementList.add(ead2[i]);
     	}
-    	plaintext = Util.buildCBORSequence(plaintextElementList);
+    	byte[] plaintext = Util.buildCBORSequence(plaintextElementList);
     	if (debugPrint && plaintext != null) {
     		Util.nicePrint("Plaintext to compute CIPHERTEXT_2", plaintext);
     	}
@@ -2352,28 +2261,8 @@ public class MessageProcessor {
     		Util.nicePrint("TH_3", th3);
     	}
         session.setTH3(th3);
-		
-    	
-        // Compute the external data for the external_aad, as a CBOR sequence
-    	
-    	byte[] externalData = computeExternalData(th3, session.getCred(), ead3);
-    	if (externalData == null) {
-    		System.err.println("Error when computing the external data for MAC_3");
-    		errMsg = new String("Error when computing the external data for MAC_3");
-    		error = true;
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("External Data to compute MAC_3", externalData);
-    	}
-		
-    	
-        // Prepare the plaintext, as empty
-        
-        byte[] plaintext = new byte[] {};
-    	
-        
+
         // Compute the key material
-        
         byte[] prk4x3m = computePRK4x3m(session);
     	if (prk4x3m == null) {
     		System.err.println("Error when computing PRK_4x3m");
@@ -2385,33 +2274,11 @@ public class MessageProcessor {
     	}
     	session.setPRK4x3m(prk4x3m);
         
-    	
-    	// Compute K_3m and IV_3m to protect the inner COSE object
-    	
-    	byte[] k3m = computeKey(Constants.EDHOC_K_3M, session);
-    	if (k3m == null) {
-    		System.err.println("Error when computing K_3m");
-    		errMsg = new String("Error when computing K_3m");
-    		error = true;
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("K_3m", k3m);
-    	}
-
-    	byte[] iv3m = computeIV(Constants.EDHOC_IV_3M, session);
-    	if (iv3m == null) {
-    		System.err.println("Error when computing IV_3m");
-    		errMsg = new String("Error when computing IV_3m");
-    		error = true;
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("IV_3m", iv3m);
-    	}
-        
 		
-    	// Encrypt the inner COSE object and take the ciphertext as MAC_3
-
-    	byte[] mac3 = computeMAC3(session.getSelectedCiphersuite(), session.getIdCred(), externalData, plaintext, k3m, iv3m);
+    	/* Start computing Signature_or_MAC_3 */
+    	
+    	// Compute MAC_3
+    	byte[] mac3 = computeMAC3(session, prk4x3m, th3, session.getIdCred(), session.getCred(), ead3);
     	if (mac3 == null) {
     		System.err.println("Error when computing MAC_3");
     		errMsg = new String("Error when computing MAC_3");
@@ -2424,6 +2291,17 @@ public class MessageProcessor {
     	
     	// Compute Signature_or_MAC_3
     	
+        // Compute the external data for the external_aad, as a CBOR sequence
+    	byte[] externalData = computeExternalData(th3, session.getCred(), ead3);
+    	if (externalData == null) {
+    		System.err.println("Error when computing the external data for MAC_3");
+    		errMsg = new String("Error when computing the external data for MAC_3");
+    		error = true;
+    	}
+    	else if (debugPrint) {
+    		Util.nicePrint("External Data to compute MAC_3", externalData);
+    	}
+    	
     	byte[] signatureOrMac3 = computeSignatureOrMac3(session, mac3, externalData);
     	if (signatureOrMac3 == null) {
     		System.err.println("Error when computing Signature_or_MAC_3");
@@ -2434,8 +2312,7 @@ public class MessageProcessor {
     		Util.nicePrint("Signature_or_MAC_3", signatureOrMac3);
     	}
     	
-    	
-        /* End computing the inner COSE object */
+    	/* End computing Signature_or_MAC_3 */
     	
     	
     	/* Start computing CIPHERTEXT_3 */
@@ -2483,7 +2360,7 @@ public class MessageProcessor {
     		for (int i = 0; i < ead3.length; i++)
     			plaintextElementList.add(ead3[i]);
     	}    	
-    	plaintext = Util.buildCBORSequence(plaintextElementList);
+    	byte[] plaintext = Util.buildCBORSequence(plaintextElementList);
     	if (debugPrint && plaintext != null) {
     		Util.nicePrint("Plaintext to compute CIPHERTEXT_3", plaintext);
     	}
@@ -2928,36 +2805,25 @@ public class MessageProcessor {
     */
 	public static byte[] computeKey(int keyName, EdhocSession session) {
 	    
-	    int keyLength = 0;
-	    byte[] key = null;
-	    
-	    switch (session.getSelectedCiphersuite()) {
-	        case Constants.EDHOC_CIPHER_SUITE_0:
-	        case Constants.EDHOC_CIPHER_SUITE_1:
-	        case Constants.EDHOC_CIPHER_SUITE_2:
-	        case Constants.EDHOC_CIPHER_SUITE_3:
-	            keyLength = 16;
-	    }
+	    int selectedCiphersuite = session.getSelectedCiphersuite();
+	    int keyLength = EdhocSession.getKeyLengthEdhocAEAD(selectedCiphersuite);
 	    if (keyLength == 0)
 	        return null;
 	    
-	    key = new byte[keyLength];
+	    byte[] key = new byte[keyLength];
 	    String label = null;
 	    byte[] emptyArray = new byte[0];
+	    List<CBORObject> objectList = new ArrayList<>();
+	    byte[] labelContext = null;
 	    
 	    try {
 	        switch(keyName) {
-	            case Constants.EDHOC_K_2M:
-	            	label = new String("K_2m");
-	                key = session.edhocKDF(session.getPRK3e2m(), session.getTH2(), label, emptyArray, keyLength);
-	                break;
-	            case Constants.EDHOC_K_3M:
-	            	label = new String("K_3m");
-	                key = session.edhocKDF(session.getPRK4x3m(), session.getTH3(), label, emptyArray, keyLength);
-	                break;
 	            case Constants.EDHOC_K_3AE:
 	            	label = new String("K_3ae");
-	                key = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), label, emptyArray, keyLength);
+	            	objectList.add(CBORObject.FromObject(label));
+	            	objectList.add(CBORObject.FromObject(emptyArray));
+	            	labelContext = Util.buildCBORSequence(objectList);
+	                key = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), labelContext, keyLength);
 	                break;
 	            case Constants.EDHOC_K_4AE:
 	            	label = new String("EDHOC_message_4_Key");
@@ -2982,40 +2848,29 @@ public class MessageProcessor {
     *  Compute one of the temporary IVs
     * @param ivName   The name of the IV to compute
     * @param session   The used EDHOC session
-    * @return  The computed key IV_2m
+    * @return  The computed IV
     */
 	public static byte[] computeIV(int ivName, EdhocSession session) {
 	    
-	    int ivLength = 0;
-	    byte[] iv = null;
-	    
-	    switch (session.getSelectedCiphersuite()) {
-	        case Constants.EDHOC_CIPHER_SUITE_0:
-	        case Constants.EDHOC_CIPHER_SUITE_1:
-	        case Constants.EDHOC_CIPHER_SUITE_2:
-	        case Constants.EDHOC_CIPHER_SUITE_3:
-	            ivLength = 13;
-	    }
+	    int selectedCiphersuite = session.getSelectedCiphersuite();
+	    int ivLength = EdhocSession.getIvLengthEdhocAEAD(selectedCiphersuite);
 	    if (ivLength == 0)
 	        return null;
 	    
-	    iv = new byte[ivLength];
+	    byte[] iv = new byte[ivLength];
 	    String label = null;
 	    byte[] emptyArray = new byte[0];
+	    List<CBORObject> objectList = new ArrayList<>();
+	    byte[] labelContext = null;
 	    
 	    try {
 	        switch(ivName) {
-            case Constants.EDHOC_IV_2M:
-            	label = new String("IV_2m");
-                iv = session.edhocKDF(session.getPRK3e2m(), session.getTH2(), label, emptyArray, ivLength);
-                break;
-            case Constants.EDHOC_IV_3M:
-            	label = new String("IV_3m");
-                iv = session.edhocKDF(session.getPRK4x3m(), session.getTH3(), label, emptyArray, ivLength);
-                break;
             case Constants.EDHOC_IV_3AE:
             	label = new String("IV_3ae");
-                iv = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), label, emptyArray, ivLength);
+            	objectList.add(CBORObject.FromObject(label));
+            	objectList.add(CBORObject.FromObject(emptyArray));
+            	labelContext = Util.buildCBORSequence(objectList);
+                iv = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), labelContext, ivLength);
                 break;
             case Constants.EDHOC_IV_4AE:
             	label = new String("EDHOC_message_4_Nonce");
@@ -3045,11 +2900,19 @@ public class MessageProcessor {
      * @return  The computed keystream KEYSTREAM_2
      */
 	public static byte[] computeKeystream2(EdhocSession session, int length) {
+	    
+		String label = new String("KEYSTREAM_2");
+		byte[] emptyArray = new byte[0];
 		
+	    List<CBORObject> objectList = new ArrayList<>();
+	    byte[] labelContext = null;
+    	objectList.add(CBORObject.FromObject(label));
+    	objectList.add(CBORObject.FromObject(emptyArray));
+    	labelContext = Util.buildCBORSequence(objectList);
+    	
 		byte[] keystream2 = new byte[length];
 		try {
-			byte[] emptyArray = new byte[0];
-			keystream2 = session.edhocKDF(session.getPRK2e(), session.getTH2(), "KEYSTREAM_2", emptyArray, length);
+			keystream2 = session.edhocKDF(session.getPRK2e(), session.getTH2(), labelContext, length);
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when generating KEYSTREAM_2\n" + e.getMessage());
 			return null;
@@ -3329,6 +3192,7 @@ public class MessageProcessor {
 		
 	}
 	
+	
     /**
      *  Compute External_Data_4 for computing/verifying MAC_4
      * @param th   The transcript hash TH4
@@ -3344,48 +3208,105 @@ public class MessageProcessor {
         
 	}
 	
+	
     /**
      *  Compute MAC_2
      * @param session   The used EDHOC session
+     * @param prk3e2m   The PRK used to compute MAC_2
+     * @param th2   The transcript hash TH2
      * @param idCredR   The ID_CRED_R associated to the long-term public key of the Responder
-     * @param externalData   The External Data for the encryption process
-     * @param plaintext   The plaintext to encrypt
-     * @param k2m   The encryption key
-     * @param iv2m   The initialization vector
+     * @param credR   The long-term public key of the Responder
+     * @param ead2   The External Authorization Data from EDHOC Message 2, it can be null
      * @return  The computed MAC_2
      */
-	public static byte[] computeMAC2(int selectedCiphersuite, CBORObject idCredR, byte[] externalData,
-			                         byte[] plaintext, byte[] k2m, byte[] iv2m) {
+	public static byte[] computeMAC2(EdhocSession session, byte[] prk3e2m, byte[] th2,
+			                         CBORObject idCredR, byte[] credR, CBORObject[] ead2) {
 		
-		
-    	byte[] mac2 = null;
-    	AlgorithmID alg = EdhocSession.getEdhocAEADAlg(selectedCiphersuite);
+		// Build the CBOR sequence for 'label_context' :
+		// ( "MAC_2", ID_CRED_R, CRED_R, ? EAD_2 )
+    	List<CBORObject> objectList = new ArrayList<>();
+    	objectList.add(CBORObject.FromObject("MAC_2"));
+    	objectList.add(idCredR);
+    	objectList.add(CBORObject.FromObject(credR));
+    	if (ead2 != null) {
+	    	for (int i = 0; i < ead2.length; i++)
+	        	objectList.add(ead2[i]);
+    	}
+    	byte[] labelContext = Util.buildCBORSequence(objectList);
+    	
+    	int macLength = 0;
+    	int method = session.getMethod();
+    	int selectedCipherSuite = session.getSelectedCiphersuite();
+    	if (method == 0 || method == 2) {
+    		macLength = EdhocSession.getEdhocHashAlgOutputSize(selectedCipherSuite);
+    	}
+    	if (method == 1 || method == 3) {
+    		macLength = EdhocSession.getTagLengthEdhocAEAD(selectedCipherSuite);
+    	}
+    	
+    	byte[] mac2 = new byte[macLength];
     	try {
-			mac2 = Util.encrypt(idCredR, externalData, plaintext, alg, iv2m, k2m);
-		} catch (CoseException e) {
+			mac2 = session.edhocKDF(prk3e2m, th2, labelContext, macLength);
+		} catch (InvalidKeyException e) {
 			System.err.println("Error when computing MAC_2\n" + e.getMessage());
-			return null;
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("Error when computing MAC_2\n" + e.getMessage());
 		}
 		
 		return mac2;
 		
 	}
-	
+
 	
     /**
      *  Compute MAC_3
      * @param session   The used EDHOC session
+     * @param prk4x3m   The PRK used to compute MAC_3
+     * @param th3   The transcript hash TH3
      * @param idCredI   The ID_CRED_I associated to the long-term public key of the Initiator
-     * @param externalData   The External Data for the encryption process
-     * @param plaintext   The plaintext to encrypt
-     * @param k3m   The encryption key
-     * @param iv3m   The initialization vector
+     * @param credI   The long-term public key of the Initiator
+     * @param ead3   The External Authorization Data from EDHOC Message 3, it can be null
      * @return  The computed MAC_3
      */
-	public static byte[] computeMAC3(int selectedCiphersuite, CBORObject idCredI, byte[] externalData,
-			                         byte[] plaintext, byte[] k3m, byte[] iv3m) {
+	public static byte[] computeMAC3(EdhocSession session, byte[] prk4x3m, byte[] th3,
+            						 CBORObject idCredI, byte[] credI, CBORObject[] ead3) {
 		
 		
+		// Build the CBOR sequence for 'label_context' :
+		// ( "MAC_3", ID_CRED_I, CRED_I, ? EAD_3 )
+    	List<CBORObject> objectList = new ArrayList<>();
+    	objectList.add(CBORObject.FromObject("MAC_3"));
+    	objectList.add(idCredI);
+    	objectList.add(CBORObject.FromObject(credI));
+    	if (ead3 != null) {
+	    	for (int i = 0; i < ead3.length; i++)
+	        	objectList.add(ead3[i]);
+    	}
+    	byte[] labelContext = Util.buildCBORSequence(objectList);
+    	
+    	int macLength = 0;
+    	int method = session.getMethod();
+    	int selectedCipherSuite = session.getSelectedCiphersuite();
+    	if (method == 0 || method == 1) {
+    		macLength = EdhocSession.getEdhocHashAlgOutputSize(selectedCipherSuite);
+    	}
+    	if (method == 2 || method == 3) {
+    		macLength = EdhocSession.getTagLengthEdhocAEAD(selectedCipherSuite);
+    	}
+    	
+    	byte[] mac3 = new byte[macLength];
+    	try {
+			mac3 = session.edhocKDF(prk4x3m, th3, labelContext, macLength);
+		} catch (InvalidKeyException e) {
+			System.err.println("Error when computing MAC_3\n" + e.getMessage());
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("Error when computing MAC_3\n" + e.getMessage());
+		}
+		
+		return mac3;
+		
+		
+		/*
     	byte[] mac3 = null;
     	AlgorithmID alg = EdhocSession.getEdhocAEADAlg(selectedCiphersuite);
     	try {
@@ -3396,6 +3317,7 @@ public class MessageProcessor {
 		}
 		
 		return mac3;
+		*/
 		
 	}
 	
