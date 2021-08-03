@@ -758,7 +758,7 @@ public class EdhocSession {
 					}
 					break;
 				
-				case 9:
+				case 9: // (1+8) CBOR integer
 					if (value == 27 || value == 59) {
 						edhocId = CBORObject.DecodeFromBytes(oscoreId);
 						
