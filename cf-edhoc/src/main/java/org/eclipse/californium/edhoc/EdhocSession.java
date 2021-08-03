@@ -29,6 +29,7 @@ import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 
 import com.upokecenter.cbor.CBORObject;
+import com.upokecenter.cbor.CBORType;
 
 public class EdhocSession {
 	
@@ -673,6 +674,25 @@ public class EdhocSession {
 		}
 	    
 	    return masterSalt;
+		
+	}
+	
+    /**
+     *  Convert an EDHOC Connection Identifier to an OSCORE Sender/Recipient ID
+     * @param edhocId   The EDHOC Connection Identifier, as a CBOR Integer or a CBOR Byte String
+     * @return  the OSCORE Sender/Recipient ID, or null in case of error
+     */
+	public static byte[] edhocToOscoreId(CBORObject edhocId) {
+
+		byte[] oscoreId = null;
+		
+		if (edhocId.getType()== CBORType.Integer)
+			oscoreId = edhocId.EncodeToBytes();
+		
+		if (edhocId.getType()== CBORType.ByteString)
+			oscoreId = edhocId.GetByteString();
+		
+		return oscoreId;
 		
 	}
 	
