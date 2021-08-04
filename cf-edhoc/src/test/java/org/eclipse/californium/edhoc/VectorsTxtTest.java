@@ -65,7 +65,7 @@ public class VectorsTxtTest {
 	static List<byte[]> initiatorEphemeralPublicList = new ArrayList<byte[]>();
 
 	static String connectionIdLabel = "Connection identifier chosen by Initiator";
-	static List<byte[]> connectionIdList = new ArrayList<byte[]>();
+	static List<CBORObject> connectionIdList = new ArrayList<CBORObject>();
 
 	static String message1Label = "message_1 (CBOR Sequence)";
 	static List<byte[]> message1List = new ArrayList<byte[]>();
@@ -117,7 +117,7 @@ public class VectorsTxtTest {
 				line = br.readLine();
 
 				byte[] connectionId = Utils.hexToBytes(line.replace(" ", ""));
-				connectionIdList.add(currentVector, connectionId);
+				connectionIdList.add(currentVector, CBORObject.DecodeFromBytes(connectionId));
 			} else if (line.startsWith(message1Label)) {
 				line = br.readLine() + br.readLine() + br.readLine();
 
@@ -187,7 +187,7 @@ public class VectorsTxtTest {
 		OneKey ltk = Util.generateKeyPair(KeyKeys.OKP_Ed25519.AsInt32()); // Dummy
 		boolean initiator = true;
 		int methodCorr = methodCorrList.get(index);
-		byte[] connectionId = connectionIdList.get(index);
+		CBORObject connectionId = connectionIdList.get(index);
 		List<Integer> cipherSuites = new ArrayList<Integer>();
 		cipherSuites.add(supportedCipherSuitesList.get(index)); // 1 suite only
 		byte[] ead1 = ad1List.get(index);
@@ -211,10 +211,10 @@ public class VectorsTxtTest {
 		AppStatement appStatement = new AppStatement(authMethods, false, true);
 		
 		// Specify the processor of External Authorization Data
-		KissEDP epd = new KissEDP();
+		KissEDP edp = new KissEDP();
 		
 		EdhocSession session = new EdhocSession(initiator, true, methodCorr, connectionId, ltk,
-				                                idCred, cred, cipherSuites, appStatement, epd);
+				                                idCred, cred, cipherSuites, appStatement, edp);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = initiatorEphemeralPrivateList.get(index);
@@ -242,7 +242,7 @@ public class VectorsTxtTest {
 
 		// Print parameters used
 		System.out.println("methodCorr " + methodCorr);
-		System.out.println("connectionId " + Utils.bytesToHex(connectionId));
+		System.out.println("connectionId " + Utils.bytesToHex(connectionId.EncodeToBytes()));
 		System.out.println("ead1 " + Utils.bytesToHex(ead1));
 		System.out.println("privateEkeyBytes " + Utils.bytesToHex(privateEkeyBytes));
 		System.out.println("publicEkeyBytes " + Utils.bytesToHex(publicEkeyBytes));
