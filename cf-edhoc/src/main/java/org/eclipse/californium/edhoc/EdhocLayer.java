@@ -78,9 +78,9 @@ public class EdhocLayer extends AbstractLayer {
 	Map<CBORObject, CBORObject> peerCredentials;
 	
 	/**
-	 * List of used EDHOC Connection IDs
+	 * Set of used EDHOC Connection IDs
 	 */
-	List<Set<Integer>> usedConnectionIds;
+	Set<CBORObject> usedConnectionIds;
 	
 	// Lookup identifier to be associated with the OSCORE Security Context
 	private final String uriLocal = "coap://localhost";
@@ -95,14 +95,14 @@ public class EdhocLayer extends AbstractLayer {
 	 * @param edhocSessions map of current EDHOC sessions
 	 * @param peerPublicKeys map containing the EDHOC peer public keys
 	 * @param peerCredentials map containing the EDHOC peer credentials
-	 * @param usedConnectionIds list containing the used EDHOC connection IDs
+	 * @param usedConnectionIds set containing the used EDHOC connection IDs
 	 * @param OSCORE_REPLAY_WINDOW size of the Replay Window to use in an OSCORE Recipient Context
 	 */
 	public EdhocLayer(OSCoreCtxDB ctxDb,
 					  Map<CBORObject, EdhocSession> edhocSessions,
 			          Map<CBORObject, OneKey> peerPublicKeys,
 			          Map<CBORObject, CBORObject> peerCredentials,
-			          List<Set<Integer>> usedConnectionIds,
+			          Set<CBORObject> usedConnectionIds,
 			          int OSCORE_REPLAY_WINDOW) {
 		this.ctxDb = ctxDb;
 		this.edhocSessions = edhocSessions;
@@ -136,8 +136,10 @@ public class EdhocLayer extends AbstractLayer {
 				System.err.println("Unable to retrieve the EDHOC session when sending an EDHOC+OSCORE request\n");
 				return;
 			}
-			if (!session.isInitiator() || session.getCurrentStep() != Constants.EDHOC_SENT_M3 ||		
-					!Arrays.equals(session.getPeerConnectionId(), ctx.getSenderId())) {
+			CBORObject obj = EdhocSession.oscoreToEdhocId(ctx.getSenderId());
+			if (!session.isInitiator() ||
+				 session.getCurrentStep() != Constants.EDHOC_SENT_M3 ||		
+				!session.getPeerConnectionId().equals(obj)) {
 				
 				System.err.println("Retrieved inconsistent EDHOC session when sending an EDHOC+OSCORE request");
 				return;
@@ -234,8 +236,8 @@ public class EdhocLayer extends AbstractLayer {
 		    List<CBORObject> edhocObjectList = new ArrayList<>();
 		    
 		    // Add C_R, i.e. the 'kid' from the OSCORE option encoded as a bstr_identifier
-			byte[] kid = getKid(request.getOptions().getOscore());
-		    CBORObject cR = Util.encodeToBstrIdentifier(CBORObject.FromObject(kid));
+			byte[] kid = getKid(request.getOptions().getOscore());		    
+			CBORObject cR = EdhocSession.oscoreToEdhocId(kid);
 		    edhocObjectList.add(cR);
 		    
 		    // Add CIPHERTEXT_3, i.e. the CBOR string as is from the received CBOR sequence
@@ -252,13 +254,16 @@ public class EdhocLayer extends AbstractLayer {
 			
 			// Consistency checks
     		if (mySession == null) {
-    			String responseString = new String("Unable to retrieve the EDHOC session when receiving an EDHOC+OSCORE request\n");
+    			String responseString = new String("Unable to retrieve the EDHOC session when"
+    					                         + " receiving an EDHOC+OSCORE request\n");
 				System.err.println(responseString);
 				sendErrorResponse(exchange, responseString, ResponseCode.BAD_REQUEST);
             	return;
     		}
-			if (mySession.isInitiator() || mySession.getCurrentStep() != Constants.EDHOC_SENT_M2 ||		
-					!Arrays.equals(mySession.getConnectionId(), kid)) {
+    		CBORObject obj = EdhocSession.oscoreToEdhocId(kid);
+			if (mySession.isInitiator() ||
+				mySession.getCurrentStep() != Constants.EDHOC_SENT_M2 ||		
+				!mySession.getConnectionId().equals(obj)) {
 				
 				System.err.println("Retrieved inconsistent EDHOC session when receiving an EDHOC+OSCORE request");
 				return;
@@ -346,10 +351,10 @@ public class EdhocLayer extends AbstractLayer {
 				/* Setup the OSCORE Security Context */
 				
 				// The Sender ID of this peer is the EDHOC connection identifier of the other peer
-				byte[] senderId = mySession.getPeerConnectionId();
+				byte[] senderId = EdhocSession.edhocToOscoreId(mySession.getPeerConnectionId());
 				
 				// The Recipient ID of this peer is the EDHOC connection identifier of this peer
-				byte[] recipientId = mySession.getConnectionId();
+				byte[] recipientId = EdhocSession.edhocToOscoreId(mySession.getConnectionId());
 				
 				int selectedCiphersuite = mySession.getSelectedCiphersuite();
 				AlgorithmID alg = EdhocSession.getAppAEAD(selectedCiphersuite);

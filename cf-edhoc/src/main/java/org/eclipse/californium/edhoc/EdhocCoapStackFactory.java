@@ -45,7 +45,7 @@ public class EdhocCoapStackFactory implements CoapStackFactory {
 	private static volatile Map<CBORObject, EdhocSession> edhocSessions;
 	private static volatile Map<CBORObject, OneKey> peerPublicKeys;
 	private static volatile Map<CBORObject, CBORObject> peerCredentials;
-	private static volatile List<Set<Integer>> usedConnectionIds;
+	private static volatile Set<CBORObject> usedConnectionIds;
 	private static volatile int OSCORE_REPLAY_WINDOW;
 
 	@Override
@@ -79,7 +79,7 @@ public class EdhocCoapStackFactory implements CoapStackFactory {
 	 *            argument for {@link EdhocStack}
 	 * @param edhocSessions map containing the EDHOC peer credentials. Passed in as default
 	 *            argument for {@link EdhocStack}
-	 * @param edhocSessions list containing the used EDHOC connection IDs. Passed in as default
+	 * @param edhocSessions set containing the used EDHOC connection IDs. Passed in as default
 	 *            argument for {@link EdhocStack}
 	 * @param OSCORE_REPLAY_WINDOW size of the Replay Window to use in an OSCORE Recipient Context. Passed in as default
 	 *            argument for {@link EdhocStack}
@@ -90,7 +90,7 @@ public class EdhocCoapStackFactory implements CoapStackFactory {
 									Map<CBORObject, EdhocSession> edhocSessions,
 									Map<CBORObject, OneKey> peerPublicKeys,
 									Map<CBORObject, CBORObject> peerCredentials,
-									List<Set<Integer>> usedConnectionIds,
+									Set<CBORObject> usedConnectionIds,
 									int OSCORE_REPLAY_WINDOW) {
 		if (init.compareAndSet(false, true)) {
 			CoapEndpoint.setDefaultCoapStackFactory(new EdhocCoapStackFactory());
