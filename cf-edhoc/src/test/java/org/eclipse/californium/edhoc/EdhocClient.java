@@ -187,11 +187,12 @@ public class EdhocClient {
 		// Set the applicability statement
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
+		// - Use of EDHOC for keying OSCORE
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
 			authMethods.add(i);
-		AppStatement appStatement = new AppStatement(authMethods, false);
+		AppStatement appStatement = new AppStatement(authMethods, false, true);
 		
 		appStatements.put(edhocURI, appStatement);
 				
