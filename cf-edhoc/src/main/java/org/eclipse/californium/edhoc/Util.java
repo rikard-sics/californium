@@ -942,7 +942,7 @@ public class Util {
 	}
 	
     /**
-     * Build an ID_CRED using 'kid'
+     * Build an ID_CRED to use with 'kid'
      *  
      * @param identityKey   The identity key to encode as CRED
      * @param subjectName   The subject name associated to this key, it can be an empty string
@@ -977,6 +977,46 @@ public class Util {
         labelList.add(CBORObject.FromObject("subject name"));
         valueList.add(CBORObject.FromObject(subjectName));
         return Util.buildDeterministicCBORMap(labelList, valueList);
+		
+	}
+	
+    /**
+     * Build an ID_CRED to use with 'kid2', with value an Unprotected CWT Claim Set (UCCS) 
+     *  
+     * @param identityKey   The identity key to encode as CRED
+     * @param subjectName   The subject name associated to this key, it can be an empty string
+     * @return The CRED, as a byte serialization of a deterministic CBOR map
+     */
+	public static byte[] buildCredRawPublicKeyUCCS(OneKey identityKey, String subjectName) {
+		
+		if (identityKey  == null || subjectName == null)
+			return null;
+		
+		CBORObject coseKeyMap = CBORObject.NewMap();
+		coseKeyMap.Add(KeyKeys.KeyType.AsCBOR(), identityKey.get(KeyKeys.KeyType));
+		if (identityKey.get(KeyKeys.KeyType) == KeyKeys.KeyType_OKP) {
+			coseKeyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), identityKey.get(KeyKeys.OKP_Curve));
+			coseKeyMap.Add(KeyKeys.OKP_X.AsCBOR(), identityKey.get(KeyKeys.OKP_X));
+		}
+		else if (identityKey.get(KeyKeys.KeyType) == KeyKeys.KeyType_EC2) {
+			coseKeyMap.Add(KeyKeys.EC2_Curve.AsCBOR(), identityKey.get(KeyKeys.EC2_Curve));
+			coseKeyMap.Add(KeyKeys.EC2_X.AsCBOR(), identityKey.get(KeyKeys.EC2_X));
+			coseKeyMap.Add(KeyKeys.EC2_Y.AsCBOR(), identityKey.get(KeyKeys.EC2_Y));
+		}
+		else {
+			return null;
+		}
+		
+		CBORObject cnfMap = CBORObject.NewMap();
+		cnfMap.Add(Constants.CWT_CNF_COSE_KEY, coseKeyMap);
+		
+		CBORObject claimSetMap = CBORObject.NewMap();
+		claimSetMap.Add(Constants.CWT_CLAIMS_SUB, CBORObject.FromObject(subjectName));
+		claimSetMap.Add(Constants.CWT_CLAIMS_CNF, cnfMap);
+
+		System.out.println("UCCS serialization: " + Utils.bytesToHex(claimSetMap.EncodeToBytes()));
+		
+        return claimSetMap.EncodeToBytes();
 		
 	}
     
