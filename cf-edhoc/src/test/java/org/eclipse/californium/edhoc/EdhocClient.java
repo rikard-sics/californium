@@ -110,12 +110,12 @@ public class EdhocClient {
 	private static Map<CBORObject, CBORObject> peerCredentials = new HashMap<CBORObject, CBORObject>();
 		
 	// Existing EDHOC Sessions, including completed ones
-	// The map label is C_X, i.e. the connection identifier offered to the other peer, as a CBOR byte string
+	// The map label is C_X, i.e. the connection identifier offered to the other peer, as a CBOR integer or byte string
 	private static Map<CBORObject, EdhocSession> edhocSessions = new HashMap<CBORObject, EdhocSession>();
 	
-	// Each set of the list refers to a different size of Connection Identifier, i.e. C_ID_X to offer to the other peer.
-	// The element with index 0 includes as elements Recipient IDs with size 1 byte.
-	private static List<Set<Integer>> usedConnectionIds = new ArrayList<Set<Integer>>();
+	// Each element is a used Connection Identifier offered to the other peers.
+	// Connection Identifiers are stored as CBOR integers (if numeric) or as CBOR byte strings (if binary)
+	private static Set<CBORObject> usedConnectionIds = new HashSet<>();
 	
 	// List of supported ciphersuites
 	private static List<Integer> supportedCiphersuites = new ArrayList<Integer>();
@@ -195,13 +195,7 @@ public class EdhocClient {
 		AppStatement appStatement = new AppStatement(authMethods, false, true);
 		
 		appStatements.put(edhocURI, appStatement);
-				
-    	for (int i = 0; i < 4; i++) {
-        	// Empty sets of assigned Connection Identifiers; one set for each possible size in bytes.
-        	// The set with index 0 refers to Connection Identifiers with size 1 byte
-    		usedConnectionIds.add(new HashSet<Integer>());
-    	}
-    	
+		
 		URI uri = null; // URI parameter of the request
 
 		// input URI from command line arguments
@@ -577,8 +571,8 @@ public class EdhocClient {
 		// Add the new session to the list of existing EDHOC sessions
 		session.setCurrentStep(Constants.EDHOC_AFTER_M1);
 		session.setHashMessage1(nextPayload);
-		byte[] connectionId = session.getConnectionId();
-		edhocSessions.put(CBORObject.FromObject(connectionId), session);
+		CBORObject connectionId = session.getConnectionId();
+		edhocSessions.put(connectionId, session);
 		
 		Request edhocMessageReq = new Request(Code.POST, Type.CON);
 		edhocMessageReq.setPayload(nextPayload);
@@ -591,12 +585,12 @@ public class EdhocClient {
         	edhocMessageResp = client.advanced(edhocMessageReq);
 		} catch (ConnectorException e) {
 			System.err.println("ConnectorException when sending EDHOC Message 1");
-			Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+			Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 			client.shutdown();
 			return;
 		} catch (IOException e) {
 			System.err.println("IOException when sending EDHOC Message 1");
-			Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+			Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 			client.shutdown();
 			return;
 		}
@@ -614,7 +608,7 @@ public class EdhocClient {
         }
         if (discontinue == true) {
         	System.err.println("Received invalid reply to EDHOC Message 1");
-        	Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+        	Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
         	client.shutdown();
         	return;
         }
@@ -628,9 +622,8 @@ public class EdhocClient {
         
         // This response relates to the previous request through the CoAP Token.
         // Hence, the Initiator knows what session to refer to, from which the correct C_I can be retrieved
-    	CBORObject connectionIdentifier = CBORObject.FromObject(session.getConnectionId());
-    	CBORObject cI = Util.encodeToBstrIdentifier(connectionIdentifier);
-        
+    	CBORObject cI = session.getConnectionId();
+ 
     	nextPayload = new byte[] {};
     	
         // The received message is an EDHOC Error Message
@@ -643,29 +636,46 @@ public class EdhocClient {
         	if (objectList != null) {
         	
 		    	// This execution flow has the client as Initiator.
-		    	// Hence, there is no C_I included, and the first element of the EDHOC Error Message is DIAG_MSG.
-		    	String errMsg = objectList[0].toString();
-		    	
-		    	if (objectList[1].getType() == CBORType.Integer) {
-		    		int suite = objectList[1].AsInt32();
-		    		peerSupportedCiphersuites.add(Integer.valueOf(suite));
-		    	}
-		    	else if (objectList[1].getType() == CBORType.Array) {
-		    		for (int i = 0; i < objectList.length; i++) {
-		        		int suite = objectList[1].get(i).AsInt32();
-		        		peerSupportedCiphersuites.add(Integer.valueOf(suite));
-		    		}
-		    	}
-		    	session.setPeerSupportedCipherSuites(peerSupportedCiphersuites);
-		    	
-		    	System.out.println("DIAG_MSG: " + errMsg + "\n");
+		    	// Hence, there is no C_I included, and the first element of the EDHOC Error Message is ERR_CODE.
+        		
+        		// Retrieve ERR_CODE
+        		int errorCode = objectList[0].AsInt32();
+        		System.out.println("ERR_CODE: " + errorCode + "\n");
+
+        		// Retrieve ERR_INFO
+        		if (errorCode == Constants.ERR_CODE_SUCCESS) {
+        		    System.out.println("Success\n");
+        		}
+        		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED) {
+        		    String errMsg = objectList[1].toString();
+        		    System.out.println("ERR_INFO: " + errMsg + "\n");
+        		}
+        		else if (errorCode == Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE) {
+        		    CBORObject suitesR = objectList[1];
+        		    if (suitesR.getType() == CBORType.Integer) {
+        		    	int suite = suitesR.AsInt32();
+    		    		peerSupportedCiphersuites.add(Integer.valueOf(suite));
+    		    		session.setPeerSupportedCipherSuites(peerSupportedCiphersuites);
+        		        System.out.println("SUITES_R: " + suitesR.AsInt32() + "\n");
+        		    }
+        		    else if (suitesR.getType() == CBORType.Array) {
+        		        System.out.print("SUITES_R: [ " );
+        		        for (int i = 0; i < suitesR.size(); i++) {
+        		        	int suite = suitesR.get(i).AsInt32();
+    		        		peerSupportedCiphersuites.add(Integer.valueOf(suite));
+        		            System.out.print(suitesR.get(i).AsInt32() + " " );
+        		        }
+        		        System.out.println("]\n");
+        		        session.setPeerSupportedCipherSuites(peerSupportedCiphersuites);
+        		    }
+        		}
 		    	
 		    	// The following simply deletes the EDHOC session. However, it would be fine to prepare a new
 		    	// EDHOC Message 1 right away, keeping the same Connection Identifier C_I and this same session.
 		    	// In fact, the session is marked as "used", hence new ephemeral keys would be generated when
 		    	// preparing a new EDHOC Message 1.        	
 		    	
-		    	Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+		    	Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 		    	
         	}
         	
@@ -690,7 +700,7 @@ public class EdhocClient {
 			
 			if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
 				System.err.println("Internal error when processing EDHOC Message 2");
-				Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+				Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 				client.shutdown();
 				return;
 			}
@@ -718,7 +728,7 @@ public class EdhocClient {
 		        
 				if (nextPayload == null || session.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
 					System.err.println("Inconsistent state before sending EDHOC Message 3");
-					Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+					Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 					client.shutdown();
 					return;
 				}
@@ -749,20 +759,21 @@ public class EdhocClient {
 			        /* Setup the OSCORE Security Context */
 			        
 			        // The Sender ID of this peer is the EDHOC connection identifier of the other peer
-			        byte[] senderId = session.getPeerConnectionId();
+			        byte[] senderId = EdhocSession.edhocToOscoreId(session.getPeerConnectionId());
 			        
 			        int selectedCiphersuite = session.getSelectedCiphersuite();
 			        AlgorithmID alg = EdhocSession.getAppAEAD(selectedCiphersuite);
 			        AlgorithmID hkdf = EdhocSession.getAppHkdf(selectedCiphersuite);
 			        
 			        OSCoreCtx ctx = null;
+			        byte[] recipientId = EdhocSession.edhocToOscoreId(connectionId);
 			        try {
 						ctx = new OSCoreCtx(masterSecret, true, alg, senderId, 
-													  connectionId, hkdf, OSCORE_REPLAY_WINDOW, masterSalt, null);
+											recipientId, hkdf, OSCORE_REPLAY_WINDOW, masterSalt, null);
 					} catch (OSException e) {
 						System.err.println("Error when deriving the OSCORE Security Context "
 					                        + e.getMessage());
-						Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+						Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 						client.shutdown();
 						return;
 					}
@@ -772,7 +783,7 @@ public class EdhocClient {
 					} catch (OSException e) {
 						System.err.println("Error when adding the OSCORE Security Context to the context database "
 					                        + e.getMessage());
-						Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+						Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 						client.shutdown();
 						return;
 					}
@@ -792,7 +803,7 @@ public class EdhocClient {
 					    edhocEndpointInfo.getEdp().processEAD2(ead2);
 					}
 					
-				    Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
+				    Util.purgeSession(session, cI, edhocSessions, usedConnectionIds);
 			        System.out.println("Sent EDHOC Error Message\n");
 			        if (debugPrint) {
 			        	Util.nicePrint("EDHOC Error Message", nextPayload);
@@ -813,7 +824,7 @@ public class EdhocClient {
 		        		// The combined request cannot be used if the Responder has to send message_4
 		        		if (session.getApplicabilityStatement().getUseMessage4() == true) {
 							System.err.println("Cannot send the combined EDHOC+OSCORE request if message_4 is expected\n");
-			    			Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+			    			Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 			            	client.shutdown();
 			            	return;
 		        		}
@@ -832,12 +843,12 @@ public class EdhocClient {
 							protectedResponse = client.advanced(edhocMessageReq2);
 						} catch (ConnectorException e) {
 							System.err.println("ConnectorException when sending a protected request\n");
-			    			Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+			    			Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 			            	client.shutdown();
 			            	return;
 						} catch (IOException e) {
 							System.err.println("IOException when sending a protected request\n");
-			    			Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+			    			Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 			            	client.shutdown();
 			            	return;
 						}
@@ -863,7 +874,7 @@ public class EdhocClient {
 				            		System.err.println("Received an EDHOC Error Message");
 						        	CBORObject[] objectList = MessageProcessor.readErrorMessage(myPayload,
 						        			 													cI, edhocSessions);
-						        	processErrorMessageAsResponse(objectList, CBORObject.FromObject(connectionId));
+						        	processErrorMessageAsResponse(objectList, connectionId);
 				            		
 				            	}
 			            	
@@ -892,12 +903,12 @@ public class EdhocClient {
 		        	
 				} catch (ConnectorException e) {
 					System.err.println("ConnectorException when sending " + myString + "\n");
-					Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+					Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 					client.shutdown();
 					return;
 				} catch (IOException e) {
 					System.err.println("IOException when sending "  + myString + "\n");
-					Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+					Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 					client.shutdown();
 					return;
 				}
@@ -905,7 +916,8 @@ public class EdhocClient {
 				// Wait for a possible response. For how long?
 		        
 		        // This is a generic response, to be passed to the application
-		        if (edhocMessageResp2 != null && edhocMessageResp2.getOptions().getContentFormat() != Constants.APPLICATION_EDHOC) {
+		        if (edhocMessageResp2 != null &&
+		        	edhocMessageResp2.getOptions().getContentFormat() != Constants.APPLICATION_EDHOC) {
 		        	
 		        	processResponseAfterEdhoc(edhocMessageResp2);
 		        	
@@ -948,7 +960,7 @@ public class EdhocClient {
 
 		            }
 		            if (discontinue == true) {
-		    			Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+		    			Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 		            	client.shutdown();
 		            	return;
 		            }
@@ -977,7 +989,7 @@ public class EdhocClient {
 		            	
 						if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
 							System.err.println("Internal error when processing EDHOC Message 4");
-							Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+							Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 			            	client.shutdown();
 			            	return;
 						}
@@ -1027,12 +1039,12 @@ public class EdhocClient {
 					        	edhocMessageResp = client.advanced(edhocMessageReq3);
 							} catch (ConnectorException e) {
 								System.err.println("ConnectorException when sending EDHOC Error Message");
-								Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+								Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 								client.shutdown();
 								return;
 							} catch (IOException e) {
 								System.err.println("IOException when sending EDHOC Error Message");
-								Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+								Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 								client.shutdown();
 								return;
 							}
@@ -1044,7 +1056,7 @@ public class EdhocClient {
 			        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload, cI, edhocSessions);
 			        	
 			        	processErrorMessageAsResponse(objectList, cI);
-			        	Util.purgeSession(session, CBORObject.FromObject(connectionId), edhocSessions, usedConnectionIds);
+			        	Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 			        	
 						client.shutdown();
 			    		return;
@@ -1130,14 +1142,13 @@ public class EdhocClient {
     			return;
     		}
     	
-    		CBORObject connectionIdentifier = Util.decodeFromBstrIdentifier(connectionId);
-    		EdhocSession session = edhocSessions.get(connectionIdentifier);
+    		EdhocSession session = edhocSessions.get(connectionId);
     		if (session == null) {
     			System.err.println("EDHOC session to delete not found");
     			return;
     		}
     	
-    		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
+    		Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
     	}
 		
 	}

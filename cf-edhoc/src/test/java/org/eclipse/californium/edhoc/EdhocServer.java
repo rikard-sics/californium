@@ -97,12 +97,12 @@ public class EdhocServer extends CoapServer {
 	private static Map<CBORObject, CBORObject> peerCredentials = new HashMap<CBORObject, CBORObject>();
 
 	// Existing EDHOC Sessions, including completed ones
-	// The map label is C_X, i.e. the connection identifier offered to the other peer, as a CBOR byte string
+	// The map label is C_X, i.e. the connection identifier offered to the other peer, as a CBOR integer or byte string
 	private static Map<CBORObject, EdhocSession> edhocSessions = new HashMap<CBORObject, EdhocSession>();
 	
-	// Each set of the list refers to a different size of Connection Identifier, i.e. C_ID_X to offer to the other peer.
-	// The element with index 0 includes as elements Recipient IDs with size 1 byte.
-	private static List<Set<Integer>> usedConnectionIds = new ArrayList<Set<Integer>>();
+	// Each element is a used Connection Identifier offered to the other peers.
+	// Connection Identifiers are stored as CBOR integers (if numeric) or as CBOR byte strings (if binary)
+	private static Set<CBORObject> usedConnectionIds = new HashSet<>();
 	
 	// List of supported ciphersuites
 	private static List<Integer> supportedCiphersuites = new ArrayList<Integer>();
@@ -151,12 +151,6 @@ public class EdhocServer extends CoapServer {
 		AppStatement appStatement = new AppStatement(authMethods, false, true);
 		
 		appStatements.put(uriLocal + "/.well-known/edhoc", appStatement);
-		
-    	for (int i = 0; i < 4; i++) {
-        	// Empty sets of assigned Connection Identifiers; one set for each possible size in bytes.
-        	// The set with index 0 refers to Connection Identifiers with size 1 byte
-    		usedConnectionIds.add(new HashSet<Integer>());
-    	}
 		
 		try {
 			// create server

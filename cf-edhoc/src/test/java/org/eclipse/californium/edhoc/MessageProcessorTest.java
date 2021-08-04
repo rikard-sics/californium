@@ -70,7 +70,7 @@ public class MessageProcessorTest {
 		/* Initiator information*/
 
 		// C_I, in plain binary format
-		byte[] connectionIdInitiator = new byte[] { 0x09 };
+		CBORObject connectionIdInitiator = EdhocSession.oscoreToEdhocId(new byte[] { 0x09 });
 		
 		// The identity key of the Initiator
 		byte[] privateIdentityKeyBytesInit = Utils.hexToBytes("2ffce7a0b2b825d397d0cb54f746e3da3f27596ee06b5371481dc0e012bc34d7");
@@ -98,7 +98,7 @@ public class MessageProcessorTest {
 		/* Responder information*/
 		
 		// C_R, in plain binary format
-		byte[] connectionIdResponder = new byte[] { 0x00 };
+		CBORObject connectionIdResponder = EdhocSession.oscoreToEdhocId(new byte[] { 0x00 });
 		
 		// The identity key of the Responder
 		byte[] privateIdentityKeyBytesResp = Utils.hexToBytes("df69274d713296e246306365372b4683ced5381bfcadcd440a24c391d2fedb94");
@@ -192,7 +192,7 @@ public class MessageProcessorTest {
 		// First set up the session to use
 		boolean initiator = true;
 		int methodCorr = 1;
-		byte[] connectionId = new byte[] { 0x09 };
+		CBORObject connectionId = EdhocSession.oscoreToEdhocId(new byte[] { 0x09 });
 		List<Integer> cipherSuites = new ArrayList<Integer>();
 		cipherSuites.add(0);
 		OneKey ltk = Util.generateKeyPair(KeyKeys.OKP_Ed25519.AsInt32());
@@ -246,7 +246,7 @@ public class MessageProcessorTest {
 		// First set up the session to use
 		boolean initiator = true;
 		int methodCorr = 13;
-		byte[] connectionId = new byte[] { 0x16 };
+		CBORObject connectionId = EdhocSession.oscoreToEdhocId(new byte[] { 0x16 });
 		List<Integer> cipherSuites = new ArrayList<Integer>();
 		cipherSuites.add(0);
 		OneKey ltk = Util.generateKeyPair(KeyKeys.OKP_X25519.AsInt32());
@@ -301,7 +301,7 @@ public class MessageProcessorTest {
 		// First set up the session to use
 		boolean initiator = true;
 		int methodCorr = 13;
-		byte[] connectionId = new byte[] { 0x16 };
+		CBORObject connectionId = EdhocSession.oscoreToEdhocId(new byte[] { 0x16 });
 		List<Integer> cipherSuites = new ArrayList<Integer>();
 		cipherSuites.add(2);
 		OneKey ltk = Util.generateKeyPair(KeyKeys.EC2_P256.AsInt32());
@@ -366,7 +366,7 @@ public class MessageProcessorTest {
 		/* Responder information*/
 
 		// C_R, in plain binary format
-		byte[] connectionIdResponder = new byte[] { 0x00 };
+		CBORObject connectionIdResponder = EdhocSession.oscoreToEdhocId(new byte[] { 0x00 });
 		
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(0);
@@ -435,7 +435,7 @@ public class MessageProcessorTest {
 		/* Initiator information*/
 		
 		// C_I, in plain binary format
-		byte[] connectionIdInitiator = new byte[] { 0x09 };
+		CBORObject connectionIdInitiator = EdhocSession.oscoreToEdhocId(new byte[] { 0x09 });
 
 		// The ephemeral key of the Initiator
 		byte[] publicPeerEphemeralKeyBytes = Utils.hexToBytes("898ff79a02067a16ea1eccb90fa52246f5aa4dd6ec076bba0259d904b7ec8b0c");
@@ -506,7 +506,7 @@ public class MessageProcessorTest {
 		/* Responder information*/
 
 		// C_R, in plain binary format
-		byte[] connectionIdResponder = new byte[] { 0x00 };
+		CBORObject connectionIdResponder = EdhocSession.oscoreToEdhocId(new byte[] { 0x00 });
 		
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(0);
@@ -532,7 +532,7 @@ public class MessageProcessorTest {
 		/* Initiator information*/
 		
 		// C_I, in plain binary format
-		byte[] connectionIdInitiator = new byte[] { 0x16 };
+		CBORObject connectionIdInitiator = EdhocSession.oscoreToEdhocId(new byte[] { 0x16 });
 
 		// The ephemeral key of the Initiator
 		byte[] peerEphemeralPublicKeyBytes = Utils.hexToBytes("8d3ef56d1b750a4351d68ac250a0e883790efc80a538a444ee9e2b57e2441a7c");
@@ -601,7 +601,7 @@ public class MessageProcessorTest {
 		/* Responder information*/
 
 		// C_R, in plain binary format
-		byte[] connectionIdResponder = new byte[] { 0x00 };
+		CBORObject connectionIdResponder = EdhocSession.oscoreToEdhocId(new byte[] { 0x00 });
 		
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(2);
@@ -628,7 +628,7 @@ public class MessageProcessorTest {
 		/* Initiator information*/
 		
 		// C_I, in plain binary format
-		byte[] connectionIdInitiator = new byte[] { 0x16 };
+		CBORObject connectionIdInitiator = EdhocSession.oscoreToEdhocId(new byte[] { 0x16 });
 
 		// The ephemeral key of the Initiator
 		byte[] peerEphemeralPublicKeyBytes = Utils.hexToBytes("475776f844979ad0b463c5a6a4343a663d17a3a80e38a81d3e3496f6061fd716");
@@ -701,7 +701,7 @@ public class MessageProcessorTest {
 		/* Initiator information*/
 
 		// C_I, in plain binary format
-		byte[] connectionIdInitiator = new byte[] { 0x09 };
+		CBORObject connectionIdInitiator = EdhocSession.oscoreToEdhocId(new byte[] { 0x09 });
 		
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(0);
@@ -729,7 +729,7 @@ public class MessageProcessorTest {
 		/* Responder information*/
 
 		// C_R, in plain binary format
-		byte[] connectionIdResponder = new byte[] { 0x00 };
+		CBORObject connectionIdResponder = EdhocSession.oscoreToEdhocId(new byte[] { 0x00 });
 		
 		// The ephemeral key of the Responder
 		byte[] peerEphemeralPublicKeyBytes = Utils.hexToBytes("71a3d599c21da18902a1aea810b2b6382ccd8d5f9bf0195281754c5ebcaf301e");
@@ -829,7 +829,7 @@ public class MessageProcessorTest {
 		/* Initiator information*/
 
 		// C_I, in plain binary format
-		byte[] connectionIdInitiator = new byte[] { 0x16 };
+		CBORObject connectionIdInitiator = EdhocSession.oscoreToEdhocId(new byte[] { 0x16 });
 		
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(0);
@@ -856,7 +856,7 @@ public class MessageProcessorTest {
 		/* Responder information*/
 
 		// C_R, in plain binary format
-		byte[] connectionIdResponder = new byte[] { 0x00 };
+		CBORObject connectionIdResponder = EdhocSession.oscoreToEdhocId(new byte[] { 0x00 });
 		
 		// The ephemeral key of the Responder
 		byte[] peerEphemeralPublicKeyBytes = Utils.hexToBytes("52fba0bdc8d953dd86ce1ab2fd7c05a4658c7c30afdbfc3301047069451baf35");
@@ -954,7 +954,7 @@ public class MessageProcessorTest {
 		/* Initiator information*/
 
 		// C_I, in plain binary format
-		byte[] connectionIdInitiator = new byte[] { 0x16 };
+		CBORObject connectionIdInitiator = EdhocSession.oscoreToEdhocId(new byte[] { 0x16 });
 		
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(2);
@@ -983,7 +983,7 @@ public class MessageProcessorTest {
 		/* Responder information*/
 
 		// C_R, in plain binary format
-		byte[] connectionIdResponder = new byte[] { 0x00 };
+		CBORObject connectionIdResponder = EdhocSession.oscoreToEdhocId(new byte[] { 0x00 });
 		
 		// The ephemeral key of the Responder
 		byte[] peerEphemeralPublicKeyBytes = Utils.hexToBytes("81df54b3756acfc8a1e9b08ba10de4e7e7dd934587a1ecdb21b92f8f22c3a38d");

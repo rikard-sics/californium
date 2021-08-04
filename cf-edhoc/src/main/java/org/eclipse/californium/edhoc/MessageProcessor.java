@@ -57,7 +57,7 @@ public class MessageProcessor {
      * @return  The type of the EDHOC message, or -1 if it not a recognized type
      */
 	public static int messageType(byte[] msg, boolean isReq, Map<CBORObject, EdhocSession> edhocSessions,
-			                      byte[] cX, AppStatement appStatement) {
+			                      CBORObject cX, AppStatement appStatement) {
 				
 		CBORObject[] myObjects = null;
 		
@@ -74,7 +74,7 @@ public class MessageProcessor {
 		if (myObjects == null || myObjects.length == 0)
 			return -1;
 		
-		byte[] connectionIdentifier = null;
+		CBORObject connectionIdentifier = null;
 		
 		if (isReq == true) {
 			// A request always starts with C_X
@@ -96,13 +96,9 @@ public class MessageProcessor {
 				// The Connection Identifier to retrieve the EDHOC session was not provided.
 				// It is present in the message as first element of the CBOR sequence.
 				
-			    if (elem.getType() == CBORType.ByteString || elem.getType() == CBORType.Integer) {
-			            
-			    		CBORObject connectionIdentifierCBOR = Util.decodeFromBstrIdentifier(myObjects[0]);			            
-			            if (connectionIdentifierCBOR != null)
-			                connectionIdentifier = connectionIdentifierCBOR.GetByteString();
-			            
-			    }
+			    if (elem.getType() == CBORType.ByteString || elem.getType() == CBORType.Integer)
+			    	connectionIdentifier = myObjects[0];
+
 			}
 		}
 		
@@ -121,7 +117,7 @@ public class MessageProcessor {
 
 	    if (connectionIdentifier != null) {
 	    	
-	        EdhocSession session = edhocSessions.get(CBORObject.FromObject(connectionIdentifier));
+	        EdhocSession session = edhocSessions.get(connectionIdentifier);
 	        
 	        if (session != null) {
 	            boolean initiator = session.isInitiator();
@@ -447,12 +443,13 @@ public class MessageProcessor {
 				responseCode = ResponseCode.BAD_REQUEST;
 				error = true;
 		}
-		if (error == false && Util.decodeFromBstrIdentifier(objectListRequest[index]) == null) {
-			errMsg = new String("C_I must be encoded as a valid bstr_identifier");
-			responseCode = ResponseCode.BAD_REQUEST;
-			error = true;
+		if (error == false && objectListRequest[index].getType() == CBORType.Integer &&
+			Util.isDeterministicCborInteger(objectListRequest[index]) == false) {
+				errMsg = new String("C_I is an integer but it does not comply with deterministic CBOR encoding");
+				responseCode = ResponseCode.BAD_REQUEST;
+				error = true;
 		}
-		else {
+		if (error == false) {
 			cI = objectListRequest[index];
 		}
 		
@@ -520,7 +517,7 @@ public class MessageProcessor {
      * @param edhocSessions   The list of active EDHOC sessions of the recipient
      * @param peerPublicKeys   The list of the long-term public keys of authorized peers
      * @param peerCredentials   The list of CRED of the long-term public keys of authorized peers
-     * @param usedConnectionIds   The collection of already allocated Connection Identifiers
+     * @param usedConnectionIds   The set of already allocated Connection Identifiers
      * @return   A list of CBOR Objects including up to three elements.
      * 
      *           The first element is a CBOR byte string, with value either:
@@ -537,7 +534,7 @@ public class MessageProcessor {
      */
 	public static List<CBORObject> readMessage2(byte[] sequence, boolean isReq, CBORObject cI, Map<CBORObject,
 			                                    EdhocSession> edhocSessions, Map<CBORObject, OneKey> peerPublicKeys,
-			                                    Map<CBORObject, CBORObject> peerCredentials, List<Set<Integer>> usedConnectionIds) {
+			                                    Map<CBORObject, CBORObject> peerCredentials, Set<CBORObject> usedConnectionIds) {
 		
 		if (sequence == null || edhocSessions == null ||
 		    peerPublicKeys == null || peerCredentials == null || usedConnectionIds == null)
@@ -583,32 +580,33 @@ public class MessageProcessor {
 			error = true;
 		}
 		
-		// C_I is present as first element
-		if (error == false && cI == null) {
+		// If EDHOC Message 2 is transported in a CoAP request, C_I is present as first element of the CBOR sequence
+		if (error == false && isReq == true) {
 			if (error == false && objectListRequest[index].getType() != CBORType.ByteString &&
 				objectListRequest[index].getType() != CBORType.Integer)  {
 					errMsg = new String("C_I must be a byte string or an integer");
 					responseCode = ResponseCode.BAD_REQUEST;
 					error = true;
 			}
-			
-			if (error == false && Util.decodeFromBstrIdentifier(objectListRequest[index]) == null) {
-				errMsg = new String("C_I must be encoded as a valid bstr_identifier");
-				responseCode = ResponseCode.BAD_REQUEST;
-				error = true;
+			if (error == false && objectListRequest[index].getType() == CBORType.Integer &&
+				    Util.isDeterministicCborInteger(objectListRequest[index]) == false) {
+				        errMsg = new String("C_I is an integer but it does not comply with deterministic CBOR encoding");
+				        responseCode = ResponseCode.BAD_REQUEST;
+				        error = true;
 			}
-			else {
-				connectionIdentifier = Util.decodeFromBstrIdentifier(objectListRequest[index]);
+			if (error == false) {
+				connectionIdentifier = objectListRequest[index];
 				index++;
 			}
 		}
 		
-		if (error == false && cI != null) {
-			connectionIdentifier = Util.decodeFromBstrIdentifier(cI);
+		if (error == false && isReq == false && cI != null) {
+				connectionIdentifier = cI; 
 		}
 		
 		if (error == false) {
-			session = edhocSessions.get(connectionIdentifier);
+			if (connectionIdentifier != null)
+				session = edhocSessions.get(connectionIdentifier);
 			
 			if (session == null) {
 				errMsg = new String("EDHOC session not found");
@@ -698,21 +696,24 @@ public class MessageProcessor {
 			
 		}
 		
-		
-		CBORObject encodedCR = null; // C_R as a bstr_identifier sent on the wire
-		
+
 		// C_R		
 		if (error == false) {
-			encodedCR = objectListRequest[index];
-			cR = Util.decodeFromBstrIdentifier(encodedCR);
+			cR = objectListRequest[index];
 			
-			if (cR == null) {
-				errMsg = new String("Invalid format for the Connection Identifier C_R");
-				responseCode = ResponseCode.BAD_REQUEST;
-				error = true;
+			if (cR.getType() != CBORType.ByteString && cR.getType() != CBORType.Integer) {
+					errMsg = new String("C_R must be a byte string or an integer");
+					responseCode = ResponseCode.BAD_REQUEST;
+					error = true;
 			}
-			else {
-				session.setPeerConnectionId(cR.GetByteString());
+			if (error == false && cR.getType() == CBORType.Integer &&
+				Util.isDeterministicCborInteger(cR) == false) {
+			        errMsg = new String("C_R is an integer but it does not comply with deterministic CBOR encoding");
+			        responseCode = ResponseCode.BAD_REQUEST;
+			        error = true;
+			}
+			if (error == false) {
+				session.setPeerConnectionId(cR);
 			}
 		}
 		
@@ -736,7 +737,7 @@ public class MessageProcessor {
         	objectListData2.add(objectListRequest[i]);
         byte[] hashMessage1SerializedCBOR = CBORObject.FromObject(hashMessage1).EncodeToBytes();
         byte[] gYSerializedCBOR = CBORObject.FromObject(gY).EncodeToBytes();
-        byte[] cRSerializedCBOR = encodedCR.EncodeToBytes();
+        byte[] cRSerializedCBOR = cR.EncodeToBytes();
         
         th2 = computeTH2(session, hashMessage1SerializedCBOR, gYSerializedCBOR, cRSerializedCBOR);
         if (th2 == null) {
@@ -1009,7 +1010,7 @@ public class MessageProcessor {
      * @param edhocSessions   The list of active EDHOC sessions of the recipient
      * @param peerPublicKeys   The list of the long-term public keys of authorized peers
      * @param peerCredentials   The list of CRED of the long-term public keys of authorized peers
-     * @param usedConnectionIds   The collection of already allocated Connection Identifiers
+     * @param usedConnectionIds   The set of already allocated Connection Identifiers
      * @return   A list of CBOR Objects including up to three elements.
      * 
      *           The first element is a CBOR byte string, with value either:
@@ -1027,7 +1028,7 @@ public class MessageProcessor {
      */
 	public static List<CBORObject> readMessage3(byte[] sequence, boolean isReq, CBORObject cR, Map<CBORObject,
             								EdhocSession> edhocSessions, Map<CBORObject, OneKey> peerPublicKeys,
-            								Map<CBORObject, CBORObject> peerCredentials, List<Set<Integer>> usedConnectionIds) {
+            								Map<CBORObject, CBORObject> peerCredentials, Set<CBORObject> usedConnectionIds) {
 		
 		if (sequence == null || edhocSessions == null ||
 			peerPublicKeys == null || peerCredentials == null || usedConnectionIds == null)
@@ -1073,28 +1074,28 @@ public class MessageProcessor {
 			error = true;
 		}
 		
-		// C_R is present as first element
-		if (error == false && cR == null) {
+		// If EDHOC Message 3 is transported in a CoAP request, C_R is present as first element of the CBOR sequence
+		if (error == false && isReq == true) {
 			if (error == false && objectListRequest[index].getType() != CBORType.ByteString &&
 				objectListRequest[index].getType() != CBORType.Integer)  {
 					errMsg = new String("C_R must be a byte string or an integer");
 					responseCode = ResponseCode.BAD_REQUEST;
 					error = true;
 			}
-			
-			if (error == false && Util.decodeFromBstrIdentifier(objectListRequest[index]) == null) {
-				errMsg = new String("C_R must be encoded as a valid bstr_identifier");
-				responseCode = ResponseCode.BAD_REQUEST;
-				error = true;
+			if (error == false && objectListRequest[index].getType() == CBORType.Integer &&
+				    Util.isDeterministicCborInteger(objectListRequest[index]) == false) {
+				        errMsg = new String("C_R is an integer but it does not comply with deterministic CBOR encoding");
+				        responseCode = ResponseCode.BAD_REQUEST;
+				        error = true;
 			}
 			else {
-				connectionIdentifier = Util.decodeFromBstrIdentifier(objectListRequest[index]);
+				connectionIdentifier = objectListRequest[index];
 				index++;
 			}
 		}
 		
-		if (error == false && cR != null) {
-			connectionIdentifier = Util.decodeFromBstrIdentifier(cR);
+		if (error == false && isReq == false && cR != null) {
+			connectionIdentifier = cR;
 		}
 			
 		if (error == false) {
@@ -1437,7 +1438,7 @@ public class MessageProcessor {
      * @param isReq   True if the CoAP message is a request, or False otherwise
      * @param cI   The connection identifier of the Initiator; set to null if expected in the EDHOC Message 4
      * @param edhocSessions   The list of active EDHOC sessions of the recipient
-     * @param usedConnectionIds   The collection of already allocated Connection Identifiers
+     * @param usedConnectionIds   The set of already allocated Connection Identifiers
      * @return   A list of CBOR Objects including up to three elements.
      * 
      *           The first element is a CBOR byte string, with value either:
@@ -1454,7 +1455,7 @@ public class MessageProcessor {
      */
 	public static List<CBORObject> readMessage4(byte[] sequence, boolean isReq, CBORObject cI,
 			                                    Map<CBORObject,EdhocSession> edhocSessions,
-			                                    List<Set<Integer>> usedConnectionIds) {
+			                                    Set<CBORObject> usedConnectionIds) {
 		
 		if (sequence == null || edhocSessions == null || usedConnectionIds == null)
 			return null;
@@ -1498,28 +1499,28 @@ public class MessageProcessor {
 			error = true;
 		}
 		
-		// C_I is present as first element
-		if (error == false && cI == null) {
+		// If EDHOC Message 4 is transported in a CoAP request, C_I is present as first element of the CBOR sequence
+		if (error == false && isReq == true) {
 			if (error == false && objectListRequest[index].getType() != CBORType.ByteString &&
 				objectListRequest[index].getType() != CBORType.Integer)  {
 					errMsg = new String("C_I must be a byte string or an integer");
 					responseCode = ResponseCode.BAD_REQUEST;
 					error = true;
 			}
-			
-			if (error == false && Util.decodeFromBstrIdentifier(objectListRequest[index]) == null) {
-				errMsg = new String("C_I must be encoded as a valid bstr_identifier");
-				responseCode = ResponseCode.BAD_REQUEST;
-				error = true;
+			if (error == false && objectListRequest[index].getType() == CBORType.Integer &&
+				    Util.isDeterministicCborInteger(objectListRequest[index]) == false) {
+				        errMsg = new String("C_I is an integer but it does not comply with deterministic CBOR encoding");
+				        responseCode = ResponseCode.BAD_REQUEST;
+				        error = true;
 			}
 			else {
-				connectionIdentifier = Util.decodeFromBstrIdentifier(objectListRequest[index]);
+				connectionIdentifier = objectListRequest[index];
 				index++;
 			}
 		}
 		
-		if (error == false && cI != null) {
-			connectionIdentifier = Util.decodeFromBstrIdentifier(cI);
+		if (error == false && isReq == false && cI != null) {
+			connectionIdentifier = cI;
 		}
 		
 		if (error == false) {
@@ -1547,10 +1548,8 @@ public class MessageProcessor {
 			}
 		}
 		
-		if (session != null) {
-			if (session.getPeerConnectionId() != null)
-				cR = CBORObject.FromObject(session.getPeerConnectionId());
-		}
+		if (session != null && session.getPeerConnectionId() != null)
+				cR = session.getPeerConnectionId();
 
 
 		// CIPHERTEXT_4
@@ -1710,7 +1709,8 @@ public class MessageProcessor {
      * @param edhocSessions   The list of active EDHOC sessions of the recipient
      * @return  The elements of the EDHOC Error Message as CBOR objects, or null in case of errors
      */
-	public static CBORObject[] readErrorMessage(byte[] sequence, CBORObject cX, Map<CBORObject, EdhocSession> edhocSessions) {
+	public static CBORObject[] readErrorMessage(byte[] sequence, CBORObject cX,
+			                                    Map<CBORObject, EdhocSession> edhocSessions) {
 		
 		if (edhocSessions == null || sequence == null) {
 			System.err.println("Error when processing EDHOC Error Message");
@@ -1735,14 +1735,14 @@ public class MessageProcessor {
 		
 		// C_X is provided by the method caller
 		if (cX != null) {
-			mySession = edhocSessions.get(Util.decodeFromBstrIdentifier(cX));
+			mySession = edhocSessions.get(cX);
 		}
 		
 		// The connection identifier is expected as first element in the EDHOC Error Message
 		else {
 			
 			if (objectList[index].getType() == CBORType.ByteString || objectList[index].getType() == CBORType.Integer) {
-				mySession = edhocSessions.get(Util.decodeFromBstrIdentifier(objectList[index]));
+				mySession = edhocSessions.get(objectList[index]);
 				index++;		
 			}
 			else {
@@ -1783,7 +1783,7 @@ public class MessageProcessor {
 		}
 		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED) {
 			if (objectList[index].getType() != CBORType.TextString) {
-				System.err.println("Error when processing EDHOC Error Message - Invalid format of DIAG_MSG");
+				System.err.println("Error when processing EDHOC Error Message - Invalid format of ERR_INFO");
 				return null;
 			}
 		}
@@ -1796,7 +1796,8 @@ public class MessageProcessor {
 				if (objectList[index].getType() == CBORType.Array) {
 					for (int i = 0; i < objectList[index].size(); i++) {
 						if (objectList[index].get(i).getType() != CBORType.Integer) {
-							System.err.println("Error when processing EDHOC Error Message - Invalid format for elements of SUITES_R");
+							System.err.println("Error when processing EDHOC Error Message - "
+									         + "Invalid format for elements of SUITES_R");
 							return null;
 						}
 					}
@@ -1924,14 +1925,11 @@ public class MessageProcessor {
         	Util.nicePrint("G_X", objBytes);
         }
 		
-		// C_I as bstr_identifier
-        byte[] connectionId = session.getConnectionId();
-		CBORObject cI = CBORObject.FromObject(connectionId);
-		objectList.add(Util.encodeToBstrIdentifier(cI));
+		// C_I
+        CBORObject cI = session.getConnectionId();
+		objectList.add(cI);
         if (debugPrint) {
-        	CBORObject obj = CBORObject.FromObject(Util.encodeToBstrIdentifier(cI));
-        	byte[] objBytes = obj.EncodeToBytes();
-        	Util.nicePrint("C_I", objBytes);
+        	Util.nicePrint("C_I", cI.EncodeToBytes());
         }
         
         // EAD_1, if provided
@@ -1978,14 +1976,12 @@ public class MessageProcessor {
         }
 		
         
-        // C_I as a bstr_identifier, if EDHOC message_2 is transported in a CoAP request
+        // C_I, if EDHOC message_2 is transported in a CoAP request
 		if (!session.isClientInitiated()) {
-			CBORObject cI = CBORObject.FromObject(session.getPeerConnectionId());
-			objectList.add(Util.encodeToBstrIdentifier(cI));
+			CBORObject cI = session.getPeerConnectionId();
+			objectList.add(cI);
 	        if (debugPrint) {
-	        	CBORObject obj = CBORObject.FromObject(Util.encodeToBstrIdentifier(cI));
-	        	byte[] objBytes = obj.EncodeToBytes();
-	        	Util.nicePrint("C_I", objBytes);
+	        	Util.nicePrint("C_I", cI.EncodeToBytes());
 	        }
 		}
 		
@@ -2002,19 +1998,19 @@ public class MessageProcessor {
     	    Util.nicePrint("G_Y", gY.EncodeToBytes());
     	}
 		
-		// C_R as a bstr_identifier
-		CBORObject cR = CBORObject.FromObject(session.getConnectionId());
-		CBORObject cRCBOR = Util.encodeToBstrIdentifier(cR);
+		// C_R
+		CBORObject cR = session.getConnectionId();
     	if (debugPrint) {
-    	    Util.nicePrint("C_R", cRCBOR.EncodeToBytes());
+    	    Util.nicePrint("C_R", cR.EncodeToBytes());
     	}
-        
+    	
+    	
         // Compute TH_2
         
         byte[] hashMessage1 = session.getHashMessage1(); // the hash of message_1, as plain bytes
         byte[] hashMessage1SerializedCBOR = CBORObject.FromObject(hashMessage1).EncodeToBytes();
         byte[] gYSerializedCBOR = gY.EncodeToBytes();
-        byte[] cRSerializedCBOR = cRCBOR.EncodeToBytes();
+        byte[] cRSerializedCBOR = cR.EncodeToBytes();
         
         byte[] th2 = computeTH2(session, hashMessage1SerializedCBOR, gYSerializedCBOR, cRSerializedCBOR);
         if (th2 == null) {
@@ -2175,7 +2171,7 @@ public class MessageProcessor {
     	}
     	
     	// The outer CBOR sequence finishes with the connection identifier C_R
-    	objectList.add(cRCBOR);
+    	objectList.add(cR);
 
     	
     	
@@ -2228,14 +2224,12 @@ public class MessageProcessor {
 		
         /* Start preparing data_3 */
 		
-        // C_R as a bstr_identifier, if EDHOC message_3 is transported in a CoAP request
+        // C_R, if EDHOC message_3 is transported in a CoAP request
 		if (session.isClientInitiated()) {
-			CBORObject cR = CBORObject.FromObject(session.getPeerConnectionId());
-			objectList.add(Util.encodeToBstrIdentifier(cR));
+			CBORObject cR = session.getPeerConnectionId();
+			objectList.add(cR);
 	        if (debugPrint) {
-	        	CBORObject obj = CBORObject.FromObject(Util.encodeToBstrIdentifier(cR));
-	        	byte[] objBytes = obj.EncodeToBytes();
-	        	Util.nicePrint("C_R", objBytes);
+	        	Util.nicePrint("C_R", cR.EncodeToBytes());
 	        }
 		}
         
@@ -2447,15 +2441,13 @@ public class MessageProcessor {
 		
         /* Start preparing data_4 */
 		
-        // C_I as a bstr_identifier, if EDHOC message_4 is transported in a CoAP request
+        // C_I, if EDHOC message_4 is transported in a CoAP request
 		if (!session.isClientInitiated()) {
-			CBORObject cI = CBORObject.FromObject(session.getPeerConnectionId());
-			objectList.add(Util.encodeToBstrIdentifier(cI));
+			CBORObject cI = session.getPeerConnectionId();
+			objectList.add(cI);
 	        if (debugPrint) {
-	        	CBORObject obj = CBORObject.FromObject(Util.encodeToBstrIdentifier(cI));
-	        	byte[] objBytes = obj.EncodeToBytes();
-	        	Util.nicePrint("C_I", objBytes);
-	        }
+	        	Util.nicePrint("C_I", cI.EncodeToBytes());
+	        }			
 		}
         
 		/* End preparing data_4 */
@@ -2605,13 +2597,8 @@ public class MessageProcessor {
 		byte[] payload;
 			
 		// Possibly include C_X - This might not have been included if the incoming EDHOC message was malformed
-		if (cX != null) {
-			
-			if (isErrorReq == true) {		
-				CBORObject bstrIdentifier = Util.encodeToBstrIdentifier(cX);
-				objectList.add(CBORObject.FromObject(bstrIdentifier));
-			}
-			
+		if (cX != null && isErrorReq == true) {
+				objectList.add(cX);
 		}
 
 		// Include ERR_CODE
@@ -2695,7 +2682,7 @@ public class MessageProcessor {
      * @param idCredI   ID_CRED_I for the identity key of the Initiator
      * @param credI   CRED_I for the identity key of the Initiator
      * @param supportedCipherSuites   The list of ciphersuites supported by the Initiator
-     * @param usedConnectionIds   The list of allocated Connection Identifiers for the Initiator
+     * @param usedConnectionIds   The set of allocated Connection Identifiers for the Initiator
      * @param appStatement   The applicability statement used for this session
      * @param epd   The processor of External Authentication Data used for this session
      * @return  The newly created EDHOC session
@@ -2703,14 +2690,17 @@ public class MessageProcessor {
 	public static EdhocSession createSessionAsInitiator(int method, OneKey keyPair,
 												        CBORObject idCredI, byte[] credI,
 			  									        List<Integer> supportedCiphersuites,
-			  									        List<Set<Integer>> usedConnectionIds,
-			  									        AppStatement appStatement, EDP epd) {
+			  									        Set<CBORObject> usedConnectionIds,
+			  									        AppStatement appStatement, EDP edp) {
 		
-		//byte[] connectionId = Util.getConnectionId(usedConnectionIds, null);
-		byte[] connectionId = new byte[] {(byte) 0x16}; // Forced and aligned with the test vector
+		//CBORObject connectionId = Util.getConnectionId(usedConnectionIds, null);
+				
+		// Forced for testing
+		CBORObject connectionId = CBORObject.FromObject(new byte[] {(byte) 0x1c});
+		usedConnectionIds.add(connectionId);
 		
         EdhocSession mySession = new EdhocSession(true, true, method, connectionId, keyPair,
-        										  idCredI, credI, supportedCiphersuites, appStatement, epd);
+        										  idCredI, credI, supportedCiphersuites, appStatement, edp);
 		
 		return mySession;
 		
@@ -2723,14 +2713,16 @@ public class MessageProcessor {
      * @param idCredR   ID_CRED_R for the identity key of the Responder
      * @param credR   CRED_R for the identity key of the Responder
      * @param supportedCipherSuites   The list of ciphersuites supported by the Responder
-     * @param usedConnectionIds   The list of allocated Connection Identifiers for the Responder
+     * @param usedConnectionIds   The set of allocated Connection Identifiers for the Responder
      * @param appStatement   The applicability statement used for this session
      * @param epd   The processor of External Authentication Data used for this session
      * @return  The newly created EDHOC session
      */
-	public static EdhocSession createSessionAsResponder(byte[] message1, boolean isReq, OneKey keyPair, CBORObject idCredR, byte[] credR,
-			  									  List<Integer> supportedCiphersuites, List<Set<Integer>> usedConnectionIds,
-			  									  AppStatement appStatement, EDP epd) {
+	public static EdhocSession createSessionAsResponder(byte[] message1, boolean isReq, OneKey keyPair,
+			                                            CBORObject idCredR, byte[] credR,
+			  									        List<Integer> supportedCiphersuites,
+			  									        Set<CBORObject> usedConnectionIds,
+			  									        AppStatement appStatement, EDP edp) {
 		
 		CBORObject[] objectListMessage1 = CBORObject.DecodeSequenceFromBytes(message1);
 		int index = -1;
@@ -2761,16 +2753,19 @@ public class MessageProcessor {
 		
 		// C_I
 		index++;
-		byte[] cI = Util.decodeFromBstrIdentifier(objectListMessage1[index]).GetByteString();
+		CBORObject cI = objectListMessage1[index];
 		
 		
 		// Create a new EDHOC session
 		
-		//byte[] connectionId = Util.getConnectionId(usedConnectionIds, null);
-		byte[] connectionId = new byte[] {(byte) 0x00}; // Forced and aligned with the test vector
+		//CBORObject connectionId = Util.getConnectionId(usedConnectionIds, null);
+		
+		// Forced for testing
+		CBORObject connectionId = CBORObject.FromObject(new byte[] {(byte) 0x1d});
+		usedConnectionIds.add(connectionId);
 		
 		EdhocSession mySession = new EdhocSession(false, isReq, method, connectionId, keyPair,
-												  idCredR, credR, supportedCiphersuites, appStatement, epd);
+												  idCredR, credR, supportedCiphersuites, appStatement, edp);
 		
 		// Set the selected cipher suite
 		mySession.setSelectedCiphersuite(selectedCipherSuite);
