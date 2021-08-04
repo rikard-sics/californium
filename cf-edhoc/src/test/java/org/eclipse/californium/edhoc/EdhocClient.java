@@ -120,7 +120,7 @@ public class EdhocClient {
 	// List of supported ciphersuites
 	private static List<Integer> supportedCiphersuites = new ArrayList<Integer>();
 	
-	// The authentication method to be indicated in EDHOC message 1 (relevant for the Initiator only)
+	// The authentication method to be indicated in EDHOC message 1 (relevant or the Initiator only)
 	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
 			
 	// The database of OSCORE Security Contexts
@@ -325,8 +325,27 @@ public class EdhocClient {
 		    		// Use 0x24 as kid for this peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x24
 				    byte[] idCredKid = new byte[] {(byte) 0x24};
 					idCred = Util.buildIdCredKid2(idCredKid);
+					
 					// Build the related CRED
-					cred = Util.buildCredRawPublicKey(keyPair, subjectName);
+					// Uncomment to generate the UCCS and print its serialization
+					/*
+					System.out.print("My   ");
+					Util.buildCredRawPublicKeyUCCS(keyPair, subjectName);
+					*/
+					
+					// OLD WAY, with a deterministic CBOR map containing a COSE Key
+					// cred = Util.buildCredRawPublicKey(keyPair, subjectName);
+					
+					if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
+						cred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a401022001215820cd4177ba62433375ede279b5e18e8b91bc3ed8f1e174474a26fc0edb44ea5373225820a0391de29c5c5badda610d4e301eaaa18422367722289cd18cbe6624e89b9cfd");
+					}
+			 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
+						cred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a30101200621582038e5d54563c2b6a4ba26f3015f61bb706e5c2efdb556d2e1690b97fc3c6de149");
+			 		}
+			 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+						cred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a3010120042158202c440cc121f8d7f24c3b0e41aedafe9caa4f4e7abb835ec30f1de88adb96ff71");
+			 		}
+					
 					break;
 		    	case Constants.CRED_TYPE_X5CHAIN:
 		    	case Constants.CRED_TYPE_X5T:
@@ -392,8 +411,27 @@ public class EdhocClient {
 		    		// Use 0x07 as kid for the other peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x07
 					byte[] peerKid = new byte[] {(byte) 0x07};
 					peerIdCred = Util.buildIdCredKid2(peerKid);
+					
 					// Build the related CRED
-					peerCred = Util.buildCredRawPublicKey(peerPublicKey, "");
+					// Uncomment to generate the UCCS and print its serialization
+					/*
+					System.out.print("Peer ");
+					Util.buildCredRawPublicKeyUCCS(peerPublicKey, "");
+					*/
+					
+					// OLD WAY, with a deterministic CBOR map containing a COSE Key
+					// peerCred = Util.buildCredRawPublicKey(peerPublicKey, "");
+					
+					if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
+						peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a4010220012158206f9702a66602d78f5e81bac1e0af01f8b52810c502e87ebb7c926c07426fd02f225820c8d33274c71c9b3ee57d842bbf2238b8283cb410eca216fb72a78ea7a870f800");
+					}
+			 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
+						peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a301012006215820dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
+			 		}
+			 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+						peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a301012004215820a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
+			 		}
+					
 					break;
 			    case Constants.CRED_TYPE_X5CHAIN:
 		    	case Constants.CRED_TYPE_X5T:
