@@ -197,7 +197,7 @@ public class VectorsTxtTest {
 		
 		// Just for method compatibility; it is not used for EDHOC Message 1
 		byte[] idCredKid = new byte[] {(byte) 0x24};
-		CBORObject idCred = Util.buildIdCredKid(idCredKid);
+		CBORObject idCred = Util.buildIdCredKid2(idCredKid);
 		byte[] cred = Util.buildCredRawPublicKey(ltk, "");
 
 		// Set the applicability statement		

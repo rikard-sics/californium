@@ -56,6 +56,8 @@ public static final int CRED_TYPE_X5CHAIN = 3;
 public static final int COSE_HEADER_PARAM_X5CHAIN = 33;
 public static final int COSE_HEADER_PARAM_X5T = 34;
 public static final int COSE_HEADER_PARAM_X5U = 35;
+public static final int COSE_HEADER_PARAM_CWT = 36;
+public static final int COSE_HEADER_PARAM_KID2 = 37;
 
 
 /**

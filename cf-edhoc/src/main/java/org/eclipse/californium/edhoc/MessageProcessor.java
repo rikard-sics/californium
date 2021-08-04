@@ -866,45 +866,22 @@ public class MessageProcessor {
     	CBORObject rawIdCredR = plaintextElementList[0];
     	error = false;
     	
-    	// ID_CRED_R is a CBOR map with only 'kid', and only 'kid' was transported as bstr_identifier
-    	if (rawIdCredR.getType() == CBORType.Integer) {
-    		CBORObject kidCBOR = Util.decodeFromBstrIdentifier(rawIdCredR);
-    		if (kidCBOR == null) {
-	        	errMsg = new String("Invalid format for ID_CRED_R");
-	        	responseCode = ResponseCode.BAD_REQUEST;
-    			error = true;
-    		}
-    		else {
-	    		idCredR.Add(HeaderKeys.KID.AsCBOR(), kidCBOR);
-	    		
-	    		if (!peerPublicKeys.containsKey(idCredR)) {
-		        	errMsg = new String("The identity expressed by ID_CRED_R is not recognized");
-		        	responseCode = ResponseCode.BAD_REQUEST;
-	    			error = true;
-	    		}
-    		}
-    	}
-    	else if (rawIdCredR.getType() == CBORType.ByteString) {
-    		
-    		// First check the case where ID_CRED_R is a CBOR map with only 'kid', and only 'kid' was transported as bstr_identifier
-    		CBORObject kidCBOR = Util.decodeFromBstrIdentifier(rawIdCredR);
-    		if (kidCBOR != null) {
-    			idCredR.Add(HeaderKeys.KID.AsCBOR(), kidCBOR);
-    		}
-    		if (!peerPublicKeys.containsKey(idCredR)) {
-    			// If not found yet, check the case where the byte string is the serialization of a whole CBOR map
-    			// TODO: Again, this requires something better to ensure a deterministic encoding, if the map has more than 2 elements
-    			idCredR = CBORObject.DecodeFromBytes(rawIdCredR.GetByteString());
-    			
-    			if (!peerPublicKeys.containsKey(idCredR)) {
-		        	errMsg = new String("The identity expressed by ID_CRED_R is not recognized");
-		        	responseCode = ResponseCode.BAD_REQUEST;
-	    			error = true;
-    			}
-    		}
+    	// ID_CRED_R is a CBOR map with 'kid2', and only 'kid2' was transported
+    	if (rawIdCredR.getType() == CBORType.Integer || rawIdCredR.getType() == CBORType.ByteString) {
+    		idCredR.Add(Constants.COSE_HEADER_PARAM_KID2, rawIdCredR);
     	}
     	else if (rawIdCredR.getType() == CBORType.Map) {
     		idCredR = rawIdCredR;
+    	}
+    	else {
+    	    errMsg = new String("Invalid format for ID_CRED_R");
+    	    responseCode = ResponseCode.BAD_REQUEST;
+    	    error = true;
+    	}
+    	if (error == false && !peerPublicKeys.containsKey(idCredR)) {
+        	errMsg = new String("The identity expressed by ID_CRED_R is not recognized");
+        	responseCode = ResponseCode.BAD_REQUEST;
+			error = true;
     	}
     	
     	if (error == true) {
@@ -1267,45 +1244,22 @@ public class MessageProcessor {
     	CBORObject rawIdCredI = plaintextElementList[0];
     	error = false;
     	
-    	// ID_CRED_I is a CBOR map with only 'kid', and only 'kid' was transported as bstr_identifier
-    	if (rawIdCredI.getType() == CBORType.Integer) {
-    		CBORObject kidCBOR = Util.decodeFromBstrIdentifier(rawIdCredI);
-    		if (kidCBOR == null) {
-	        	errMsg = new String("Invalid format for ID_CRED_I");
-	        	responseCode = ResponseCode.BAD_REQUEST;
-    			error = true;
-    		}
-    		else {
-	    		idCredI.Add(HeaderKeys.KID.AsCBOR(), kidCBOR);
-	    		
-	    		if (!peerPublicKeys.containsKey(idCredI)) {
-		        	errMsg = new String("The identity expressed by ID_CRED_I is not recognized");
-		        	responseCode = ResponseCode.BAD_REQUEST;
-	    			error = true;
-	    		}
-    		}
-    	}
-    	else if (rawIdCredI.getType() == CBORType.ByteString) {
-    		
-    		// First check the case where ID_CRED_R is a CBOR map with only 'kid', and only 'kid' was transported as bstr_identifier
-    		CBORObject kidCBOR = Util.decodeFromBstrIdentifier(rawIdCredI);
-    		if (kidCBOR != null) {
-    			idCredI.Add(HeaderKeys.KID.AsCBOR(), kidCBOR);
-    		}
-    		if (!peerPublicKeys.containsKey(idCredI)) {
-    			// If not found yet, check the case where the byte string is the serialization of a whole CBOR map
-    			// TODO: Again, this requires something better to ensure a deterministic encoding, if the map has more than 2 elements
-    			idCredI = CBORObject.DecodeFromBytes(rawIdCredI.GetByteString());
-    			
-    			if (!peerPublicKeys.containsKey(idCredI)) {
-		        	errMsg = new String("The identity expressed by ID_CRED_I is not recognized");
-		        	responseCode = ResponseCode.BAD_REQUEST;
-	    			error = true;
-    			}
-    		}
+    	// ID_CRED_I is a CBOR map with 'kid2', and only 'kid2' was transported
+    	if (rawIdCredI.getType() == CBORType.Integer || rawIdCredI.getType() == CBORType.ByteString) {
+    	    idCredI.Add(Constants.COSE_HEADER_PARAM_KID2, rawIdCredI);
     	}
     	else if (rawIdCredI.getType() == CBORType.Map) {
-    		idCredI = rawIdCredI;
+    	    idCredI = rawIdCredI;
+    	}
+    	else {
+    	    errMsg = new String("Invalid format for ID_CRED_I");
+    	    responseCode = ResponseCode.BAD_REQUEST;
+    	    error = true;
+    	}
+    	if (error == false && !peerPublicKeys.containsKey(idCredI)) {
+    	    errMsg = new String("The identity expressed by ID_CRED_I is not recognized");
+    	    responseCode = ResponseCode.BAD_REQUEST;
+    	    error = true;
     	}
     	
     	if (error == true) {
@@ -2114,13 +2068,11 @@ public class MessageProcessor {
     	// Prepare the plaintext
     	List<CBORObject> plaintextElementList = new ArrayList<>();
     	CBORObject plaintextElement = null;
-    	if (session.getIdCred().size() == 1 && session.getIdCred().ContainsKey(HeaderKeys.KID.AsCBOR())) {
-    		// ID_CRED_R is composed of only 'kid', which is the only thing to include, as a bstr_identifier
-    		CBORObject kid = session.getIdCred().get(HeaderKeys.KID.AsCBOR());
-    		plaintextElement = Util.encodeToBstrIdentifier(kid);
+    	if (session.getIdCred().ContainsKey(Constants.COSE_HEADER_PARAM_KID2)) {
+    		// ID_CRED_R uses 'kid2', whose value is the only thing to include in the plaintext
+    		plaintextElement = session.getIdCred().get(Constants.COSE_HEADER_PARAM_KID2);
     	}
     	else {
-    		// TODO: Again, this requires something better to ensure a deterministic encoding, if the map has more than 2 elements
     		plaintextElement = session.getIdCred();
     	}
     	plaintextElementList.add(plaintextElement);
@@ -2339,15 +2291,13 @@ public class MessageProcessor {
     	// Prepare the plaintext
     	List<CBORObject> plaintextElementList = new ArrayList<>();
     	CBORObject plaintextElement = null;
-    	if (session.getIdCred().size() == 1 && session.getIdCred().ContainsKey(HeaderKeys.KID.AsCBOR())) {
-    		// ID_CRED_I is composed of only 'kid', which is the only thing to include, as a bstr_identifier
-    		CBORObject kid = session.getIdCred().get(HeaderKeys.KID.AsCBOR());
-    		plaintextElement = Util.encodeToBstrIdentifier(kid);
+    	if (session.getIdCred().ContainsKey(Constants.COSE_HEADER_PARAM_KID2)) {
+    	    // ID_CRED_I uses 'kid2', whose value is the only thing to include in the plaintext
+    	    plaintextElement = session.getIdCred().get(Constants.COSE_HEADER_PARAM_KID2);
     	}
     	else {
-    		// TODO: Again, this requires something better to ensure a deterministic encoding, if the map has more than 2 elements
-    		plaintextElement = session.getIdCred();
-    	}
+    	    plaintextElement = session.getIdCred();
+    	}    	
     	plaintextElementList.add(plaintextElement);
     	plaintextElementList.add(CBORObject.FromObject(signatureOrMac3));
     	if (ead3 != null) {
