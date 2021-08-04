@@ -111,57 +111,6 @@ public class UtilTest {
 		}
 	}
 
-	/**
-	 * Test encoding to bstr_identifier.
-	 * 
-	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#section-4.3
-	 */
-	@Test
-	public void testEncodeToBstrIdentifier() {
-		byte[] input1Bytes = new byte[] { (byte) 0x59, (byte) 0xe9 };
-		CBORObject input1 = CBORObject.FromObject(input1Bytes);
-		CBORObject expected1 = CBORObject.FromObject(input1Bytes);
-
-		CBORObject output1 = Util.encodeToBstrIdentifier(input1);
-		Assert.assertEquals(CBORType.ByteString, output1.getType());
-		Assert.assertArrayEquals(expected1.GetByteString(), output1.GetByteString());
-
-		// Second test
-
-		byte[] input2Bytes = new byte[] { (byte) 0x2a };
-		CBORObject input2 = CBORObject.FromObject(input2Bytes);
-		CBORObject expected2 = CBORObject.FromObject(18);
-
-		CBORObject output2 = Util.encodeToBstrIdentifier(input2);
-		Assert.assertEquals(CBORType.Integer, output2.getType());
-		Assert.assertEquals(expected2.AsInt32(), output2.AsInt32());
-	}
-
-	/**
-	 * Test decoding from bstr_identifier.
-	 * 
-	 * See: https://tools.ietf.org/html/draft-ietf-lake-edhoc-02#section-4.3
-	 */
-	@Test
-	public void testDecodeFromBstrIdentifier() {
-		byte[] input1Bytes = new byte[] { (byte) 0x59, (byte) 0xe9 };
-		CBORObject input1 = CBORObject.FromObject(input1Bytes);
-		CBORObject expected1 = CBORObject.FromObject(input1Bytes);
-
-		CBORObject output1 = Util.decodeFromBstrIdentifier(input1);
-		Assert.assertEquals(CBORType.ByteString, output1.getType());
-		Assert.assertArrayEquals(expected1.GetByteString(), output1.GetByteString());
-
-		// Second test
-
-		CBORObject input2 = CBORObject.FromObject(18);
-		byte[] expected2Bytes = new byte[] { (byte) 0x2a };
-		CBORObject expected2 = CBORObject.FromObject(expected2Bytes);
-
-		CBORObject output2 = Util.decodeFromBstrIdentifier(input2);
-		Assert.assertEquals(CBORType.ByteString, output2.getType());
-		Assert.assertArrayEquals(expected2.GetByteString(), output2.GetByteString());
-	}
 
 	/**
 	 * Test a signature computation and verification with EdDSA Ed25519.
