@@ -59,6 +59,19 @@ public static final int COSE_HEADER_PARAM_X5U = 35;
 public static final int COSE_HEADER_PARAM_CWT = 36;
 public static final int COSE_HEADER_PARAM_KID2 = 37;
 
+/**
+ * CBOR Web Token (CWT) Claims
+ * https://www.iana.org/assignments/cwt/cwt.xhtml#claims-registry
+ */
+public static final int CWT_CLAIMS_SUB = 2;
+public static final int CWT_CLAIMS_CNF = 8;
+
+/**
+ * CWT Confirmation Methods
+ * https://www.iana.org/assignments/cwt/cwt.xhtml#confirmation-methods
+ */
+public static final int CWT_CNF_COSE_KEY = 1;
+
 
 /**
  * EDHOC Message Types
