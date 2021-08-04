@@ -458,61 +458,6 @@ public class Util {
 	}
 	
     /**
-     *  Encode a CBOR byte string as a bstr_identifier, i.e.:
-     *  - A CBOR byte string with length 0, 2 or greater than 2 bytes remains as is
-     *  - A CBOR byte string with length 1 byte becomes a CBOR integer, with
-     *    value the byte-encoded integer value from the byte string - 24
-     * @param byteString   The CBOR byte string to encode as bstr_identifier
-     * @return  the bstr_identifier, as a CBOR byte string or a CBOR integer
-     */
-	public static CBORObject encodeToBstrIdentifier (CBORObject byteString) {
-		
-		if(byteString.getType() != CBORType.ByteString)
-			return null;
-		
-		byte[] rawByteString = byteString.GetByteString();
-		
-		if (rawByteString.length == 1) {
-			int value = bytesToInt(rawByteString) - 24;
-			if (value >= -24 && value <= 23)
-				return CBORObject.FromObject(value);
-		}
-		
-		return byteString;
-		
-	}
-	
-    /**
-     *  Produce a CBOR byte string from a bstr_identifier, i.e.:
-     *  - If the bstr_identifier is a CBOR integer, take its value + 24 and encode the result as a 1-byte CBOR byte string
-     *  - If the bstr_identifier is a CBOR byte string with length 0, 2 or more than 2 bytes, return it as is
-     * @param inputObject   The CBOR object to convert back into a CBOR byte string
-     * @return  the CBOR byte string corresponding to the input bstr_identifier, or null in case of invalid input
-     */
-	public static CBORObject decodeFromBstrIdentifier (CBORObject inputObject) {
-		
-		if (inputObject == null ||  inputObject.getType() != CBORType.ByteString && inputObject.getType() != CBORType.Integer)
-			return null;
-		
-		if (inputObject.getType() == CBORType.ByteString) {
-			if(inputObject.GetByteString().length == 1) {
-				return null;
-			}
-			return inputObject;
-		}
-		
-		// The CBOR object is of Major Type "Integer"
-		int value = inputObject.AsInt32() + 24;
-		
-		if(value < 0 || value > 47)
-			return null;
-		
-		byte[] rawByteString = intToBytes(value);
-		return CBORObject.FromObject(rawByteString);
-		
-	}
-	
-    /**
      *  Compute the bitwise xor between two byte arrays of equal length
      * @param arg1   The first byte array
      * @param arg2   The second byte array
@@ -891,15 +836,44 @@ public class Util {
 	}
 	
     /**
-     * Build an ID_CRED using 'kid'
+     * Build an ID_CRED using 'cwt', with value a CWT as a CBOR array,
+     * or an Unprotected CWT Claim Set (UCCS) as a CBOR map
      *  
      * @param kid   The kid to use
      * @return The ID_CRED, as a CBOR map
      */
-	public static CBORObject buildIdCredKid(byte[] kid) {
+	public static CBORObject buildIdCredCWT(CBORObject cwt) {
 		
 		CBORObject idCred = CBORObject.NewMap();
-		idCred.Add(HeaderKeys.KID.AsCBOR(), kid);
+		idCred.Add(Constants.COSE_HEADER_PARAM_CWT, cwt);
+		return idCred;
+		
+	}
+	
+    /**
+     * Build an ID_CRED using 'kid2', with value a CBOR byte string
+     *  
+     * @param kid   The kid to use
+     * @return The ID_CRED, as a CBOR map
+     */
+	public static CBORObject buildIdCredKid2(byte[] kid) {
+		
+		CBORObject idCred = CBORObject.NewMap();
+		idCred.Add(Constants.COSE_HEADER_PARAM_KID2, kid);
+		return idCred;
+		
+	}
+	
+    /**
+     * Build an ID_CRED using 'kid2', with value a CBOR integer
+     *  
+     * @param kid   The kid to use
+     * @return The ID_CRED, as a CBOR map
+     */
+	public static CBORObject buildIdCredKid2(int kid) {
+		
+		CBORObject idCred = CBORObject.NewMap();
+		idCred.Add(Constants.COSE_HEADER_PARAM_KID2, kid);
 		return idCred;
 		
 	}

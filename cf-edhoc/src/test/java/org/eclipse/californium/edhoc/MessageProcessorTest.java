@@ -254,7 +254,7 @@ public class MessageProcessorTest {
 		
 		// Just for method compatibility; it is not used for EDHOC Message 1
 		byte[] idCredKid = new byte[] {(byte) 0x24};
-		CBORObject idCred = Util.buildIdCredKid(idCredKid);
+		CBORObject idCred = Util.buildIdCredKid2(idCredKid);
 		byte[] cred = Util.buildCredRawPublicKey(ltk, "");
 
 		// Set the applicability statement		
@@ -309,7 +309,7 @@ public class MessageProcessorTest {
 		
 		// Just for method compatibility; it is not used for EDHOC Message 1
 		byte[] idCredKid = new byte[] {(byte) 0x23};
-		CBORObject idCred = Util.buildIdCredKid(idCredKid);
+		CBORObject idCred = Util.buildIdCredKid2(idCredKid);
 		byte[] cred = Util.buildCredRawPublicKey(ltk, "");
 
 		// Set the applicability statement		
@@ -518,7 +518,7 @@ public class MessageProcessorTest {
 		
 		// ID_CRED_R for the identity key of the Responder
 		byte[] idCredKid = new byte[] {(byte) 0x05};
-		CBORObject idCredR = Util.buildIdCredKid(idCredKid);
+		CBORObject idCredR = Util.buildIdCredKid2(idCredKid);
 		
 		// CRED_R for the identity key of the Responder
 		byte[] credR = Util.buildCredRawPublicKey(identityKey, "");
@@ -614,7 +614,7 @@ public class MessageProcessorTest {
 		
 		// ID_CRED_R for the identity key of the Responder
 		byte[] idCredKid = new byte[] {(byte) 0x05};
-		CBORObject idCredR = Util.buildIdCredKid(idCredKid);
+		CBORObject idCredR = Util.buildIdCredKid2(idCredKid);
 		
 		// CRED_R for the identity key of the Responder
 		byte[] credR = Util.buildCredRawPublicKey(identityKey, "");
@@ -841,7 +841,7 @@ public class MessageProcessorTest {
 		
 		// ID_CRED_I for the identity key of the Initiator
 		byte[] idCredKid = new byte[] {(byte) 0x23};
-		CBORObject idCredI = Util.buildIdCredKid(idCredKid);
+		CBORObject idCredI = Util.buildIdCredKid2(idCredKid);
 		
 		// CRED_I for the identity key of the Initiator
 		byte[] credI = Util.buildCredRawPublicKey(identityKey, "");		
@@ -968,7 +968,7 @@ public class MessageProcessorTest {
 		
 		// ID_CRED_I for the identity key of the Initiator
 		byte[] idCredKid = new byte[] {(byte) 0x23};
-		CBORObject idCredI = Util.buildIdCredKid(idCredKid);
+		CBORObject idCredI = Util.buildIdCredKid2(idCredKid);
 		
 		// CRED_I for the identity key of the Initiator
 		byte[] credI = Util.buildCredRawPublicKey(identityKey, "");		
