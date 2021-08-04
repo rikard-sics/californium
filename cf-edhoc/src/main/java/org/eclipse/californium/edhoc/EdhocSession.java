@@ -36,7 +36,7 @@ public class EdhocSession {
 	private boolean initiator;
 	private boolean clientInitiated;
 	private int method;
-	private byte[] connectionId;
+	private CBORObject connectionId;
 	private OneKey longTermKey;
 	private CBORObject idCred;
 	private byte[] cred; // This is the serialization of a CBOR object
@@ -54,7 +54,7 @@ public class EdhocSession {
 	private int currentStep;
 	private int selectedCiphersuite;
 	
-	private byte[] peerConnectionId;
+	private CBORObject peerConnectionId;
 	private List<Integer> peerSupportedCiphersuites = null;
 	private CBORObject peerIdCred = null;
 	private OneKey peerLongTermPublicKey = null;
@@ -79,7 +79,7 @@ public class EdhocSession {
 	// EDHOC message_3 , to be used for building an EDHOC+OSCORE request
 	private byte[] message3 = null;
 	
-	public EdhocSession(boolean initiator, boolean clientInitiated, int method, byte[] connectionId, OneKey ltk,
+	public EdhocSession(boolean initiator, boolean clientInitiated, int method, CBORObject connectionId, OneKey ltk,
 						CBORObject idCred, byte[] cred, List<Integer> cipherSuites,
 						AppStatement appStatement, EDP edp) {
 		
@@ -156,7 +156,7 @@ public class EdhocSession {
 	/**
 	 * @return  the Connection Identifier of this peer
 	 */
-	public byte[] getConnectionId() {
+	public CBORObject getConnectionId() {
 		return this.connectionId;
 	}	
 	
@@ -291,14 +291,14 @@ public class EdhocSession {
 	 * Set the Connection Identifier of the other peer
 	 * @param peerId   the Connection Id of the other peer
 	 */
-	public void setPeerConnectionId(byte[] peerId) {
+	public void setPeerConnectionId(CBORObject peerId) {
 		this.peerConnectionId = peerId;
 	}
 
 	/**
 	 * @return  the Connection Identifier of the other peer
 	 */
-	public byte[] getPeerConnectionId() {
+	public CBORObject getPeerConnectionId() {
 		return this.peerConnectionId;
 	}
 	
@@ -676,33 +676,10 @@ public class EdhocSession {
 
 		byte[] oscoreId = null;
 		
-		if (edhocId.getType()== CBORType.Integer) {
-			
+		if (edhocId.getType() == CBORType.Integer && Util.isDeterministicCborInteger(edhocId) == true)
 			oscoreId = edhocId.EncodeToBytes();
-			
-			// Check compliancy with deterministic CBOR
-			switch (oscoreId.length) {
-				case 2:
-					if (edhocId.AsInt32() >= -24 || edhocId.AsInt32() <= 23)
-						oscoreId = null;
-					break;
-				case 3:
-					if (edhocId.AsInt32() >= -256 || edhocId.AsInt32() <= 255)
-						oscoreId = null;
-					break;
-				case 5:
-					if (edhocId.AsInt32() >= -65536 || edhocId.AsInt32() <= 65535)
-						oscoreId = null;
-					break;
-				case 9:
-					if (edhocId.AsInt64Value() >= -4294967296L || edhocId.AsInt64Value() <= 4294967295L)
-						oscoreId = null;
-					break;
-			}
-
-		}
 		
-		if (edhocId.getType()== CBORType.ByteString)
+		if (edhocId.getType() == CBORType.ByteString)
 			oscoreId = edhocId.GetByteString();
 		
 		return oscoreId;
@@ -723,7 +700,7 @@ public class EdhocSession {
 		int oscoreIdLength = oscoreId.length;
 		
 		if (oscoreIdLength == 0) {
-			// The EDHOC Connection identifier is a CBOR byte string
+			// The EDHOC Connection identifier is the empty CBOR byte string
 			byte[] emptyArray = new byte[0];
 			edhocId = CBORObject.FromObject(emptyArray);
 		}
@@ -742,49 +719,61 @@ public class EdhocSession {
 			int value = Util.bytesToInt(selection);
 			
 			switch (oscoreIdLength) {
-				case 1: // (1+0) CBOR integer
-					if ( (value >= 0 && value <= 23) ||  // 0x00-0x17 or 0x20-0x37
-						 (value >= 32 && value <= 55) ) {
+				case 1: // Possibly a (1+0) CBOR integer
+					if ( (value >= 0 && value <= 23) || (value >= 32 && value <= 55) ) {
+						// 0x00-0x17 or 0x20-0x37
+						
 						edhocId = CBORObject.DecodeFromBytes(oscoreId);
 						useInteger = true; // The EDHOC Connection identifier can be a CBOR integer
 					}
 					break;
-				case 2: // (1+1) CBOR integer
-					if (value == 24 || value == 56) { // 0x18 or 0x38
+				case 2: // Possibly a (1+1) CBOR integer
+					if (value == 24 || value == 56) {
+						// 0x18 or 0x38
+						
 						edhocId = CBORObject.DecodeFromBytes(oscoreId);
 						
 						// Comply with deterministic CBOR
 						// Values -24 ... 23 must rather be encoded as a (1+0) CBOR integer
+						
 						if (edhocId.AsInt32() < -24 || edhocId.AsInt32() > 23)
 							useInteger = true; // The EDHOC Connection identifier can be a CBOR integer
 					}
 					break;
-				case 3: // (1+2) CBOR integer
-					if (value == 25 || value == 57) { // 0x19 or 0x39
+				case 3: // Possibly a (1+2) CBOR integer
+					if (value == 25 || value == 57) {
+						// 0x19 or 0x39
+						
 						edhocId = CBORObject.DecodeFromBytes(oscoreId);
 						
 						// Comply with deterministic CBOR
 						// Values -24 ... 23 must rather be encoded as a (1+0) CBOR integer
 						// Values -256 ... 255 must rather be encoded as a (1+1) CBOR integer
+						
 						if (edhocId.AsInt32() < -256 || edhocId.AsInt32() > 255)
 							useInteger = true; // The EDHOC Connection identifier can be a CBOR integer
 					}
 					break;
-				case 5: // (1+4) CBOR integer
-					if (value == 26 || value == 58) { // 0x1A or 0x3A
+				case 5: // Possibly a (1+4) CBOR integer
+					if (value == 26 || value == 58) {
+						// 0x1A or 0x3A
+						
 						edhocId = CBORObject.DecodeFromBytes(oscoreId);
 						
 						// Comply with deterministic CBOR
 						// Values -24 ... 23 must rather be encoded as a (1+0) CBOR integer
 						// Values -256 ... 255 must rather be encoded as a (1+1) CBOR integer
 						// Values -65536 ... 65535 must be encoded as a (1+2) CBOR integer
+						
 						if (edhocId.AsInt32() < -65536 || edhocId.AsInt32() > 65535)
 							useInteger = true; // The EDHOC Connection identifier can be a CBOR integer
 					}
 					break;
 				
-				case 9: // (1+8) CBOR integer
-					if (value == 27 || value == 59) { // 0x1B or 0x3B
+				case 9: // Possibly a (1+8) CBOR integer
+					if (value == 27 || value == 59) {
+						// 0x1B or 0x3B
+						
 						edhocId = CBORObject.DecodeFromBytes(oscoreId);
 						
 						// Comply with deterministic CBOR

@@ -41,9 +41,9 @@ public class EdhocEndpointInfo {
 	// The map label is C_X, i.e. the connection identifier offered to the other peer, as a CBOR byte string
 	private Map<CBORObject, EdhocSession> edhocSessions;
 	
-	// Each set of the list refers to a different size of Connection Identifier, i.e. C_ID_X to offer to the other peer.
-	// The element with index 0 includes as elements Recipient IDs with size 1 byte.
-	private List<Set<Integer>> usedConnectionIds;
+	// Each element is a used Connection Identifier offered to the other peers.
+	// Connection Identifiers are stored as CBOR integers (if numeric) or as CBOR byte strings (if binary)
+	private Set<CBORObject> usedConnectionIds;
 	
 	// List of supported ciphersuites
 	private List<Integer> supportedCiphersuites;
@@ -67,7 +67,7 @@ public class EdhocEndpointInfo {
 	public EdhocEndpointInfo(CBORObject idCred,
 							 byte[] cred, OneKey keyPair, Map<CBORObject, OneKey> peerPublicKeys,
 							 Map<CBORObject, CBORObject> peerCredentials, Map<CBORObject, EdhocSession> edhocSessions,
-							 List<Set<Integer>> usedConnectionIds, List<Integer> supportedCiphersuites, HashMapCtxDB db,
+							 Set<CBORObject> usedConnectionIds, List<Integer> supportedCiphersuites, HashMapCtxDB db,
 							 String uri, int OSCORE_REPLAY_WINDOW, Map<String, AppStatement> appStatements, EDP edp) {
 				
 		this.idCred = idCred;
@@ -147,7 +147,7 @@ public class EdhocEndpointInfo {
 	}
 	
 	// Return the set of used Connection Identifiers
-	public List<Set<Integer>> getUsedConnectionIds() {
+	public Set<CBORObject> getUsedConnectionIds() {
 		return usedConnectionIds;
 	}
 	

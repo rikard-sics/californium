@@ -69,7 +69,7 @@ public class EdhocStack extends BaseCoapStack {
 	 */
 	public EdhocStack(String tag, final NetworkConfig config, final Outbox outbox, final OSCoreCtxDB ctxDb,
 			Map<CBORObject, EdhocSession> edhocSessions, Map<CBORObject, OneKey> peerPublicKeys,
-			Map<CBORObject, CBORObject> peerCredentials, List<Set<Integer>> usedConnectionIds,
+			Map<CBORObject, CBORObject> peerCredentials, Set<CBORObject> usedConnectionIds,
 			int OSCORE_REPLAY_WINDOW) {
 		super(outbox);
 		ReliabilityLayer reliabilityLayer;

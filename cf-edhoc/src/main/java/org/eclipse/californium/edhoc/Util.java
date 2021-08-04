@@ -714,21 +714,16 @@ public class Util {
      * Note that, if this was an OSCORE Recipient ID, the Recipient ID itself will not be deallocated
      *  
      * @param connectionId   The Connection Identifier to release
-     * @param usedConnectionIds   The collection of already allocated Connection Identifiers
+     * @param usedConnectionIds   The set of already allocated Connection Identifiers
      */
-    public static void releaseConnectionId (byte[] connectionId, List<Set<Integer>> usedConnectionIds) {
+    public static void releaseConnectionId (CBORObject connectionId, Set<CBORObject> usedConnectionIds) {
     	
-    	if (connectionId == null || connectionId.length > 4)
+    	if (connectionId == null ||
+    		connectionId.getType() != CBORType.Integer ||
+    		connectionId.getType() != CBORType.ByteString)
     		return;
     	
-    	int connectionIdAsInt = bytesToInt(connectionId);
-    	
-    	if (connectionId.length != 0)
-    		usedConnectionIds.get(connectionId.length - 1).remove(connectionIdAsInt);
-    	// else set to false a to-be-introduced flag related to a zero-length connection ID
-    	/*
-    	 * 
-    	 */
+    	usedConnectionIds.remove(connectionId);
     	
     }
     
@@ -736,14 +731,14 @@ public class Util {
 	 * Remove an EDHOC session from the list of active sessions; release the used Connection Identifier; invalidate the session
 	 * @param session   The EDHOC session to invalidate
 	 * @param connectionIdentifier   The Connection Identifier used for the session to invalidate
-	 * @param edhocSessions   The list of active EDHOC sessions of the recipient
+	 * @param edhocSessions   The set of active EDHOC sessions of the recipient
      * @param usedConnectionIds   The collection of already allocated Connection Identifiers
 	 */
 	public static void purgeSession(EdhocSession session, CBORObject connectionIdentifier,
-			                        Map<CBORObject, EdhocSession> edhocSessions, List<Set<Integer>> usedConnectionIds) {
+			                        Map<CBORObject, EdhocSession> edhocSessions, Set<CBORObject> usedConnectionIds) {
 		if (session != null) {
 		    edhocSessions.remove(connectionIdentifier, session);
-		    Util.releaseConnectionId(connectionIdentifier.GetByteString(), usedConnectionIds);
+		    Util.releaseConnectionId(connectionIdentifier, usedConnectionIds);
 		    session.deleteTemporaryMaterial();
 		    session = null;
 		}
@@ -1085,6 +1080,45 @@ public class Util {
 				System.err.println("Invalid EC2 curve - Expected curve: P-256");
 				return false;
 			}
+				
+		}
+		
+		return true;
+		
+	}
+	
+    /**
+     * Check if a CBOR integer complies with deterministic CBOR encoding
+     *  
+     * @param obj   The CBOR integer to check
+     * @return True in case the CBOR integer complies with deterministic CBOR encoding, or false otherwise
+     */
+	public static boolean isDeterministicCborInteger (CBORObject obj) {
+		
+		if (obj.getType() != CBORType.Integer)
+			return false;
+		
+		byte[] objBytes = obj.EncodeToBytes();
+		
+		switch (objBytes.length) {
+			case 2:
+				if (obj.AsInt32() >= -24 || obj.AsInt32() <= 23)
+					return false;
+				break;
+			case 3:
+				if (obj.AsInt32() >= -256 || obj.AsInt32() <= 255)
+					return false;
+				break;
+			case 5:
+				if (obj.AsInt32() >= -65536 || obj.AsInt32() <= 65535)
+					return false;
+				break;
+			case 9:
+				if (obj.AsInt64Value() >= -4294967296L || obj.AsInt64Value() <= 4294967295L)
+					return false;
+				break;
+			default:
+				return false;
 				
 		}
 		
