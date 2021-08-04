@@ -29,10 +29,14 @@ public class AppStatement {
 	// Set to true if message_4 has to be sent by the Responder
 	private boolean useMessage4;
 	
-	public AppStatement(Set<Integer> authMethods, boolean useMessage4) {
+	// Set to true if used for keying OSCORE
+	private boolean usedForOSCORE;
+	
+	public AppStatement(Set<Integer> authMethods, boolean useMessage4, boolean usedForOSCORE) {
 		
 		this.authMethods = authMethods;
 		this.useMessage4 = useMessage4;
+		this.usedForOSCORE = usedForOSCORE;
 		
 	}
 	
@@ -45,6 +49,12 @@ public class AppStatement {
 	public boolean getUseMessage4() {
 		
 		return this.useMessage4;
+		
+	}
+	
+	public boolean getUsedForOSCORE() {
+		
+		return this.usedForOSCORE;
 		
 	}
 		
