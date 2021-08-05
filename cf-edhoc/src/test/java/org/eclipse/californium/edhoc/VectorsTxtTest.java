@@ -29,6 +29,7 @@ import java.util.Set;
 
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -208,13 +209,18 @@ public class VectorsTxtTest {
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
 			authMethods.add(i);
-		AppStatement appStatement = new AppStatement(authMethods, false, true);
+		boolean useMessage4 = false;
+		boolean usedForOSCORE = true;
+		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
 		
+		// Specify the database of OSCORE Security Contexts
+		HashMapCtxDB db = new HashMapCtxDB();
+		
 		EdhocSession session = new EdhocSession(initiator, true, methodCorr, connectionId, ltk,
-				                                idCred, cred, cipherSuites, appStatement, edp);
+				                                idCred, cred, cipherSuites, appStatement, edp, db);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = initiatorEphemeralPrivateList.get(index);
