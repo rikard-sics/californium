@@ -611,7 +611,13 @@ public class EdhocClient {
 		
 		// Add the new session to the list of existing EDHOC sessions
 		session.setCurrentStep(Constants.EDHOC_AFTER_M1);
-		session.setHashMessage1(nextPayload);
+		
+		// Compute and store the hash of EDHOC Message 1
+		// The first byte 0xf6 sent in the CoAP request must be skipped
+		byte[] hashInput = new byte[nextPayload.length - 1];
+		System.arraycopy(nextPayload, 1, hashInput, 0, hashInput.length);
+		session.setHashMessage1(hashInput);
+		
 		CBORObject connectionId = session.getConnectionId();
 		edhocSessions.put(connectionId, session);
 		
