@@ -192,7 +192,9 @@ public class EdhocClient {
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
 			authMethods.add(i);
-		AppStatement appStatement = new AppStatement(authMethods, false, true);
+		boolean useMessage4 = false;
+		boolean usedForOSCORE = true;
+		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE);
 		
 		appStatements.put(edhocURI, appStatement);
 		
@@ -591,7 +593,7 @@ public class EdhocClient {
 		EdhocSession session = MessageProcessor.createSessionAsInitiator(authenticationMethod,
                  edhocEndpointInfo.getKeyPair(), edhocEndpointInfo.getIdCred(), edhocEndpointInfo.getCred(),
                  edhocEndpointInfo.getSupportedCiphersuites(), edhocEndpointInfo.getUsedConnectionIds(),
-                 appStatement, edhocEndpointInfo.getEdp());
+                 appStatement, edhocEndpointInfo.getEdp(), db);
 		
 		// At this point, the initiator may overwrite the information in the EDHOC session about the supported ciphersuites
 		// and the selected ciphersuite, based on a previously received EDHOC Error Message
@@ -786,45 +788,49 @@ public class EdhocClient {
 			        
 			        System.out.println("Sent EDHOC Message 3\n");
 					
-			        /* Invoke the EDHOC-Exporter to produce OSCORE input material */
-			        byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(session);
-			        byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(session);
-			        if (debugPrint) {
-			        	Util.nicePrint("OSCORE Master Secret", masterSecret);
-			        	Util.nicePrint("OSCORE Master Salt", masterSalt);
+			        if (session.getApplicabilityStatement().getUsedForOSCORE() == true) {
+			        
+				        /* Invoke the EDHOC-Exporter to produce OSCORE input material */
+				        byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(session);
+				        byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(session);
+				        if (debugPrint) {
+				        	Util.nicePrint("OSCORE Master Secret", masterSecret);
+				        	Util.nicePrint("OSCORE Master Salt", masterSalt);
+				        }
+				        
+				        /* Setup the OSCORE Security Context */
+				        
+				        // The Sender ID of this peer is the EDHOC connection identifier of the other peer
+				        byte[] senderId = EdhocSession.edhocToOscoreId(session.getPeerConnectionId());
+				        
+				        int selectedCiphersuite = session.getSelectedCiphersuite();
+				        AlgorithmID alg = EdhocSession.getAppAEAD(selectedCiphersuite);
+				        AlgorithmID hkdf = EdhocSession.getAppHkdf(selectedCiphersuite);
+				        
+				        OSCoreCtx ctx = null;
+				        byte[] recipientId = EdhocSession.edhocToOscoreId(connectionId);
+				        try {
+							ctx = new OSCoreCtx(masterSecret, true, alg, senderId, 
+												recipientId, hkdf, OSCORE_REPLAY_WINDOW, masterSalt, null);
+						} catch (OSException e) {
+							System.err.println("Error when deriving the OSCORE Security Context "
+						                        + e.getMessage());
+							Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+							client.shutdown();
+							return;
+						}
+				        
+				        try {
+							db.addContext(edhocURI, ctx);
+						} catch (OSException e) {
+							System.err.println("Error when adding the OSCORE Security Context to the context database "
+						                        + e.getMessage());
+							Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+							client.shutdown();
+							return;
+						}
+			        
 			        }
-			        
-			        /* Setup the OSCORE Security Context */
-			        
-			        // The Sender ID of this peer is the EDHOC connection identifier of the other peer
-			        byte[] senderId = EdhocSession.edhocToOscoreId(session.getPeerConnectionId());
-			        
-			        int selectedCiphersuite = session.getSelectedCiphersuite();
-			        AlgorithmID alg = EdhocSession.getAppAEAD(selectedCiphersuite);
-			        AlgorithmID hkdf = EdhocSession.getAppHkdf(selectedCiphersuite);
-			        
-			        OSCoreCtx ctx = null;
-			        byte[] recipientId = EdhocSession.edhocToOscoreId(connectionId);
-			        try {
-						ctx = new OSCoreCtx(masterSecret, true, alg, senderId, 
-											recipientId, hkdf, OSCORE_REPLAY_WINDOW, masterSalt, null);
-					} catch (OSException e) {
-						System.err.println("Error when deriving the OSCORE Security Context "
-					                        + e.getMessage());
-						Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
-						client.shutdown();
-						return;
-					}
-			        
-			        try {
-						db.addContext(edhocURI, ctx);
-					} catch (OSException e) {
-						System.err.println("Error when adding the OSCORE Security Context to the context database "
-					                        + e.getMessage());
-						Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
-						client.shutdown();
-						return;
-					}
 			        
 				}
 				else if (requestType == Constants.EDHOC_ERROR_MESSAGE) {
@@ -857,7 +863,8 @@ public class EdhocClient {
 					
 		        	// If EDHOC message_3 has to be combined with the first
 		        	// OSCORE-protected request include the EDHOC option in the request
-		        	if (OSCORE_EDHOC_COMBINED == true && requestType == Constants.EDHOC_MESSAGE_3) {
+		        	if (OSCORE_EDHOC_COMBINED == true && requestType == Constants.EDHOC_MESSAGE_3 &&
+		        		session.getApplicabilityStatement().getUsedForOSCORE() == true) {
 		        		
 		        		// The combined request cannot be used if the Responder has to send message_4
 		        		if (session.getApplicabilityStatement().getUseMessage4() == true) {
@@ -1104,7 +1111,8 @@ public class EdhocClient {
 		        }
 
 				// Send a request protected with the just established Security Context
-		        if (POST_EDHOC_EXCHANGE) {
+		        boolean usedForOSCORE = session.getApplicabilityStatement().getUsedForOSCORE();
+		        if (POST_EDHOC_EXCHANGE && usedForOSCORE == true) {
 					client = new CoapClient(helloWorldURI);
 					Request protectedRequest = Request.newGet();
 					CoapResponse protectedResponse = null;

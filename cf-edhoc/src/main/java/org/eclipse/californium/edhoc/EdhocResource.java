@@ -27,7 +27,9 @@ import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCtx;
+import org.eclipse.californium.oscore.OSCoreCtxDB;
 import org.eclipse.californium.oscore.OSException;
 
 import com.upokecenter.cbor.CBORObject;
@@ -66,7 +68,7 @@ class EdhocResource extends CoapResource {
 	public void handlePOST(CoapExchange exchange) {
 		
 		byte[] nextMessage = new byte[] {};
-		
+				
 		// Retrieve the applicability statement to use
 		AppStatement appStatement = edhocEndpointInfo.getAppStatements().get(exchange.advanced().getRequest().getURI());
 		
@@ -82,7 +84,7 @@ class EdhocResource extends CoapResource {
 			return;
 			
 		}
-
+		
 		byte[] message = exchange.getRequestPayload();
 		
 		if ((message == null && !exchange.getRequestOptions().hasContentFormat()) ||
@@ -190,7 +192,8 @@ class EdhocResource extends CoapResource {
 																    edhocEndpointInfo.getCred(),
 																    edhocEndpointInfo.getSupportedCiphersuites(),
 																    edhocEndpointInfo.getUsedConnectionIds(),
-																    appStatement, edhocEndpointInfo.getEdp());
+																    appStatement, edhocEndpointInfo.getEdp(),
+																    edhocEndpointInfo.getOscoreDb());
 				
 				// Compute the EDHOC Message 2
 				nextMessage = MessageProcessor.writeMessage2(session, ead2);
@@ -199,7 +202,7 @@ class EdhocResource extends CoapResource {
 				
 				// Deallocate the assigned Connection Identifier for this peer
 				if (nextMessage == null || session.getCurrentStep() != Constants.EDHOC_BEFORE_M2) {
-					Util.releaseConnectionId(connectionId, edhocEndpointInfo.getUsedConnectionIds());
+					Util.releaseConnectionId(connectionId, edhocEndpointInfo.getUsedConnectionIds(), session.getOscoreDb());
 					session.deleteTemporaryMaterial();
 					session = null;
 					
@@ -266,7 +269,9 @@ class EdhocResource extends CoapResource {
 						// The reading of EDHOC Message 1 was successful, but the writing of EDHOC Message 2 was not
 						
 						// The session was created, but not added to the list of EDHOC sessions
-						Util.releaseConnectionId(session.getConnectionId(), edhocEndpointInfo.getUsedConnectionIds());
+						Util.releaseConnectionId(session.getConnectionId(),
+								                 edhocEndpointInfo.getUsedConnectionIds(),
+								                 session.getOscoreDb());
 						session.deleteTemporaryMaterial();
 						session = null;
 					}
@@ -368,49 +373,52 @@ class EdhocResource extends CoapResource {
 						return;
 				}
 		        
-		        /* Invoke the EDHOC-Exporter to produce OSCORE input material */
-		        byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(mySession);
-		        byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(mySession);
-		        if (debugPrint) {
-		        	Util.nicePrint("OSCORE Master Secret", masterSecret);
-		        	Util.nicePrint("OSCORE Master Salt", masterSalt);
-		        }
+				if (mySession.getApplicabilityStatement().getUsedForOSCORE() == true) {
+			        /* Invoke the EDHOC-Exporter to produce OSCORE input material */
+			        byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(mySession);
+			        byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(mySession);
+			        if (debugPrint) {
+			        	Util.nicePrint("OSCORE Master Secret", masterSecret);
+			        	Util.nicePrint("OSCORE Master Salt", masterSalt);
+			        }
+			        
+			        /* Setup the OSCORE Security Context */
+			        
+			        // The Sender ID of this peer is the EDHOC connection identifier of the other peer
+			        byte[] senderId = EdhocSession.edhocToOscoreId(mySession.getPeerConnectionId());
+			        
+			        // The Recipient ID of this peer is the EDHOC connection identifier of this peer
+			        byte[] recipientId = EdhocSession.edhocToOscoreId(mySession.getConnectionId());
+			        
+			        int selectedCiphersuite = mySession.getSelectedCiphersuite();
+			        AlgorithmID alg = EdhocSession.getAppAEAD(selectedCiphersuite);
+			        AlgorithmID hkdf = EdhocSession.getAppHkdf(selectedCiphersuite);
+			        
+			        OSCoreCtx ctx = null;
+			        try {
+						ctx = new OSCoreCtx(masterSecret, false, alg, senderId, 
+											recipientId, hkdf, edhocEndpointInfo.getOscoreReplayWindow(), masterSalt, null);
+					} catch (OSException e) {
+						System.err.println("Error when deriving the OSCORE Security Context " + e.getMessage());						
+						Util.purgeSession(mySession,
+										  CBORObject.FromObject(mySession.getConnectionId()),
+										  edhocEndpointInfo.getEdhocSessions(),
+										  edhocEndpointInfo.getUsedConnectionIds());
+						return;
+					}
+			        
+			        try {
+			        	edhocEndpointInfo.getOscoreDb().addContext(edhocEndpointInfo.getUri(), ctx);
+					} catch (OSException e) {
+						System.err.println("Error when adding the OSCORE Security Context to the context database " + e.getMessage());							
+						Util.purgeSession(mySession,
+										  CBORObject.FromObject(mySession.getConnectionId()),
+										  edhocEndpointInfo.getEdhocSessions(),
+										  edhocEndpointInfo.getUsedConnectionIds());
+						return;
+					}
 		        
-		        /* Setup the OSCORE Security Context */
-		        
-		        // The Sender ID of this peer is the EDHOC connection identifier of the other peer
-		        byte[] senderId = EdhocSession.edhocToOscoreId(mySession.getPeerConnectionId());
-		        
-		        // The Recipient ID of this peer is the EDHOC connection identifier of this peer
-		        byte[] recipientId = EdhocSession.edhocToOscoreId(mySession.getConnectionId());
-		        
-		        int selectedCiphersuite = mySession.getSelectedCiphersuite();
-		        AlgorithmID alg = EdhocSession.getAppAEAD(selectedCiphersuite);
-		        AlgorithmID hkdf = EdhocSession.getAppHkdf(selectedCiphersuite);
-		        
-		        OSCoreCtx ctx = null;
-		        try {
-					ctx = new OSCoreCtx(masterSecret, false, alg, senderId, 
-										recipientId, hkdf, edhocEndpointInfo.getOscoreReplayWindow(), masterSalt, null);
-				} catch (OSException e) {
-					System.err.println("Error when deriving the OSCORE Security Context " + e.getMessage());						
-					Util.purgeSession(mySession,
-									  CBORObject.FromObject(mySession.getConnectionId()),
-									  edhocEndpointInfo.getEdhocSessions(),
-									  edhocEndpointInfo.getUsedConnectionIds());
-					return;
 				}
-		        
-		        try {
-		        	edhocEndpointInfo.getOscoreDb().addContext(edhocEndpointInfo.getUri(), ctx);
-				} catch (OSException e) {
-					System.err.println("Error when adding the OSCORE Security Context to the context database " + e.getMessage());							
-					Util.purgeSession(mySession,
-									  CBORObject.FromObject(mySession.getConnectionId()),
-									  edhocEndpointInfo.getEdhocSessions(),
-									  edhocEndpointInfo.getUsedConnectionIds());
-					return;
-				}			        			        
 		        
 		        // Prepare the response to send back
 		        Response myResponse = new Response(ResponseCode.CHANGED);
