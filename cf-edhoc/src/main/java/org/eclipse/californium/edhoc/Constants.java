@@ -114,24 +114,32 @@ public static final int EDHOC_AUTH_METHOD_3 = 3;
 /**
  * EDHOC cipher suites
  * 
+ * - EDHOC AEAD algorithm
+ * - EDHOC hash algorithm
+ * - EDHOC MAC length in bytes (Static DH)
+ * - EDHOC key exchange algorithm (ECDH curve)
+ * - EDHOC signature algorithm
+ * - Application AEAD algorithm 
+ * - Application hash algorithm 
+ * 
  * Value: 0
- * Array: 10, -16, 4, -8, 10, -16
- * Desc: AES-CCM-16-64-128, SHA-256, X25519, EdDSA,
+ * Array: 10, -16, 8, 4, -8, 10, -16
+ * Desc: AES-CCM-16-64-128, SHA-256, 8, X25519, EdDSA,
  *       AES-CCM-16-64-128, SHA-256
    
  * Value: 1
- * Array: 30, -16, 4, -8, 10, -16
- * Desc: AES-CCM-16-128-128, SHA-256, X25519, EdDSA,
+ * Array: 30, -16, 16 ,4, -8, 10, -16
+ * Desc: AES-CCM-16-128-128, SHA-256, 16, X25519, EdDSA,
  *       AES-CCM-16-64-128, SHA-256
 
  * Value: 2
- * Array: 10, -16, 1, -7, 10, -16
- * Desc: AES-CCM-16-64-128, SHA-256, P-256, ES256,
+ * Array: 10, -16, 8, 1, -7, 10, -16
+ * Desc: AES-CCM-16-64-128, SHA-256, 8, P-256, ES256,
  *       AES-CCM-16-64-128, SHA-256
 
  * Value: 3
- * Array: 30, -16, 1, -7, 10, -16
- * Desc: AES-CCM-16-128-128, SHA-256, P-256, ES256,
+ * Array: 30, -16, 16, 1, -7, 10, -16
+ * Desc: AES-CCM-16-128-128, SHA-256, 16, P-256, ES256,
  *       AES-CCM-16-64-128, SHA-256
  * 
  */

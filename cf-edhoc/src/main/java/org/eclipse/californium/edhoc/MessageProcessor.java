@@ -714,6 +714,15 @@ public class MessageProcessor {
 			        responseCode = ResponseCode.BAD_REQUEST;
 			        error = true;
 			}
+			if (error == false && session.getApplicabilityStatement().getUsedForOSCORE() == true) {
+				byte[] recipientId = EdhocSession.edhocToOscoreId(session.getConnectionId());
+				byte[] senderId = EdhocSession.edhocToOscoreId(cR);
+				if (Arrays.equals(recipientId, senderId)) {
+			        errMsg = new String("C_I and C_R cannot be equivalent and yield the same OSCORE Sender/Recipient ID");
+			        responseCode = ResponseCode.BAD_REQUEST;
+			        error = true;
+				}
+			}
 			if (error == false) {
 				session.setPeerConnectionId(cR);
 			}
@@ -2650,9 +2659,9 @@ public class MessageProcessor {
 		CBORObject connectionId = null;
 		HashMapCtxDB oscoreDB = (appStatement.getUsedForOSCORE() == true) ? db : null;
 		
-		// connectionId = Util.getConnectionId(usedConnectionIds, oscoreDB);
+		connectionId = Util.getConnectionId(usedConnectionIds, oscoreDB, null);
 		// Forced for testing
-		connectionId = CBORObject.FromObject(new byte[] {(byte) 0x1c});
+		// connectionId = CBORObject.FromObject(new byte[] {(byte) 0x1c});
 		
 		usedConnectionIds.add(connectionId);
         EdhocSession mySession = new EdhocSession(true, true, method, connectionId, keyPair,
@@ -2719,9 +2728,9 @@ public class MessageProcessor {
 		CBORObject connectionId = null;
 		HashMapCtxDB oscoreDB = (appStatement.getUsedForOSCORE() == true) ? db : null;
 		
-		// connectionId = Util.getConnectionId(usedConnectionIds, oscoreDB);
+		connectionId = Util.getConnectionId(usedConnectionIds, oscoreDB, cI);
 		// Forced for testing
-		connectionId = CBORObject.FromObject(new byte[] {(byte) 0x1d});
+		// connectionId = CBORObject.FromObject(new byte[] {(byte) 0x1d});
 		
 		usedConnectionIds.add(connectionId);
 		EdhocSession mySession = new EdhocSession(false, isReq, method, connectionId, keyPair,

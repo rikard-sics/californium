@@ -27,6 +27,7 @@ import java.net.URISyntaxException;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -809,6 +810,13 @@ public class EdhocClient {
 				        
 				        OSCoreCtx ctx = null;
 				        byte[] recipientId = EdhocSession.edhocToOscoreId(connectionId);
+				        if (Arrays.equals(senderId, recipientId)) {
+							System.err.println("Error: the Sender ID coincides with the Recipient ID " +
+												Utils.toHexString(senderId));
+							Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+							client.shutdown();
+							return;
+				        }
 				        try {
 							ctx = new OSCoreCtx(masterSecret, true, alg, senderId, 
 												recipientId, hkdf, OSCORE_REPLAY_WINDOW, masterSalt, null);
