@@ -2754,7 +2754,11 @@ public class MessageProcessor {
 		mySession.setPeerEphemeralPublicKey(peerEphemeralKey);
 				
 		// Compute and store the hash of EDHOC Message 1
-		mySession.setHashMessage1(message1);
+		// If it came as a CoAP request, the first received byte 0xf6 must be skipped
+		int offset = (isReq == true) ? 1 : 0;
+		byte[] hashInput = new byte[message1.length - offset];
+		System.arraycopy(message1, offset, hashInput, 0, hashInput.length);
+		mySession.setHashMessage1(hashInput);
 		
 		return mySession;
 		
