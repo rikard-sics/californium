@@ -20,9 +20,11 @@
 package org.eclipse.californium.edhoc;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.californium.core.CoapResource;
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.server.resources.CoapExchange;
@@ -367,9 +369,9 @@ class EdhocResource extends CoapResource {
 				}
 				if (mySession.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
 						System.err.println("Inconsistent state before sending EDHOC Message 3");							
-						Util.purgeSession(mySession, CBORObject.FromObject(mySession.getConnectionId()),
-																		   edhocEndpointInfo.getEdhocSessions(),
-																		   edhocEndpointInfo.getUsedConnectionIds());
+						Util.purgeSession(mySession, mySession.getConnectionId(),
+										  edhocEndpointInfo.getEdhocSessions(),
+										  edhocEndpointInfo.getUsedConnectionIds());
 						return;
 				}
 		        
@@ -390,6 +392,15 @@ class EdhocResource extends CoapResource {
 			        // The Recipient ID of this peer is the EDHOC connection identifier of this peer
 			        byte[] recipientId = EdhocSession.edhocToOscoreId(mySession.getConnectionId());
 			        
+			        if (Arrays.equals(senderId, recipientId)) {
+						System.err.println("Error: the Sender ID coincides with the Recipient ID " +
+											Utils.toHexString(senderId));
+						Util.purgeSession(mySession, mySession.getConnectionId(),
+										  edhocEndpointInfo.getEdhocSessions(),
+										  edhocEndpointInfo.getUsedConnectionIds());
+						return;
+			        }
+			        
 			        int selectedCiphersuite = mySession.getSelectedCiphersuite();
 			        AlgorithmID alg = EdhocSession.getAppAEAD(selectedCiphersuite);
 			        AlgorithmID hkdf = EdhocSession.getAppHkdf(selectedCiphersuite);
@@ -400,8 +411,7 @@ class EdhocResource extends CoapResource {
 											recipientId, hkdf, edhocEndpointInfo.getOscoreReplayWindow(), masterSalt, null);
 					} catch (OSException e) {
 						System.err.println("Error when deriving the OSCORE Security Context " + e.getMessage());						
-						Util.purgeSession(mySession,
-										  CBORObject.FromObject(mySession.getConnectionId()),
+						Util.purgeSession(mySession, mySession.getConnectionId(),
 										  edhocEndpointInfo.getEdhocSessions(),
 										  edhocEndpointInfo.getUsedConnectionIds());
 						return;
@@ -411,8 +421,7 @@ class EdhocResource extends CoapResource {
 			        	edhocEndpointInfo.getOscoreDb().addContext(edhocEndpointInfo.getUri(), ctx);
 					} catch (OSException e) {
 						System.err.println("Error when adding the OSCORE Security Context to the context database " + e.getMessage());							
-						Util.purgeSession(mySession,
-										  CBORObject.FromObject(mySession.getConnectionId()),
+						Util.purgeSession(mySession, mySession.getConnectionId(),
 										  edhocEndpointInfo.getEdhocSessions(),
 										  edhocEndpointInfo.getUsedConnectionIds());
 						return;
@@ -451,9 +460,9 @@ class EdhocResource extends CoapResource {
 					// Deallocate the assigned Connection Identifier for this peer
 					if (nextMessage == null || mySession.getCurrentStep() != Constants.EDHOC_AFTER_M4) {
 						System.err.println("Inconsistent state before sending EDHOC Message 4");
-						Util.purgeSession(mySession, CBORObject.FromObject(connectionId),
-																		   edhocEndpointInfo.getEdhocSessions(),
-																		   edhocEndpointInfo.getUsedConnectionIds());
+						Util.purgeSession(mySession, connectionId,
+										  edhocEndpointInfo.getEdhocSessions(),
+										  edhocEndpointInfo.getUsedConnectionIds());
 						return;
 					}
 					
