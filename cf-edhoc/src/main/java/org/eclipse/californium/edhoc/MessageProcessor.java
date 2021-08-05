@@ -32,6 +32,8 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.oscore.HashMapCtxDB;
+import org.eclipse.californium.oscore.OSCoreCtxDB;
 
 import com.upokecenter.cbor.CBORException;
 import com.upokecenter.cbor.CBORObject;
@@ -2635,22 +2637,26 @@ public class MessageProcessor {
      * @param usedConnectionIds   The set of allocated Connection Identifiers for the Initiator
      * @param appStatement   The applicability statement used for this session
      * @param epd   The processor of External Authentication Data used for this session
+     * @param db   The database of OSCORE Security Contexts
      * @return  The newly created EDHOC session
      */
 	public static EdhocSession createSessionAsInitiator(int method, OneKey keyPair,
 												        CBORObject idCredI, byte[] credI,
 			  									        List<Integer> supportedCiphersuites,
 			  									        Set<CBORObject> usedConnectionIds,
-			  									        AppStatement appStatement, EDP edp) {
+			  									        AppStatement appStatement,
+			  									        EDP edp, HashMapCtxDB db) {
 		
-		//CBORObject connectionId = Util.getConnectionId(usedConnectionIds, null);
-				
+		CBORObject connectionId = null;
+		HashMapCtxDB oscoreDB = (appStatement.getUsedForOSCORE() == true) ? db : null;
+		
+		// connectionId = Util.getConnectionId(usedConnectionIds, oscoreDB);
 		// Forced for testing
-		CBORObject connectionId = CBORObject.FromObject(new byte[] {(byte) 0x1c});
-		usedConnectionIds.add(connectionId);
+		connectionId = CBORObject.FromObject(new byte[] {(byte) 0x1c});
 		
+		usedConnectionIds.add(connectionId);
         EdhocSession mySession = new EdhocSession(true, true, method, connectionId, keyPair,
-        										  idCredI, credI, supportedCiphersuites, appStatement, edp);
+        										  idCredI, credI, supportedCiphersuites, appStatement, edp, oscoreDB);
 		
 		return mySession;
 		
@@ -2666,13 +2672,15 @@ public class MessageProcessor {
      * @param usedConnectionIds   The set of allocated Connection Identifiers for the Responder
      * @param appStatement   The applicability statement used for this session
      * @param epd   The processor of External Authentication Data used for this session
+     * @param db   The database of OSCORE Security Contexts
      * @return  The newly created EDHOC session
      */
 	public static EdhocSession createSessionAsResponder(byte[] message1, boolean isReq, OneKey keyPair,
 			                                            CBORObject idCredR, byte[] credR,
 			  									        List<Integer> supportedCiphersuites,
 			  									        Set<CBORObject> usedConnectionIds,
-			  									        AppStatement appStatement, EDP edp) {
+			  									        AppStatement appStatement,
+			  									        EDP edp, HashMapCtxDB db) {
 		
 		CBORObject[] objectListMessage1 = CBORObject.DecodeSequenceFromBytes(message1);
 		int index = -1;
@@ -2708,14 +2716,16 @@ public class MessageProcessor {
 		
 		// Create a new EDHOC session
 		
-		//CBORObject connectionId = Util.getConnectionId(usedConnectionIds, null);
+		CBORObject connectionId = null;
+		HashMapCtxDB oscoreDB = (appStatement.getUsedForOSCORE() == true) ? db : null;
 		
+		// connectionId = Util.getConnectionId(usedConnectionIds, oscoreDB);
 		// Forced for testing
-		CBORObject connectionId = CBORObject.FromObject(new byte[] {(byte) 0x1d});
-		usedConnectionIds.add(connectionId);
+		connectionId = CBORObject.FromObject(new byte[] {(byte) 0x1d});
 		
+		usedConnectionIds.add(connectionId);
 		EdhocSession mySession = new EdhocSession(false, isReq, method, connectionId, keyPair,
-												  idCredR, credR, supportedCiphersuites, appStatement, edp);
+												  idCredR, credR, supportedCiphersuites, appStatement, edp, oscoreDB);
 		
 		// Set the selected cipher suite
 		mySession.setSelectedCiphersuite(selectedCipherSuite);

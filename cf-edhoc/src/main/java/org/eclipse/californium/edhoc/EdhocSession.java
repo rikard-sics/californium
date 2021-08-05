@@ -25,6 +25,8 @@ import java.util.List;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.oscore.HashMapCtxDB;
+import org.eclipse.californium.oscore.OSCoreCtxDB;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
@@ -50,6 +52,11 @@ public class EdhocSession {
 	// also by the EDHOC layer, when receiving an EDHOC+OSCORE request
 	// targeting a different resource than an EDHOC resource. 
 	private EDP edp;
+	
+	// The database of OSCORE Security Contexts.
+	// It can be null, if the EDHOC session has occurred
+	// with an EDHOC resource not used to key OSCORE
+	private HashMapCtxDB db;
 	
 	private int currentStep;
 	private int selectedCiphersuite;
@@ -81,7 +88,7 @@ public class EdhocSession {
 	
 	public EdhocSession(boolean initiator, boolean clientInitiated, int method, CBORObject connectionId, OneKey ltk,
 						CBORObject idCred, byte[] cred, List<Integer> cipherSuites,
-						AppStatement appStatement, EDP edp) {
+						AppStatement appStatement, EDP edp, HashMapCtxDB db) {
 		
 		this.firstUse = true;
 		
@@ -95,6 +102,7 @@ public class EdhocSession {
 		this.supportedCiphersuites = cipherSuites;
 		this.appStatement = appStatement;
 		this.edp = edp;
+		this.db = db;
 		
 		this.selectedCiphersuite = supportedCiphersuites.get(0);		
 		setEphemeralKey();
@@ -255,6 +263,13 @@ public class EdhocSession {
 		
 		return this.edp;
 		
+	}
+	
+	/**
+	 * @return  the database of OSCORE Security Contexts
+	 */
+	public HashMapCtxDB getOscoreDb() {
+		return this.db;
 	}
 	
 	/**

@@ -131,7 +131,7 @@ public class EdhocEndpointInfo {
 		return OSCORE_REPLAY_WINDOW;
 	}
 	
-	// Return the database of OSCORE Security Context
+	// Return the database of OSCORE Security Contexts
 	public HashMapCtxDB getOscoreDb() {
 		return db;
 	}

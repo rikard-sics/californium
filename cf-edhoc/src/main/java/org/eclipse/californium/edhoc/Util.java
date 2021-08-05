@@ -33,6 +33,9 @@ import org.eclipse.californium.cose.Message;
 import org.eclipse.californium.cose.MessageTag;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.cose.Sign1Message;
+import org.eclipse.californium.oscore.CoapOSException;
+import org.eclipse.californium.oscore.HashMapCtxDB;
+import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSCoreCtxDB;
 
 import com.upokecenter.cbor.CBORObject;
@@ -556,11 +559,11 @@ public class Util {
     /**
      * Get an available Connection Identifier to offer to the other peer
      *  
-     * @param usedConnectionIds   The collection of already allocated Connection Identifiers
+     * @param usedConnectionIds   The set of already allocated Connection Identifiers
      * @param db   The database of OSCORE security contexts when using EDHOC to key OSCORE, it can be null
      * @return   the newly allocated connection identifier, or null in case of errors
      */
-    public static byte[] getConnectionId (List<Set<Integer>> usedConnectionIds, OSCoreCtxDB db) {
+    public static CBORObject getConnectionId (Set<CBORObject> usedConnectionIds, OSCoreCtxDB db) {
     	
     	if (usedConnectionIds == null)
     		return null;
@@ -583,15 +586,19 @@ public class Util {
      * Actually allocate an available Connection Identifier to offer to the other peer
      * If EDHOC is used for keying OSCORE, Recipient IDs are used as Connect Identifiers
      *  
-     * @param usedConnectionIds   The collection of already allocated Connection Identifiers
+     * @param usedConnectionIds   The set of already allocated Connection Identifiers
      * @param db   The database of OSCORE security contexts when using EDHOC to key OSCORE, it can be null
      * @return   the newly allocated connection identifier, or null in case of errors
      */
-    private static byte[] allocateConnectionId(List<Set<Integer>> usedConnectionIds, OSCoreCtxDB db) {
+    private static CBORObject allocateConnectionId(Set<CBORObject> usedConnectionIds, OSCoreCtxDB db) {
     	
     	byte[] connectionId = null;
         boolean found = false;
     	
+        CBORObject obj = CBORObject.NewArray();
+        return obj;
+        
+        /*
     	int maxIdValue;
     	
         // Start with 1 byte as size of the Connection ID; try with up to 4 bytes in size        
@@ -651,6 +658,8 @@ public class Util {
         	return null;
         else
         	return connectionId;
+        
+        */
     	
     }
     
@@ -660,8 +669,9 @@ public class Util {
      *  
      * @param connectionId   The Connection Identifier to release
      * @param usedConnectionIds   The set of already allocated Connection Identifiers
+     * @param db   The database of OSCORE security contexts when using EDHOC to key OSCORE, it can be null
      */
-    public static void releaseConnectionId (CBORObject connectionId, Set<CBORObject> usedConnectionIds) {
+    public static void releaseConnectionId (CBORObject connectionId, Set<CBORObject> usedConnectionIds, OSCoreCtxDB db) {
     	
     	if (connectionId == null ||
     		connectionId.getType() != CBORType.Integer ||
@@ -669,6 +679,21 @@ public class Util {
     		return;
     	
     	usedConnectionIds.remove(connectionId);
+    	
+    	if (db != null) {
+    		byte[] recipientId = EdhocSession.edhocToOscoreId(connectionId);
+    		OSCoreCtx ctx = null;
+			try {
+				ctx = db.getContext(recipientId, null);
+			} catch (CoapOSException e) {
+				System.err.println("Found multiple OSCORE Security Contexts with the same Recipient ID " +
+								   Utils.bytesToHex(recipientId) + "\n" + e.getMessage());
+			}
+    		if (ctx != null) {
+    			db.removeContext(ctx);
+    		}
+    			
+    	}
     	
     }
     
@@ -683,7 +708,7 @@ public class Util {
 			                        Map<CBORObject, EdhocSession> edhocSessions, Set<CBORObject> usedConnectionIds) {
 		if (session != null) {
 		    edhocSessions.remove(connectionIdentifier, session);
-		    Util.releaseConnectionId(connectionIdentifier, usedConnectionIds);
+		    Util.releaseConnectionId(connectionIdentifier, usedConnectionIds, session.getOscoreDb());
 		    session.deleteTemporaryMaterial();
 		    session = null;
 		}
