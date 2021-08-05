@@ -148,7 +148,9 @@ public class EdhocServer extends CoapServer {
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++)
 			authMethods.add(i);
-		AppStatement appStatement = new AppStatement(authMethods, false, true);
+		boolean useMessage4 = false;
+		boolean usedForOSCORE = true;
+		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE);
 		
 		appStatements.put(uriLocal + "/.well-known/edhoc", appStatement);
 		
