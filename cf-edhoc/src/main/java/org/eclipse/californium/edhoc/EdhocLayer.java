@@ -129,7 +129,7 @@ public class EdhocLayer extends AbstractLayer {
 			byte[] cI = ctx.getRecipientId();
 			
 			// Retrieve the EDHOC session associated to C_R and storing EDHOC message_3
-			EdhocSession session = this.edhocSessions.get(CBORObject.FromObject(cI));
+			EdhocSession session = this.edhocSessions.get(EdhocSession.oscoreToEdhocId(cI));
 			
 			// Consistency checks
 			if (session == null) {
@@ -250,7 +250,7 @@ public class EdhocLayer extends AbstractLayer {
 				Util.nicePrint("EDHOC+OSCORE: rebuilt EDHOC message_3", edhocMessage3);
 			}
 			
-			EdhocSession mySession = edhocSessions.get(CBORObject.FromObject(kid));
+			EdhocSession mySession = edhocSessions.get(EdhocSession.oscoreToEdhocId(kid));
 			
 			// Consistency checks
     		if (mySession == null) {
