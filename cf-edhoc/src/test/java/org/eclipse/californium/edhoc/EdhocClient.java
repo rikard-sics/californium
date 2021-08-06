@@ -342,9 +342,6 @@ public class EdhocClient {
 					Util.buildCredRawPublicKeyUCCS(keyPair, subjectName);
 					*/
 					
-					// OLD WAY, with a deterministic CBOR map containing a COSE Key
-					// cred = Util.buildCredRawPublicKey(keyPair, subjectName);
-					
 					if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
 						cred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a401022001215820cd4177ba62433375ede279b5e18e8b91bc3ed8f1e174474a26fc0edb44ea5373225820a0391de29c5c5badda610d4e301eaaa18422367722289cd18cbe6624e89b9cfd");
 					}
@@ -427,10 +424,7 @@ public class EdhocClient {
 					System.out.print("Peer ");
 					Util.buildCredRawPublicKeyUCCS(peerPublicKey, "");
 					*/
-					
-					// OLD WAY, with a deterministic CBOR map containing a COSE Key
-					// peerCred = Util.buildCredRawPublicKey(peerPublicKey, "");
-					
+										
 					if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
 						peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a4010220012158206f9702a66602d78f5e81bac1e0af01f8b52810c502e87ebb7c926c07426fd02f225820c8d33274c71c9b3ee57d842bbf2238b8283cb410eca216fb72a78ea7a870f800");
 					}
