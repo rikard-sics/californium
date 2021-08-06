@@ -57,13 +57,18 @@ public class MessageProcessorTest {
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
+		// - Supporting for the EDHOC+OSCORE request
+		// - Method for converting from OSCORE Recipient/Sender ID to EDHOC Connection Identifier
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
 			authMethods.add(i);
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE);
+		boolean supportCombinedRequest = false;
+		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
+		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
+													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		int methodCorr = 1;
 		
@@ -211,13 +216,18 @@ public class MessageProcessorTest {
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
+		// - Supporting for the EDHOC+OSCORE request
+		// - Method for converting from OSCORE Recipient/Sender ID to EDHOC Connection Identifier
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
 			authMethods.add(i);
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE);
+		boolean supportCombinedRequest = false;
+		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
+		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
+													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -268,16 +278,22 @@ public class MessageProcessorTest {
 		byte[] cred = Util.buildCredRawPublicKey(ltk, "");
 
 		// Set the applicability statement		
+		// Set the applicability statement
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
+		// - Supporting for the EDHOC+OSCORE request
+		// - Method for converting from OSCORE Recipient/Sender ID to EDHOC Connection Identifier
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
 			authMethods.add(i);
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE);
+		boolean supportCombinedRequest = false;
+		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
+		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
+													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -327,17 +343,22 @@ public class MessageProcessorTest {
 		CBORObject idCred = Util.buildIdCredKid2(idCredKid);
 		byte[] cred = Util.buildCredRawPublicKey(ltk, "");
 
-		// Set the applicability statement		
+		// Set the applicability statement
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
+		// - Supporting for the EDHOC+OSCORE request
+		// - Method for converting from OSCORE Recipient/Sender ID to EDHOC Connection Identifier
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
 			authMethods.add(i);
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE);
+		boolean supportCombinedRequest = false;
+		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
+		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
+													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -464,17 +485,22 @@ public class MessageProcessorTest {
 		
 		/* Set up the session to use */
 		
-		// Set the applicability statement		
+		// Set the applicability statement
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
+		// - Supporting for the EDHOC+OSCORE request
+		// - Method for converting from OSCORE Recipient/Sender ID to EDHOC Connection Identifier
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
 			authMethods.add(i);
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE);
+		boolean supportCombinedRequest = false;
+		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
+		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
+													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -566,17 +592,22 @@ public class MessageProcessorTest {
 		
 		/* Set up the session to use */
 		
-		// Set the applicability statement		
+		// Set the applicability statement
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
+		// - Supporting for the EDHOC+OSCORE request
+		// - Method for converting from OSCORE Recipient/Sender ID to EDHOC Connection Identifier
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
 			authMethods.add(i);
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE);
+		boolean supportCombinedRequest = false;
+		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
+		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
+													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -671,13 +702,18 @@ public class MessageProcessorTest {
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
+		// - Supporting for the EDHOC+OSCORE request
+		// - Method for converting from OSCORE Recipient/Sender ID to EDHOC Connection Identifier
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
 			authMethods.add(i);
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE);
+		boolean supportCombinedRequest = false;
+		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
+		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
+													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -779,17 +815,22 @@ public class MessageProcessorTest {
 		
 		/* Set up the session to use */
 		
-		// Set the applicability statement		
+		// Set the applicability statement
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
+		// - Supporting for the EDHOC+OSCORE request
+		// - Method for converting from OSCORE Recipient/Sender ID to EDHOC Connection Identifier
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
 			authMethods.add(i);
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE);
+		boolean supportCombinedRequest = false;
+		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
+		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
+													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -916,13 +957,18 @@ public class MessageProcessorTest {
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
+		// - Supporting for the EDHOC+OSCORE request
+		// - Method for converting from OSCORE Recipient/Sender ID to EDHOC Connection Identifier
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
 			authMethods.add(i);
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE);
+		boolean supportCombinedRequest = false;
+		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
+		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
+													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -1043,17 +1089,22 @@ public class MessageProcessorTest {
 		
 		/* Set up the session to use */
 		
-		// Set the applicability statement		
+		// Set the applicability statement
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
+		// - Supporting for the EDHOC+OSCORE request
+		// - Method for converting from OSCORE Recipient/Sender ID to EDHOC Connection Identifier
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
 			authMethods.add(i);
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE);
+		boolean supportCombinedRequest = false;
+		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
+		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
+													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();

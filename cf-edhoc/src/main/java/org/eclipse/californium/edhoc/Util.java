@@ -1490,6 +1490,60 @@ public class Util {
 	}
 	
     /**
+     * Check if the serialization of a CBOR object corresponds to a CBOR integer
+     *  
+     * @param buffer   The serialization to check
+     * @return True in case the serialized CBOR object is a CBOR integer, or false otherwise
+     */
+	public static boolean isCborIntegerEncoding (byte[] buffer) {
+		
+		if (buffer == null || buffer.length == 0)
+			return false;
+		
+		int bufferLength = buffer.length;
+		
+		byte[] selection = new byte[1];
+		System.arraycopy(buffer, 0, selection, 0, 1);
+		int value = Util.bytesToInt(selection);
+		
+		switch (bufferLength) {
+			case 1: // Possibly a (1+0) CBOR integer
+				if ( (value >= 0 && value <= 23) || (value >= 32 && value <= 55) ) {
+					// 0x00-0x17 or 0x20-0x37
+					
+					return true;
+				}
+			case 2: // Possibly a (1+1) CBOR integer
+				if (value == 24 || value == 56) {
+					// 0x18 or 0x38
+					
+					return true;
+				}
+			case 3: // Possibly a (1+2) CBOR integer
+				if (value == 25 || value == 57) {
+					// 0x19 or 0x39
+					
+					return true;
+				}
+			case 5: // Possibly a (1+4) CBOR integer
+				if (value == 26 || value == 58) {
+					// 0x1A or 0x3A
+					
+					return true;
+				}
+			case 9: // Possibly a (1+8) CBOR integer
+				if (value == 27 || value == 59) {
+					// 0x1B or 0x3B
+					
+					return true;
+				}
+		}
+		
+		return false;
+		
+	}
+	
+    /**
      * Check if a CBOR integer complies with deterministic CBOR encoding
      *  
      * @param obj   The CBOR integer to check
