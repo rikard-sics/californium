@@ -451,6 +451,22 @@ public class MessageProcessor {
 				responseCode = ResponseCode.BAD_REQUEST;
 				error = true;
 		}
+		if (error == false && objectListRequest[index].getType() == CBORType.ByteString) {
+			
+			if (appStatement.getSupportCombinedRequest() == true ||
+			    appStatement.getConversionMethodOscoreToEdhoc() == Constants.CONVERSION_ID_CORE) {
+				
+				byte[] buffer = objectListRequest[index].GetByteString();
+				if (Util.isCborIntegerEncoding(buffer) == true) {
+					errMsg = new String("C_I does not comply with the method for converting from "
+							            + "OSCORE Recipient/Sender IDs to EDHOC Connection Identifiers");
+					responseCode = ResponseCode.BAD_REQUEST;
+					error = true;
+				}
+				
+			}
+			
+		}
 		if (error == false) {
 			cI = objectListRequest[index];
 		}
@@ -722,6 +738,22 @@ public class MessageProcessor {
 			        responseCode = ResponseCode.BAD_REQUEST;
 			        error = true;
 				}
+			}
+			if (error == false && objectListRequest[index].getType() == CBORType.ByteString) {
+				
+				if (session.getApplicabilityStatement().getSupportCombinedRequest() == true ||
+					session.getApplicabilityStatement().getConversionMethodOscoreToEdhoc() == Constants.CONVERSION_ID_CORE) {
+					
+					byte[] buffer = objectListRequest[index].GetByteString();
+					if (Util.isCborIntegerEncoding(buffer) == true) {
+						errMsg = new String("C_R does not comply with the method for converting from "
+								            + "OSCORE Recipient/Sender IDs to EDHOC Connection Identifiers");
+						responseCode = ResponseCode.BAD_REQUEST;
+						error = true;
+					}
+					
+				}
+				
 			}
 			if (error == false) {
 				session.setPeerConnectionId(cR);
