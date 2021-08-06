@@ -268,7 +268,21 @@ public class EdhocLayer extends AbstractLayer {
 				System.err.println("Retrieved inconsistent EDHOC session when receiving an EDHOC+OSCORE request");
 				return;
 			}
-    		    		
+    		   
+    		// This EDHOC resource does not support the use of the EDHOC+OSCORE request
+    		if (mySession.getApplicabilityStatement().getSupportCombinedRequest() == false) {
+				System.err.println("This EDHOC resource does not support the use of the EDHOC+OSCORE request\n");
+    			Util.purgeSession(mySession, CBORObject.FromObject(kid), edhocSessions, usedConnectionIds);
+    			
+    			String errMsg = new String("This EDHOC resource does not support the use of the EDHOC+OSCORE request");
+    			byte[] nextMessage = MessageProcessor.writeErrorMessage(Constants.ERR_CODE_UNSPECIFIED,
+    																	Constants.EDHOC_MESSAGE_3,
+												                        false, null, errMsg, null);
+				ResponseCode responseCode = ResponseCode.BAD_REQUEST;
+    			sendErrorMessage(exchange, nextMessage, responseCode);
+            	return;
+    		}
+			
     		// The combined request cannot be used if the Responder has to send message_4
     		if (mySession.getApplicabilityStatement().getUseMessage4() == true) {
 				System.err.println("Cannot receive the combined EDHOC+OSCORE request if message_4 is expected\n");
