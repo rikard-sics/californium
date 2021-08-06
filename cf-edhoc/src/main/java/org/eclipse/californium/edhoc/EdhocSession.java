@@ -727,80 +727,54 @@ public class EdhocSession {
 		else {
 			boolean useInteger = false;
 			
-			// Check the first byte of the OSCORE ID, to determine
-			// if it happens to be the encoding of a CBOR integer
-			byte[] selection = new byte[1];		
-			System.arraycopy(oscoreId, 0, selection, 0, 1);
-			int value = Util.bytesToInt(selection);
+			// Check the first byte of the OSCORE ID, to determine if it happens to be the encoding of a CBOR integer
+			boolean isIntegerEncoding = Util.isCborIntegerEncoding(oscoreId);
 			
-			switch (oscoreIdLength) {
-				case 1: // Possibly a (1+0) CBOR integer
-					if ( (value >= 0 && value <= 23) || (value >= 32 && value <= 55) ) {
-						// 0x00-0x17 or 0x20-0x37
-						
-						edhocId = CBORObject.DecodeFromBytes(oscoreId);
+			if (isIntegerEncoding == true) {
+				edhocId = CBORObject.DecodeFromBytes(oscoreId);
+				
+				switch (oscoreIdLength) {
+					case 1: // (1+0) CBOR integer
 						useInteger = true; // The EDHOC Connection identifier can be a CBOR integer
-					}
-					break;
-				case 2: // Possibly a (1+1) CBOR integer
-					if (value == 24 || value == 56) {
-						// 0x18 or 0x38
 						
-						edhocId = CBORObject.DecodeFromBytes(oscoreId);
-						
+						break;
+					case 2: // (1+1) CBOR integer	
 						// Comply with deterministic CBOR
 						// Values -24 ... 23 must rather be encoded as a (1+0) CBOR integer
-						
 						if (edhocId.AsInt32() < -24 || edhocId.AsInt32() > 23)
 							useInteger = true; // The EDHOC Connection identifier can be a CBOR integer
-					}
-					break;
-				case 3: // Possibly a (1+2) CBOR integer
-					if (value == 25 || value == 57) {
-						// 0x19 or 0x39
 						
-						edhocId = CBORObject.DecodeFromBytes(oscoreId);
-						
+						break;
+					case 3: // (1+2) CBOR integer
 						// Comply with deterministic CBOR
 						// Values -24 ... 23 must rather be encoded as a (1+0) CBOR integer
-						// Values -256 ... 255 must rather be encoded as a (1+1) CBOR integer
-						
+						// Values -256 ... 255 must rather be encoded as a (1+1) CBOR integer	
 						if (edhocId.AsInt32() < -256 || edhocId.AsInt32() > 255)
 							useInteger = true; // The EDHOC Connection identifier can be a CBOR integer
-					}
-					break;
-				case 5: // Possibly a (1+4) CBOR integer
-					if (value == 26 || value == 58) {
-						// 0x1A or 0x3A
-						
-						edhocId = CBORObject.DecodeFromBytes(oscoreId);
-						
+					
+						break;
+					case 5: // (1+4) CBOR integer
 						// Comply with deterministic CBOR
 						// Values -24 ... 23 must rather be encoded as a (1+0) CBOR integer
 						// Values -256 ... 255 must rather be encoded as a (1+1) CBOR integer
-						// Values -65536 ... 65535 must be encoded as a (1+2) CBOR integer
-						
+						// Values -65536 ... 65535 must be encoded as a (1+2) CBOR integer							
 						if (edhocId.AsInt32() < -65536 || edhocId.AsInt32() > 65535)
 							useInteger = true; // The EDHOC Connection identifier can be a CBOR integer
-					}
-					break;
-				
-				case 9: // Possibly a (1+8) CBOR integer
-					if (value == 27 || value == 59) {
-						// 0x1B or 0x3B
-						
-						edhocId = CBORObject.DecodeFromBytes(oscoreId);
-						
+
+						break;
+					
+					case 9: // (1+8) CBOR integer
 						// Comply with deterministic CBOR
 						// Values -24 ... 23 must rather be encoded as a (1+0) CBOR integer
 						// Values -256 ... 255 must rather be encoded as a (1+1) CBOR integer
 						// Values -65536 ... 65535 must rather be encoded as a (1+2) CBOR integer
 						// Values -4294967296 ... 4294967295 must be encoded as a (1+4) CBOR integer
-						
 						if (edhocId.AsInt64Value() < -4294967296L || edhocId.AsInt32() > 4294967295L)
 							useInteger = true; // The EDHOC Connection identifier can be a CBOR integer
-					}
-					break;
+
+						break;
+				}
+			
 			}
 			
 			if (useInteger == false) {

@@ -144,13 +144,18 @@ public class EdhocServer extends CoapServer {
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
+		// - Supporting for the EDHOC+OSCORE request
+		// - Method for converting from OSCORE Recipient/Sender ID to EDHOC Connection Identifier
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
-		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++)
+		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
 			authMethods.add(i);
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE);
+		boolean supportCombinedRequest = true; // If set to true, it overrides the ID conversion method to CONVERSION_ID_CORE
+		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED; // Undefined yields using CONVERSION_ID_CORE
+		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
+													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		appStatements.put(uriLocal + "/.well-known/edhoc", appStatement);
 		

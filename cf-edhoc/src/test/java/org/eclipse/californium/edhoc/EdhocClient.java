@@ -134,6 +134,7 @@ public class EdhocClient {
 	private static final boolean POST_EDHOC_EXCHANGE = false;
 	
 	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
+	// Note: the applicability statement pertaining the EDHOC resource must first indicate support for the combined request 
 	private static final boolean OSCORE_EDHOC_COMBINED = false;
 	
 	// The collection of applicability statements - The lookup key is the full URI of the EDHOC resource
@@ -189,13 +190,18 @@ public class EdhocClient {
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
+		// - Supporting for the EDHOC+OSCORE request
+		// - Method for converting from OSCORE Recipient/Sender ID to EDHOC Connection Identifier
 		//
 		Set<Integer> authMethods = new HashSet<Integer>();
 		for (int i = 0; i <= Constants.EDHOC_AUTH_METHOD_3; i++ )
 			authMethods.add(i);
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE);
+		boolean supportCombinedRequest = true; // If set to true, it overrides the ID conversion method to CONVERSION_ID_CORE
+		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED; // Undefined yields using CONVERSION_ID_CORE
+		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
+													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		appStatements.put(edhocURI, appStatement);
 		
@@ -878,7 +884,8 @@ public class EdhocClient {
 		        	// If EDHOC message_3 has to be combined with the first
 		        	// OSCORE-protected request include the EDHOC option in the request
 		        	if (OSCORE_EDHOC_COMBINED == true && requestType == Constants.EDHOC_MESSAGE_3 &&
-		        		session.getApplicabilityStatement().getUsedForOSCORE() == true) {
+		        		session.getApplicabilityStatement().getUsedForOSCORE() == true &&
+		        		session.getApplicabilityStatement().getSupportCombinedRequest() == true) {
 		        		
 		        		// The combined request cannot be used if the Responder has to send message_4
 		        		if (session.getApplicabilityStatement().getUseMessage4() == true) {
