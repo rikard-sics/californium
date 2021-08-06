@@ -32,11 +32,23 @@ public class AppStatement {
 	// Set to true if used for keying OSCORE
 	private boolean usedForOSCORE;
 	
-	public AppStatement(Set<Integer> authMethods, boolean useMessage4, boolean usedForOSCORE) {
+	// Set to true if supporting the EDHOC+OSCORE request
+	// If set to true, it implies conversionMethodOscoreToEdhoc equal to CONVERSION_ID_CORE (1)
+	private boolean supportCombinedRequest;
+	
+	// Method to use for converting from OSCORE Recipient/Sender ID to EDHOC Connection Identifier
+	// It can be CONVERSION_ID_UNDEFINED (0), hence the two EDHOC peers can use whatever method each.
+	// If left undefined, this implementation uses CONVERSION_ID_CORE (1) as conversion method.
+	private int conversionMethodOscoreToEdhoc;
+	
+	public AppStatement(Set<Integer> authMethods, boolean useMessage4, boolean usedForOSCORE,
+						boolean supportCombinedRequest, int conversionMethodOscoreToEdhoc) {
 		
 		this.authMethods = authMethods;
 		this.useMessage4 = useMessage4;
 		this.usedForOSCORE = usedForOSCORE;
+		this.supportCombinedRequest = supportCombinedRequest;
+		this.conversionMethodOscoreToEdhoc = conversionMethodOscoreToEdhoc;
 		
 	}
 	
@@ -57,5 +69,17 @@ public class AppStatement {
 		return this.usedForOSCORE;
 		
 	}
+	
+	public boolean getSupportCombinedRequest() {
 		
+		return this.supportCombinedRequest;
+		
+	}
+	
+	public int getConversionMethodOscoreToEdhoc() {
+		
+		return this.conversionMethodOscoreToEdhoc;
+		
+	}
+	
 }
