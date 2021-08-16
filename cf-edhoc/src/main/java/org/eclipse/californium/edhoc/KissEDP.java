@@ -19,8 +19,7 @@ public class KissEDP implements EDP {
 			System.out.println("Malformed or invalid EAD1");
 		}
 		
-		int eadType = ead1[0].AsInt32();
-		System.out.println("EAD1 has type: " + eadType + "\n");
+		overviewEAD(ead1);
 	}
 	
 	// Process the External Authorization Data EAD_2 from EDHOC message_2
@@ -31,9 +30,8 @@ public class KissEDP implements EDP {
 		if (!consistencyCheck(ead2)) {
 			System.out.println("Malformed or invalid EAD2");
 		}
-		
-		int eadType = ead2[0].AsInt32();
-		System.out.println("EAD2 has type: " + eadType + "\n");
+
+		overviewEAD(ead2);
 	}
 	
 	// Process the External Authorization Data EAD_3 from EDHOC message_3
@@ -45,8 +43,7 @@ public class KissEDP implements EDP {
 			System.out.println("Malformed or invalid EAD3");
 		}
 		
-		int eadType = ead3[0].AsInt32();
-		System.out.println("EAD3 has type: " + eadType + "\n");
+		overviewEAD(ead3);
 	}
 	
 	// Process the External Authorization Data EAD_4 from EDHOC message_4
@@ -58,8 +55,7 @@ public class KissEDP implements EDP {
 			System.out.println("Malformed or invalid EAD4");
 		}
 		
-		int eadType = ead4[0].AsInt32();
-		System.out.println("EAD4 has type: " + eadType + "\n");
+		overviewEAD(ead4);
 	}
 	
 	// Perform common consistency checks on the External Authorization Data
@@ -77,6 +73,33 @@ public class KissEDP implements EDP {
 
 		return ret;
 		
+	}
+	
+	// Print a generic overview of External Authorization Data from an EDHOC message
+	private void overviewEAD(CBORObject[] ead) {
+		
+		System.out.println("EAD overview\n");
+		
+		for (int i = 0; i < ead.length; i++) {
+			
+			// This element must be an integer indicating the data type
+			if (i % 2 == 0) {
+				if (ead[i].getType() != CBORType.Integer) {
+					System.out.println("Malformed or invalid data item #" + (i/2));
+					i += 2; // skip the companion data element
+					continue;
+				}
+				System.out.println("The data item #" + (i/2) + " has EDHOC EAD type " + ead[i].AsInt32());
+			}
+			
+			// This element includes the actual data according to the specified data type
+			if (i % 2 == 1) {
+				System.out.println("The data item #" + (i/2) + " has CBOR type " + ead[i].getType());
+			}
+			
+		}
+
+		System.out.println("\n");
 	}
 	
 }
