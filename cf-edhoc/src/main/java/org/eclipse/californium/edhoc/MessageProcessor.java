@@ -3280,20 +3280,6 @@ public class MessageProcessor {
 		
 		return mac3;
 		
-		
-		/*
-    	byte[] mac3 = null;
-    	AlgorithmID alg = EdhocSession.getEdhocAEADAlg(selectedCiphersuite);
-    	try {
-			mac3 = Util.encrypt(idCredI, externalData, plaintext, alg, iv3m, k3m);
-		} catch (CoseException e) {
-			System.err.println("Error when computing MAC_3\n" + e.getMessage());
-			return null;
-		}
-		
-		return mac3;
-		*/
-		
 	}
 	
 	

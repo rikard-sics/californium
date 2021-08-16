@@ -128,8 +128,8 @@ class EdhocResource extends CoapResource {
 		
 		List<CBORObject> processingResult = new ArrayList<CBORObject>();
 		
-		// Possibly specify external authorization data for EAD_2, or null if none have to be provided
-		// The first element of EAD is always a CBOR integer, followed by one or multiple additional elements 
+		// Possibly specify external authorization data for EAD_2, or null if none has to be provided
+		// The EAD is structured in pairs of CBOR items (int, any), i.e. the data type first and then the actual data
 		CBORObject[] ead2 = null;		
 		
 		// The received message is an actual EDHOC message
@@ -449,8 +449,8 @@ class EdhocResource extends CoapResource {
 		        else {
 		        	// message_4 has to be sent to the Initiator
 		        	
-					// Possibly specify external authorization data for EAD_4, or null if none have to be provided
-		        	// The first element of EAD is always a CBOR integer, followed by one or multiple additional elements
+		        	// Possibly specify external authorization data for EAD_4, or null if none has to be provided
+		        	// The EAD is structured in pairs of CBOR items (int, any), i.e. the data type first and then the actual data
 					CBORObject[] ead4 = null;
 		        	
 					// Compute the EDHOC Message 4
