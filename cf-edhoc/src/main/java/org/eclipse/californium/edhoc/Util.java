@@ -1373,7 +1373,7 @@ public class Util {
      *  
      * @param identityKey   The identity key to encode as CRED
      * @param subjectName   The subject name associated to this key, it can be an empty string
-     * @return The CRED, as a byte serialization of a deterministic CBOR map
+     * @return The CRED, as a byte serialization of a CBOR map
      */
 	public static byte[] buildCredRawPublicKeyUCCS(OneKey identityKey, String subjectName) {
 		
@@ -1399,7 +1399,7 @@ public class Util {
 		cnfMap.Add(Constants.CWT_CNF_COSE_KEY, coseKeyMap);
 		
 		CBORObject claimSetMap = CBORObject.NewMap();
-		claimSetMap.Add(Constants.CWT_CLAIMS_SUB, CBORObject.FromObject(subjectName));
+		claimSetMap.Add(Constants.CWT_CLAIMS_SUB, subjectName);
 		claimSetMap.Add(Constants.CWT_CLAIMS_CNF, cnfMap);
 
 		System.out.println("UCCS serialization: " + Utils.bytesToHex(claimSetMap.EncodeToBytes()));
