@@ -29,9 +29,7 @@ import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
-import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCtx;
-import org.eclipse.californium.oscore.OSCoreCtxDB;
 import org.eclipse.californium.oscore.OSException;
 
 import com.upokecenter.cbor.CBORObject;
