@@ -26,7 +26,6 @@ import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.oscore.HashMapCtxDB;
-import org.eclipse.californium.oscore.OSCoreCtxDB;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
@@ -575,9 +574,14 @@ public class EdhocSession {
 		if (this.currentStep != Constants.EDHOC_AFTER_M3)
 			return false;
 		
-		this.prk_4x3m = Hkdf.extract(nonce, this.prk_4x3m);
+		String hashAlgorithm = getEdhocHashAlg(selectedCiphersuite);
 		
-		return true;
+		if (hashAlgorithm.equals("SHA-256") || hashAlgorithm.equals("SHA-384") || hashAlgorithm.equals("SHA-512")) {
+			this.prk_4x3m = Hkdf.extract(nonce, this.prk_4x3m);
+			return true;
+		}
+		
+		return false;
 		
 	}
 	
@@ -597,15 +601,13 @@ public class EdhocSession {
 			return null;
 		
 		int edhoc_aead_id;
-		if(selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_0 ||
-		   selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_2)
-			edhoc_aead_id = 10; // AES-CCM-16-64-128
-		else if(selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_1 ||
-			    selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_3)
-			edhoc_aead_id = 30; // AES-CCM-16-128-128
+		if (selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_2)
+			edhoc_aead_id = AlgorithmID.AES_CCM_16_64_128.AsCBOR().AsInt32(); // AES-CCM-16-64-128 (10)
+		else if (selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_1 || selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_3)
+			edhoc_aead_id = AlgorithmID.AES_CCM_16_128_128.AsCBOR().AsInt32(); // AES-CCM-16-128-128 (30)
 		else
 			return null;
-		
+
 		CBORObject infoArray = CBORObject.NewArray();
 		
 		infoArray.Add(edhoc_aead_id);
@@ -628,10 +630,16 @@ public class EdhocSession {
 		}
 		
 		infoArray.Add(len);
-		
 		byte[] info = infoArray.EncodeToBytes();
 		
-		return Hkdf.expand(prk, info, len);
+		byte[] okm = null;
+		String hashAlgorithm = EdhocSession.getEdhocHashAlg(selectedCiphersuite);
+		
+		if (hashAlgorithm.equals("SHA-256") || hashAlgorithm.equals("SHA-384") || hashAlgorithm.equals("SHA-512")) {
+			okm = Hkdf.expand(prk, info, len);
+		}
+		
+		return okm;
 		
 	}
 

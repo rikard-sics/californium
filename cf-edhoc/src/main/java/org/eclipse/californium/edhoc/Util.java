@@ -34,7 +34,6 @@ import org.eclipse.californium.cose.MessageTag;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.cose.Sign1Message;
 import org.eclipse.californium.oscore.CoapOSException;
-import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSCoreCtxDB;
 import org.eclipse.californium.oscore.OSException;
@@ -45,7 +44,6 @@ import com.upokecenter.cbor.CBORType;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 import net.i2p.crypto.eddsa.Utils;
 
-import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
