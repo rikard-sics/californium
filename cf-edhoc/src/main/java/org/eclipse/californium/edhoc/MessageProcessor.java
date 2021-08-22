@@ -82,8 +82,8 @@ public class MessageProcessor {
 			// A request always starts with C_X
 			CBORObject elem = myObjects[0];
 			
-			if (elem.equals(CBORObject.Null)) {
-				// If C_X is equal to 'nil' (0x46), this is EDHOC message_1
+			if (elem.equals(CBORObject.True)) {
+				// If C_X is equal to 'true' (0xf5), this is EDHOC message_1
 				return Constants.EDHOC_MESSAGE_1;
 			}
 			if (isErrorMessage(myObjects, isReq)) {
@@ -195,9 +195,9 @@ public class MessageProcessor {
 			return false;
 		
 		if (isReq == true) {
-			// If in a request, this starts with C_X different than 'nil' (0xf6),
+			// If in a request, this starts with C_X different than 'true' (0xf5),
 			// followed by ERR_CODE as a CBOR integer
-			if (!myObjects[0].equals(CBORObject.Null) && myObjects[1].getType() == CBORType.Integer)
+			if (!myObjects[0].equals(CBORObject.True) && myObjects[1].getType() == CBORType.Integer)
 				return true;
 			
 		}
@@ -297,11 +297,11 @@ public class MessageProcessor {
     	}
     	else {
     	    // If the received message is a request (i.e. the CoAP client is the initiator), the first element
-    	    // before the actual message_1 is the CBOR simple value Null, i.e. the byte 0xf6, and it can be skipped
+    	    // before the actual message_1 is the CBOR simple value 'true', i.e. the byte 0xf5, and it can be skipped
 	    	if (isReq) {
 	    		index++;
-	    		if (!objectListRequest[index].equals(CBORObject.Null)) {
-	    			errMsg = new String("The first element must be the CBOR simple value Null");
+	    		if (!objectListRequest[index].equals(CBORObject.True)) {
+	    			errMsg = new String("The first element must be the CBOR simple value 'true'");
 	    			responseCode = ResponseCode.BAD_REQUEST;
 	    			error = true;
 	    		}
@@ -1829,9 +1829,9 @@ public class MessageProcessor {
         // Prepare the list of CBOR objects to build the CBOR sequence
         List<CBORObject> objectList = new ArrayList<>();
         
-        // C_X equal to the CBOR simple value Null (i.e., 0xf6), if EDHOC message_1 is transported in a CoAP request
+        // C_X equal to the CBOR simple value 'true' (i.e., 0xf5), if EDHOC message_1 is transported in a CoAP request
         if (session.isClientInitiated() == true) {
-        	objectList.add(CBORObject.Null);
+        	objectList.add(CBORObject.True);
         }
         
         // METHOD as CBOR integer
@@ -2729,7 +2729,7 @@ public class MessageProcessor {
 		// Retrieve elements from EDHOC Message 1
 		
 	    // If the received message is a request (i.e. the CoAP client is the initiator), the first element
-	    // before the actual message_1 is the CBOR simple value Null, i.e. the byte 0xf6, and it can be skipped
+	    // before the actual message_1 is the CBOR simple value 'true', i.e. the byte 0xf5, and it can be skipped
 	    if (isReq == true) {
 	        index++;
 	    }
@@ -2786,7 +2786,7 @@ public class MessageProcessor {
 		mySession.setPeerEphemeralPublicKey(peerEphemeralKey);
 				
 		// Compute and store the hash of EDHOC Message 1
-		// If it came as a CoAP request, the first received byte 0xf6 must be skipped
+		// If it came as a CoAP request, the first received byte 0xf5 must be skipped
 		int offset = (isReq == true) ? 1 : 0;
 		byte[] hashInput = new byte[message1.length - offset];
 		System.arraycopy(message1, offset, hashInput, 0, hashInput.length);
