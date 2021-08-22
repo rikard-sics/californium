@@ -1239,29 +1239,29 @@ public class Util {
 	}
 	
     /**
-     * Build an ID_CRED using 'kid2', with value a CBOR byte string
+     * Build an ID_CRED using 'kid', with value a CBOR byte string
      *  
      * @param kid   The kid to use
      * @return The ID_CRED, as a CBOR map
      */
-	public static CBORObject buildIdCredKid2(byte[] kid) {
+	public static CBORObject buildIdCredKid(byte[] kid) {
 		
 		CBORObject idCred = CBORObject.NewMap();
-		idCred.Add(Constants.COSE_HEADER_PARAM_KID2, kid);
+		idCred.Add(HeaderKeys.KID.AsCBOR(), kid);
 		return idCred;
 		
 	}
 	
     /**
-     * Build an ID_CRED using 'kid2', with value a CBOR integer
+     * Build an ID_CRED using 'kid', with value a CBOR integer
      *  
      * @param kid   The kid to use
      * @return The ID_CRED, as a CBOR map
      */
-	public static CBORObject buildIdCredKid2(int kid) {
+	public static CBORObject buildIdCredKid(int kid) {
 		
 		CBORObject idCred = CBORObject.NewMap();
-		idCred.Add(Constants.COSE_HEADER_PARAM_KID2, kid);
+		idCred.Add(HeaderKeys.KID.AsCBOR(), kid);
 		return idCred;
 		
 	}

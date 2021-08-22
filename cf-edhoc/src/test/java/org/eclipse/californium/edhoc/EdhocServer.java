@@ -322,7 +322,7 @@ public class EdhocServer extends CoapServer {
 					// Build the related ID_CRED
 		    		// Use 0x07 as kid for this peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x07
 					byte[] idCredKid = new byte[] {(byte) 0x07};
-					idCred = Util.buildIdCredKid2(idCredKid);
+					idCred = Util.buildIdCredKid(idCredKid);
 					
 					// Build the related CRED
 										
@@ -401,7 +401,7 @@ public class EdhocServer extends CoapServer {
 					// Build the related ID_CRED
 		    		// Use 0x24 as kid for the other peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x24
 					byte[] peerKid = new byte[] {(byte) 0x24};
-					peerIdCred = Util.buildIdCredKid2(peerKid);
+					peerIdCred = Util.buildIdCredKid(peerKid);
 					
 					// Build the related CRED
 										
