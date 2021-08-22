@@ -33,7 +33,6 @@ import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.oscore.HashMapCtxDB;
-import org.eclipse.californium.oscore.OSCoreCtxDB;
 
 import com.upokecenter.cbor.CBORException;
 import com.upokecenter.cbor.CBORObject;
@@ -815,7 +814,8 @@ public class MessageProcessor {
     	}
         
         // Compute PRK_2e
-    	prk2e = computePRK2e(dhSecret);
+    	String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCiphersuite());
+    	prk2e = computePRK2e(dhSecret, hashAlgorithm);
     	dhSecret = null;
     	if (prk2e == null) {
         	errMsg = new String("Error when computing PRK_2e");
@@ -2041,7 +2041,8 @@ public class MessageProcessor {
     	}
         
         // Compute PRK_2e
-    	prk2e = computePRK2e(dhSecret);
+        String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCiphersuite());
+    	prk2e = computePRK2e(dhSecret, hashAlgorithm);
     	dhSecret = null;
     	if (prk2e == null) {
     		System.err.println("Error when computing PRK_2e");
@@ -2908,13 +2909,16 @@ public class MessageProcessor {
     /**
      *  Compute the key PRK_2e
      * @param dhSecret   The Diffie-Hellman secret
+     * @param hashAlgorithm   The EDHOC hash algorithm of the selected cipher suite
      * @return  The computed key PRK_2e
      */
-	public static byte[] computePRK2e(byte[] dhSecret) {
+	public static byte[] computePRK2e(byte[] dhSecret, String hashAlgorithm) {
 	
 		byte[] prk2e = null;
-	    try {
-			prk2e = Hkdf.extract(new byte[] {}, dhSecret);
+	    try {  	
+	    	if (hashAlgorithm.equals("SHA-256") || hashAlgorithm.equals("SHA-384") || hashAlgorithm.equals("SHA-512")) {
+	    		prk2e = Hkdf.extract(new byte[] {}, dhSecret);
+	    	}
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when generating PRK_2e\n" + e.getMessage());
 			return null;
@@ -3017,8 +3021,12 @@ public class MessageProcessor {
             	if (debugPrint) {
             		Util.nicePrint("G_RX", dhSecret);
             	}
+            	
+            	String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCiphersuite());
             	try {
-					prk3e2m = Hkdf.extract(prk2e, dhSecret);
+            		if (hashAlgorithm.equals("SHA-256") || hashAlgorithm.equals("SHA-384") || hashAlgorithm.equals("SHA-512")) {
+            			prk3e2m = Hkdf.extract(prk2e, dhSecret);
+            		}
 				} catch (InvalidKeyException e) {
 					System.err.println("Error when generating PRK_3e2m\n" + e.getMessage());
 					return null;
@@ -3112,8 +3120,12 @@ public class MessageProcessor {
             	if (debugPrint) {
             		Util.nicePrint("G_IY", dhSecret);
             	}
+            	
+            	String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCiphersuite());
             	try {
-					prk4x3m = Hkdf.extract(prk3e2m, dhSecret);
+            		if (hashAlgorithm.equals("SHA-256") || hashAlgorithm.equals("SHA-384") || hashAlgorithm.equals("SHA-512")) {
+            			prk4x3m = Hkdf.extract(prk3e2m, dhSecret);
+            		}
 				} catch (InvalidKeyException e) {
 					System.err.println("Error when generating PRK_4x3m\n" + e.getMessage());
 					return null;
