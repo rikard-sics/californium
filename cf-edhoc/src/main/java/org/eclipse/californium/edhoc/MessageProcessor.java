@@ -911,7 +911,7 @@ public class MessageProcessor {
     	
     	// ID_CRED_R is a CBOR map with 'kid2', and only 'kid2' was transported
     	if (rawIdCredR.getType() == CBORType.Integer || rawIdCredR.getType() == CBORType.ByteString) {
-    		idCredR.Add(Constants.COSE_HEADER_PARAM_KID2, rawIdCredR);
+    		idCredR.Add(HeaderKeys.KID.AsCBOR(), rawIdCredR);
     	}
     	else if (rawIdCredR.getType() == CBORType.Map) {
     		idCredR = rawIdCredR;
@@ -1289,7 +1289,7 @@ public class MessageProcessor {
     	
     	// ID_CRED_I is a CBOR map with 'kid2', and only 'kid2' was transported
     	if (rawIdCredI.getType() == CBORType.Integer || rawIdCredI.getType() == CBORType.ByteString) {
-    	    idCredI.Add(Constants.COSE_HEADER_PARAM_KID2, rawIdCredI);
+    	    idCredI.Add(HeaderKeys.KID.AsCBOR(), rawIdCredI);
     	}
     	else if (rawIdCredI.getType() == CBORType.Map) {
     	    idCredI = rawIdCredI;
@@ -2111,9 +2111,9 @@ public class MessageProcessor {
     	// Prepare the plaintext
     	List<CBORObject> plaintextElementList = new ArrayList<>();
     	CBORObject plaintextElement = null;
-    	if (session.getIdCred().ContainsKey(Constants.COSE_HEADER_PARAM_KID2)) {
+    	if (session.getIdCred().ContainsKey(HeaderKeys.KID.AsCBOR())) {
     		// ID_CRED_R uses 'kid2', whose value is the only thing to include in the plaintext
-    		plaintextElement = session.getIdCred().get(Constants.COSE_HEADER_PARAM_KID2);
+    		plaintextElement = session.getIdCred().get(HeaderKeys.KID.AsCBOR());
     	}
     	else {
     		plaintextElement = session.getIdCred();
@@ -2334,9 +2334,9 @@ public class MessageProcessor {
     	// Prepare the plaintext
     	List<CBORObject> plaintextElementList = new ArrayList<>();
     	CBORObject plaintextElement = null;
-    	if (session.getIdCred().ContainsKey(Constants.COSE_HEADER_PARAM_KID2)) {
+    	if (session.getIdCred().ContainsKey(HeaderKeys.KID.AsCBOR())) {
     	    // ID_CRED_I uses 'kid2', whose value is the only thing to include in the plaintext
-    	    plaintextElement = session.getIdCred().get(Constants.COSE_HEADER_PARAM_KID2);
+    	    plaintextElement = session.getIdCred().get(HeaderKeys.KID.AsCBOR());
     	}
     	else {
     	    plaintextElement = session.getIdCred();
