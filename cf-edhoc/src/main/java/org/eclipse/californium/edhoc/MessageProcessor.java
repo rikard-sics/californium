@@ -3214,14 +3214,14 @@ public class MessageProcessor {
 			                         CBORObject idCredR, byte[] credR, CBORObject[] ead2) {
 		
 		// Build the CBOR sequence for 'context': ( ID_CRED_R, CRED_R, ? EAD_2 )
-    	List<CBORObject> objectList = new ArrayList<>();
-    	objectList.add(idCredR);
-    	objectList.add(CBORObject.FromObject(credR));
+    	int eadLength = (ead2 != null) ? ead2.length : 0;
+    	CBORObject[] context = new CBORObject[2 + eadLength];
+    	context[0] = idCredR;
+    	context[1] = CBORObject.FromObject(credR);
     	if (ead2 != null) {
 	    	for (int i = 0; i < ead2.length; i++)
-	        	objectList.add(ead2[i]);
+	    		context[i+2] = ead2[i];
     	}
-    	byte[] context = Util.buildCBORSequence(objectList);
     	
     	int macLength = 0;
     	int method = session.getMethod();
@@ -3260,16 +3260,15 @@ public class MessageProcessor {
 	public static byte[] computeMAC3(EdhocSession session, byte[] prk4x3m, byte[] th3,
             						 CBORObject idCredI, byte[] credI, CBORObject[] ead3) {
 		
-		
 		// Build the CBOR sequence for 'context': ( ID_CRED_I, CRED_I, ? EAD_3 )
-    	List<CBORObject> objectList = new ArrayList<>();
-    	objectList.add(idCredI);
-    	objectList.add(CBORObject.FromObject(credI));
-    	if (ead3 != null) {
-	    	for (int i = 0; i < ead3.length; i++)
-	        	objectList.add(ead3[i]);
-    	}
-    	byte[] context = Util.buildCBORSequence(objectList);
+		int eadLength = (ead3 != null) ? ead3.length : 0;
+		CBORObject[] context = new CBORObject[2 + eadLength];
+		context[0] = idCredI;
+		context[1] = CBORObject.FromObject(credI);
+		if (ead3 != null) {
+		    for (int i = 0; i < ead3.length; i++)
+		        context[i+2] = ead3[i];
+		}
     	
     	int macLength = 0;
     	int method = session.getMethod();
