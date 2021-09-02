@@ -1198,21 +1198,21 @@ public class Util {
     /**
      * Build SUITES_R
      *  
-     * @param supportedCiphersuites   The list of supported ciphersuites for this peer
+     * @param ciphersuites   The list of supported ciphersuites for this peer to include in SUITES_R
      * @return SUITES_R, as a CBOR object
      */
-	public static CBORObject buildSuitesR(List<Integer> supportedCiphersuites) {
+	public static CBORObject buildSuitesR(List<Integer> ciphersuites) {
 		
 		CBORObject suitesR;
 		
-		if (supportedCiphersuites.size() == 1) {
-			int cs = supportedCiphersuites.get(0).intValue();
-			suitesR = CBORObject.FromObject(cs);
+		if (ciphersuites.size() == 1) {
+			int suite = ciphersuites.get(0).intValue();
+			suitesR = CBORObject.FromObject(suite);
 		}
 		// This peer supports multiple ciphersuites
 		else {
 			suitesR = CBORObject.NewArray();
-			for (Integer i : supportedCiphersuites) {
+			for (Integer i : ciphersuites) {
 				suitesR.Add(i.intValue());
 			}
 		}
