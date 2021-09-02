@@ -118,7 +118,7 @@ public class EdhocClient {
 	// Connection Identifiers are stored as CBOR integers (if numeric) or as CBOR byte strings (if binary)
 	private static Set<CBORObject> usedConnectionIds = new HashSet<>();
 	
-	// List of supported ciphersuites
+	// List of supported ciphersuites, in decreasing order of preference.
 	private static List<Integer> supportedCiphersuites = new ArrayList<Integer>();
 	
 	// The authentication method to be indicated in EDHOC message 1 (relevant or the Initiator only)
