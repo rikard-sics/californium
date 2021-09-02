@@ -613,13 +613,12 @@ public class EdhocSession {
 		infoArray.Add(edhoc_aead_id);
 		infoArray.Add(transcript_hash);
 		infoArray.Add(label);
-		
+		infoArray.Add(len);
 		if (context != null) {
 			for (int i = 0; i < context.length; i++)
 				infoArray.Add(context[i]);
 		}
 		
-		infoArray.Add(len);
 		byte[] info = infoArray.EncodeToBytes();
 		
 		byte[] okm = null;
