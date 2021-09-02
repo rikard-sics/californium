@@ -367,61 +367,79 @@ public class MessageProcessor {
 					}
 				}
 		}
-		
-		// Check if the selected ciphersuite is supported
+
+		// Check if the selected ciphersuite is supported and that no prior ciphersuite in SUITES_I is supported
+		List<Integer> ciphersuitesToOffer = new ArrayList<Integer>();
 		if (error == false) {
 			int selectedCiphersuite;
 			
 			if (objectListRequest[index].getType() == CBORType.Integer) {
+				// SUITES_I is the selected ciphersuite
 				selectedCiphersuite = objectListRequest[index].AsInt32();
+				
 				// This peer does not support the selected ciphersuite
 				if (!supportedCiphersuites.contains(Integer.valueOf(selectedCiphersuite))) {
 					errMsg = new String("The selected ciphersuite is not supported");
 					errorCode = Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE;
 					responseCode = ResponseCode.BAD_REQUEST;
 					error = true;
+					
+					// SUITE_R will include all the ciphersuites supported by the Responder
+					ciphersuitesToOffer = supportedCiphersuites;
 				}
 			}
 			
 			else if (objectListRequest[index].getType() == CBORType.Array) {
-				selectedCiphersuite = objectListRequest[index].get(0).AsInt32();
-				// This peer does not support the selected ciphersuite
+				// The selected ciphersuite is the last element of SUITES_I
+				int size = objectListRequest[index].size(); 
+				selectedCiphersuite = objectListRequest[index].get(size-1).AsInt32();
+				
+				int firstSharedCiphersuite = -1;
+				// Find the first commonly supported ciphersuite, i.e. the ciphersuite both
+				// supported by the Responder and specified as early as possible in SUITES_I
+				for (int i = 0; i < size; i++) {
+					int suite = objectListRequest[index].get(i).AsInt32();
+					if (supportedCiphersuites.contains(Integer.valueOf(suite))) {
+						firstSharedCiphersuite = suite;
+						break;
+					}
+				}
+				
 				if (!supportedCiphersuites.contains(Integer.valueOf(selectedCiphersuite))) {
+					// The Responder does not support the selected ciphersuite
+					
 					errMsg = new String("The selected ciphersuite is not supported");
 					errorCode = Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE;
 					responseCode = ResponseCode.BAD_REQUEST;
 					error = true;
-				}
-				
-				else {
-					int selectedIndex = -1;
-					// Find the position of the selected ciphersuite in the provided list
-					for (int i = 1; i < objectListRequest[index].size(); i++) {
-						if (objectListRequest[index].get(i).AsInt32() == selectedCiphersuite)
-							selectedIndex = i;
-					}
-					// The selected ciphersuite was not in the provided list
-					if (selectedIndex == -1) {
-						errMsg = new String("The selected ciphersuite is not in the provided list");
-						errorCode = Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE;
-						responseCode = ResponseCode.BAD_REQUEST;
-						error = true;
+					
+					if (firstSharedCiphersuite == -1) {
+						// The Responder does not support any ciphersuites in SUITE_I.
+						// SUITE_R will include all the ciphersuites supported by the Responder
+						ciphersuitesToOffer = supportedCiphersuites;
 					}
 					else {
-						for (int i = 1; i < selectedIndex; i++) {
-							int cs = objectListRequest[1].get(i).AsInt32();
-							// This peer supports ciphersuites prior to the selected one in the provided list
-							if (supportedCiphersuites.contains(Integer.valueOf(cs))) {
-								errMsg = new String("Supported ciphersuites prior to the selected one in the provided list");
-								errorCode = Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE;
-								responseCode = ResponseCode.BAD_REQUEST;
-								error = true;
-								break;
-							}
-						}
+						// SUITES_R will include only the ciphersuite supported
+						// by both peers and most preferred by the Initiator.
+						ciphersuitesToOffer.add(firstSharedCiphersuite);
 					}
+					
 				}
-
+				else if (firstSharedCiphersuite != selectedCiphersuite) {
+					// The Responder supports the selected ciphersuite, but it has to reply with an EDHOC Error Message
+					// if it supports a cipher suite more preferred by the Initiator than the selected cipher suite
+					
+					errMsg = new String("The selected ciphersuite is not supported");
+					errorCode = Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE;
+					responseCode = ResponseCode.BAD_REQUEST;
+					error = true;
+					
+					// SUITES_R will include only the ciphersuite supported
+					// by both peers and most preferred by the Initiator.
+					ciphersuitesToOffer.add(firstSharedCiphersuite);
+					
+				}
+				
 			}
 			
 		}
@@ -498,9 +516,7 @@ public class MessageProcessor {
 		if (error == true) {
 			
 			// Prepare SUITES_R
-			
-			// In either case, any supported ciphersuite from SUITES_I will also be included in SUITES_R
-			suitesR = Util.buildSuitesR(supportedCiphersuites);
+			suitesR = Util.buildSuitesR(ciphersuitesToOffer);
 			
 			return processError(errorCode, Constants.EDHOC_MESSAGE_1, !isReq, cI, errMsg, suitesR, responseCode, ead1);
 			
@@ -1850,11 +1866,12 @@ public class MessageProcessor {
         List<Integer> peerSupportedCiphersuites = session.getPeerSupportedCipherSuites();
         
     	int selectedSuite = -1;
+    	int preferredSuite = supportedCiphersuites.get(0).intValue();
     	
     	// No SUITES_R has been received, so it is not known what ciphersuites the responder supports
     	if (peerSupportedCiphersuites == null) {
     		// The selected ciphersuite is the most preferred by the initiator
-    		selectedSuite = supportedCiphersuites.get(0).intValue();
+    		selectedSuite = preferredSuite;
     	}
     	// SUITES_R has been received, so it is known what ciphersuites the responder supports
     	else {
@@ -1871,36 +1888,30 @@ public class MessageProcessor {
     		return null;
     	}
     	
-        if(supportedCiphersuites.size() == 1) {
-        	objectList.add(CBORObject.FromObject(selectedSuite));
-            if (debugPrint) {
-            	CBORObject obj = CBORObject.FromObject(selectedSuite);
-            	byte[] objBytes = obj.EncodeToBytes();
-            	Util.nicePrint("SUITES_I", objBytes);
-            }
+    	CBORObject suitesI;
+    	if (selectedSuite == preferredSuite) {
+    		// SUITES_I is only the selected suite, as a CBOR integer
+    		suitesI = CBORObject.FromObject(selectedSuite);
+    	}
+    	else {
+    		// SUITES_I is a CBOR array
+    		// The elements are the Initiator's supported cipher suite in decreasing order of preference,
+    		// up until and including the selected suite as last element of the array.
+    		suitesI = CBORObject.NewArray();
+    		for (Integer i : supportedCiphersuites) {
+    			int suite = i.intValue();
+    			suitesI.Add(suite);
+    			if (suite == selectedSuite) {
+    				break;
+    			}
+    		}
+    	}
+    	objectList.add(suitesI);
+        if (debugPrint) {
+        	byte[] objBytes = suitesI.EncodeToBytes();
+        	Util.nicePrint("SUITES_I", objBytes);
         }
-        else {
-        	CBORObject myArray = CBORObject.NewArray();
-        	myArray.Add(CBORObject.FromObject(selectedSuite));
-        	for (int i = 0; i < supportedCiphersuites.size(); i++) {
-        		int suiteListElement =  supportedCiphersuites.get(i).intValue();
-        		myArray.Add(CBORObject.FromObject(suiteListElement));
-        		
-        		// SUITES_R has been received - Truncate the list of supported cipher suites, with the selected one as last one 
-        		if (peerSupportedCiphersuites != null) {
-        			if (suiteListElement == selectedSuite)
-        				break;
-        		}
-        		
-        	}
-        	objectList.add(CBORObject.FromObject(myArray));
-            if (debugPrint) {
-            	CBORObject obj = CBORObject.FromObject(myArray);
-            	byte[] objBytes = obj.EncodeToBytes();
-            	Util.nicePrint("SUITES_I", objBytes);
-            }
-        }
-                
+    	                
         // The session has been reused, e.g. following an EDHOC Error Message
         // Generate new ephemeral key, according to the (updated) selected ciphersuite
         if (session.getFirstUse() == false) {
@@ -2178,13 +2189,9 @@ public class MessageProcessor {
 			// Prepare C_I
 			CBORObject cI = CBORObject.FromObject(session.getPeerConnectionId());
 			
-			// Prepare SUITES_R
-			List<Integer> supportedCiphersuites = session.getSupportedCipherSuites();
-			CBORObject suitesR = Util.buildSuitesR(supportedCiphersuites);
-			
 			List<CBORObject> processingResult = processError(errorCode, Constants.EDHOC_MESSAGE_1,
 															 !session.isClientInitiated(),
-															 cI, errMsg, suitesR, responseCode, null);
+															 cI, errMsg, null, responseCode, null);
 			return processingResult.get(0).GetByteString();
 			
 		}
