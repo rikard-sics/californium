@@ -57,6 +57,7 @@ public static final int COSE_HEADER_PARAM_X5CHAIN = 33;
 public static final int COSE_HEADER_PARAM_X5T = 34;
 public static final int COSE_HEADER_PARAM_X5U = 35;
 public static final int COSE_HEADER_PARAM_CWT = 36;
+public static final int COSE_HEADER_PARAM_UCCS = 37;
 
 /**
  * CBOR Web Token (CWT) Claims
