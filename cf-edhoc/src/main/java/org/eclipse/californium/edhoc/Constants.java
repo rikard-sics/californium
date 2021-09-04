@@ -20,6 +20,8 @@ package org.eclipse.californium.edhoc;
 
 import java.nio.charset.Charset;
 
+import org.eclipse.californium.cose.KeyKeys;
+
 
 /**
  * Constants for use with the EDHOC protocol.
@@ -42,12 +44,28 @@ public static final int APPLICATION_EDHOC = 10001;
 
 
 /**
- * Identifier Type
+ * Key Curve
  */
-public static final int CRED_TYPE_RPK = 0;
-public static final int CRED_TYPE_X5T = 1;
-public static final int CRED_TYPE_X5U = 2;
-public static final int CRED_TYPE_X5CHAIN = 3;
+public static final int CURVE_Ed25519 = KeyKeys.OKP_Ed25519.AsInt32(); // Ed25519
+public static final int CURVE_X25519 = KeyKeys.OKP_X25519.AsInt32();   // X25519
+public static final int CURVE_P256 = KeyKeys.EC2_P256.AsInt32();       // P-256
+
+/**
+ * Credential Type
+ */
+public static final int CRED_TYPE_CWT = 0;  // RPK as a CWT
+public static final int CRED_TYPE_UCCS = 1; // RPK as a Unprotected CWT Claim Set (UCCS)
+public static final int CRED_TYPE_X509 = 2; // X.509 certificate
+
+/**
+ * Credential Identifier Type
+ */
+public static final int ID_CRED_TYPE_KID = 0;     // RPK by reference
+public static final int ID_CRED_TYPE_CWT = 1;     // RPK by value (as CWT)
+public static final int ID_CRED_TYPE_UCCS = 2;    // RPK by value (as UCCS)
+public static final int ID_CRED_TYPE_X5T = 3;     // X.509 certificate by hash reference
+public static final int ID_CRED_TYPE_X5U = 4;     // X.509 certificate by retrieval link
+public static final int ID_CRED_TYPE_X5CHAIN = 5; // X.509 certificate by value
 
 /**
  * COSE Header Parameters

@@ -75,24 +75,27 @@ public class EdhocClient {
 	
 	private final static int keyFormat = 1; // 0 is for Base64; 1 is for binary encoding
 	
-	// Uncomment to use an ECDSA key pair with curve P-256 as long-term identity key
-    // private final static int keyCurve = KeyKeys.EC2_P256.AsInt32();
-    
-    // Uncomment to use an EdDSA key pair with curve Ed25519 for signatures
-    private final static int keyCurve = KeyKeys.OKP_Ed25519.AsInt32();
-    
-    // Uncomment to use a Montgomery key pair with curve X25519
-    // private final static int keyCurve = KeyKeys.OKP_X25519.AsInt32();
-    
-    // The ID_CRED used for the identity key of this peer
-    private static CBORObject idCred = null;
+	// The authentication method to be indicated in EDHOC message 1 (relevant or the Initiator only)
+	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
+	
+	// Key curve of the long-term identity key of this and the other peer
+	// Possible values: CURVE_Ed25519; CURVE_X25519; CURVE_P256
+    private final static int keyCurve = Constants.CURVE_Ed25519;
     
     // The type of the credential of this peer and the other peer
-    // Possible values: CRED_TYPE_RPK ; CRED_TYPE_X5T ; CRED_TYPE_X5U ; CRED_TYPE_X5CHAIN
-    private static int credType = Constants.CRED_TYPE_X5T;
+    // Possible values: CRED_TYPE_CWT ; CRED_TYPE_UCCS ; CRED_TYPE_X509
+    private static int credType = Constants.CRED_TYPE_X509;
+    
+    // The type of the credential identifier of this peer and the other peer
+    // Possible values: ID_CRED_TYPE_KID ; ID_CRED_TYPE_CWT ; ID_CRED_TYPE_UCCS ;
+    //                  ID_CRED_TYPE_X5T ; ID_CRED_TYPE_X5U ; ID_CRED_TYPE_X5CHAIN
+    private static int idCredType = Constants.ID_CRED_TYPE_X5T;
     
     // The CRED used for the identity key of this peer
     private static byte[] cred = null;
+    
+    // The ID_CRED used for the identity key of this peer
+    private static CBORObject idCred = null;
     
     // The subject name used for the identity key of this peer
     private static String subjectName = "";
@@ -120,10 +123,10 @@ public class EdhocClient {
 	
 	// List of supported ciphersuites, in decreasing order of preference.
 	private static List<Integer> supportedCiphersuites = new ArrayList<Integer>();
+
+	// The collection of applicability statements - The lookup key is the full URI of the EDHOC resource
+	private static Map<String, AppStatement> appStatements = new HashMap<String, AppStatement>();
 	
-	// The authentication method to be indicated in EDHOC message 1 (relevant or the Initiator only)
-	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
-			
 	// The database of OSCORE Security Contexts
 	private final static HashMapCtxDB db = new HashMapCtxDB();
 	
@@ -136,9 +139,6 @@ public class EdhocClient {
 	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
 	// Note: the applicability statement pertaining the EDHOC resource must first indicate support for the combined request 
 	private static final boolean OSCORE_EDHOC_COMBINED = false;
-	
-	// The collection of applicability statements - The lookup key is the full URI of the EDHOC resource
-	private static Map<String, AppStatement> appStatements = new HashMap<String, AppStatement>();
 	
 	private static NetworkConfigDefaultHandler DEFAULTS = new NetworkConfigDefaultHandler() {
 
@@ -326,36 +326,35 @@ public class EdhocClient {
 				break;
 			}
 			
+			// Build CRED for this peer
 			byte[] serializedCert = null;
+			CBORObject uccsObject = null;
 			
-		    switch (credType) {
-		    	case Constants.CRED_TYPE_RPK:
-					// Build the related ID_CRED
-		    		// Use 0x24 as kid for this peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x24
-				    byte[] idCredKid = new byte[] {(byte) 0x24};
-					idCred = Util.buildIdCredKid(idCredKid);
-					
-					// Build the related CRED
-					// Uncomment to generate the UCCS and print its serialization
-					/*
+    		// Use 0x24 as kid for this peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x24
+		    byte[] idCredKid = new byte[] {(byte) 0x24};
+			
+			switch (credType) {
+				case Constants.CRED_TYPE_CWT:
+					// TODO
+					break;
+				case Constants.CRED_TYPE_UCCS:
 					System.out.print("My   ");
-					Util.buildCredRawPublicKeyUCCS(keyPair, subjectName);
-					*/
+					CBORObject idCredKidCbor = CBORObject.FromObject(idCredKid);
+					uccsObject = CBORObject.DecodeFromBytes(Util.buildCredRawPublicKeyUCCS(keyPair, subjectName, idCredKidCbor));
 					
+					// These serializations have to be prepared manually, in order to ensure that
+					// the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
 					if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
-						cred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a401022001215820cd4177ba62433375ede279b5e18e8b91bc3ed8f1e174474a26fc0edb44ea5373225820a0391de29c5c5badda610d4e301eaaa18422367722289cd18cbe6624e89b9cfd");
+						cred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a501020241242001215820cd4177ba62433375ede279b5e18e8b91bc3ed8f1e174474a26fc0edb44ea5373225820a0391de29c5c5badda610d4e301eaaa18422367722289cd18cbe6624e89b9cfd");
 					}
 			 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
-						cred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a30101200621582038e5d54563c2b6a4ba26f3015f61bb706e5c2efdb556d2e1690b97fc3c6de149");
+						cred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a40101024124200621582038e5d54563c2b6a4ba26f3015f61bb706e5c2efdb556d2e1690b97fc3c6de149");
 			 		}
 			 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
-						cred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a3010120042158202c440cc121f8d7f24c3b0e41aedafe9caa4f4e7abb835ec30f1de88adb96ff71");
+						cred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a4010102412420042158202c440cc121f8d7f24c3b0e41aedafe9caa4f4e7abb835ec30f1de88adb96ff71");
 			 		}
-					
 					break;
-		    	case Constants.CRED_TYPE_X5CHAIN:
-		    	case Constants.CRED_TYPE_X5T:
-		    	case Constants.CRED_TYPE_X5U:
+				case Constants.CRED_TYPE_X509:
 		    		// The x509 certificate of this peer
 		    		serializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("5413204c3ebc3428a6cf57e24c9def59651770449bce7ec6561e52433aa55e71f1fa34b22a9ca4a1e12924eae1d1766088098449cb848ffc795f88afc49cbe8afdd1ba009f21675e8f6c77a4a2c30195601f6f0a0852978bd43d28207d44486502ff7bdda6");
 		    		
@@ -364,20 +363,36 @@ public class EdhocClient {
 		    		
 		    		// CRED, as serialization of a CBOR byte string wrapping the serialized certificate
 		    		cred = CBORObject.FromObject(serializedCert).EncodeToBytes();
-		    		switch (credType) {
-		    			case Constants.CRED_TYPE_X5CHAIN:
-				    		// ID_CRED for the identity key of this peer, built from the x509 certificate using x5chain
-				    		idCred = Util.buildIdCredX5chain(serializedCert);
-				    		break;
-		    			case Constants.CRED_TYPE_X5T:
-				    		// ID_CRED for the identity key of this peer, built from the x509 certificate using x5t
-				    		idCred = Util.buildIdCredX5t(serializedCert);
-				    		break;
-		    			case Constants.CRED_TYPE_X5U:
-				    		// ID_CRED for the identity key of this peer, built from the x509 certificate using x5u
-				    		idCred = Util.buildIdCredX5u("http://example.repo.com");
-				    		break;
-		    		}
+		    		break;
+			}
+			
+			
+			// Build ID_CRED for this peer
+		    switch (idCredType) {
+		    	case Constants.ID_CRED_TYPE_KID:
+		    		// ID_CRED for the identity key of this peer, using the kid associated to the RPK
+					idCred = Util.buildIdCredKid(idCredKid);
+					break;
+		    	case Constants.ID_CRED_TYPE_CWT:
+		    		// ID_CRED for the identity key of this peer, using a CWT to transport the RPK by value
+					// TODO
+					break;
+		    	case Constants.ID_CRED_TYPE_UCCS:
+		    		// ID_CRED for the identity key of this peer, using a UCCS to transport the RPK by value
+		    		idCred = Util.buildIdCredUCCS(uccsObject);
+					break;
+    			case Constants.ID_CRED_TYPE_X5CHAIN:
+		    		// ID_CRED for the identity key of this peer, built from the x509 certificate using x5chain
+		    		idCred = Util.buildIdCredX5chain(serializedCert);
+		    		break;
+    			case Constants.ID_CRED_TYPE_X5T:
+		    		// ID_CRED for the identity key of this peer, built from the x509 certificate using x5t
+		    		idCred = Util.buildIdCredX5t(serializedCert);
+		    		break;
+    			case Constants.ID_CRED_TYPE_X5U:
+		    		// ID_CRED for the identity key of this peer, built from the x509 certificate using x5u
+		    		idCred = Util.buildIdCredX5u("http://example.repo.com");
+		    		break;
 		    }
 
 			
@@ -405,62 +420,76 @@ public class EdhocClient {
 					peerPublicKey =  SharedSecretCalculation.buildCurve25519OneKey(null, peerPublicKeyBinary);
 				}
 				break;
-		}
+			}
 			
-			CBORObject peerIdCred = null;
+			// Build CRED for the other peer
 			byte[] peerCred = null;
 			byte[] peerSerializedCert = null;
+			CBORObject peerUccsObject = null;
 			
-		    switch (credType) {
-			    case Constants.CRED_TYPE_RPK:
-					// Build the related ID_CRED
-		    		// Use 0x07 as kid for the other peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x07
-					byte[] peerKid = new byte[] {(byte) 0x07};
-					peerIdCred = Util.buildIdCredKid(peerKid);
-					
-					// Build the related CRED
-					// Uncomment to generate the UCCS and print its serialization
-					/*
-					System.out.print("Peer ");
-					Util.buildCredRawPublicKeyUCCS(peerPublicKey, "");
-					*/
-										
-					if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
-						peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a4010220012158206f9702a66602d78f5e81bac1e0af01f8b52810c502e87ebb7c926c07426fd02f225820c8d33274c71c9b3ee57d842bbf2238b8283cb410eca216fb72a78ea7a870f800");
-					}
-			 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
-						peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a301012006215820dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
-			 		}
-			 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
-						peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a301012004215820a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
-			 		}
-					
+    		// Use 0x07 as kid for the other peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x07
+			byte[] peerKid = new byte[] {(byte) 0x07};
+			
+			switch (credType) {
+			case Constants.CRED_TYPE_CWT:
+				// TODO
+				break;
+			case Constants.CRED_TYPE_UCCS:				
+				System.out.print("Peer ");
+				CBORObject peerKidCbor = CBORObject.FromObject(peerKid);
+				peerUccsObject = CBORObject.DecodeFromBytes(Util.buildCredRawPublicKeyUCCS(peerPublicKey, subjectName, peerKidCbor));
+				
+				// These serializations have to be prepared manually, in order to ensure that
+				// the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
+				if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
+					peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a5010202410720012158206f9702a66602d78f5e81bac1e0af01f8b52810c502e87ebb7c926c07426fd02f225820c8d33274c71c9b3ee57d842bbf2238b8283cb410eca216fb72a78ea7a870f800");
+				}
+		 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
+					peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a401010241072006215820dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
+		 		}
+		 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+					peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a401010241072004215820a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
+		 		}
+				break;
+			case Constants.CRED_TYPE_X509:
+	    		// The x509 certificate of the other peer
+	    		peerSerializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("c788370016b8965bdb2074bff82e5a20e09bec21f8406e86442b87ec3ff245b70a47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb2");
+	    		
+	    		// Test with Peter (real DER certificate for the same identity key)
+	    		// peerSerializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("308202763082021ca00302010202144aebaeff99a7ec4c9b398e007e3074d6d24fd779300a06082a8648ce3d0403023073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c301e170d3231303230393039333131345a170d3232303230393039333131345a3073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c3059301306072a8648ce3d020106082a8648ce3d030107034200040d75040e117b0fed769f235a4c831ff3b6699b8e310af28094fe3baea003b5e9772a4def5d8d4ee362e9ae9ef615215d115341f531338e3fa4030b6257b25d66a3818d30818a301d0603551d0e0416041444f3cf92db3cda030a3faf611872b90c601c0f74301f0603551d2304183016801444f3cf92db3cda030a3faf611872b90c601c0f74300f0603551d130101ff040530030101ff30270603551d250420301e06082b0601050507031c06082b0601050507030106082b06010505070302300e0603551d0f0101ff0404030201f6300a06082a8648ce3d0403020348003045022100ee29fb91849d8f0c617de9f817e016b535cac732235eed8a6711e68a3a634d0802205d1750bc02f0f1dde19a7c48d82fb5442c560d13f3d1a7e99546a6c39a28f38b");
+	    		
+	    		// CRED, as serialization of a CBOR byte string wrapping the serialized certificate
+	    		peerCred = CBORObject.FromObject(peerSerializedCert).EncodeToBytes();
+	    		break;
+			}
+			
+			// Build ID_CRED for the other peer
+			CBORObject peerIdCred = null;
+			
+		    switch (idCredType) {
+		    	case Constants.ID_CRED_TYPE_KID:
+		    		// ID_CRED for the identity key of the other peer, using the kid associated to the RPK
+		    		peerIdCred = Util.buildIdCredKid(peerKid);
 					break;
-			    case Constants.CRED_TYPE_X5CHAIN:
-		    	case Constants.CRED_TYPE_X5T:
-		    	case Constants.CRED_TYPE_X5U:
-		    		// The x509 certificate of the other peer
-		    		peerSerializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("c788370016b8965bdb2074bff82e5a20e09bec21f8406e86442b87ec3ff245b70a47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb2");
-		    		
-		    		// Test with Peter (real DER certificate for the same identity key)
-		    		// peerSerializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("308202763082021ca00302010202144aebaeff99a7ec4c9b398e007e3074d6d24fd779300a06082a8648ce3d0403023073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c301e170d3231303230393039333131345a170d3232303230393039333131345a3073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c3059301306072a8648ce3d020106082a8648ce3d030107034200040d75040e117b0fed769f235a4c831ff3b6699b8e310af28094fe3baea003b5e9772a4def5d8d4ee362e9ae9ef615215d115341f531338e3fa4030b6257b25d66a3818d30818a301d0603551d0e0416041444f3cf92db3cda030a3faf611872b90c601c0f74301f0603551d2304183016801444f3cf92db3cda030a3faf611872b90c601c0f74300f0603551d130101ff040530030101ff30270603551d250420301e06082b0601050507031c06082b0601050507030106082b06010505070302300e0603551d0f0101ff0404030201f6300a06082a8648ce3d0403020348003045022100ee29fb91849d8f0c617de9f817e016b535cac732235eed8a6711e68a3a634d0802205d1750bc02f0f1dde19a7c48d82fb5442c560d13f3d1a7e99546a6c39a28f38b");
-		    		
-		    		// CRED, as serialization of a CBOR byte string wrapping the serialized certificate
-		    		peerCred = CBORObject.FromObject(peerSerializedCert).EncodeToBytes();
-		    		switch (credType) {
-		    			case Constants.CRED_TYPE_X5CHAIN:
-				    		// ID_CRED for the identity key of the other peer, built from the x509 certificate using x5chain
-		    				peerIdCred = Util.buildIdCredX5chain(peerSerializedCert);
-				    		break;
-		    			case Constants.CRED_TYPE_X5T:
-				    		// ID_CRED for the identity key of the other peer, built from the x509 certificate using x5t
-				    		peerIdCred = Util.buildIdCredX5t(peerSerializedCert);
-				    		break;
-		    			case Constants.CRED_TYPE_X5U:
-				    		// ID_CRED for the identity key of the other peer, built from the x509 certificate using x5u
-		    				peerIdCred = Util.buildIdCredX5u("http://example.repo.com");
-		    				break;
-		    		}
+		    	case Constants.ID_CRED_TYPE_CWT:
+		    		// ID_CRED for the identity key of the other peer, using a CWT to transport the RPK by value
+					// TODO
+					break;
+		    	case Constants.ID_CRED_TYPE_UCCS:
+		    		// ID_CRED for the identity key of the other peer, using a UCCS to transport the RPK by value
+		    		peerIdCred = Util.buildIdCredUCCS(peerUccsObject);
+					break;
+    			case Constants.ID_CRED_TYPE_X5CHAIN:
+		    		// ID_CRED for the identity key of the other peer, built from the x509 certificate using x5chain
+    				peerIdCred = Util.buildIdCredX5chain(peerSerializedCert);
+		    		break;
+    			case Constants.ID_CRED_TYPE_X5T:
+		    		// ID_CRED for the identity key of the other peer, built from the x509 certificate using x5t
+    				peerIdCred = Util.buildIdCredX5t(peerSerializedCert);
+		    		break;
+    			case Constants.ID_CRED_TYPE_X5U:
+		    		// ID_CRED for the identity key of this peer, built from the x509 certificate using x5u
+    				peerIdCred = Util.buildIdCredX5u("http://example.repo.com");
 		    		break;
 		    }
 			peerPublicKeys.put(peerIdCred, peerPublicKey);
