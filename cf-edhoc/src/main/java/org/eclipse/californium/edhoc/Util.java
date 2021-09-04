@@ -1223,15 +1223,28 @@ public class Util {
 	
     /**
      * Build an ID_CRED using 'cwt', with value a CWT as a CBOR array,
-     * or an Unprotected CWT Claim Set (UCCS) as a CBOR map
      *  
-     * @param kid   The kid to use
+     * @param cwt   The CWT to use
      * @return The ID_CRED, as a CBOR map
      */
 	public static CBORObject buildIdCredCWT(CBORObject cwt) {
 		
 		CBORObject idCred = CBORObject.NewMap();
 		idCred.Add(Constants.COSE_HEADER_PARAM_CWT, cwt);
+		return idCred;
+		
+	}
+	
+    /**
+     * Build an ID_CRED using 'uccs', with value an Unprotected CWT Claim Set (UCCS) as a CBOR map
+     *  
+     * @param claimSet   The CWT claim set to use, as a CBOR map
+     * @return The ID_CRED, as a CBOR map
+     */
+	public static CBORObject buildIdCredUCCS(CBORObject claimSet) {
+		
+		CBORObject idCred = CBORObject.NewMap();
+		idCred.Add(Constants.COSE_HEADER_PARAM_UCCS, claimSet);
 		return idCred;
 		
 	}
@@ -1321,7 +1334,6 @@ public class Util {
 	public static CBORObject buildIdCredX5u(String uri) {
 		
 		CBORObject idCred = CBORObject.NewMap();
-		
 		idCred.Add(Constants.COSE_HEADER_PARAM_X5U, uri);
 		return idCred;
 		
