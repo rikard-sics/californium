@@ -1383,15 +1383,17 @@ public class Util {
      *  
      * @param identityKey   The identity key to encode as CRED
      * @param subjectName   The subject name associated to this key, it can be an empty string
+     * @param kid   The key identifier associated to this key
      * @return The CRED, as a byte serialization of a CBOR map
      */
-	public static byte[] buildCredRawPublicKeyUCCS(OneKey identityKey, String subjectName) {
+	public static byte[] buildCredRawPublicKeyUCCS(OneKey identityKey, String subjectName, CBORObject kid) {
 		
 		if (identityKey  == null || subjectName == null)
 			return null;
 		
 		CBORObject coseKeyMap = CBORObject.NewMap();
 		coseKeyMap.Add(KeyKeys.KeyType.AsCBOR(), identityKey.get(KeyKeys.KeyType));
+		coseKeyMap.Add(KeyKeys.KeyId.AsCBOR(), kid);
 		if (identityKey.get(KeyKeys.KeyType) == KeyKeys.KeyType_OKP) {
 			coseKeyMap.Add(KeyKeys.OKP_Curve.AsCBOR(), identityKey.get(KeyKeys.OKP_Curve));
 			coseKeyMap.Add(KeyKeys.OKP_X.AsCBOR(), identityKey.get(KeyKeys.OKP_X));
