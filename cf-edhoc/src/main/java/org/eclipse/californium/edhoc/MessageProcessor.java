@@ -925,7 +925,7 @@ public class MessageProcessor {
     	CBORObject rawIdCredR = plaintextElementList[0];
     	error = false;
     	
-    	// ID_CRED_R is a CBOR map with 'kid2', and only 'kid2' was transported
+    	// ID_CRED_R is a CBOR map with 'kid', and only 'kid' was transported
     	if (rawIdCredR.getType() == CBORType.Integer || rawIdCredR.getType() == CBORType.ByteString) {
     		idCredR.Add(HeaderKeys.KID.AsCBOR(), rawIdCredR);
     	}
@@ -1303,7 +1303,7 @@ public class MessageProcessor {
     	CBORObject rawIdCredI = plaintextElementList[0];
     	error = false;
     	
-    	// ID_CRED_I is a CBOR map with 'kid2', and only 'kid2' was transported
+    	// ID_CRED_I is a CBOR map with 'kid', and only 'kid' was transported
     	if (rawIdCredI.getType() == CBORType.Integer || rawIdCredI.getType() == CBORType.ByteString) {
     	    idCredI.Add(HeaderKeys.KID.AsCBOR(), rawIdCredI);
     	}
@@ -2124,7 +2124,7 @@ public class MessageProcessor {
     	List<CBORObject> plaintextElementList = new ArrayList<>();
     	CBORObject plaintextElement = null;
     	if (session.getIdCred().ContainsKey(HeaderKeys.KID.AsCBOR())) {
-    		// ID_CRED_R uses 'kid2', whose value is the only thing to include in the plaintext
+    		// ID_CRED_R uses 'kid', whose value is the only thing to include in the plaintext
     		plaintextElement = session.getIdCred().get(HeaderKeys.KID.AsCBOR());
     	}
     	else {
@@ -2343,7 +2343,7 @@ public class MessageProcessor {
     	List<CBORObject> plaintextElementList = new ArrayList<>();
     	CBORObject plaintextElement = null;
     	if (session.getIdCred().ContainsKey(HeaderKeys.KID.AsCBOR())) {
-    	    // ID_CRED_I uses 'kid2', whose value is the only thing to include in the plaintext
+    	    // ID_CRED_I uses 'kid', whose value is the only thing to include in the plaintext
     	    plaintextElement = session.getIdCred().get(HeaderKeys.KID.AsCBOR());
     	}
     	else {
