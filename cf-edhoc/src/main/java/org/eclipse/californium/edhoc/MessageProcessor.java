@@ -2820,16 +2820,17 @@ public class MessageProcessor {
 	    
 	    byte[] key = new byte[keyLength];
 	    String label = null;
+	    CBORObject context = CBORObject.FromObject(new byte[0]);
 	    
 	    try {
 	        switch(keyName) {
 	            case Constants.EDHOC_K_3AE:
 	            	label = new String("K_3ae");
-	                key = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), label, null, keyLength);
+	                key = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), label, context, keyLength);
 	                break;
 	            case Constants.EDHOC_K_4AE:
 	            	label = new String("EDHOC_message_4_Key");
-	                key = session.edhocExporter(label, null, keyLength);
+	                key = session.edhocExporter(label, context, keyLength);
 	                break;
 	            default:
 	            	key = null;
@@ -2861,16 +2862,17 @@ public class MessageProcessor {
 	    
 	    byte[] iv = new byte[ivLength];
 	    String label = null;
+	    CBORObject context = CBORObject.FromObject(new byte[0]);
 	    
 	    try {
 	        switch(ivName) {
             case Constants.EDHOC_IV_3AE:
             	label = new String("IV_3ae");
-                iv = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), label, null, ivLength);
+                iv = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), label, context, ivLength);
                 break;
             case Constants.EDHOC_IV_4AE:
             	label = new String("EDHOC_message_4_Nonce");
-                iv = session.edhocExporter(label, null, ivLength);
+                iv = session.edhocExporter(label, context, ivLength);
                 break;
             default:
             	iv = null;
@@ -2898,8 +2900,9 @@ public class MessageProcessor {
 	public static byte[] computeKeystream2(EdhocSession session, int length) {
     	
 		byte[] keystream2 = new byte[length];
+		CBORObject context = CBORObject.FromObject(new byte[0]);
 		try {
-			keystream2 = session.edhocKDF(session.getPRK2e(), session.getTH2(), "KEYSTREAM_2", null, length);
+			keystream2 = session.edhocKDF(session.getPRK2e(), session.getTH2(), "KEYSTREAM_2", context, length);
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when generating KEYSTREAM_2\n" + e.getMessage());
 			return null;
@@ -3220,15 +3223,17 @@ public class MessageProcessor {
 	public static byte[] computeMAC2(EdhocSession session, byte[] prk3e2m, byte[] th2,
 			                         CBORObject idCredR, byte[] credR, CBORObject[] ead2) {
 		
-		// Build the CBOR sequence for 'context': ( ID_CRED_R, CRED_R, ? EAD_2 )
-    	int eadLength = (ead2 != null) ? ead2.length : 0;
-    	CBORObject[] context = new CBORObject[2 + eadLength];
-    	context[0] = idCredR;
-    	context[1] = CBORObject.FromObject(credR);
+		// Build the CBOR sequence to use for 'context': ( ID_CRED_R, CRED_R, ? EAD_2 )
+		// The actual 'context' is a CBOR byte string with value the serialization of the CBOR sequence
+        List<CBORObject> objectList = new ArrayList<>();
+    	objectList.add(idCredR);
+    	objectList.add(CBORObject.FromObject(credR));
     	if (ead2 != null) {
 	    	for (int i = 0; i < ead2.length; i++)
-	    		context[i+2] = ead2[i];
+	    		objectList.add(ead2[i]);
     	}
+    	byte[] contextSequence = Util.buildCBORSequence(objectList);
+    	CBORObject context = CBORObject.FromObject(contextSequence);
     	
     	int macLength = 0;
     	int method = session.getMethod();
@@ -3266,16 +3271,18 @@ public class MessageProcessor {
      */
 	public static byte[] computeMAC3(EdhocSession session, byte[] prk4x3m, byte[] th3,
             						 CBORObject idCredI, byte[] credI, CBORObject[] ead3) {
-		
+				
 		// Build the CBOR sequence for 'context': ( ID_CRED_I, CRED_I, ? EAD_3 )
-		int eadLength = (ead3 != null) ? ead3.length : 0;
-		CBORObject[] context = new CBORObject[2 + eadLength];
-		context[0] = idCredI;
-		context[1] = CBORObject.FromObject(credI);
-		if (ead3 != null) {
-		    for (int i = 0; i < ead3.length; i++)
-		        context[i+2] = ead3[i];
-		}
+		// The actual 'context' is a CBOR byte string with value the serialization of the CBOR sequence
+        List<CBORObject> objectList = new ArrayList<>();
+    	objectList.add(idCredI);
+    	objectList.add(CBORObject.FromObject(credI));
+    	if (ead3 != null) {
+	    	for (int i = 0; i < ead3.length; i++)
+	    		objectList.add(ead3[i]);
+    	}
+    	byte[] contextSequence = Util.buildCBORSequence(objectList);
+    	CBORObject context = CBORObject.FromObject(contextSequence);
     	
     	int macLength = 0;
     	int method = session.getMethod();
