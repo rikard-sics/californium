@@ -579,6 +579,7 @@ public class EdhocSession {
 		
 		if (hashAlgorithm.equals("SHA-256") || hashAlgorithm.equals("SHA-384") || hashAlgorithm.equals("SHA-512")) {
 			this.prk_4x3m = Hkdf.extract(nonce, this.prk_4x3m);
+	        Util.nicePrint("PRK_4x3m", this.prk_4x3m);
 			return true;
 		}
 		
@@ -620,7 +621,6 @@ public class EdhocSession {
         objectList.add(context);
         objectList.add(CBORObject.FromObject(len));
 		byte[] info = Util.buildCBORSequence(objectList);
-		
 		byte[] okm = null;
 		String hashAlgorithm = EdhocSession.getEdhocHashAlg(selectedCiphersuite);
 		
