@@ -1598,9 +1598,8 @@ public class MessageProcessor {
 		
         // Compute the external data for the external_aad
 		
-        byte[] th4 = session.getTH4(); // TH_4 as plain bytes
-    	byte[] externalData = null;
-    	externalData = CBORObject.FromObject(th4).EncodeToBytes();
+		// Prepare the External Data as including only TH4
+    	byte[] externalData = session.getTH4();
 
     	if (externalData == null) {
     		errMsg = new String("Error when computing the external data for CIPHERTEXT_4");
@@ -1975,7 +1974,7 @@ public class MessageProcessor {
 		List<CBORObject> objectList = new ArrayList<>();
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
 		int errorCode = Constants.ERR_CODE_UNSPECIFIED; // The error code to use for the EDHOC Error Message
-		ResponseCode responseCode = null; // Will be set to the CoAP response code to use for the EDHOC Error Message
+		ResponseCode responseCode = ResponseCode.INTERNAL_SERVER_ERROR;; // The CoAP response code to use for the EDHOC Error Message
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		
         if (debugPrint) {
@@ -2217,7 +2216,7 @@ public class MessageProcessor {
 		List<CBORObject> objectList = new ArrayList<>();
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
 		int errorCode = Constants.ERR_CODE_UNSPECIFIED; // The error code to use for the EDHOC Error Message
-		ResponseCode responseCode = null; // Will be set to the CoAP response code to use for the EDHOC Error Message
+		ResponseCode responseCode = ResponseCode.INTERNAL_SERVER_ERROR; // The CoAP response code to use for the EDHOC Error Message
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		
         if (debugPrint) {
@@ -2336,7 +2335,7 @@ public class MessageProcessor {
     		Util.nicePrint("IV_3ae", iv3ae);
     	}
     	    	
-    	// Prepare the external_aad as including only TH3
+    	// Prepare the External Data as including only TH3
     	externalData = th3;
     	
     	// Prepare the plaintext
@@ -2432,7 +2431,7 @@ public class MessageProcessor {
 		List<CBORObject> objectList = new ArrayList<>();
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
 		int errorCode = Constants.ERR_CODE_UNSPECIFIED; // The error code to use for the EDHOC Error Message
-		ResponseCode responseCode = null; // Will be set to the CoAP response code to use for the EDHOC Error Message
+		ResponseCode responseCode = ResponseCode.INTERNAL_SERVER_ERROR; // The CoAP response code to use for the EDHOC Error Message
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		
         if (debugPrint) {
@@ -2458,9 +2457,8 @@ public class MessageProcessor {
 		
         // Compute the external data for the external_aad
 		
-        byte[] th4 = session.getTH4(); // TH_4 as plain bytes
-    	byte[] externalData = null;
-    	externalData = CBORObject.FromObject(th4).EncodeToBytes();
+		// Prepare the External Data as including only TH4
+    	byte[] externalData = session.getTH4();
 
     	if (externalData == null) {
     		System.err.println("Error when computing the external data for CIPHERTEXT_4");
@@ -2496,12 +2494,12 @@ public class MessageProcessor {
     	if (error == false) {    	
 			k4ae = computeKey(Constants.EDHOC_K_4AE, session);
 			if (k4ae == null) {
-				System.err.println("Error when computing K");
-				errMsg = new String("Error when computing K");
+				System.err.println("Error when computing K_4ae");
+				errMsg = new String("Error when computing K_4ae");
 				error = true;
 			}
 			else if (debugPrint) {
-				Util.nicePrint("K", k4ae);
+				Util.nicePrint("K_4ae", k4ae);
 			}
     	}
 
@@ -2509,12 +2507,12 @@ public class MessageProcessor {
     	if (error == false) {
 	    	iv4ae = computeIV(Constants.EDHOC_IV_4AE, session);
 	    	if (iv4ae == null) {
-	    		System.err.println("Error when computing IV");
-	    		errMsg = new String("Error when computing IV");
+	    		System.err.println("Error when computing IV_4ae");
+	    		errMsg = new String("Error when computing IV_4ae");
 	    		error = true;
 	    	}
 	    	else if (debugPrint) {
-	    		Util.nicePrint("IV", iv4ae);
+	    		Util.nicePrint("IV_4ae", iv4ae);
 	    	}
     	}
     	
@@ -2681,7 +2679,7 @@ public class MessageProcessor {
      * @param method   The authentication method signaled by the Initiator
      * @param keyPair   The identity key of the Initiator
      * @param idCredI   ID_CRED_I for the identity key of the Initiator
-     * @param credI   CRED_I for the identity key of the Initiator
+     * @param credI   CRED_I for the identity key of the Initiator, as the serialization of a CBOR object
      * @param supportedCipherSuites   The list of ciphersuites supported by the Initiator
      * @param usedConnectionIds   The set of allocated Connection Identifiers for the Initiator
      * @param appStatement   The applicability statement used for this session
@@ -2716,7 +2714,7 @@ public class MessageProcessor {
      * @param message1   The payload of the received EDHOC Message 1
      * @param keyPair   The identity key of the Responder
      * @param idCredR   ID_CRED_R for the identity key of the Responder
-     * @param credR   CRED_R for the identity key of the Responder
+     * @param credR   CRED_R for the identity key of the Responder, as the serialization of a CBOR object
      * @param supportedCipherSuites   The list of ciphersuites supported by the Responder
      * @param usedConnectionIds   The set of allocated Connection Identifiers for the Responder
      * @param appStatement   The applicability statement used for this session
@@ -3216,7 +3214,7 @@ public class MessageProcessor {
      * @param prk3e2m   The PRK used to compute MAC_2
      * @param th2   The transcript hash TH2
      * @param idCredR   The ID_CRED_R associated to the long-term public key of the Responder
-     * @param credR   The long-term public key of the Responder
+     * @param credR   The long-term public key of the Responder, as the serialization of a CBOR object
      * @param ead2   The External Authorization Data from EDHOC Message 2, it can be null
      * @return  The computed MAC_2
      */
@@ -3227,7 +3225,8 @@ public class MessageProcessor {
 		// The actual 'context' is a CBOR byte string with value the serialization of the CBOR sequence
         List<CBORObject> objectList = new ArrayList<>();
     	objectList.add(idCredR);
-    	objectList.add(CBORObject.FromObject(credR));
+    	objectList.add(CBORObject.DecodeFromBytes(credR));
+    	
     	if (ead2 != null) {
 	    	for (int i = 0; i < ead2.length; i++)
 	    		objectList.add(ead2[i]);
@@ -3265,7 +3264,7 @@ public class MessageProcessor {
      * @param prk4x3m   The PRK used to compute MAC_3
      * @param th3   The transcript hash TH3
      * @param idCredI   The ID_CRED_I associated to the long-term public key of the Initiator
-     * @param credI   The long-term public key of the Initiator
+     * @param credI   The long-term public key of the Initiator, as the serialization of a CBOR object
      * @param ead3   The External Authorization Data from EDHOC Message 3, it can be null
      * @return  The computed MAC_3
      */
@@ -3276,7 +3275,8 @@ public class MessageProcessor {
 		// The actual 'context' is a CBOR byte string with value the serialization of the CBOR sequence
         List<CBORObject> objectList = new ArrayList<>();
     	objectList.add(idCredI);
-    	objectList.add(CBORObject.FromObject(credI));
+    	objectList.add(CBORObject.DecodeFromBytes(credI));
+    	
     	if (ead3 != null) {
 	    	for (int i = 0; i < ead3.length; i++)
 	    		objectList.add(ead3[i]);
