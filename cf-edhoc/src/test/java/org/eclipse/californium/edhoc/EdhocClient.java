@@ -177,7 +177,6 @@ public class EdhocClient {
 
 		// Use to dynamically generate a key pair
 		// keyPair = Util.generateKeyPair(keyCurve);
-		Util.generateKeyPair(keyCurve);
 		
 		// Use to set up hardcoded keys for this peer and the other peer 
 		setupIdentityKeys();
