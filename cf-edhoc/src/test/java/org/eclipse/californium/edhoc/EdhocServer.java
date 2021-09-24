@@ -576,6 +576,7 @@ public class EdhocServer extends CoapServer {
 		byte[] kid = new byte[] {(byte) 0x01};
 		CBORObject idCredX = CBORObject.NewMap();
 		idCredX.Add(HeaderKeys.KID.AsCBOR(), kid);
+		CBORObject emptyMap = CBORObject.NewMap();
 		
 		byte[] mySignature = null;
 		try {
@@ -610,14 +611,14 @@ public class EdhocServer extends CoapServer {
 		System.out.println("Plaintext: " + Utils.bytesToHex(payloadToEncrypt));
 		byte[] myCiphertext = null;
 		try {
-			myCiphertext = Util.encrypt(idCredX, externalData, payloadToEncrypt, encryptionAlg, iv, symmetricKey);
+			myCiphertext = Util.encrypt(emptyMap, externalData, payloadToEncrypt, encryptionAlg, iv, symmetricKey);
 			System.out.println("Encryption completed");
 		} catch (CoseException e) {
 			System.err.println("Error while encrypting: " + e.getMessage());
 		}
 		byte[] myPlaintext = null;
 		try {
-			myPlaintext = Util.decrypt(idCredX, externalData, myCiphertext, encryptionAlg, iv, symmetricKey);
+			myPlaintext = Util.decrypt(emptyMap, externalData, myCiphertext, encryptionAlg, iv, symmetricKey);
 			System.out.println("Decryption completed");
 		} catch (CoseException e) {
 			System.err.println("Error while encrypting: " + e.getMessage());
