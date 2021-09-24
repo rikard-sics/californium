@@ -71,14 +71,23 @@ public class EdhocServer extends CoapServer {
 	// Has to be aligned between Initiator and Responder, to choose which public keys to install for testing
 	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
 	
-    // The type of the credential of this peer and the other peer
+    // The type of the credential of this peer
     // Possible values: CRED_TYPE_CWT ; CRED_TYPE_CCS ; CRED_TYPE_X509
     private static int credType = Constants.CRED_TYPE_X509;
     
-    // The type of the credential identifier of this peer and the other peer
+    // The type of the credential identifier of this peer
     // Possible values: ID_CRED_TYPE_KID ; ID_CRED_TYPE_CWT ; ID_CRED_TYPE_CCS ;
     //                  ID_CRED_TYPE_X5T ; ID_CRED_TYPE_X5U ; ID_CRED_TYPE_X5CHAIN
     private static int idCredType = Constants.ID_CRED_TYPE_X5T;
+    
+    // The type of the credential of the other peer
+    // Possible values: CRED_TYPE_CWT ; CRED_TYPE_CCS ; CRED_TYPE_X509
+    private static int peerCredType = Constants.CRED_TYPE_X509;
+    
+    // The type of the credential identifier of the other peer
+    // Possible values: ID_CRED_TYPE_KID ; ID_CRED_TYPE_CWT ; ID_CRED_TYPE_CCS ;
+    //                  ID_CRED_TYPE_X5T ; ID_CRED_TYPE_X5U ; ID_CRED_TYPE_X5CHAIN
+    private static int peerIdCredType = Constants.ID_CRED_TYPE_X5T;
     
     // The subject name used for the identity key of this peer
     private static String subjectName = "";
@@ -432,7 +441,7 @@ public class EdhocServer extends CoapServer {
 		// Use 0x24 as kid for the other peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x24
 		byte[] peerKid = new byte[] {(byte) 0x24};
 		
-		switch (credType) {
+		switch (peerCredType) {
 		case Constants.CRED_TYPE_CWT:
 			// TODO
 			break;
@@ -468,7 +477,7 @@ public class EdhocServer extends CoapServer {
 		// Build ID_CRED for the other peer
 		CBORObject peerIdCred = null;
 		
-	    switch (idCredType) {
+	    switch (peerIdCredType) {
 	    	case Constants.ID_CRED_TYPE_KID:
 	    		// ID_CRED for the identity key of the other peer, using the kid associated to the RPK
 	    		peerIdCred = Util.buildIdCredKid(peerKid);
