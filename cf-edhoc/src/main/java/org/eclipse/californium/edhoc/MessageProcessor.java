@@ -3326,8 +3326,11 @@ public class MessageProcessor {
     	int selectedCiphersuite = session.getSelectedCiphersuite();
     	AlgorithmID alg = EdhocSession.getEdhocAEADAlg(selectedCiphersuite);
     	
+    	// Prepare the empty content for the COSE protected header
+    	CBORObject emptyMap = CBORObject.NewMap();
+    	
     	try {
-    		ciphertext3 = Util.encrypt(null, externalData, plaintext, alg, iv3ae, k3ae);
+    		ciphertext3 = Util.encrypt(emptyMap, externalData, plaintext, alg, iv3ae, k3ae);
 		} catch (CoseException e) {
 			System.err.println("Error when computing CIPHERTEXT_3\n" + e.getMessage());
 			return null;
@@ -3356,8 +3359,11 @@ public class MessageProcessor {
     	int selectedCiphersuite = session.getSelectedCiphersuite();
     	AlgorithmID alg = EdhocSession.getEdhocAEADAlg(selectedCiphersuite);
     	
+    	// Prepare the empty content for the COSE protected header
+    	CBORObject emptyMap = CBORObject.NewMap();
+    	
     	try {
-			ciphertext4 = Util.encrypt(null, externalData, plaintext, alg, iv4m, k4m);
+			ciphertext4 = Util.encrypt(emptyMap, externalData, plaintext, alg, iv4m, k4m);
 		} catch (CoseException e) {
 			System.err.println("Error when computing CIPHERTEXT_4\n" + e.getMessage());
 			return null;
