@@ -53,8 +53,7 @@ public class Util {
 
     /**
      *  Compute a ciphertext using the COSE Encrypt0 object
-     * @param idCredX   The ID of the public credential of the encrypter as a CBOR map,
-     *                  or null for computing CIPHERTEXT_3 and CIPHERTEXT_4 
+     * @param pretectedHeader   The elements to include in the COSE protected header, as a CBOR map
      * @param externalData   The data to use as external_aad
      * @param plaintext   The plaintext to encrypt
      * @param alg   The encryption algorithm to use
@@ -62,26 +61,21 @@ public class Util {
      * @param key   The symmetric key to use for encrypting
      * @return  the computed ciphertext, or null in case of invalid input
      */
-	public static byte[] encrypt (CBORObject idCredX, byte[] externalData, byte[] plaintext,
+	public static byte[] encrypt (CBORObject pretectedHeader, byte[] externalData, byte[] plaintext,
 			                      AlgorithmID alg, byte[] iv, byte[] key) throws CoseException {
         
-		if(externalData == null || plaintext == null || iv == null || key == null)
+		if(pretectedHeader == null || externalData == null || plaintext == null || iv == null || key == null)
         	return null;       
 		
-        // The ID of the public credential has to be a CBOR map, except for computing MAC_4
-        if(idCredX != null && idCredX.getType() != CBORType.Map)
+        // The elements to include in the COSE protected header must be provided as a CBOR map 
+        if(pretectedHeader.getType() != CBORType.Map)
         	return null;
                 
         Encrypt0Message msg = new Encrypt0Message();
         
         // Set the protected header of the COSE object
-        
-        // The ID of the public credential is a CBOR map, except for computing MAC_4 in which case the Protected bucket is empty
-        if(idCredX != null) {        
-	        for(CBORObject label : idCredX.getKeys()) {
-	            // All good if the map has only one element, otherwise it needs to be rebuilt deterministically
-	        	msg.addAttribute(label, idCredX.get(label), Attribute.PROTECTED);
-	        }
+        for(CBORObject label : pretectedHeader.getKeys()) {
+        	msg.addAttribute(label, pretectedHeader.get(label), Attribute.PROTECTED);
         }
         
         msg.addAttribute(HeaderKeys.Algorithm, alg.AsCBOR(), Attribute.DO_NOT_SEND);
@@ -114,7 +108,7 @@ public class Util {
 	
     /**
      *  Decrypt a ciphertext using the COSE Encrypt0 object
-     * @param idCredX   The ID of the public credential of the decrypter, as a CBOR map 
+     * @param pretectedHeader   The elements to include in the COSE protected header, as a CBOR map 
      * @param externalData   The data to use as external_aad
      * @param ciphertext   The ciphertext to decrypt
      * @param alg   The encryption algorithm to use
@@ -122,22 +116,21 @@ public class Util {
      * @param key   The symmetric key to use for decrypting
      * @return  the computed plaintext, or null in case of invalid input
      */
-	public static byte[] decrypt (CBORObject idCredX, byte[] externalData, byte[] ciphertext, AlgorithmID alg, byte[] iv, byte[] key)
-			                               throws CoseException {
+	public static byte[] decrypt (CBORObject pretectedHeader, byte[] externalData, byte[] ciphertext,
+								  AlgorithmID alg, byte[] iv, byte[] key) throws CoseException {
         
-		if(idCredX == null || externalData == null || ciphertext == null || iv == null || key == null)
+		if(pretectedHeader == null || externalData == null || ciphertext == null || iv == null || key == null)
         	return null;       
 		
-        // The ID of the public credential has to be a CBOR map ...
-        if(idCredX.getType() != CBORType.Map)
+        // The elements to include in the COSE protected header must be provided as a CBOR map
+        if(pretectedHeader.getType() != CBORType.Map)
         	return null;
         
         Encrypt0Message msg = new Encrypt0Message();
         
         // Set the protected header of the COSE object
-        for(CBORObject label : idCredX.getKeys()) {
-            // All good if the map has only one element, otherwise it needs to be rebuilt deterministically
-        	msg.addAttribute(label, idCredX.get(label), Attribute.PROTECTED);
+        for(CBORObject label : pretectedHeader.getKeys()) {
+        	msg.addAttribute(label, pretectedHeader.get(label), Attribute.PROTECTED);
         }
         
         msg.addAttribute(HeaderKeys.Algorithm, alg.AsCBOR(), Attribute.DO_NOT_SEND);
