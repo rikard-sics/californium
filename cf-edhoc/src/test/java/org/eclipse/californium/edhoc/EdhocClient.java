@@ -28,7 +28,6 @@ import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -57,7 +56,6 @@ import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
 import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
 import org.eclipse.californium.cose.AlgorithmID;
-import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 
@@ -72,15 +70,20 @@ public class EdhocClient {
 	private static final int DEFAULT_BLOCK_SIZE = 512;
 	
 	private final static Provider EdDSA = new EdDSASecurityProvider();
+		
+	
+	// Set to True if this CoAP client is the EDHOC initiator (only flow available at the moment)
+	// Relevant to choose with public keys to install, when testing with selected ciphersuite 0 or 1
+	private final static boolean isInitiator = true;
+	
+	// What will be the selected ciphersuite as indicated in EDHOC message 1
+	// Has to be aligned between Initiator and Responder, to choose which public keys to install for testing
+	private static int selectedCipherSuite = Constants.EDHOC_CIPHER_SUITE_0;
 	
 	// The authentication method to include in EDHOC message 1 (Initiator only)
-	// Has to be aligned between Initiator and Responder, to choose which public keys to use for testing
+	// Has to be aligned between Initiator and Responder, to choose which public keys to install for testing
 	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
 	
-	// Key curve of the long-term identity key of this and the other peer
-	// Possible values: CURVE_Ed25519; CURVE_X25519; CURVE_P256
-    private final static int keyCurve = Constants.CURVE_Ed25519;
-    
     // The type of the credential of this peer and the other peer
     // Possible values: CRED_TYPE_CWT ; CRED_TYPE_CCS ; CRED_TYPE_X509
     private static int credType = Constants.CRED_TYPE_X509;
@@ -90,14 +93,28 @@ public class EdhocClient {
     //                  ID_CRED_TYPE_X5T ; ID_CRED_TYPE_X5U ; ID_CRED_TYPE_X5CHAIN
     private static int idCredType = Constants.ID_CRED_TYPE_X5T;
     
+	// Set to true if an OSCORE-protected exchange is performed after EDHOC completion
+	private static final boolean POST_EDHOC_EXCHANGE = false;
+	
+	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
+	// Note: the applicability statement pertaining the EDHOC resource must first indicate support for the combined request 
+	private static final boolean OSCORE_EDHOC_COMBINED = false;
+    
+	
+    // The subject name used for the identity key of this peer
+    private static String subjectName = "";
+    
     // The CRED used for the identity key of this peer
     private static byte[] cred = null;
     
     // The ID_CRED used for the identity key of this peer
     private static CBORObject idCred = null;
     
-    // The subject name used for the identity key of this peer
-    private static String subjectName = "";
+	// Key curve of the long-term identity key of this peer
+    private static int keyCurve = -1;
+
+	// Key curve of the long-term identity key of the other peer
+    private static int peerKeyCurve = -1;
     
     // The long-term asymmetric key pair of this peer
 	private static OneKey keyPair = null;
@@ -131,13 +148,6 @@ public class EdhocClient {
 	
 	// The size of the Replay Window to use in an OSCORE Recipient Context
 	private static final int OSCORE_REPLAY_WINDOW = 32;
-	
-	// Set to true if an OSCORE-protected exchange is performed after EDHOC completion
-	private static final boolean POST_EDHOC_EXCHANGE = false;
-	
-	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
-	// Note: the applicability statement pertaining the EDHOC resource must first indicate support for the combined request 
-	private static final boolean OSCORE_EDHOC_COMBINED = false;
 	
 	private static NetworkConfigDefaultHandler DEFAULTS = new NetworkConfigDefaultHandler() {
 
@@ -247,8 +257,6 @@ public class EdhocClient {
 	
 	private static void setupIdentityKeys () {
 		
-		String keyPairBase64 = null;
-		String peerPublicKeyBase64 = null;
 		byte[] privateKeyBinary = null;
 		byte[] publicKeyBinary = null;
 		byte[] publicKeyBinaryY = null;
@@ -256,24 +264,73 @@ public class EdhocClient {
 		byte[] peerPublicKeyBinaryY = null;
 		
 					
-		/* Values as binary serializations */
+		// In order to install the right public keys to use for testing, determine the public key curve
+		// consistent with the expected selected cipher suite and the expected authentication method.
+		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_0 ||
+			selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_1) {
+			
+			switch (authenticationMethod) {
+				case Constants.EDHOC_AUTH_METHOD_0:
+					keyCurve = peerKeyCurve = Constants.CURVE_Ed25519;
+					break;
+				case Constants.EDHOC_AUTH_METHOD_1:
+					if (isInitiator) {
+						keyCurve = Constants.CURVE_Ed25519;
+						peerKeyCurve = Constants.CURVE_X25519;
+					}
+					else {
+						keyCurve = Constants.CURVE_X25519;
+						peerKeyCurve = Constants.CURVE_Ed25519;
+					}
+					break;
+				case Constants.EDHOC_AUTH_METHOD_2:
+					if (isInitiator) {
+						keyCurve = Constants.CURVE_X25519;
+						peerKeyCurve = Constants.CURVE_Ed25519;
+					}
+					else {
+						keyCurve = Constants.CURVE_Ed25519;
+						peerKeyCurve = Constants.CURVE_X25519;
+					}
+					break;
+				case Constants.EDHOC_AUTH_METHOD_3:
+					keyCurve = peerKeyCurve = Constants.CURVE_X25519;
+					break;
+			}			
+		}
+		else if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_2 ||
+				 selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_3) {
+			
+			keyCurve = peerKeyCurve = Constants.CURVE_P256;
+			
+		}
+		
+		/* Values as binary serializations */		
 		if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
 			privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("04f347f2bead699adb247344f347f2bdac93c7f2bead6a9d2a9b24754a1e2b62");
 			publicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("cd4177ba62433375ede279b5e18e8b91bc3ed8f1e174474a26fc0edb44ea5373");
 			publicKeyBinaryY = net.i2p.crypto.eddsa.Utils.hexToBytes("A0391DE29C5C5BADDA610D4E301EAAA18422367722289CD18CBE6624E89B9CFD");
-			peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("6f9702a66602d78f5e81bac1e0af01f8b52810c502e87ebb7c926c07426fd02f");
-			peerPublicKeyBinaryY = net.i2p.crypto.eddsa.Utils.hexToBytes("C8D33274C71C9B3EE57D842BBF2238B8283CB410ECA216FB72A78EA7A870F800");
 		}
  		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
  			privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("2ffce7a0b2b825d397d0cb54f746e3da3f27596ee06b5371481dc0e012bc34d7");
 			publicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("38e5d54563c2b6a4ba26f3015f61bb706e5c2efdb556d2e1690b97fc3c6de149");
-			peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
  		}
  		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
  			privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("2bbea655c23371c329cfbd3b1f02c6c062033837b8b59099a4436f666081b08e");
 			publicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("2c440cc121f8d7f24c3b0e41aedafe9caa4f4e7abb835ec30f1de88adb96ff71");
+ 		}
+		
+		if (peerKeyCurve == KeyKeys.EC2_P256.AsInt32()) {
+			peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("6f9702a66602d78f5e81bac1e0af01f8b52810c502e87ebb7c926c07426fd02f");
+			peerPublicKeyBinaryY = net.i2p.crypto.eddsa.Utils.hexToBytes("C8D33274C71C9B3EE57D842BBF2238B8283CB410ECA216FB72A78EA7A870F800");
+		}
+ 		else if (peerKeyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
+			peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
+ 		}
+ 		else if (peerKeyCurve == KeyKeys.OKP_X25519.AsInt32()) {
 			peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
  		}
+		
 		
 		
 		/* Settings for this peer */
@@ -367,14 +424,14 @@ public class EdhocClient {
 	    OneKey peerPublicKey = null;
 
 		/* Values as binary serializations */
-			if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
+			if (peerKeyCurve == KeyKeys.EC2_P256.AsInt32()) {
 				peerPublicKey =  SharedSecretCalculation.buildEcdsa256OneKey(null, peerPublicKeyBinary, peerPublicKeyBinaryY);
 			}
 	 		else 
-			if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
+			if (peerKeyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
 				peerPublicKey =  SharedSecretCalculation.buildEd25519OneKey(null, peerPublicKeyBinary);
 			}
-			else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+			else if (peerKeyCurve == KeyKeys.OKP_X25519.AsInt32()) {
 				peerPublicKey =  SharedSecretCalculation.buildCurve25519OneKey(null, peerPublicKeyBinary);
 			}
 		
@@ -397,13 +454,13 @@ public class EdhocClient {
 			
 			// These serializations have to be prepared manually, in order to ensure that
 			// the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
-			if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
+			if (peerKeyCurve == KeyKeys.EC2_P256.AsInt32()) {
 				peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a5010202410720012158206f9702a66602d78f5e81bac1e0af01f8b52810c502e87ebb7c926c07426fd02f225820c8d33274c71c9b3ee57d842bbf2238b8283cb410eca216fb72a78ea7a870f800");
 			}
-	 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
+	 		else if (peerKeyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
 				peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a401010241072006215820dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
 	 		}
-	 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+	 		else if (peerKeyCurve == KeyKeys.OKP_X25519.AsInt32()) {
 				peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a401010241072004215820a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
 	 		}
 			break;
