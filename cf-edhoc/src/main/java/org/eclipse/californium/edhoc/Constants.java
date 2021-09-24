@@ -53,29 +53,29 @@ public static final int CURVE_P256 = KeyKeys.EC2_P256.AsInt32();       // P-256
 /**
  * Credential Type
  */
-public static final int CRED_TYPE_CWT = 0;  // RPK as a CWT
-public static final int CRED_TYPE_UCCS = 1; // RPK as a Unprotected CWT Claim Set (UCCS)
-public static final int CRED_TYPE_X509 = 2; // X.509 certificate
+public static final int CRED_TYPE_CWT  = 0;  // RPK as a CWT
+public static final int CRED_TYPE_CCS  = 1;  // RPK as a CWT Claims Set (CCS)
+public static final int CRED_TYPE_X509 = 2;  // X.509 certificate
 
 /**
  * Credential Identifier Type
  */
-public static final int ID_CRED_TYPE_KID = 0;     // RPK by reference
-public static final int ID_CRED_TYPE_CWT = 1;     // RPK by value (as CWT)
-public static final int ID_CRED_TYPE_UCCS = 2;    // RPK by value (as UCCS)
-public static final int ID_CRED_TYPE_X5T = 3;     // X.509 certificate by hash reference
-public static final int ID_CRED_TYPE_X5U = 4;     // X.509 certificate by retrieval link
-public static final int ID_CRED_TYPE_X5CHAIN = 5; // X.509 certificate by value
+public static final int ID_CRED_TYPE_KID     = 0;     // RPK by reference
+public static final int ID_CRED_TYPE_CWT     = 1;     // RPK by value (as CWT)
+public static final int ID_CRED_TYPE_CCS     = 2;     // RPK by value (as CCS)
+public static final int ID_CRED_TYPE_X5T     = 3;     // X.509 certificate by hash reference
+public static final int ID_CRED_TYPE_X5U     = 4;     // X.509 certificate by retrieval link
+public static final int ID_CRED_TYPE_X5CHAIN = 5;     // X.509 certificate by value
 
 /**
  * COSE Header Parameters
  * https://www.iana.org/assignments/cose/cose.xhtml
  */
 public static final int COSE_HEADER_PARAM_X5CHAIN = 33;
-public static final int COSE_HEADER_PARAM_X5T = 34;
-public static final int COSE_HEADER_PARAM_X5U = 35;
-public static final int COSE_HEADER_PARAM_CWT = 36;
-public static final int COSE_HEADER_PARAM_UCCS = 37;
+public static final int COSE_HEADER_PARAM_X5T     = 34;
+public static final int COSE_HEADER_PARAM_X5U     = 35;
+public static final int COSE_HEADER_PARAM_KCWT    = 36;  // Official value to be still assigned
+public static final int COSE_HEADER_PARAM_KCCS    = 37;  // Official value to be still assigned
 
 /**
  * CBOR Web Token (CWT) Claims

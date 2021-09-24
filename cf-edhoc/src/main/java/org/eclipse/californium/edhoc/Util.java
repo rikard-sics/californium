@@ -1222,29 +1222,29 @@ public class Util {
 	}
 	
     /**
-     * Build an ID_CRED using 'cwt', with value a CWT as a CBOR array,
+     * Build an ID_CRED using 'kcwt', with value a CWT as a CBOR array,
      *  
      * @param cwt   The CWT to use
      * @return The ID_CRED, as a CBOR map
      */
-	public static CBORObject buildIdCredCWT(CBORObject cwt) {
+	public static CBORObject buildIdCredKcwt(CBORObject cwt) {
 		
 		CBORObject idCred = CBORObject.NewMap();
-		idCred.Add(Constants.COSE_HEADER_PARAM_CWT, cwt);
+		idCred.Add(Constants.COSE_HEADER_PARAM_KCWT, cwt);
 		return idCred;
 		
 	}
 	
     /**
-     * Build an ID_CRED using 'uccs', with value an Unprotected CWT Claim Set (UCCS) as a CBOR map
+     * Build an ID_CRED using 'kccs', with value a CWT Claims Set (CCS) as a CBOR map
      *  
-     * @param claimSet   The CWT claim set to use, as a CBOR map
+     * @param claimSet   The CWT Claims Set to use, as a CBOR map
      * @return The ID_CRED, as a CBOR map
      */
-	public static CBORObject buildIdCredUCCS(CBORObject claimSet) {
+	public static CBORObject buildIdCredKccs(CBORObject claimSet) {
 		
 		CBORObject idCred = CBORObject.NewMap();
-		idCred.Add(Constants.COSE_HEADER_PARAM_UCCS, claimSet);
+		idCred.Add(Constants.COSE_HEADER_PARAM_KCCS, claimSet);
 		return idCred;
 		
 	}
@@ -1379,19 +1379,19 @@ public class Util {
 	}
 	
     /**
-     * Build an ID_CRED to use with 'kid2', with value an Unprotected CWT Claim Set (UCCS) 
+     * Build an ID_CRED to use with 'kid2', with value a CWT Claims Set (CCS) 
      *  
      * @param identityKey   The identity key to encode as CRED
      * @param subjectName   The subject name associated to this key, it can be an empty string
      * @param kid   The key identifier associated to this key
      * @return The CRED, as a byte serialization of a CBOR map
      */
-	public static byte[] buildCredRawPublicKeyUCCS(OneKey identityKey, String subjectName, CBORObject kid) {
+	public static byte[] buildCredRawPublicKeyCcs(OneKey identityKey, String subjectName, CBORObject kid) {
 		
 		if (identityKey  == null || subjectName == null)
 			return null;
 		
-		CBORObject coseKeyMap = CBORObject.NewMap();
+		CBORObject coseKeyMap = CBORObject.NewOrderedMap();
 		coseKeyMap.Add(KeyKeys.KeyType.AsCBOR(), identityKey.get(KeyKeys.KeyType));
 		coseKeyMap.Add(KeyKeys.KeyId.AsCBOR(), kid);
 		if (identityKey.get(KeyKeys.KeyType) == KeyKeys.KeyType_OKP) {
@@ -1407,14 +1407,14 @@ public class Util {
 			return null;
 		}
 		
-		CBORObject cnfMap = CBORObject.NewMap();
+		CBORObject cnfMap = CBORObject.NewOrderedMap();
 		cnfMap.Add(Constants.CWT_CNF_COSE_KEY, coseKeyMap);
 		
-		CBORObject claimSetMap = CBORObject.NewMap();
+		CBORObject claimSetMap = CBORObject.NewOrderedMap();
 		claimSetMap.Add(Constants.CWT_CLAIMS_SUB, subjectName);
 		claimSetMap.Add(Constants.CWT_CLAIMS_CNF, cnfMap);
 
-		System.out.println("UCCS serialization: " + Utils.bytesToHex(claimSetMap.EncodeToBytes()));
+		System.out.println("CCS serialization: " + Utils.bytesToHex(claimSetMap.EncodeToBytes()));
 		
         return claimSetMap.EncodeToBytes();
 		

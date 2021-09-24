@@ -2823,11 +2823,11 @@ public class MessageProcessor {
 	    try {
 	        switch(keyName) {
 	            case Constants.EDHOC_K_3AE:
-	            	label = new String("K_3ae");
+	            	label = new String("K_3");
 	                key = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), label, context, keyLength);
 	                break;
 	            case Constants.EDHOC_K_4AE:
-	            	label = new String("EDHOC_message_4_Key");
+	            	label = new String("EDHOC_K_4");
 	                key = session.edhocExporter(label, context, keyLength);
 	                break;
 	            default:
@@ -2865,11 +2865,11 @@ public class MessageProcessor {
 	    try {
 	        switch(ivName) {
             case Constants.EDHOC_IV_3AE:
-            	label = new String("IV_3ae");
+            	label = new String("IV_3");
                 iv = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), label, context, ivLength);
                 break;
             case Constants.EDHOC_IV_4AE:
-            	label = new String("EDHOC_message_4_Nonce");
+            	label = new String("EDHOC_IV_4");
                 iv = session.edhocExporter(label, context, ivLength);
                 break;
             default:
