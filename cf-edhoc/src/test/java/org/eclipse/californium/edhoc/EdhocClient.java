@@ -73,9 +73,8 @@ public class EdhocClient {
 	
 	private final static Provider EdDSA = new EdDSASecurityProvider();
 	
-	private final static int keyFormat = 1; // 0 is for Base64; 1 is for binary encoding
-	
-	// The authentication method to be indicated in EDHOC message 1 (relevant or the Initiator only)
+	// The authentication method to include in EDHOC message 1 (Initiator only)
+	// Has to be aligned between Initiator and Responder, to choose which public keys to use for testing
 	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
 	
 	// Key curve of the long-term identity key of this and the other peer
@@ -257,248 +256,201 @@ public class EdhocClient {
 		byte[] peerPublicKeyBinary = null;
 		byte[] peerPublicKeyBinaryY = null;
 		
-		switch (keyFormat) {
-		
-			/* For stand-alone testing, as base64 encoding of OneKey objects */
-			case 0:
-				if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
-					keyPairBase64 = "pgMmAQIgASFYIGdZmgAlZDXB6FGfVVxHrB2LL8JMZag4JgK4ZcZ/+GBUIlgguZsSChh5hecy3n4Op+lZZJ2xXdbsz8DY7qRmLdIVavkjWCDfyRlRix5e7y5M9aMohvqWGgWCbCW2UYo7V5JppHHsRA==";
-					peerPublicKeyBase64 = "pQMmAQIgASFYIPWSTdB9SCF/+CGXpy7gty8qipdR30t6HgdFGQo8ViiAIlggXvJCtXVXBJwmjMa4YdRbcdgjpXqM57S2CZENPrUGQnM=";
-				}
-		 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
-		 			keyPairBase64 = "pQMnAQEgBiFYIEPgltbaO4rEBSYv3Lhs09jLtrOdihHUxLdc9pRoR/W9I1ggTriT3VdzE7bLv2mJ3gqW/YIyJ7vDuCac62OZMNO8SP4=";
-		 			peerPublicKeyBase64 = "pAMnAQEgBiFYIDzQyFH694a7CcXQasH9RcqnmwQAy2FIX97dGGGy+bpS";
-		 		}
-		 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
-		 			keyPairBase64 = "pQMnAQEgBiFYIGt2OynWjaQY4cE9OhPQrwcrZYNg8lRJ+MwXIYMjeCtrI1gg5TeGQyIjv2d2mulBYLnL7Mxp0cuaHMBlSuuFtmaU808=";
-		 			peerPublicKeyBase64 = "pAMnAQEgBiFYIKOjK/y+4psOGi9zdnJBqTLThdpEj6Qygg4Voc10NYGS";
-		 		}
-				break;
-			
-			/* Value from the test vectors, as binary serializations */
-			case 1:
-				if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
-					privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("04f347f2bead699adb247344f347f2bdac93c7f2bead6a9d2a9b24754a1e2b62");
-					publicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("cd4177ba62433375ede279b5e18e8b91bc3ed8f1e174474a26fc0edb44ea5373");
-					publicKeyBinaryY = net.i2p.crypto.eddsa.Utils.hexToBytes("A0391DE29C5C5BADDA610D4E301EAAA18422367722289CD18CBE6624E89B9CFD");
-					peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("6f9702a66602d78f5e81bac1e0af01f8b52810c502e87ebb7c926c07426fd02f");
-					peerPublicKeyBinaryY = net.i2p.crypto.eddsa.Utils.hexToBytes("C8D33274C71C9B3EE57D842BBF2238B8283CB410ECA216FB72A78EA7A870F800");
-				}
-		 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
-		 			privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("2ffce7a0b2b825d397d0cb54f746e3da3f27596ee06b5371481dc0e012bc34d7");
-					publicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("38e5d54563c2b6a4ba26f3015f61bb706e5c2efdb556d2e1690b97fc3c6de149");
-					peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
-		 		}
-		 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
-		 			privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("2bbea655c23371c329cfbd3b1f02c6c062033837b8b59099a4436f666081b08e");
-					publicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("2c440cc121f8d7f24c3b0e41aedafe9caa4f4e7abb835ec30f1de88adb96ff71");
-					peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
-		 		}
-				break;
-		
-		}
-		
-		
-		try {
-
-			/* Settings for this peer */
-			
-			// Build the OneKey object for the identity key pair of this peer
-			
-			switch (keyFormat) {
-			/* For stand-alone testing, as base64 encoding of OneKey objects */
-			case 0:
-				keyPair =  new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyPairBase64)));
-				break;
-				
-			/* Value from the test vectors, as binary serializations */
-			case 1:
-				if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
-					keyPair =  SharedSecretCalculation.buildEcdsa256OneKey(privateKeyBinary, publicKeyBinary, publicKeyBinaryY);
-				}
-		 		else 
-				if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
-					keyPair =  SharedSecretCalculation.buildEd25519OneKey(privateKeyBinary, publicKeyBinary);
-				}
-				else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
-					keyPair =  SharedSecretCalculation.buildCurve25519OneKey(privateKeyBinary, publicKeyBinary);
-				}
-				break;
-			}
-			
-			// Build CRED for this peer
-			byte[] serializedCert = null;
-			CBORObject ccsObject = null;
-			
-    		// Use 0x24 as kid for this peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x24
-		    byte[] idCredKid = new byte[] {(byte) 0x24};
-			
-			switch (credType) {
-				case Constants.CRED_TYPE_CWT:
-					// TODO
-					break;
-				case Constants.CRED_TYPE_CCS:
-					System.out.print("My   ");
-					CBORObject idCredKidCbor = CBORObject.FromObject(idCredKid);
-					ccsObject = CBORObject.DecodeFromBytes(Util.buildCredRawPublicKeyCcs(keyPair, subjectName, idCredKidCbor));
 					
-					// These serializations have to be prepared manually, in order to ensure that
-					// the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
-					if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
-						cred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a501020241242001215820cd4177ba62433375ede279b5e18e8b91bc3ed8f1e174474a26fc0edb44ea5373225820a0391de29c5c5badda610d4e301eaaa18422367722289cd18cbe6624e89b9cfd");
-					}
-			 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
-						cred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a40101024124200621582038e5d54563c2b6a4ba26f3015f61bb706e5c2efdb556d2e1690b97fc3c6de149");
-			 		}
-			 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
-						cred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a4010102412420042158202c440cc121f8d7f24c3b0e41aedafe9caa4f4e7abb835ec30f1de88adb96ff71");
-			 		}
-					break;
-				case Constants.CRED_TYPE_X509:
-		    		// The x509 certificate of this peer
-		    		serializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("5413204c3ebc3428a6cf57e24c9def59651770449bce7ec6561e52433aa55e71f1fa34b22a9ca4a1e12924eae1d1766088098449cb848ffc795f88afc49cbe8afdd1ba009f21675e8f6c77a4a2c30195601f6f0a0852978bd43d28207d44486502ff7bdda6");
-		    		
-		    		// Test with Peter (real DER certificate for the same identity key)
-		    		// serializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("30820225308201cba003020102020711223344556600300a06082a8648ce3d040302306f310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31153013060355040b0c0c6d616e7566616374757265723115301306035504030c0c6d6173612e73746f6b2e6e6c3020170d3231303230393039333131345a180f39393939313233313233353935395a308190310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31163014060355040b0c0d6d616e75666163747572696e67311c301a06035504030c13757569643a706c656467652e312e322e332e34311730150603550405130e706c656467652e312e322e332e343059301306072a8648ce3d020106082a8648ce3d03010703420004d474715902aa13cd63984076ea4aeb38818f99a80413fcdd9e033c3c50318817eb1cd945afce48b64479441d1095fb0cf5c31774c786d07959935839bb147defa32e302c30090603551d1304023000301f0603551d23041830168014707f9105ed9e1e1c3fe0cf869d810b2d43d10042300a06082a8648ce3d040302034800304502200fdaaaf09f44ccdafa54a467de952c1e90d1a9a8f60b96793bc9497af318671202210086fddeb42703574df21c7c36a66a3807034fa3366a72b812567f0ed0249a2b31");
-		    		
-		    		// CRED, as serialization of a CBOR byte string wrapping the serialized certificate
-		    		cred = CBORObject.FromObject(serializedCert).EncodeToBytes();
-		    		break;
-			}
-			
-			
-			// Build ID_CRED for this peer
-		    switch (idCredType) {
-		    	case Constants.ID_CRED_TYPE_KID:
-		    		// ID_CRED for the identity key of this peer, using the kid associated to the RPK
-					idCred = Util.buildIdCredKid(idCredKid);
-					break;
-		    	case Constants.ID_CRED_TYPE_CWT:
-		    		// ID_CRED for the identity key of this peer, using a CWT to transport the RPK by value
-					// TODO
-					break;
-		    	case Constants.ID_CRED_TYPE_CCS:
-		    		// ID_CRED for the identity key of this peer, using a CCS to transport the RPK by value
-		    		idCred = Util.buildIdCredKccs(ccsObject);
-					break;
-    			case Constants.ID_CRED_TYPE_X5CHAIN:
-		    		// ID_CRED for the identity key of this peer, built from the x509 certificate using x5chain
-		    		idCred = Util.buildIdCredX5chain(serializedCert);
-		    		break;
-    			case Constants.ID_CRED_TYPE_X5T:
-		    		// ID_CRED for the identity key of this peer, built from the x509 certificate using x5t
-		    		idCred = Util.buildIdCredX5t(serializedCert);
-		    		break;
-    			case Constants.ID_CRED_TYPE_X5U:
-		    		// ID_CRED for the identity key of this peer, built from the x509 certificate using x5u
-		    		idCred = Util.buildIdCredX5u("http://example.repo.com");
-		    		break;
-		    }
+		/* Values as binary serializations */
+		if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
+			privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("04f347f2bead699adb247344f347f2bdac93c7f2bead6a9d2a9b24754a1e2b62");
+			publicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("cd4177ba62433375ede279b5e18e8b91bc3ed8f1e174474a26fc0edb44ea5373");
+			publicKeyBinaryY = net.i2p.crypto.eddsa.Utils.hexToBytes("A0391DE29C5C5BADDA610D4E301EAAA18422367722289CD18CBE6624E89B9CFD");
+			peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("6f9702a66602d78f5e81bac1e0af01f8b52810c502e87ebb7c926c07426fd02f");
+			peerPublicKeyBinaryY = net.i2p.crypto.eddsa.Utils.hexToBytes("C8D33274C71C9B3EE57D842BBF2238B8283CB410ECA216FB72A78EA7A870F800");
+		}
+ 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
+ 			privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("2ffce7a0b2b825d397d0cb54f746e3da3f27596ee06b5371481dc0e012bc34d7");
+			publicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("38e5d54563c2b6a4ba26f3015f61bb706e5c2efdb556d2e1690b97fc3c6de149");
+			peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
+ 		}
+ 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+ 			privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("2bbea655c23371c329cfbd3b1f02c6c062033837b8b59099a4436f666081b08e");
+			publicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("2c440cc121f8d7f24c3b0e41aedafe9caa4f4e7abb835ec30f1de88adb96ff71");
+			peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
+ 		}
+		
+		
+		/* Settings for this peer */
+		
+		// Build the OneKey object for the identity key pair of this peer
+						
+		/* Values as binary serializations */
+		if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
+			keyPair =  SharedSecretCalculation.buildEcdsa256OneKey(privateKeyBinary, publicKeyBinary, publicKeyBinaryY);
+		}
+ 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
+			keyPair =  SharedSecretCalculation.buildEd25519OneKey(privateKeyBinary, publicKeyBinary);
+		}
+		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+			keyPair =  SharedSecretCalculation.buildCurve25519OneKey(privateKeyBinary, publicKeyBinary);
+		}
 
-			
-			/* Settings for the other peer */
-		    
-			// Build the OneKey object for the identity public key of the other peer
-		    OneKey peerPublicKey = null;
-		    
-			switch (keyFormat) {
-			/* For stand-alone testing, as base64 encoding of OneKey objects */
-			case 0:
-				peerPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(peerPublicKeyBase64)));
-				break;
-				
-			/* Value from the test vectors, as binary serializations */
-			case 1:
-				if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
-					peerPublicKey =  SharedSecretCalculation.buildEcdsa256OneKey(null, peerPublicKeyBinary, peerPublicKeyBinaryY);
-				}
-		 		else 
-				if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
-					peerPublicKey =  SharedSecretCalculation.buildEd25519OneKey(null, peerPublicKeyBinary);
-				}
-				else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
-					peerPublicKey =  SharedSecretCalculation.buildCurve25519OneKey(null, peerPublicKeyBinary);
-				}
-				break;
-			}
-			
-			// Build CRED for the other peer
-			byte[] peerCred = null;
-			byte[] peerSerializedCert = null;
-			CBORObject peerCcsObject = null;
-			
-    		// Use 0x07 as kid for the other peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x07
-			byte[] peerKid = new byte[] {(byte) 0x07};
-			
-			switch (credType) {
+		// Build CRED for this peer
+		byte[] serializedCert = null;
+		CBORObject ccsObject = null;
+		
+		// Use 0x24 as kid for this peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x24
+	    byte[] idCredKid = new byte[] {(byte) 0x24};
+		
+		switch (credType) {
 			case Constants.CRED_TYPE_CWT:
 				// TODO
 				break;
-			case Constants.CRED_TYPE_CCS:				
-				System.out.print("Peer ");
-				CBORObject peerKidCbor = CBORObject.FromObject(peerKid);
-				peerCcsObject = CBORObject.DecodeFromBytes(Util.buildCredRawPublicKeyCcs(peerPublicKey, subjectName, peerKidCbor));
+			case Constants.CRED_TYPE_CCS:
+				System.out.print("My   ");
+				CBORObject idCredKidCbor = CBORObject.FromObject(idCredKid);
+				ccsObject = CBORObject.DecodeFromBytes(Util.buildCredRawPublicKeyCcs(keyPair, subjectName, idCredKidCbor));
 				
 				// These serializations have to be prepared manually, in order to ensure that
 				// the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
 				if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
-					peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a5010202410720012158206f9702a66602d78f5e81bac1e0af01f8b52810c502e87ebb7c926c07426fd02f225820c8d33274c71c9b3ee57d842bbf2238b8283cb410eca216fb72a78ea7a870f800");
+					cred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a501020241242001215820cd4177ba62433375ede279b5e18e8b91bc3ed8f1e174474a26fc0edb44ea5373225820a0391de29c5c5badda610d4e301eaaa18422367722289cd18cbe6624e89b9cfd");
 				}
 		 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
-					peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a401010241072006215820dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
+					cred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a40101024124200621582038e5d54563c2b6a4ba26f3015f61bb706e5c2efdb556d2e1690b97fc3c6de149");
 		 		}
 		 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
-					peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a401010241072004215820a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
+					cred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a4010102412420042158202c440cc121f8d7f24c3b0e41aedafe9caa4f4e7abb835ec30f1de88adb96ff71");
 		 		}
 				break;
 			case Constants.CRED_TYPE_X509:
-	    		// The x509 certificate of the other peer
-	    		peerSerializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("c788370016b8965bdb2074bff82e5a20e09bec21f8406e86442b87ec3ff245b70a47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb2");
+	    		// The x509 certificate of this peer
+	    		serializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("5413204c3ebc3428a6cf57e24c9def59651770449bce7ec6561e52433aa55e71f1fa34b22a9ca4a1e12924eae1d1766088098449cb848ffc795f88afc49cbe8afdd1ba009f21675e8f6c77a4a2c30195601f6f0a0852978bd43d28207d44486502ff7bdda6");
 	    		
 	    		// Test with Peter (real DER certificate for the same identity key)
-	    		// peerSerializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("308202763082021ca00302010202144aebaeff99a7ec4c9b398e007e3074d6d24fd779300a06082a8648ce3d0403023073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c301e170d3231303230393039333131345a170d3232303230393039333131345a3073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c3059301306072a8648ce3d020106082a8648ce3d030107034200040d75040e117b0fed769f235a4c831ff3b6699b8e310af28094fe3baea003b5e9772a4def5d8d4ee362e9ae9ef615215d115341f531338e3fa4030b6257b25d66a3818d30818a301d0603551d0e0416041444f3cf92db3cda030a3faf611872b90c601c0f74301f0603551d2304183016801444f3cf92db3cda030a3faf611872b90c601c0f74300f0603551d130101ff040530030101ff30270603551d250420301e06082b0601050507031c06082b0601050507030106082b06010505070302300e0603551d0f0101ff0404030201f6300a06082a8648ce3d0403020348003045022100ee29fb91849d8f0c617de9f817e016b535cac732235eed8a6711e68a3a634d0802205d1750bc02f0f1dde19a7c48d82fb5442c560d13f3d1a7e99546a6c39a28f38b");
+	    		// serializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("30820225308201cba003020102020711223344556600300a06082a8648ce3d040302306f310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31153013060355040b0c0c6d616e7566616374757265723115301306035504030c0c6d6173612e73746f6b2e6e6c3020170d3231303230393039333131345a180f39393939313233313233353935395a308190310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31163014060355040b0c0d6d616e75666163747572696e67311c301a06035504030c13757569643a706c656467652e312e322e332e34311730150603550405130e706c656467652e312e322e332e343059301306072a8648ce3d020106082a8648ce3d03010703420004d474715902aa13cd63984076ea4aeb38818f99a80413fcdd9e033c3c50318817eb1cd945afce48b64479441d1095fb0cf5c31774c786d07959935839bb147defa32e302c30090603551d1304023000301f0603551d23041830168014707f9105ed9e1e1c3fe0cf869d810b2d43d10042300a06082a8648ce3d040302034800304502200fdaaaf09f44ccdafa54a467de952c1e90d1a9a8f60b96793bc9497af318671202210086fddeb42703574df21c7c36a66a3807034fa3366a72b812567f0ed0249a2b31");
 	    		
 	    		// CRED, as serialization of a CBOR byte string wrapping the serialized certificate
-	    		peerCred = CBORObject.FromObject(peerSerializedCert).EncodeToBytes();
+	    		cred = CBORObject.FromObject(serializedCert).EncodeToBytes();
 	    		break;
-			}
-			
-			// Build ID_CRED for the other peer
-			CBORObject peerIdCred = null;
-			
-		    switch (idCredType) {
-		    	case Constants.ID_CRED_TYPE_KID:
-		    		// ID_CRED for the identity key of the other peer, using the kid associated to the RPK
-		    		peerIdCred = Util.buildIdCredKid(peerKid);
-					break;
-		    	case Constants.ID_CRED_TYPE_CWT:
-		    		// ID_CRED for the identity key of the other peer, using a CWT to transport the RPK by value
-					// TODO
-					break;
-		    	case Constants.ID_CRED_TYPE_CCS:
-		    		// ID_CRED for the identity key of the other peer, using a CCS to transport the RPK by value
-		    		peerIdCred = Util.buildIdCredKccs(peerCcsObject);
-					break;
-    			case Constants.ID_CRED_TYPE_X5CHAIN:
-		    		// ID_CRED for the identity key of the other peer, built from the x509 certificate using x5chain
-    				peerIdCred = Util.buildIdCredX5chain(peerSerializedCert);
-		    		break;
-    			case Constants.ID_CRED_TYPE_X5T:
-		    		// ID_CRED for the identity key of the other peer, built from the x509 certificate using x5t
-    				peerIdCred = Util.buildIdCredX5t(peerSerializedCert);
-		    		break;
-    			case Constants.ID_CRED_TYPE_X5U:
-		    		// ID_CRED for the identity key of this peer, built from the x509 certificate using x5u
-    				peerIdCred = Util.buildIdCredX5u("http://example.repo.com");
-		    		break;
-		    }
-			peerPublicKeys.put(peerIdCred, peerPublicKey);
-			peerCredentials.put(peerIdCred, CBORObject.FromObject(peerCred));
-			
-		} catch (CoseException e) {
-			System.err.println("Error while generating the key pair");
-			return;
 		}
+		
+		
+		// Build ID_CRED for this peer
+	    switch (idCredType) {
+	    	case Constants.ID_CRED_TYPE_KID:
+	    		// ID_CRED for the identity key of this peer, using the kid associated to the RPK
+				idCred = Util.buildIdCredKid(idCredKid);
+				break;
+	    	case Constants.ID_CRED_TYPE_CWT:
+	    		// ID_CRED for the identity key of this peer, using a CWT to transport the RPK by value
+				// TODO
+				break;
+	    	case Constants.ID_CRED_TYPE_CCS:
+	    		// ID_CRED for the identity key of this peer, using a CCS to transport the RPK by value
+	    		idCred = Util.buildIdCredKccs(ccsObject);
+				break;
+			case Constants.ID_CRED_TYPE_X5CHAIN:
+	    		// ID_CRED for the identity key of this peer, built from the x509 certificate using x5chain
+	    		idCred = Util.buildIdCredX5chain(serializedCert);
+	    		break;
+			case Constants.ID_CRED_TYPE_X5T:
+	    		// ID_CRED for the identity key of this peer, built from the x509 certificate using x5t
+	    		idCred = Util.buildIdCredX5t(serializedCert);
+	    		break;
+			case Constants.ID_CRED_TYPE_X5U:
+	    		// ID_CRED for the identity key of this peer, built from the x509 certificate using x5u
+	    		idCred = Util.buildIdCredX5u("http://example.repo.com");
+	    		break;
+	    }
+
+		
+		/* Settings for the other peer */
+	    
+		// Build the OneKey object for the identity public key of the other peer
+	    OneKey peerPublicKey = null;
+
+		/* Values as binary serializations */
+			if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
+				peerPublicKey =  SharedSecretCalculation.buildEcdsa256OneKey(null, peerPublicKeyBinary, peerPublicKeyBinaryY);
+			}
+	 		else 
+			if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
+				peerPublicKey =  SharedSecretCalculation.buildEd25519OneKey(null, peerPublicKeyBinary);
+			}
+			else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+				peerPublicKey =  SharedSecretCalculation.buildCurve25519OneKey(null, peerPublicKeyBinary);
+			}
+		
+		// Build CRED for the other peer
+		byte[] peerCred = null;
+		byte[] peerSerializedCert = null;
+		CBORObject peerCcsObject = null;
+		
+		// Use 0x07 as kid for the other peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x07
+		byte[] peerKid = new byte[] {(byte) 0x07};
+		
+		switch (credType) {
+		case Constants.CRED_TYPE_CWT:
+			// TODO
+			break;
+		case Constants.CRED_TYPE_CCS:				
+			System.out.print("Peer ");
+			CBORObject peerKidCbor = CBORObject.FromObject(peerKid);
+			peerCcsObject = CBORObject.DecodeFromBytes(Util.buildCredRawPublicKeyCcs(peerPublicKey, subjectName, peerKidCbor));
+			
+			// These serializations have to be prepared manually, in order to ensure that
+			// the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
+			if (keyCurve == KeyKeys.EC2_P256.AsInt32()) {
+				peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a5010202410720012158206f9702a66602d78f5e81bac1e0af01f8b52810c502e87ebb7c926c07426fd02f225820c8d33274c71c9b3ee57d842bbf2238b8283cb410eca216fb72a78ea7a870f800");
+			}
+	 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
+				peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a401010241072006215820dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
+	 		}
+	 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+				peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a401010241072004215820a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
+	 		}
+			break;
+		case Constants.CRED_TYPE_X509:
+    		// The x509 certificate of the other peer
+    		peerSerializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("c788370016b8965bdb2074bff82e5a20e09bec21f8406e86442b87ec3ff245b70a47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb2");
+    		
+    		// Test with Peter (real DER certificate for the same identity key)
+    		// peerSerializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("308202763082021ca00302010202144aebaeff99a7ec4c9b398e007e3074d6d24fd779300a06082a8648ce3d0403023073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c301e170d3231303230393039333131345a170d3232303230393039333131345a3073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c3059301306072a8648ce3d020106082a8648ce3d030107034200040d75040e117b0fed769f235a4c831ff3b6699b8e310af28094fe3baea003b5e9772a4def5d8d4ee362e9ae9ef615215d115341f531338e3fa4030b6257b25d66a3818d30818a301d0603551d0e0416041444f3cf92db3cda030a3faf611872b90c601c0f74301f0603551d2304183016801444f3cf92db3cda030a3faf611872b90c601c0f74300f0603551d130101ff040530030101ff30270603551d250420301e06082b0601050507031c06082b0601050507030106082b06010505070302300e0603551d0f0101ff0404030201f6300a06082a8648ce3d0403020348003045022100ee29fb91849d8f0c617de9f817e016b535cac732235eed8a6711e68a3a634d0802205d1750bc02f0f1dde19a7c48d82fb5442c560d13f3d1a7e99546a6c39a28f38b");
+    		
+    		// CRED, as serialization of a CBOR byte string wrapping the serialized certificate
+    		peerCred = CBORObject.FromObject(peerSerializedCert).EncodeToBytes();
+    		break;
+		}
+		
+		// Build ID_CRED for the other peer
+		CBORObject peerIdCred = null;
+		
+	    switch (idCredType) {
+	    	case Constants.ID_CRED_TYPE_KID:
+	    		// ID_CRED for the identity key of the other peer, using the kid associated to the RPK
+	    		peerIdCred = Util.buildIdCredKid(peerKid);
+				break;
+	    	case Constants.ID_CRED_TYPE_CWT:
+	    		// ID_CRED for the identity key of the other peer, using a CWT to transport the RPK by value
+				// TODO
+				break;
+	    	case Constants.ID_CRED_TYPE_CCS:
+	    		// ID_CRED for the identity key of the other peer, using a CCS to transport the RPK by value
+	    		peerIdCred = Util.buildIdCredKccs(peerCcsObject);
+				break;
+			case Constants.ID_CRED_TYPE_X5CHAIN:
+	    		// ID_CRED for the identity key of the other peer, built from the x509 certificate using x5chain
+				peerIdCred = Util.buildIdCredX5chain(peerSerializedCert);
+	    		break;
+			case Constants.ID_CRED_TYPE_X5T:
+	    		// ID_CRED for the identity key of the other peer, built from the x509 certificate using x5t
+				peerIdCred = Util.buildIdCredX5t(peerSerializedCert);
+	    		break;
+			case Constants.ID_CRED_TYPE_X5U:
+	    		// ID_CRED for the identity key of this peer, built from the x509 certificate using x5u
+				peerIdCred = Util.buildIdCredX5u("http://example.repo.com");
+	    		break;
+	    }
+		peerPublicKeys.put(peerIdCred, peerPublicKey);
+		peerCredentials.put(peerIdCred, CBORObject.FromObject(peerCred));
 		
 	}
 	
