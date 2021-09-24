@@ -69,11 +69,11 @@ public class EdhocServer extends CoapServer {
     private final static int keyCurve = Constants.CURVE_Ed25519;
     
     // The type of the credential of this peer and the other peer
-    // Possible values: CRED_TYPE_CWT ; CRED_TYPE_UCCS ; CRED_TYPE_X509
+    // Possible values: CRED_TYPE_CWT ; CRED_TYPE_CCS ; CRED_TYPE_X509
     private static int credType = Constants.CRED_TYPE_X509;
     
     // The type of the credential identifier of this peer and the other peer
-    // Possible values: ID_CRED_TYPE_KID ; ID_CRED_TYPE_CWT ; ID_CRED_TYPE_UCCS ;
+    // Possible values: ID_CRED_TYPE_KID ; ID_CRED_TYPE_CWT ; ID_CRED_TYPE_CCS ;
     //                  ID_CRED_TYPE_X5T ; ID_CRED_TYPE_X5U ; ID_CRED_TYPE_X5CHAIN
     private static int idCredType = Constants.ID_CRED_TYPE_X5T;
     
@@ -317,7 +317,7 @@ public class EdhocServer extends CoapServer {
 			
 			// Build CRED for this peer
 			byte[] serializedCert = null;
-			CBORObject uccsObject = null;
+			CBORObject ccsObject = null;
 			
     		// Use 0x07 as kid for this peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x07
 			byte[] idCredKid = new byte[] {(byte) 0x07};
@@ -326,10 +326,10 @@ public class EdhocServer extends CoapServer {
 				case Constants.CRED_TYPE_CWT:
 					// TODO
 					break;
-				case Constants.CRED_TYPE_UCCS:
+				case Constants.CRED_TYPE_CCS:
 					System.out.print("My   ");
 					CBORObject idCredKidCbor = CBORObject.FromObject(idCredKid);
-					uccsObject = CBORObject.DecodeFromBytes(Util.buildCredRawPublicKeyUCCS(keyPair, subjectName, idCredKidCbor));
+					ccsObject = CBORObject.DecodeFromBytes(Util.buildCredRawPublicKeyCcs(keyPair, subjectName, idCredKidCbor));
 					
 					// These serializations have to be prepared manually, in order to ensure that
 					// the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
@@ -365,9 +365,9 @@ public class EdhocServer extends CoapServer {
 		    		// ID_CRED for the identity key of this peer, using a CWT to transport the RPK by value
 					// TODO
 					break;
-		    	case Constants.ID_CRED_TYPE_UCCS:
-		    		// ID_CRED for the identity key of this peer, using a UCCS to transport the RPK by value
-		    		idCred = Util.buildIdCredUCCS(uccsObject);
+		    	case Constants.ID_CRED_TYPE_CCS:
+		    		// ID_CRED for the identity key of this peer, using a CCS to transport the RPK by value
+		    		idCred = Util.buildIdCredKccs(ccsObject);
 					break;
     			case Constants.ID_CRED_TYPE_X5CHAIN:
 		    		// ID_CRED for the identity key of this peer, built from the x509 certificate using x5chain
@@ -412,7 +412,7 @@ public class EdhocServer extends CoapServer {
 			// Build CRED for the other peer
 			byte[] peerCred = null;
 			byte[] peerSerializedCert = null;
-			CBORObject peerUccsObject = null;
+			CBORObject peerCcsObject = null;
 			
     		// Use 0x24 as kid for the other peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x24
 			byte[] peerKid = new byte[] {(byte) 0x24};
@@ -421,10 +421,10 @@ public class EdhocServer extends CoapServer {
 			case Constants.CRED_TYPE_CWT:
 				// TODO
 				break;
-			case Constants.CRED_TYPE_UCCS:				
+			case Constants.CRED_TYPE_CCS:				
 				System.out.print("Peer ");
 				CBORObject peerKidCbor = CBORObject.FromObject(peerKid);
-				peerUccsObject = CBORObject.DecodeFromBytes(Util.buildCredRawPublicKeyUCCS(peerPublicKey, subjectName, peerKidCbor));
+				peerCcsObject = CBORObject.DecodeFromBytes(Util.buildCredRawPublicKeyCcs(peerPublicKey, subjectName, peerKidCbor));
 				
 				// These serializations have to be prepared manually, in order to ensure that
 				// the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
@@ -462,9 +462,9 @@ public class EdhocServer extends CoapServer {
 		    		// ID_CRED for the identity key of the other peer, using a CWT to transport the RPK by value
 					// TODO
 					break;
-		    	case Constants.ID_CRED_TYPE_UCCS:
-		    		// ID_CRED for the identity key of the other peer, using a UCCS to transport the RPK by value
-		    		peerIdCred = Util.buildIdCredUCCS(peerUccsObject);
+		    	case Constants.ID_CRED_TYPE_CCS:
+		    		// ID_CRED for the identity key of the other peer, using a CCS to transport the RPK by value
+		    		peerIdCred = Util.buildIdCredKccs(peerCcsObject);
 					break;
     			case Constants.ID_CRED_TYPE_X5CHAIN:
 		    		// ID_CRED for the identity key of the other peer, built from the x509 certificate using x5chain

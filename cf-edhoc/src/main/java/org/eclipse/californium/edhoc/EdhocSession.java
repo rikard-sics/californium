@@ -605,17 +605,8 @@ public class EdhocSession {
 		if (context.getType() != CBORType.ByteString)
 			return null;
 		
-		int edhoc_aead_id;
-		if (selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_2)
-			edhoc_aead_id = AlgorithmID.AES_CCM_16_64_128.AsCBOR().AsInt32(); // AES-CCM-16-64-128 (10)
-		else if (selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_1 || selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_3)
-			edhoc_aead_id = AlgorithmID.AES_CCM_16_128_128.AsCBOR().AsInt32(); // AES-CCM-16-128-128 (30)
-		else
-			return null;
-		
         // Prepare the 'info' CBOR sequence
         List<CBORObject> objectList = new ArrayList<>();
-        objectList.add(CBORObject.FromObject(edhoc_aead_id));
         objectList.add(CBORObject.FromObject(transcript_hash));
         objectList.add(CBORObject.FromObject(label));
         objectList.add(context);
@@ -646,7 +637,7 @@ public class EdhocSession {
 	    int keyLength = getKeyLengthAppAEAD(selectedCiphersuite);
 	    
 	    try {
-			masterSecret = session.edhocExporter("OSCORE Master Secret", context, keyLength);
+			masterSecret = session.edhocExporter("OSCORE_Master_Secret", context, keyLength);
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when the OSCORE Master Secret" + e.getMessage());
 		} catch (NoSuchAlgorithmException e) {
@@ -668,7 +659,7 @@ public class EdhocSession {
 	    CBORObject context = CBORObject.FromObject(new byte[0]);
 	    
 	    try {
-			masterSalt = session.edhocExporter("OSCORE Master Salt", context, 8);
+			masterSalt = session.edhocExporter("OSCORE_Master_Salt", context, 8);
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when the OSCORE Master Salt" + e.getMessage());
 		} catch (NoSuchAlgorithmException e) {
