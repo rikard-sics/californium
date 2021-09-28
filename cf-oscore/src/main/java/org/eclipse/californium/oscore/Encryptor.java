@@ -287,7 +287,7 @@ public abstract class Encryptor {
 		OneKey senderPrivateKey = senderCtx.getPrivateKey();
 		CounterSign1 sign = new CounterSign1(senderPrivateKey);
 
-		CBORObject signAlg = senderCtx.getAlgCountersign().AsCBOR();
+		CBORObject signAlg = senderCtx.getAlgSign().AsCBOR();
 		try {
 			sign.addAttribute(HeaderKeys.Algorithm, signAlg, Attribute.DO_NOT_SEND);
 		} catch (CoseException e) {
