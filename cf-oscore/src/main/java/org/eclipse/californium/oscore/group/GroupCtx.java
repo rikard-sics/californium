@@ -49,9 +49,10 @@ public class GroupCtx {
 	AlgorithmID aeadAlg;
 	AlgorithmID hkdfAlg;
 	byte[] idContext;
-	AlgorithmID algCountersign;
+	AlgorithmID algSign;
+	AlgorithmID algSignEnc;
 	int[][] parCountersign;
-	AlgorithmID algSecret;
+	AlgorithmID algKeyAgreement;
 	int[][] parSecret;
 	byte[] groupEncryptionKey;
 	byte[] gmPublicKey;
@@ -78,32 +79,32 @@ public class GroupCtx {
 	 * @param aeadAlg
 	 * @param hkdfAlg
 	 * @param idContext
-	 * @param algCountersign
+	 * @param algSign
 	 * @param gmPublicKey
 	 */
 	public GroupCtx(byte[] masterSecret, byte[] masterSalt, AlgorithmID aeadAlg, AlgorithmID hkdfAlg, byte[] idContext,
-			AlgorithmID algCountersign, byte[] gmPublicKey) {
+			AlgorithmID algSign, byte[] gmPublicKey) {
 
 		this.masterSecret = masterSecret;
 		this.masterSalt = masterSalt;
 		this.aeadAlg = aeadAlg;
 		this.hkdfAlg = hkdfAlg;
 		this.idContext = idContext;
-		this.algCountersign = algCountersign;
+		this.algSign = algSign;
 		this.gmPublicKey = gmPublicKey;
+		this.algSignEnc = aeadAlg;
 
 		recipientCtxMap = new HashMap<ByteId, GroupRecipientCtx>();
 		publicKeysMap = new HashMap<ByteId, OneKey>();
 
 		// Set the par countersign value
-		int[] countersign_alg_capab = getCountersignAlgCapab(algCountersign);
-		int[] countersign_key_type_capab = getCountersignKeyTypeCapab(algCountersign);
+		int[] countersign_alg_capab = getCountersignAlgCapab(algSign);
+		int[] countersign_key_type_capab = getCountersignKeyTypeCapab(algSign);
 		this.parCountersign = new int[][] { countersign_alg_capab, countersign_key_type_capab };
 
 		// Set the alg secret and par secret values
-		this.algSecret = AlgorithmID.ECDH_SS_HKDF_256;
-		if (algCountersign == AlgorithmID.ECDSA_256 || algCountersign == AlgorithmID.ECDSA_384
-				|| algCountersign == AlgorithmID.ECDSA_512) {
+		this.algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
+		if (algSign == AlgorithmID.ECDSA_256 || algSign == AlgorithmID.ECDSA_384 || algSign == AlgorithmID.ECDSA_512) {
 			this.parSecret = new int[][] { countersign_alg_capab, countersign_key_type_capab };
 		} else {
 			this.parSecret = new int[][] { countersign_alg_capab, new int[] { 1, 4 } };
@@ -132,7 +133,7 @@ public class GroupCtx {
 		this.aeadAlg = aeadAlg;
 		this.hkdfAlg = hkdfAlg;
 		this.idContext = idContext;
-		this.algCountersign = algCountersign;
+		this.algSign = algCountersign;
 		this.parCountersign = parCountersign;
 		this.gmPublicKey = gmPublicKey;
 
@@ -233,7 +234,7 @@ public class GroupCtx {
 	}
 
 	public int getCountersignatureLen() {
-		switch (algCountersign) {
+		switch (algSign) {
 		case EDDSA:
 		case ECDSA_256:
 			return 64;
@@ -402,10 +403,10 @@ public class GroupCtx {
 
 		byte[] sharedSecret = null;
 
-		if (this.algCountersign == AlgorithmID.EDDSA) {
+		if (this.algSign == AlgorithmID.EDDSA) {
 			sharedSecret = generateSharedSecretEdDSA(senderCtx.getPrivateKey(), recipientPublicKey);
-		} else if (this.algCountersign == AlgorithmID.ECDSA_256 || this.algCountersign == AlgorithmID.ECDSA_384
-				|| this.algCountersign == AlgorithmID.ECDSA_512) {
+		} else if (this.algSign == AlgorithmID.ECDSA_256 || this.algSign == AlgorithmID.ECDSA_384
+				|| this.algSign == AlgorithmID.ECDSA_512) {
 			sharedSecret = generateSharedSecretECDSA(senderCtx.getPrivateKey(), recipientPublicKey);
 		} else {
 			System.err.println("Error: Unknown countersignature!");
@@ -457,10 +458,10 @@ public class GroupCtx {
 
 		byte[] sharedSecret = null;
 
-		if (this.algCountersign == AlgorithmID.EDDSA) {
+		if (this.algSign == AlgorithmID.EDDSA) {
 			sharedSecret = generateSharedSecretEdDSA(senderCtx.getPrivateKey(), recipientPublicKey);
-		} else if (this.algCountersign == AlgorithmID.ECDSA_256 || this.algCountersign == AlgorithmID.ECDSA_384
-				|| this.algCountersign == AlgorithmID.ECDSA_512) {
+		} else if (this.algSign == AlgorithmID.ECDSA_256 || this.algSign == AlgorithmID.ECDSA_384
+				|| this.algSign == AlgorithmID.ECDSA_512) {
 			sharedSecret = generateSharedSecretECDSA(senderCtx.getPrivateKey(), recipientPublicKey);
 		} else {
 			System.err.println("Error: Unknown countersignature!");

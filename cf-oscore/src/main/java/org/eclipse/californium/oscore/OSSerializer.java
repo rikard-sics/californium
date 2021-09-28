@@ -277,31 +277,37 @@ public class OSSerializer {
 	 */
 	public static byte[] updateAADForGroup(OSCoreCtx ctx, byte[] aadBytes, Message message) {
 
-		CBORObject algCountersign;
-		CBORObject parCountersign;
+		CBORObject algSign;
+		CBORObject algSignEnc;
+		CBORObject algKeyAgreement;
+
 		byte[] senderPublicKey;
 		byte[] gmPublicKey;
 
 		if (ctx instanceof GroupRecipientCtx) {
 			GroupRecipientCtx recipientCtx = (GroupRecipientCtx) ctx;
-			algCountersign = recipientCtx.getAlgCountersign().AsCBOR();
-			parCountersign = CBORObject.FromObject(recipientCtx.getParCountersign());
+			algSign = recipientCtx.getAlgSign().AsCBOR();
+			algSignEnc = recipientCtx.getAlgSignEnc().AsCBOR();
+			algKeyAgreement = recipientCtx.getAlgKeyAgreement().AsCBOR();
 			senderPublicKey = recipientCtx.getPublicKeyRaw();
 			gmPublicKey = recipientCtx.getCommonCtx().getGmPublicKey();
 		} else {
 			GroupSenderCtx senderCtx = (GroupSenderCtx) ctx;
-			algCountersign = senderCtx.getAlgCountersign().AsCBOR();
-			parCountersign = CBORObject.FromObject(senderCtx.getParCountersign());
+			algSign = senderCtx.getAlgSign().AsCBOR();
+			algSignEnc = senderCtx.getAlgSignEnc().AsCBOR();
+			algKeyAgreement = senderCtx.getAlgKeyAgreement().AsCBOR();
 			senderPublicKey = senderCtx.getPublicKeyRaw();
 			gmPublicKey = senderCtx.getCommonCtx().getGmPublicKey();
 		}
 
 		CBORObject groupAadEnc = CBORObject.DecodeFromBytes(aadBytes);
 
-		// Update index 1 which holds the algorithms array
+		// Build index 1 which holds the algorithms array
 		CBORObject algorithms = groupAadEnc.get(1);
-		algorithms.Add(algCountersign);
-		algorithms.Add(parCountersign);
+		algorithms.Add(algSignEnc);
+		algorithms.Add(algSign);
+		algorithms.Add(algKeyAgreement);
+
 		// Add update algorithms array to external AAD (used for encryption)
 		groupAadEnc.set(1, algorithms);
 
