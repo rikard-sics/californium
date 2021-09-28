@@ -118,14 +118,13 @@ public class GroupCtx {
 		this.algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
 
 		// Set the par countersign value
-		int[] countersign_alg_capab = getCountersignAlgCapab(algCountersign);
-		int[] countersign_key_type_capab = getCountersignKeyTypeCapab(algCountersign);
+		int[] countersign_alg_capab = getCountersignAlgCapab(algSign);
+		int[] countersign_key_type_capab = getCountersignKeyTypeCapab(algSign);
 		this.parCountersign = new int[][] { countersign_alg_capab, countersign_key_type_capab };
 
 		// Set the alg secret and par secret values
-		this.algSecret = AlgorithmID.ECDH_SS_HKDF_256;
-		if (algCountersign == AlgorithmID.ECDSA_256 || algCountersign == AlgorithmID.ECDSA_384
-				|| algCountersign == AlgorithmID.ECDSA_512) {
+		this.algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
+		if (algSign == AlgorithmID.ECDSA_256 || algSign == AlgorithmID.ECDSA_384 || algSign == AlgorithmID.ECDSA_512) {
 			this.parSecret = new int[][] { countersign_alg_capab, countersign_key_type_capab };
 		} else {
 			this.parSecret = new int[][] { countersign_alg_capab, new int[] { 1, 4 } };
