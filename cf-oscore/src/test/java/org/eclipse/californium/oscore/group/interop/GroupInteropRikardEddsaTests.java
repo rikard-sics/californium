@@ -149,9 +149,9 @@ public class GroupInteropRikardEddsaTests {
 	public void testContextsAlgCountersign() throws OSException {
 		// Check that the contexts use the correct countersignature algorithms
 
-		assertEquals(AlgorithmID.EDDSA, senderCtxEddsa.getAlgCountersign());
-		assertEquals(AlgorithmID.EDDSA, recipient1CtxEddsa.getAlgCountersign());
-		assertEquals(AlgorithmID.EDDSA, recipient2CtxEddsa.getAlgCountersign());
+		assertEquals(AlgorithmID.EDDSA, senderCtxEddsa.getAlgSign());
+		assertEquals(AlgorithmID.EDDSA, recipient1CtxEddsa.getAlgSign());
+		assertEquals(AlgorithmID.EDDSA, recipient2CtxEddsa.getAlgSign());
 	}
 
 	@Test
