@@ -194,13 +194,13 @@ public class GroupKeyDerivationInteropTest {
 	public void testContextsAlgCountersign() throws OSException {
 		// Check that the contexts use the correct countersignature algorithms
 
-		assertEquals(AlgorithmID.ECDSA_256, senderCtxEcdsa.getAlgCountersign());
-		assertEquals(AlgorithmID.ECDSA_256, recipient1CtxEcdsa.getAlgCountersign());
-		assertEquals(AlgorithmID.ECDSA_256, recipient2CtxEcdsa.getAlgCountersign());
+		assertEquals(AlgorithmID.ECDSA_256, senderCtxEcdsa.getAlgSign());
+		assertEquals(AlgorithmID.ECDSA_256, recipient1CtxEcdsa.getAlgSign());
+		assertEquals(AlgorithmID.ECDSA_256, recipient2CtxEcdsa.getAlgSign());
 
-		assertEquals(AlgorithmID.EDDSA, senderCtxEddsa.getAlgCountersign());
-		assertEquals(AlgorithmID.EDDSA, recipient1CtxEddsa.getAlgCountersign());
-		assertEquals(AlgorithmID.EDDSA, recipient2CtxEddsa.getAlgCountersign());
+		assertEquals(AlgorithmID.EDDSA, senderCtxEddsa.getAlgSign());
+		assertEquals(AlgorithmID.EDDSA, recipient1CtxEddsa.getAlgSign());
+		assertEquals(AlgorithmID.EDDSA, recipient2CtxEddsa.getAlgSign());
 	}
 
 	@Test

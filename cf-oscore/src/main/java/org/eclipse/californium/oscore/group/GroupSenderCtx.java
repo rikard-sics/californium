@@ -112,12 +112,30 @@ public class GroupSenderCtx extends OSCoreCtx {
 	}
 
 	/**
-	 * Get the alg countersign value.
+	 * Get the alg sign value.
 	 * 
-	 * @return the alg countersign value
+	 * @return the alg sign value
 	 */
-	public AlgorithmID getAlgCountersign() {
-		return commonCtx.algCountersign;
+	public AlgorithmID getAlgSign() {
+		return commonCtx.algSign;
+	}
+
+	/**
+	 * Get the alg sign enc value.
+	 * 
+	 * @return the alg sign enc value
+	 */
+	public AlgorithmID getAlgSignEnc() {
+		return commonCtx.algSignEnc;
+	}
+
+	/**
+	 * Get the alg pairwise key agreement value.
+	 * 
+	 * @return the alg pairwise key agreement value.
+	 */
+	public AlgorithmID getAlgKeyAgreement() {
+		return commonCtx.algKeyAgreement;
 	}
 
 	/**
