@@ -380,7 +380,7 @@ public abstract class Decryptor {
 			sign = new CounterSign1(countersignatureBytes);
 			sign.setKey(recipientPublicKey);
 
-			CBORObject signAlg = recipientCtx.getAlgCountersign().AsCBOR();
+			CBORObject signAlg = recipientCtx.getAlgSign().AsCBOR();
 			sign.addAttribute(HeaderKeys.Algorithm, signAlg, Attribute.DO_NOT_SEND);
 			byte[] signAad = aad;
 
