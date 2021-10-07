@@ -366,7 +366,7 @@ public class GroupCtx {
 
 		String digest = "SHA256"; // FIXME, see below also
 		CBORObject info = CBORObject.NewArray();
-		int keyLength = 32; // FIXME
+		int keyLength = this.algSignEnc.getKeySize() / 8;
 
 		// Then derive the group encryption key
 		info = CBORObject.NewArray();
