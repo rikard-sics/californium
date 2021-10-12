@@ -77,7 +77,6 @@ public class OSCoreObserveTest {
 
 	private Timer timer;
 	private Endpoint serverEndpoint;
-	private static String serverName = TestTools.LOCALHOST_EPHEMERAL.getAddress().getHostAddress();
 	private static String clientName = TestTools.LOCALHOST_EPHEMERAL.getAddress().getHostAddress();
 	
 	private static boolean withOSCORE = true;
@@ -215,7 +214,8 @@ public class OSCoreObserveTest {
 	
 		try {
 			OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, null, MAX_UNFRAGMENTED_SIZE);
-			dbClient.addContext("coap://" + serverName, ctx);
+			String serverUri = TestTools.getUri(serverEndpoint, "");
+			dbClient.addContext(serverUri, ctx);
 		}
 		catch(OSException e) {
 			System.err.println("Failed to set client OSCORE Context information!");
