@@ -29,6 +29,8 @@ import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.Token;
 
+import java.util.Arrays;
+
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
@@ -447,16 +449,32 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				int requestSequenceNumber = optionDecoder.getSequenceNumber();
 				
 				// DET_REQ
-				// If this is a response to a deterministic request, set
-				// an internal-signaling Request-Hash option, to allow
+				// If this is a response to a deterministic request, set/preserve
+				// the Request-Hash option for internal signaling, to allow
 				// the next processing step to update the external_aad
 				if (isDeterministicRequest(ctxDb, exchange)) {
 					
+					// The Request-Hash previously sent in the Deterministic Request 
 					byte[] hash = exchange.getRequest().getOptions().getRequestHash();
 					
 					if (hash == null) {
 						LOGGER.error("Error while decrypting a response to a deterministic request");
 						throw new OSException("Error while decrypting a response to a deterministic request");
+					}
+					
+					if (!response.getOptions().hasRequestHash()) {
+						// The server has elided the Request-Hash option from the response, as expected
+						response.getOptions().setRequestHash(hash);
+					}
+					else {
+						// The server has sent the Request-Hash option
+						byte[] hashServer = response.getOptions().getRequestHash();
+						if (Arrays.equals(hash, hashServer)) {
+							// The hash in the response has a different value than in the request
+							LOGGER.error("Error while decrypting a response to a deterministic request");
+							throw new OSException("Error while decrypting a response to a deterministic request");
+						}
+						// The hash in the response has the same value as in the request, keep it
 					}
 					
 					response.getOptions().setRequestHash(hash);
