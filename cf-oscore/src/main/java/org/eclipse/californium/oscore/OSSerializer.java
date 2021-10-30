@@ -390,12 +390,6 @@ public class OSSerializer {
 
 		CBORObject groupAadEnc = CBORObject.DecodeFromBytes(aadBytes);
 
-		// TODO Moot, remove it!
-		/*
-		// Update the element with index 2, i.e.'request_kid', to specify the hash
-		groupAadEnc.set(2, CBORObject.FromObject(hash));
-		*/
-
 		// This is hardcoded, assuming the hash algorithm to be SHA-256
 		// and the option number of the Request-Hash option to be 548
 		byte[] prefix = { (byte) 0xed, (byte) 0x01, (byte) 0x17, (byte) 0x13 };
