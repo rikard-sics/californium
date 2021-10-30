@@ -287,8 +287,8 @@ public abstract class Decryptor {
 				if (!isDetReq) {
 					key = ((GroupRecipientCtx) ctx).getPairwiseRecipientKey();
 				}
-				else {
-					// Derive the deterministic decryption key, to use for encrypting the deterministic request
+				else if (isDetReq && isRequest) {
+					// Derive the deterministic decryption key, to use for decrypting the deterministic request
 
 					int keyLength = key.length;
 					detRecipientKey = key;
@@ -310,6 +310,10 @@ public abstract class Decryptor {
 						throw new OSException(e.getMessage());
 					}
 					
+				}
+				else if (isDetReq && !isRequest) {
+					LOGGER.error("Received a response protected in group mode as reply to a deterministic request");
+					throw new OSException("Received a response protected in group mode as reply to a deterministic request");
 				}
 				
 			}
