@@ -352,7 +352,10 @@ public class OSSerializer {
 				boolean groupModeRequest = OptionEncoder.getPairwiseMode(oscoreOption) == false;
 				oscoreOption = Encryptor.encodeOSCoreRequest(ctx, groupModeRequest);
 			} else {
-				boolean newPartialIV = ctx.getResponsesIncludePartialIV() || message.getOptions().hasObserve();
+				boolean newPartialIV = ctx.getResponsesIncludePartialIV() ||
+									   message.getOptions().hasObserve() ||
+									   message.getOptions().hasRequestHash(); // DET_REQ (this method should take newPartialIV as parameter
+				
 				oscoreOption = Encryptor.encodeOSCoreResponse(ctx, newPartialIV);
 			}
 		}
