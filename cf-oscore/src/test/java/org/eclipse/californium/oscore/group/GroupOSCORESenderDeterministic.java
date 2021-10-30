@@ -65,12 +65,12 @@ public class GroupOSCORESenderDeterministic {
 	/**
 	 * Whether to use the pairwise mode of Group OSCORE or not
 	 */
-	static final boolean pairwiseMode = false;
+	static final boolean pairwiseMode = true;
 	
 	/**
 	 * Whether to send the request as a deterministic request or not
 	 */
-	static final boolean deterministicRequest = false;
+	static final boolean deterministicRequest = true;
 	
 	/**
 	 * File name for network configuration.

@@ -208,10 +208,11 @@ public class GroupOSCOREReceiverDeterministic {
 			commonCtx.addDeterministicSenderCtx(detSid, "SHA-256");
 			commonCtx.addDeterministicRecipientCtx(detSid, 0, "SHA-256");
 			
-			commonCtx.setResponsesIncludePartialIV(true);
+			// TO BE REMOVED
+			// commonCtx.setResponsesIncludePartialIV(true);
 
 			db.addContext(uriLocal, commonCtx);
-
+			
 			OSCoreCoapStackFactory.useAsDefault(db);
 		}
 
