@@ -61,14 +61,14 @@ public class GroupOSCORESenderDeterministic {
 	 * 
 	 * If set to true, the request will be sent over unicast, otherwise over multicast
 	 */
-	static final boolean pairwiseMode = false;
+	static final boolean pairwiseMode = true;
 	
 	/**
 	 * Whether to send the request as a deterministic request or not
 	 * 
 	 * It must be set to false if "pairwiseMode" is set to false
 	 */
-	static final boolean deterministicRequest = false;
+	static final boolean deterministicRequest = true;
 	
 	/**
 	 * Whether to send the request through a proxy or not
