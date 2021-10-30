@@ -445,7 +445,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				// the Request-Hash option for internal signaling, to allow
 				// the next processing step to update the external_aad
 				if (isDeterministicRequest(ctxDb, exchange)) {
-					
+
 					// The Request-Hash previously sent in the Deterministic Request
 					byte[] hash = exchange.getRequest().getOptions().getRequestHash();
 					
