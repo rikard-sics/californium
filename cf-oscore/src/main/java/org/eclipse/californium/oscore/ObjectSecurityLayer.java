@@ -461,7 +461,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					else {
 						// The server has sent the Request-Hash option
 						byte[] hashServer = response.getOptions().getRequestHash();
-						if (Arrays.equals(hash, hashServer)) {
+						if (!Arrays.equals(hash, hashServer)) {
 							// The hash in the response has a different value than in the request
 							LOGGER.error("Error while decrypting a response to a deterministic request");
 							throw new OSException("Error while decrypting a response to a deterministic request");
