@@ -315,7 +315,7 @@ public abstract class Decryptor {
 			LOGGER.debug("Signature verification succeeded: " + signatureCorrect);
 		}
 		// DET_REQ
-		// If this is a deterministic request, recomput the hash value,
+		// If this is a deterministic request, recompute the hash value,
 		// and compare it against the one in the Request-Hash option
 		else if (isRequest && isDetReq) {
 						
