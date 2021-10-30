@@ -276,25 +276,32 @@ public class GroupOSCORESenderDeterministic {
 			client.setURI(multicastRequestURI);
 		}
 		
-		Request request = Request.newPost();
-		request.setPayload(requestPayload);
+		Request request;
 		if (useOSCORE) {
 			
 			if (!pairwiseMode) {
-				// Protect the request in group mode
+				request = Request.newPost();
+				request.setPayload(requestPayload);
 				request.setType(Type.NON);
+				
+				// Protect the request in group mode
 				request.getOptions().setOscore(Bytes.EMPTY);
 			}
 			else {
 				if (!deterministicRequest) {
-					// Protect the request in pairwise mode for a particular group member
+					request = Request.newPost();
+					request.setPayload(requestPayload);
 					request.setType(Type.CON);
+					
+					// Protect the request in pairwise mode for a particular group member
 					request.getOptions().setOscore(OptionEncoder.set(true, multicastRequestURI, rid1, false));
 				}
 				else {
-					// Protect the request in pairwise mode as a deterministic request
+
 					request = new Request(Code.GET);
 					request.setType(Type.CON);
+					
+					// Protect the request in pairwise mode as a deterministic request
 					request.getOptions().setOscore(OptionEncoder.set(true, multicastRequestURI, null, true));
 				}
 				
@@ -313,7 +320,7 @@ public class GroupOSCORESenderDeterministic {
 		}
 		System.out.println("Request destination port: " + destinationPort);
 		System.out.println("Request method: " + request.getCode());
-		if (!pairwiseMode) {
+		if (!pairwiseMode || !deterministicRequest) {
 			System.out.println("Request payload: " + requestPayload);
 		}
 		System.out.println("==================");
@@ -327,12 +334,7 @@ public class GroupOSCORESenderDeterministic {
 			e.printStackTrace();
 		}
 
-		if (!pairwiseMode) {
-			System.out.println(Utils.prettyPrint(request));
-		}
-		else {
-			System.out.println(Utils.prettyPrint(request));
-		}
+		System.out.println(Utils.prettyPrint(request));
 		
 		if (pairwiseMode) {
 			
