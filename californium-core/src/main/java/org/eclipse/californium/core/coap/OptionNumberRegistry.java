@@ -59,7 +59,7 @@ public final class OptionNumberRegistry {
 	//TODO temporary assignment
 	public static final int OSCORE			= 9;
 	
-	// TODO temporary assignment from the experimental range
+	// TODO temporary assignment from the "Specification required" range
 	public static final int REQUEST_HASH    = 548;
 
 	/**
