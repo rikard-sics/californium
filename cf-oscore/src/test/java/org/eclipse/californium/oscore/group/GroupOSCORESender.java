@@ -117,6 +117,12 @@ public class GroupOSCORESender {
 	// Group OSCORE specific values for the countersignature (EdDSA)
 	private final static AlgorithmID algCountersign = AlgorithmID.EDDSA;
 
+	// Encryption algorithm for when using signatures
+	private final static AlgorithmID algSignEnc = AlgorithmID.AES_CCM_16_64_128;
+
+	// Algorithm for key agreement
+	private final static AlgorithmID algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
+
 	// test vector OSCORE draft Appendix C.1.1
 	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
 			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
@@ -181,13 +187,13 @@ public class GroupOSCORESender {
 
 			byte[] gmPublicKey = gm_public_key_bytes;
 			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign,
-					gmPublicKey);
+					algSignEnc, algKeyAgreement, gmPublicKey);
 
-			commonCtx.addSenderCtx(sid, sid_private_key, 1);
+			commonCtx.addSenderCtxCcs(sid, sid_private_key);
 
-			commonCtx.addRecipientCtx(rid0, REPLAY_WINDOW, null, 1);
-			commonCtx.addRecipientCtx(rid1, REPLAY_WINDOW, rid1_public_key, 1);
-			commonCtx.addRecipientCtx(rid2, REPLAY_WINDOW, rid2_public_key, 1);
+			commonCtx.addRecipientCtxCcs(rid0, REPLAY_WINDOW, null);
+			commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
+			commonCtx.addRecipientCtxCcs(rid2, REPLAY_WINDOW, rid2_public_key);
 
 			commonCtx.setResponsesIncludePartialIV(true);
 			commonCtx.setResponsesIncludePartialIV(true);
