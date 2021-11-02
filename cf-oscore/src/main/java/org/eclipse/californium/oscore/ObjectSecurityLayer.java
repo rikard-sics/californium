@@ -256,6 +256,13 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 			try {
 				// Retrieve the context
+				// TODO: Don't just use Token as key, also use the addressing
+				// information. Maybe consider using Token and RID + ID Context
+				// instead. Need to change the map to take 3 things instead of
+				// just Token.
+				//
+				// Or actually use the requestOption KID and KID Context
+				// directly. (Indirectly using the Token).
 				OSCoreCtx ctx = ctxDb.getContextByToken(exchange.getCurrentRequest().getToken());
 				addPartialIV = (ctx !=null && ctx.getResponsesIncludePartialIV()) || exchange.getRequest().getOptions().hasObserve();
 

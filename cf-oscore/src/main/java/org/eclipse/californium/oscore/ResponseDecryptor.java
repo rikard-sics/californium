@@ -50,6 +50,16 @@ public class ResponseDecryptor extends Decryptor {
 
 	/**
 	 * Decrypt the response.
+	 * 
+	 * TODO: If request was pairwise (RID is null initially), need to get RID in
+	 * a different. Can add map of Partial IV, KID and KID Context in the Group
+	 * Context, db.getSeqByToken(token) can be used to get the Partial IV. When
+	 * response is processed, delete the entry from the map (unless the response
+	 * had the observe option).
+	 * 
+	 * Need request here, could have metadata associated to the request to know
+	 * if it was in pairwise mode (and what KID it was sent to). Could change
+	 * the "db.getSeqByToken(token)" to get PIV straight from the request.
 	 *
 	 * @param db the context database used
 	 * @param response the response
