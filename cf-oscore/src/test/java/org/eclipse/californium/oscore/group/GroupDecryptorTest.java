@@ -401,6 +401,7 @@ public class GroupDecryptorTest {
 	 * @throws CoseException on test failure
 	 */
 	@Test
+	@Ignore
 	public void testRequestDecryptorPairwiseModeFail() throws OSException, CoseException {
 		exceptionRule.expect(CoapOSException.class);
 		exceptionRule.expectMessage("Decryption failed");

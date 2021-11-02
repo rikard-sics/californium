@@ -92,55 +92,45 @@ public class GroupCtx {
 		this.idContext = idContext;
 		this.algSign = algSign;
 		this.gmPublicKey = gmPublicKey;
-		this.algSignEnc = aeadAlg;
+		this.algSignEnc = aeadAlg; // Same if not indicated
 
 		recipientCtxMap = new HashMap<ByteId, GroupRecipientCtx>();
 		publicKeysMap = new HashMap<ByteId, OneKey>();
 
-		// Set the par countersign value
-		int[] countersign_alg_capab = getCountersignAlgCapab(algSign);
-		int[] countersign_key_type_capab = getCountersignKeyTypeCapab(algSign);
-		this.parCountersign = new int[][] { countersign_alg_capab, countersign_key_type_capab };
-
-		// Set the alg secret and par secret values
+		// Default since not indicated
 		this.algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
-		if (algSign == AlgorithmID.ECDSA_256 || algSign == AlgorithmID.ECDSA_384 || algSign == AlgorithmID.ECDSA_512) {
-			this.parSecret = new int[][] { countersign_alg_capab, countersign_key_type_capab };
-		} else {
-			this.parSecret = new int[][] { countersign_alg_capab, new int[] { 1, 4 } };
-		}
 	}
 
 	/**
-	 * Construct a Group OSCORE context allowing to explicitly set the
-	 * parCountersign and parCountersignKey.
+	 * Construct a Group OSCORE context. New one to be used.
 	 * 
 	 * @param masterSecret
 	 * @param masterSalt
 	 * @param aeadAlg
 	 * @param hkdfAlg
 	 * @param idContext
-	 * @param algCountersign
-	 * @param parCountersign
-	 * @param parCountersignKey
+	 * @param algSign
 	 * @param gmPublicKey
+	 * @param algSignEnc
+	 * @param algKeyAgreement
 	 */
 	public GroupCtx(byte[] masterSecret, byte[] masterSalt, AlgorithmID aeadAlg, AlgorithmID hkdfAlg, byte[] idContext,
-			AlgorithmID algCountersign, int[][] parCountersign, int[] parCountersignKey, byte[] gmPublicKey) {
+			AlgorithmID algSign, AlgorithmID algSignEnc, AlgorithmID algKeyAgreement, byte[] gmPublicKey) {
 
 		this.masterSecret = masterSecret;
 		this.masterSalt = masterSalt;
 		this.aeadAlg = aeadAlg;
 		this.hkdfAlg = hkdfAlg;
 		this.idContext = idContext;
-		this.algSign = algCountersign;
-		this.parCountersign = parCountersign;
+		this.algSign = algSign;
 		this.gmPublicKey = gmPublicKey;
+		this.algSignEnc = algSignEnc;
+		this.algKeyAgreement = algKeyAgreement;
 
 		recipientCtxMap = new HashMap<ByteId, GroupRecipientCtx>();
 		publicKeysMap = new HashMap<ByteId, OneKey>();
-	}
 
+	}
 
 	/**
 	 * Add a recipient context.
@@ -153,7 +143,7 @@ public class GroupCtx {
 	public void addRecipientCtx(byte[] recipientId, int replayWindow, OneKey otherEndpointPubKey) throws OSException {
 		GroupRecipientCtx recipientCtx = new GroupRecipientCtx(masterSecret, false, aeadAlg, null, recipientId, hkdfAlg,
 				replayWindow, masterSalt, idContext, otherEndpointPubKey,
-				/* FIXME */ null, this);
+				null, this);
 
 		recipientCtxMap.put(new ByteId(recipientId), recipientCtx);
 
@@ -173,7 +163,7 @@ public class GroupCtx {
 		}
 
 		GroupSenderCtx senderCtx = new GroupSenderCtx(masterSecret, false, aeadAlg, senderId, null, hkdfAlg, 0,
-				masterSalt, idContext, ownPrivateKey, /* FIXME */ null, this);
+				masterSalt, idContext, ownPrivateKey, null, this);
 		this.senderCtx = senderCtx;
 
 		this.groupEncryptionKey = deriveGroupEncryptionKey();
@@ -181,14 +171,14 @@ public class GroupCtx {
 
 	//
 	/**
-	 * Add a recipient context.
+	 * Add a recipient context with (U)CCS.
 	 * 
 	 * @param recipientId
 	 * @param replayWindow
 	 * @param otherEndpointPubKey
 	 * @throws OSException
 	 */
-	public void addRecipientCtx(byte[] recipientId, int replayWindow, MultiKey otherEndpointPubKey, int dummy)
+	public void addRecipientCtxCcs(byte[] recipientId, int replayWindow, MultiKey otherEndpointPubKey)
 			throws OSException {
 		GroupRecipientCtx recipientCtx;
 		if (otherEndpointPubKey != null) {
@@ -204,13 +194,13 @@ public class GroupCtx {
 	}
 
 	/**
-	 * Add a sender context.
+	 * Add a sender context with (U)CCS.
 	 * 
 	 * @param senderId
 	 * @param ownPrivateKey
 	 * @throws OSException
 	 */
-	public void addSenderCtx(byte[] senderId, MultiKey ownPrivateKey, int dummy) throws OSException {
+	public void addSenderCtxCcs(byte[] senderId, MultiKey ownPrivateKey) throws OSException {
 
 		if (senderCtx != null) {
 			throw new OSException("Cannot add more than one Sender Context.");
@@ -364,7 +354,13 @@ public class GroupCtx {
 	// TODO: Merge with below?
 	byte[] deriveGroupEncryptionKey() {
 
-		String digest = "SHA256"; // FIXME, see below also
+		String digest = "";
+		if (algKeyAgreement.toString().contains("HKDF_256")) {
+			digest = "SHA256";
+		} else if (algKeyAgreement.toString().contains("HKDF_512")) {
+			digest = "SHA512";
+		}
+
 		CBORObject info = CBORObject.NewArray();
 		int keyLength = this.algSignEnc.getKeySize() / 8;
 
@@ -397,7 +393,13 @@ public class GroupCtx {
 			return null;
 		}
 
-		String digest = "SHA256"; // FIXME, see below also
+		String digest = "";
+		if (algKeyAgreement.toString().contains("HKDF_256")) {
+			digest = "SHA256";
+		} else if (algKeyAgreement.toString().contains("HKDF_512")) {
+			digest = "SHA512";
+		}
+
 		CBORObject info = CBORObject.NewArray();
 		int keyLength = this.aeadAlg.getKeySize() / 8;
 
@@ -442,7 +444,13 @@ public class GroupCtx {
 			return null;
 		}
 
-		String digest = "SHA256";
+		String digest = "";
+		if (algKeyAgreement.toString().contains("HKDF_256")) {
+			digest = "SHA256";
+		} else if (algKeyAgreement.toString().contains("HKDF_512")) {
+			digest = "SHA512";
+		}
+
 		CBORObject info = CBORObject.NewArray();
 		int keyLength = this.aeadAlg.getKeySize() / 8;
 
