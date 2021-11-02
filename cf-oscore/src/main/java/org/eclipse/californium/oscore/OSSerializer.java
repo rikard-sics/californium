@@ -269,6 +269,7 @@ public class OSSerializer {
 
 	/**
 	 * Update the external AAD for Group OSCORE by adding further parameters.
+	 * TODO: Add also newPartialIV as input parameter.
 	 * 
 	 * @param ctx the context used
 	 * @param aadBytes the current external AAD value

@@ -99,6 +99,8 @@ public abstract class Encryptor {
 				recipientId = null;
 				int requestSeq = 0;
 
+				
+				// TODO: Get recipientId and seqNr from message as below
 				if (ctx.isGroupContext() == false) {
 					recipientId = ctx.getRecipientId();
 					requestSeq = ctx.getReceiverSeq();
