@@ -345,7 +345,13 @@ public abstract class Encryptor {
 			boolean isRequest) {
 
 		// Derive the keystream
-		String digest = "SHA256"; // FIXME, see below also
+		String digest = "";
+		if (ctx.getAlgKeyAgreement().toString().contains("HKDF_256")) {
+			digest = "SHA256";
+		} else if (ctx.getAlgKeyAgreement().toString().contains("HKDF_512")) {
+			digest = "SHA512";
+		}
+
 		CBORObject info = CBORObject.NewArray();
 		int keyLength = ctx.getCommonCtx().getCountersignatureLen();
 
