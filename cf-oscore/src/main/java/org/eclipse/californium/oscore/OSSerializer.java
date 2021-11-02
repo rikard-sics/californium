@@ -288,15 +288,16 @@ public class OSSerializer {
 			GroupSenderCtx senderCtx = (GroupSenderCtx) ctx;
 			algCountersign = senderCtx.getAlgCountersign().AsCBOR();
 			parCountersign = CBORObject.FromObject(senderCtx.getParCountersign());
-		} else if (ctx instanceof GroupDeterministicSenderCtx) { // DET_REQ (new case)
-			GroupDeterministicSenderCtx detSenderCtx = (GroupDeterministicSenderCtx) ctx;
-			GroupSenderCtx senderCtx = detSenderCtx.getSenderCtx();
-			algCountersign = senderCtx.getAlgCountersign().AsCBOR();
-			parCountersign = CBORObject.FromObject(senderCtx.getParCountersign());
 		}
 		else if (ctx instanceof GroupDeterministicRecipientCtx) { // DET_REQ (new case)
 			GroupDeterministicRecipientCtx detRecipientCtx = (GroupDeterministicRecipientCtx) ctx;
 			GroupSenderCtx senderCtx = detRecipientCtx.getSenderCtx();
+			algCountersign = senderCtx.getAlgCountersign().AsCBOR();
+			parCountersign = CBORObject.FromObject(senderCtx.getParCountersign());
+		}
+		else if (ctx instanceof GroupDeterministicSenderCtx) { // DET_REQ (new case)
+			GroupDeterministicSenderCtx detSenderCtx = (GroupDeterministicSenderCtx) ctx;
+			GroupSenderCtx senderCtx = detSenderCtx.getSenderCtx();
 			algCountersign = senderCtx.getAlgCountersign().AsCBOR();
 			parCountersign = CBORObject.FromObject(senderCtx.getParCountersign());
 		}
