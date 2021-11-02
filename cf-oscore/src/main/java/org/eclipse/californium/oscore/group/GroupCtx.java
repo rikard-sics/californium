@@ -124,11 +124,6 @@ public class GroupCtx {
 
 		// Set the alg secret and par secret values
 		this.algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
-		if (algSign == AlgorithmID.ECDSA_256 || algSign == AlgorithmID.ECDSA_384 || algSign == AlgorithmID.ECDSA_512) {
-			this.parSecret = new int[][] { countersign_alg_capab, countersign_key_type_capab };
-		} else {
-			this.parSecret = new int[][] { countersign_alg_capab, new int[] { 1, 4 } };
-		}
 	}
 
 	/**
@@ -159,6 +154,7 @@ public class GroupCtx {
 
 		recipientCtxMap = new HashMap<ByteId, GroupRecipientCtx>();
 		publicKeysMap = new HashMap<ByteId, OneKey>();
+
 	}
 
 	/**
@@ -539,6 +535,7 @@ public class GroupCtx {
 		} else if (algKeyAgreement.toString().contains("HKDF_512")) {
 			digest = "SHA512";
 		}
+
 		CBORObject info = CBORObject.NewArray();
 		int keyLength = this.aeadAlg.getKeySize() / 8;
 

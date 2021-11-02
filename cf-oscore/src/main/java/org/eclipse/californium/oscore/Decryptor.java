@@ -574,6 +574,7 @@ public abstract class Decryptor {
 		} else if (ctx.getAlgKeyAgreement().toString().contains("HKDF_512")) {
 			digest = "SHA512";
 		}
+
 		CBORObject info = CBORObject.NewArray();
 		int keyLength = ctx.getCommonCtx().getCountersignatureLen();
 
