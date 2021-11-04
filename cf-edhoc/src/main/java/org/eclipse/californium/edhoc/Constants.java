@@ -40,7 +40,7 @@ public static final Charset charset = Charset.forName("UTF-8");
 /**
  * Content-Format application/edhoc
  */
-public static final int APPLICATION_EDHOC = 10001;
+public static final int APPLICATION_EDHOC = 65000;
 
 
 /**
