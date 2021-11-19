@@ -45,7 +45,6 @@ public class GroupSenderCtx extends OSCoreCtx {
 	GroupSenderCtx(byte[] master_secret, boolean client, AlgorithmID alg, byte[] sender_id, byte[] recipient_id,
 			AlgorithmID kdf, Integer replay_size, byte[] master_salt, byte[] contextId, OneKey ownPrivateKey,
 			byte[] ownPublicKeyRaw, GroupCtx commonCtx) throws OSException {
-
 		// Build OSCORE Context using OSCoreCtx constructor
 		super(master_secret, client, alg, sender_id, recipient_id, kdf, replay_size, master_salt, contextId,
 				DEFAULT_MAX_UNFRAGMENTED_SIZE);
