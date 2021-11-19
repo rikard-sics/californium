@@ -301,7 +301,6 @@ public class GroupCtx {
 			return 132; // Why 132 and not 128?
 		default:
 			throw new RuntimeException("Unsupported countersignature algorithm!");
-
 		}
 	}
 
