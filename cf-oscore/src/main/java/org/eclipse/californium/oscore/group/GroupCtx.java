@@ -34,7 +34,6 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
-
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
@@ -257,6 +256,7 @@ public class GroupCtx {
 
 		this.groupEncryptionKey = deriveGroupEncryptionKey();
 	}
+	//
 	
 	/**
 	 * Add a deterministic sender context.
@@ -301,7 +301,6 @@ public class GroupCtx {
 			return 132; // Why 132 and not 128?
 		default:
 			throw new RuntimeException("Unsupported countersignature algorithm!");
-
 		}
 	}
 

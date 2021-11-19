@@ -197,7 +197,7 @@ public class GroupOSCOREInteropServerPeter {
 		if (useOSCORE) {
 
 			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign, null);
-			
+
 			commonCtx.addSenderCtx(sid, sid_private_key);
 
 			commonCtx.addRecipientCtx(rid1, REPLAY_WINDOW, rid1_public_key);
