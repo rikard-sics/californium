@@ -72,6 +72,14 @@ public class ExampleCoapServer {
 		}
 	};
 
+	// For multicast listening
+	private static final Logger LOGGER = LoggerFactory.getLogger(ExampleCoapServer.class);
+	private static boolean ipv4 = true;
+	private static final boolean LOOPBACK = false;
+	static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
+	static int multicastPort = DEFAULT_COAP_PORT; // Port to use for multicast
+	static int unicastPort; // Port to use for unicast
+
 	private CoapServer coapServer;
 
 	public ExampleCoapServer(Configuration config, final int port) throws IOException {
@@ -139,7 +147,6 @@ public class ExampleCoapServer {
 			port = Integer.parseInt(arg[0]);
 		} else {
 			port = config.get(CoapConfig.COAP_PORT);
-
 		}
 	}
 

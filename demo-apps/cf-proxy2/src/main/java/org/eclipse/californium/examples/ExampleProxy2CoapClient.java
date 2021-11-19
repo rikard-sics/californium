@@ -278,6 +278,7 @@ public class ExampleProxy2CoapClient {
 		}
 
 		// Newly added tests below
+		
 		// RH: Newly added tests below
 
 		System.out.println("");
