@@ -210,7 +210,6 @@ public class GroupCtx {
 		this.groupEncryptionKey = deriveGroupEncryptionKey();
 	}
 
-	//
 	/**
 	 * Add a recipient context with (U)CCS.
 	 * 
@@ -253,6 +252,7 @@ public class GroupCtx {
 
 		this.groupEncryptionKey = deriveGroupEncryptionKey();
 	}
+	//
 	
 	/**
 	 * Add a deterministic sender context.
@@ -297,7 +297,6 @@ public class GroupCtx {
 			return 132; // Why 132 and not 128?
 		default:
 			throw new RuntimeException("Unsupported countersignature algorithm!");
-
 		}
 	}
 
@@ -489,7 +488,7 @@ public class GroupCtx {
 		info.Add(this.aeadAlg.AsCBOR());
 		info.Add(CBORObject.FromObject("Key"));
 		info.Add(this.aeadAlg.getKeySize() / 8);
-
+		
 		byte[] keysConcatenated = Bytes.concatenate(senderCtx.getPublicKeyRaw(), recipientPublicKeyRaw);
 		byte[] ikmSender = Bytes.concatenate(keysConcatenated, sharedSecret);
 
@@ -518,7 +517,6 @@ public class GroupCtx {
 		} else if (algKeyAgreement.toString().contains("HKDF_512")) {
 			digest = "SHA512";
 		}
-
 		CBORObject info = CBORObject.NewArray();
 		int keyLength = this.aeadAlg.getKeySize() / 8;
 

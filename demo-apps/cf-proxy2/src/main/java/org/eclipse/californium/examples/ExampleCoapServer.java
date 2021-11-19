@@ -17,11 +17,13 @@ package org.eclipse.californium.examples;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
+import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.core.network.CoapEndpoint;
@@ -34,6 +36,8 @@ import org.eclipse.californium.elements.config.UdpConfig;
 import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
 import org.eclipse.californium.elements.util.DatagramWriter;
 import org.eclipse.californium.scandium.config.DtlsConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Example CoAP server for proxy demonstration.
@@ -74,6 +78,14 @@ public class ExampleCoapServer {
 			config.set(CoapConfig.COAP_SECURE_PORT, DEFAULT_COAP_SECURE_PORT);
 		}
 	};
+
+	// For multicast listening
+	private static final Logger LOGGER = LoggerFactory.getLogger(ExampleCoapServer.class);
+	private static boolean ipv4 = true;
+	private static final boolean LOOPBACK = false;
+	static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
+	static int multicastPort = DEFAULT_COAP_PORT; // Port to use for multicast
+	static int unicastPort; // Port to use for unicast
 
 	private CoapServer coapServer;
 
@@ -142,8 +154,9 @@ public class ExampleCoapServer {
 			port = Integer.parseInt(arg[0]);
 		} else {
 			port = config.get(CoapConfig.COAP_PORT);
+
 		}
-		new ExampleCoapServer(config, port);
 	}
+
 }
 
