@@ -147,8 +147,8 @@ public class ExampleCoapServer {
 			port = Integer.parseInt(arg[0]);
 		} else {
 			port = config.get(CoapConfig.COAP_PORT);
-
 		}
+		new ExampleCoapServer(config, port);
 	}
 
 }

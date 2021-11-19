@@ -193,7 +193,7 @@ public class GroupSenderCtx extends OSCoreCtx {
 	protected GroupSenderCtx getSenderCtx() {
 		return this;
 	}
-	
+		
 	/**
 	 * Get a reference to the Deterministic Sender Context
 	 * 
