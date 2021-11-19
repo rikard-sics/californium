@@ -24,6 +24,7 @@ import javax.xml.bind.DatatypeConverter;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ByteId;
 import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSException;
@@ -37,16 +38,20 @@ public class GroupSenderCtx extends OSCoreCtx {
 
 	GroupCtx commonCtx;
 	OneKey ownPrivateKey;
+	byte[] ownPublicKeyRaw = Bytes.EMPTY;
 
 	HashMap<ByteId, byte[]> pairwiseSenderKeys;
 
 	GroupSenderCtx(byte[] master_secret, boolean client, AlgorithmID alg, byte[] sender_id, byte[] recipient_id,
 			AlgorithmID kdf, Integer replay_size, byte[] master_salt, byte[] contextId, OneKey ownPrivateKey,
-			GroupCtx commonCtx) throws OSException {
+			byte[] ownPublicKeyRaw, GroupCtx commonCtx) throws OSException {
 		super(master_secret, client, alg, sender_id, recipient_id, kdf, replay_size, master_salt, contextId);
 
 		this.commonCtx = commonCtx;
 		this.ownPrivateKey = ownPrivateKey;
+		if (ownPublicKeyRaw != null) {
+			this.ownPublicKeyRaw = ownPublicKeyRaw;
+		}
 
 		pairwiseSenderKeys = new HashMap<ByteId, byte[]>();
 	}
@@ -68,7 +73,7 @@ public class GroupSenderCtx extends OSCoreCtx {
 			}
 
 			byte[] pairwiseSenderKey = commonCtx.derivePairwiseSenderKey(recipientCtx.getRecipientId(),
-					recipientCtx.getRecipientKey(), recipientCtx.getPublicKey());
+					recipientCtx.getRecipientKey(), recipientCtx.getPublicKey(), recipientCtx.getPublicKeyRaw());
 			pairwiseSenderKeys.put(rid, pairwiseSenderKey);
 
 		}
@@ -107,14 +112,31 @@ public class GroupSenderCtx extends OSCoreCtx {
 	}
 
 	/**
-	 * Get the alg countersign value.
+	 * Get the alg sign value.
 	 * 
-	 * @return the alg countersign value
+	 * @return the alg sign value
 	 */
-	public AlgorithmID getAlgCountersign() {
-		return commonCtx.algCountersign;
+	public AlgorithmID getAlgSign() {
+		return commonCtx.algSign;
 	}
 
+	/**
+	 * Get the alg sign enc value.
+	 * 
+	 * @return the alg sign enc value
+	 */
+	public AlgorithmID getAlgSignEnc() {
+		return commonCtx.algSignEnc;
+	}
+	
+	/**
+	 * Get the alg pairwise key agreement value.
+	 * @return the alg pairwise key agreement value.
+	 */	
+	public AlgorithmID getAlgKeyAgreement() {
+		return commonCtx.algKeyAgreement;
+	}
+	
 	/**
 	 * Get the length of the countersignature depending on the countersignature
 	 * algorithm currently used.
@@ -153,9 +175,28 @@ public class GroupSenderCtx extends OSCoreCtx {
 		return ownPrivateKey;
 	}
 
+	/**
+	 * Get the raw bytes of the public key associated to this sender context,
+	 * meaning your own public key.
+	 * 
+	 * @return the bytes of the public key
+	 */
+	public byte[] getPublicKeyRaw() {
+		return ownPublicKeyRaw;
+	}
+	
 	@Override
 	protected GroupSenderCtx getSenderCtx() {
 		return this;
+	}
+	
+	/**
+	 * Get the common context associated to this GroupSenderCtx.
+	 * 
+	 * @return the common context associated to this GroupSenderCtx
+	 */
+	public GroupCtx getCommonCtx() {
+		return commonCtx;
 	}
 	
 	/**

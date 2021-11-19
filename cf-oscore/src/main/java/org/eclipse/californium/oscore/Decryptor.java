@@ -41,6 +41,7 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.CounterSign1;
 import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupDeterministicRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupDeterministicSenderCtx;
@@ -93,9 +94,9 @@ public abstract class Decryptor {
 		boolean isDetReq = false; // Will be set to true in case of a deterministic request
 		byte[] hash = null; // Value of the Request-Hash option, if this is a deterministic request
 
+		CBORObject piv = enc.findAttribute(HeaderKeys.PARTIAL_IV);
+		
 		if (isRequest) {
-
-			CBORObject piv = enc.findAttribute(HeaderKeys.PARTIAL_IV);
 
 			if (piv == null) {
 				LOGGER.error("Decryption failed: no partialIV in request");
@@ -171,8 +172,6 @@ public abstract class Decryptor {
 				throw new OSException(ErrorDescriptions.DECRYPTION_FAILED);
 			}
 
-			CBORObject piv = enc.findAttribute(HeaderKeys.PARTIAL_IV);
-		
 			//Sequence number taken from original request
 			seq = seqByToken;
 
@@ -230,9 +229,10 @@ public abstract class Decryptor {
 			// Update external AAD value for Group OSCORE
 			aad = OSSerializer.updateAADForGroup(ctx, aad, message);
 
+			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + ", using pairwise mode: "
+					+ !groupModeMessage);
 			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + " with AAD "
 					+ Utils.toHexString(aad));
-
 			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + " with nonce "
 					+ Utils.toHexString(nonce));
 
@@ -250,11 +250,23 @@ public abstract class Decryptor {
 					message.getOptions().removeRequestHash();
 				}
 				
+				// Decrypt the signature.
+				if (isRequest || piv != null) {
+					byte[] pivFromMessage = enc.findAttribute(HeaderKeys.PARTIAL_IV).GetByteString();
+					decryptSignature(enc, sign, (GroupRecipientCtx) ctx, pivFromMessage, ctx.getRecipientId(),
+							isRequest);
+				} else {
+					byte[] pivFromOther = OSSerializer.stripZeroes(ByteBuffer.allocate(5).putInt(seq).array());
+					decryptSignature(enc, sign, (GroupRecipientCtx) ctx, pivFromOther, ctx.getSenderId(), isRequest);
+				}
+				
 				sign = prepareCheckSignature(enc, ctx, aad, message);
 				
 			} else {
 				// DET_REQ (extended here)
-				// If this is a pairwise response use the pairwise key
+				// This message is protected with the pairwise mode, and it is neither
+				// a deterministic request nor a response to a deterministic request.
+				// The decryption key is simply the pairwise recipient key.
 				if (!isDetReq) {
 					key = ((GroupRecipientCtx) ctx).getPairwiseRecipientKey();
 				}
@@ -283,8 +295,8 @@ public abstract class Decryptor {
 					
 				}
 				else if (isDetReq && !isRequest) {
-					LOGGER.error("Received a response protected in group mode as reply to a deterministic request");
-					throw new OSException("Received a response protected in group mode as reply to a deterministic request");
+					LOGGER.error("Received a response protected in pairwise mode as reply to a deterministic request");
+					throw new OSException("Received a response protected in pairwise mode as reply to a deterministic request");
 				}
 				
 			}
@@ -298,6 +310,13 @@ public abstract class Decryptor {
 		System.out.println("AAD " + Utils.toHexString(aad));
 		
 		enc.setExternal(aad);
+		
+		// Check signature before decrypting
+		if (groupModeMessage) {
+			// Verify the signature
+			boolean signatureCorrect = checkSignature(enc, sign);
+			LOGGER.debug("Signature verification succeeded: " + signatureCorrect);
+		}
 			
 		try {
 			// TODO: Get and set Recipient ID (KID) here too?
@@ -310,14 +329,10 @@ public abstract class Decryptor {
 			throw new OSException(ErrorDescriptions.DECRYPTION_FAILED + " " + e.getMessage());
 		}
 
-		if (groupModeMessage) {
-			boolean signatureCorrect = checkSignature(enc, sign);
-			LOGGER.debug("Signature verification succeeded: " + signatureCorrect);
-		}
 		// DET_REQ
 		// If this is a deterministic request, recompute the hash value,
 		// and compare it against the one in the Request-Hash option
-		else if (isRequest && isDetReq) {
+		if (!groupModeMessage && isRequest && isDetReq) {
 						
 			int hashInputLength = detRecipientKey.length + aad.length + plaintext.length;
 			
@@ -562,7 +577,7 @@ public abstract class Decryptor {
 			sign = new CounterSign1(countersignatureBytes);
 			sign.setKey(recipientPublicKey);
 
-			CBORObject signAlg = recipientCtx.getAlgCountersign().AsCBOR();
+			CBORObject signAlg = recipientCtx.getAlgSign().AsCBOR();
 			sign.addAttribute(HeaderKeys.Algorithm, signAlg, Attribute.DO_NOT_SEND);
 			byte[] signAad = aad;
 
@@ -577,4 +592,65 @@ public abstract class Decryptor {
 
 		return sign;
 	}
+	
+	private static void decryptSignature(Encrypt0Message enc, CounterSign1 sign, GroupRecipientCtx ctx,
+			byte[] partialIV,
+			byte[] kid, boolean isRequest) {
+
+		// Derive the keystream
+		String digest = "";
+		if (ctx.getAlgKeyAgreement().toString().contains("HKDF_256")) {
+			digest = "SHA256";
+		} else if (ctx.getAlgKeyAgreement().toString().contains("HKDF_512")) {
+			digest = "SHA512";
+		}
+
+		CBORObject info = CBORObject.NewArray();
+		int keyLength = ctx.getCommonCtx().getCountersignatureLen();
+
+		info = CBORObject.NewArray();
+		info.Add(kid);
+		info.Add(ctx.getIdContext());
+		info.Add(isRequest);
+		info.Add(keyLength);
+
+		byte[] groupEncryptionKey = ctx.getCommonCtx().getGroupEncryptionKey();
+		byte[] keystream = null;
+		try {
+			keystream = OSCoreCtx.deriveKey(groupEncryptionKey, partialIV, keyLength, digest, info.EncodeToBytes());
+
+		} catch (CoseException e) {
+			System.err.println(e.getMessage());
+		}
+
+		System.out.println("===");
+		System.out.println("D Signature keystream: " + Utils.toHexString(keystream));
+		System.out.println("D groupEncryptionKey: " + Utils.toHexString(groupEncryptionKey));
+		System.out.println("D partialIV: " + Utils.toHexString(partialIV));
+		System.out.println("D kid: " + Utils.toHexString(kid));
+		System.out.println("D IdContext: " + Utils.toHexString(ctx.getIdContext()));
+		System.out.println("D isRequest: " + isRequest);
+		System.out.println("===");
+
+		// Now actually decrypt the signature
+		byte[] full_payload = null;
+		try {
+			full_payload = enc.getEncryptedContent();
+		} catch (CoseException e) {
+			LOGGER.error("Countersignature verification procedure failed.");
+			e.printStackTrace();
+		}
+		byte[] countersignBytes = Arrays.copyOfRange(full_payload, full_payload.length - keyLength,
+				full_payload.length);
+		byte[] ciphertext = Arrays.copyOfRange(full_payload, 0, full_payload.length - keyLength);
+
+		byte[] decryptedCountersign = new byte[keystream.length];
+		for (int i = 0; i < keystream.length; i++) {
+			decryptedCountersign[i] = (byte) (countersignBytes[i] ^ keystream[i]);
+		}
+
+		// Replace the signature in the Encrypt0 object
+		enc.setEncryptedContent(Bytes.concatenate(ciphertext, decryptedCountersign));
+	}
+	
 }

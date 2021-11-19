@@ -124,6 +124,12 @@ public class GroupOSCOREReceiverDeterministic {
 	// Group OSCORE specific values for the countersignature (EdDSA)
 	private final static AlgorithmID algCountersign = AlgorithmID.EDDSA;
 
+	// Encryption algorithm for when using signatures
+	private final static AlgorithmID algSignEnc = AlgorithmID.AES_CCM_16_64_128;
+
+	// Algorithm for key agreement
+	private final static AlgorithmID algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
+	
 	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
 			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
 	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
@@ -144,20 +150,22 @@ public class GroupOSCOREReceiverDeterministic {
 	
 	private static final int REPLAY_WINDOW = 32;
 
-	/*
-	 * Rikard: Note regarding countersignature keys. The sid_private_key
-	 * contains both the public and private keys. The rid*_public_key contains
-	 * only the public key. For information on the keys see the Countersign_Keys
-	 * file.
-	 */
+	private final static byte[] gm_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+			"A501781A636F6170733A2F2F6D79736974652E6578616D706C652E636F6D026C67726F75706D616E6167657203781A636F6170733A2F2F646F6D61696E2E6578616D706C652E6F7267041AAB9B154F08A101A4010103272006215820CDE3EFD3BC3F99C9C9EE210415C6CBA55061B5046E963B8A58C9143A61166472");
 
 	private static byte[] sid = new byte[] { 0x52 };
-	private static String sid_private_key_string = "pQMnAQEgBiFYIHfsNYwdNE5B7g6HuDg9I6IJms05vfmJzkW1Loh0YzibI1gghX62HT9tcKJ4o2dA0TLAmfYogO1Jfie9/UaF+howTyY=";
-	private static OneKey sid_private_key;
+	private static byte[] sid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A401010327200621582077EC358C1D344E41EE0E87B8383D23A2099ACD39BDF989CE45B52E887463389B");
+	private static byte[] sid_private_key_bytes = new byte[] { (byte) 0x85, 0x7E, (byte) 0xB6, 0x1D, 0x3F, 0x6D, 0x70,
+			(byte) 0xA2, 0x78, (byte) 0xA3, 0x67, 0x40, (byte) 0xD1, 0x32, (byte) 0xC0, (byte) 0x99, (byte) 0xF6, 0x28,
+			(byte) 0x80, (byte) 0xED, 0x49, 0x7E, 0x27, (byte) 0xBD, (byte) 0xFD, 0x46, (byte) 0x85, (byte) 0xFA, 0x1A,
+			0x30, 0x4F, 0x26 };
+	private static MultiKey sid_private_key;
 
 	private final static byte[] rid1 = new byte[] { 0x25 };
-	private final static String rid1_public_key_string = "pAMnAQEgBiFYIAaekSuDljrMWUG2NUaGfewQbluQUfLuFPO8XMlhrNQ6";
-	private static OneKey rid1_public_key;
+	private final static byte[] rid1_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+			"A501781B636F6170733A2F2F746573746572312E6578616D706C652E636F6D02666D796E616D6503781A636F6170733A2F2F68656C6C6F312E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820069E912B83963ACC5941B63546867DEC106E5B9051F2EE14F3BC5CC961ACD43A");
+	private static MultiKey rid1_public_key;
 
 	private final static byte[] detSid = new byte[] { (byte) 0xdc }; // Sender ID of the deterministic client
 	
@@ -174,36 +182,45 @@ public class GroupOSCOREReceiverDeterministic {
 		Security.insertProviderAt(EdDSA, 0);
 
 		// Set sender & receiver keys for countersignatures
-		sid_private_key = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(sid_private_key_string)));
-		rid1_public_key = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(rid1_public_key_string)));
+		sid_private_key = new MultiKey(sid_public_key_bytes, sid_private_key_bytes);
+		rid1_public_key = new MultiKey(rid1_public_key_bytes);
 
 		// Check command line arguments (flag to use different sid and sid key)
 		if (args.length != 0) {
 			System.out.println("Starting with alternative sid 0x77.");
 			sid = new byte[] { 0x77 };
-			sid_private_key_string = "pQMnAQEgBiFYIBBbjGqMiAGb8MNUWSk0EwuqgAc5nMKsO+hFiEYT1bouI1gge/Yvdn7Rz0xgkR/En9/Mub1HzH6fr0HLZjadXIUIsjk=";
-			sid_private_key = new OneKey(
-					CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(sid_private_key_string)));
-			
+			sid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+					"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820105B8C6A8C88019BF0C354592934130BAA8007399CC2AC3BE845884613D5BA2E");
+			sid_private_key_bytes = new byte[] { 0x7B, (byte) 0xF6, 0x2F, 0x76, 0x7E, (byte) 0xD1, (byte) 0xCF, 0x4C,
+					0x60, (byte) 0x91, 0x1F, (byte) 0xC4, (byte) 0x9F, (byte) 0xDF, (byte) 0xCC, (byte) 0xB9,
+					(byte) 0xBD, 0x47, (byte) 0xCC, 0x7E, (byte) 0x9F, (byte) 0xAF, 0x41, (byte) 0xCB, 0x66, 0x36,
+					(byte) 0x9D, 0x5C, (byte) 0x85, 0x08, (byte) 0xB2, 0x39 };
+			sid_private_key = new MultiKey(sid_public_key_bytes, sid_private_key_bytes);
 		} else {
 			System.out.println("Starting with sid 0x52.");
 			
 			/*
 			// Test with Christian
-			sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_3_KEY_EDDSA);
+			sid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+					"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820105B8C6A8C88019BF0C354592934130BAA8007399CC2AC3BE845884613D5BA2E");
+			sid_private_key_bytes = new byte[] { 0x7B, (byte) 0xF6, 0x2F, 0x76, 0x7E, (byte) 0xD1, (byte) 0xCF, 0x4C,
+					0x60, (byte) 0x91, 0x1F, (byte) 0xC4, (byte) 0x9F, (byte) 0xDF, (byte) 0xCC, (byte) 0xB9,
+					(byte) 0xBD, 0x47, (byte) 0xCC, 0x7E, (byte) 0x9F, (byte) 0xAF, 0x41, (byte) 0xCB, 0x66, 0x36,
+					(byte) 0x9D, 0x5C, (byte) 0x85, 0x08, (byte) 0xB2, 0x39 };
+			sid_private_key = new MultiKey(sid_public_key_bytes, sid_private_key_bytes);
 			*/
 		}
 		
 		// If OSCORE is being used set the context information
 		if (useOSCORE) {
 
-			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign);
+			byte[] gmPublicKey = gm_public_key_bytes;
+			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign,
+											  algSignEnc, algKeyAgreement, gmPublicKey);
 
-			commonCtx.addSenderCtx(sid, sid_private_key);
+			commonCtx.addSenderCtxCcs(sid, sid_private_key);
 
-			commonCtx.addRecipientCtx(rid1, REPLAY_WINDOW, rid1_public_key);
+			commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
 
 			commonCtx.addDeterministicSenderCtx(detSid, "SHA-256");
 			commonCtx.addDeterministicRecipientCtx(detSid, 0, "SHA-256");

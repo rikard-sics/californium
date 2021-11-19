@@ -150,9 +150,9 @@ public class GroupInteropRikardEddsaOldTests {
 	public void testContextsAlgCountersign() throws OSException {
 		// Check that the contexts use the correct countersignature algorithms
 
-		assertEquals(AlgorithmID.EDDSA, senderCtxEddsa.getAlgCountersign());
-		assertEquals(AlgorithmID.EDDSA, recipient1CtxEddsa.getAlgCountersign());
-		assertEquals(AlgorithmID.EDDSA, recipient2CtxEddsa.getAlgCountersign());
+		assertEquals(AlgorithmID.EDDSA, senderCtxEddsa.getAlgSign());
+		assertEquals(AlgorithmID.EDDSA, recipient1CtxEddsa.getAlgSign());
+		assertEquals(AlgorithmID.EDDSA, recipient2CtxEddsa.getAlgSign());
 	}
 
 	@Test
@@ -241,7 +241,7 @@ public class GroupInteropRikardEddsaOldTests {
 		// --- Try decryption ---
 		String destinationUri = "coap://127.0.0.1/test";
 
-		GroupCtx groupCtxRikard = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256);
+		GroupCtx groupCtxRikard = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256, null);
 		// Dummy values for pretend sender
 		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParametersOld.JIM_ENTITY_1_KEY_ECDSA);
 		groupCtxRikard.addSenderCtx(new byte[] { 0x11, 0x22 }, senderFullKey);
@@ -337,7 +337,7 @@ public class GroupInteropRikardEddsaOldTests {
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 0);
 
-		GroupCtx groupCtxEddsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.EDDSA);
+		GroupCtx groupCtxEddsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.EDDSA, null);
 
 		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(senderFullKeyEddsa);
 		groupCtxEddsa.addSenderCtx(sid, senderFullKey);

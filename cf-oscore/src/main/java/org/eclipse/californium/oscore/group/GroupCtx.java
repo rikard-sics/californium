@@ -33,6 +33,7 @@ import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ByteId;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCtx;
@@ -53,10 +54,13 @@ public class GroupCtx {
 	AlgorithmID aeadAlg;
 	AlgorithmID hkdfAlg;
 	byte[] idContext;
-	AlgorithmID algCountersign;
+	AlgorithmID algSign;
+	AlgorithmID algSignEnc;
 	int[][] parCountersign;
-	AlgorithmID algSecret;
+	AlgorithmID algKeyAgreement;
 	int[][] parSecret;
+	byte[] groupEncryptionKey;
+	byte[] gmPublicKey;
 
 	// Reference to the associated sender context
 	GroupSenderCtx senderCtx;
@@ -86,66 +90,58 @@ public class GroupCtx {
 	 * @param aeadAlg
 	 * @param hkdfAlg
 	 * @param idContext
-	 * @param algCountersign
+	 * @param algSign
+	 * @param gmPublicKey
 	 */
 	public GroupCtx(byte[] masterSecret, byte[] masterSalt, AlgorithmID aeadAlg, AlgorithmID hkdfAlg, byte[] idContext,
-			AlgorithmID algCountersign) {
+			AlgorithmID algSign, byte[] gmPublicKey) {
 
 		this.masterSecret = masterSecret;
 		this.masterSalt = masterSalt;
 		this.aeadAlg = aeadAlg;
 		this.hkdfAlg = hkdfAlg;
 		this.idContext = idContext;
-		this.algCountersign = algCountersign;
+		this.algSign = algSign;
+		this.gmPublicKey = gmPublicKey;
+		this.algSignEnc = aeadAlg; // Same if not indicated
 
 		recipientCtxMap = new HashMap<ByteId, GroupRecipientCtx>();
 		publicKeysMap = new HashMap<ByteId, OneKey>();
 
-		// Set the par countersign value
-		int[] countersign_alg_capab = getCountersignAlgCapab(algCountersign);
-		int[] countersign_key_type_capab = getCountersignKeyTypeCapab(algCountersign);
-		this.parCountersign = new int[][] { countersign_alg_capab, countersign_key_type_capab };
-
-		// Set the alg secret and par secret values
-		this.algSecret = AlgorithmID.ECDH_SS_HKDF_256;
-		if (algCountersign == AlgorithmID.ECDSA_256 || algCountersign == AlgorithmID.ECDSA_384
-				|| algCountersign == AlgorithmID.ECDSA_512) {
-			this.parSecret = new int[][] { countersign_alg_capab, countersign_key_type_capab };
-		} else {
-			this.parSecret = new int[][] { countersign_alg_capab, new int[] { 1, 4 } };
-		}
-
+		// Default since not indicated
+		this.algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
 	}
 
 	/**
-	 * Construct a Group OSCORE context allowing to explicitly set the
-	 * parCountersign and parCountersignKey.
+	 * Construct a Group OSCORE context. New one to be used.
 	 * 
 	 * @param masterSecret
 	 * @param masterSalt
 	 * @param aeadAlg
 	 * @param hkdfAlg
 	 * @param idContext
-	 * @param algCountersign
-	 * @param parCountersign
-	 * @param parCountersignKey
+	 * @param algSign
+	 * @param gmPublicKey
+	 * @param algSignEnc
+	 * @param algKeyAgreement
 	 */
 	public GroupCtx(byte[] masterSecret, byte[] masterSalt, AlgorithmID aeadAlg, AlgorithmID hkdfAlg, byte[] idContext,
-			AlgorithmID algCountersign, int[][] parCountersign, int[] parCountersignKey) {
+			AlgorithmID algSign, AlgorithmID algSignEnc, AlgorithmID algKeyAgreement, byte[] gmPublicKey) {
 
 		this.masterSecret = masterSecret;
 		this.masterSalt = masterSalt;
 		this.aeadAlg = aeadAlg;
 		this.hkdfAlg = hkdfAlg;
 		this.idContext = idContext;
-		this.algCountersign = algCountersign;
-		this.parCountersign = parCountersign;
+		this.algSign = algSign;
+		this.gmPublicKey = gmPublicKey;
+		this.algSignEnc = algSignEnc;
+		this.algKeyAgreement = algKeyAgreement;
 
 		recipientCtxMap = new HashMap<ByteId, GroupRecipientCtx>();
 		publicKeysMap = new HashMap<ByteId, OneKey>();
 
 	}
-
 
 	/**
 	 * Add a recipient context.
@@ -157,7 +153,8 @@ public class GroupCtx {
 	 */
 	public void addRecipientCtx(byte[] recipientId, int replayWindow, OneKey otherEndpointPubKey) throws OSException {
 		GroupRecipientCtx recipientCtx = new GroupRecipientCtx(masterSecret, false, aeadAlg, null, recipientId, hkdfAlg,
-				replayWindow, masterSalt, idContext, otherEndpointPubKey, this);
+				replayWindow, masterSalt, idContext, otherEndpointPubKey,
+				null, this);
 
 		recipientCtxMap.put(new ByteId(recipientId), recipientCtx);
 
@@ -198,9 +195,56 @@ public class GroupCtx {
 		}
 
 		GroupSenderCtx senderCtx = new GroupSenderCtx(masterSecret, false, aeadAlg, senderId, null, hkdfAlg, 0,
-				masterSalt, idContext, ownPrivateKey, this);
+				masterSalt, idContext, ownPrivateKey, null, this);
 		this.senderCtx = senderCtx;
+
+		this.groupEncryptionKey = deriveGroupEncryptionKey();
 	}
+	
+	//
+	/**
+	 * Add a recipient context with (U)CCS.
+	 * 
+	 * @param recipientId
+	 * @param replayWindow
+	 * @param otherEndpointPubKey
+	 * @throws OSException
+	 */
+	public void addRecipientCtxCcs(byte[] recipientId, int replayWindow, MultiKey otherEndpointPubKey)
+			throws OSException {
+		GroupRecipientCtx recipientCtx;
+		if (otherEndpointPubKey != null) {
+			recipientCtx = new GroupRecipientCtx(masterSecret, false, aeadAlg, null, recipientId, hkdfAlg, replayWindow,
+					masterSalt, idContext, otherEndpointPubKey.getCoseKey(), otherEndpointPubKey.getRawKey(), this);
+		} else {
+			recipientCtx = new GroupRecipientCtx(masterSecret, false, aeadAlg, null, recipientId, hkdfAlg, replayWindow,
+					masterSalt, idContext, null, null, this);
+		}
+
+		recipientCtxMap.put(new ByteId(recipientId), recipientCtx);
+
+	}
+
+	/**
+	 * Add a sender context with (U)CCS.
+	 * 
+	 * @param senderId
+	 * @param ownPrivateKey
+	 * @throws OSException
+	 */
+	public void addSenderCtxCcs(byte[] senderId, MultiKey ownPrivateKey) throws OSException {
+
+		if (senderCtx != null) {
+			throw new OSException("Cannot add more than one Sender Context.");
+		}
+
+		GroupSenderCtx senderCtx = new GroupSenderCtx(masterSecret, false, aeadAlg, senderId, null, hkdfAlg, 0,
+				masterSalt, idContext, ownPrivateKey.getCoseKey(), ownPrivateKey.getRawKey(), this);
+		this.senderCtx = senderCtx;
+
+		this.groupEncryptionKey = deriveGroupEncryptionKey();
+	}
+	//
 	
 	/**
 	 * Add a deterministic sender context.
@@ -230,8 +274,17 @@ public class GroupCtx {
 		
 	}
 	
-	int getCountersignatureLen() {
-		switch (algCountersign) {
+	/**
+	 * Retrieve the public key for the Group Manager associated to this context.
+	 * 
+	 * @return the public key for the GM for this context
+	 */
+	public byte[] getGmPublicKey() {
+		return gmPublicKey;
+	}
+
+	public int getCountersignatureLen() {
+		switch (algSign) {
 		case EDDSA:
 		case ECDSA_256:
 			return 64;
@@ -241,7 +294,6 @@ public class GroupCtx {
 			return 132; // Why 132 and not 128?
 		default:
 			throw new RuntimeException("Unsupported countersignature algorithm!");
-
 		}
 	}
 
@@ -364,23 +416,63 @@ public class GroupCtx {
 	}
 
 	// TODO: Merge with below?
-	byte[] derivePairwiseSenderKey(byte[] recipientId, byte[] recipientKey, OneKey recipientPublicKey) {
+	byte[] deriveGroupEncryptionKey() {
+
+		String digest = "";
+		if (algKeyAgreement.toString().contains("HKDF_256")) {
+			digest = "SHA256";
+		} else if (algKeyAgreement.toString().contains("HKDF_512")) {
+			digest = "SHA512";
+		}
+
+		CBORObject info = CBORObject.NewArray();
+		int keyLength = this.algSignEnc.getKeySize() / 8;
+
+		// Then derive the group encryption key
+		info = CBORObject.NewArray();
+		info.Add(Bytes.EMPTY);
+		info.Add(this.idContext);
+		info.Add(this.aeadAlg.AsCBOR());
+		info.Add(CBORObject.FromObject("Group Encryption Key"));
+		info.Add(keyLength);
+
+		byte[] groupEncryptionKey = null;
+		try {
+			groupEncryptionKey = OSCoreCtx.deriveKey(senderCtx.getMasterSecret(), senderCtx.getSalt(), keyLength,
+					digest, info.EncodeToBytes());
+
+		} catch (CoseException e) {
+			System.err.println(e.getMessage());
+		}
+
+		return groupEncryptionKey;
+	}
+
+	// TODO: Merge with below?
+	byte[] derivePairwiseSenderKey(byte[] recipientId, byte[] recipientKey, OneKey recipientPublicKey,
+			byte[] recipientPublicKeyRaw) {
 
 		// TODO: Move? See below also
 		if (recipientPublicKey == null || senderCtx.getPrivateKey() == null) {
 			return null;
 		}
 
-		String digest = "SHA256"; // FIXME, see below also
+		String digest = "";
+		if (algKeyAgreement.toString().contains("HKDF_256")) {
+			digest = "SHA256";
+		} else if (algKeyAgreement.toString().contains("HKDF_512")) {
+			digest = "SHA512";
+		}
+		
 		CBORObject info = CBORObject.NewArray();
 		int keyLength = this.aeadAlg.getKeySize() / 8;
 
 		byte[] sharedSecret = null;
 
-		if (this.algCountersign == AlgorithmID.EDDSA) {
+		if (this.algSign == AlgorithmID.EDDSA) {
 			sharedSecret = generateSharedSecretEdDSA(senderCtx.getPrivateKey(), recipientPublicKey);
-		} else if (this.algCountersign == AlgorithmID.ECDSA_256 || this.algCountersign == AlgorithmID.ECDSA_384
-				|| this.algCountersign == AlgorithmID.ECDSA_512) {
+		} else if (this.algSign == AlgorithmID.ECDSA_256 || this.algSign == AlgorithmID.ECDSA_384
+				|| this.algSign == AlgorithmID.ECDSA_512) {
 			sharedSecret = generateSharedSecretECDSA(senderCtx.getPrivateKey(), recipientPublicKey);
 		} else {
 			System.err.println("Error: Unknown countersignature!");
@@ -393,10 +485,13 @@ public class GroupCtx {
 		info.Add(this.aeadAlg.AsCBOR());
 		info.Add(CBORObject.FromObject("Key"));
 		info.Add(this.aeadAlg.getKeySize() / 8);
+		
+		byte[] keysConcatenated = Bytes.concatenate(senderCtx.getPublicKeyRaw(), recipientPublicKeyRaw);
+		byte[] ikmSender = Bytes.concatenate(keysConcatenated, sharedSecret);
 
 		byte[] pairwiseSenderKey = null;
 		try {
-			pairwiseSenderKey = OSCoreCtx.deriveKey(sharedSecret, senderCtx.getSenderKey(), keyLength, digest,
+			pairwiseSenderKey = OSCoreCtx.deriveKey(ikmSender, senderCtx.getSenderKey(), keyLength, digest,
 					info.EncodeToBytes());
 
 		} catch (CoseException e) {
@@ -406,13 +501,20 @@ public class GroupCtx {
 		return pairwiseSenderKey;
 	}
 
-	byte[] derivePairwiseRecipientKey(byte[] recipientId, byte[] recipientKey, OneKey recipientPublicKey) {
+	byte[] derivePairwiseRecipientKey(byte[] recipientId, byte[] recipientKey, OneKey recipientPublicKey,
+			byte[] recipientPublicKeyRaw) {
 
 		if (recipientPublicKey == null || senderCtx.getPrivateKey() == null) {
 			return null;
 		}
 
-		String digest = "SHA256";
+		String digest = "";
+		if (algKeyAgreement.toString().contains("HKDF_256")) {
+			digest = "SHA256";
+		} else if (algKeyAgreement.toString().contains("HKDF_512")) {
+			digest = "SHA512";
+		}
+		
 		CBORObject info = CBORObject.NewArray();
 		int keyLength = this.aeadAlg.getKeySize() / 8;
 
@@ -428,17 +530,20 @@ public class GroupCtx {
 
 		byte[] sharedSecret = null;
 
-		if (this.algCountersign == AlgorithmID.EDDSA) {
+		if (this.algSign == AlgorithmID.EDDSA) {
 			sharedSecret = generateSharedSecretEdDSA(senderCtx.getPrivateKey(), recipientPublicKey);
-		} else if (this.algCountersign == AlgorithmID.ECDSA_256 || this.algCountersign == AlgorithmID.ECDSA_384
-				|| this.algCountersign == AlgorithmID.ECDSA_512) {
+		} else if (this.algSign == AlgorithmID.ECDSA_256 || this.algSign == AlgorithmID.ECDSA_384
+				|| this.algSign == AlgorithmID.ECDSA_512) {
 			sharedSecret = generateSharedSecretECDSA(senderCtx.getPrivateKey(), recipientPublicKey);
 		} else {
 			System.err.println("Error: Unknown countersignature!");
 		}
 
+		byte[] keysConcatenated = Bytes.concatenate(recipientPublicKeyRaw, senderCtx.getPublicKeyRaw());
+		byte[] ikmRecipient = Bytes.concatenate(keysConcatenated, sharedSecret);
+		
 		try {
-			pairwiseRecipientKey = OSCoreCtx.deriveKey(sharedSecret, recipientKey, keyLength, digest,
+			pairwiseRecipientKey = OSCoreCtx.deriveKey(ikmRecipient, recipientKey, keyLength, digest,
 					info.EncodeToBytes());
 
 		} catch (CoseException e) {
@@ -492,6 +597,16 @@ public class GroupCtx {
 		}
 
 		return sharedSecret;
+	}
+	
+	/**
+	 * Get the group encryption key from the common context (used for making a
+	 * keystream to encrypt the signature).
+	 * 
+	 * @return the group encryption key
+	 */
+	public byte[] getGroupEncryptionKey() {
+		return groupEncryptionKey;
 	}
 	
     /**
