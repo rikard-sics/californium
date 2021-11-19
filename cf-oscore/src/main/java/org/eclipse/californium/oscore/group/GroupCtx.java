@@ -256,6 +256,7 @@ public class GroupCtx {
 
 		this.groupEncryptionKey = deriveGroupEncryptionKey();
 	}
+	//
 	
 	/**
 	 * Add a deterministic sender context.
@@ -491,7 +492,7 @@ public class GroupCtx {
 		info.Add(this.aeadAlg.AsCBOR());
 		info.Add(CBORObject.FromObject("Key"));
 		info.Add(this.aeadAlg.getKeySize() / 8);
-
+		
 		byte[] keysConcatenated = Bytes.concatenate(senderCtx.getPublicKeyRaw(), recipientPublicKeyRaw);
 		byte[] ikmSender = Bytes.concatenate(keysConcatenated, sharedSecret);
 
