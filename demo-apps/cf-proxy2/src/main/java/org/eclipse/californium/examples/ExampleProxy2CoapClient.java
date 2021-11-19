@@ -291,6 +291,7 @@ public class ExampleProxy2CoapClient {
 		get(client);
 
 		// Newly added tests below
+		
 		// RH: Newly added tests below
 
 		System.out.println("");
