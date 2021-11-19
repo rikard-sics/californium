@@ -184,14 +184,6 @@ public class GroupRecipientCtx extends OSCoreCtx {
 	 * 
 	 * @return the private key
 	 */
-
-
-	// ------- TODO: Remove methods below -------
-
-	/**
-	 * 
-	 * @return the private key
-	 */
 	public OneKey getPrivateKey() {
 		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
 		System.err.println("Bad call to getPrivateKey on GroupRecipientCtx" + stackTraceElements[2].toString());

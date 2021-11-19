@@ -87,7 +87,7 @@ public class GroupOSCOREInteropClient {
 	/**
 	 * Whether to use OSCORE or not. (Case 1)
 	 */
-	static final boolean useOSCORE = true;
+	static final boolean useOSCORE = false;
 
 	/**
 	 * Whether to use Group OSCORE or normal OSCORE.

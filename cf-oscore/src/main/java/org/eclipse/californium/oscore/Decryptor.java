@@ -260,7 +260,7 @@ public abstract class Decryptor {
 					aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
 					message.getOptions().removeRequestHash();
 				}
-
+				
 				// Decrypt the signature.
 				if (isRequest || piv != null) {
 					byte[] pivFromMessage = enc.findAttribute(HeaderKeys.PARTIAL_IV).GetByteString();
