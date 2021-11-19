@@ -172,7 +172,6 @@ public abstract class Decryptor {
 				LOGGER.error("Decryption failed: the arrived response is not connected to a request we sent");
 				throw new OSException(ErrorDescriptions.DECRYPTION_FAILED);
 			}
-		
 			//Sequence number taken from original request
 			seq = seqByToken;
 
@@ -246,13 +245,6 @@ public abstract class Decryptor {
 					+ !groupModeMessage);
 			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + " with AAD "
 					+ Utils.toHexString(aad));
-
-			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + " with nonce "
-					+ Utils.toHexString(nonce));
-
-			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + " with AAD "
-					+ Utils.toHexString(aad));
-
 			System.out.println("Decrypting incoming " + message.getClass().getSimpleName() + " with nonce "
 					+ Utils.toHexString(nonce));
 
@@ -283,7 +275,9 @@ public abstract class Decryptor {
 				
 			} else {
 				// DET_REQ (extended here)
-				// If this is a pairwise response use the pairwise key
+				// This message is protected with the pairwise mode, and it is neither
+				// a deterministic request nor a response to a deterministic request.
+				// The decryption key is simply the pairwise recipient key.
 				if (!isDetReq) {
 					key = ((GroupRecipientCtx) ctx).getPairwiseRecipientKey();
 				}
@@ -312,8 +306,8 @@ public abstract class Decryptor {
 					
 				}
 				else if (isDetReq && !isRequest) {
-					LOGGER.error("Received a response protected in group mode as reply to a deterministic request");
-					throw new OSException("Received a response protected in group mode as reply to a deterministic request");
+					LOGGER.error("Received a response protected in pairwise mode as reply to a deterministic request");
+					throw new OSException("Received a response protected in pairwise mode as reply to a deterministic request");
 				}
 				
 			}
@@ -347,14 +341,10 @@ public abstract class Decryptor {
 			throw new OSException(details);
 		}
 
-		if (groupModeMessage) {
-			boolean signatureCorrect = checkSignature(enc, sign);
-			LOGGER.debug("Signature verification succeeded: " + signatureCorrect);
-		}
 		// DET_REQ
 		// If this is a deterministic request, recompute the hash value,
 		// and compare it against the one in the Request-Hash option
-		else if (isRequest && isDetReq) {
+		if (!groupModeMessage && isRequest && isDetReq) {
 						
 			int hashInputLength = detRecipientKey.length + aad.length + plaintext.length;
 			
@@ -647,4 +637,5 @@ public abstract class Decryptor {
 		// Replace the signature in the Encrypt0 object
 		enc.setEncryptedContent(Bytes.concatenate(ciphertext, decryptedCountersign));
 	}
+
 }

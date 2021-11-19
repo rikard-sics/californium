@@ -17,11 +17,13 @@
 package org.eclipse.californium.examples;
 
 import java.io.IOException;
+import java.net.URI;
 
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.config.CoapConfig;
+import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.elements.AddressEndpointContext;
@@ -29,6 +31,9 @@ import org.eclipse.californium.elements.config.TcpConfig;
 import org.eclipse.californium.elements.config.UdpConfig;
 import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.examples.util.CoapResponsePrinter;
+import org.eclipse.californium.oscore.HashMapCtxDB;
+import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
+import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.proxy2.resources.ProxyHttpClientResource;
 
 /**
@@ -76,6 +81,20 @@ import org.eclipse.californium.proxy2.resources.ProxyHttpClientResource;
  * </pre>
  */
 public class ExampleProxy2CoapClient {
+
+	private final static HashMapCtxDB db = new HashMapCtxDB();
+	private final static String uriLocal = "coap://localhost";
+	private final static String hello1 = "/hello/1";
+	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
+	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
+
+	// test vector OSCORE draft Appendix C.1.1
+	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
+	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
+			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
+	private final static byte[] sid = new byte[0];
+	private final static byte[] rid = new byte[] { 0x01 };
 
 	private static final int PROXY_PORT = 5683;
 

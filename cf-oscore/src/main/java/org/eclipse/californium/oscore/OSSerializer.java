@@ -301,14 +301,6 @@ public class OSSerializer {
 			algKeyAgreement = senderCtx.getAlgKeyAgreement().AsCBOR();
 			senderPublicKey = senderCtx.getPublicKeyRaw();
 			gmPublicKey = senderCtx.getCommonCtx().getGmPublicKey();
-		} else if (ctx instanceof GroupDeterministicSenderCtx) { // DET_REQ (new case)
-			GroupDeterministicSenderCtx detSenderCtx = (GroupDeterministicSenderCtx) ctx;
-			GroupSenderCtx senderCtx = detSenderCtx.getSenderCtx();
-			algSign = senderCtx.getAlgSign().AsCBOR();
-			algSignEnc = senderCtx.getAlgSignEnc().AsCBOR();
-			algKeyAgreement = senderCtx.getAlgKeyAgreement().AsCBOR();
-			senderPublicKey = Bytes.EMPTY;
-			gmPublicKey = senderCtx.getCommonCtx().getGmPublicKey();
 		}
 		else if (ctx instanceof GroupDeterministicRecipientCtx) { // DET_REQ (new case)
 			GroupDeterministicRecipientCtx detRecipientCtx = (GroupDeterministicRecipientCtx) ctx;
@@ -322,8 +314,11 @@ public class OSSerializer {
 		else if (ctx instanceof GroupDeterministicSenderCtx) { // DET_REQ (new case)
 			GroupDeterministicSenderCtx detSenderCtx = (GroupDeterministicSenderCtx) ctx;
 			GroupSenderCtx senderCtx = detSenderCtx.getSenderCtx();
-			algCountersign = senderCtx.getAlgCountersign().AsCBOR();
-			parCountersign = CBORObject.FromObject(senderCtx.getParCountersign());
+			algSign = senderCtx.getAlgSign().AsCBOR();
+			algSignEnc = senderCtx.getAlgSignEnc().AsCBOR();
+			algKeyAgreement = senderCtx.getAlgKeyAgreement().AsCBOR();
+			senderPublicKey = Bytes.EMPTY;
+			gmPublicKey = senderCtx.getCommonCtx().getGmPublicKey();
 		}
 
 		CBORObject groupAadEnc = CBORObject.DecodeFromBytes(aadBytes);

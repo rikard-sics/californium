@@ -498,8 +498,7 @@ public abstract class Encryptor {
 		enc.setEncryptedContent(fullPayload);
 	}
 
-	private static void encryptSignature(Encrypt0Message enc, GroupSenderCtx ctx, byte[] partialIV, byte[] kid,
-			boolean isRequest) {
+	private static void encryptSignature(Encrypt0Message enc, GroupSenderCtx ctx, byte[] partialIV, byte[] kid, boolean isRequest) {
 
 		// Derive the keystream
 		String digest = "";
