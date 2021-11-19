@@ -325,6 +325,7 @@ public class ExampleProxy2CoapClient {
 		System.out.println("Request B");
 		request = Request.newGet();
 		request.setURI(proxyUri.toString());
+
 		request.getOptions().setProxyUri("coap://localhost:" + SERVER_COAP_PORT + "/coap-target"); // M.T.
 		System.out.println("Proxy-URI: " + request.getOptions().getProxyUri());
 		request(client, request);
