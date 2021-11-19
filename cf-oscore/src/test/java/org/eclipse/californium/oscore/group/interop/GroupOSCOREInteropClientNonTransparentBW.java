@@ -245,6 +245,7 @@ public class GroupOSCOREInteropClientNonTransparentBW {
 
 		}
 
+
 		Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 
 		CoapEndpoint endpoint = new CoapEndpoint.Builder().setConfiguration(config).build();
