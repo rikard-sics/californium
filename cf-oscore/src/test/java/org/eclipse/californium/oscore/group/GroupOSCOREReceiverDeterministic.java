@@ -269,7 +269,8 @@ public class GroupOSCOREReceiverDeterministic {
 			// set display name
 			getAttributes().setTitle("Hello-World Resource");
 
-			id = random.nextInt(1000);
+			// id = random.nextInt(1000);
+			id = 42;
 
 			System.out.println("coap receiver: " + id);
 		}

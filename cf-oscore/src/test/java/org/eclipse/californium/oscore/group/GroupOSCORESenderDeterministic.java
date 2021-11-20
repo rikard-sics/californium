@@ -63,12 +63,16 @@ public class GroupOSCORESenderDeterministic {
 	static final boolean useOSCORE = true;
 	
 	/**
-	 * Whether to use the pairwise mode of Group OSCORE or not
+	 * Whether to use the pairwise mode of Group OSCORE or not.
+	 * 
+	 * If set to true, the request will be sent over unicast, otherwise over multicast
 	 */
 	static final boolean pairwiseMode = true;
 	
 	/**
 	 * Whether to send the request as a deterministic request or not
+	 * 
+	 * It must be set to false if "pairwiseMode" is set to false
 	 */
 	static final boolean deterministicRequest = true;
 	
@@ -263,9 +267,6 @@ public class GroupOSCORESenderDeterministic {
 			commonCtx.addDeterministicSenderCtx(detSid, "SHA-256");
 			commonCtx.addDeterministicRecipientCtx(detSid, 0, "SHA-256");
 			
-			commonCtx.setResponsesIncludePartialIV(true);
-			commonCtx.setResponsesIncludePartialIV(true);
-
 			db.addContext(multicastRequestURI, commonCtx);
 
 			OSCoreCoapStackFactory.useAsDefault(db);
@@ -284,6 +285,7 @@ public class GroupOSCORESenderDeterministic {
 		}
 		
 		Request request;
+		Code requestCode = Code.POST;
 		if (useOSCORE) {
 			
 			if (!pairwiseMode) {
@@ -307,6 +309,7 @@ public class GroupOSCORESenderDeterministic {
 
 					request = new Request(Code.GET);
 					request.setType(Type.CON);
+					requestCode = Code.GET;
 					
 					// Protect the request in pairwise mode as a deterministic request
 					request.getOptions().setOscore(OptionEncoder.set(true, multicastRequestURI, null, true));
@@ -327,7 +330,7 @@ public class GroupOSCORESenderDeterministic {
 		}
 		System.out.println("Request destination port: " + destinationPort);
 		System.out.println("Request method: " + request.getCode());
-		if (!pairwiseMode || !deterministicRequest) {
+		if (requestCode != Code.GET && requestCode != Code.DELETE && requestPayload != null) {
 			System.out.println("Request payload: " + requestPayload);
 		}
 		System.out.println("==================");
@@ -343,7 +346,7 @@ public class GroupOSCORESenderDeterministic {
 
 		System.out.println(Utils.prettyPrint(request));
 		
-		if (pairwiseMode) {
+		if (useOSCORE && pairwiseMode) {
 			
 			// sends a unicast request
 			
@@ -355,21 +358,56 @@ public class GroupOSCORESenderDeterministic {
 			System.out.println(Utils.prettyPrint(response));
 			*/
 			
+			// Send a first request as prepared above
 			client.advanced(handler, request);
 			while (handler.waitOn(HANDLER_TIMEOUT)) {
 				// Wait for responses
 			}
 			
-			/*
+			// Prepare a second request, with the same type and payload of the first one
+			requestCode = Code.POST;
+			if (!deterministicRequest) {
+				request = Request.newPost();
+				request.setPayload(requestPayload);
+				request.setType(Type.CON);
+				
+				// Protect the request in pairwise mode for a particular group member
+				request.getOptions().setOscore(OptionEncoder.set(true, multicastRequestURI, rid1, false));
+			}
+			else {
+
+				request = new Request(Code.GET);
+				request.setType(Type.CON);
+				requestCode = Code.GET;
+				
+				// Protect the request in pairwise mode as a deterministic request
+				request.getOptions().setOscore(OptionEncoder.set(true, multicastRequestURI, null, true));
+			}
+			
+			// Send the second request
 			client.advanced(handler, request);
 			while (handler.waitOn(HANDLER_TIMEOUT)) {
 				// Wait for responses
 			}
-			*/
 			
 		}
-		else {
-			// sends a multicast request
+		else if (useOSCORE && !pairwiseMode) {
+			// Sends a first multicast request, as prepared above
+			client.advanced(handler, request);
+			System.out.println("Sending from: " + client.getEndpoint().getAddress());
+			while (handler.waitOn(HANDLER_TIMEOUT)) {
+				// Wait for responses
+			}
+			
+			// Prepare a second request, with the same type and payload of the first one
+			request = Request.newPost();
+			request.setPayload(requestPayload);
+			request.setType(Type.NON);
+			
+			// Protect the request in group mode
+			request.getOptions().setOscore(Bytes.EMPTY);
+			
+			// Send the second multicast request, with the same type and payload of the first one 
 			client.advanced(handler, request);
 			System.out.println("Sending from: " + client.getEndpoint().getAddress());
 			while (handler.waitOn(HANDLER_TIMEOUT)) {
