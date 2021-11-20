@@ -480,12 +480,31 @@ public class GroupOSCORESenderDeterministic {
 				// Wait for responses
 			}
 			
-			/*
+			// Prepare a second request, with the same type and payload of the first one
+			requestCode = Code.POST;
+			if (!deterministicRequest) {
+				request = Request.newPost();
+				request.setPayload(requestPayload);
+				request.setType(Type.CON);
+				
+				// Protect the request in pairwise mode for a particular group member
+				request.getOptions().setOscore(OptionEncoder.set(true, multicastRequestURI, rid1, false));
+			}
+			else {
+
+				request = new Request(Code.GET);
+				request.setType(Type.CON);
+				requestCode = Code.GET;
+				
+				// Protect the request in pairwise mode as a deterministic request
+				request.getOptions().setOscore(OptionEncoder.set(true, multicastRequestURI, null, true));
+			}
+			
+			// Send the second request
 			client.advanced(handler, request);
 			while (handler.waitOn(HANDLER_TIMEOUT)) {
 				// Wait for responses
 			}
-			*/
 			
 		}
 		else if (useOSCORE && !pairwiseMode) {
