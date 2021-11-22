@@ -16,18 +16,9 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore.group;
 
-import java.util.HashMap;
-import java.util.Map.Entry;
-
-import javax.xml.bind.DatatypeConverter;
-
 import org.eclipse.californium.cose.AlgorithmID;
-import org.eclipse.californium.cose.CoseException;
-import org.eclipse.californium.cose.OneKey;
-import org.eclipse.californium.oscore.ByteId;
 import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSException;
-import org.junit.Assert;
 
 /**
  * Class implementing a Group OSCORE sender context.

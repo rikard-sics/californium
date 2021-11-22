@@ -27,8 +27,6 @@ import java.security.Provider;
 import java.security.Security;
 import java.util.Random;
 
-import javax.xml.bind.DatatypeConverter;
-
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.Utils;
@@ -42,7 +40,6 @@ import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.core.server.resources.Resource;
 import org.eclipse.californium.cose.AlgorithmID;
-import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.UDPConnector;
 import org.eclipse.californium.elements.UdpMulticastConnector;
 import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
@@ -51,8 +48,6 @@ import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 

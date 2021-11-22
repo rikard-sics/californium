@@ -24,8 +24,6 @@ import java.net.URISyntaxException;
 import java.security.Provider;
 import java.security.Security;
 
-import javax.xml.bind.DatatypeConverter;
-
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapResponse;

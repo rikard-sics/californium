@@ -44,9 +44,7 @@ import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupDeterministicRecipientCtx;
-import org.eclipse.californium.oscore.group.GroupDeterministicSenderCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
-import org.eclipse.californium.oscore.group.OptionEncoder;
 
 /**
  * 
