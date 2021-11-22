@@ -17,10 +17,8 @@
 package org.eclipse.californium.oscore.group;
 
 import org.eclipse.californium.cose.AlgorithmID;
-import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSException;
-import org.junit.Assert;
 
 /**
  * Class implementing a Group OSCORE Recipient context.
