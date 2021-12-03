@@ -24,18 +24,17 @@ import java.net.URISyntaxException;
 import java.security.Provider;
 import java.security.Security;
 
-import javax.xml.bind.DatatypeConverter;
-
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
+import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.network.CoapEndpoint;
-import org.eclipse.californium.core.network.config.NetworkConfig;
-import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
+import org.eclipse.californium.elements.config.Configuration;
+import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.HashMapCtxDB;
@@ -43,7 +42,7 @@ import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
-import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
+import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
 
 /**
  * Test sender configured to support multicast requests. Rebased.
@@ -61,11 +60,11 @@ public class GroupOSCORESender {
 	/**
 	 * Special network configuration defaults handler.
 	 */
-	private static NetworkConfigDefaultHandler DEFAULTS = new NetworkConfigDefaultHandler() {
+	private static DefinitionsProvider DEFAULTS = new DefinitionsProvider() {
 
 		@Override
-		public void applyDefaults(NetworkConfig config) {
-			config.setInt(Keys.MULTICAST_BASE_MID, 65000);
+		public void applyDefinitions(Configuration config) {
+			config.set(CoapConfig.MULTICAST_BASE_MID, 65000);
 		}
 
 	};
@@ -203,9 +202,9 @@ public class GroupOSCORESender {
 			OSCoreCoapStackFactory.useAsDefault(db);
 		}
 
-		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
+		Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 
-		CoapEndpoint endpoint = new CoapEndpoint.Builder().setNetworkConfig(config).build();
+		CoapEndpoint endpoint = new CoapEndpoint.Builder().setConfiguration(config).build();
 		CoapClient client = new CoapClient();
 
 		client.setEndpoint(endpoint);
@@ -213,6 +212,7 @@ public class GroupOSCORESender {
 		client.setURI(requestURI);
 		Request multicastRequest = Request.newPost();
 		multicastRequest.setPayload(requestPayload);
+		multicastRequest.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 		multicastRequest.setType(Type.NON);
 		if (useOSCORE) {
 			// For group mode request

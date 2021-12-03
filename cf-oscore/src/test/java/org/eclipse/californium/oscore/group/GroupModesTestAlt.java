@@ -47,9 +47,9 @@ import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.californium.core.network.EndpointManager;
-import org.eclipse.californium.core.network.config.NetworkConfig;
-import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
-import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
+import org.eclipse.californium.elements.config.Configuration;
+import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
+import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
@@ -104,11 +104,11 @@ public class GroupModesTestAlt {
 	/**
 	 * Special network configuration defaults handler.
 	 */
-	private static NetworkConfigDefaultHandler DEFAULTS = new NetworkConfigDefaultHandler() {
+	private static DefinitionsProvider DEFAULTS = new DefinitionsProvider() {
 
 		@Override
-		public void applyDefaults(NetworkConfig config) {
-			config.setInt(Keys.MULTICAST_BASE_MID, 65000);
+		public void applyDefinitions(Configuration config) {
+			config.set(CoapConfig.MULTICAST_BASE_MID, 65000);
 		}
 
 	};
@@ -200,11 +200,11 @@ public class GroupModesTestAlt {
 		setClientContext();
 
 		// Create client endpoint with OSCORE context DB
-		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
+		Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
 		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
 		builder.setCustomCoapStackArgument(dbClient);
-		builder.setNetworkConfig(config);
+		builder.setConfiguration(config);
 		CoapEndpoint clientEndpoint = builder.build();
 		cleanup.add(clientEndpoint);
 
@@ -254,11 +254,11 @@ public class GroupModesTestAlt {
 		setClientContext();
 
 		// Create client endpoint with OSCORE context DB
-		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
+		Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
 		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
 		builder.setCustomCoapStackArgument(dbClient);
-		builder.setNetworkConfig(config);
+		builder.setConfiguration(config);
 		CoapEndpoint clientEndpoint = builder.build();
 		cleanup.add(clientEndpoint);
 
@@ -306,11 +306,11 @@ public class GroupModesTestAlt {
 		setClientContext();
 
 		// Create client endpoint with OSCORE context DB
-		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
+		Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
 		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
 		builder.setCustomCoapStackArgument(dbClient);
-		builder.setNetworkConfig(config);
+		builder.setConfiguration(config);
 		CoapEndpoint clientEndpoint = builder.build();
 		cleanup.add(clientEndpoint);
 
@@ -350,11 +350,11 @@ public class GroupModesTestAlt {
 		setClientContext();
 
 		// Create client endpoint with OSCORE context DB
-		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
+		Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
 		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
 		builder.setCustomCoapStackArgument(dbClient);
-		builder.setNetworkConfig(config);
+		builder.setConfiguration(config);
 		CoapEndpoint clientEndpoint = builder.build();
 		cleanup.add(clientEndpoint);
 
@@ -511,7 +511,7 @@ public class GroupModesTestAlt {
 
 		// Create server and multicast configuration
 		CoapServer server = new CoapServer();
-		NetworkConfig config = NetworkConfig.getStandard();
+		Configuration config = Configuration.getStandard();
 		createEndpoints(server, CoAP.DEFAULT_COAP_PORT, CoAP.DEFAULT_COAP_PORT, config);
 		serverEndpoint = server.getEndpoint(CoAP.DEFAULT_COAP_PORT);
 
@@ -588,12 +588,12 @@ public class GroupModesTestAlt {
 	 * @param multicastPort
 	 * @param config
 	 */
-	private static void createEndpoints(CoapServer server, int unicastPort, int multicastPort, NetworkConfig config) {
+	private static void createEndpoints(CoapServer server, int unicastPort, int multicastPort, Configuration config) {
 		// UDPConnector udpConnector = new UDPConnector(new
 		// InetSocketAddress(unicastPort));
 		// udpConnector.setReuseAddress(true);
 		// CoapEndpoint coapEndpoint = new
-		// CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector).build();
+		// CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector).build();
 
 		NetworkInterface networkInterface = NetworkInterfacesUtil.getMulticastInterface();
 		if (networkInterface == null) {
@@ -607,9 +607,9 @@ public class GroupModesTestAlt {
 		if (!ipv4 && NetworkInterfacesUtil.isAnyIpv6()) {
 			Inet6Address ipv6 = NetworkInterfacesUtil.getMulticastInterfaceIpv6();
 			LOGGER.info("Multicast: IPv6 Network Address: {}", StringUtil.toString(ipv6));
-			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv6, unicastPort));
+			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv6, unicastPort), config);
 			udpConnector.setReuseAddress(true);
-			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector)
+			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector)
 					.setCustomCoapStackArgument(dbServer).build();
 
 			builder = new UdpMulticastConnector.Builder().setLocalAddress(CoAP.MULTICAST_IPV6_SITELOCAL, multicastPort)
@@ -631,9 +631,9 @@ public class GroupModesTestAlt {
 		if (ipv4 && NetworkInterfacesUtil.isAnyIpv4()) {
 			Inet4Address ipv4 = NetworkInterfacesUtil.getMulticastInterfaceIpv4();
 			LOGGER.info("Multicast: IPv4 Network Address: {}", StringUtil.toString(ipv4));
-			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv4, unicastPort));
+			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv4, unicastPort), config);
 			udpConnector.setReuseAddress(true);
-			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector)
+			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector)
 					.setCustomCoapStackArgument(dbServer).build();
 
 			builder = new UdpMulticastConnector.Builder().setLocalAddress(CoAP.MULTICAST_IPV4, multicastPort)
@@ -650,9 +650,9 @@ public class GroupModesTestAlt {
 			LOGGER.info("IPv4 - multicast");
 		}
 		UDPConnector udpConnector = new UDPConnector(
-				new InetSocketAddress(InetAddress.getLoopbackAddress(), unicastPort));
+				new InetSocketAddress(InetAddress.getLoopbackAddress(), unicastPort), config);
 		udpConnector.setReuseAddress(true);
-		CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector)
+		CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector)
 				.setCustomCoapStackArgument(dbServer).build();
 		server.addEndpoint(coapEndpoint);
 		LOGGER.info("loopback");

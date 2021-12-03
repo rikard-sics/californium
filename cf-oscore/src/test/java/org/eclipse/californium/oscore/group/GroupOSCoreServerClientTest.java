@@ -43,9 +43,9 @@ import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.californium.core.network.EndpointManager;
-import org.eclipse.californium.core.network.config.NetworkConfig;
-import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
-import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
+import org.eclipse.californium.elements.config.Configuration;
+import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
+import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
@@ -87,11 +87,11 @@ public class GroupOSCoreServerClientTest {
 	/**
 	 * Special network configuration defaults handler.
 	 */
-	private static NetworkConfigDefaultHandler DEFAULTS = new NetworkConfigDefaultHandler() {
+	private static DefinitionsProvider DEFAULTS = new DefinitionsProvider() {
 
 		@Override
-		public void applyDefaults(NetworkConfig config) {
-			config.setInt(Keys.MULTICAST_BASE_MID, 65000);
+		public void applyDefinitions(Configuration config) {
+			config.set(CoapConfig.MULTICAST_BASE_MID, 65000);
 		}
 
 	};
@@ -406,7 +406,7 @@ public class GroupOSCoreServerClientTest {
 		// Reduce timeout and disable retransmissions since the first request
 		// will not get a response
 		client.setTimeout((long) 250);
-		clientEndpoint.getConfig().setInt(NetworkConfig.Keys.MAX_RETRANSMIT, 0);
+		clientEndpoint.getConfig().set(CoapConfig.MAX_RETRANSMIT, 1);
 
 		client.setURI(uri);
 		Request request = Request.newGet();
@@ -711,11 +711,11 @@ public class GroupOSCoreServerClientTest {
 	 * @return an endpoint for a client
 	 */
 	private CoapEndpoint createClientEndpoint() {
-		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
+		Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
 		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
 		builder.setCustomCoapStackArgument(dbClient);
-		builder.setNetworkConfig(config);
+		builder.setConfiguration(config);
 		CoapEndpoint clientEndpoint = builder.build();
 		return clientEndpoint;
 	}
