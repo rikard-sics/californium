@@ -29,6 +29,8 @@ import org.junit.Assert;
  */
 public class GroupRecipientCtx extends OSCoreCtx {
 
+	private final static int DEFAULT_MAX_UNFRAGMENTED_SIZE = 4096;
+
 	GroupCtx commonCtx;
 	OneKey otherEndpointPubKey;
 	byte[] otherEndpointPubKeyRaw = Bytes.EMPTY;
@@ -38,7 +40,9 @@ public class GroupRecipientCtx extends OSCoreCtx {
 	GroupRecipientCtx(byte[] master_secret, boolean client, AlgorithmID alg, byte[] sender_id,
 			byte[] recipient_id, AlgorithmID kdf, Integer replay_size, byte[] master_salt, byte[] contextId,
 			OneKey otherEndpointPubKey, byte[] otherEndpointPubKeyRaw, GroupCtx commonCtx) throws OSException {
-		super(master_secret, client, alg, sender_id, recipient_id, kdf, replay_size, master_salt, contextId);
+		// Build OSCORE Context using OSCoreCtx constructor
+		super(master_secret, client, alg, sender_id, recipient_id, kdf, replay_size, master_salt, contextId,
+				DEFAULT_MAX_UNFRAGMENTED_SIZE);
 
 		this.commonCtx = commonCtx;
 		this.otherEndpointPubKey = otherEndpointPubKey;
