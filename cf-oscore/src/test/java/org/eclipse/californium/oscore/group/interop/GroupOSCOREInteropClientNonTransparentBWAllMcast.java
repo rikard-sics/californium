@@ -40,9 +40,9 @@ import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.network.CoapEndpoint;
-import org.eclipse.californium.core.network.config.NetworkConfig;
-import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
-import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
+import org.eclipse.californium.elements.config.Configuration;
+import org.eclipse.californium.core.config.CoapConfig;
+import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
@@ -74,11 +74,11 @@ public class GroupOSCOREInteropClientNonTransparentBWAllMcast {
 	/**
 	 * Special network configuration defaults handler.
 	 */
-	private static NetworkConfigDefaultHandler DEFAULTS = new NetworkConfigDefaultHandler() {
+	private static DefinitionsProvider DEFAULTS = new DefinitionsProvider() {
 
 		@Override
-		public void applyDefaults(NetworkConfig config) {
-			config.setInt(Keys.MULTICAST_BASE_MID, 65000);
+		public void applyDefinitions(Configuration config) {
+			config.set(CoapConfig.MULTICAST_BASE_MID, 65000);
 		}
 
 	};
@@ -150,6 +150,8 @@ public class GroupOSCOREInteropClientNonTransparentBWAllMcast {
 	private final static byte[] rid0 = new byte[] { (byte) 0xCC }; // Dummy
 
 	private final static byte[] group_identifier = InteropParametersNew.RIKARD_GROUP_ID_ECDSA;
+
+	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 
 	/* --- OSCORE Security Context information --- */
 
@@ -242,9 +244,9 @@ public class GroupOSCOREInteropClientNonTransparentBWAllMcast {
 
 		}
 
-		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
+		Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 
-		CoapEndpoint endpoint = new CoapEndpoint.Builder().setNetworkConfig(config).build();
+		CoapEndpoint endpoint = new CoapEndpoint.Builder().setConfiguration(config).build();
 		CoapClient client = new CoapClient();
 
 		client.setEndpoint(endpoint);
@@ -503,7 +505,8 @@ public class GroupOSCOREInteropClientNonTransparentBWAllMcast {
 		byte[] id_context = null;
 
 		try {
-			oscoreCtx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, id_context);
+			oscoreCtx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, id_context,
+					MAX_UNFRAGMENTED_SIZE);
 			// oscoreCtx.setResponsesIncludePartialIV(true);
 			db.addContext(requestURI, oscoreCtx);
 		} catch (OSException e) {
