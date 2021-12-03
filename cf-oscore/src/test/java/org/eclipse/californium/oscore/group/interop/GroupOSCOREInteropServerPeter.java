@@ -31,6 +31,7 @@ import java.security.Security;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.californium.core.CoapResource;
@@ -43,9 +44,9 @@ import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.Endpoint;
-import org.eclipse.californium.core.network.EndpointContextMatcherFactory.MatcherMode;
-import org.eclipse.californium.core.network.config.NetworkConfig;
-import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
+import org.eclipse.californium.core.config.CoapConfig.MatcherMode;
+import org.eclipse.californium.elements.config.Configuration;
+import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.core.server.resources.Resource;
 import org.eclipse.californium.cose.AlgorithmID;
@@ -152,6 +153,8 @@ public class GroupOSCOREInteropServerPeter {
 	// InteropParametersNew.RIKARD_GROUP_ID_EDDSA;
 	private final static byte[] group_identifier = null;
 
+	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
+
 	/* --- OSCORE Security Context information --- */
 
 	private static Random random;
@@ -229,15 +232,16 @@ public class GroupOSCOREInteropServerPeter {
 		// Initialize random number generator
 		random = new Random();
 
-		NetworkConfig config = NetworkConfig.getStandard();
+		Configuration config = Configuration.getStandard();
 
 		// For BW (needed?)
 		MatcherMode mode = MatcherMode.STRICT;
-		config = config.setInt(Keys.ACK_TIMEOUT, 200).setFloat(Keys.ACK_RANDOM_FACTOR, 1f)
-				.setFloat(Keys.ACK_TIMEOUT_SCALE, 1f)
+		config = config.set(CoapConfig.ACK_TIMEOUT, 200, TimeUnit.MILLISECONDS).set(CoapConfig.ACK_INIT_RANDOM, 1f)
+				.set(CoapConfig.ACK_TIMEOUT_SCALE, 1f)
 				// set response timeout (indirect) to 10s
-				.setLong(Keys.EXCHANGE_LIFETIME, 10 * 1000L).setInt(Keys.MAX_MESSAGE_SIZE, DEFAULT_BLOCK_SIZE)
-				.setInt(Keys.PREFERRED_BLOCK_SIZE, DEFAULT_BLOCK_SIZE).setString(Keys.RESPONSE_MATCHING, mode.name());
+				.set(CoapConfig.EXCHANGE_LIFETIME, 10 * 1000L, TimeUnit.MILLISECONDS)
+				.set(CoapConfig.MAX_MESSAGE_SIZE, DEFAULT_BLOCK_SIZE)
+				.set(CoapConfig.PREFERRED_BLOCK_SIZE, DEFAULT_BLOCK_SIZE).set(CoapConfig.RESPONSE_MATCHING, mode);
 
 		// Case 9: Duplicate server response
 		// endpoint.setDuplicateResponse(true);
@@ -286,7 +290,7 @@ public class GroupOSCOREInteropServerPeter {
 		server.start();
 	}
 
-	private static CoapEndpoint createEndpoints(NetworkConfig config) throws UnknownHostException {
+	private static CoapEndpoint createEndpoints(Configuration config) throws UnknownHostException {
 
 		InetSocketAddress localAddress;
 		// Set a random loopback address in 127.0.0.0/8
@@ -304,9 +308,9 @@ public class GroupOSCOREInteropServerPeter {
 
 		Connector connector = null;
 		InetSocketAddress unicastAddress = new InetSocketAddress(listenIP, listenPort);
-		connector = new UDPConnector(unicastAddress);
+		connector = new UDPConnector(unicastAddress, config);
 
-		return new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(connector).build();
+		return new CoapEndpoint.Builder().setConfiguration(config).setConnector(connector).build();
 	}
 
 	/**
@@ -322,7 +326,8 @@ public class GroupOSCOREInteropServerPeter {
 		byte[] id_context = null;
 
 		try {
-			oscoreCtx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, id_context);
+			oscoreCtx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, id_context,
+					MAX_UNFRAGMENTED_SIZE);
 			// oscoreCtx.setResponsesIncludePartialIV(true);
 			db.addContext(oscoreCtx);
 		} catch (OSException e) {
@@ -662,12 +667,12 @@ public class GroupOSCOREInteropServerPeter {
 	 * @param multicastPort
 	 * @param config
 	 */
-	private static void createEndpoints(CoapServer server, int unicastPort, int multicastPort, NetworkConfig config) {
+	private static void createEndpoints(CoapServer server, int unicastPort, int multicastPort, Configuration config) {
 		// UDPConnector udpConnector = new UDPConnector(new
 		// InetSocketAddress(unicastPort));
 		// udpConnector.setReuseAddress(true);
 		// CoapEndpoint coapEndpoint = new
-		// CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector).build();
+		// CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector).build();
 
 		NetworkInterface networkInterface = NetworkInterfacesUtil.getMulticastInterface();
 		if (networkInterface == null) {
@@ -681,9 +686,9 @@ public class GroupOSCOREInteropServerPeter {
 		if (!ipv4 && NetworkInterfacesUtil.isAnyIpv6()) {
 			Inet6Address ipv6 = NetworkInterfacesUtil.getMulticastInterfaceIpv6();
 			LOGGER.info("Multicast: IPv6 Network Address: {}", StringUtil.toString(ipv6));
-			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv6, unicastPort));
+			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv6, unicastPort), config);
 			udpConnector.setReuseAddress(true);
-			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector)
+			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector)
 					.build();
 
 			builder = new UdpMulticastConnector.Builder().setLocalAddress(listenIP, multicastPort)
@@ -705,9 +710,9 @@ public class GroupOSCOREInteropServerPeter {
 		if (ipv4 && NetworkInterfacesUtil.isAnyIpv4()) {
 			Inet4Address ipv4 = NetworkInterfacesUtil.getMulticastInterfaceIpv4();
 			LOGGER.info("Multicast: IPv4 Network Address: {}", StringUtil.toString(ipv4));
-			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv4, unicastPort));
+			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv4, unicastPort), config);
 			udpConnector.setReuseAddress(true);
-			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector)
+			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector)
 					.build();
 
 			builder = new UdpMulticastConnector.Builder().setLocalAddress(listenIP, multicastPort)
@@ -724,9 +729,9 @@ public class GroupOSCOREInteropServerPeter {
 			LOGGER.info("IPv4 - multicast");
 		}
 		UDPConnector udpConnector = new UDPConnector(
-				new InetSocketAddress(InetAddress.getLoopbackAddress(), unicastPort));
+				new InetSocketAddress(InetAddress.getLoopbackAddress(), unicastPort), config);
 		udpConnector.setReuseAddress(true);
-		CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setNetworkConfig(config).setConnector(udpConnector)
+		CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector)
 				.build();
 		server.addEndpoint(coapEndpoint);
 		LOGGER.info("loopback");
