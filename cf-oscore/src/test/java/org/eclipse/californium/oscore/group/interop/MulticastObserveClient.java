@@ -25,9 +25,10 @@ import java.net.InetAddress;
 import java.security.Provider;
 import java.security.Security;
 import java.util.Random;
+import javax.xml.bind.DatatypeConverter;
+
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
-import org.eclipse.californium.core.CoapObserveRelation;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
