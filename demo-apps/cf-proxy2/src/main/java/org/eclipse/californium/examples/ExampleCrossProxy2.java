@@ -147,6 +147,9 @@ public class ExampleCrossProxy2 {
 
 	private static final String COAP2COAP = "coap2coap";
 	private static final String COAP2HTTP = "coap2http";
+	
+	private static final int COAP_PORT= 5685; // M.T.
+    private static final int HTTP_PORT= 8000; // M.T.
 
 	private static String start;
 
@@ -160,9 +163,17 @@ public class ExampleCrossProxy2 {
 
 	public ExampleCrossProxy2(Configuration config, boolean accept, boolean cache) throws IOException {
 		HttpClientFactory.setNetworkConfig(config);
+
+		// M.T.
+		/*
 		coapPort = config.get(CoapConfig.COAP_PORT);
 		httpPort = config.get(Proxy2Config.HTTP_PORT);
+		*/
+		coapPort = COAP_PORT;
+		httpPort = HTTP_PORT;
+
 		int threads = config.get(CoapConfig.PROTOCOL_STAGE_THREAD_COUNT);
+
 		ScheduledExecutorService mainExecutor = ExecutorsUtil.newScheduledThreadPool(threads,
 				new DaemonThreadFactory("Proxy#"));
 		ScheduledExecutorService secondaryExecutor = ExecutorsUtil.newDefaultSecondaryScheduler("ProxyTimer#");
@@ -216,14 +227,16 @@ public class ExampleCrossProxy2 {
 
 		// HTTP Proxy which forwards http request to coap server and forwards
 		// translated coap response back to http client
+		
 		httpServer = ProxyHttpServer.buider()
-				.setConfiguration(config)
-				.setPort(8080)
-				.setExecutor(mainExecutor)
-				.setHttpTranslator(new Http2CoapTranslator())
-				.setLocalCoapDeliverer(local)
-				.setProxyCoapDeliverer(proxyMessageDeliverer)
-				.build();
+			.setConfiguration(config)
+		//	.setPort(8080) // M.T.
+			.setPort(httpPort) // M.T.
+			.setExecutor(mainExecutor)
+			.setHttpTranslator(new Http2CoapTranslator())
+			.setLocalCoapDeliverer(local)
+			.setProxyCoapDeliverer(proxyMessageDeliverer)
+			.build();
 		httpServer.start();
 		System.out.println("** HTTP Local at: http://localhost:" + httpPort + "/local/");
 		System.out.println("** HTTP Proxy at: http://localhost:" + httpPort + "/proxy/");
@@ -238,6 +251,11 @@ public class ExampleCrossProxy2 {
 
 	public static void main(String args[]) throws IOException {
 		Configuration proxyConfig = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
+
+		// M.T.
+		// proxyConfig.set(Proxy2Config.COAP_PORT, COAP_PORT);
+		proxyConfig.set(Proxy2Config.HTTP_PORT, HTTP_PORT);
+
 		ExampleCrossProxy2 proxy = new ExampleCrossProxy2(proxyConfig, false, true);
 		ExampleHttpServer httpServer = null;
 		Configuration config = ExampleCoapServer.init();

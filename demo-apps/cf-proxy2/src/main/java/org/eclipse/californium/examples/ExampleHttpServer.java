@@ -47,7 +47,7 @@ public class ExampleHttpServer {
 
 	public static final ThreadGroup HTTP_THREAD_GROUP = new ThreadGroup("http"); //$NON-NLS-1$
 
-	public static final int DEFAULT_PORT = 8000;
+	public static final int DEFAULT_PORT = 8080; // M.T.
 	public static final String RESOURCE = "/http-target";
 
 	static {
