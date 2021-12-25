@@ -58,15 +58,8 @@ public class ExampleCoapServer {
 	public static final String RESOURCE = "/coap-target";
 	public static final String RESOURCE_EMPTY = "/coap-empty";
 
-	public static final int DEFAULT_COAP_PORT = 5685;
+	public static final int DEFAULT_COAP_PORT = 5683; // M.T.
 	public static final int DEFAULT_COAP_SECURE_PORT = 5686;
-
-	static {
-		CoapConfig.register();
-		UdpConfig.register();
-		TcpConfig.register();
-		DtlsConfig.register();
-	}
 
 	/**
 	 * Special configuration defaults handler.
@@ -75,14 +68,6 @@ public class ExampleCoapServer {
 		config.set(CoapConfig.COAP_PORT, DEFAULT_COAP_PORT);
 		config.set(CoapConfig.COAP_SECURE_PORT, DEFAULT_COAP_SECURE_PORT);
 	};
-
-	// For multicast listening
-	private static final Logger LOGGER = LoggerFactory.getLogger(ExampleCoapServer.class);
-	private static boolean ipv4 = true;
-	private static final boolean LOOPBACK = false;
-	static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
-	static int multicastPort = DEFAULT_COAP_PORT; // Port to use for multicast
-	static int unicastPort; // Port to use for unicast
 
 	private CoapServer coapServer;
 
