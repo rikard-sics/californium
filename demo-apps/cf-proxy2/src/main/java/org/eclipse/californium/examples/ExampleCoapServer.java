@@ -81,7 +81,7 @@ public class ExampleCoapServer {
 
 	public static final String RESOURCE = "/coap-target";
 
-	public static final int DEFAULT_COAP_PORT = 5685;
+	public static final int DEFAULT_COAP_PORT = 5683; // M.T.
 
 	/**
 	 * Special network configuration defaults handler.

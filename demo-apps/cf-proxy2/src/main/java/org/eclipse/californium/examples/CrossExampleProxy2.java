@@ -131,6 +131,9 @@ public class CrossExampleProxy2 {
 
 	private static final String COAP2COAP = "coap2coap";
 	private static final String COAP2HTTP = "coap2http";
+	
+	private static final int COAP_PORT= 5685; // M.T.
+    private static final int HTTP_PORT= 8000; // M.T.
 
 	private static String start;
 
@@ -144,8 +147,15 @@ public class CrossExampleProxy2 {
 
 	public CrossExampleProxy2(NetworkConfig config, boolean accept, boolean cache) throws IOException {
 		HttpClientFactory.setNetworkConfig(config);
+		
+		// M.T.
+		/*
 		coapPort = config.getInt(Keys.COAP_PORT);
 		httpPort = config.getInt(Keys.HTTP_PORT);
+		*/
+		coapPort = COAP_PORT;
+		httpPort = HTTP_PORT;
+		
 		int threads = config.getInt(NetworkConfig.Keys.PROTOCOL_STAGE_THREAD_COUNT);
 		ScheduledExecutorService mainExecutor = ExecutorsUtil.newScheduledThreadPool(threads,
 				new DaemonThreadFactory("Proxy#"));
@@ -198,7 +208,12 @@ public class CrossExampleProxy2 {
 
 		// HTTP Proxy which forwards http request to coap server and forwards
 		// translated coap response back to http client
-		httpServer = new ProxyHttpServer(config, 8080);
+		
+		// M.T.
+		// httpServer = new ProxyHttpServer(config, 8080);
+		httpServer = new ProxyHttpServer(config, httpPort);
+		
+		
 		httpServer.setHttpTranslator(new Http2CoapTranslator());
 		httpServer.setLocalCoapDeliverer(local);
 		httpServer.setProxyCoapDeliverer(proxyMessageDeliverer);
@@ -214,6 +229,11 @@ public class CrossExampleProxy2 {
 
 	public static void main(String args[]) throws IOException {
 		NetworkConfig proxyConfig = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
+		
+		// M.T.
+		proxyConfig.setInt(Keys.COAP_PORT, COAP_PORT);
+		proxyConfig.setInt(Keys.HTTP_PORT, HTTP_PORT);
+		
 		CrossExampleProxy2 proxy = new CrossExampleProxy2(proxyConfig, false, true);
 		ExampleHttpServer httpServer = null;
 		NetworkConfig config = ExampleCoapServer.init();

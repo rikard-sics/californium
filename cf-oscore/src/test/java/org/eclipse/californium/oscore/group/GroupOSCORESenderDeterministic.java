@@ -37,6 +37,7 @@ import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
 import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.elements.AddressEndpointContext;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
@@ -69,6 +70,13 @@ public class GroupOSCORESenderDeterministic {
 	 * It must be set to false if "pairwiseMode" is set to false
 	 */
 	static final boolean deterministicRequest = true;
+	
+	/**
+	 * Whether to send the request through a proxy or not
+	 * 
+	 * It must be set to false if "pairwiseMode" is set to false
+	 */
+	static final boolean useProxy = false;
 	
 	/**
 	 * File name for network configuration.
@@ -121,6 +129,16 @@ public class GroupOSCORESenderDeterministic {
 	 * Payload in request sent (POST)
 	 */
 	static final String requestPayload = "test";
+
+	/**
+	 * Port number of the CoAP-to-CoAP proxy
+	 */
+	private static final int proxyPort = 5685;
+	
+	/**
+	 * Resource at the proxy to perform coap2coap forwarding
+	 */
+	static final String proxyResource = "/coap2coap";
 
 	/**
 	 * ED25519 curve value.
@@ -269,7 +287,10 @@ public class GroupOSCORESenderDeterministic {
 		CoapClient client = new CoapClient();
 				
 		if (pairwiseMode) {
-			client = new CoapClient(unicastRequestURI);
+			client = new CoapClient();
+			if (useProxy == false) {
+				client.setURI(unicastRequestURI);
+			}
 		}
 		else {
 			NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE_MULTICAST, CONFIG_HEADER_MULTICAST, DEFAULTS);
@@ -330,9 +351,20 @@ public class GroupOSCORESenderDeterministic {
 		System.out.println("==================");
 
 		try {
-			String host = new URI(client.getURI()).getHost();
-			int port = new URI(client.getURI()).getPort();
-			System.out.println("Sending to: " + host + ":" + port);
+			String host;
+			int port;
+			String path;
+			if (useProxy == false) {
+				host = new URI(client.getURI()).getHost();
+				port = new URI(client.getURI()).getPort();
+				path = new URI(client.getURI()).getPath();
+			}
+			else {
+				host = new URI(unicastRequestURI).getHost();
+				port = proxyPort;
+				path = proxyResource;
+			}
+			System.out.println("Sending to: " + host + ":" + port + path);
 		} catch (URISyntaxException e) {
 			System.err.println("Failed to parse destination URI");
 			e.printStackTrace();
@@ -351,6 +383,11 @@ public class GroupOSCORESenderDeterministic {
 			System.out.println("Receiving from: " + response.advanced().getSourceContext().getPeerAddress());
 			System.out.println(Utils.prettyPrint(response));
 			*/
+			
+			if (useProxy == true) {
+				request.setURI("coap://" + unicastIP.getHostAddress() + ":" + proxyPort + proxyResource);
+				request.getOptions().setProxyUri("coap://" + unicastIP.getHostAddress() + ":" + destinationPort + requestResource);
+			}
 			
 			// Send a first request as prepared above
 			client.advanced(handler, request);
@@ -376,6 +413,11 @@ public class GroupOSCORESenderDeterministic {
 				
 				// Protect the request in pairwise mode as a deterministic request
 				request.getOptions().setOscore(OptionEncoder.set(true, multicastRequestURI, null, true));
+			}
+			
+			if (useProxy == true) {
+				request.setURI("coap://" + unicastIP.getHostAddress() + ":" + proxyPort + proxyResource);
+				request.getOptions().setProxyUri("coap://" + unicastIP.getHostAddress() + ":" + destinationPort + requestResource);
 			}
 			
 			// Send the second request
