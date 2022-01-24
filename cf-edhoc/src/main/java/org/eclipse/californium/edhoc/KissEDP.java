@@ -15,9 +15,6 @@ public class KissEDP implements EDP {
 	public void processEAD1(CBORObject[] ead1) {
 
 		System.out.println("Entered processEAD1()");
-		if (!consistencyCheck(ead1)) {
-			System.out.println("Malformed or invalid EAD1");
-		}
 		
 		overviewEAD(ead1);
 	}
@@ -27,9 +24,6 @@ public class KissEDP implements EDP {
 	public void processEAD2(CBORObject[] ead2) {
 
 		System.out.println("Entered processEAD2()");
-		if (!consistencyCheck(ead2)) {
-			System.out.println("Malformed or invalid EAD2");
-		}
 
 		overviewEAD(ead2);
 	}
@@ -39,9 +33,6 @@ public class KissEDP implements EDP {
 	public void processEAD3(CBORObject[] ead3) {
 
 		System.out.println("Entered processEAD3()");
-		if (!consistencyCheck(ead3)) {
-			System.out.println("Malformed or invalid EAD3");
-		}
 		
 		overviewEAD(ead3);
 	}
@@ -51,28 +42,8 @@ public class KissEDP implements EDP {
 	public void processEAD4(CBORObject[] ead4) {
 
 		System.out.println("Entered processEAD4()");
-		if (!consistencyCheck(ead4)) {
-			System.out.println("Malformed or invalid EAD4");
-		}
 		
 		overviewEAD(ead4);
-	}
-	
-	// Perform common consistency checks on the External Authorization Data
-	@Override
-	public boolean consistencyCheck(CBORObject[] ead) {
-		
-		boolean ret = true;
-		
-		if (ead.length < 2) {
-			ret = false;
-		}
-		if (ead[0].getType() != CBORType.Integer) {
-			ret = false;
-		}
-
-		return ret;
-		
 	}
 	
 	// Print a generic overview of External Authorization Data from an EDHOC message
@@ -94,8 +65,7 @@ public class KissEDP implements EDP {
 			
 			// This element includes the actual EAD Value according to the specified EAD Label
 			if (i % 2 == 1) {
-				System.out.println("The data item #" + (i/2) + " has CBOR type " + ead[i].getType() + "\n");
-				System.out.println("The data item #" + (i/2) + " has Value: " + ead[i].toString() + "\n");
+				Util.nicePrint("The data item #" + (i/2) + " has Value ", ead[i].GetByteString());
 			}
 			
 		}
