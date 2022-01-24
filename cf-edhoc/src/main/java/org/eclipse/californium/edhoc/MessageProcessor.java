@@ -289,6 +289,12 @@ public class MessageProcessor {
 		
 		/* Consistency checks */
 		
+		if (error == false && objectListRequest.length == 0) {
+		    errMsg = new String("Malformed or invalid EDHOC message_1");
+		    responseCode = ResponseCode.BAD_REQUEST;
+		    error = true;
+		}
+		
     	if (error == false && appStatement == null) {
 			errMsg = new String("Impossible to retrieve the applicability statement");
 			responseCode = ResponseCode.BAD_REQUEST;
@@ -491,24 +497,39 @@ public class MessageProcessor {
 		// EAD_1
 		index++;
 		if (error == false && objectListRequest.length > index) {
+		    // EAD_1 is present
+			int length = objectListRequest.length - index;
+
+		    if ((length % 2) == 1) {
+		        errMsg = new String("Malformed or invalid EAD_1");
+		        responseCode = ResponseCode.BAD_REQUEST;
+		        error = true;
+		    }
+		    else {
+		        ead1 = new CBORObject[length];
+		        
+		        for (int i = index; i < objectListRequest.length; i++) {
+		            if ((i % 2) == 0 && objectListRequest[i].getType() != CBORType.Integer) {
+		                ead1 = null;
+		                errMsg = new String("Malformed or invalid EAD_1");
+		                responseCode = ResponseCode.BAD_REQUEST;
+		                error = true;
+		                break;
+		            }
+		            if ((i % 2) == 1 && objectListRequest[i].getType() != CBORType.ByteString) {
+		                ead1 = null;
+		                errMsg = new String("Malformed or invalid EAD_1");
+		                responseCode = ResponseCode.BAD_REQUEST;
+		                error = true;
+		                break;
+		            }
+		            // Make a hard copy
+		            byte[] serializedObject = objectListRequest[i].EncodeToBytes();
+		            CBORObject element = CBORObject.DecodeFromBytes(serializedObject);
+		            ead1[i] = element;
+		        }
+		    }
 			
-			// EAD_1 has to start with a CBOR integer and includes at least 2 CBOR objects
-			if ( (objectListRequest[index].getType() != CBORType.Integer) ||
-				 (objectListRequest.length < (index+2)) ) {
-				errMsg = new String("Malformed or invalid EAD_1");
-				responseCode = ResponseCode.BAD_REQUEST;
-				error = true;
-			}
-			else {
-				int length = objectListRequest.length - index;
-				ead1 = new CBORObject[length];
-				for (int i = index; i < length; i++) {
-					// Make a hard copy
-					byte[] serializedObject = objectListRequest[i].EncodeToBytes();
-					CBORObject element = CBORObject.DecodeFromBytes(serializedObject);
-					ead1[i] = element;
-				}
-			}
 		}
 		
 		/* Return an EDHOC Error Message */
@@ -869,6 +890,7 @@ public class MessageProcessor {
     	error = false;
     	
     	// Parse the outer plaintext as a CBOR sequence
+    	int baseIndex = 0;
     	CBORObject[] plaintextElementList = null;
     	try {
     		plaintextElementList = CBORObject.DecodeSequenceFromBytes(outerPlaintext);
@@ -879,34 +901,61 @@ public class MessageProcessor {
     	    error = true;
     	}
 	    
-    	if (error == false && plaintextElementList.length != 2 && plaintextElementList.length != 3) {
+    	if (error == false && plaintextElementList.length == 0) {
+        	errMsg = new String("Malformed or invalid plaintext from CIPHERTEXT_2");
+        	responseCode = ResponseCode.BAD_REQUEST;
+    		error = true;
+    	}
+    	else if (error == false) {
+        	// Discard possible padding prepended to the plaintext
+	    	while (plaintextElementList[baseIndex] == CBORObject.True)
+	    		baseIndex++;
+    	}
+    	else if (error == false && plaintextElementList.length - baseIndex < 2) {
         	errMsg = new String("Invalid format of the content encrypted as CIPHERTEXT_2");
         	responseCode = ResponseCode.BAD_REQUEST;
         	error = true;
     	}
     	else if (error == false &&
-    			 plaintextElementList[0].getType() != CBORType.ByteString &&
-    			 plaintextElementList[0].getType() != CBORType.Integer &&
-    			 plaintextElementList[0].getType() != CBORType.Map) {
-        	errMsg = new String("ID_CRED_R must be a CBOR map or a bstr_identifier");
+    			 plaintextElementList[baseIndex].getType() != CBORType.ByteString &&
+    			 plaintextElementList[baseIndex].getType() != CBORType.Integer &&
+    			 plaintextElementList[baseIndex].getType() != CBORType.Map) {
+        	errMsg = new String("Invalid format of ID_CRED_R");
         	responseCode = ResponseCode.BAD_REQUEST;
         	error = true;
     	}
-    	else if (error == false && plaintextElementList[1].getType() != CBORType.ByteString) {
+    	else if (error == false && plaintextElementList[baseIndex + 1].getType() != CBORType.ByteString) {
         	errMsg = new String("Signature_or_MAC_2 must be a byte string");
         	responseCode = ResponseCode.BAD_REQUEST;
         	error = true;
-    	}
-    	else if (error == false && plaintextElementList.length > 2) {
-    		if (plaintextElementList[2].getType() != CBORType.Integer || plaintextElementList.length < 4) {
+    	}	
+    	else if (error == false && plaintextElementList.length - baseIndex > 2) {
+    		// EAD_2 is present
+    		int length = plaintextElementList.length - baseIndex - 2;
+    		
+    		if ((length % 2) == 1) {
 	        	errMsg = new String("Malformed or invalid EAD_2");
 	        	responseCode = ResponseCode.BAD_REQUEST;
 	        	error = true;
     		}
     		else {
-    	        int length = plaintextElementList.length - 2;
     	        ead2 = new CBORObject[length];
-    	        for (int i = 2; i < length; i++) {
+    	        
+    	        for (int i = baseIndex + 2; i < plaintextElementList.length; i++) {
+        	        if ((i % 2) == 0 && plaintextElementList[i].getType() != CBORType.Integer) {
+        	        	ead2 = null;
+        	        	errMsg = new String("Malformed or invalid EAD_2");
+        	        	responseCode = ResponseCode.BAD_REQUEST;
+        	        	error = true;
+        	        	break;
+        	        }
+        	        if ((i % 2) == 1 && plaintextElementList[i].getType() != CBORType.ByteString) {
+        	        	ead2 = null;
+        	        	errMsg = new String("Malformed or invalid EAD_2");
+        	        	responseCode = ResponseCode.BAD_REQUEST;
+        	        	error = true;
+        	        	break;
+        	        }
     	            // Make a hard copy
     	            byte[] serializedObject = plaintextElementList[i].EncodeToBytes();
     	            CBORObject element = CBORObject.DecodeFromBytes(serializedObject);
@@ -914,6 +963,7 @@ public class MessageProcessor {
     	        }
     		}
     	}
+    	
     	if (error == true) {
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(errorCode, Constants.EDHOC_MESSAGE_2, !isReq, cR, errMsg, null, responseCode, ead2);
@@ -1248,6 +1298,7 @@ public class MessageProcessor {
     	error = false;
     	
     	// Parse the outer plaintext as a CBOR sequence
+    	int baseIndex = 0;
     	CBORObject[] plaintextElementList = null;
     	try {
     		plaintextElementList = CBORObject.DecodeSequenceFromBytes(outerPlaintext);
@@ -1258,34 +1309,61 @@ public class MessageProcessor {
     	    error = true;
     	}
     	
-    	if (error == false && plaintextElementList.length != 2 && plaintextElementList.length != 3) {
-        	errMsg = new String("Invalid format of the content encrypted as CIPHERTEXT_3");
-        	responseCode = ResponseCode.BAD_REQUEST;
-        	error = true;
+    	if (error == false && plaintextElementList.length == 0) {
+    	    errMsg = new String("Malformed or invalid plaintext from CIPHERTEXT_3");
+    	    responseCode = ResponseCode.BAD_REQUEST;
+    	    error = true;
+    	}
+    	else if (error == false) {
+    	    // Discard possible padding prepended to the plaintext
+    	    while (plaintextElementList[baseIndex] == CBORObject.True)
+    	        baseIndex++;
+    	}
+    	else if (error == false && plaintextElementList.length - baseIndex < 2) {
+    	    errMsg = new String("Invalid format of the content encrypted as CIPHERTEXT_3");
+    	    responseCode = ResponseCode.BAD_REQUEST;
+    	    error = true;
     	}
     	else if (error == false &&
-    			 plaintextElementList[0].getType() != CBORType.ByteString &&
-    			 plaintextElementList[0].getType() != CBORType.Integer &&
-    			 plaintextElementList[0].getType() != CBORType.Map) {
-        	errMsg = new String("ID_CRED_I must be a CBOR map or a bstr_identifier");
-        	responseCode = ResponseCode.BAD_REQUEST;
-        	error = true;
+                plaintextElementList[baseIndex].getType() != CBORType.ByteString &&
+                plaintextElementList[baseIndex].getType() != CBORType.Integer &&
+                plaintextElementList[baseIndex].getType() != CBORType.Map) {
+        errMsg = new String("Invalid format of ID_CRED_I");
+        responseCode = ResponseCode.BAD_REQUEST;
+        error = true;
     	}
-    	else if (error == false && plaintextElementList[1].getType() != CBORType.ByteString) {
-        	errMsg = new String("Signature_or_MAC_3 must be a byte string");
-        	responseCode = ResponseCode.BAD_REQUEST;
-        	error = true;
+    	else if (error == false && plaintextElementList[baseIndex + 1].getType() != CBORType.ByteString) {
+    	    errMsg = new String("Signature_or_MAC_3 must be a byte string");
+    	    responseCode = ResponseCode.BAD_REQUEST;
+    	    error = true;
     	}
-    	else if (error == false && plaintextElementList.length > 2) {
-    	    if (plaintextElementList[2].getType() != CBORType.Integer || plaintextElementList.length < 4) {
+    	else if (error == false && plaintextElementList.length - baseIndex > 2) {
+    	    // EAD_3 is present
+    	    int length = plaintextElementList.length - baseIndex - 2;
+    	    
+    	    if ((length % 2) == 1) {
     	        errMsg = new String("Malformed or invalid EAD_3");
     	        responseCode = ResponseCode.BAD_REQUEST;
     	        error = true;
     	    }
     	    else {
-    	        int length = plaintextElementList.length - 2;
     	        ead3 = new CBORObject[length];
-    	        for (int i = 2; i < length; i++) {
+    	        
+    	        for (int i = baseIndex + 2; i < plaintextElementList.length; i++) {
+    	            if ((i % 2) == 0 && plaintextElementList[i].getType() != CBORType.Integer) {
+    	                ead3 = null;
+    	                errMsg = new String("Malformed or invalid EAD_3");
+    	                responseCode = ResponseCode.BAD_REQUEST;
+    	                error = true;
+    	                break;
+    	            }
+    	            if ((i % 2) == 1 && plaintextElementList[i].getType() != CBORType.ByteString) {
+    	                ead3 = null;
+    	                errMsg = new String("Malformed or invalid EAD_3");
+    	                responseCode = ResponseCode.BAD_REQUEST;
+    	                error = true;
+    	                break;
+    	            }
     	            // Make a hard copy
     	            byte[] serializedObject = plaintextElementList[i].EncodeToBytes();
     	            CBORObject element = CBORObject.DecodeFromBytes(serializedObject);
@@ -1293,6 +1371,7 @@ public class MessageProcessor {
     	        }
     	    }
     	}
+    	
     	if (error == true) {
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(errorCode, Constants.EDHOC_MESSAGE_3, !isReq, cI, errMsg, null, responseCode, ead3);
@@ -1649,13 +1728,13 @@ public class MessageProcessor {
         /* End computing the plaintext */
     	
     	
-    	// Parse the outer plaintext as a CBOR sequence. To be valid, this is
-    	// either an empty plaintext, or the External Authorization Data EAD_4 
+    	// Parse the outer plaintext as a CBOR sequence. To be valid, this is either the empty plaintext,
+    	// or the External Authorization Data EAD_4 possibly prepended by padding 
     	error = false;
+    	int baseIndex = 0;
     	CBORObject[] plaintextElementList = null;
     	
     	if (outerPlaintext.length != 0) {
-    		// EAD_4 is present
     		try {
     			plaintextElementList = CBORObject.DecodeSequenceFromBytes(outerPlaintext);
     		}
@@ -1665,24 +1744,47 @@ public class MessageProcessor {
     			error = true;
     		}
     		
-		    if (error == false && (plaintextElementList.length < 2 || plaintextElementList[0].getType() != CBORType.Integer)) {
-		        errMsg = new String("Malformed or invalid EAD_4");
-		        responseCode = ResponseCode.BAD_REQUEST;
-		        error = true;
-		    }
-		    else if (error == false){
-		        int length = plaintextElementList.length;
-		        ead4 = new CBORObject[length];
-		        for (int i = 0; i < length; i++) {
-		            // Make a hard copy
-		            byte[] serializedObject = plaintextElementList[i].EncodeToBytes();
-		            CBORObject element = CBORObject.DecodeFromBytes(serializedObject);
-		            ead4[i] = element;
-		        }
-		    }
+        	if (error == false) {
+        	    // Discard possible padding prepended to the plaintext
+        	    while (plaintextElementList[baseIndex] == CBORObject.True)
+        	        baseIndex++;
+        	}
+        	if (error == false && plaintextElementList.length - baseIndex > 0) {
+        	    // EAD_4 is present
+        	    int length = plaintextElementList.length - baseIndex;
+        	    
+        	    if ((length % 2) == 1) {
+        	        errMsg = new String("Malformed or invalid EAD_4");
+        	        responseCode = ResponseCode.BAD_REQUEST;
+        	        error = true;
+        	    }
+        	    else {
+        	        ead4 = new CBORObject[length];
+        	        
+        	        for (int i = baseIndex; i < plaintextElementList.length; i++) {
+        	            if ((i % 2) == 0 && plaintextElementList[i].getType() != CBORType.Integer) {
+        	                ead4 = null;
+        	                errMsg = new String("Malformed or invalid EAD_4");
+        	                responseCode = ResponseCode.BAD_REQUEST;
+        	                error = true;
+        	                break;
+        	            }
+        	            if ((i % 2) == 1 && plaintextElementList[i].getType() != CBORType.ByteString) {
+        	                ead4 = null;
+        	                errMsg = new String("Malformed or invalid EAD_4");
+        	                responseCode = ResponseCode.BAD_REQUEST;
+        	                error = true;
+        	                break;
+        	            }
+        	            // Make a hard copy
+        	            byte[] serializedObject = plaintextElementList[i].EncodeToBytes();
+        	            CBORObject element = CBORObject.DecodeFromBytes(serializedObject);
+        	            ead4[i] = element;
+        	        }
+        	    }
+        	}
     		
     	}
-    	    	
     	
     	// Return an EDHOC Error Message
     	if (error == true) {
