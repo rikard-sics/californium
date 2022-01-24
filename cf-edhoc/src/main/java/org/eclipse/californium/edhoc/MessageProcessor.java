@@ -240,6 +240,7 @@ public class MessageProcessor {
      * @param isReq   True if the CoAP message is a request, or False otherwise
      * @param supportedCipherSuites   The list of cipher suites supported by this peer 
      * @param appStatement   The applicability statement to use
+     * @param sessions   The EDHOC sessions of this peer
      * @return   A list of CBOR Objects including up to three elements.
      * 
      *           The first element is a CBOR byte string, with value either:
@@ -256,7 +257,8 @@ public class MessageProcessor {
      */
 	public static List<CBORObject> readMessage1(byte[] sequence, boolean isReq,
 												List<Integer> supportedCiphersuites,
-												AppStatement appStatement) {
+												AppStatement appStatement,
+												Map<CBORObject, EdhocSession> sessions) {
 		
 		if (sequence == null || supportedCiphersuites == null)
 				return null;
@@ -457,6 +459,33 @@ public class MessageProcessor {
 				errMsg = new String("G_X must be a byte string");
 				responseCode = ResponseCode.BAD_REQUEST;
 				error = true;
+		}
+		if (error == false) {
+			// Check that G_X in EDHOC message_1 is not equal to G_X in a
+			// simultaneous EDHOC message exchange initiated by this peer.
+			for (CBORObject obj : sessions.keySet()) {
+				EdhocSession mySession = sessions.get(obj);
+				
+				if (mySession.isInitiator() && mySession.getTH4() == null) {
+					// This peer is the initiator and the EDHOC exchange is not concluded
+					
+			        CBORObject gX = null;
+			        int selectedSuite = mySession.getSelectedCiphersuite();
+			        
+					if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_1) {
+						gX = mySession.getEphemeralKey().PublicKey().get(KeyKeys.OKP_X);
+					}
+					else if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_2 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_3) {
+						gX = mySession.getEphemeralKey().PublicKey().get(KeyKeys.EC2_X);
+					}
+					
+					if (Arrays.equals(objectListRequest[index].GetByteString(), gX.GetByteString())) {
+						error = true;
+						break;
+					}
+				}
+				
+			}
 		}
 		
 		// C_I

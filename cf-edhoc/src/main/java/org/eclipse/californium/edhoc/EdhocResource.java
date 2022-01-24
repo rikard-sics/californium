@@ -154,7 +154,7 @@ class EdhocResource extends CoapResource {
 			
 			processingResult = MessageProcessor.readMessage1(message, true,
 															 edhocEndpointInfo.getSupportedCiphersuites(),
-															 appStatement);
+															 appStatement, edhocEndpointInfo.getEdhocSessions());
 
 			if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
 				String responseString = new String("Internal error when processing EDHOC Message 1");
