@@ -32,6 +32,7 @@ import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.EncryptCommon;
 import org.eclipse.californium.elements.config.Configuration;
+import org.eclipse.californium.elements.config.UdpConfig;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.scandium.dtls.cipher.CCMBlockCipher;
@@ -47,6 +48,11 @@ import com.upokecenter.cbor.CBORObject;
  *
  */
 public class OSCoreCtx {
+
+	static {
+		CoapConfig.register();
+		UdpConfig.register();
+	}
 
 	/**
 	 * The logger
@@ -68,17 +74,12 @@ public class OSCoreCtx {
 
 	private byte[] recipient_id;
 	private byte[] recipient_key;
-	private int recipient_seq;
+	private int lowest_recipient_seq;
 	private int recipient_replay_window_size;
 	private int recipient_replay_window;
 
 	private AlgorithmID kdf;
 
-	private int rollback_recipient_seq = -1;
-	private int rollback_recipient_replay = -1;
-	private byte[] rollback_last_block_tag = null;
-
-	private byte[] last_block_tag = null;
 	private int seqMax = Integer.MAX_VALUE;
 
 	private int id_length;
@@ -222,7 +223,7 @@ public class OSCoreCtx {
 		setLengths();
 
 		this.sender_seq = 0;
-		this.recipient_seq = -1;
+		this.lowest_recipient_seq = 0;
 
 		if (master_secret != null) {
 			this.common_master_secret = master_secret.clone();
@@ -249,6 +250,9 @@ public class OSCoreCtx {
 		}
 
 		if (replay_size == null) {
+			this.recipient_replay_window_size = 32;
+		} else if (replay_size > 32) {
+			LOGGER.warn("Maximum size of replay window is 32. Setting to 32.");
 			this.recipient_replay_window_size = 32;
 		} else {
 			this.recipient_replay_window_size = replay_size.intValue();
@@ -403,22 +407,15 @@ public class OSCoreCtx {
 	/**
 	 * @return the sender sequence number
 	 */
-	synchronized int getSenderSeq() {
+	public synchronized int getSenderSeq() {
 		return sender_seq;
 	}
 
 	/**
-	 * @return the recipient sequence number
+	 * @return the lowest recipient sequence number in current replay window
 	 */
-	synchronized int getRecipientSeq() {
-		return recipient_seq;
-	}
-
-	/**
-	 * @return the tag of the last block processed with this context
-	 */
-	public byte[] getLastBlockTag() {
-		return last_block_tag;
+	public synchronized int getLowestRecipientSeq() {
+		return lowest_recipient_seq;
 	}
 
 	/**
@@ -431,7 +428,7 @@ public class OSCoreCtx {
 	/**
 	 * @return the repipient's identifier
 	 */
-	byte[] getRecipientId() {
+	public byte[] getRecipientId() {
 		return recipient_id;
 	}
 
@@ -452,14 +449,14 @@ public class OSCoreCtx {
 	/**
 	 * @return size of recipient replay window
 	 */
-	int getRecipientReplaySize() {
+	public int getRecipientReplaySize() {
 		return recipient_replay_window_size;
 	}
 
 	/**
 	 * @return recipient replay window
 	 */
-	private int getRecipientReplayWindow() {
+	public int getRecipientReplayWindow() {
 		return recipient_replay_window;
 	}
 
@@ -637,18 +634,10 @@ public class OSCoreCtx {
 		return recipientIdString;
 	}
 
-	private int rollbackRecipientSeq() {
-		return rollback_recipient_seq;
-	}
-
-	private int rollbackRecipientReplay() {
-		return rollback_recipient_replay;
-	}
-
 	/**
 	 * @param seq the sender sequence number to set
 	 */
-	public synchronized void setSenderSeq(int seq) {
+	synchronized void setSenderSeq(int seq) {
 		sender_seq = seq;
 	}
 
@@ -656,16 +645,7 @@ public class OSCoreCtx {
 	 * @param seq the recipient sequence number to set
 	 */
 	synchronized void setRecipientSeq(int seq) {
-		recipient_seq = seq;
-	}
-
-	/**
-	 * Save the tag of the last processed block
-	 * 
-	 * @param tag the tag
-	 */
-	public void setLastBlockTag(byte[] tag) {
-		last_block_tag = tag.clone();
+		lowest_recipient_seq = seq;
 	}
 
 	/**
@@ -793,56 +773,33 @@ public class OSCoreCtx {
 	 * 
 	 * @param seq the incoming sequence number
 	 * 
-	 * @throws OSException if the sequence number wraps or if for a replay
+	 * @throws OSException if the sequence number wraps or if it is a replay
 	 */
 	public synchronized void checkIncomingSeq(int seq) throws OSException {
+
 		if (seq >= seqMax) {
 			LOGGER.error("Sequence number wrapped, get new OSCore context");
 			throw new OSException(ErrorDescriptions.REPLAY_DETECT);
 		}
-		rollback_recipient_seq = recipient_seq;
-		rollback_recipient_replay = recipient_replay_window;
-		if (seq > recipient_seq) {
-			// Update the replay window
-			int shift = seq - recipient_seq;
-			recipient_replay_window = recipient_replay_window << shift;
-			recipient_seq = seq;
-		} else if (seq == recipient_seq) {
-			LOGGER.error("Sequence number is replay");
-			throw new OSException(ErrorDescriptions.REPLAY_DETECT);
-		} else { // seq < recipient_seq
-			if (seq + recipient_replay_window_size < recipient_seq) {
-				LOGGER.error("Message too old");
-				throw new OSException(ErrorDescriptions.REPLAY_DETECT);
-			}
-			// seq+replay_window_size > recipient_seq
-			int shift = this.recipient_seq - seq;
-			int pattern = 1 << shift;
-			int verifier = recipient_replay_window & pattern;
-			verifier = verifier >> shift;
-			if (verifier == 1) {
-				throw new OSException(ErrorDescriptions.REPLAY_DETECT);
-			}
-			recipient_replay_window = recipient_replay_window | pattern;
-		}
-	}
 
-	/**
-	 * Rolls back the latest recipient sequence number update if any
-	 */
-	public synchronized void rollBack() {
-		if (rollback_recipient_replay != -1) {
-			recipient_replay_window = rollback_recipient_replay;
-			rollback_recipient_replay = -1;
+		if (seq < lowest_recipient_seq) {
+			LOGGER.error("Message too old");
+			throw new OSException(ErrorDescriptions.REPLAY_DETECT);
 		}
-		if (rollback_recipient_seq != -1) {
-			recipient_seq = rollback_recipient_seq;
-			rollback_recipient_seq = -1;
+
+		boolean valid = ((recipient_replay_window >> (seq - lowest_recipient_seq)) & 1) == 0;
+		if (!valid) {
+			LOGGER.error("Replayed message detected");
+			throw new OSException(ErrorDescriptions.REPLAY_DETECT);
 		}
-		if (this.rollback_last_block_tag != null) {
-			this.last_block_tag = this.rollback_last_block_tag;
-			this.rollback_last_block_tag = null;
+
+		// Update window
+		int shift = seq - (lowest_recipient_seq + recipient_replay_window_size - 1);
+		if (shift > 0) {
+			recipient_replay_window >>= shift;
+			lowest_recipient_seq += shift;
 		}
+		recipient_replay_window |= 1 << (seq - lowest_recipient_seq);
 	}
 
 	protected static byte[] deriveKey(byte[] secret, byte[] salt, int cbitKey, String digest, byte[] rgbContext)

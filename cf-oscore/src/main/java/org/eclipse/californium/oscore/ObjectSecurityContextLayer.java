@@ -112,7 +112,12 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 	public void sendRequest(final Exchange exchange, final Request request) {
 		if (shouldProtectRequest(request)) {
 			try {
-				final String uri = request.getURI();
+				final String uri;
+				if (request.getOptions().hasProxyUri()) {
+					uri = request.getOptions().getProxyUri();
+				} else {
+					uri = request.getURI();
+				}
 
 				if (uri == null) {
 					LOGGER.error(ErrorDescriptions.URI_NULL);
@@ -243,7 +248,12 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 				// If response is protected with OSCORE parse it first with
 				// prepareReceive
 				if (isProtected(response)) {
-					response = ObjectSecurityLayer.prepareReceive(ctxDb, response);
+					// Parse the OSCORE option from the corresponding request
+					OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
+					int requestSequenceNumber = optionDecoder.getSequenceNumber();
+					
+					response = ObjectSecurityLayer.prepareReceive(ctxDb, response,
+							requestSequenceNumber);
 				}
 			} catch (OSException e) {
 				LOGGER.error("Error while receiving OSCore response: " + e.getMessage());

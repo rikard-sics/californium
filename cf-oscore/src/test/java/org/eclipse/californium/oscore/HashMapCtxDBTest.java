@@ -17,9 +17,7 @@
 package org.eclipse.californium.oscore;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.cose.AlgorithmID;
@@ -226,68 +224,4 @@ public class HashMapCtxDBTest {
 		assertNull(db.getContextByToken(modifiedToken));
 	}
 
-	@Test
-	public void testNullSeqByToken() throws OSException {
-		HashMapCtxDB db = new HashMapCtxDB();
-		exception.expect(NullPointerException.class);
-
-		db.addSeqByToken(token, null);
-	}
-
-	@Test
-	public void testSeqByNullToken() throws OSException {
-		HashMapCtxDB db = new HashMapCtxDB();
-		exception.expect(NullPointerException.class);
-
-		db.addSeqByToken(null, seq);
-	}
-
-	@Test
-	public void testSeqBytToken() throws OSException {
-		HashMapCtxDB db = new HashMapCtxDB();
-		db.addSeqByToken(token, seq);
-
-		assertEquals(seq, db.getSeqByToken(token));
-		assertNull(db.getSeqByToken(modifiedToken));
-	}
-
-	@Test
-	public void testRemoveSeqBytToken() throws OSException {
-		HashMapCtxDB db = new HashMapCtxDB();
-		db.addSeqByToken(token, seq);
-		db.removeSeqByToken(token);
-
-		assertNull(db.getSeqByToken(token));
-		assertFalse(db.tokenExist(token));
-	}
-
-	@Test
-	public void testUpdateNonExistentSeqByToken() {
-		HashMapCtxDB db = new HashMapCtxDB();
-
-		try {
-			db.updateSeqByToken(null, seq);
-			db.updateSeqByToken(token, 44);
-		} catch (NullPointerException e) {
-			assertEquals(ErrorDescriptions.TOKEN_NULL, e.getMessage());
-		}
-
-		try {
-			db.updateSeqByToken(token, -5);
-		} catch (Exception e) {
-			assertEquals(ErrorDescriptions.SEQ_NBR_INVALID, e.getMessage());
-		}
-
-		assertFalse(db.tokenExist(token));
-		assertNull(db.getSeqByToken(token));
-	}
-
-	@Test
-	public void testTokenExists() throws OSException {
-		HashMapCtxDB db = new HashMapCtxDB();
-		db.addSeqByToken(token, seq);
-
-		assertTrue(db.tokenExist(token));
-		assertFalse(db.tokenExist(modifiedToken));
-	}
 }

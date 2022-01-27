@@ -110,12 +110,16 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	 *
 	 * @param ctxDb the context database used
 	 * @param response the incoming request
+	 * @param requestSequenceNr sequence number (Partial IV) from the request
+	 *            (if decrypting a response)
+	 * 
 	 * @return the decrypted and verified response
 	 * 
 	 * @throws OSException error while decrypting response
 	 */
-	public static Response prepareReceive(OSCoreCtxDB ctxDb, Response response) throws OSException {
-		return ResponseDecryptor.decrypt(ctxDb, response);
+	public static Response prepareReceive(OSCoreCtxDB ctxDb, Response response, Integer requestSequenceNr)
+			throws OSException {
+		return ResponseDecryptor.decrypt(ctxDb, response, requestSequenceNr);
 	}
 
 	@Override
@@ -133,7 +137,12 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					return;
 				}
 
-				String uri = request.getURI();
+				final String uri;
+				if (request.getOptions().hasProxyUri()) {
+					uri = request.getOptions().getProxyUri();
+				} else {
+					uri = request.getURI();
+				}
 
 				if (uri == null) {
 					LOGGER.error(ErrorDescriptions.URI_NULL);
@@ -158,8 +167,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				 */
 				OSCoreEndpointContextInfo.sendingRequest(ctx, exchange);
 
-				final int seqByToken = ctx.getSenderSeq();
-
 				final Request preparedRequest = prepareSend(ctxDb, request);
 				final OSCoreCtx finalCtx = ctxDb.getContext(uri);
 
@@ -181,7 +188,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						}
 
 						ctxDb.addContext(token, finalCtx);
-						ctxDb.addSeqByToken(token, seqByToken);
 					}
 				});
 
@@ -197,6 +203,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			}
 		}
 		LOGGER.info("Request: " + exchange.getRequest().toString());
+		System.out.println("OPTION: " + Utils.toHexString(req.getOptions().getOscore()));
 		super.sendRequest(exchange, req);
 	}
 
@@ -221,16 +228,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					&& exchange.getCurrentRequest().getOptions().getOscore().length != 0;
 
 			try {
+				// Retrieve the context
 				OSCoreCtx ctx = ctxDb.getContextByToken(exchange.getCurrentRequest().getToken());
 				addPartialIV = ctx.getResponsesIncludePartialIV() || exchange.getRequest().getOptions().hasObserve();
-
-
-				System.out.println("**********");
-				System.out.println("Corresponding request OSCORE option1: "
-						+ Utils.toHexString(exchange.getCurrentRequest().getOptions().getOscore()));
-				System.out.println("Corresponding request OSCORE option2: "
-						+ Utils.toHexString(exchange.getCryptographicContextID()));
-				System.out.println("**********");
 
 				// Parse the OSCORE option from the corresponding request
 				OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
@@ -334,10 +334,13 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		try {
 			//Printing of status information.
 			//Warns when expecting OSCORE response but unprotected response is received
-			if (!isProtected(response) && responseShouldBeProtected(exchange, response)) {
+			boolean expectProtectedResponse = responseShouldBeProtected(exchange, response);
+			if (!isProtected(response) && expectProtectedResponse) {
 				LOGGER.warn("Incoming response is NOT OSCORE protected!");
-			} else if (isProtected(response)) {
+			} else if (isProtected(response) && expectProtectedResponse) {
 				LOGGER.info("Incoming response is OSCORE protected");
+			} else {
+				LOGGER.warn("Incoming response is OSCORE protected but it should not be!");
 			}
 
 			// For OSCORE-protected response with the outer block2-option let
@@ -355,7 +358,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 			//If response is protected with OSCORE parse it first with prepareReceive
 			if (isProtected(response)) {
-				response = prepareReceive(ctxDb, response);
+				// Parse the OSCORE option from the corresponding request
+				OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
+				int requestSequenceNumber = optionDecoder.getSequenceNumber();
+
+				response = prepareReceive(ctxDb, response, requestSequenceNumber);
 			}
 		} catch (OSException e) {
 			LOGGER.error("Error while receiving OSCore response: " + e.getMessage());
@@ -390,11 +397,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		OptionSet options = request.getOptions();
 		if (exchange.getCryptographicContextID() == null) {
 			if (response.getOptions().hasObserve() && request.getOptions().hasObserve()) {
-
 				// Since the exchange object has been re-created the
 				// cryptographic id doesn't exist
 				if (options.hasOscore()) {
-					exchange.setCryptographicContextID(exchange.getCryptographicContextID());
+					exchange.setCryptographicContextID(options.getOscore());
 				}
 			}
 		}

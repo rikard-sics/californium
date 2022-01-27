@@ -46,8 +46,8 @@ public class ResponseEncryptor extends Encryptor {
 	 *            or not
 	 * @param outerBlockwise boolean to indicate whether the block-wise options
 	 *            should be encrypted or not
-	 * @param requestSequenceNr the sequence number (PIV) from the request (if
-	 *            encrypting a response)
+	 * @param requestSequenceNr sequence number (Partial IV) from the request
+	 *            (if encrypting a response)
 	 * 
 	 * @return the response with the encrypted OSCore option
 	 * 
