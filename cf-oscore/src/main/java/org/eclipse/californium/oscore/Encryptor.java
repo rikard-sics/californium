@@ -21,21 +21,21 @@ package org.eclipse.californium.oscore;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
-import org.eclipse.californium.cose.Encrypt0Message;
-
-import com.upokecenter.cbor.CBORObject;
-
 import org.eclipse.californium.cose.Attribute;
 import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.elements.util.Bytes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.upokecenter.cbor.CBORObject;
 
 /**
  * 
@@ -138,9 +138,13 @@ public abstract class Encryptor {
 		options.removeOscore();
 
 		if (request) {
-			message.getOptions().setOscore(encodeOSCoreRequest(ctx));
+			byte[] oscore = encodeOSCoreRequest(ctx);
+			System.out.println("OSCORE Option Req: " + Utils.toHexString(oscore));
+			message.getOptions().setOscore(oscore);
 		} else {
-			message.getOptions().setOscore(encodeOSCoreResponse(ctx, newPartialIV));
+			byte[] oscore = encodeOSCoreResponse(ctx, newPartialIV);
+			System.out.println("OSCORE Option Resp: " + Utils.toHexString(oscore));
+			message.getOptions().setOscore(oscore);
 		}
 
 		if (cipherText != null) {
@@ -157,6 +161,47 @@ public abstract class Encryptor {
 	 * @return the Object-Security value as byte array
 	 */
 	public static byte[] encodeOSCoreRequest(OSCoreCtx ctx) {
+
+		OscoreOptionEncoder optionEncoder = new OscoreOptionEncoder();
+		if (ctx.getIncludeContextId()) {
+			optionEncoder.setIdContext(ctx.getMessageIdContext());
+		}
+		optionEncoder.setPartialIV(ctx.getSenderSeq());
+		optionEncoder.setKid(ctx.getSenderId());
+
+		return optionEncoder.getBytes();
+	}
+
+	/**
+	 * Encodes the Object-Security value for a Response.
+	 * 
+	 * @param ctx the context
+	 * @param newPartialIV if true encodes the partialIV, otherwise partialIV is
+	 *            not encoded
+	 * @return the Object-Security value as byte array
+	 */
+	public static byte[] encodeOSCoreResponse(OSCoreCtx ctx, final boolean newPartialIV) {
+
+		OscoreOptionEncoder optionEncoder = new OscoreOptionEncoder();
+		if (ctx.getIncludeContextId()) {
+			optionEncoder.setIdContext(ctx.getMessageIdContext());
+		}
+		if (newPartialIV) {
+			optionEncoder.setPartialIV(ctx.getSenderSeq());
+		}
+		// optionEncoder.setKid(ctx.getSenderId());
+
+		return optionEncoder.getBytes();
+	}
+
+	/**
+	 * Encodes the Object-Security value for a Request.
+	 * 
+	 * @deprecated
+	 * @param ctx the context
+	 * @return the Object-Security value as byte array
+	 */
+	public static byte[] encodeOSCoreRequestOld(OSCoreCtx ctx) {
 		int firstByte = 0x00;
 		ByteArrayOutputStream bRes = new ByteArrayOutputStream();
 		byte[] partialIV = OSSerializer.processPartialIV(ctx.getSenderSeq());
@@ -190,12 +235,13 @@ public abstract class Encryptor {
 	/**
 	 * Encodes the Object-Security value for a Response.
 	 * 
+	 * @deprecated
 	 * @param ctx the context
 	 * @param newPartialIV if true encodes the partialIV, otherwise partialIV is
 	 *            not encoded
 	 * @return the Object-Security value as byte array
 	 */
-	public static byte[] encodeOSCoreResponse(OSCoreCtx ctx, final boolean newPartialIV) {
+	public static byte[] encodeOSCoreResponseOld(OSCoreCtx ctx, final boolean newPartialIV) {
 		int firstByte = 0x00;
 		ByteArrayOutputStream bRes = new ByteArrayOutputStream();
 

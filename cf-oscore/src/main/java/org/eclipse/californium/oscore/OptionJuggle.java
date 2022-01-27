@@ -23,6 +23,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.californium.core.coap.CoAP.Code;
+import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.MessageObserver;
 import org.eclipse.californium.core.coap.Option;
 import org.eclipse.californium.core.coap.OptionNumberRegistry;
@@ -33,10 +36,6 @@ import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.elements.EndpointContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.eclipse.californium.core.coap.CoAP.Code;
-import org.eclipse.californium.core.coap.CoAP.ResponseCode;
-import org.eclipse.californium.core.coap.CoAP.Type;
 
 /**
  * 
@@ -336,6 +335,7 @@ public class OptionJuggle {
 	/**
 	 * Retrieve RID value from an OSCORE option.
 	 * 
+	 * @deprecated
 	 * @param oscoreOption the OSCORE option
 	 * @return the RID value
 	 */
@@ -373,6 +373,7 @@ public class OptionJuggle {
 	/**
 	 * Retrieve ID Context value from an OSCORE option.
 	 * 
+	 * @deprecated
 	 * @param oscoreOption the OSCORE option
 	 * @return the ID Context value
 	 */

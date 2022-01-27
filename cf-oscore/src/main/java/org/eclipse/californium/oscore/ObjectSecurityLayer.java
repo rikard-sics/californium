@@ -18,8 +18,7 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
@@ -28,11 +27,12 @@ import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.Token;
-import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ContextRederivation.PHASE;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 
@@ -257,8 +257,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		if (isProtected(request)) {
 
 			// Retrieve the OSCORE context associated with this RID and ID Context
-			byte[] rid = OptionJuggle.getRid(request.getOptions().getOscore());
-			byte[] IDContext = OptionJuggle.getIDContext(request.getOptions().getOscore());
+			OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(request.getOptions().getOscore());
+			byte[] rid = optionDecoder.getKid();
+			byte[] IDContext = optionDecoder.getIdContext();
 
 			OSCoreCtx ctx = null;
 			try {

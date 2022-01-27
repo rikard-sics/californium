@@ -22,20 +22,19 @@ package org.eclipse.californium.oscore;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
-import org.eclipse.californium.cose.Encrypt0Message;
-
-import com.upokecenter.cbor.CBORObject;
-
 import org.eclipse.californium.cose.Attribute;
 import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.cose.HeaderKeys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.upokecenter.cbor.CBORObject;
 
 /**
  * 
@@ -212,24 +211,84 @@ public abstract class Decryptor {
 	}
 
 	/**
-	 * Decodes the Object-Security value.
+	 * Decodes and checks the Object-Security value.
 	 * 
 	 * @param message the received message
 	 * @param enc the Encrypt0Message object
 	 * @throws OSException if OSCORE option fails to decode
 	 */
 	private static void decodeObjectSecurity(Message message, Encrypt0Message enc) throws OSException {
+
+		OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(message.getOptions().getOscore());
+
+		int n = optionDecoder.getN();
+		int k = optionDecoder.getK();
+		int h = optionDecoder.getH();
+
+		byte[] partialIV = optionDecoder.getPartialIV();
+		byte[] kid = optionDecoder.getKid();
+		byte[] kidContext = optionDecoder.getIdContext();
+
+		// Check Partial IV
+		if (n > 0 && partialIV == null) {
+			LOGGER.error("Partial_IV is missing from message when it is expected.");
+			throw new OSException(ErrorDescriptions.FAILED_TO_DECODE_COSE);
+		}
+
+		// Check KID Context
+		if (h != 0 && kidContext == null) {
+			LOGGER.error("Kid context is missing from message when it is expected.");
+			throw new OSException(ErrorDescriptions.FAILED_TO_DECODE_COSE);
+		}
+
+		// Check KID
+		if (k != 0 && kid == null && message instanceof Request) {
+			LOGGER.error("Kid is missing from message when it is expected.");
+			throw new OSException(ErrorDescriptions.FAILED_TO_DECODE_COSE);
+		}
+
+		// Adding parsed data to Encrypt0Message object
+		try {
+			if (partialIV != null) {
+				enc.addAttribute(HeaderKeys.PARTIAL_IV, CBORObject.FromObject(partialIV), Attribute.UNPROTECTED);
+			}
+			if (kid != null) {
+				enc.addAttribute(HeaderKeys.KID, CBORObject.FromObject(kid), Attribute.UNPROTECTED);
+			}
+
+			// COSE Header parameter for KID Context defined with label 10
+			// https://www.iana.org/assignments/cose/cose.xhtml
+			int kidContextLabel = 10;
+			if (kidContext != null) {
+				enc.addAttribute(CBORObject.FromObject(kidContextLabel), CBORObject.FromObject(kidContext),
+						Attribute.UNPROTECTED);
+			}
+		} catch (CoseException e) {
+			LOGGER.error("COSE processing of message failed.");
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * Decodes the Object-Security value.
+	 * 
+	 * @deprecated
+	 * @param message the received message
+	 * @param enc the Encrypt0Message object
+	 * @throws OSException if OSCORE option fails to decode
+	 */
+	private static void decodeObjectSecurityOld(Message message, Encrypt0Message enc) throws OSException {
 		byte[] total = message.getOptions().getOscore();
 
 		/**
-		 * If the OSCORE option value is a zero length byte array
-		 * it represents a byte array of length 1 with a byte 0x00
-		 * See https://tools.ietf.org/html/draft-ietf-core-object-security-16#section-2  
+		 * If the OSCORE option value is a zero length byte array it represents
+		 * a byte array of length 1 with a byte 0x00 See
+		 * https://tools.ietf.org/html/draft-ietf-core-object-security-16#section-2
 		 */
 		if (total.length == 0) {
 			total = new byte[] { 0x00 };
 		}
-		
+
 		byte flagByte = total[0];
 
 		int n = flagByte & 0x07;
@@ -241,7 +300,7 @@ public abstract class Decryptor {
 		byte[] kidContext = null;
 		int index = 1;
 
-		//Parsing Partial IV
+		// Parsing Partial IV
 		if (n > 0) {
 			try {
 				partialIV = Arrays.copyOfRange(total, index, index + n);
@@ -252,7 +311,7 @@ public abstract class Decryptor {
 			}
 		}
 
-		//Parsing KID Context
+		// Parsing KID Context
 		if (h != 0) {
 			int s = total[index];
 
@@ -268,7 +327,7 @@ public abstract class Decryptor {
 			}
 		}
 
-		//Parsing KID
+		// Parsing KID
 		if (k != 0) {
 			kid = Arrays.copyOfRange(total, index, total.length);
 		} else {
@@ -278,7 +337,7 @@ public abstract class Decryptor {
 			}
 		}
 
-		//Adding parsed data to Encrypt0Message object
+		// Adding parsed data to Encrypt0Message object
 		try {
 			if (partialIV != null) {
 				enc.addAttribute(HeaderKeys.PARTIAL_IV, CBORObject.FromObject(partialIV), Attribute.UNPROTECTED);
@@ -286,8 +345,8 @@ public abstract class Decryptor {
 			if (kid != null) {
 				enc.addAttribute(HeaderKeys.KID, CBORObject.FromObject(kid), Attribute.UNPROTECTED);
 			}
-			//COSE Header parameter for KID Context defined with label 10
-			//https://www.iana.org/assignments/cose/cose.xhtml
+			// COSE Header parameter for KID Context defined with label 10
+			// https://www.iana.org/assignments/cose/cose.xhtml
 			if (kidContext != null) {
 				enc.addAttribute(CBORObject.FromObject(10), CBORObject.FromObject(kidContext), Attribute.UNPROTECTED);
 			}

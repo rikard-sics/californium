@@ -18,8 +18,6 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
@@ -32,6 +30,8 @@ import org.eclipse.californium.core.network.Exchange.Origin;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ContextRederivation.PHASE;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 
@@ -72,8 +72,9 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 			LOGGER.debug("Incoming OSCORE request uses outer block-wise");
 
 			// Retrieve the OSCORE context for this RID and ID Context
-			byte[] rid = OptionJuggle.getRid(request.getOptions().getOscore());
-			byte[] IDContext = OptionJuggle.getIDContext(request.getOptions().getOscore());
+			OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(request.getOptions().getOscore());
+			byte[] rid = optionDecoder.getKid();
+			byte[] IDContext = optionDecoder.getIdContext();
 
 			OSCoreCtx ctx = null;
 			try {
