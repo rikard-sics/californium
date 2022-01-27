@@ -20,10 +20,6 @@
 package org.eclipse.californium.oscore;
 
 import java.io.ByteArrayInputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.upokecenter.cbor.CBORObject;
 
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.OptionSet;
@@ -32,6 +28,10 @@ import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.core.network.serialization.UdpDataParser;
 import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.elements.util.DatagramReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.upokecenter.cbor.CBORObject;
 
 /**
  * 
@@ -96,7 +96,7 @@ public class ResponseDecryptor extends Decryptor {
 
 		//Check if parsing of response plaintext succeeds
 		try {
-			byte[] plaintext = decryptAndDecode(enc, response, ctx, db.getSeqByToken(token));
+			byte[] plaintext = decryptAndDecode(enc, response, ctx, db.getSeqByToken(token)); // FIXME
 	
 			DatagramReader reader = new DatagramReader(new ByteArrayInputStream(plaintext));
 			

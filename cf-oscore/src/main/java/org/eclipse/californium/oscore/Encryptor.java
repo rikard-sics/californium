@@ -20,9 +20,7 @@
 package org.eclipse.californium.oscore;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 
-import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
@@ -31,7 +29,6 @@ import org.eclipse.californium.cose.Attribute;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.cose.HeaderKeys;
-import org.eclipse.californium.elements.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,12 +54,14 @@ public abstract class Encryptor {
 	 * @param ctx the OSCore context
 	 * @param message the message
 	 * @param newPartialIV if response contains partialIV
+	 * @param requestSequenceNr the sequence number (PIV) from the request (if encrypting a response)
 	 *
 	 * @return the COSE message
 	 * 
 	 * @throws OSException if encryption or encoding fails
 	 */
-	protected static byte[] encryptAndEncode(Encrypt0Message enc, OSCoreCtx ctx, Message message, boolean newPartialIV)
+	protected static byte[] encryptAndEncode(Encrypt0Message enc, OSCoreCtx ctx, Message message, boolean newPartialIV,
+			Integer requestSequenceNr)
 			throws OSException {
 		boolean isRequest = message instanceof Request;
 
@@ -83,7 +82,7 @@ public abstract class Encryptor {
 
 				if (!newPartialIV) {
 					// use nonce from request
-					partialIV = OSSerializer.processPartialIV(ctx.getReceiverSeq());
+					partialIV = OSSerializer.processPartialIV(requestSequenceNr);
 					nonce = OSSerializer.nonceGeneration(partialIV, ctx.getRecipientId(), ctx.getCommonIV(),
 							ctx.getIVLength());
 				} else {
@@ -92,7 +91,9 @@ public abstract class Encryptor {
 					nonce = OSSerializer.nonceGeneration(partialIV, ctx.getSenderId(), ctx.getCommonIV(),
 							ctx.getIVLength());
 				}
-				aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), ctx.getReceiverSeq(), ctx.getRecipientId(), message.getOptions());
+
+				aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), requestSequenceNr, ctx.getRecipientId(),
+						message.getOptions());
 			}
 
 			enc.setExternal(aad);
@@ -138,13 +139,9 @@ public abstract class Encryptor {
 		options.removeOscore();
 
 		if (request) {
-			byte[] oscore = encodeOSCoreRequest(ctx);
-			System.out.println("OSCORE Option Req: " + Utils.toHexString(oscore));
-			message.getOptions().setOscore(oscore);
+			message.getOptions().setOscore(encodeOSCoreRequest(ctx));
 		} else {
-			byte[] oscore = encodeOSCoreResponse(ctx, newPartialIV);
-			System.out.println("OSCORE Option Resp: " + Utils.toHexString(oscore));
-			message.getOptions().setOscore(oscore);
+			message.getOptions().setOscore(encodeOSCoreResponse(ctx, newPartialIV));
 		}
 
 		if (cipherText != null) {
@@ -192,95 +189,5 @@ public abstract class Encryptor {
 		// optionEncoder.setKid(ctx.getSenderId());
 
 		return optionEncoder.getBytes();
-	}
-
-	/**
-	 * Encodes the Object-Security value for a Request.
-	 * 
-	 * @deprecated
-	 * @param ctx the context
-	 * @return the Object-Security value as byte array
-	 */
-	public static byte[] encodeOSCoreRequestOld(OSCoreCtx ctx) {
-		int firstByte = 0x00;
-		ByteArrayOutputStream bRes = new ByteArrayOutputStream();
-		byte[] partialIV = OSSerializer.processPartialIV(ctx.getSenderSeq());
-		firstByte = firstByte | (partialIV.length & 0x07); //PartialIV length
-		firstByte = firstByte | 0x08; //Set the KID bit
-
-		//If the Context ID should be included for this context, set its bit
-		if (ctx.getIncludeContextId()) {
-			firstByte = firstByte | 0x10;
-		}
-
-		bRes.write(firstByte);
-
-		try {
-			bRes.write(partialIV);
-
-			//Encode the Context ID length and value if to be included
-			if (ctx.getIncludeContextId()) {
-				bRes.write(ctx.getMessageIdContext().length);
-				bRes.write(ctx.getMessageIdContext());
-			}
-
-			//Encode Sender ID (KID)
-			bRes.write(ctx.getSenderId());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return bRes.toByteArray();
-	}
-
-	/**
-	 * Encodes the Object-Security value for a Response.
-	 * 
-	 * @deprecated
-	 * @param ctx the context
-	 * @param newPartialIV if true encodes the partialIV, otherwise partialIV is
-	 *            not encoded
-	 * @return the Object-Security value as byte array
-	 */
-	public static byte[] encodeOSCoreResponseOld(OSCoreCtx ctx, final boolean newPartialIV) {
-		int firstByte = 0x00;
-		ByteArrayOutputStream bRes = new ByteArrayOutputStream();
-
-		//If the Context ID should be included for this context, set its bit
-		if (ctx.getIncludeContextId()) {
-			firstByte = firstByte | 0x10;
-		}
-
-		if (newPartialIV) {
-			byte[] partialIV = OSSerializer.processPartialIV(ctx.getSenderSeq());
-			firstByte = firstByte | (partialIV.length & 0x07);
-
-			bRes.write(firstByte);
-			try {
-				bRes.write(partialIV);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		} else {
-			bRes.write(firstByte);
-		}
-
-		//Encode the Context ID length and value if to be included
-		if (ctx.getIncludeContextId()) {
-			try {
-				bRes.write(ctx.getMessageIdContext().length);
-				bRes.write(ctx.getMessageIdContext());
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-
-		//If the OSCORE option is length 1 and 0x00, it should be empty
-		//See https://tools.ietf.org/html/draft-ietf-core-object-security-16#section-2
-		byte[] optionBytes = bRes.toByteArray();
-		if (optionBytes.length == 1 && optionBytes[0] == 0x00) {
-			return Bytes.EMPTY;
-		} else {
-			return optionBytes;
-		}
 	}
 }

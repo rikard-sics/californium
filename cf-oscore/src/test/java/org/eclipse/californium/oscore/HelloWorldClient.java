@@ -55,6 +55,7 @@ public class HelloWorldClient {
 		CoapClient c = new CoapClient(uriLocal + hello1);
 
 		Request r = new Request(Code.GET);
+		r.getOptions().setOscore(new byte[0]);
 		CoapResponse resp = c.advanced(r);
 		printResponse(resp);
 

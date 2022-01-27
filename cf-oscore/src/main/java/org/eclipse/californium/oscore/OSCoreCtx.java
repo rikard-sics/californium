@@ -403,14 +403,14 @@ public class OSCoreCtx {
 	/**
 	 * @return the sender sequence number
 	 */
-	public synchronized int getSenderSeq() {
+	synchronized int getSenderSeq() {
 		return sender_seq;
 	}
 
 	/**
-	 * @return the receiver sequence number
+	 * @return the recipient sequence number
 	 */
-	public synchronized int getReceiverSeq() {
+	synchronized int getRecipientSeq() {
 		return recipient_seq;
 	}
 
@@ -431,7 +431,7 @@ public class OSCoreCtx {
 	/**
 	 * @return the repipient's identifier
 	 */
-	public byte[] getRecipientId() {
+	byte[] getRecipientId() {
 		return recipient_id;
 	}
 
@@ -452,14 +452,14 @@ public class OSCoreCtx {
 	/**
 	 * @return size of recipient replay window
 	 */
-	public int getRecipientReplaySize() {
+	int getRecipientReplaySize() {
 		return recipient_replay_window_size;
 	}
 
 	/**
 	 * @return recipient replay window
 	 */
-	public int getRecipientReplayWindow() {
+	private int getRecipientReplayWindow() {
 		return recipient_replay_window;
 	}
 
@@ -637,11 +637,11 @@ public class OSCoreCtx {
 		return recipientIdString;
 	}
 
-    public int rollbackRecipientSeq() {
+	private int rollbackRecipientSeq() {
 		return rollback_recipient_seq;
 	}
 
-	public int rollbackRecipientReplay() {
+	private int rollbackRecipientReplay() {
 		return rollback_recipient_replay;
 	}
 
@@ -655,7 +655,7 @@ public class OSCoreCtx {
 	/**
 	 * @param seq the recipient sequence number to set
 	 */
-	public synchronized void setReceiverSeq(int seq) {
+	synchronized void setRecipientSeq(int seq) {
 		recipient_seq = seq;
 	}
 

@@ -69,7 +69,7 @@ public class HelloWorldServer {
 				Response r = new Response(ResponseCode.CONTENT);
 				r.setPayload("Hello World!");
 				exchange.respond(r);
-				server.destroy();
+				// server.destroy();
 			}
 		};
 

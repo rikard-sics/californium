@@ -1,6 +1,6 @@
 package org.eclipse.californium.oscore;
 
-import java.nio.ByteBuffer;
+import java.math.BigInteger;
 import java.util.Arrays;
 
 // https://datatracker.ietf.org/doc/html/rfc8613#section-6.1
@@ -114,7 +114,18 @@ public class OscoreOptionDecoder {
 			decode();
 		}
 
-		return ByteBuffer.wrap(partialIV).getInt();
+		if (partialIV == null) {// FIXME
+			return 0;
+		}
+
+		return (new BigInteger(partialIV).intValue()); // FIXME
+
+		// if (Arrays.equals(partialIV, new byte[] { 0x00 })) {
+		// return 0;
+		// } else {
+		// return ByteBuffer.wrap(partialIV).getInt();
+		// }
+
 	}
 
 	/**

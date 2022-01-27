@@ -18,6 +18,7 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Message;
@@ -75,17 +76,18 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	 * @param ctxDb the OSCore context DB
 	 * @param message the message
 	 * @param ctx the OSCore context
-	 * @param newPartialIV boolean to indicate whether to use a new partial IV or not
-	 * @param outerBlockwise boolean to indicate whether the block-wise options
-	 *            should be encrypted or not
+	 * @param newPartialIV whether to use a new partial IV or not
+	 * @param outerBlockwise whether the block-wise options should be encrypted
+	 * @param requestSequenceNr sequence number (Partial IV) from the request
+	 *            (if encrypting a response)
 	 * 
 	 * @return the encrypted message
 	 * 
 	 * @throws OSException error while encrypting response
 	 */
 	public static Response prepareSend(OSCoreCtxDB ctxDb, Response message, OSCoreCtx ctx, final boolean newPartialIV,
-			boolean outerBlockwise) throws OSException {
-		return ResponseEncryptor.encrypt(ctxDb, message, ctx, newPartialIV, outerBlockwise);
+			boolean outerBlockwise, Integer requestSequenceNr) throws OSException {
+		return ResponseEncryptor.encrypt(ctxDb, message, ctx, newPartialIV, outerBlockwise, requestSequenceNr);
 	}
 
 	/**
@@ -156,7 +158,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				 */
 				OSCoreEndpointContextInfo.sendingRequest(ctx, exchange);
 
-				exchange.setCryptographicContextID(ctx.getRecipientId());
 				final int seqByToken = ctx.getSenderSeq();
 
 				final Request preparedRequest = prepareSend(ctxDb, request);
@@ -185,6 +186,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				});
 
 				req = preparedRequest;
+				exchange.setCryptographicContextID(req.getOptions().getOscore());
 
 			} catch (OSException e) {
 				LOGGER.error("Error sending request: " + e.getMessage());
@@ -222,7 +224,20 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				OSCoreCtx ctx = ctxDb.getContextByToken(exchange.getCurrentRequest().getToken());
 				addPartialIV = ctx.getResponsesIncludePartialIV() || exchange.getRequest().getOptions().hasObserve();
 
-				Response preparedResponse = prepareSend(ctxDb, response, ctx, addPartialIV, outerBlockwise);
+
+				System.out.println("**********");
+				System.out.println("Corresponding request OSCORE option1: "
+						+ Utils.toHexString(exchange.getCurrentRequest().getOptions().getOscore()));
+				System.out.println("Corresponding request OSCORE option2: "
+						+ Utils.toHexString(exchange.getCryptographicContextID()));
+				System.out.println("**********");
+
+				// Parse the OSCORE option from the corresponding request
+				OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
+				int requestSequenceNumber = optionDecoder.getSequenceNumber();
+
+				Response preparedResponse = prepareSend(ctxDb, response, ctx, addPartialIV, outerBlockwise,
+						requestSequenceNumber);
 
 				if (outgoingExceedsMaxUnfragSize(preparedResponse, outerBlockwise, ctx.getMaxUnfragmentedSize())) {
 					super.sendResponse(exchange,
@@ -287,9 +302,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				return;
 			}
 
+			byte[] requestOscoreOption;
 			try {
+				requestOscoreOption = request.getOptions().getOscore();
 				request = prepareReceive(ctxDb, request, ctx);
-				rid = request.getOptions().getOscore();
 				request.getOptions().setOscore(Bytes.EMPTY);
 				exchange.setRequest(request);
 			} catch (CoapOSException e) {
@@ -301,7 +317,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				}
 				return;
 			}
-			exchange.setCryptographicContextID(rid);
+			exchange.setCryptographicContextID(requestOscoreOption);
 		}
 		super.receiveRequest(exchange, request);
 	}
@@ -378,14 +394,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				// Since the exchange object has been re-created the
 				// cryptographic id doesn't exist
 				if (options.hasOscore()) {
-					String uri = request.getURI();
-					try {
-						OSCoreCtx ctx = ctxDb.getContext(uri);
-						exchange.setCryptographicContextID(ctx.getRecipientId());
-					} catch (OSException e) {
-						LOGGER.error("Error when re-creating exchange at OSCORE level");
-						throw new OSException("Error when re-creating exchange at OSCORE level");
-					}
+					exchange.setCryptographicContextID(exchange.getCryptographicContextID());
 				}
 			}
 		}
