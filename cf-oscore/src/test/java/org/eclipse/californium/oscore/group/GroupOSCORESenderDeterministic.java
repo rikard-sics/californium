@@ -57,28 +57,20 @@ public class GroupOSCORESenderDeterministic {
 	static final boolean useOSCORE = true;
 	
 	/**
-<<<<<<< HEAD
 	 * Whether to use the pairwise mode of Group OSCORE or not.
 	 * 
 	 * If set to true, the request will be sent over unicast, otherwise over multicast
-=======
-	 * Whether to use the pairwise mode of Group OSCORE or not
->>>>>>> e2a5289f0 (Full exhange deterministic request and related response)
 	 */
 	static final boolean pairwiseMode = false;
 	
 	/**
 	 * Whether to send the request as a deterministic request or not
-<<<<<<< HEAD
 	 * 
 	 * It must be set to false if "pairwiseMode" is set to false
-=======
->>>>>>> e2a5289f0 (Full exhange deterministic request and related response)
 	 */
 	static final boolean deterministicRequest = false;
 	
 	/**
-<<<<<<< HEAD
 	 * Whether to send the request through a proxy or not
 	 * 
 	 * It must be set to false if "pairwiseMode" is set to false
@@ -86,8 +78,6 @@ public class GroupOSCORESenderDeterministic {
 	static final boolean useProxy = false;
 	
 	/**
-=======
->>>>>>> e2a5289f0 (Full exhange deterministic request and related response)
 	 * File name for network configuration.
 	 */
 	private static final File CONFIG_FILE_MULTICAST = new File("CaliforniumMulticast.properties");
@@ -254,7 +244,6 @@ public class GroupOSCORESenderDeterministic {
 		} else {
 			unicastRequestURI = "coap://" + unicastIP.getHostAddress() + ":" + destinationPort + requestResource;
 		}
-
 		if (proxyIP instanceof Inet6Address) {
 			unicastProxyURI = "coap://" + "[" + proxyIP.getHostAddress() + "]" + ":" + proxyPort + proxyResource;
 		} else {
