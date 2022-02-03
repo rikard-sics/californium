@@ -134,6 +134,7 @@ public class GroupOSCORESenderDeterministic {
 	 */
 	static final InetAddress proxyIP = new InetSocketAddress("127.0.0.1", 0).getAddress();
 	
+
 	/**
 	 * Port number of the CoAP-to-CoAP proxy
 	 */
