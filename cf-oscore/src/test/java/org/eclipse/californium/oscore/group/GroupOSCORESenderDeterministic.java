@@ -130,13 +130,19 @@ public class GroupOSCORESenderDeterministic {
 
 	/**
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 12fb01d37 (Improvements in configuring setup with proxy)
 	 * Unicast address of the proxy, if used
 	 */
 	static final InetAddress proxyIP = new InetSocketAddress("127.0.0.1", 0).getAddress();
 	
 	/**
+<<<<<<< HEAD
 =======
 >>>>>>> 76175c0d1 (Cacheable OSCORE with a CoAP-to-CoAP forward proxy)
+=======
+>>>>>>> 12fb01d37 (Improvements in configuring setup with proxy)
 	 * Port number of the CoAP-to-CoAP proxy
 	 */
 	private static final int proxyPort = 5685;
@@ -246,12 +252,12 @@ public class GroupOSCORESenderDeterministic {
 		} else {
 			unicastRequestURI = "coap://" + unicastIP.getHostAddress() + ":" + destinationPort + requestResource;
 		}
-
 		if (proxyIP instanceof Inet6Address) {
 			unicastProxyURI = "coap://" + "[" + proxyIP.getHostAddress() + "]" + ":" + proxyPort + proxyResource;
 		} else {
 			unicastProxyURI = "coap://" + proxyIP.getHostAddress() + ":" + proxyPort + proxyResource;
 		}
+
 		
 		// Test with Christian
 		// unicastRequestURI = "coap://detsrv.proxy.rd.coap.amsuess.com/.well-known/core";
