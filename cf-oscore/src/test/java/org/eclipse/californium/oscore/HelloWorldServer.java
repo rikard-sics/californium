@@ -16,8 +16,10 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
+import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
@@ -43,14 +45,16 @@ public class HelloWorldServer {
 	private final static byte[] rid = new byte[0];
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 
+	private static int counter = 0;
+	
 	public static void main(String[] args) throws OSException {
 		OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, null, MAX_UNFRAGMENTED_SIZE);
 		db.addContext(uriLocal, ctx);
 		OSCoreCoapStackFactory.useAsDefault(db);
 
-		final CoapServer server = new CoapServer(5683);
+		final CoapServer server = new CoapServer(5685);
 
-		OSCoreResource hello = new OSCoreResource("hello", true) {
+		CoapResource hello = new CoapResource("hello", true) {
 
 			@Override
 			public void handleGET(CoapExchange exchange) {
@@ -61,7 +65,20 @@ public class HelloWorldServer {
 			}
 		};
 
-		OSCoreResource hello1 = new OSCoreResource("1", true) {
+		CoapResource target = new CoapResource("coap-target", true) {
+
+			@Override
+			public void handleGET(CoapExchange exchange) {
+				System.out.println("Accessing coap-target resource");
+				Response r = new Response(ResponseCode.CONTENT);
+				r.setPayload("coap-target Resource " + counter);
+				r.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
+				exchange.respond(r);
+				counter++;
+			}
+		};
+
+		CoapResource hello1 = new CoapResource("1", true) {
 
 			@Override
 			public void handleGET(CoapExchange exchange) {
@@ -69,10 +86,10 @@ public class HelloWorldServer {
 				Response r = new Response(ResponseCode.CONTENT);
 				r.setPayload("Hello World!");
 				exchange.respond(r);
-				server.destroy();
 			}
 		};
 
+		server.add(target);
 		server.add(hello.add(hello1));
 		server.start();
 	}

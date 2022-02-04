@@ -235,7 +235,7 @@ public class ExampleCrossProxy2 {
 
 	public static void main(String args[]) throws IOException {
 		Configuration proxyConfig = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
-		ExampleCrossProxy2 proxy = new ExampleCrossProxy2(proxyConfig, false, true);
+		ExampleCrossProxy2 proxy = new ExampleCrossProxy2(proxyConfig, false, false);
 		ExampleHttpServer httpServer = null;
 		Configuration config = ExampleCoapServer.init();
 		for (int index = 0; index < args.length; ++index) {
