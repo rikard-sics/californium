@@ -407,6 +407,9 @@ public class EdhocLayer extends AbstractLayer {
 					return;
 				}			        			        
 				
+				// Remove the EDHOC option
+				request.getOptions().setEdhoc(false);
+				
 				// The next step is to pass the OSCORE request to the next layer for processing
 			
 			}
