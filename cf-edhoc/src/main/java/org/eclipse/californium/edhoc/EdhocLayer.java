@@ -193,7 +193,16 @@ public class EdhocLayer extends AbstractLayer {
 
 		LOGGER.warn("Receiving request through EDHOC layer");
 
-		if (request.getOptions().hasEdhoc() && request.getOptions().hasOscore()) {
+		if (request.getOptions().hasEdhoc()) {
+			
+			if (!request.getOptions().hasOscore()) {
+    			String responseString = new String("Received a request including the EDHOC option but"
+                        + " not including the OSCORE option\n");
+    			System.err.println(responseString);
+    			sendErrorResponse(exchange, responseString, ResponseCode.BAD_REQUEST);
+    			return;
+			}
+			
 			LOGGER.warn("Combined EDHOC+OSCORE request");
 			
 			
