@@ -557,7 +557,7 @@ public class Util {
      * @param forbiddenIdentifier   The connection identifier C_I, it is null when the caller is the Initiator
      * @return   the newly allocated connection identifier, or null in case of errors
      */
-    public static CBORObject getConnectionId (Set<CBORObject> usedConnectionIds,
+    public static CBORObject getConnectionId(Set<CBORObject> usedConnectionIds,
     										  OSCoreCtxDB db, CBORObject forbiddenIdentifier) {
     	
     	if (usedConnectionIds == null)
@@ -715,69 +715,6 @@ public class Util {
     	}
         
         return null;
-        
-        /*
-    	int maxIdValue;
-    	
-        // Start with 1 byte as size of the Connection ID; try with up to 4 bytes in size        
-        for (int idSize = 1; idSize <= 4; idSize++) {
-        	
-        	if (idSize == 4)
-        		maxIdValue = (1 << 31) - 1;
-        	else
-        		maxIdValue = (1 << (idSize * 8)) - 1;
-        	
-	        for (int j = 0; j <= maxIdValue; j++) {
-	        	
-	        	connectionId = Util.intToBytes(j);
-    			
-    			// This Connection ID is marked as not available to use
-    			if (usedConnectionIds.get(idSize - 1).contains(j))
-    				continue;
-    			
-    			try {
-		        	// This Connection ID seems to be available to use 
-	        		if (!usedConnectionIds.get(idSize - 1).contains(j)) {
-	        			
-	        			// Double check in the database of OSCORE Security Contexts
-	        			if (db != null && db.getContext(connectionId) != null) {
-	        				
-	        				// A Security Context with this Connection ID used as Recipient ID exists and was not tracked!
-	        				// Update the local list of used Connection IDs, then move on to the next candidate
-	        				usedConnectionIds.get(idSize - 1).add(j);
-	        				continue;
-	        				
-	        			}
-	        			else {
-	        				
-	        				// This Recipient ID is actually available at the moment as Connection ID. Add it to the local list
-	        				usedConnectionIds.get(idSize - 1).add(j);
-	        				found = true;
-	        				break;
-	        			}
-	        			
-	        		}
-    			}
-        		catch(RuntimeException e) {
-    				// Multiple Security Contexts with this Connection ID as Recipient ID exist and it was not tracked!
-    				// Update the local list of used Connection IDs, then move on to the next candidate
-    				usedConnectionIds.get(idSize - 1).add(j);
-    				continue;
-        		}
-        			
-	        }
-	        
-	        if (found)
-	        	break;
-	        	
-        }
-        
-        if (!found)
-        	return null;
-        else
-        	return connectionId;
-        
-        */
     	
     }
     
@@ -806,7 +743,8 @@ public class Util {
         	return null;
         }
     	if (ctx == null) {
-    		// The Recipient ID is available for OSCORE
+    		// The Recipient ID is available for OSCORE, i.e., it is
+    		// currently not used in the sets of all the Recipient Contexts
     		
         	connectionIdentifier = EdhocSession.oscoreToEdhocId(recipientId);
         	
