@@ -74,12 +74,12 @@ class EdhocResource extends CoapResource {
 		
 		byte[] nextMessage = new byte[] {};
 				
-		// Retrieve the applicability statement to use
-		AppStatement appStatement = edhocEndpointInfo.getAppStatements().get(exchange.advanced().getRequest().getURI());
+		// Retrieve the application profile to use
+		AppProfile appProfile = edhocEndpointInfo.getAppProfiles().get(exchange.advanced().getRequest().getURI());
 		
-		// Error when retrieving the applicability statement for this EDHOC resource
-		if (appStatement == null) {
-			String responseString = new String("Error when retrieving the applicability statement");
+		// Error when retrieving the application profile for this EDHOC resource
+		if (appProfile == null) {
+			String responseString = new String("Error when retrieving the application profile");
 			System.err.println(responseString);
 			
 			nextMessage = responseString.getBytes(Constants.charset);
@@ -96,7 +96,7 @@ class EdhocResource extends CoapResource {
 			(message != null && exchange.getRequestOptions().hasContentFormat() &&
 			 exchange.getRequestOptions().getContentFormat() != Constants.APPLICATION_EDHOC)) {
 			// The server can start acting as Initiator and send an EDHOC Message 1 as a CoAP response
-			processTriggerRequest(exchange, appStatement);
+			processTriggerRequest(exchange, appProfile);
 			return;
 		}
 		
@@ -114,7 +114,7 @@ class EdhocResource extends CoapResource {
 
 		int messageType = MessageProcessor.messageType(message, true,
 				                                       edhocEndpointInfo.getEdhocSessions(),
-				                                       null, appStatement);
+				                                       null, appProfile);
 		
 		// Invalid EDHOC message type
 		if (messageType == -1) {
@@ -159,7 +159,7 @@ class EdhocResource extends CoapResource {
 			
 			processingResult = MessageProcessor.readMessage1(message, true,
 															 edhocEndpointInfo.getSupportedCiphersuites(),
-															 appStatement);
+															 appProfile);
 
 			if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
 				String responseString = new String("Internal error when processing EDHOC Message 1");
@@ -197,7 +197,7 @@ class EdhocResource extends CoapResource {
 																    edhocEndpointInfo.getCred(),
 																    edhocEndpointInfo.getSupportedCiphersuites(),
 																    edhocEndpointInfo.getUsedConnectionIds(),
-																    appStatement, edhocEndpointInfo.getEdp(),
+																    appProfile, edhocEndpointInfo.getEdp(),
 																    edhocEndpointInfo.getOscoreDb());
 				
 				// Compute the EDHOC Message 2
@@ -232,7 +232,7 @@ class EdhocResource extends CoapResource {
 			}
 			
 			responseType = MessageProcessor.messageType(nextMessage, false, edhocEndpointInfo.getEdhocSessions(),
-														connectionIdentifier, appStatement);
+														connectionIdentifier, appProfile);
 			
 			if (responseType != Constants.EDHOC_MESSAGE_2 && responseType != Constants.EDHOC_ERROR_MESSAGE) {
 				nextMessage = null;
@@ -378,7 +378,7 @@ class EdhocResource extends CoapResource {
 						return;
 				}
 		        
-				if (mySession.getApplicabilityStatement().getUsedForOSCORE() == true) {
+				if (mySession.getApplicationProfile().getUsedForOSCORE() == true) {
 			        /* Invoke the EDHOC-Exporter to produce OSCORE input material */
 			        byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(mySession);
 			        byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(mySession);
@@ -435,7 +435,7 @@ class EdhocResource extends CoapResource {
 		        // Prepare the response to send back
 		        Response myResponse = new Response(ResponseCode.CHANGED);
 		        
-		        if (mySession.getApplicabilityStatement().getUseMessage4() == false) {
+		        if (mySession.getApplicationProfile().getUseMessage4() == false) {
 			        // Just send an empty response back
 		        	
 					myResponse.setPayload(nextMessage);
@@ -471,7 +471,7 @@ class EdhocResource extends CoapResource {
 					
 					int responseType = MessageProcessor.messageType(nextMessage, false,
 																	edhocEndpointInfo.getEdhocSessions(),
-                            										connectionId, appStatement);
+                            										connectionId, appProfile);
 
 					if (responseType == Constants.EDHOC_MESSAGE_4 || responseType == Constants.EDHOC_ERROR_MESSAGE) {
 						
@@ -496,7 +496,7 @@ class EdhocResource extends CoapResource {
 					        
 							int responseCodeValue = processingResult.get(1).AsInt32();
 							ResponseCode responseCode = ResponseCode.valueOf(responseCodeValue);
-					        sendErrorMessage(exchange, nextMessage, appStatement, responseCode);
+					        sendErrorMessage(exchange, nextMessage, appProfile, responseCode);
 					        
 					        Util.purgeSession(mySession, connectionId,
 							        		  edhocEndpointInfo.getEdhocSessions(),
@@ -539,7 +539,7 @@ class EdhocResource extends CoapResource {
 				
 				int responseCodeValue = processingResult.get(1).AsInt32();
 				ResponseCode responseCode = ResponseCode.valueOf(responseCodeValue);
-				sendErrorMessage(exchange, nextMessage, appStatement, responseCode);
+				sendErrorMessage(exchange, nextMessage, appProfile, responseCode);
 			}
 			
 			return;
@@ -619,11 +619,11 @@ class EdhocResource extends CoapResource {
 	}
 	
 	private void sendErrorMessage(CoapExchange exchange, byte[] nextMessage,
-			                      AppStatement appStatement, ResponseCode responseCode) {
+			                      AppProfile appProfile, ResponseCode responseCode) {
 		
 		int responseType = MessageProcessor.messageType(nextMessage, false,
 														edhocEndpointInfo.getEdhocSessions(),
-														null, appStatement);
+														null, appProfile);
 		
 		if (responseType != Constants.EDHOC_ERROR_MESSAGE) {
 			System.err.println("Inconsistent state before sending EDHOC Error Message");	
@@ -641,7 +641,7 @@ class EdhocResource extends CoapResource {
 	/*
 	 * Process a "trigger request" targeting the EDHOC resource
 	 */
-	private void processTriggerRequest(CoapExchange request, AppStatement appStatement) {
+	private void processTriggerRequest(CoapExchange request, AppProfile appProfile) {
 		// Do nothing
 		System.out.println("Entered processNonEdhocMessage()");
 		
