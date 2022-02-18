@@ -128,6 +128,10 @@ public class EdhocClient {
     // The long-term asymmetric key pair of this peer
 	private static OneKey keyPair = null;
 	
+	// Each element is the ID_CRED_X used for an
+	// authentication credential associated to this peer
+	private static Set<CBORObject> ownIdCreds = new HashSet<>();
+	
 	// Long-term public keys of authorized peers
 	// The map label is a CBOR Map used as ID_CRED_X
 	private static Map<CBORObject, OneKey> peerPublicKeys = new HashMap<CBORObject, OneKey>();
@@ -260,7 +264,7 @@ public class EdhocClient {
 		// The EAD is structured in pairs of CBOR items (int, any), i.e. the EAD Label first and then the EAD Value 
 		CBORObject[] ead1 = null;
 		
-		edhocExchangeAsInitiator(args, uri, edhocEndpointInfo, ead1);
+		edhocExchangeAsInitiator(args, uri, ownIdCreds, edhocEndpointInfo, ead1);
 
 	}
 	
@@ -425,6 +429,10 @@ public class EdhocClient {
 	    		idCred = Util.buildIdCredX5u("http://example.repo.com");
 	    		break;
 	    }
+	    // Add ID_CRED to the whole collection of ID_CRED_X for this peer
+	    if (idCred != null) {
+	    	ownIdCreds.add(idCred);
+	    }
 
 		
 		/* Settings for the other peer */
@@ -568,7 +576,7 @@ public class EdhocClient {
 		
 	}
 	
-	private static void edhocExchangeAsInitiator(final String args[], final URI targetUri,
+	private static void edhocExchangeAsInitiator(final String args[], final URI targetUri, Set<CBORObject> ownIdCreds,
 												 EdhocEndpointInfo edhocEndpointInfo, CBORObject[] ead1) {
 		
 		CoapClient client = new CoapClient(targetUri);
@@ -789,7 +797,7 @@ public class EdhocClient {
 			/* Start handling EDHOC Message 2 */
 			
 			processingResult = MessageProcessor.readMessage2(responsePayload, false, cI, edhocSessions, peerPublicKeys,
-					                                         peerCredentials, usedConnectionIds);
+					                                         peerCredentials, usedConnectionIds, ownIdCreds);
 			
 			if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
 				System.err.println("Internal error when processing EDHOC Message 2");

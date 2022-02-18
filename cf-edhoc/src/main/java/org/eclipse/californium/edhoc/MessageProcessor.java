@@ -563,7 +563,7 @@ public class MessageProcessor {
 		return processingResult;
 		
 	}
-		
+	
     /**
      *  Process an EDHOC Message 2
      * @param sequence   The CBOR sequence used as payload of the EDHOC Message 2
@@ -573,6 +573,7 @@ public class MessageProcessor {
      * @param peerPublicKeys   The list of the long-term public keys of authorized peers
      * @param peerCredentials   The list of CRED of the long-term public keys of authorized peers
      * @param usedConnectionIds   The set of already allocated Connection Identifiers
+     * @param ownIdCreds   The set of ID_CRED_X used for an authentication credential associated to this peer
      * @return   A list of CBOR Objects including up to three elements.
      * 
      *           The first element is a CBOR byte string, with value either:
@@ -589,7 +590,8 @@ public class MessageProcessor {
      */
 	public static List<CBORObject> readMessage2(byte[] sequence, boolean isReq, CBORObject cI, Map<CBORObject,
 			                                    EdhocSession> edhocSessions, Map<CBORObject, OneKey> peerPublicKeys,
-			                                    Map<CBORObject, CBORObject> peerCredentials, Set<CBORObject> usedConnectionIds) {
+			                                    Map<CBORObject, CBORObject> peerCredentials, Set<CBORObject> usedConnectionIds,
+			                                    Set<CBORObject> ownIdCreds) {
 		
 		if (sequence == null || edhocSessions == null ||
 		    peerPublicKeys == null || peerCredentials == null || usedConnectionIds == null)
@@ -993,6 +995,12 @@ public class MessageProcessor {
         	responseCode = ResponseCode.BAD_REQUEST;
 			error = true;
     	}
+    	if (error == false && ownIdCreds.contains(idCredR)) {
+        	errMsg = new String("The identity expressed by ID_CRED_R is equal to my own identity");
+        	responseCode = ResponseCode.BAD_REQUEST;
+			error = true;
+    	}
+    	
     	
     	if (error == true) {
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);

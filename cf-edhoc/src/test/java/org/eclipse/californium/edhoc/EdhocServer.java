@@ -106,7 +106,11 @@ public class EdhocServer extends CoapServer {
     
     // The long-term asymmetric key pair of this peer
 	private static OneKey keyPair = null;
-		
+	
+	// Each element is the ID_CRED_X used for an
+	// authentication credential associated to this peer
+	private static Set<CBORObject> ownIdCreds = new HashSet<>();
+	
 	// Long-term public keys of authorized peers
 	// The map label is a CBOR Map used as ID_CRED_X
 	private static Map<CBORObject, OneKey> peerPublicKeys = new HashMap<CBORObject, OneKey>();
@@ -237,7 +241,7 @@ public class EdhocServer extends CoapServer {
 																	OSCORE_REPLAY_WINDOW, appStatements, edp);
 		
 		// provide an instance of a .well-known/edhoc resource
-		CoapResource edhocResource = new EdhocResource("edhoc", edhocEndpointInfo);
+		CoapResource edhocResource = new EdhocResource("edhoc", edhocEndpointInfo, ownIdCreds);
 		
 		wellKnownResource.add(edhocResource);
 
@@ -415,7 +419,12 @@ public class EdhocServer extends CoapServer {
 	    		idCred = Util.buildIdCredX5u("http://example.repo.com");
 	    		break;
 	    }
+	    // Add ID_CRED to the whole collection of ID_CRED_X for this peer 
+	    if (idCred != null) {
+	    	ownIdCreds.add(idCred);
+	    }
 		
+	    
 		/* Settings for the other peer */
 	    
 		// Build the OneKey object for the identity public key of the other peer
