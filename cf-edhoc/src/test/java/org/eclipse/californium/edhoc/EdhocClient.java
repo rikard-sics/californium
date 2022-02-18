@@ -106,7 +106,7 @@ public class EdhocClient {
 	private static final boolean POST_EDHOC_EXCHANGE = false;
 	
 	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
-	// Note: the applicability statement pertaining the EDHOC resource must first indicate support for the combined request 
+	// Note: the application profile pertaining the EDHOC resource must first indicate support for the combined request 
 	private static final boolean OSCORE_EDHOC_COMBINED = false;
     
 	
@@ -153,8 +153,8 @@ public class EdhocClient {
 	// List of supported ciphersuites, in decreasing order of preference.
 	private static List<Integer> supportedCiphersuites = new ArrayList<Integer>();
 
-	// The collection of applicability statements - The lookup key is the full URI of the EDHOC resource
-	private static Map<String, AppStatement> appStatements = new HashMap<String, AppStatement>();
+	// The collection of application profiles - The lookup key is the full URI of the EDHOC resource
+	private static Map<String, AppProfile> appProfiles = new HashMap<String, AppProfile>();
 	
 	// The database of OSCORE Security Contexts
 	private final static HashMapCtxDB db = new HashMapCtxDB();
@@ -207,7 +207,7 @@ public class EdhocClient {
 		// Add the supported ciphersuites
 		setupSupportedCipherSuites();
 		
-		// Set the applicability statement
+		// Set the application profile
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
@@ -221,10 +221,10 @@ public class EdhocClient {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = true; // If set to true, it overrides the ID conversion method to CONVERSION_ID_CORE
 		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED; // Undefined yields using CONVERSION_ID_CORE
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
-													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
+											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
-		appStatements.put(edhocURI, appStatement);
+		appProfiles.put(edhocURI, appProfile);
 		
 		URI uri = null; // URI parameter of the request
 
@@ -258,7 +258,7 @@ public class EdhocClient {
 		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCred, cred, keyPair, peerPublicKeys,
 																	peerCredentials, edhocSessions, usedConnectionIds,
 																	supportedCiphersuites, db, edhocURI,
-																	OSCORE_REPLAY_WINDOW, appStatements, edp);
+																	OSCORE_REPLAY_WINDOW, appProfiles, edp);
 		
 		// Possibly specify external authorization data for EAD_1, or null if none has to be provided
 		// The EAD is structured in pairs of CBOR items (int, any), i.e. the EAD Label first and then the EAD Value 
@@ -643,12 +643,12 @@ public class EdhocClient {
 		/* Prepare and send EDHOC Message 1 */
 		
 		String uriAsString = targetUri.toString();
-		AppStatement appStatement = edhocEndpointInfo.getAppStatements().get(uriAsString);
+		AppProfile appProfile = edhocEndpointInfo.getAppProfiles().get(uriAsString);
 		
 		EdhocSession session = MessageProcessor.createSessionAsInitiator(authenticationMethod,
                  edhocEndpointInfo.getKeyPair(), edhocEndpointInfo.getIdCred(), edhocEndpointInfo.getCred(),
                  edhocEndpointInfo.getSupportedCiphersuites(), edhocEndpointInfo.getUsedConnectionIds(),
-                 appStatement, edhocEndpointInfo.getEdp(), db);
+                 appProfile, edhocEndpointInfo.getEdp(), db);
 		
 		// At this point, the initiator may overwrite the information in the EDHOC session about the supported ciphersuites
 		// and the selected ciphersuite, based on a previously received EDHOC Error Message
@@ -703,7 +703,7 @@ public class EdhocClient {
         if (responsePayload == null)
         	discontinue = true;
         else {
-        	responseType = MessageProcessor.messageType(responsePayload, false, edhocSessions, connectionId, appStatement);
+        	responseType = MessageProcessor.messageType(responsePayload, false, edhocSessions, connectionId, appProfile);
         	if (responseType != Constants.EDHOC_MESSAGE_2 && responseType != Constants.EDHOC_ERROR_MESSAGE)
         		discontinue = true;
         }
@@ -836,7 +836,7 @@ public class EdhocClient {
 				
 			}
 
-			int requestType = MessageProcessor.messageType(nextPayload, true, edhocSessions, connectionId,  appStatement);
+			int requestType = MessageProcessor.messageType(nextPayload, true, edhocSessions, connectionId,  appProfile);
 			
 			if (requestType != Constants.EDHOC_MESSAGE_3 && requestType != Constants.EDHOC_ERROR_MESSAGE) {
 				nextPayload = null;
@@ -849,7 +849,7 @@ public class EdhocClient {
 			        
 			        System.out.println("Sent EDHOC Message 3\n");
 					
-			        if (session.getApplicabilityStatement().getUsedForOSCORE() == true) {
+			        if (session.getApplicationProfile().getUsedForOSCORE() == true) {
 			        
 				        /* Invoke the EDHOC-Exporter to produce OSCORE input material */
 				        byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(session);
@@ -932,11 +932,11 @@ public class EdhocClient {
 		        	// If EDHOC message_3 has to be combined with the first
 		        	// OSCORE-protected request include the EDHOC option in the request
 		        	if (OSCORE_EDHOC_COMBINED == true && requestType == Constants.EDHOC_MESSAGE_3 &&
-		        		session.getApplicabilityStatement().getUsedForOSCORE() == true &&
-		        		session.getApplicabilityStatement().getSupportCombinedRequest() == true) {
+		        		session.getApplicationProfile().getUsedForOSCORE() == true &&
+		        		session.getApplicationProfile().getSupportCombinedRequest() == true) {
 		        		
 		        		// The combined request cannot be used if the Responder has to send message_4
-		        		if (session.getApplicabilityStatement().getUseMessage4() == true) {
+		        		if (session.getApplicationProfile().getUseMessage4() == true) {
 							System.err.println("Cannot send the combined EDHOC+OSCORE request if message_4 is expected\n");
 			    			Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 			            	client.shutdown();
@@ -981,7 +981,7 @@ public class EdhocClient {
 			            	       (restCode == ResponseCode.INTERNAL_SERVER_ERROR.value)) ) {
 			            	
 				            	responseType = MessageProcessor.messageType(myPayload, false,
-		                                                                    edhocSessions, connectionId, appStatement);
+		                                                                    edhocSessions, connectionId, appProfile);
 			            		
 				            	if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
 				            		
@@ -1040,14 +1040,14 @@ public class EdhocClient {
 		        else if (edhocMessageResp2 != null) {
 
 		        	responseType = -1;
-		        	boolean expectMessage4 = session.getApplicabilityStatement().getUseMessage4();
+		        	boolean expectMessage4 = session.getApplicationProfile().getUseMessage4();
 		            responsePayload = edhocMessageResp2.getPayload();
 		            
 		            if (responsePayload == null)
 		            	discontinue = true;
 		            else {
 		            	responseType = MessageProcessor.messageType(responsePayload, false,
-		            			                                    edhocSessions, connectionId, appStatement);
+		            			                                    edhocSessions, connectionId, appProfile);
 		            	
 		            	// It is always consistent to receive an Error Message
 		            	if (responseType != Constants.EDHOC_ERROR_MESSAGE) {
@@ -1180,7 +1180,7 @@ public class EdhocClient {
 		        }
 
 				// Send a request protected with the just established Security Context
-		        boolean usedForOSCORE = session.getApplicabilityStatement().getUsedForOSCORE();
+		        boolean usedForOSCORE = session.getApplicationProfile().getUsedForOSCORE();
 		        if (POST_EDHOC_EXCHANGE && usedForOSCORE == true) {
 					client = new CoapClient(helloWorldURI);
 					Request protectedRequest = Request.newGet();

@@ -132,8 +132,8 @@ public class EdhocServer extends CoapServer {
 	// List of supported ciphersuites, in decreasing order of preference.
 	private static List<Integer> supportedCiphersuites = new ArrayList<Integer>();
 	
-	// The collection of applicability statements - The lookup key is the full URI of the EDHOC resource
-	private static Map<String, AppStatement> appStatements = new HashMap<String, AppStatement>();
+	// The collection of application profiles - The lookup key is the full URI of the EDHOC resource
+	private static Map<String, AppProfile> appProfiles = new HashMap<String, AppProfile>();
 	
 	// The database of OSCORE Security Contexts
 	private final static HashMapCtxDB db = new HashMapCtxDB();
@@ -162,7 +162,7 @@ public class EdhocServer extends CoapServer {
 		// Add the supported ciphersuites
 		setupSupportedCipherSuites();
 		
-		// Set the applicability statement
+		// Set the application profile
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
@@ -176,10 +176,10 @@ public class EdhocServer extends CoapServer {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = true; // If set to true, it overrides the ID conversion method to CONVERSION_ID_CORE
 		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED; // Undefined yields using CONVERSION_ID_CORE
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
-													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
+											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
-		appStatements.put(uriLocal + "/.well-known/edhoc", appStatement);
+		appProfiles.put(uriLocal + "/.well-known/edhoc", appProfile);
 		
 		try {
 			// create server
@@ -238,7 +238,7 @@ public class EdhocServer extends CoapServer {
 		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCred, cred, keyPair, peerPublicKeys,
 																	peerCredentials, edhocSessions, usedConnectionIds,
 																	supportedCiphersuites, db, uriLocal,
-																	OSCORE_REPLAY_WINDOW, appStatements, edp);
+																	OSCORE_REPLAY_WINDOW, appProfiles, edp);
 		
 		// provide an instance of a .well-known/edhoc resource
 		CoapResource edhocResource = new EdhocResource("edhoc", edhocEndpointInfo, ownIdCreds);

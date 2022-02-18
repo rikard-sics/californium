@@ -44,7 +44,7 @@ public class EdhocSession {
 	private byte[] cred; // This is the serialization of a CBOR object
 	private OneKey ephemeralKey;
 	private List<Integer> supportedCiphersuites;
-	private AppStatement appStatement;
+	private AppProfile appProfile;
 	
 	// The processor to use for External Authorization Data.
 	//
@@ -88,7 +88,7 @@ public class EdhocSession {
 	
 	public EdhocSession(boolean initiator, boolean clientInitiated, int method, CBORObject connectionId, OneKey ltk,
 						CBORObject idCred, byte[] cred, List<Integer> cipherSuites,
-						AppStatement appStatement, EDP edp, HashMapCtxDB db) {
+						AppProfile appProfile, EDP edp, HashMapCtxDB db) {
 		
 		this.firstUse = true;
 		
@@ -100,7 +100,7 @@ public class EdhocSession {
 		this.idCred = idCred;
 		this.cred = cred;
 		this.supportedCiphersuites = cipherSuites;
-		this.appStatement = appStatement;
+		this.appProfile = appProfile;
 		this.edp = edp;
 		this.db = db;
 		
@@ -248,11 +248,11 @@ public class EdhocSession {
 	}
 	
 	/**
-	 * @return  the applicability statement used for this session
+	 * @return  the application profile used for this session
 	 */
-	public AppStatement getApplicabilityStatement() {
+	public AppProfile getApplicationProfile() {
 
-		return this.appStatement;
+		return this.appProfile;
 		
 	}
 	

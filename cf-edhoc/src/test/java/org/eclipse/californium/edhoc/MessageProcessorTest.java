@@ -61,7 +61,7 @@ public class MessageProcessorTest {
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 1);
 
-		// Set the applicability statement
+		// Set the application profile
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
@@ -75,8 +75,8 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
-													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
+											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		int method = 0;
 		
@@ -107,7 +107,7 @@ public class MessageProcessorTest {
 		KissEDP edp = new KissEDP();
 		HashMapCtxDB db = new HashMapCtxDB();
 		EdhocSession sessionInitiator = new EdhocSession(initiator, true, method, connectionIdInitiator,
-												identityKeyInit, idCredI, credI, supportedCipherSuites, appStatement, edp, db);
+												identityKeyInit, idCredI, credI, supportedCipherSuites, appProfile, edp, db);
 		
 		edhocSessions.put(CBORObject.FromObject(connectionIdInitiator), sessionInitiator);
 
@@ -136,31 +136,31 @@ public class MessageProcessorTest {
 		KissEDP edp2 = new KissEDP();
 		HashMapCtxDB db2 = new HashMapCtxDB();
 		EdhocSession sessionResponder = new EdhocSession(initiator, true, method, connectionIdResponder,
-												identityKeyResp, idCredR, credR, supportedCipherSuites, appStatement, edp2, db2);
+												identityKeyResp, idCredR, credR, supportedCipherSuites, appProfile, edp2, db2);
 		
 		edhocSessions.put(CBORObject.FromObject(connectionIdResponder), sessionResponder);
 		
 		
 		// Test from the point of view of the Initiator as Client
 		Assert.assertEquals(Constants.EDHOC_MESSAGE_1, MessageProcessor.messageType(
-				message1, true, edhocSessions, connectionIdInitiator, appStatement));
+				message1, true, edhocSessions, connectionIdInitiator, appProfile));
 		sessionInitiator.setCurrentStep(Constants.EDHOC_SENT_M1);
 		Assert.assertEquals(Constants.EDHOC_MESSAGE_2, MessageProcessor.messageType(
-				message2, false, edhocSessions,connectionIdInitiator, appStatement));
+				message2, false, edhocSessions,connectionIdInitiator, appProfile));
 		sessionInitiator.setCurrentStep(Constants.EDHOC_AFTER_M3);
 		Assert.assertEquals(Constants.EDHOC_MESSAGE_3, MessageProcessor.messageType(
-				message3, true, edhocSessions, connectionIdInitiator, appStatement));
+				message3, true, edhocSessions, connectionIdInitiator, appProfile));
 
 		
 		// Test from the point of view of the Responder as Server
 		Assert.assertEquals(Constants.EDHOC_MESSAGE_1, MessageProcessor.messageType(
-				message1, true, edhocSessions, null, appStatement));
+				message1, true, edhocSessions, null, appProfile));
 		sessionResponder.setCurrentStep(Constants.EDHOC_AFTER_M2);
 		Assert.assertEquals(Constants.EDHOC_MESSAGE_2, MessageProcessor.messageType(
-				message2, false, edhocSessions, connectionIdResponder, appStatement));
+				message2, false, edhocSessions, connectionIdResponder, appProfile));
 		sessionResponder.setCurrentStep(Constants.EDHOC_SENT_M2);
 		Assert.assertEquals(Constants.EDHOC_MESSAGE_3, MessageProcessor.messageType(
-				message3, true, edhocSessions, null, appStatement));
+				message3, true, edhocSessions, null, appProfile));
 		
 		
 		// Error message is not from test vectors
@@ -175,13 +175,13 @@ public class MessageProcessorTest {
 		errorMessageList.add(errMsg);
 		byte[] errorMessage = Util.buildCBORSequence(errorMessageList);
 		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
-				            errorMessage, false, edhocSessions, connectionIdInitiator, appStatement));
+				            errorMessage, false, edhocSessions, connectionIdInitiator, appProfile));
 		errorMessageList = new ArrayList<CBORObject>();
 		errorMessageList.add(CBORObject.FromObject(Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE));
 		errorMessageList.add(suitesR);
 		errorMessage = Util.buildCBORSequence(errorMessageList);
 		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
-				            errorMessage, false, edhocSessions, connectionIdInitiator, appStatement));
+				            errorMessage, false, edhocSessions, connectionIdInitiator, appProfile));
 		
 		// Test for an EDHOC error message as an incoming/outgoing request
 		errorMessageList = new ArrayList<CBORObject>();
@@ -190,14 +190,14 @@ public class MessageProcessorTest {
 		errorMessageList.add(errMsg);
 		errorMessage = Util.buildCBORSequence(errorMessageList);
 		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
-				            errorMessage, true, edhocSessions, connectionIdInitiator, appStatement));
+				            errorMessage, true, edhocSessions, connectionIdInitiator, appProfile));
 		errorMessageList = new ArrayList<CBORObject>();
 		errorMessageList.add(cX);
 		errorMessageList.add(CBORObject.FromObject(Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE));
 		errorMessageList.add(suitesR);
 		errorMessage = Util.buildCBORSequence(errorMessageList);
 		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
-				            errorMessage, true, edhocSessions, connectionIdInitiator, appStatement));
+				            errorMessage, true, edhocSessions, connectionIdInitiator, appProfile));
 		
 	}
 
@@ -227,8 +227,7 @@ public class MessageProcessorTest {
 		CBORObject idCred = Util.buildIdCredKid(idCredKid);
 		byte[] cred = Util.buildCredRawPublicKey(ltk, "");
 
-		// Set the applicability statement		
-		// Set the applicability statement
+		// Set the application profile
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
@@ -242,8 +241,8 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
-													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
+											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -252,7 +251,7 @@ public class MessageProcessorTest {
 		HashMapCtxDB db = new HashMapCtxDB();
 		
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionId, ltk,
-				                                idCred, cred, cipherSuites, appStatement, edp, db);
+				                                idCred, cred, cipherSuites, appProfile, edp, db);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = Utils.hexToBytes("b3111998cb3f668663ed4251c78be6e95a4da127e4f6fee275e855d8d9dfd8ed");
@@ -326,7 +325,7 @@ public class MessageProcessorTest {
 		
 		/* Set up the session to use */
 		
-		// Set the applicability statement
+		// Set the application profile
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
@@ -340,8 +339,8 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
-													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
+											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -351,7 +350,7 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdResponder,
-												identityKey, idCredR, credR, supportedCipherSuites, appStatement, edp, db);
+												identityKey, idCredR, credR, supportedCipherSuites, appProfile, edp, db);
 
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -445,7 +444,7 @@ public class MessageProcessorTest {
 		
 		/* Set up the session to use */
 		
-		// Set the applicability statement
+		// Set the application profile
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
@@ -459,8 +458,8 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
-													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
+											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -470,7 +469,7 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdInitiator,
-												identityKey, idCredI, credI, supportedCipherSuites, appStatement, edp, db);
+												identityKey, idCredI, credI, supportedCipherSuites, appProfile, edp, db);
 
 		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -603,7 +602,7 @@ public class MessageProcessorTest {
 		
 		/* Set up the session to use */
 		
-		// Set the applicability statement
+		// Set the application profile
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
@@ -617,8 +616,8 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
-													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
+											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -628,7 +627,7 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdResponder,
-												identityKey, idCredR, credR, supportedCipherSuites, appStatement, edp, db);
+												identityKey, idCredR, credR, supportedCipherSuites, appProfile, edp, db);
 
 		session.setSelectedCiphersuite(0);
 		session.setCurrentStep(Constants.EDHOC_AFTER_M3);
@@ -687,7 +686,7 @@ public class MessageProcessorTest {
 		byte[] cred = Utils.hexToBytes("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F404142434445464748494A4B4C4D4E4F505152535455565758595A5B5C5D5E5F606162636465666768696A6B6C6D6E6F707172737475767778797A7B7C7D7E7F808182838485868788");
 		CBORObject idCred = Util.buildIdCredX5t(cred);
 		
-		// Set the applicability statement
+		// Set the application profile
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
@@ -701,8 +700,8 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
-													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
+											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -711,7 +710,7 @@ public class MessageProcessorTest {
 		HashMapCtxDB db = new HashMapCtxDB();
 		
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionId, ltk,
-				                                idCred, cred, cipherSuites, appStatement, edp, db);
+				                                idCred, cred, cipherSuites, appProfile, edp, db);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = Utils.hexToBytes("b026b168429b213d6b421df6abd0641cd66dca2ee7fd5977104bb238182e5ea6");
@@ -831,7 +830,7 @@ public class MessageProcessorTest {
 		
 		/* Set up the session to use */
 		
-		// Set the applicability statement
+		// Set the application profile
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
@@ -845,8 +844,8 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
-													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
+											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -856,7 +855,7 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdResponder,
-												identityKey, idCredR, credR, supportedCipherSuites, appStatement, edp, db);
+												identityKey, idCredR, credR, supportedCipherSuites, appProfile, edp, db);
 
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -952,7 +951,7 @@ public class MessageProcessorTest {
 		
 		/* Set up the session to use */
 		
-		// Set the applicability statement
+		// Set the application profile
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
@@ -966,8 +965,8 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
-													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
+											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -977,7 +976,7 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdInitiator,
-												identityKey, idCredI, credI, supportedCipherSuites, appStatement, edp, db);
+												identityKey, idCredI, credI, supportedCipherSuites, appProfile, edp, db);
 
 		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -1115,7 +1114,7 @@ public class MessageProcessorTest {
 		
 		/* Set up the session to use */
 		
-		// Set the applicability statement
+		// Set the application profile
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
@@ -1129,8 +1128,8 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
-													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
+											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -1140,7 +1139,7 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdResponder,
-												identityKey, idCredR, credR, supportedCipherSuites, appStatement, edp, db);
+												identityKey, idCredR, credR, supportedCipherSuites, appProfile, edp, db);
 
 		
 		session.setSelectedCiphersuite(0);

@@ -201,7 +201,7 @@ public class VectorsTxtTest {
 		CBORObject idCred = Util.buildIdCredKid(idCredKid);
 		byte[] cred = Util.buildCredRawPublicKey(ltk, "");
 
-		// Set the applicability statement
+		// Set the application profile
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
 		// - Use of EDHOC for keying OSCORE
@@ -215,8 +215,8 @@ public class VectorsTxtTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
-		AppStatement appStatement = new AppStatement(authMethods, useMessage4, usedForOSCORE,
-													 supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
+											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -225,7 +225,7 @@ public class VectorsTxtTest {
 		HashMapCtxDB db = new HashMapCtxDB();
 		
 		EdhocSession session = new EdhocSession(initiator, true, methodCorr, connectionId, ltk,
-				                                idCred, cred, cipherSuites, appStatement, edp, db);
+				                                idCred, cred, cipherSuites, appProfile, edp, db);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = initiatorEphemeralPrivateList.get(index);
