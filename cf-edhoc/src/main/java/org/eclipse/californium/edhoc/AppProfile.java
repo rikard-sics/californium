@@ -21,7 +21,7 @@ package org.eclipse.californium.edhoc;
 import java.util.HashSet;
 import java.util.Set;
 
-public class AppStatement {
+public class AppProfile {
 
 	// Supported authentication methods
 	Set<Integer> authMethods = new HashSet<Integer>();
@@ -41,7 +41,7 @@ public class AppStatement {
 	// If left undefined, this implementation uses CONVERSION_ID_CORE (1) as conversion method.
 	private int conversionMethodOscoreToEdhoc;
 	
-	public AppStatement(Set<Integer> authMethods, boolean useMessage4, boolean usedForOSCORE,
+	public AppProfile(Set<Integer> authMethods, boolean useMessage4, boolean usedForOSCORE,
 						boolean supportCombinedRequest, int conversionMethodOscoreToEdhoc) {
 		
 		this.authMethods = authMethods;

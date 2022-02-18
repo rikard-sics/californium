@@ -279,7 +279,7 @@ public class EdhocLayer extends AbstractLayer {
 			}
     		   
     		// This EDHOC resource does not support the use of the EDHOC+OSCORE request
-    		if (mySession.getApplicabilityStatement().getSupportCombinedRequest() == false) {
+    		if (mySession.getApplicationProfile().getSupportCombinedRequest() == false) {
 				System.err.println("This EDHOC resource does not support the use of the EDHOC+OSCORE request\n");
     			Util.purgeSession(mySession, CBORObject.FromObject(kid), edhocSessions, usedConnectionIds);
     			
@@ -293,7 +293,7 @@ public class EdhocLayer extends AbstractLayer {
     		}
 			
     		// The combined request cannot be used if the Responder has to send message_4
-    		if (mySession.getApplicabilityStatement().getUseMessage4() == true) {
+    		if (mySession.getApplicationProfile().getUseMessage4() == true) {
 				System.err.println("Cannot receive the combined EDHOC+OSCORE request if message_4 is expected\n");
     			Util.purgeSession(mySession, CBORObject.FromObject(kid), edhocSessions, usedConnectionIds);
     			

@@ -58,7 +58,7 @@ public class MessageProcessor {
      * @return  The type of the EDHOC message, or -1 if it not a recognized type
      */
 	public static int messageType(byte[] msg, boolean isReq, Map<CBORObject, EdhocSession> edhocSessions,
-			                      CBORObject cX, AppStatement appStatement) {
+			                      CBORObject cX, AppProfile appProfile) {
 				
 		CBORObject[] myObjects = null;
 		
@@ -239,7 +239,7 @@ public class MessageProcessor {
      * @param sequence   The CBOR sequence used as payload of the EDHOC Message 1
      * @param isReq   True if the CoAP message is a request, or False otherwise
      * @param supportedCipherSuites   The list of cipher suites supported by this peer 
-     * @param appStatement   The applicability statement to use
+     * @param appProfile   The application profile to use
      * @param sessions   The EDHOC sessions of this peer
      * @return   A list of CBOR Objects including up to three elements.
      * 
@@ -257,7 +257,7 @@ public class MessageProcessor {
      */
 	public static List<CBORObject> readMessage1(byte[] sequence, boolean isReq,
 												List<Integer> supportedCiphersuites,
-												AppStatement appStatement) {
+												AppProfile appProfile) {
 		
 		if (sequence == null || supportedCiphersuites == null)
 				return null;
@@ -296,8 +296,8 @@ public class MessageProcessor {
 		    error = true;
 		}
 		
-    	if (error == false && appStatement == null) {
-			errMsg = new String("Impossible to retrieve the applicability statement");
+    	if (error == false && appProfile == null) {
+			errMsg = new String("Impossible to retrieve the application profile");
 			responseCode = ResponseCode.BAD_REQUEST;
 			error = true;
     	}
@@ -326,7 +326,7 @@ public class MessageProcessor {
 			else {
 				// Check that the indicated authentication method is supported
 		    	int method = objectListRequest[index].AsInt32();
-		    	if (!appStatement.isAuthMethodSupported(method)) {
+		    	if (!appProfile.isAuthMethodSupported(method)) {
 					errMsg = new String("Authentication method " + method + " is not supported");
 					responseCode = ResponseCode.BAD_REQUEST;
 					error = true;
@@ -477,8 +477,8 @@ public class MessageProcessor {
 		}
 		if (error == false && objectListRequest[index].getType() == CBORType.ByteString) {
 			
-			if (appStatement.getSupportCombinedRequest() == true ||
-			    appStatement.getConversionMethodOscoreToEdhoc() == Constants.CONVERSION_ID_CORE) {
+			if (appProfile.getSupportCombinedRequest() == true ||
+			    appProfile.getConversionMethodOscoreToEdhoc() == Constants.CONVERSION_ID_CORE) {
 				
 				byte[] buffer = objectListRequest[index].GetByteString();
 				if (Util.isCborIntegerEncoding(buffer) == true) {
@@ -769,7 +769,7 @@ public class MessageProcessor {
 			        responseCode = ResponseCode.BAD_REQUEST;
 			        error = true;
 			}
-			if (error == false && session.getApplicabilityStatement().getUsedForOSCORE() == true) {
+			if (error == false && session.getApplicationProfile().getUsedForOSCORE() == true) {
 				byte[] recipientId = EdhocSession.edhocToOscoreId(session.getConnectionId());
 				byte[] senderId = EdhocSession.edhocToOscoreId(cR);
 				if (Arrays.equals(recipientId, senderId)) {
@@ -780,8 +780,8 @@ public class MessageProcessor {
 			}
 			if (error == false && objectListRequest[index].getType() == CBORType.ByteString) {
 				
-				if (session.getApplicabilityStatement().getSupportCombinedRequest() == true ||
-					session.getApplicabilityStatement().getConversionMethodOscoreToEdhoc() == Constants.CONVERSION_ID_CORE) {
+				if (session.getApplicationProfile().getSupportCombinedRequest() == true ||
+					session.getApplicationProfile().getConversionMethodOscoreToEdhoc() == Constants.CONVERSION_ID_CORE) {
 					
 					byte[] buffer = objectListRequest[index].GetByteString();
 					if (Util.isCborIntegerEncoding(buffer) == true) {
@@ -1637,8 +1637,8 @@ public class MessageProcessor {
 				responseCode = ResponseCode.BAD_REQUEST;
 				error = true;
 			}
-			else if (session.getApplicabilityStatement().getUseMessage4() == false) {
-				errMsg = new String("EDHOC Message 4 is not used for this applicability statement");
+			else if (session.getApplicationProfile().getUseMessage4() == false) {
+				errMsg = new String("EDHOC Message 4 is not used for this application profile");
 				responseCode = ResponseCode.BAD_REQUEST;
 				error = true;
 			}
@@ -2793,7 +2793,7 @@ public class MessageProcessor {
      * @param credI   CRED_I for the identity key of the Initiator, as the serialization of a CBOR object
      * @param supportedCipherSuites   The list of ciphersuites supported by the Initiator
      * @param usedConnectionIds   The set of allocated Connection Identifiers for the Initiator
-     * @param appStatement   The applicability statement used for this session
+     * @param appProfile   The application profile used for this session
      * @param epd   The processor of External Authentication Data used for this session
      * @param db   The database of OSCORE Security Contexts
      * @return  The newly created EDHOC session
@@ -2802,11 +2802,11 @@ public class MessageProcessor {
 												        CBORObject idCredI, byte[] credI,
 			  									        List<Integer> supportedCiphersuites,
 			  									        Set<CBORObject> usedConnectionIds,
-			  									        AppStatement appStatement,
+			  									        AppProfile appProfile,
 			  									        EDP edp, HashMapCtxDB db) {
 		
 		CBORObject connectionId = null;
-		HashMapCtxDB oscoreDB = (appStatement.getUsedForOSCORE() == true) ? db : null;
+		HashMapCtxDB oscoreDB = (appProfile.getUsedForOSCORE() == true) ? db : null;
 		
 		connectionId = Util.getConnectionId(usedConnectionIds, oscoreDB, null);
 		// Forced for testing
@@ -2814,7 +2814,7 @@ public class MessageProcessor {
 		
 		usedConnectionIds.add(connectionId);
         EdhocSession mySession = new EdhocSession(true, true, method, connectionId, keyPair,
-        										  idCredI, credI, supportedCiphersuites, appStatement, edp, oscoreDB);
+        										  idCredI, credI, supportedCiphersuites, appProfile, edp, oscoreDB);
 		
 		return mySession;
 		
@@ -2828,7 +2828,7 @@ public class MessageProcessor {
      * @param credR   CRED_R for the identity key of the Responder, as the serialization of a CBOR object
      * @param supportedCipherSuites   The list of ciphersuites supported by the Responder
      * @param usedConnectionIds   The set of allocated Connection Identifiers for the Responder
-     * @param appStatement   The applicability statement used for this session
+     * @param appProfile   The application profile used for this session
      * @param epd   The processor of External Authentication Data used for this session
      * @param db   The database of OSCORE Security Contexts
      * @return  The newly created EDHOC session
@@ -2837,7 +2837,7 @@ public class MessageProcessor {
 			                                            CBORObject idCredR, byte[] credR,
 			  									        List<Integer> supportedCiphersuites,
 			  									        Set<CBORObject> usedConnectionIds,
-			  									        AppStatement appStatement,
+			  									        AppProfile appProfile,
 			  									        EDP edp, HashMapCtxDB db) {
 		
 		CBORObject[] objectListMessage1 = CBORObject.DecodeSequenceFromBytes(message1);
@@ -2875,7 +2875,7 @@ public class MessageProcessor {
 		// Create a new EDHOC session
 		
 		CBORObject connectionId = null;
-		HashMapCtxDB oscoreDB = (appStatement.getUsedForOSCORE() == true) ? db : null;
+		HashMapCtxDB oscoreDB = (appProfile.getUsedForOSCORE() == true) ? db : null;
 		
 		connectionId = Util.getConnectionId(usedConnectionIds, oscoreDB, cI);
 		// Forced for testing
@@ -2883,7 +2883,7 @@ public class MessageProcessor {
 		
 		usedConnectionIds.add(connectionId);
 		EdhocSession mySession = new EdhocSession(false, isReq, method, connectionId, keyPair,
-												  idCredR, credR, supportedCiphersuites, appStatement, edp, oscoreDB);
+												  idCredR, credR, supportedCiphersuites, appProfile, edp, oscoreDB);
 		
 		// Set the selected cipher suite
 		mySession.setSelectedCiphersuite(selectedCipherSuite);
