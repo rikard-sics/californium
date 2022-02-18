@@ -22,6 +22,7 @@ package org.eclipse.californium.edhoc;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.Utils;
@@ -41,16 +42,20 @@ import com.upokecenter.cbor.CBORType;
 class EdhocResource extends CoapResource {
 
 	private EdhocEndpointInfo edhocEndpointInfo;
+	private Set<CBORObject> ownIdCreds;
 	
 	private static final boolean debugPrint = true;
 	
-	public EdhocResource(String resourceIdentifier, EdhocEndpointInfo edhocEndpointInfo) {
+	public EdhocResource(String resourceIdentifier, EdhocEndpointInfo edhocEndpointInfo, Set<CBORObject> ownIdCreds) {
 		
 		// set resource identifier
 		super(resourceIdentifier);
 
 		// set the information about the EDHOC server hosting this EDHOC resource
 		this.edhocEndpointInfo = edhocEndpointInfo;
+		
+		// set the collection of ID_CRED_X used for an authentication credential associated to this peer
+		this.ownIdCreds = ownIdCreds;
 		
 		// set display name
 		getAttributes().setTitle("EDHOC Resource");
