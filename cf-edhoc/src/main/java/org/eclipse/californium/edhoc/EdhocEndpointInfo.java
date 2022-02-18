@@ -57,8 +57,8 @@ public class EdhocEndpointInfo {
 	// The size of the Replay Window to use in an OSCORE Recipient Context
 	private int OSCORE_REPLAY_WINDOW;
 	
-	// The collection of applicability statements - The lookup key is the full URI of the EDHOC resource
-	private Map<String, AppStatement> appStatements;
+	// The collection of application profiles - The lookup key is the full URI of the EDHOC resource
+	private Map<String, AppProfile> appProfiles;
 	
 	// The processor of External Authorization Data
 	private EDP edp;
@@ -68,7 +68,7 @@ public class EdhocEndpointInfo {
 							 byte[] cred, OneKey keyPair, Map<CBORObject, OneKey> peerPublicKeys,
 							 Map<CBORObject, CBORObject> peerCredentials, Map<CBORObject, EdhocSession> edhocSessions,
 							 Set<CBORObject> usedConnectionIds, List<Integer> supportedCiphersuites, HashMapCtxDB db,
-							 String uri, int OSCORE_REPLAY_WINDOW, Map<String, AppStatement> appStatements, EDP edp) {
+							 String uri, int OSCORE_REPLAY_WINDOW, Map<String, AppProfile> appProfiles, EDP edp) {
 				
 		this.idCred = idCred;
 		this.cred = cred;
@@ -81,7 +81,7 @@ public class EdhocEndpointInfo {
 		this.db = db;
 		this.uri = uri;
 		this.OSCORE_REPLAY_WINDOW = OSCORE_REPLAY_WINDOW;
-		this.appStatements = appStatements;
+		this.appProfiles = appProfiles;
 		this.edp = edp;
 		
 	}
@@ -91,9 +91,9 @@ public class EdhocEndpointInfo {
 		return edhocSessions;
 	}
 
-	// Return a reference to the set of Applicability Statements
-	public Map<String, AppStatement> getAppStatements() {
-		return appStatements;
+	// Return a reference to the set of Application Profiles
+	public Map<String, AppProfile> getAppProfiles() {
+		return appProfiles;
 	}
 	
 	// Return a reference to the processor of External Authorization Data
