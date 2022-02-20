@@ -24,8 +24,6 @@ import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Random;
-
 import org.eclipse.californium.TestTools;
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResource;
@@ -41,6 +39,7 @@ import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.server.MessageDeliverer;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.elements.AddressEndpointContext;
 import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
 import org.eclipse.californium.elements.util.Bytes;
@@ -85,8 +84,6 @@ public class OSCoreProxyTest {
 	static final int TIMEOUT_IN_MILLIS = 5000;
 	static final String TARGET = "resource";
 
-	static final boolean USE_OSCORE = true;
-
 	// OSCORE context information shared between server and client
 	private final static HashMapCtxDB dbClient = new HashMapCtxDB();
 	private final static HashMapCtxDB dbServer = new HashMapCtxDB();
@@ -104,93 +101,106 @@ public class OSCoreProxyTest {
 	private String proxyUri;
 	private String payload;
 
+	/**
+	 * Creates and initializes a simple server supporting OSCORE.
+	 */
 	public void startupServer() {
-		payload = createRandomPayload(64);
+		payload = "Correct payload in response from server";
 		createOscoreServer();
 		resource.setPayload(payload);
 	}
 
+	/**
+	 * Creates and initializes a coap2coap proxy
+	 */
 	public void startupProxy() {
 		createSimpleProxy();
 	}
 
 	/**
-	 * Perform GET request via proxy with small response payload. No block-wise
-	 * messages involved.
+	 * Perform GET request via proxy using the Proxy-Uri option to indicate the
+	 * server URI.
 	 * 
 	 * @throws Exception on test failure
 	 */
 	@Test
-	public void testProxySmallGet() throws Exception {
+	public void testProxyUri() throws Exception {
 		startupServer();
 		startupProxy();
 		setClientContext(serverUri);
+
+		Request request = Request.newGet().setURI(proxyUri);
+		request.getOptions().setProxyUri(serverUri);
+		request.getOptions().setOscore(Bytes.EMPTY);
 
 		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
 		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
 		builder.setCustomCoapStackArgument(dbClient);
 		CoapEndpoint clientEndpoint = builder.build();
 
-		String responsePayload = "test";
-		resource.setPayload(responsePayload);
-
-		Request request = Request.newGet().setURI(proxyUri);
-		request.getOptions().setProxyUri(serverUri);
-		if (USE_OSCORE) {
-			request.getOptions().setOscore(Bytes.EMPTY);
-		}
-
 		CoapClient client = new CoapClient();
 		client.setEndpoint(clientEndpoint);
 		cleanup.add(clientEndpoint);
+
 		CoapResponse response = client.advanced(request);
 		System.out.println(Utils.prettyPrint(response));
-		assertNotNull(response);
-		assertEquals(CoAP.ResponseCode.CONTENT, response.getCode());
-		assertFalse(response.getOptions().hasSize2());
-		assertFalse(response.getOptions().hasBlock1());
-		assertEquals(responsePayload, response.getResponseText());
+
+		assertNotNull("Response was null", response);
+		assertFalse("Response had Size2 option", response.getOptions().hasSize2());
+		assertFalse("Response had Block1 option", response.getOptions().hasBlock1());
+		assertEquals("Response payload was incorrect", payload, response.getResponseText());
+		assertEquals("Response had incorrect code", CoAP.ResponseCode.CONTENT, response.getCode());
 		client.shutdown();
 	}
 
 	/**
-	 * Perform GET request via proxy with large response payload. No block-wise
-	 * messages involved.
+	 * Perform GET request via proxy using the Proxy-Scheme and the Uri-*
+	 * options to indicate the server URI. The proxy address and port is set
+	 * using an AddressEndpointContext.
 	 * 
 	 * @throws Exception on test failure
 	 */
 	@Test
-	public void testProxyLargeGet() throws Exception {
+	public void testProxyScheme() throws Exception {
 		startupServer();
 		startupProxy();
 		setClientContext(serverUri);
+
+		String proxyAddress = URI.create(proxyUri).getHost();
+		int proxyPort = URI.create(proxyUri).getPort();
+		AddressEndpointContext proxy = new AddressEndpointContext(proxyAddress, proxyPort);
+
+		Request request = Request.newGet();
+		request.setDestinationContext(proxy);
+		request.setURI(serverUri);
+		request.setProxyScheme("coap");
+		request.getOptions().setOscore(Bytes.EMPTY);
 
 		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
 		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
 		builder.setCustomCoapStackArgument(dbClient);
 		CoapEndpoint clientEndpoint = builder.build();
 
-		Request request = Request.newGet().setURI(proxyUri);
-		request.getOptions().setProxyUri(serverUri);
-		if (USE_OSCORE) {
-			request.getOptions().setOscore(Bytes.EMPTY);
-		}
-
 		CoapClient client = new CoapClient();
 		client.setEndpoint(clientEndpoint);
 		cleanup.add(clientEndpoint);
 		CoapResponse response = client.advanced(request);
 		System.out.println(Utils.prettyPrint(response));
-		assertNotNull(response);
-		assertEquals(CoAP.ResponseCode.CONTENT, response.getCode());
-		assertFalse(response.getOptions().hasSize2());
-		assertFalse(response.getOptions().hasBlock1());
-		assertEquals(payload, response.getResponseText());
+
+		assertNotNull("Response was null", response);
+		assertFalse("Response had Size2 option", response.getOptions().hasSize2());
+		assertFalse("Response had Block1 option", response.getOptions().hasBlock1());
+		assertEquals("Response payload was incorrect", payload, response.getResponseText());
+		assertEquals("Response had incorrect code", CoAP.ResponseCode.CONTENT, response.getCode());
 		client.shutdown();
 	}
 
+	/**
+	 * Set up OSCORE context information for request (client)
+	 * 
+	 * @param serverUri the URI the server resource is located at
+	 */
 	public void setClientContext(String serverUri) {
-		// Set up OSCORE context information for request (client)
 		byte[] sid = Bytes.EMPTY;
 		byte[] rid = new byte[] { 0x01 };
 
@@ -203,8 +213,10 @@ public class OSCoreProxyTest {
 		}
 	}
 
+	/**
+	 * Set up OSCORE context information for response (server)
+	 */
 	public void setServerContext() {
-		// Set up OSCORE context information for response (server)
 		byte[] sid = new byte[] { 0x01 };
 		byte[] rid = Bytes.EMPTY;
 
@@ -242,15 +254,6 @@ public class OSCoreProxyTest {
 		serverUri = TestTools.getUri(serverEndpoint, TARGET);
 	}
 
-	private static String createRandomPayload(int size) {
-		StringBuilder builder = new StringBuilder(size);
-		Random random = new Random(size);
-		for (int i = 0; i < size; ++i) {
-			builder.append(random.nextInt(10));
-		}
-		return builder.toString();
-	}
-
 	private static class MyResource extends CoapResource {
 
 		private volatile String currentPayload;
@@ -261,21 +264,6 @@ public class OSCoreProxyTest {
 
 		@Override
 		public void handleGET(CoapExchange exchange) {
-			Response response = new Response(ResponseCode.CONTENT);
-			response.setPayload(currentPayload);
-			exchange.respond(response);
-		}
-
-		@Override
-		public void handlePUT(CoapExchange exchange) {
-			currentPayload = exchange.getRequestText();
-			Response response = new Response(ResponseCode.CHANGED);
-			exchange.respond(response);
-		}
-
-		@Override
-		public void handlePOST(CoapExchange exchange) {
-			currentPayload += exchange.getRequestText();
 			Response response = new Response(ResponseCode.CONTENT);
 			response.setPayload(currentPayload);
 			exchange.respond(response);
@@ -314,6 +302,17 @@ public class OSCoreProxyTest {
 					// Create and send request to the server based on the
 					// incoming request from the client
 					Request incomingRequest = exchange.getRequest();
+
+					// Requests should not contain the Proxy-Uri option when
+					// OSCORE is used (it will be changed to Proxy-Scheme +
+					// Uri-* options)
+					if (incomingRequest.getOptions().hasProxyUri()) {
+						Response resp = Response.createResponse(incomingRequest, ResponseCode.BAD_REQUEST);
+						resp.setPayload("Request from client contained Proxy-Uri option");
+						exchange.sendResponse(resp);
+						return;
+					}
+
 					URI finalDestinationUri = coapTranslator.getDestinationURI(incomingRequest,
 							coapTranslator.getExposedInterface(incomingRequest));
 					Request outgoingRequest = coapTranslator.getRequest(finalDestinationUri, incomingRequest);
