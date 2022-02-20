@@ -19,6 +19,7 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -110,15 +111,24 @@ public class OptionJuggle {
 		}
 
 		if (hasProxyUri) {
-			String proxyUri = options.getProxyUri();
-			proxyUri = proxyUri.replace("coap://", "");
-			proxyUri = proxyUri.replace("coaps://", "");
-			int i = proxyUri.indexOf('/');
-			if (i >= 0) {
-				proxyUri = proxyUri.substring(0, i);
+			// create Uri-Host, Uri-Port and Proxy-Scheme
+			URI proxyUri = URI.create(options.getProxyUri());
+			String uriHost = proxyUri.getHost();
+			int uriPort = proxyUri.getPort();
+			String proxyScheme = proxyUri.getScheme();
+
+			if (uriHost != null) {
+				ret.setUriHost(uriHost);
 			}
-			proxyUri = "coap://" + proxyUri;
-			ret.setProxyUri(proxyUri);
+
+			if (uriPort != -1) {
+				ret.setUriPort(uriPort);
+			}
+
+			if (proxyScheme != null) {
+				ret.setProxyScheme(proxyScheme);
+			}
+
 		}
 
 		byte[] oscore = options.getOscore();
@@ -150,33 +160,19 @@ public class OptionJuggle {
 				break;
 			case OptionNumberRegistry.PROXY_URI:
 				// create Uri-Path and Uri-Query
-				String proxyUri = o.getStringValue();
-				proxyUri = proxyUri.replace("coap://", "");
-				proxyUri = proxyUri.replace("coaps://", "");
-				int i = proxyUri.indexOf('/');
-				if (i >= 0) {
-					proxyUri = proxyUri.substring(i + 1, proxyUri.length());
-				} else {// No Uri-Path and Uri-Query
-					break;
-				}
-				i = proxyUri.indexOf("?");
-				String uriPath = proxyUri;
-				String uriQuery = null;
-				if (i >= 0) {
-					uriPath = proxyUri.substring(0, i);
-					uriQuery = proxyUri.substring(i + 1, proxyUri.length());
-				}
+				URI proxyUri = URI.create(o.getStringValue());
+				String uriPath = proxyUri.getPath();
+				String uriQuery = proxyUri.getQuery();
 
 				if (uriPath != null) {
 					ret.setUriPath(uriPath);
 				}
 
 				if (uriQuery != null) {
-					String[] uriQueries = uriQuery.split("&");
-					for (int idx = 0; idx < uriQueries.length; idx++) {
-						ret.setUriQuery(uriQueries[idx]);
-					}
+					ret.setUriQuery(uriQuery);
+
 				}
+
 				break;
 			default: // default is encrypt
 				ret.addOption(o);

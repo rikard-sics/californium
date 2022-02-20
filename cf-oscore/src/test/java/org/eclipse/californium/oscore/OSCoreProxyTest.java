@@ -32,6 +32,7 @@ import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.network.CoapEndpoint;
@@ -71,13 +72,22 @@ import org.junit.Test;
  */
 public class OSCoreProxyTest {
 
+	/**
+	 * Set network rule for the test
+	 */
 	@ClassRule
 	public static CoapNetworkRule network = new CoapNetworkRule(CoapNetworkRule.Mode.DIRECT,
 			CoapNetworkRule.Mode.NATIVE);
 
+	/**
+	 * Set thread cleanup rule
+	 */
 	@Rule
 	public CoapThreadsRule cleanup = new CoapThreadsRule();
 
+	/**
+	 * Set test logger rule
+	 */
 	@Rule
 	public TestNameLoggerRule name = new TestNameLoggerRule();
 
@@ -266,6 +276,7 @@ public class OSCoreProxyTest {
 		public void handleGET(CoapExchange exchange) {
 			Response response = new Response(ResponseCode.CONTENT);
 			response.setPayload(currentPayload);
+			response.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 			exchange.respond(response);
 		}
 
@@ -306,9 +317,9 @@ public class OSCoreProxyTest {
 					// Requests should not contain the Proxy-Uri option when
 					// OSCORE is used (it will be changed to Proxy-Scheme +
 					// Uri-* options)
-					if (incomingRequest.getOptions().hasProxyUri()) {
+					if (incomingRequest.getOptions().hasProxyUri() || !incomingRequest.getOptions().hasProxyScheme()) {
 						Response resp = Response.createResponse(incomingRequest, ResponseCode.BAD_REQUEST);
-						resp.setPayload("Request from client contained Proxy-Uri option");
+						resp.setPayload("Request contained Proxy-Uri option or no Proxy-Scheme");
 						exchange.sendResponse(resp);
 						return;
 					}
