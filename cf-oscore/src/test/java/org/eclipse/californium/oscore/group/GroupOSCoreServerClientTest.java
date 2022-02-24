@@ -61,6 +61,7 @@ import org.eclipse.californium.oscore.OSCoreEndpointContextInfo;
 import org.eclipse.californium.oscore.OSException;
 import org.eclipse.californium.rule.CoapNetworkRule;
 import org.eclipse.californium.rule.CoapThreadsRule;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -142,6 +143,8 @@ public class GroupOSCoreServerClientTest {
 	static Random rand;
 	private String uri;
 
+	CoapServer server;
+
 	@Before
 	public void init() {
 		EndpointManager.clear();
@@ -152,6 +155,14 @@ public class GroupOSCoreServerClientTest {
 	public static void setStackFactory() {
 		OSCoreCoapStackFactory.useAsDefault(null); // TODO: Better way?
 		rand = new Random();
+	}
+
+	@After
+	public void after() {
+		if (null != server) {
+			server.destroy();
+		}
+		System.out.println("End " + getClass().getSimpleName());
 	}
 
 	/* --- Client tests follow --- */
@@ -305,7 +316,7 @@ public class GroupOSCoreServerClientTest {
 	 * @throws Exception on test failure
 	 */
 	@Test
-	public void testDynamicContextDerivationRequest() throws Exception {
+	public void testDynamicRequestContextDerivation() throws Exception {
 
 		createServer(false); // No PIV in responses
 
@@ -380,7 +391,7 @@ public class GroupOSCoreServerClientTest {
 	 * @throws Exception on test failure
 	 */
 	@Test
-	public void testDynamicContextDerivationResponse() throws Exception {
+	public void testDynamicResponseContextDerivation() throws Exception {
 
 		createServer(false); // No PIV in responses
 
@@ -448,7 +459,7 @@ public class GroupOSCoreServerClientTest {
 		assertNotNull("Client received no response", response);
 		System.out.println("client received response");
 		assertEquals(SERVER_RESPONSE, response.advanced().getPayloadString());
-		// assertArrayEquals(token, response.advanced().getTokenBytes());
+		assertArrayEquals(token, response.advanced().getTokenBytes());
 
 		// Parse the flag byte group bit (expect non-zero value)
 		byte flagByte = response.getOptions().getOscore()[0];
@@ -809,7 +820,7 @@ public class GroupOSCoreServerClientTest {
 		builder.setCustomCoapStackArgument(dbServer);
 		builder.setInetSocketAddress(TestTools.LOCALHOST_EPHEMERAL);
 		serverEndpoint = builder.build();
-		CoapServer server = new CoapServer();
+		server = new CoapServer();
 		server.addEndpoint(serverEndpoint);
 
 		/** --- Resources for tests follow --- **/

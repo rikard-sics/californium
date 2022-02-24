@@ -49,7 +49,7 @@ public class RequestEncryptor extends Encryptor {
 	 */
 	public static Request encrypt(OSCoreCtxDB db, Request request) throws OSException {
 
-		final String uri;
+		String uri;
 		if (request.getOptions().hasProxyUri()) {
 			uri = request.getOptions().getProxyUri();
 		} else {
@@ -84,7 +84,7 @@ public class RequestEncryptor extends Encryptor {
 		OptionSet options = request.getOptions();
 		byte[] confidential = OSSerializer.serializeConfidentialData(options, request.getPayload(), realCode);
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
-		byte[] cipherText = encryptAndEncode(enc, ctx, request, false, null);
+		byte[] cipherText = encryptAndEncode(enc, ctx, request, false, null, null);
 		compression(ctx, cipherText, request, false);
 
 		request.setOptions(OptionJuggle.prepareUoptions(request.getOptions()));

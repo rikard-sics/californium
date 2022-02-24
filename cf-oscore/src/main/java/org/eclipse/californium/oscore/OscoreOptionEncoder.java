@@ -36,6 +36,7 @@ public class OscoreOptionEncoder {
 	private byte[] idContext;
 	private byte[] partialIV;
 	private byte[] kid;
+	boolean groupFlag;
 
 	/**
 	 * Retrieve the encoded bytes of the OSCORE option.
@@ -71,6 +72,11 @@ public class OscoreOptionEncoder {
 		// If the KID should be included, set its bit
 		if (hasKid) {
 			firstByte = firstByte | 0x08; // Set the KID bit
+		}
+
+		// If the Group Flag is set, set its bit
+		if (groupFlag) {
+			firstByte = firstByte | 0x20;
 		}
 
 		// If the Partial IV should be included, encode it
@@ -185,6 +191,26 @@ public class OscoreOptionEncoder {
 	public void setKid(byte[] kid) {
 		encoded = false;
 		this.kid = kid;
+	}
+
+	/**
+	 * Retrieve the value of the Group Mode bit
+	 * 
+	 * @return the KID
+	 */
+	public boolean getGroupFlag() {
+		return groupFlag;
+	}
+
+	/**
+	 * Set the Group Mode bit in the flag bytes
+	 * 
+	 * @param b the value of the bit to set
+	 */
+	public void setGroupFlag(boolean b) {
+		encoded = false;
+		this.groupFlag = b;
+
 	}
 
 }

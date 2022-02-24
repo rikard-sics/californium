@@ -294,7 +294,7 @@ public class GroupEncryptorTest {
 		boolean outerBlockwise = false;
 		byte[] requestOscoreOption = new byte[] { 0x39, 0x14, 0x08, 0x74, 0x65, 0x73, 0x74, 0x74, 0x65, 0x73, 0x74,
 				0x00 };
-		Response encrypted = ResponseEncryptor.encrypt(null, r, senderCtx, newPartialIV, outerBlockwise,
+		Response encrypted = ResponseEncryptor.encrypt(null, r, senderCtx, newPartialIV, outerBlockwise, seq,
 				requestOscoreOption);
 
 		// Check the OSCORE option value
@@ -382,7 +382,7 @@ public class GroupEncryptorTest {
 		boolean outerBlockwise = false;
 		byte[] requestOscoreOption = new byte[] { 0x39, 0x14, 0x08, 0x74, 0x65, 0x73, 0x74, 0x74, 0x65, 0x73, 0x74,
 				0x22 };
-		Response encrypted = ResponseEncryptor.encrypt(db, r, senderCtx, newPartialIV, outerBlockwise,
+		Response encrypted = ResponseEncryptor.encrypt(db, r, senderCtx, newPartialIV, outerBlockwise, seq,
 				requestOscoreOption);
 
 		// Check the OSCORE option value
