@@ -300,7 +300,7 @@ public class GroupKeyDerivationInteropJimTests {
 
 		// Set up some state information simulating an incoming request
 		OSCoreCtxDB db = new HashMapCtxDB();
-		recipientCtx.setReceiverSeq(seq - 1);
+		// FIXME: //recipientCtx.setReceiverSeq(seq - 1);
 		db.addContext(recipientCtx);
 		r.setSourceContext(new UdpEndpointContext(new InetSocketAddress(0)));
 
