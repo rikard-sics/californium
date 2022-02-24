@@ -230,30 +230,33 @@ public class GroupSenderCtx extends OSCoreCtx {
 
 	}
 
-
-	/**
-	 * @return size of recipient replay window
-	 */
-	@Override
-	public int getRecipientReplaySize() {
-		System.out.println("Bad call to getRecipientReplaySize");
-		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
-		System.err.println("Bad call to getRecipientReplaySize on GroupSenderCtx" + stackTraceElements[2].toString());
-		Assert.fail();
-		return recipient_replay_window_size;
-	}
-
-	/**
-	 * @return recipient replay window
-	 */
-	@Override
-	public int getRecipientReplayWindow() {
-		System.out.println("Bad call to getRecipientReplayWindow");
-		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
-		System.err.println("Bad call to getRecipientReplayWindow on GroupSenderCtx" + stackTraceElements[2].toString());
-		Assert.fail();
-		return recipient_replay_window;
-	}
+	// /**
+	// * @return size of recipient replay window
+	// */
+	// @Override
+	// public int getRecipientReplaySize() {
+	// System.out.println("Bad call to getRecipientReplaySize");
+	// StackTraceElement[] stackTraceElements =
+	// Thread.currentThread().getStackTrace();
+	// System.err.println("Bad call to getRecipientReplaySize on GroupSenderCtx"
+	// + stackTraceElements[2].toString());
+	// Assert.fail();
+	// return recipient_replay_window_size;
+	// }
+	//
+	// /**
+	// * @return recipient replay window
+	// */
+	// @Override
+	// public int getRecipientReplayWindow() {
+	// System.out.println("Bad call to getRecipientReplayWindow");
+	// StackTraceElement[] stackTraceElements =
+	// Thread.currentThread().getStackTrace();
+	// System.err.println("Bad call to getRecipientReplayWindow on
+	// GroupSenderCtx" + stackTraceElements[2].toString());
+	// Assert.fail();
+	// return recipient_replay_window;
+	// }
 
 	@Override
 	public void setRecipientKey(byte[] recipientKey) {
@@ -264,29 +267,35 @@ public class GroupSenderCtx extends OSCoreCtx {
 		super.setRecipientKey(recipientKey);
 	}
 
-	/**
-	 * @param seq the recipient sequence number to set
-	 */
-	public synchronized void setReceiverSeq(int seq) {
-		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
-		System.err.println("Bad call to setReceiverSeq on GroupSenderCtx" + stackTraceElements[2].toString());
-		Assert.fail();
-		super.setReceiverSeq(seq);
-	}
+	// /**
+	// * @param seq the recipient sequence number to set
+	// */
+	// public synchronized void setReceiverSeq(int seq) {
+	// StackTraceElement[] stackTraceElements =
+	// Thread.currentThread().getStackTrace();
+	// System.err.println("Bad call to setReceiverSeq on GroupSenderCtx" +
+	// stackTraceElements[2].toString());
+	// Assert.fail();
+	// super.setReceiverSeq(seq);
+	// }
 
-	public int rollbackRecipientSeq() {
-		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
-		System.err.println("Bad call to rollbackRecipientSeq on GroupSenderCtx" + stackTraceElements[2].toString());
-		Assert.fail();
-		return super.rollbackRecipientSeq();
-	}
-
-	public int rollbackRecipientReplay() {
-		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
-		System.err.println("Bad call to rollbackRecipientReplay on GroupSenderCtx" + stackTraceElements[2].toString());
-		Assert.fail();
-		return super.rollbackRecipientReplay();
-	}
+	// public int rollbackRecipientSeq() {
+	// StackTraceElement[] stackTraceElements =
+	// Thread.currentThread().getStackTrace();
+	// System.err.println("Bad call to rollbackRecipientSeq on GroupSenderCtx" +
+	// stackTraceElements[2].toString());
+	// Assert.fail();
+	// return super.rollbackRecipientSeq();
+	// }
+	//
+	// public int rollbackRecipientReplay() {
+	// StackTraceElement[] stackTraceElements =
+	// Thread.currentThread().getStackTrace();
+	// System.err.println("Bad call to rollbackRecipientReplay on
+	// GroupSenderCtx" + stackTraceElements[2].toString());
+	// Assert.fail();
+	// return super.rollbackRecipientReplay();
+	// }
 
 	/**
 	 * @return the repipient's identifier
@@ -309,7 +318,7 @@ public class GroupSenderCtx extends OSCoreCtx {
 		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
 		System.err.println("Bad call to getReceiverSeq on GroupSenderCtx" + stackTraceElements[2].toString());
 		Assert.fail();
-		return super.getReceiverSeq();
+		return super.getLowestRecipientSeq();
 	}
 
 	/**
