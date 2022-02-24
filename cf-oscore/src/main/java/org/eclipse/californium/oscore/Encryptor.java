@@ -135,7 +135,7 @@ public abstract class Encryptor {
 
 				recipientId = null;
 				int requestSeq = 0;
-				
+
 				// DET_REQ
 				// Detect if this is a response to a deterministic request
 				if (message.getOptions().getRequestHash() != null) {
@@ -380,43 +380,25 @@ public abstract class Encryptor {
 	 * Encodes the Object-Security value for a Request.
 	 * 
 	 * @param ctx the context
-	 * @param groupModeRequest if this is a Group OSCORE group mode request
+	 * @param groupModeRequest if the request is using group mode
+	 * 
 	 * @return the Object-Security value as byte array
 	 */
 	public static byte[] encodeOSCoreRequest(OSCoreCtx ctx, boolean groupModeRequest) {
-		int firstByte = 0x00;
-		ByteArrayOutputStream bRes = new ByteArrayOutputStream();
-		byte[] partialIV = OSSerializer.processPartialIV(ctx.getSenderSeq());
-		firstByte = firstByte | (partialIV.length & 0x07); //PartialIV length
-		firstByte = firstByte | 0x08; //Set the KID bit
-		
-		//If the Context ID should be included for this context, set its bit
+
+		OscoreOptionEncoder optionEncoder = new OscoreOptionEncoder();
 		if (ctx.getIncludeContextId() || ctx.isGroupContext()) {
-			firstByte = firstByte | 0x10;
+			optionEncoder.setIdContext(ctx.getMessageIdContext());
 		}
 
-		// If this is a group mode request
 		if (groupModeRequest) {
-			firstByte = firstByte | 0x20;
+			optionEncoder.setGroupFlag(true);
 		}
 
-		bRes.write(firstByte);
-
-		try {
-			bRes.write(partialIV);
-
-			//Encode the Context ID length and value if to be included
-			if (ctx.getIncludeContextId() || ctx.isGroupContext()) {
-				bRes.write(ctx.getMessageIdContext().length);
-				bRes.write(ctx.getMessageIdContext());
-			}
-
-			//Encode Sender ID (KID)
-			bRes.write(ctx.getSenderId());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return bRes.toByteArray();
+		optionEncoder.setPartialIV(ctx.getSenderSeq());
+		optionEncoder.setKid(ctx.getSenderId());
+		
+		return optionEncoder.getBytes();
 	}
 
 
@@ -429,65 +411,26 @@ public abstract class Encryptor {
 	 * @return the Object-Security value as byte array
 	 */
 	public static byte[] encodeOSCoreResponse(OSCoreCtx ctx, final boolean newPartialIV) {
-		int firstByte = 0x00;
-		ByteArrayOutputStream bRes = new ByteArrayOutputStream();
 
-		//If the Context ID should be included for this context, set its bit
+		OscoreOptionEncoder optionEncoder = new OscoreOptionEncoder();
 		if (ctx.getIncludeContextId()) {
-			firstByte = firstByte | 0x10;
+			optionEncoder.setIdContext(ctx.getMessageIdContext());
 		}
-
-		// If the KID should be included (Group OSCORE), set its bit
-		if (ctx.isGroupContext()) {
-			firstByte = firstByte | 0x08;
-		}
-
-		// If this is a group mode response
-		if (ctx instanceof GroupSenderCtx && ((GroupSenderCtx) ctx).getPairwiseModeResponses() == false) {
-			firstByte = firstByte | 0x20;
-		}
-
 		if (newPartialIV) {
-			byte[] partialIV = OSSerializer.processPartialIV(ctx.getSenderSeq());
-			firstByte = firstByte | (partialIV.length & 0x07);
-
-			bRes.write(firstByte);
-			try {
-				bRes.write(partialIV);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		} else {
-			bRes.write(firstByte);
+			optionEncoder.setPartialIV(ctx.getSenderSeq());
 		}
 
-		//Encode the Context ID length and value if to be included
-		if (ctx.getIncludeContextId()) {
-			try {
-				bRes.write(ctx.getMessageIdContext().length);
-				bRes.write(ctx.getMessageIdContext());
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+		// If this is a group mode response, set flag bit
+		if (ctx instanceof GroupSenderCtx && ((GroupSenderCtx) ctx).getPairwiseModeResponses() == false) {
+			optionEncoder.setGroupFlag(true);
 		}
-		
-		//For Group OSCORE always include the KID (Sender ID) in responses
+
+		// Always include KID for Group OSCORE (for now)
 		if (ctx.isGroupContext()) {
-			try {
-				bRes.write(ctx.getSenderId());
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			optionEncoder.setKid(ctx.getSenderId());
 		}
 
-		//If the OSCORE option is length 1 and 0x00, it should be empty
-		//See https://tools.ietf.org/html/draft-ietf-core-object-security-16#section-2
-		byte[] optionBytes = bRes.toByteArray();
-		if (optionBytes.length == 1 && optionBytes[0] == 0x00) {
-			return Bytes.EMPTY;
-		} else {
-			return optionBytes;
-		}
+		return optionEncoder.getBytes();
 	}
 
 	private static void prepareSignature(Encrypt0Message enc, OSCoreCtx ctx, byte[] aad, Message message) {

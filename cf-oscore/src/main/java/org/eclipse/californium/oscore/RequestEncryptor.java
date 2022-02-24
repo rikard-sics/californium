@@ -85,6 +85,7 @@ public class RequestEncryptor extends Encryptor {
 		byte[] confidential = OSSerializer.serializeConfidentialData(options, request.getPayload(), realCode);
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
 		byte[] cipherText = encryptAndEncode(enc, ctx, request, false, null, null);
+<<<<<<< HEAD
 		
 		// DET_REQ
 		// If it is a deterministic request, switch to the Deterministic Sender Context
@@ -92,6 +93,8 @@ public class RequestEncryptor extends Encryptor {
 		if (isDetReq) {
 			ctx = ((GroupSenderCtx) ctx).getDeterministicSenderCtx();
 		}
+=======
+>>>>>>> a29c0775a (Rebase on latest Californium master (bb6adaa) and fixes after that)
 		compression(ctx, cipherText, request, false);
 
 		request.setOptions(OptionJuggle.prepareUoptions(request.getOptions()));
