@@ -170,11 +170,8 @@ public class GroupOSCoreServerClientTest {
 
 	/**
 	 * Tests working OSCORE non-confirmable request and response.
-<<<<<<< HEAD
 	 * 
 	 * @throws Exception on test failure
-=======
->>>>>>> 5cbd596e9 (Initial commit of Group OSCORE code)
 	 */
 	@Test
 	public void testNonConfirmable() throws Exception {
