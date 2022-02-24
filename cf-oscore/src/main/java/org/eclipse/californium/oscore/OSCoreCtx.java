@@ -785,11 +785,6 @@ public class OSCoreCtx {
 	 */
 	public synchronized void checkIncomingSeq(int seq) throws OSException {
 
-		if (DISABLE_REPLAY_CHECKS) {
-			recipient_seq = seq;
-			return;
-		}
-
 		if (seq >= seqMax) {
 			LOGGER.error("Sequence number wrapped, get new OSCore context");
 			throw new OSException(ErrorDescriptions.REPLAY_DETECT);
