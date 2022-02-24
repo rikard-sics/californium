@@ -21,6 +21,7 @@ package org.eclipse.californium.oscore;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.californium.core.coap.CoAP.Code;
@@ -307,6 +308,8 @@ public class OptionJuggle {
 		}
 		return result;
 	}
+
+	// FIXME: For below use instead OscoreOptionDecoder/Encoder
 
 	/**
 	 * Retrieve RID value from an OSCORE option.

@@ -57,7 +57,7 @@ public abstract class Encryptor {
 
 	protected static byte[] encryptAndEncode(Encrypt0Message enc, OSCoreCtx ctx, Message message,
 			boolean newPartialIV) throws OSException {
-		return encryptAndEncode(enc, ctx, message, newPartialIV, null);
+		return encryptAndEncode(enc, ctx, message, newPartialIV, null, null);
 	}
 	/**
 	 * Encrypt the COSE message using the OSCore context.
@@ -104,7 +104,7 @@ public abstract class Encryptor {
 				// TODO: Get recipientId and seqNr from message as below
 				if (ctx.isGroupContext() == false) {
 					recipientId = ctx.getRecipientId();
-					requestSeq = ctx.getReceiverSeq();
+					requestSeq = requestSequenceNr;
 
 				} else if (ctx.isGroupContext()) {
 					// For Group OSCORE use RID and seq from request
@@ -114,8 +114,8 @@ public abstract class Encryptor {
 
 				if (!newPartialIV) {
 					// use nonce from request
-					partialIV = OSSerializer.processPartialIV(requestSequenceNr);
-					nonce = OSSerializer.nonceGeneration(partialIV, ctx.getRecipientId(), ctx.getCommonIV(),
+					partialIV = OSSerializer.processPartialIV(requestSeq);
+					nonce = OSSerializer.nonceGeneration(partialIV, recipientId, ctx.getCommonIV(),
 							ctx.getIVLength());
 				} else {
 					// response creates its own partialIV
@@ -123,8 +123,7 @@ public abstract class Encryptor {
 					nonce = OSSerializer.nonceGeneration(partialIV, ctx.getSenderId(), ctx.getCommonIV(),
 							ctx.getIVLength());
 				}
-
-				aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), requestSequenceNr, ctx.getRecipientId(),
+				aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), requestSeq, recipientId,
 						message.getOptions());
 
 			}
@@ -256,14 +255,21 @@ public abstract class Encryptor {
 	 * Encodes the Object-Security value for a Request.
 	 * 
 	 * @param ctx the context
+	 * @param groupModeRequest if the request is using group mode
+	 * 
 	 * @return the Object-Security value as byte array
 	 */
-	public static byte[] encodeOSCoreRequest(OSCoreCtx ctx) {
+	public static byte[] encodeOSCoreRequest(OSCoreCtx ctx, boolean groupModeRequest) {
 
 		OscoreOptionEncoder optionEncoder = new OscoreOptionEncoder();
-		if (ctx.getIncludeContextId()) {
+		if (ctx.getIncludeContextId() || ctx.isGroupContext()) {
 			optionEncoder.setIdContext(ctx.getMessageIdContext());
 		}
+
+		if (groupModeRequest) {
+			optionEncoder.setGroupFlag(true);
+		}
+
 		optionEncoder.setPartialIV(ctx.getSenderSeq());
 		optionEncoder.setKid(ctx.getSenderId());
 
@@ -286,6 +292,16 @@ public abstract class Encryptor {
 		}
 		if (newPartialIV) {
 			optionEncoder.setPartialIV(ctx.getSenderSeq());
+		}
+
+		// If this is a group mode response, set flag bit
+		if (ctx instanceof GroupSenderCtx && ((GroupSenderCtx) ctx).getPairwiseModeResponses() == false) {
+			optionEncoder.setGroupFlag(true);
+		}
+
+		// Always include KID for Group OSCORE (for now)
+		if (ctx.isGroupContext()) {
+			optionEncoder.setKid(ctx.getSenderId());
 		}
 
 		return optionEncoder.getBytes();
