@@ -151,7 +151,7 @@ public class GroupDecryptorTest {
 
 		// Set up some state information simulating an incoming request
 		OSCoreCtxDB db = new HashMapCtxDB();
-		recipientCtx.setReceiverSeq(seq - 1);
+		// FIXME: //recipientCtx.setReceiverSeq(seq - 1);
 		db.addContext(recipientCtx);
 		r.setSourceContext(new UdpEndpointContext(new InetSocketAddress(0)));
 
@@ -218,11 +218,11 @@ public class GroupDecryptorTest {
 		// request
 		OSCoreCtxDB db = new HashMapCtxDB();
 		db.addContext(r.getToken(), recipientCtx);
-		db.addSeqByToken(r.getToken(), seq);
+		// FIXME: //db.addSeqByToken(r.getToken(), seq);
 		db.addContext("localhost", commonCtx);
 
 		// Decrypt the response message
-		Response decrypted = ResponseDecryptor.decrypt(db, r);
+		Response decrypted = ResponseDecryptor.decrypt(db, r, seq);
 		decrypted.getOptions().removeOscore();
 
 		// Check the decrypted response payload
@@ -293,12 +293,12 @@ public class GroupDecryptorTest {
 		// request
 		OSCoreCtxDB db = new HashMapCtxDB();
 		db.addContext(r.getToken(), recipientCtx);
-		db.addSeqByToken(r.getToken(), seq);
+		// FIXME: //db.addSeqByToken(r.getToken(), seq);
 		db.addContext("", commonCtx);
 		r.setSourceContext(new UdpEndpointContext(new InetSocketAddress(0)));
 
 		// Decrypt the response message
-		Response decrypted = ResponseDecryptor.decrypt(db, r);
+		Response decrypted = ResponseDecryptor.decrypt(db, r, seq);
 		decrypted.getOptions().removeOscore();
 
 		// Check the decrypted response payload

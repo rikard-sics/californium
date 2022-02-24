@@ -40,9 +40,10 @@ import org.junit.runners.Suite.SuiteClasses;
 		OSSerializerTest.class, OSCoreServerClientTest.class, OSCoreObserveTest.class, EncryptorTest.class,
 		DecryptorTest.class, EndpointContextInfoTest.class, ContextRederivationTest.class,
 		OSCoreInnerBlockwiseTest.class, OSCoreOuterBlockwiseTest.class, OSCoreAlgorithmsTest.class,
-		OscoreOptionTest.class, GroupOSCoreServerClientTest.class, KeyRemappingTest.class, SharedSecretCalculationTest.class })
-		GroupEncryptorTest.class, GroupDecryptorTest.class, CountersignAlgorithmsTest.class, GroupModesTest.class,
-		GroupModesTestAlt.class, GroupKeyDerivationTest.class, OneKeyDecoderTest.class })
+		OscoreOptionTest.class, GroupOSCoreServerClientTest.class, KeyRemappingTest.class,
+		SharedSecretCalculationTest.class, GroupEncryptorTest.class, GroupDecryptorTest.class,
+		CountersignAlgorithmsTest.class, GroupModesTest.class, GroupModesTestAlt.class, GroupKeyDerivationTest.class,
+		OneKeyDecoderTest.class })
 public class AllJUnitTests {
 
 }

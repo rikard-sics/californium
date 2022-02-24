@@ -88,7 +88,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	 * @throws OSException error while encrypting response
 	 */
 	public static Response prepareSend(OSCoreCtxDB ctxDb, Response message, OSCoreCtx ctx, final boolean newPartialIV,
-			boolean outerBlockwise, int requestSequenceNr) throws OSException {
+			boolean outerBlockwise, int requestSequenceNr, byte[] requestOption) throws OSException {
 		return ResponseEncryptor.encrypt(ctxDb, message, ctx, newPartialIV, outerBlockwise, requestSequenceNr, requestOption);
 	}
 
@@ -148,7 +148,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					}
 				}
 
-				final String uri;
+				String uri;
 				if (request.getOptions().hasProxyUri()) {
 					uri = request.getOptions().getProxyUri();
 				} else {
