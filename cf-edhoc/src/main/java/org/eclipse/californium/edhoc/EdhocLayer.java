@@ -87,6 +87,9 @@ public class EdhocLayer extends AbstractLayer {
 	
 	// The size of the Replay Window to use in an OSCORE Recipient Context
 	private int OSCORE_REPLAY_WINDOW;
+	
+	// The size to consider for MAX_UNFRAGMENTED SIZE
+	private int MAX_UNFRAGMENTED_SIZE;
 
 	/**
 	 * Build the EdhocLayer
@@ -97,19 +100,22 @@ public class EdhocLayer extends AbstractLayer {
 	 * @param peerCredentials map containing the EDHOC peer credentials
 	 * @param usedConnectionIds set containing the used EDHOC connection IDs
 	 * @param OSCORE_REPLAY_WINDOW size of the Replay Window to use in an OSCORE Recipient Context
+	 * @param MAX_UNFRAGMENTED_SIZE size of MAX_UNFRAGMENTED_SIZE to use in an OSCORE Security Context
 	 */
 	public EdhocLayer(OSCoreCtxDB ctxDb,
 					  Map<CBORObject, EdhocSession> edhocSessions,
 			          Map<CBORObject, OneKey> peerPublicKeys,
 			          Map<CBORObject, CBORObject> peerCredentials,
 			          Set<CBORObject> usedConnectionIds,
-			          int OSCORE_REPLAY_WINDOW) {
+			          int OSCORE_REPLAY_WINDOW,
+			          int MAX_UNFRAGMENTED_SIZE) {
 		this.ctxDb = ctxDb;
 		this.edhocSessions = edhocSessions;
 		this.peerPublicKeys = peerPublicKeys;
 		this.peerCredentials = peerCredentials;
 		this.usedConnectionIds = usedConnectionIds;
 		this.OSCORE_REPLAY_WINDOW = OSCORE_REPLAY_WINDOW;
+		this.MAX_UNFRAGMENTED_SIZE = MAX_UNFRAGMENTED_SIZE;
 
 		LOGGER.warn("Initializing EDHOC layer");
 	}
@@ -386,7 +392,8 @@ public class EdhocLayer extends AbstractLayer {
 				OSCoreCtx ctx = null;
 				try {
 					ctx = new OSCoreCtx(masterSecret, false, alg, senderId, 
-					recipientId, hkdf, OSCORE_REPLAY_WINDOW, masterSalt, null);
+					recipientId, hkdf, OSCORE_REPLAY_WINDOW, masterSalt, null, MAX_UNFRAGMENTED_SIZE);
+					
 				} catch (OSException e) {							
 					Util.purgeSession(mySession,
 									  CBORObject.FromObject(mySession.getConnectionId()), edhocSessions, usedConnectionIds);
@@ -453,11 +460,17 @@ public class EdhocLayer extends AbstractLayer {
 	 * @return the OSCORE Context used to protect the exchange (if any)
 	 */
 	private OSCoreCtx getContextForOutgoing(Exchange e) {
-		byte[] rid = e.getCryptographicContextID();
-		if (rid == null) {
+		
+		String uri = e.getRequest().getURI();
+		if (uri == null) {
 			return null;
 		} else {
-			return ctxDb.getContext(rid);
+			try {
+				return ctxDb.getContext(uri);
+			} catch (OSException exception) {
+				System.err.println("Error when retrieving the OSCORE Security Context " + exception.getMessage());
+				return null;
+			}
 		}
 	}
 
