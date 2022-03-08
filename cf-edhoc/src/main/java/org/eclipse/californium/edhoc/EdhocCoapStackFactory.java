@@ -17,18 +17,18 @@
  ******************************************************************************/
 package org.eclipse.californium.edhoc;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.network.CoapEndpoint;
-import org.eclipse.californium.core.network.CoapStackFactory;
+import org.eclipse.californium.core.network.ExtendedCoapStackFactory;
 import org.eclipse.californium.core.network.Outbox;
-import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.network.stack.CoapStack;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.EndpointContextMatcher;
+import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.oscore.OSCoreCtxDB;
 import org.eclipse.californium.oscore.ObjectSecurityLayer;
 
@@ -38,7 +38,7 @@ import com.upokecenter.cbor.CBORObject;
  * Coap stack factory creating a {@link EdhocStack} including a
  * {@link ObjectSecurityLayer} and {@link EdhocLayer}.
  */
-public class EdhocCoapStackFactory implements CoapStackFactory {
+public class EdhocCoapStackFactory implements ExtendedCoapStackFactory {
 
 	private static AtomicBoolean init = new AtomicBoolean();
 	private static volatile OSCoreCtxDB defaultCtxDb;
@@ -47,11 +47,12 @@ public class EdhocCoapStackFactory implements CoapStackFactory {
 	private static volatile Map<CBORObject, CBORObject> peerCredentials;
 	private static volatile Set<CBORObject> usedConnectionIds;
 	private static volatile int OSCORE_REPLAY_WINDOW;
+	private static volatile int MAX_UNFRAGMENTED_SIZE;
 
 	@Override
 	// TODO: This method may need updating for the custom argument
 	// This is only for when useAsDefault is not used
-	public CoapStack createCoapStack(String protocol, String tag, NetworkConfig config, Outbox outbox,
+	public CoapStack createCoapStack(String protocol, String tag, Configuration config, Outbox outbox,
 			Object customStackArgument) {
 		if (CoAP.isTcpProtocol(protocol)) {
 			throw new IllegalArgumentException("protocol \"" + protocol + "\" is not supported!");
@@ -61,7 +62,7 @@ public class EdhocCoapStackFactory implements CoapStackFactory {
 			ctxDb = (OSCoreCtxDB) customStackArgument;
 		}
 		return new EdhocStack(tag, config, outbox, ctxDb, edhocSessions, peerPublicKeys, peerCredentials,
-				              usedConnectionIds, OSCORE_REPLAY_WINDOW);
+				              usedConnectionIds, OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE);
 	}
 
 	/**
@@ -83,6 +84,8 @@ public class EdhocCoapStackFactory implements CoapStackFactory {
 	 *            argument for {@link EdhocStack}
 	 * @param OSCORE_REPLAY_WINDOW size of the Replay Window to use in an OSCORE Recipient Context. Passed in as default
 	 *            argument for {@link EdhocStack}
+	 * @param MAX_UNFRAGMENTED_SIZE size of the MAX_UNFRAGMENTED_SIZE to use in an OSCORE Security Context. Passed in as default
+	 *            argument for {@link EdhocStack}
 	 * 
 	 * @see CoapEndpoint#setDefaultCoapStackFactory(CoapStackFactory)
 	 */
@@ -91,7 +94,8 @@ public class EdhocCoapStackFactory implements CoapStackFactory {
 									Map<CBORObject, OneKey> peerPublicKeys,
 									Map<CBORObject, CBORObject> peerCredentials,
 									Set<CBORObject> usedConnectionIds,
-									int OSCORE_REPLAY_WINDOW) {
+									int OSCORE_REPLAY_WINDOW,
+									int MAX_UNFRAGMENTED_SIZE) {
 		if (init.compareAndSet(false, true)) {
 			CoapEndpoint.setDefaultCoapStackFactory(new EdhocCoapStackFactory());
 		}
@@ -101,5 +105,14 @@ public class EdhocCoapStackFactory implements CoapStackFactory {
 		EdhocCoapStackFactory.peerCredentials = peerCredentials;
 		EdhocCoapStackFactory.usedConnectionIds = usedConnectionIds;
 		EdhocCoapStackFactory.OSCORE_REPLAY_WINDOW = OSCORE_REPLAY_WINDOW;
+		EdhocCoapStackFactory.MAX_UNFRAGMENTED_SIZE = MAX_UNFRAGMENTED_SIZE;
+	}
+
+	@Override
+	public CoapStack createCoapStack(String protocol, String tag, Configuration config,
+			EndpointContextMatcher matchingStrategy, Outbox outbox, Object customStackArgument) {
+		
+		return createCoapStack(protocol, tag, config, outbox, customStackArgument);
+		
 	}
 }

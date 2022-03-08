@@ -411,7 +411,9 @@ class EdhocResource extends CoapResource {
 			        OSCoreCtx ctx = null;
 			        try {
 						ctx = new OSCoreCtx(masterSecret, false, alg, senderId, 
-											recipientId, hkdf, edhocEndpointInfo.getOscoreReplayWindow(), masterSalt, null);
+											recipientId, hkdf, edhocEndpointInfo.getOscoreReplayWindow(),
+											masterSalt, null, edhocEndpointInfo.getOscoreMaxUnfragmentedSize());
+						
 					} catch (OSException e) {
 						System.err.println("Error when deriving the OSCORE Security Context " + e.getMessage());						
 						Util.purgeSession(mySession, mySession.getConnectionId(),
