@@ -35,14 +35,15 @@ import java.util.Set;
 
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
+import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.core.network.CoapEndpoint;
-import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 
@@ -53,7 +54,8 @@ import net.i2p.crypto.eddsa.Utils;
 
 public class EdhocServer extends CoapServer {
 
-	private static final int COAP_PORT = NetworkConfig.getStandard().getInt(NetworkConfig.Keys.COAP_PORT);
+	private static final int COAP_PORT = Configuration.getStandard().get(CoapConfig.COAP_PORT);
+
 	// private static final int COAP_PORT = 5690;
 	
 	private final static Provider EdDSA = new EdDSASecurityProvider();
@@ -144,6 +146,9 @@ public class EdhocServer extends CoapServer {
 	// The size of the Replay Window to use in an OSCORE Recipient Context
 	private static final int OSCORE_REPLAY_WINDOW = 32;
 	
+	// The size to consider for MAX_UNFRAGMENTED SIZE
+	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
+	
 	/*
 	 * Application entry point.
 	 */
@@ -154,7 +159,7 @@ public class EdhocServer extends CoapServer {
 
 		// Enable EDHOC stack with EDHOC and OSCORE layers
 		EdhocCoapStackFactory.useAsDefault(db, edhocSessions, peerPublicKeys, peerCredentials,
-				                           usedConnectionIds, OSCORE_REPLAY_WINDOW);
+				                           usedConnectionIds, OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE);
 
 		// Use to set up hardcoded keys for this peer and the other peer 
 		setupIdentityKeys();
@@ -206,13 +211,13 @@ public class EdhocServer extends CoapServer {
 	 * addresses of all network interfaces.
 	 */
 	private void addEndpoints(boolean udp) {
-		NetworkConfig config = NetworkConfig.getStandard();
+		Configuration config = Configuration.getStandard();
 		for (InetAddress addr : NetworkInterfacesUtil.getNetworkInterfaces()) {
 			InetSocketAddress bindToAddress = new InetSocketAddress(addr, COAP_PORT);
 			if (udp) {
 				CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
 				builder.setInetSocketAddress(bindToAddress);
-				builder.setNetworkConfig(config);
+				builder.setConfiguration(config);
 				addEndpoint(builder.build());
 			}
 
@@ -238,7 +243,8 @@ public class EdhocServer extends CoapServer {
 		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCred, cred, keyPair, peerPublicKeys,
 																	peerCredentials, edhocSessions, usedConnectionIds,
 																	supportedCiphersuites, db, uriLocal,
-																	OSCORE_REPLAY_WINDOW, appProfiles, edp);
+																	OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE,
+																	appProfiles, edp);
 		
 		// provide an instance of a .well-known/edhoc resource
 		CoapResource edhocResource = new EdhocResource("edhoc", edhocEndpointInfo, ownIdCreds);
