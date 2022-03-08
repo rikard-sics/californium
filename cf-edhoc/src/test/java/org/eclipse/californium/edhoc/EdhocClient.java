@@ -41,6 +41,9 @@ import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
+import org.eclipse.californium.core.config.CoapConfig;
+import org.eclipse.californium.elements.config.Configuration;
+import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
 import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.HashMapCtxDB;
@@ -52,9 +55,6 @@ import com.upokecenter.cbor.CBORType;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
-import org.eclipse.californium.core.network.config.NetworkConfig;
-import org.eclipse.californium.core.network.config.NetworkConfigDefaultHandler;
-import org.eclipse.californium.core.network.config.NetworkConfig.Keys;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
@@ -162,14 +162,20 @@ public class EdhocClient {
 	// The size of the Replay Window to use in an OSCORE Recipient Context
 	private static final int OSCORE_REPLAY_WINDOW = 32;
 	
-	private static NetworkConfigDefaultHandler DEFAULTS = new NetworkConfigDefaultHandler() {
+	// The size to consider for MAX_UNFRAGMENTED SIZE
+	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
+	
+	private static DefinitionsProvider DEFAULTS = new DefinitionsProvider() {
 
 		@Override
-		public void applyDefaults(NetworkConfig config) {
-			config.setInt(Keys.MAX_RESOURCE_BODY_SIZE, DEFAULT_MAX_RESOURCE_SIZE);
-			config.setInt(Keys.MAX_MESSAGE_SIZE, DEFAULT_BLOCK_SIZE);
-			config.setInt(Keys.PREFERRED_BLOCK_SIZE, DEFAULT_BLOCK_SIZE);
+		public void applyDefinitions(Configuration config) {
+			config.set(CoapConfig.MULTICAST_BASE_MID, 65000);
+			
+			config.set(CoapConfig.MAX_RESOURCE_BODY_SIZE, DEFAULT_MAX_RESOURCE_SIZE);
+			config.set(CoapConfig.MAX_MESSAGE_SIZE, DEFAULT_BLOCK_SIZE);
+			config.set(CoapConfig.PREFERRED_BLOCK_SIZE, DEFAULT_BLOCK_SIZE);
 		}
+
 	};
 	
 	private static String helloWorldURI = "coap://localhost/helloWorld";
@@ -188,15 +194,15 @@ public class EdhocClient {
 	public static void main(String args[]) {
 		String defaultUri = "coap://localhost/helloWorld";
 				
-		NetworkConfig config = NetworkConfig.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
-		NetworkConfig.setStandard(config);
+		Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
+		Configuration.setStandard(config);
 
 		// Insert EdDSA security provider
 		Security.insertProviderAt(EdDSA, 1);
 
 		// Enable EDHOC stack with EDHOC and OSCORE layers
 		EdhocCoapStackFactory.useAsDefault(db, edhocSessions, peerPublicKeys, peerCredentials,
-				                           usedConnectionIds, OSCORE_REPLAY_WINDOW);
+				                           usedConnectionIds, OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE);
 
 		// Use to dynamically generate a key pair
 		// keyPair = Util.generateKeyPair(keyCurve);
@@ -258,7 +264,8 @@ public class EdhocClient {
 		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCred, cred, keyPair, peerPublicKeys,
 																	peerCredentials, edhocSessions, usedConnectionIds,
 																	supportedCiphersuites, db, edhocURI,
-																	OSCORE_REPLAY_WINDOW, appProfiles, edp);
+																	OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE,
+																	appProfiles, edp);
 		
 		// Possibly specify external authorization data for EAD_1, or null if none has to be provided
 		// The EAD is structured in pairs of CBOR items (int, any), i.e. the EAD Label first and then the EAD Value 
@@ -878,8 +885,10 @@ public class EdhocClient {
 							return;
 				        }
 				        try {
-							ctx = new OSCoreCtx(masterSecret, true, alg, senderId, 
-												recipientId, hkdf, OSCORE_REPLAY_WINDOW, masterSalt, null);
+							
+							ctx = new OSCoreCtx(masterSecret, true, alg, senderId, recipientId, hkdf,
+									            OSCORE_REPLAY_WINDOW, masterSalt, null, MAX_UNFRAGMENTED_SIZE);
+							
 						} catch (OSException e) {
 							System.err.println("Error when deriving the OSCORE Security Context "
 						                        + e.getMessage());

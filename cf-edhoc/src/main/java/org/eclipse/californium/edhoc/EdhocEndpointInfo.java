@@ -57,6 +57,9 @@ public class EdhocEndpointInfo {
 	// The size of the Replay Window to use in an OSCORE Recipient Context
 	private int OSCORE_REPLAY_WINDOW;
 	
+	// The size of MAX_UNFRAGMENTED_SIZE to use in an OSCORE Security Context
+	private int MAX_UNFRAGMENTED_SIZE;
+	
 	// The collection of application profiles - The lookup key is the full URI of the EDHOC resource
 	private Map<String, AppProfile> appProfiles;
 	
@@ -68,7 +71,8 @@ public class EdhocEndpointInfo {
 							 byte[] cred, OneKey keyPair, Map<CBORObject, OneKey> peerPublicKeys,
 							 Map<CBORObject, CBORObject> peerCredentials, Map<CBORObject, EdhocSession> edhocSessions,
 							 Set<CBORObject> usedConnectionIds, List<Integer> supportedCiphersuites, HashMapCtxDB db,
-							 String uri, int OSCORE_REPLAY_WINDOW, Map<String, AppProfile> appProfiles, EDP edp) {
+							 String uri, int OSCORE_REPLAY_WINDOW, int MAX_UNFRAGMENTED_SIZE,
+							 Map<String, AppProfile> appProfiles, EDP edp) {
 				
 		this.idCred = idCred;
 		this.cred = cred;
@@ -81,6 +85,7 @@ public class EdhocEndpointInfo {
 		this.db = db;
 		this.uri = uri;
 		this.OSCORE_REPLAY_WINDOW = OSCORE_REPLAY_WINDOW;
+		this.MAX_UNFRAGMENTED_SIZE = MAX_UNFRAGMENTED_SIZE;
 		this.appProfiles = appProfiles;
 		this.edp = edp;
 		
@@ -130,6 +135,11 @@ public class EdhocEndpointInfo {
 	public int getOscoreReplayWindow() {
 		return OSCORE_REPLAY_WINDOW;
 	}
+	
+	// Return the default MAX_UNFRAGMENTED_SIZE
+		public int getOscoreMaxUnfragmentedSize() {
+			return MAX_UNFRAGMENTED_SIZE;
+		}
 	
 	// Return the database of OSCORE Security Contexts
 	public HashMapCtxDB getOscoreDb() {

@@ -761,7 +761,7 @@ public class Util {
         		// Allocate a non-finalized OSCORE Security Context, to have the Recipient ID as taken
         		try {
         			byte[] emptyArray = new byte[0];
-    				ctx = new OSCoreCtx(emptyArray, true, null, null, recipientId, AlgorithmID.HKDF_HMAC_SHA_256, 0, null, null);
+    				ctx = new OSCoreCtx(emptyArray, true, null, null, recipientId, AlgorithmID.HKDF_HMAC_SHA_256, 0, null, null, 0);
     			} catch (OSException e) {
     				System.err.println("Error when allocating an EDHOC Connection Identifier to use as "
     						           + "OSCORE Recipient ID" + e.getMessage());
