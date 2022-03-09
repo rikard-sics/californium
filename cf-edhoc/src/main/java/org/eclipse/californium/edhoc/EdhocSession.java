@@ -637,7 +637,7 @@ public class EdhocSession {
 	    int keyLength = getKeyLengthAppAEAD(selectedCiphersuite);
 	    
 	    try {
-			masterSecret = session.edhocExporter("OSCORE_Master_Secret", context, keyLength);
+			masterSecret = session.edhocExporter("OSCORE_Secret", context, keyLength);
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when the OSCORE Master Secret" + e.getMessage());
 		} catch (NoSuchAlgorithmException e) {
@@ -659,7 +659,7 @@ public class EdhocSession {
 	    CBORObject context = CBORObject.FromObject(new byte[0]);
 	    
 	    try {
-			masterSalt = session.edhocExporter("OSCORE_Master_Salt", context, 8);
+			masterSalt = session.edhocExporter("OSCORE_Salt", context, 8);
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when the OSCORE Master Salt" + e.getMessage());
 		} catch (NoSuchAlgorithmException e) {
