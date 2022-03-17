@@ -228,7 +228,12 @@ public class MessageProcessorTest {
 		CBORObject[] ead1 = null;
 		
 		// Just for method compatibility; it is not used for EDHOC Message 1
-		byte[] cred = Utils.hexToBytes("58f13081ee3081a1a003020102020462319ea0300506032b6570301d311b301906035504030c124544484f4320526f6f742045643235353139301e170d3232303331363038323430305a170d3239313233313233303030305a30223120301e06035504030c174544484f4320496e69746961746f722045643235353139302a300506032b6570032100ed06a8ae61a829ba5fa54525c9d07f48dd44a302f43e0f23d8cc20b73085141e300506032b6570034100521241d8b3a770996bcfc9b9ead4e7e0a1c0db353a3bdf2910b39275ae48b756015981850d27db6734e37f67212267dd05eeff27b9e7a813fa574b72a00b430b");
+		// The x509 certificate of the Initiator
+		byte[] serializedCert = Utils.hexToBytes("3081EE3081A1A003020102020462319EA0300506032B6570301D311B301906035504030C124544484F4320526F6F742045643235353139301E170D3232303331363038323430305A170D3239313233313233303030305A30223120301E06035504030C174544484F4320496E69746961746F722045643235353139302A300506032B6570032100ED06A8AE61A829BA5FA54525C9D07F48DD44A302F43E0F23D8CC20B73085141E300506032B6570034100521241D8B3A770996BCFC9B9EAD4E7E0A1C0DB353A3BDF2910B39275AE48B756015981850D27DB6734E37F67212267DD05EEFF27B9E7A813FA574B72A00B430B");
+		
+		// CRED_I, as serialization of a CBOR byte string wrapping the serialized certificate
+		byte[] cred = CBORObject.FromObject(serializedCert).EncodeToBytes();
+		
 		CBORObject idCred = Util.buildIdCredX5t(cred);		
 
 		
@@ -479,9 +484,9 @@ public class MessageProcessorTest {
 		OneKey identityKey = SharedSecretCalculation.buildEd25519OneKey(privateIdentityKeyBytes, publicIdentityKeyBytes);
 		
 		// The ephemeral key of the Initiator
-		byte[] privateEphemeralKeyBytes = Utils.hexToBytes("892ec28e5cb6669108470539500b705e60d008d347c5817ee9f3327c8a87bb03");
+		byte[] privateEkeyBytes = Utils.hexToBytes("892ec28e5cb6669108470539500b705e60d008d347c5817ee9f3327c8a87bb03");
 		byte[] publicEphemeralKeyBytes = Utils.hexToBytes("31f82c7b5b9cbbf0f194d913cc12ef1532d328ef32632a4881a1c0701e237f04");
-		OneKey ephemeralKey = SharedSecretCalculation.buildCurve25519OneKey(privateEphemeralKeyBytes, publicEphemeralKeyBytes);
+		OneKey ephemeralKey = SharedSecretCalculation.buildCurve25519OneKey(privateEkeyBytes, publicEphemeralKeyBytes);
 		
 		
 		/* Responder information*/
