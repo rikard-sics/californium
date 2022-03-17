@@ -484,9 +484,9 @@ public class MessageProcessorTest {
 		OneKey identityKey = SharedSecretCalculation.buildEd25519OneKey(privateIdentityKeyBytes, publicIdentityKeyBytes);
 		
 		// The ephemeral key of the Initiator
-		byte[] privateEkeyBytes = Utils.hexToBytes("892ec28e5cb6669108470539500b705e60d008d347c5817ee9f3327c8a87bb03");
+		byte[] privateEphemeralKeyBytes = Utils.hexToBytes("892ec28e5cb6669108470539500b705e60d008d347c5817ee9f3327c8a87bb03");
 		byte[] publicEphemeralKeyBytes = Utils.hexToBytes("31f82c7b5b9cbbf0f194d913cc12ef1532d328ef32632a4881a1c0701e237f04");
-		OneKey ephemeralKey = SharedSecretCalculation.buildCurve25519OneKey(privateEkeyBytes, publicEphemeralKeyBytes);
+		OneKey ephemeralKey = SharedSecretCalculation.buildCurve25519OneKey(privateEphemeralKeyBytes, publicEphemeralKeyBytes);
 		
 		
 		/* Responder information*/
