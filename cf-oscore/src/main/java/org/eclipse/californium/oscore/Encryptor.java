@@ -130,6 +130,7 @@ public abstract class Encryptor {
 
 			System.out.println("Encrypting outgoing " + message.getClass().getSimpleName());
 			System.out.println("Key " + Utils.toHexString(ctx.getSenderKey()));
+			System.out.println("Plaintext " + Utils.toHexString(enc.GetContent()));
 			System.out.println("PartialIV " + Utils.toHexString(partialIV));
 			System.out.println("Nonce " + Utils.toHexString(nonce));
 			System.out.println("AAD " + Utils.toHexString(aad));
