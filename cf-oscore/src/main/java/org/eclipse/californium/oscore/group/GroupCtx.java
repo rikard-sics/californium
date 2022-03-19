@@ -58,10 +58,10 @@ public class GroupCtx {
 	byte[] gmPublicKey;
 
 	// Reference to the associated sender context
-	GroupSenderCtx senderCtx;
+	public GroupSenderCtx senderCtx;
 
 	// References to the associated recipient contexts
-	HashMap<ByteId, GroupRecipientCtx> recipientCtxMap;
+	public HashMap<ByteId, GroupRecipientCtx> recipientCtxMap;
 
 	// References to public keys without existing contexts
 	// (For dynamic context generation)
