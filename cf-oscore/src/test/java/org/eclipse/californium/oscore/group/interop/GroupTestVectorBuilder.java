@@ -1,5 +1,8 @@
 package org.eclipse.californium.oscore.group.interop;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.security.Provider;
 import java.security.Security;
@@ -34,11 +37,13 @@ import net.i2p.crypto.eddsa.Utils;
  */
 public class GroupTestVectorBuilder {
 
+	private final static AlgorithmID algCountersign = AlgorithmID.EDDSA;
+	private static boolean pairwiseResponse = true;
+
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
 	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
 
 	private final static AlgorithmID algSignEnc = AlgorithmID.AES_CCM_16_64_128;
-	private final static AlgorithmID algCountersign = AlgorithmID.EDDSA;
 	private final static AlgorithmID algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
 
 	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
@@ -48,27 +53,69 @@ public class GroupTestVectorBuilder {
 	private final static byte[] id_context = new byte[] { (byte) 0xdd, (byte) 0x11 };
 
 	private static byte[] sid = new byte[] { 0x25 };
-	private static byte[] sid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
-			"a501781b636f6170733a2f2f746573746572312e6578616d706c652e636f6d02666d796e616d6503781a636f6170733a2f2f68656c6c6f312e6578616d706c652e6f7267041a70004b4f08a101a4010103272006215820069e912b83963acc5941b63546867dec106e5b9051f2ee14f3bc5cc961acd43a");
-	private static byte[] sid_private_key_bytes = net.i2p.crypto.eddsa.Utils
-			.hexToBytes("64714d41a240b61d8d823502717ab088c9f4af6fc9844553e4ad4c42cc735239");
+	private static byte[] sid_public_key_bytes;
+	private static byte[] sid_private_key_bytes;
 	private static MultiKey sid_full_key;
 
 	private final static byte[] rid = new byte[] { 0x52 };
-	private final static byte[] rid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
-			"a501781a636f6170733a2f2f7365727665722e6578616d706c652e636f6d026673656e64657203781a636f6170733a2f2f636c69656e742e6578616d706c652e6f7267041a70004b4f08a101a401010327200621582077ec358c1d344e41ee0e87b8383d23a2099acd39bdf989ce45b52e887463389b");
-	private static byte[] rid_private_key_bytes = net.i2p.crypto.eddsa.Utils
-			.hexToBytes("857eb61d3f6d70a278a36740d132c099f62880ed497e27bdfd4685fa1a304f26");
+	private static byte[] rid_public_key_bytes;
+	private static byte[] rid_private_key_bytes;
 	private static MultiKey rid_full_key;
 
-	private final static byte[] gm_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
-			"a501781a636f6170733a2f2f6d79736974652e6578616d706c652e636f6d026c67726f75706d616e6167657203781a636f6170733a2f2f646f6d61696e2e6578616d706c652e6f7267041aab9b154f08a101a4010103272006215820cde3efd3bc3f99c9c9ee210415c6cba55061b5046e963b8a58c9143a61166472");
+	private static byte[] gm_public_key_bytes;
 
 	private static final int REPLAY_WINDOW = 32;
 
 	static int initial_seq = 0;
 
-	public static void main(String[] args) throws OSException {
+	public static void main(String[] args) throws OSException, FileNotFoundException {
+
+		// Redirect println
+		// https://www.tutorialspoint.com/redirecting-system-out-println-output-to-a-file-in-java
+		String mode = "groupResp";
+		if (pairwiseResponse) {
+			mode = "pairwiseResp";
+		}
+		String fileName = "vectors-" + algCountersign + "-" + mode + ".txt";
+		File theFile = new File(fileName);
+		PrintStream stream = new PrintStream(theFile);
+		System.out.println("From now on " + theFile.getAbsolutePath() + " will be your console");
+		System.setOut(stream);
+		System.setErr(stream);
+
+		// Set keys depending on algorithm (ECDSA P-256/EdDSA Ed25519)
+		if (algCountersign == AlgorithmID.EDDSA) {
+
+			sid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+					"a501781b636f6170733a2f2f746573746572312e6578616d706c652e636f6d02666d796e616d6503781a636f6170733a2f2f68656c6c6f312e6578616d706c652e6f7267041a70004b4f08a101a4010103272006215820069e912b83963acc5941b63546867dec106e5b9051f2ee14f3bc5cc961acd43a");
+			sid_private_key_bytes = net.i2p.crypto.eddsa.Utils
+					.hexToBytes("64714d41a240b61d8d823502717ab088c9f4af6fc9844553e4ad4c42cc735239");
+
+			rid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+					"a501781a636f6170733a2f2f7365727665722e6578616d706c652e636f6d026673656e64657203781a636f6170733a2f2f636c69656e742e6578616d706c652e6f7267041a70004b4f08a101a401010327200621582077ec358c1d344e41ee0e87b8383d23a2099acd39bdf989ce45b52e887463389b");
+			rid_private_key_bytes = net.i2p.crypto.eddsa.Utils
+					.hexToBytes("857eb61d3f6d70a278a36740d132c099f62880ed497e27bdfd4685fa1a304f26");
+
+			gm_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+					"a501781a636f6170733a2f2f6d79736974652e6578616d706c652e636f6d026c67726f75706d616e6167657203781a636f6170733a2f2f646f6d61696e2e6578616d706c652e6f7267041aab9b154f08a101a4010103272006215820cde3efd3bc3f99c9c9ee210415c6cba55061b5046e963b8a58c9143a61166472");
+
+		} else if (algCountersign == AlgorithmID.ECDSA_256) {
+			sid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+					"A501781B636F6170733A2F2F746573746572312E6578616D706C652E636F6D02666D796E616D6503781A636F6170733A2F2F68656C6C6F312E6578616D706C652E6F7267041A70004B4F08A101A5010202412522582064CE3DD128CC4EFA6DE209BE8ABD111C7272F612C2DB654057B6EC00FBFB06842158201ADB2AB6AF48F17C9877CF77DB4FA39DC0923FBE215E576FE6F790B1FF2CBC962001");
+			sid_private_key_bytes = net.i2p.crypto.eddsa.Utils
+					.hexToBytes("FEA2190084748436543C5EC8E329D2AFBD7068054F595CA1F987B9E43E2205E6");
+
+			rid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+					"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A501020241522258201897A28666FE1CC4FACEF79CC7BDECDC271F2A619A00844FCD553A12DD679A4F2158200EB313B4D314A1001244776D321F2DD88A5A31DF06A6EEAE0A79832D39408BC12001");
+			rid_private_key_bytes = net.i2p.crypto.eddsa.Utils
+					.hexToBytes("DA2593A6E0BCC81A5941069CB76303487816A2F4E6C0F21737B56A7C90381597");
+
+			gm_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+					"A501781A636F6170733A2F2F6D79736974652E6578616D706C652E636F6D026C67726F75706D616E6167657203781A636F6170733A2F2F646F6D61696E2E6578616D706C652E6F7267041AAB9B154F08A101A5010202402258205694315AD17A4DA5E3F69CA02F83E9C3D594712137ED8AFB748A70491598F9CD215820FAD4312A45F45A3212810905B223800F6CED4BC8D5BACBC8D33BB60C45FC98DD2001");
+
+		} else {
+			System.err.println("Invalid algCountersign!");
+		}
 
 		// Install cryptographic providers
 		Provider EdDSA = new EdDSASecurityProvider();
@@ -145,10 +192,9 @@ public class GroupTestVectorBuilder {
 		System.out.println("[Request]: " + "\n");
 
 		// Create request message from raw byte array
-		byte[] requestBytes = Utils.hexToBytes(
-				"48019483f0aeef1c796812a0ba68656c6c6f576f726c64ed010c13404b3a7c9f8c878a0b5246cca71e3926f0a8cebefdcabbc80e79579d5a1ee17d");
-		// Good byte[] requestBytes =
-		// Utils.hexToBytes("48019483f0aeef1c796812a0ba68656c6c6f576f726c64");
+		// byte[] requestBytes = Utils.hexToBytes(
+		// "48019483f0aeef1c796812a0ba68656c6c6f576f726c64ed010c13404b3a7c9f8c878a0b5246cca71e3926f0a8cebefdcabbc80e79579d5a1ee17d");
+		byte[] requestBytes = Utils.hexToBytes("48019483f0aeef1c796812a0ba68656c6c6f576f726c64");
 
 		UdpDataParser parser = new UdpDataParser();
 		Message mess = parser.parseMessage(requestBytes);
@@ -205,6 +251,7 @@ public class GroupTestVectorBuilder {
 
 		System.out.println("");
 		System.out.println("[Response to Deterministic Request]" + "\n");
+		System.out.println("Response using pairwise mode: " + pairwiseResponse);
 
 		byte[] responseBytes = new byte[] { 0x64, 0x45, 0x5d, 0x1f, 0x00, 0x00, 0x39, 0x74, (byte) 0xff, 0x48, 0x65,
 				0x6c, 0x6c, 0x6f, 0x20, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x21 };
@@ -222,7 +269,7 @@ public class GroupTestVectorBuilder {
 		GroupSenderCtx senderCtx = commonCtxSrv.senderCtx;
 		senderCtx.setSenderSeq(initial_seq);
 		senderCtx.setResponsesIncludePartialIV(false);
-		commonCtxSrv.setPairwiseModeResponses(true);
+		commonCtxSrv.setPairwiseModeResponses(pairwiseResponse);
 
 		boolean newPartialIV = false;
 		boolean outerBlockwise = false;
@@ -237,7 +284,7 @@ public class GroupTestVectorBuilder {
 	}
 
 	private static String printDiagnostic(byte[] input) {
-		String temp = CBORObject.DecodeFromBytes(sid_public_key_bytes).toString();
+		String temp = CBORObject.DecodeFromBytes(input).toString();
 
 		return temp.replace(",", ",\n") + "\n\n\n\n\n\n\n";
 	}
