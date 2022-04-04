@@ -18,6 +18,7 @@ package org.eclipse.californium.edhoc.prototype;
 
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
@@ -50,9 +51,10 @@ public class Phase0Server {
 
 	public static void main(String[] args) throws OSException {
 
-		System.out.println("Started Phase 0 server");
+		// System.out.println("Started Phase 0 server");
 
-		OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, null, MAX_UNFRAGMENTED_SIZE);
+		OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, null,
+				MAX_UNFRAGMENTED_SIZE);
 		db.addContext(uriLocal, ctx);
 		OSCoreCoapStackFactory.useAsDefault(db);
 
@@ -62,7 +64,7 @@ public class Phase0Server {
 
 			@Override
 			public void handleGET(CoapExchange exchange) {
-				System.out.println("Accessing hello resource");
+				// System.out.println("Accessing hello resource");
 				Response r = new Response(ResponseCode.CONTENT);
 				r.setPayload("Hello Resource");
 				exchange.respond(r);
@@ -73,7 +75,7 @@ public class Phase0Server {
 
 			@Override
 			public void handleGET(CoapExchange exchange) {
-				System.out.println("Accessing hello/1 resource");
+				// System.out.println("Accessing hello/1 resource");
 				Response r = new Response(ResponseCode.CONTENT);
 				r.setPayload("Hello World!");
 				exchange.respond(r);
@@ -84,7 +86,7 @@ public class Phase0Server {
 
 			@Override
 			public void handleGET(CoapExchange exchange) {
-				System.out.println("Accessing light resource");
+				// System.out.println("Accessing light resource");
 				Response r = new Response(ResponseCode.CONTENT);
 				r.setPayload("Hello World!");
 				exchange.respond(r);
@@ -92,11 +94,24 @@ public class Phase0Server {
 
 			@Override
 			public void handlePOST(CoapExchange exchange) {
-				System.out.println("Accessing light resource");
+
 				Response r = new Response(ResponseCode.CHANGED);
-				r.setPayload("Hello World!");
+				r.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
+
+				if (exchange.getRequestText().equals("1")) {
+					r.setPayload("Turning on light ");
+					System.out.println("Turning on light ");
+				} else if (exchange.getRequestText().equals("0")) {
+					r.setPayload("Turning off light");
+					System.out.println("Turning off light");
+				} else {
+					r.setPayload("Invalid payload! ");
+					// System.out.println("Invalid payload! ");
+				}
+
+				// System.out.println("Accessing light resource");
+
 				exchange.respond(r);
-				server.destroy();
 			}
 		};
 

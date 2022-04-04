@@ -50,6 +50,9 @@ public final class UdpDataSerializer extends DataSerializer {
 		phase = inPhase;
 	}
 
+	static int cumulativeOutgoingUdp = 0;
+	static int cumulativeOutgoingCoap = 0;
+
 	/**
 	 * {@inheritDoc}
 	 * 
@@ -87,12 +90,16 @@ public final class UdpDataSerializer extends DataSerializer {
 		if (message instanceof Request && phase.contains("Client")) {
 			System.out.println(phase + ": " + messageName + "Request " + " CoAP Payload: " + message.getPayloadSize());
 			System.out.println(phase + ": " + messageName + "Request " + " UDP Payload: " + writer.size());
+			cumulativeOutgoingUdp += writer.size();
+			cumulativeOutgoingCoap += message.getPayloadSize();
 		} else if (message instanceof Response && phase.contains("Client")) {
 			System.out.println(phase + ": " + messageName + "Response " + " CoAP Payload: " + message.getPayloadSize());
 			System.out.println(phase + ": " + messageName + "Response " + " UDP Payload: " + writer.size());
+			cumulativeOutgoingUdp += writer.size();
+			cumulativeOutgoingCoap += message.getPayloadSize();
 		}
 
-		System.out.println("Counter: " + messageCounter);
+		// System.out.println(Utils.prettyPrint(response));
 		messageCounter++;
 	}
 

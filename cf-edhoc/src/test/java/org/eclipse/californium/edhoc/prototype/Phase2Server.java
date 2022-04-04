@@ -168,7 +168,7 @@ public class Phase2Server extends CoapServer {
 	 */
 	public static void main(String[] args) {
 		
-		System.out.println("Started Phase 2 server");
+		// System.out.println("Started Phase 2 server");
 
 		// Insert EdDSA security provider
 		Security.insertProviderAt(EdDSA, 1);
@@ -212,7 +212,7 @@ public class Phase2Server extends CoapServer {
 			server.start();
 						
 		} catch (SocketException e) {
-			System.err.println("Failed to initialize server: " + e.getMessage());
+			// System.err.println("Failed to initialize server: " + e.getMessage());
 		}
 		
 		// Use to dynamically generate a key pair
@@ -389,7 +389,7 @@ public class Phase2Server extends CoapServer {
 				// TODO
 				break;
 			case Constants.CRED_TYPE_CCS:
-				System.out.print("My   ");
+				// System.out.print("My   ");
 				CBORObject idCredKidCbor = CBORObject.FromObject(idCredKid);
 				ccsObject = CBORObject.DecodeFromBytes(Util.buildCredRawPublicKeyCcs(keyPair, subjectName, idCredKidCbor));
 				
@@ -480,7 +480,7 @@ public class Phase2Server extends CoapServer {
 			// TODO
 			break;
 		case Constants.CRED_TYPE_CCS:				
-			System.out.print("Peer ");
+			// System.out.print("Peer ");
 			CBORObject peerKidCbor = CBORObject.FromObject(peerKid);
 			peerCcsObject = CBORObject.DecodeFromBytes(Util.buildCredRawPublicKeyCcs(peerPublicKey, subjectName, peerKidCbor));
 			
@@ -550,7 +550,7 @@ public class Phase2Server extends CoapServer {
 
 		@Override
 		public void handleGET(CoapExchange exchange) {
-			System.out.println("Accessing light resource");
+			// System.out.println("Accessing light resource");
 			Response r = new Response(ResponseCode.CONTENT);
 			r.setPayload("Hello World!");
 			exchange.respond(r);
@@ -570,7 +570,7 @@ public class Phase2Server extends CoapServer {
 				r.setPayload("Invalid payload! ");
 			}
 
-			System.out.println("Accessing light resource");
+			// System.out.println("Accessing light resource");
 
 			exchange.respond(r);
 		}
@@ -623,22 +623,22 @@ public class Phase2Server extends CoapServer {
 	
 	private static void runTests() {
 		// Test a hash computation
-		System.out.println("=======================");
-		System.out.println("Test a hash computation");
+		// System.out.println("=======================");
+		// System.out.println("Test a hash computation");
 		byte[] inputHash = new byte[] {(byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0, (byte) 0x5c};
 		try {
-			System.out.println("Hash input: " + Utils.bytesToHex(inputHash));
+			// System.out.println("Hash input: " + Utils.bytesToHex(inputHash));
 			byte[] resultHash = Util.computeHash(inputHash, "SHA-256");
-			System.out.println("Hash output: " + Utils.bytesToHex(resultHash));
+			// System.out.println("Hash output: " + Utils.bytesToHex(resultHash));
 		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Hash algorithm not supported");
+			// System.err.println("Hash algorithm not supported");
 		}
-		System.out.println();
+		// System.out.println();
 		
 
 		// Test a signature computation and verification
-		System.out.println("=======================");
-		System.out.println("Test a signature computation and verification");
+		// System.out.println("=======================");
+		// System.out.println("Test a signature computation and verification");
 		byte[] payloadToSign = new byte[] {(byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0, (byte) 0x5c};
 		byte[] externalData = new byte[] {(byte) 0xef, (byte) 0xde, (byte) 0xac, (byte) 0x75, (byte) 0x0f, (byte) 0xc5};
 		byte[] kid = new byte[] {(byte) 0x01};
@@ -649,24 +649,24 @@ public class Phase2Server extends CoapServer {
 		byte[] mySignature = null;
 		try {
 			mySignature = Util.computeSignature(idCredX, externalData, payloadToSign, keyPair);
-	        System.out.println("Signing completed");
+	        // System.out.println("Signing completed");
 		} catch (CoseException e) {
-			System.err.println("Error while computing the signature: " +  e.getMessage());
+			// System.err.println("Error while computing the signature: " +  e.getMessage());
 		}
 		
 		boolean verified = false;
 		try {
 			verified = Util.verifySignature(mySignature, idCredX, externalData, payloadToSign, keyPair);
 		} catch (CoseException e) {
-			System.err.println("Error while verifying the signature: " + e.getMessage());
+			// System.err.println("Error while verifying the signature: " + e.getMessage());
 		}
-		System.out.println("Signature validity: " + verified);
-		System.out.println();
+		// System.out.println("Signature validity: " + verified);
+		// System.out.println();
 		
 		
 		// Test an encryption and decryption
-		System.out.println("=======================");
-		System.out.println("Test an encryption and decryption");
+		// System.out.println("=======================");
+		// System.out.println("Test an encryption and decryption");
 		byte[] payloadToEncrypt = new byte[] {(byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0, (byte) 0x5c};
 		byte[] symmetricKey =  new byte[] {(byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03, (byte) 0x04, (byte) 0x05,
 				                           (byte) 0x06, (byte) 0x07, (byte) 0x08, (byte) 0x09, (byte) 0x10, (byte) 0x11,
@@ -676,23 +676,23 @@ public class Phase2Server extends CoapServer {
 		AlgorithmID encryptionAlg = AlgorithmID.AES_CCM_16_64_128;
 		
 		
-		System.out.println("Plaintext: " + Utils.bytesToHex(payloadToEncrypt));
+		// System.out.println("Plaintext: " + Utils.bytesToHex(payloadToEncrypt));
 		byte[] myCiphertext = null;
 		try {
 			myCiphertext = Util.encrypt(emptyMap, externalData, payloadToEncrypt, encryptionAlg, iv, symmetricKey);
-			System.out.println("Encryption completed");
+			// System.out.println("Encryption completed");
 		} catch (CoseException e) {
-			System.err.println("Error while encrypting: " + e.getMessage());
+			// System.err.println("Error while encrypting: " + e.getMessage());
 		}
 		byte[] myPlaintext = null;
 		try {
 			myPlaintext = Util.decrypt(emptyMap, externalData, myCiphertext, encryptionAlg, iv, symmetricKey);
-			System.out.println("Decryption completed");
+			// System.out.println("Decryption completed");
 		} catch (CoseException e) {
-			System.err.println("Error while encrypting: " + e.getMessage());
+			// System.err.println("Error while encrypting: " + e.getMessage());
 		}
-		System.out.println("Decryption correctness: " + Arrays.equals(payloadToEncrypt, myPlaintext));
-		System.out.println();
+		// System.out.println("Decryption correctness: " + Arrays.equals(payloadToEncrypt, myPlaintext));
+		// System.out.println();
 		
 	}
 		

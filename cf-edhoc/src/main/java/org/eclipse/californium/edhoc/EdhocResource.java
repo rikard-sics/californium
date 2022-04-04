@@ -80,7 +80,7 @@ public class EdhocResource extends CoapResource {
 		// Error when retrieving the application profile for this EDHOC resource
 		if (appProfile == null) {
 			String responseString = new String("Error when retrieving the application profile");
-			System.err.println(responseString);
+			// System.err.println(responseString);
 			
 			nextMessage = responseString.getBytes(Constants.charset);
 			Response genericErrorResponse = new Response(ResponseCode.INTERNAL_SERVER_ERROR);
@@ -103,7 +103,7 @@ public class EdhocResource extends CoapResource {
 		if (message == null || exchange.getRequestOptions().hasContentFormat()) {
 			String responseString = new String("Error when receiving a request to the EDHOC resource"
 					+ "EDHOC message_1 must be included in a request without content-format");
-			System.err.println(responseString);
+			// System.err.println(responseString);
 			
 			nextMessage = responseString.getBytes(Constants.charset);
 			Response genericErrorResponse = new Response(ResponseCode.BAD_REQUEST);
@@ -119,7 +119,7 @@ public class EdhocResource extends CoapResource {
 		// Invalid EDHOC message type
 		if (messageType == -1) {
 			String responseString = new String("Invalid EDHOC message type");
-			System.err.println(responseString);
+			// System.err.println(responseString);
 			
 			nextMessage = responseString.getBytes(Constants.charset);
 			Response genericErrorResponse = new Response(ResponseCode.BAD_REQUEST);
@@ -149,7 +149,7 @@ public class EdhocResource extends CoapResource {
 				typeName = new String("EDHOC Message " + messageType);
 				break;		
 		}
-		System.out.println("Determined EDHOC message type: " + typeName + "\n");
+		// System.out.println("Determined EDHOC message type: " + typeName + "\n");
 		Util.nicePrint(typeName, message);
 
 		
@@ -163,7 +163,7 @@ public class EdhocResource extends CoapResource {
 
 			if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
 				String responseString = new String("Internal error when processing EDHOC Message 1");
-				System.err.println(responseString);
+				// System.err.println(responseString);
 				
 				nextMessage = responseString.getBytes(Constants.charset);
 				Response genericErrorResponse = new Response(ResponseCode.INTERNAL_SERVER_ERROR);
@@ -212,7 +212,7 @@ public class EdhocResource extends CoapResource {
 					session = null;
 					
 					String responseString = new String("Inconsistent state before sending EDHOC Message 2");
-					System.err.println(responseString);
+					// System.err.println(responseString);
 					nextMessage = responseString.getBytes(Constants.charset);
 					Response genericErrorResponse = new Response(ResponseCode.INTERNAL_SERVER_ERROR);
 					genericErrorResponse.setPayload(nextMessage);
@@ -263,10 +263,10 @@ public class EdhocResource extends CoapResource {
 				myResponse.setPayload(nextMessage);
 				
 				String myString = (responseType == Constants.EDHOC_MESSAGE_2) ? "EDHOC Message 2" : "EDHOC Error Message";
-				System.out.println("Response type: " + myString + "\n");
+				// System.out.println("Response type: " + myString + "\n");
 				
 				if (responseType == Constants.EDHOC_MESSAGE_2) {
-			        System.out.println("Sent EDHOC Message 2\n");
+			        // System.out.println("Sent EDHOC Message 2\n");
 				}
 				if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
 				    
@@ -281,7 +281,7 @@ public class EdhocResource extends CoapResource {
 						session = null;
 					}
 					
-			        System.out.println("Sent EDHOC Error Message\n");
+			        // System.out.println("Sent EDHOC Error Message\n");
 			        if (debugPrint) {
 			        	Util.nicePrint("EDHOC Error Message", nextMessage);
 			        }
@@ -300,7 +300,7 @@ public class EdhocResource extends CoapResource {
 								  edhocEndpointInfo.getUsedConnectionIds());
 				
 				String responseString = new String("Inconsistent state after processing EDHOC Message 2");
-				System.err.println(responseString);
+				// System.err.println(responseString);
 				nextMessage = responseString.getBytes(Constants.charset);
 				Response genericErrorResponse = new Response(ResponseCode.INTERNAL_SERVER_ERROR);
 				genericErrorResponse.setPayload(nextMessage);
@@ -317,7 +317,7 @@ public class EdhocResource extends CoapResource {
 		
 		if (messageType == Constants.EDHOC_MESSAGE_2) {
 			
-			System.out.println("Handler for processing EDHOC Message 2");
+			// System.out.println("Handler for processing EDHOC Message 2");
 			
 			// Do nothing
 			
@@ -335,7 +335,7 @@ public class EdhocResource extends CoapResource {
 															 edhocEndpointInfo.getUsedConnectionIds());
 			
 			if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
-				System.err.println("Internal error when processing EDHOC Message 3");
+				// System.err.println("Internal error when processing EDHOC Message 3");
 				return;
 			}
 			
@@ -367,11 +367,11 @@ public class EdhocResource extends CoapResource {
 				mySession = edhocEndpointInfo.getEdhocSessions().get(cR);
 				
 				if (mySession == null) {
-					System.err.println("Inconsistent state before sending EDHOC Message 3");
+					// System.err.println("Inconsistent state before sending EDHOC Message 3");
 					return;
 				}
 				if (mySession.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
-						System.err.println("Inconsistent state before sending EDHOC Message 3");							
+						// System.err.println("Inconsistent state before sending EDHOC Message 3");							
 						Util.purgeSession(mySession, mySession.getConnectionId(),
 										  edhocEndpointInfo.getEdhocSessions(),
 										  edhocEndpointInfo.getUsedConnectionIds());
@@ -396,8 +396,8 @@ public class EdhocResource extends CoapResource {
 			        byte[] recipientId = EdhocSession.edhocToOscoreId(mySession.getConnectionId());
 			        
 			        if (Arrays.equals(senderId, recipientId)) {
-						System.err.println("Error: the Sender ID coincides with the Recipient ID " +
-											Utils.toHexString(senderId));
+						// System.err.println("Error: the Sender ID coincides with the Recipient ID " +
+						// Utils.toHexString(senderId));
 						Util.purgeSession(mySession, mySession.getConnectionId(),
 										  edhocEndpointInfo.getEdhocSessions(),
 										  edhocEndpointInfo.getUsedConnectionIds());
@@ -415,7 +415,7 @@ public class EdhocResource extends CoapResource {
 											masterSalt, null, edhocEndpointInfo.getOscoreMaxUnfragmentedSize());
 						
 					} catch (OSException e) {
-						System.err.println("Error when deriving the OSCORE Security Context " + e.getMessage());						
+						// System.err.println("Error when deriving the OSCORE Security Context " + e.getMessage());						
 						Util.purgeSession(mySession, mySession.getConnectionId(),
 										  edhocEndpointInfo.getEdhocSessions(),
 										  edhocEndpointInfo.getUsedConnectionIds());
@@ -425,7 +425,7 @@ public class EdhocResource extends CoapResource {
 			        try {
 			        	edhocEndpointInfo.getOscoreDb().addContext(edhocEndpointInfo.getUri(), ctx);
 					} catch (OSException e) {
-						System.err.println("Error when adding the OSCORE Security Context to the context database " + e.getMessage());							
+						// System.err.println("Error when adding the OSCORE Security Context to the context database " + e.getMessage());							
 						Util.purgeSession(mySession, mySession.getConnectionId(),
 										  edhocEndpointInfo.getEdhocSessions(),
 										  edhocEndpointInfo.getUsedConnectionIds());
@@ -464,7 +464,7 @@ public class EdhocResource extends CoapResource {
 					
 					// Deallocate the assigned Connection Identifier for this peer
 					if (nextMessage == null || mySession.getCurrentStep() != Constants.EDHOC_AFTER_M4) {
-						System.err.println("Inconsistent state before sending EDHOC Message 4");
+						// System.err.println("Inconsistent state before sending EDHOC Message 4");
 						Util.purgeSession(mySession, connectionId,
 										  edhocEndpointInfo.getEdhocSessions(),
 										  edhocEndpointInfo.getUsedConnectionIds());
@@ -483,14 +483,14 @@ public class EdhocResource extends CoapResource {
 						
 						String myString = (responseType == Constants.EDHOC_MESSAGE_4) ?
 								                             "EDHOC Message 4" : "EDHOC Error Message";
-						System.out.println("Response type: " + myString + "\n");
+						// System.out.println("Response type: " + myString + "\n");
 						
 						if (responseType == Constants.EDHOC_MESSAGE_4) {
 
 					        mySession.setCurrentStep(Constants.EDHOC_SENT_M4);
 							exchange.respond(myResponse);
 					        
-					        System.out.println("Sent EDHOC Message 4\n");
+					        // System.out.println("Sent EDHOC Message 4\n");
 					        
 						}
 						
@@ -504,7 +504,7 @@ public class EdhocResource extends CoapResource {
 							        		  edhocEndpointInfo.getEdhocSessions(),
 							        		  edhocEndpointInfo.getUsedConnectionIds());
 					        
-					        System.out.println("Sent EDHOC Error Message\n");
+					        // System.out.println("Sent EDHOC Error Message\n");
 					        if (debugPrint) {
 					        	Util.nicePrint("EDHOC Error Message", nextMessage);
 					        }
@@ -513,7 +513,7 @@ public class EdhocResource extends CoapResource {
 						return;
 					}
 					else {
-						System.err.println("Inconsistent state before sending EDHOC Message 4");
+						// System.err.println("Inconsistent state before sending EDHOC Message 4");
 						Util.purgeSession(mySession, connectionId,
 										  edhocEndpointInfo.getEdhocSessions(),
 										  edhocEndpointInfo.getUsedConnectionIds());
@@ -561,33 +561,33 @@ public class EdhocResource extends CoapResource {
 	        	CBORObject connectionIdentifier = objectList[0];
 	        	
 	    		if (connectionIdentifier == null) {
-	    			System.err.println("Malformed or invalid connection identifier in EDHOC Error Message");
+	    			// System.err.println("Malformed or invalid connection identifier in EDHOC Error Message");
 	    			return;
 	    		}
 	        	
 	        	// Retrieve ERR_CODE
 	        	int errorCode = objectList[1].AsInt32();
-	        	System.out.println("ERR_CODE: " + errorCode + "\n");
+	        	// System.out.println("ERR_CODE: " + errorCode + "\n");
 	        	
 	        	// Retrieve ERR_INFO
 	    		if (errorCode == Constants.ERR_CODE_SUCCESS) {
-	    			System.out.println("Success\n");
+	    			// System.out.println("Success\n");
 	    		}
 	    		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED) {
 		        	String errMsg = objectList[2].toString();
-		        	System.out.println("ERR_INFO: " + errMsg + "\n");
+		        	// System.out.println("ERR_INFO: " + errMsg + "\n");
 	    		}
 	    		else if (errorCode == Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE) {
 	    			CBORObject suitesR = objectList[2];
 					if (suitesR.getType() == CBORType.Integer) {
-			        	System.out.println("SUITES_R: " + suitesR.AsInt32() + "\n");
+			        	// System.out.println("SUITES_R: " + suitesR.AsInt32() + "\n");
 					}
 					else if (suitesR.getType() == CBORType.Array) {
-						System.out.print("SUITES_R: [ " );
+						// System.out.print("SUITES_R: [ " );
 						for (int i = 0; i < suitesR.size(); i++) {
-							System.out.print(suitesR.get(i).AsInt32() + " " );
+							// System.out.print(suitesR.get(i).AsInt32() + " " );
 						}
-						System.out.println("]\n");
+						// System.out.println("]\n");
 					}
 	    		}
 	        	
@@ -599,7 +599,7 @@ public class EdhocResource extends CoapResource {
 	        	
 	        	EdhocSession mySession = edhocEndpointInfo.getEdhocSessions().get(connectionIdentifier);
 	    		if (mySession == null) {
-	    			System.err.println("EDHOC session to delete not found");
+	    			// System.err.println("EDHOC session to delete not found");
 	    			return;
 	    		}
 	    		
@@ -628,7 +628,7 @@ public class EdhocResource extends CoapResource {
 														null, appProfile);
 		
 		if (responseType != Constants.EDHOC_ERROR_MESSAGE) {
-			System.err.println("Inconsistent state before sending EDHOC Error Message");	
+			// System.err.println("Inconsistent state before sending EDHOC Error Message");	
 			return;
 		}
 		
@@ -645,7 +645,7 @@ public class EdhocResource extends CoapResource {
 	 */
 	private void processTriggerRequest(CoapExchange request, AppProfile appProfile) {
 		// Do nothing
-		System.out.println("Entered processNonEdhocMessage()");
+		// System.out.println("Entered processNonEdhocMessage()");
 		
 		// Here the server can start acting as Initiator and send an EDHOC Message 1 as a CoAP response
 	}

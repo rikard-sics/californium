@@ -64,7 +64,7 @@ public class Phase0Client {
 		OSCoreCoapStackFactory.useAsDefault(db);
 		CoapClient c = new CoapClient(uriLocal + hello1);
 
-		System.out.println("Phase 0 Client ready to send CoAP request" + "\n");
+		// System.out.println("Phase 0 Client ready to send CoAP request" + "\n");
 		Support.printPause("Press enter to send CoAP message");
 
 		Request r = new Request(Code.POST);
@@ -87,14 +87,14 @@ public class Phase0Client {
 			} else if (command.equals("q")) {
 				System.exit(0);
 			} else {
-				System.out.println("Unknown command!");
+				// System.out.println("Unknown command!");
 			}
 
 			r = new Request(Code.POST);
 			r.setPayload(payload);
 			resp = c.advanced(r);
-			org.eclipse.californium.core.Utils.prettyPrint(resp);
-			// System.out.println("RTT: " +
+			System.out.println(org.eclipse.californium.core.Utils.prettyPrint(resp));
+			// // System.out.println("RTT: " +
 			// resp.advanced().getTransmissionRttNanos() + " nanoseconds");
 
 			Thread.sleep(1000);
@@ -106,17 +106,17 @@ public class Phase0Client {
 
 	private static void printResponse(CoapResponse resp) {
 		if (resp != null) {
-			System.out.println("RESPONSE CODE: " + resp.getCode().name() + " " + resp.getCode());
+			// System.out.println("RESPONSE CODE: " + resp.getCode().name() + " " + resp.getCode());
 			if (resp.getPayload() != null) {
-				System.out.print("RESPONSE PAYLOAD: ");
+				// System.out.print("RESPONSE PAYLOAD: ");
 				for (byte b : resp.getPayload()) {
-					System.out.print(Integer.toHexString(b & 0xff) + " ");
+					// System.out.print(Integer.toHexString(b & 0xff) + " ");
 				}
-				System.out.println();
+				// System.out.println();
 			}
-			System.out.println("RESPONSE TEXT: " + resp.getResponseText());
+			// System.out.println("RESPONSE TEXT: " + resp.getResponseText());
 		} else {
-			System.out.println("RESPONSE IS NULL");
+			// System.out.println("RESPONSE IS NULL");
 		}
 	}
 }

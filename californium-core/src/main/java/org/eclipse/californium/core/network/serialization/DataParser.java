@@ -76,6 +76,9 @@ public abstract class DataParser {
 		phase = inPhase;
 	}
 
+	static int cumulativeIncomingUdp = 0;
+	static int cumulativeIncomingCoap = 0;
+
 	/**
 	 * Parses a byte array into a CoAP Message.
 	 * 
@@ -114,10 +117,14 @@ public abstract class DataParser {
 				System.out.println(
 						phase + ": " + messageName + ": Request " + " CoAP Payload: " + message.getPayloadSize());
 				System.out.println(phase + ": " + messageName + ": Request " + " UDP Payload: " + msg.length);
+				cumulativeIncomingUdp += msg.length;
+				cumulativeIncomingCoap += message.getPayloadSize();
 			} else if (message instanceof Response && phase.contains("Client")) {
 				System.out.println(
 						phase + ": " + messageName + ": Response " + " CoAP Payload: " + message.getPayloadSize());
 				System.out.println(phase + ": " + messageName + ": Response " + " UDP Payload: " + msg.length);
+				cumulativeIncomingUdp += msg.length;
+				cumulativeIncomingCoap += message.getPayloadSize();
 			}
 			messageCounter++;
 			

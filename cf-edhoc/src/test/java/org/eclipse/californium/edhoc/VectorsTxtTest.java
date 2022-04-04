@@ -157,7 +157,7 @@ public class VectorsTxtTest {
 	 * @return a list of integers contained
 	 */
 	private static List<Integer> parseUncompressedSuitesI(byte[] uncompressedSuitesI) {
-		System.out.println("Suites: " + Utils.bytesToHex(uncompressedSuitesI));
+		// System.out.println("Suites: " + Utils.bytesToHex(uncompressedSuitesI));
 		CBORObject cborArray = CBORObject.DecodeFromBytes(uncompressedSuitesI);
 		List<Integer> outputList = new ArrayList<Integer>();
 
@@ -243,7 +243,7 @@ public class VectorsTxtTest {
 				}
 			}
 			catch (CBORException e) {
-				System.out.println("Malformed or invalid CBOR sequence as EAD_1");
+				// System.out.println("Malformed or invalid CBOR sequence as EAD_1");
 			}
 		}
 		byte[] message1 = MessageProcessor.writeMessage1(session, ead1Array);
@@ -252,19 +252,19 @@ public class VectorsTxtTest {
 		byte[] expectedMessage1 = message1List.get(index);
 
 		// Print parameters used
-		System.out.println("methodCorr " + methodCorr);
-		System.out.println("connectionId " + Utils.bytesToHex(connectionId.EncodeToBytes()));
-		System.out.println("ead1 " + Utils.bytesToHex(ead1));
-		System.out.println("privateEkeyBytes " + Utils.bytesToHex(privateEkeyBytes));
-		System.out.println("publicEkeyBytes " + Utils.bytesToHex(publicEkeyBytes));
-		System.out.print("Cipher suites: ");
+		// System.out.println("methodCorr " + methodCorr);
+		// System.out.println("connectionId " + Utils.bytesToHex(connectionId.EncodeToBytes()));
+		// System.out.println("ead1 " + Utils.bytesToHex(ead1));
+		// System.out.println("privateEkeyBytes " + Utils.bytesToHex(privateEkeyBytes));
+		// System.out.println("publicEkeyBytes " + Utils.bytesToHex(publicEkeyBytes));
+		// System.out.print("Cipher suites: ");
 		for (int i = 0; i < cipherSuites.size(); i++) {
-			System.out.print(cipherSuites.get(i) + " ");
+			// System.out.print(cipherSuites.get(i) + " ");
 		}
-		System.out.println("");
+		// System.out.println("");
 
-		System.out.println("Our message1      " + Utils.bytesToHex(message1));
-		System.out.println("Expected message1 " + Utils.bytesToHex(expectedMessage1));
+		// System.out.println("Our message1      " + Utils.bytesToHex(message1));
+		// System.out.println("Expected message1 " + Utils.bytesToHex(expectedMessage1));
 
 		Assert.assertArrayEquals("Failed on test vector " + index, expectedMessage1, message1);
 	}

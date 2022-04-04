@@ -89,9 +89,9 @@ public class Util {
         
         // Debug print
         /*
-        System.out.println("Protected attributes: " + msg.getProtectedAttributes().toString());
-        System.out.println("aad                 : " + Utils.bytesToHex(msg.getExternal()));
-        System.out.println("plaintext           : " + Utils.bytesToHex(msg.GetContent()));
+        // System.out.println("Protected attributes: " + msg.getProtectedAttributes().toString());
+        // System.out.println("aad                 : " + Utils.bytesToHex(msg.getExternal()));
+        // System.out.println("plaintext           : " + Utils.bytesToHex(msg.GetContent()));
         */
         
         // Perform the encryption
@@ -99,7 +99,7 @@ public class Util {
         
         // Debug print
         /*
-        System.out.println("Encrypted content: " + Utils.bytesToHex(msg.getEncryptedContent()));
+        // System.out.println("Encrypted content: " + Utils.bytesToHex(msg.getEncryptedContent()));
         */
         
         return msg.getEncryptedContent();
@@ -144,9 +144,9 @@ public class Util {
         
         // Debug print
         /*
-        System.out.println("Protected attributes: " + msg.getProtectedAttributes().toString());
-        System.out.println("aad                 : " + Utils.bytesToHex(msg.getExternal()));
-        System.out.println("payload             : " + Utils.bytesToHex(msg.GetContent()));
+        // System.out.println("Protected attributes: " + msg.getProtectedAttributes().toString());
+        // System.out.println("aad                 : " + Utils.bytesToHex(msg.getExternal()));
+        // System.out.println("payload             : " + Utils.bytesToHex(msg.GetContent()));
         */
         
         // Perform the encryption
@@ -154,7 +154,7 @@ public class Util {
         
         // Debug print
         /*
-        System.out.println("Decrypted content: " + Utils.bytesToHex(msg.GetContent()));
+        // System.out.println("Decrypted content: " + Utils.bytesToHex(msg.GetContent()));
         */
         
         return msg.GetContent();
@@ -206,9 +206,9 @@ public class Util {
         
         // Debug print
         /*
-        System.out.println("Protected attributes: " + msg.getProtectedAttributes().toString());
-        System.out.println("aad                 : " + Utils.bytesToHex(msg.getExternal()));
-        System.out.println("payload             : " + Utils.bytesToHex(msg.GetContent()));
+        // System.out.println("Protected attributes: " + msg.getProtectedAttributes().toString());
+        // System.out.println("aad                 : " + Utils.bytesToHex(msg.getExternal()));
+        // System.out.println("payload             : " + Utils.bytesToHex(msg.GetContent()));
         */
         
         // Compute the signature
@@ -219,7 +219,7 @@ public class Util {
 		
         // Debug print
         /*
-        System.out.println("\nCBOR array with signature: " + myArray.toString() + "\n");
+        // System.out.println("\nCBOR array with signature: " + myArray.toString() + "\n");
         */
         
         // Return the actual signature, as fourth element of the CBOR array
@@ -292,7 +292,7 @@ public class Util {
   
         // Debug print
         /*
-        System.out.println("\nCBOR array with signature: " + myArray.toString() + "\n");
+        // System.out.println("\nCBOR array with signature: " + myArray.toString() + "\n");
         */
         
         // Build the COSE Sign1 object from the raw version
@@ -303,9 +303,9 @@ public class Util {
         
         // Debug print
         /*
-        System.out.println("Protected attributes: " + msg.getProtectedAttributes().toString());
-        System.out.println("aad                 : " + Utils.bytesToHex(msg.getExternal()));
-        System.out.println("payload             : " + Utils.bytesToHex(msg.GetContent()));
+        // System.out.println("Protected attributes: " + msg.getProtectedAttributes().toString());
+        // System.out.println("aad                 : " + Utils.bytesToHex(msg.getExternal()));
+        // System.out.println("payload             : " + Utils.bytesToHex(msg.GetContent()));
         */
         
         // Verify the signature
@@ -763,8 +763,8 @@ public class Util {
         			byte[] emptyArray = new byte[0];
     				ctx = new OSCoreCtx(emptyArray, true, null, null, recipientId, AlgorithmID.HKDF_HMAC_SHA_256, 0, null, null, 0);
     			} catch (OSException e) {
-    				System.err.println("Error when allocating an EDHOC Connection Identifier to use as "
-    						           + "OSCORE Recipient ID" + e.getMessage());
+    				// System.err.println("Error when allocating an EDHOC Connection Identifier to use as "
+					// + "OSCORE Recipient ID" + e.getMessage());
     				usedConnectionIds.remove(connectionIdentifier);
     				return null;
     			}
@@ -977,8 +977,8 @@ public class Util {
 				try {
 					ctx = db.getContext(recipientId, null);
 				} catch (CoapOSException e) {
-					System.err.println("Found multiple OSCORE Security Contexts with the same Recipient ID " +
-									   Utils.bytesToHex(recipientId) + "\n" + e.getMessage());
+					// System.err.println("Found multiple OSCORE Security Contexts with the same Recipient ID " +
+					// Utils.bytesToHex(recipientId) + "\n" + e.getMessage());
 				}
 	    		if (ctx != null) {
 	    			db.removeContext(ctx);
@@ -1031,7 +1031,7 @@ public class Util {
 	    	}
 			
 		} catch (CoseException e) {
-			System.err.println("Error while generating the key pair");
+			// System.err.println("Error while generating the key pair");
 			return null;
 		}
 		
@@ -1039,10 +1039,10 @@ public class Util {
 		/*
 		byte[] keyPairBytes = keyPair.EncodeToBytes();
     	String testKeyBytesBase64 = Base64.getEncoder().encodeToString(keyPairBytes);
-    	System.out.println(testKeyBytesBase64);
+    	// System.out.println(testKeyBytesBase64);
     	
-    	System.out.println(keyCurve);
-    	System.out.println(keyPair.AsCBOR());
+    	// System.out.println(keyCurve);
+    	// System.out.println(keyPair.AsCBOR());
     	*/
 		
 		// Print out the base64 serialization of the public key only
@@ -1050,10 +1050,10 @@ public class Util {
     	OneKey testPublicKey = keyPair.PublicKey();
     	byte[] testPublicKeyBytes = testPublicKey.EncodeToBytes();
     	String testPublicKeyBytesBase64 = Base64.getEncoder().encodeToString(testPublicKeyBytes);
-    	System.out.println(testPublicKeyBytesBase64);
+    	// System.out.println(testPublicKeyBytesBase64);
     	
-    	System.out.println(keyCurve);
-    	System.out.println(testPublicKey.AsCBOR());
+    	// System.out.println(keyCurve);
+    	// System.out.println(testPublicKey.AsCBOR());
     	*/
     	
     	return keyPair;
@@ -1068,19 +1068,19 @@ public class Util {
      */
     public static void nicePrint(String header, byte[] content) {
     	
-    	System.out.println(header + " (" + (content.length) + " bytes):");
-    	
-    	String contentStr = Utils.bytesToHex(content);
-    	for (int i = 0; i < (content.length * 2); i++) {
-    		if ((i != 0) && (i % 20) == 0)
-    	    	System.out.println();
-    		
-        	System.out.print(contentStr.charAt(i));
-    		if ((i % 2) == 1)
-    	    	System.out.print(" ");
-    	}
-    	
-    	System.out.println("\n");
+		// // System.out.println(header + " (" + (content.length) + " bytes):");
+		//
+		// String contentStr = Utils.bytesToHex(content);
+		// for (int i = 0; i < (content.length * 2); i++) {
+		// if ((i != 0) && (i % 20) == 0)
+		// // System.out.println();
+		//
+		// // System.out.print(contentStr.charAt(i));
+		// if ((i % 2) == 1)
+		// // System.out.print(" ");
+		// }
+		//
+		// // System.out.println("\n");
 
     }
     
@@ -1119,8 +1119,8 @@ public class Util {
         try {
         	coseKey = new OneKey(key);
 		} catch (CoseException e) {
-			System.err.println(e.getMessage());
-			System.err.println("Error while generating the COSE key");
+			// System.err.println(e.getMessage());
+			// System.err.println("Error while generating the COSE key");
 		}
 	    return coseKey;
 		
@@ -1241,7 +1241,7 @@ public class Util {
 		try {
 			hash = Util.computeHash(cert, "SHA-256");
 		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Error while hashing the x509 certificate: " + e.getMessage());
+			// System.err.println("Error while hashing the x509 certificate: " + e.getMessage());
 			return null;
 		}
 		if (hash == null) {
@@ -1345,7 +1345,7 @@ public class Util {
 		claimSetMap.Add(Constants.CWT_CLAIMS_SUB, subjectName);
 		claimSetMap.Add(Constants.CWT_CLAIMS_CNF, cnfMap);
 
-		System.out.println("CCS serialization: " + Utils.bytesToHex(claimSetMap.EncodeToBytes()));
+		// System.out.println("CCS serialization: " + Utils.bytesToHex(claimSetMap.EncodeToBytes()));
 		
         return claimSetMap.EncodeToBytes();
 		
@@ -1364,12 +1364,12 @@ public class Util {
 		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_1) {
 			
 				if (key.get(KeyKeys.KeyType) != KeyKeys.KeyType_OKP) {
-					System.err.println("Invalid key type - Expected key type: OKP");
+					// System.err.println("Invalid key type - Expected key type: OKP");
 					return false;
 				}
 				
 			if (key.get(KeyKeys.OKP_Curve) != KeyKeys.OKP_Ed25519) {
-				System.err.println("Invalid OKP curve - Expected curve: Ed25519");
+				// System.err.println("Invalid OKP curve - Expected curve: Ed25519");
 				return false;
 			}
 			
@@ -1377,12 +1377,12 @@ public class Util {
 		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_2 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_3) {
 				
 			if (key.get(KeyKeys.KeyType) != KeyKeys.KeyType_EC2) {
-				System.err.println("Invalid key type - Expected key type: EC2");
+				// System.err.println("Invalid key type - Expected key type: EC2");
 				return false;
 			}
 				
 			if (key.get(KeyKeys.EC2_Curve) != KeyKeys.EC2_P256) {
-				System.err.println("Invalid EC2 curve - Expected curve: P-256");
+				// System.err.println("Invalid EC2 curve - Expected curve: P-256");
 				return false;
 			}
 				
@@ -1404,12 +1404,12 @@ public class Util {
 		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_1) {
 		    
 			if (key.get(KeyKeys.KeyType) != KeyKeys.KeyType_OKP) {
-				System.err.println("Invalid key type - Expected key type: OKP");
+				// System.err.println("Invalid key type - Expected key type: OKP");
 				return false;
 			}
 				
 			if (key.get(KeyKeys.OKP_Curve) != KeyKeys.OKP_X25519) {
-				System.err.println("Invalid OKP curve - Expected curve: Ed25519");
+				// System.err.println("Invalid OKP curve - Expected curve: Ed25519");
 				return false;
 			}
 			
@@ -1417,12 +1417,12 @@ public class Util {
 		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_2 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_3) {
 				
 			if (key.get(KeyKeys.KeyType) != KeyKeys.KeyType_EC2) {
-				System.err.println("Invalid key type - Expected key type: EC2");
+				// System.err.println("Invalid key type - Expected key type: EC2");
 				return false;
 			}
 				
 			if (key.get(KeyKeys.EC2_Curve) != KeyKeys.EC2_P256) {
-				System.err.println("Invalid EC2 curve - Expected curve: P-256");
+				// System.err.println("Invalid EC2 curve - Expected curve: P-256");
 				return false;
 			}
 				

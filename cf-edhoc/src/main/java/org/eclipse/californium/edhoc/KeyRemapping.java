@@ -87,27 +87,27 @@ public class KeyRemapping {
 		FieldElement v = calcCurve25519_v(x, u);
 
 		// Print calculated values
-		System.out.println("x: " + x);
-		System.out.println("y: " + y);
+		// System.out.println("x: " + x);
+		// System.out.println("y: " + y);
 
-		System.out.println("v: " + v);
-		System.out.println("u: " + u);
+		// System.out.println("v: " + v);
+		// System.out.println("u: " + u);
 
 		// Check that calculated u and v values are correct
 		if (Arrays.equals(u.toByteArray(), u_correct.toByteArray())) {
-			System.out.println("u value is correct!");
+			// System.out.println("u value is correct!");
 		} else {
-			System.out.println("u value is INCORRECT!");
+			// System.out.println("u value is INCORRECT!");
 		}
 		if (Arrays.equals(v.toByteArray(), v_correct.toByteArray())) {
-			System.out.println("v value is correct!");
+			// System.out.println("v value is correct!");
 		} else {
-			System.out.println("v value is INCORRECT!");
+			// System.out.println("v value is INCORRECT!");
 		}
 
 		/**/
-		System.out.println();
-		System.out.println();
+		// System.out.println();
+		// System.out.println();
 		/**/
 
 		// Testing starting with a COSE Key
@@ -116,35 +116,35 @@ public class KeyRemapping {
 		FieldElement y_fromKeyAlt = extractCOSE_y_alt(myKey);
 		FieldElement y_fromKey = extractCOSE_y(myKey);
 
-		System.out.println("y from COSE key (alt): " + y_fromKeyAlt);
-		System.out.println("y from COSE key: " + y_fromKey);
-		System.out.println("COSE key X param_: " + myKey.get(KeyKeys.OKP_X));
+		// System.out.println("y from COSE key (alt): " + y_fromKeyAlt);
+		// System.out.println("y from COSE key: " + y_fromKey);
+		// System.out.println("COSE key X param_: " + myKey.get(KeyKeys.OKP_X));
 
-		System.out.println("y from COSE key (alt) (bytes): " + Utils.bytesToHex(y_fromKeyAlt.toByteArray()));
-		System.out.println("y from COSE key (bytes): " + Utils.bytesToHex(y_fromKey.toByteArray()));
+		// System.out.println("y from COSE key (alt) (bytes): " + Utils.bytesToHex(y_fromKeyAlt.toByteArray()));
+		// System.out.println("y from COSE key (bytes): " + Utils.bytesToHex(y_fromKey.toByteArray()));
 
 		// Check that calculating y in both ways give the same result
 		if (Arrays.equals(y_fromKeyAlt.toByteArray(), y_fromKey.toByteArray())) {
-			System.out.println("y from key value is correct!");
+			// System.out.println("y from key value is correct!");
 		} else {
-			System.out.println("y from key value is INCORRECT!");
+			// System.out.println("y from key value is INCORRECT!");
 		}
 
 		/**/
-		System.out.println();
-		System.out.println();
+		// System.out.println();
+		// System.out.println();
 		/**/
 
 		FieldElement x_fromKey = extractCOSE_x(myKey);
-		System.out.println("x from COSE key: " + x_fromKey);
+		// System.out.println("x from COSE key: " + x_fromKey);
 
 		FieldElement uuu1 = calcCurve25519_u(y_fromKeyAlt);
 		FieldElement uuu2 = calcCurve25519_u(y_fromKey);
 		// calcCurve25519_v(x_fromKey, uuu1);
 		// calcCurve25519_v(x_fromKey, uuu2);
 		//
-		System.out.println(uuu1);
-		System.out.println(uuu2);
+		// System.out.println(uuu1);
+		// System.out.println(uuu2);
 
 	}
 

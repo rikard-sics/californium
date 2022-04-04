@@ -90,25 +90,25 @@ public class KeyRemappingTest {
 		FieldElement v = KeyRemapping.calcCurve25519_v(x, u);
 
 		// Print calculated values
-		System.out.println("x: " + x);
-		System.out.println("y: " + y);
+		// System.out.println("x: " + x);
+		// System.out.println("y: " + y);
 
-		System.out.println("v: " + v);
-		System.out.println("u: " + u);
+		// System.out.println("v: " + v);
+		// System.out.println("u: " + u);
 
 		// Check that calculated u and v values are correct
 		assertArrayEquals(u.toByteArray(), u_correct.toByteArray());
 		if (Arrays.equals(u.toByteArray(), u_correct.toByteArray())) {
-			System.out.println("u value is correct!");
+			// System.out.println("u value is correct!");
 		} else {
-			System.out.println("u value is INCORRECT!");
+			// System.out.println("u value is INCORRECT!");
 		}
 
 		assertArrayEquals(v.toByteArray(), v_correct.toByteArray());
 		if (Arrays.equals(v.toByteArray(), v_correct.toByteArray())) {
-			System.out.println("v value is correct!");
+			// System.out.println("v value is correct!");
 		} else {
-			System.out.println("v value is INCORRECT!");
+			// System.out.println("v value is INCORRECT!");
 		}
 
 	}
@@ -124,28 +124,28 @@ public class KeyRemappingTest {
 		FieldElement y_fromKeyAlt = KeyRemapping.extractCOSE_y_alt(myKey);
 		FieldElement y_fromKey = KeyRemapping.extractCOSE_y(myKey);
 
-		System.out.println("y from COSE key (alt): " + y_fromKeyAlt);
-		System.out.println("y from COSE key: " + y_fromKey);
-		System.out.println("COSE key X param_: " + myKey.get(KeyKeys.OKP_X));
+		// System.out.println("y from COSE key (alt): " + y_fromKeyAlt);
+		// System.out.println("y from COSE key: " + y_fromKey);
+		// System.out.println("COSE key X param_: " + myKey.get(KeyKeys.OKP_X));
 
-		System.out.println("y from COSE key (alt) (bytes): " + Utils.bytesToHex(y_fromKeyAlt.toByteArray()));
-		System.out.println("y from COSE key (bytes): " + Utils.bytesToHex(y_fromKey.toByteArray()));
+		// System.out.println("y from COSE key (alt) (bytes): " + Utils.bytesToHex(y_fromKeyAlt.toByteArray()));
+		// System.out.println("y from COSE key (bytes): " + Utils.bytesToHex(y_fromKey.toByteArray()));
 
 		// Check that calculating y in both ways give the same result
 		assertArrayEquals(y_fromKeyAlt.toByteArray(), y_fromKey.toByteArray());
 		if (Arrays.equals(y_fromKeyAlt.toByteArray(), y_fromKey.toByteArray())) {
-			System.out.println("y from key value is correct!");
+			// System.out.println("y from key value is correct!");
 		} else {
-			System.out.println("y from key value is INCORRECT!");
+			// System.out.println("y from key value is INCORRECT!");
 		}
 
 		/**/
-		System.out.println();
-		System.out.println();
+		// System.out.println();
+		// System.out.println();
 		/**/
 
 		FieldElement x_fromKey = KeyRemapping.extractCOSE_x(myKey);
-		System.out.println("x from COSE key: " + x_fromKey);
+		// System.out.println("x from COSE key: " + x_fromKey);
 		assertEquals(32, x_fromKey.toByteArray().length);
 
 		FieldElement u1 = KeyRemapping.calcCurve25519_u(y_fromKeyAlt);
@@ -154,8 +154,8 @@ public class KeyRemappingTest {
 		// The two calculated u values match
 		assertArrayEquals(u1.toByteArray(), u2.toByteArray());
 
-		System.out.println(u1);
-		System.out.println(u2);
+		// System.out.println(u1);
+		// System.out.println(u2);
 
 	}
 
@@ -177,8 +177,8 @@ public class KeyRemappingTest {
 		// Calculate the X value (output)
 		FieldElement resultX = KeyRemapping.curve25519uToWei25519X(u);
 
-		System.out.println("Correct " + Utils.bytesToHex(expectedX.toByteArray()));
-		System.out.println("Result " + Utils.bytesToHex(resultX.toByteArray()));
+		// System.out.println("Correct " + Utils.bytesToHex(expectedX.toByteArray()));
+		// System.out.println("Result " + Utils.bytesToHex(resultX.toByteArray()));
 
 		assertArrayEquals(expectedX.toByteArray(), resultX.toByteArray());
 	}
@@ -199,8 +199,8 @@ public class KeyRemappingTest {
 		// Calculate the Y value (output)
 		FieldElement resultY = KeyRemapping.curve25519vToWei25519Y(v);
 
-		System.out.println("Correct " + Utils.bytesToHex(expectedY.toByteArray()));
-		System.out.println("Result " + Utils.bytesToHex(resultY.toByteArray()));
+		// System.out.println("Correct " + Utils.bytesToHex(expectedY.toByteArray()));
+		// System.out.println("Result " + Utils.bytesToHex(resultY.toByteArray()));
 
 		assertArrayEquals(expectedY.toByteArray(), resultY.toByteArray());
 	}
@@ -220,8 +220,8 @@ public class KeyRemappingTest {
 		// Calculate the u value (output)
 		FieldElement resultU = KeyRemapping.wei25519XToCurve25519u(X);
 
-		System.out.println("Correct " + Utils.bytesToHex(expectedU.toByteArray()));
-		System.out.println("Result " + Utils.bytesToHex(resultU.toByteArray()));
+		// System.out.println("Correct " + Utils.bytesToHex(expectedU.toByteArray()));
+		// System.out.println("Result " + Utils.bytesToHex(resultU.toByteArray()));
 
 		assertArrayEquals(expectedU.toByteArray(), resultU.toByteArray());
 	}
@@ -242,8 +242,8 @@ public class KeyRemappingTest {
 		// Calculate the v value (output)
 		FieldElement resultV = KeyRemapping.wei25519YToCurve25519v(Y);
 
-		System.out.println("Correct " + Utils.bytesToHex(expectedV.toByteArray()));
-		System.out.println("Result " + Utils.bytesToHex(resultV.toByteArray()));
+		// System.out.println("Correct " + Utils.bytesToHex(expectedV.toByteArray()));
+		// System.out.println("Result " + Utils.bytesToHex(resultV.toByteArray()));
 
 		assertArrayEquals(expectedV.toByteArray(), resultV.toByteArray());
 	}
@@ -263,8 +263,8 @@ public class KeyRemappingTest {
 
 		FieldElement calculatedX = KeyRemapping.edwards25519yToWei25519X(y);
 
-		System.out.println("Correct " + Utils.bytesToHex(expectedX.toByteArray()));
-		System.out.println("Result " + Utils.bytesToHex(calculatedX.toByteArray()));
+		// System.out.println("Correct " + Utils.bytesToHex(expectedX.toByteArray()));
+		// System.out.println("Result " + Utils.bytesToHex(calculatedX.toByteArray()));
 
 		assertArrayEquals(expectedX.toByteArray(), calculatedX.toByteArray());
 
@@ -289,8 +289,8 @@ public class KeyRemappingTest {
 
 		FieldElement calculatedY = KeyRemapping.edwards25519xToWei25519Y(x, y);
 
-		System.out.println("Correct " + Utils.bytesToHex(expectedY.toByteArray()));
-		System.out.println("Result " + Utils.bytesToHex(calculatedY.toByteArray()));
+		// System.out.println("Correct " + Utils.bytesToHex(expectedY.toByteArray()));
+		// System.out.println("Result " + Utils.bytesToHex(calculatedY.toByteArray()));
 
 		assertArrayEquals(expectedY.toByteArray(), calculatedY.toByteArray());
 
@@ -311,8 +311,8 @@ public class KeyRemappingTest {
 
 		FieldElement calculatedY = KeyRemapping.wei25519XToEdwards25519y(X);
 
-		System.out.println("Correct " + Utils.bytesToHex(expectedY.toByteArray()));
-		System.out.println("Result " + Utils.bytesToHex(calculatedY.toByteArray()));
+		// System.out.println("Correct " + Utils.bytesToHex(expectedY.toByteArray()));
+		// System.out.println("Result " + Utils.bytesToHex(calculatedY.toByteArray()));
 
 		assertArrayEquals(expectedY.toByteArray(), calculatedY.toByteArray());
 
@@ -337,8 +337,8 @@ public class KeyRemappingTest {
 
 		FieldElement calculatedX = KeyRemapping.wei25519YToEdwards25519x(Y, X);
 
-		System.out.println("Correct " + Utils.bytesToHex(expectedX.toByteArray()));
-		System.out.println("Result " + Utils.bytesToHex(calculatedX.toByteArray()));
+		// System.out.println("Correct " + Utils.bytesToHex(expectedX.toByteArray()));
+		// System.out.println("Result " + Utils.bytesToHex(calculatedX.toByteArray()));
 
 		assertArrayEquals(expectedX.toByteArray(), calculatedX.toByteArray());
 

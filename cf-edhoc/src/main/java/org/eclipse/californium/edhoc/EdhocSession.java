@@ -488,12 +488,12 @@ public class EdhocSession {
 		try {
 			hash = Util.computeHash(msg, hashAlgorithm);
 		} catch (NoSuchAlgorithmException e) {
-		    System.err.println("Invalid hash algorithm when computing the hash of EDHOC Message 1\n" + e.getMessage());
+		    // System.err.println("Invalid hash algorithm when computing the hash of EDHOC Message 1\n" + e.getMessage());
 		    return false;
 		}
 		
 		if (hash == null) {
-		    System.err.println("Error when computing the hash of EDHOC Message 1\n");
+		    // System.err.println("Error when computing the hash of EDHOC Message 1\n");
 			return false;
 		}
 		
@@ -639,9 +639,9 @@ public class EdhocSession {
 	    try {
 			masterSecret = session.edhocExporter("OSCORE_Master_Secret", context, keyLength);
 		} catch (InvalidKeyException e) {
-			System.err.println("Error when the OSCORE Master Secret" + e.getMessage());
+			// System.err.println("Error when the OSCORE Master Secret" + e.getMessage());
 		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Error when the OSCORE Master Secret" + e.getMessage());
+			// System.err.println("Error when the OSCORE Master Secret" + e.getMessage());
 		}
 	    
 	    return masterSecret;
@@ -661,9 +661,9 @@ public class EdhocSession {
 	    try {
 			masterSalt = session.edhocExporter("OSCORE_Master_Salt", context, 8);
 		} catch (InvalidKeyException e) {
-			System.err.println("Error when the OSCORE Master Salt" + e.getMessage());
+			// System.err.println("Error when the OSCORE Master Salt" + e.getMessage());
 		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Error when the OSCORE Master Salt" + e.getMessage());
+			// System.err.println("Error when the OSCORE Master Salt" + e.getMessage());
 		}
 	    
 	    return masterSalt;

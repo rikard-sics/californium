@@ -148,7 +148,7 @@ public class SharedSecretCalculation {
 		try {
 			key = OneKey.generateKey(KeyKeys.OKP_Ed25519);
 		} catch (CoseException e) {
-			System.err.println("Failed to generate Ed25519 key: " + e);
+			// System.err.println("Failed to generate Ed25519 key: " + e);
 		}
 
 		return key;
@@ -211,7 +211,7 @@ public class SharedSecretCalculation {
 		ECParameterSpec ecSpec = new ECParameterSpec(curveParams.getCurve(), curveParams.getG(), curveParams.getN(),
 				curveParams.getH(), curveParams.getSeed());
 
-		// System.out.println("Spec using seed: " +
+		// // System.out.println("Spec using seed: " +
 		// Utils.bytesToHex(ecSpec.getSeed()));
 
 		KeyPairGenerator kpg = null;
@@ -219,7 +219,7 @@ public class SharedSecretCalculation {
 			kpg = KeyPairGenerator.getInstance("EC", new BouncyCastleProvider());
 			kpg.initialize(ecSpec);
 		} catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
-			System.err.println("Failed to generate Curve25519 key: " + e);
+			// System.err.println("Failed to generate Curve25519 key: " + e);
 		}
 
 		KeyPair keyPair = kpg.generateKeyPair();
@@ -231,40 +231,46 @@ public class SharedSecretCalculation {
 
 		// Build the COSE OneKey
 
-		System.out.println("D " + Utils.bytesToHex(privKey.getD().toByteArray()));
-		System.out.println("Seed priv " + Utils.bytesToHex(privKey.getParameters().getSeed()));
-		System.out.println("Seed pub " + Utils.bytesToHex(pubKey.getParameters().getSeed()));
-		System.out.println();
-		System.out.println("Q pub " + pubKey.getQ().toString());
-		System.out.println("Q pub uncompressed " + Utils.bytesToHex(pubKey.getQ().getEncoded(false)));
-		System.out.println("Q pub 1st half " + Utils.bytesToHex(Arrays.copyOf(pubKey.getQ().getEncoded(false), 32)));
-		System.out.println("Q compressed   " + Utils.bytesToHex(pubKey.getQ().getEncoded(true)));
-		System.out.println("Sing of v?   " + Utils.bytesToHex(Arrays.copyOf(pubKey.getQ().getEncoded(true), 1)));
-		System.out
-				.println("Actual U?   " + Utils.bytesToHex(Arrays.copyOfRange(pubKey.getQ().getEncoded(true), 1, 33)));
-		System.out.println(
-				"getAffineXCoord " + Utils.bytesToHex(pubKey.getQ().getAffineXCoord().toBigInteger().toByteArray()));
-		System.out.println(
-				"getAffineYCoord " + Utils.bytesToHex(pubKey.getQ().getAffineYCoord().toBigInteger().toByteArray()));
-		System.out.println();
-		System.out
-				.println("getRawXCoord " + Utils.bytesToHex(pubKey.getQ().getRawXCoord().toBigInteger().toByteArray()));
-		System.out
-				.println("getRawYCoord " + Utils.bytesToHex(pubKey.getQ().getRawYCoord().toBigInteger().toByteArray()));
-		System.out.println();
-		System.out.println("getXCoord " + Utils.bytesToHex(pubKey.getQ().getXCoord().toBigInteger().toByteArray()));
-		System.out.println("getYCoord " + Utils.bytesToHex(pubKey.getQ().getYCoord().toBigInteger().toByteArray()));
-		System.out.println();
-		System.out.println("Pubkey encoded: " + Utils.bytesToHex(pubKey.getEncoded()));
-		System.out.println("Privkey encoded: " + Utils.bytesToHex(privKey.getEncoded()));
-		System.out.println();
-		System.out.println("S: " + Utils.bytesToHex(privKey.getS().toByteArray()));
-		System.out.println();
+		// System.out.println("D " + Utils.bytesToHex(privKey.getD().toByteArray()));
+		// System.out.println("Seed priv " + Utils.bytesToHex(privKey.getParameters().getSeed()));
+		// System.out.println("Seed pub " + Utils.bytesToHex(pubKey.getParameters().getSeed()));
+		// System.out.println();
+		// System.out.println("Q pub " + pubKey.getQ().toString());
+		// System.out.println("Q pub uncompressed " + Utils.bytesToHex(pubKey.getQ().getEncoded(false)));
+		// System.out.println("Q pub 1st half " + Utils.bytesToHex(Arrays.copyOf(pubKey.getQ().getEncoded(false), 32)));
+		// System.out.println("Q compressed   " + Utils.bytesToHex(pubKey.getQ().getEncoded(true)));
+		// System.out.println("Sing of v?   " + Utils.bytesToHex(Arrays.copyOf(pubKey.getQ().getEncoded(true), 1)));
+		// System.out
+		// .println("Actual U? " +
+		// Utils.bytesToHex(Arrays.copyOfRange(pubKey.getQ().getEncoded(true),
+		// 1, 33)));
+		// System.out.println(
+		// "getAffineXCoord " +
+		// Utils.bytesToHex(pubKey.getQ().getAffineXCoord().toBigInteger().toByteArray()));
+		// System.out.println(
+		// "getAffineYCoord " +
+		// Utils.bytesToHex(pubKey.getQ().getAffineYCoord().toBigInteger().toByteArray()));
+		// System.out.println();
+		// System.out
+		// .println("getRawXCoord " +
+		// Utils.bytesToHex(pubKey.getQ().getRawXCoord().toBigInteger().toByteArray()));
+		// System.out
+		// .println("getRawYCoord " +
+		// Utils.bytesToHex(pubKey.getQ().getRawYCoord().toBigInteger().toByteArray()));
+		// System.out.println();
+		// System.out.println("getXCoord " + Utils.bytesToHex(pubKey.getQ().getXCoord().toBigInteger().toByteArray()));
+		// System.out.println("getYCoord " + Utils.bytesToHex(pubKey.getQ().getYCoord().toBigInteger().toByteArray()));
+		// System.out.println();
+		// System.out.println("Pubkey encoded: " + Utils.bytesToHex(pubKey.getEncoded()));
+		// System.out.println("Privkey encoded: " + Utils.bytesToHex(privKey.getEncoded()));
+		// System.out.println();
+		// System.out.println("S: " + Utils.bytesToHex(privKey.getS().toByteArray()));
+		// System.out.println();
 		privKey.getParameters().getH();
-		System.out.println("H: " + Utils.bytesToHex(privKey.getParameters().getH().toByteArray()));
-		System.out.println();
-		System.out.println("Pubkey (Java) encoded: " + Utils.bytesToHex(publicKey.getEncoded()));
-		System.out.println("Privkey (Java) encoded: " + Utils.bytesToHex(privateKey.getEncoded()));
+		// System.out.println("H: " + Utils.bytesToHex(privKey.getParameters().getH().toByteArray()));
+		// System.out.println();
+		// System.out.println("Pubkey (Java) encoded: " + Utils.bytesToHex(publicKey.getEncoded()));
+		// System.out.println("Privkey (Java) encoded: " + Utils.bytesToHex(privateKey.getEncoded()));
 
 		// Get the private D
 		byte[] rgbD = invertArray(privKey.getD().toByteArray());
@@ -308,7 +314,7 @@ public class SharedSecretCalculation {
 		try {
 			key = new OneKey(keyMap);
 		} catch (CoseException e) {
-			System.err.println("Failed to generate COSE OneKey: " + e);
+			// System.err.println("Failed to generate COSE OneKey: " + e);
 		}
 
 		return key;
@@ -395,7 +401,7 @@ public class SharedSecretCalculation {
 		try {
 			publicKeyY = recomputeEcdsa384YFromX(publicKeyX, signY);
 		} catch (CoseException e) {
-			System.err.println("Failed to recompute missing Y value: " + e);
+			// System.err.println("Failed to recompute missing Y value: " + e);
 		}
 
 		return buildEcdsa384OneKey(privateKey, publicKeyX, publicKeyY);
@@ -420,7 +426,7 @@ public class SharedSecretCalculation {
 			try {
 				publicKeyY = recomputeEcdsa384YFromX(publicKeyX, true);
 			} catch (CoseException e) {
-				System.err.println("Failed to recompute missing Y value: " + e);
+				// System.err.println("Failed to recompute missing Y value: " + e);
 			}
 		}
 
@@ -439,7 +445,7 @@ public class SharedSecretCalculation {
 		try {
 			key = new OneKey(keyMap);
 		} catch (CoseException e) {
-			System.err.println("Failed to generate COSE OneKey: " + e);
+			// System.err.println("Failed to generate COSE OneKey: " + e);
 		}
 
 		return key;
@@ -462,7 +468,7 @@ public class SharedSecretCalculation {
 		try {
 			publicKeyY = recomputeEcdsa256YFromX(publicKeyX, signY);
 		} catch (CoseException e) {
-			System.err.println("Failed to recompute missing Y value: " + e);
+			// System.err.println("Failed to recompute missing Y value: " + e);
 		}
 
 		return buildEcdsa256OneKey(privateKey, publicKeyX, publicKeyY);
@@ -487,7 +493,7 @@ public class SharedSecretCalculation {
 			try {
 				publicKeyY = recomputeEcdsa256YFromX(publicKeyX, true);
 			} catch (CoseException e) {
-				System.err.println("Failed to recompute missing Y value: " + e);
+				// System.err.println("Failed to recompute missing Y value: " + e);
 			}
 		}
 
@@ -506,7 +512,7 @@ public class SharedSecretCalculation {
 		try {
 			key = new OneKey(keyMap);
 		} catch (CoseException e) {
-			System.err.println("Failed to generate COSE OneKey: " + e);
+			// System.err.println("Failed to generate COSE OneKey: " + e);
 		}
 
 		return key;
@@ -556,9 +562,9 @@ public class SharedSecretCalculation {
 		BigInteger root1 = squareMod(combined, prime);
 		BigInteger root2 = root1.negate().mod(prime);
 
-		// System.out.println("Root1: " +
+		// // System.out.println("Root1: " +
 		// Utils.bytesToHex(root1.toByteArray()));
-		// System.out.println("Root2: " +
+		// // System.out.println("Root2: " +
 		// Utils.bytesToHex(root2.toByteArray()));
 
 		byte[] root1Bytes = root1.toByteArray();
@@ -610,7 +616,7 @@ public class SharedSecretCalculation {
 			rhs = keyX.modPow(BigInteger.valueOf(3), p).add(curve.getA().multiply(x)).add(curve.getB()).mod(p);
 			lhs = keyY.modPow(BigInteger.valueOf(2), p).mod(p);
 			if (!rhs.equals(lhs)) {
-				System.out.println("Key using first Y not on curve!");
+				// System.out.println("Key using first Y not on curve!");
 			} else {
 				return possibleKey1.get(KeyKeys.EC2_Y).GetByteString();
 			}
@@ -625,12 +631,12 @@ public class SharedSecretCalculation {
 			rhs = keyX.modPow(BigInteger.valueOf(3), p).add(curve.getA().multiply(x)).add(curve.getB()).mod(p);
 			lhs = keyY.modPow(BigInteger.valueOf(2), p).mod(p);
 			if (!rhs.equals(lhs)) {
-				System.out.println("Key using second Y not on curve!");
+				// System.out.println("Key using second Y not on curve!");
 			} else {
 				return possibleKey2.get(KeyKeys.EC2_Y).GetByteString();
 			}
 		}
-		System.out.println("Found no fitting Y value.");
+		// System.out.println("Found no fitting Y value.");
 		return null;
 	}
 
@@ -686,9 +692,9 @@ public class SharedSecretCalculation {
 			xBytes = Arrays.copyOfRange(xBytes, 1, 49);
 		}
 
-		// System.out.println("Root1: " + Utils.bytesToHex(root1Bytes));
-		// System.out.println("Root2: " + Utils.bytesToHex(root2Bytes));
-		// System.out.println("X: " + Utils.bytesToHex(xBytes));
+		// // System.out.println("Root1: " + Utils.bytesToHex(root1Bytes));
+		// // System.out.println("Root2: " + Utils.bytesToHex(root2Bytes));
+		// // System.out.println("X: " + Utils.bytesToHex(xBytes));
 		
 		// Now build 2 keys from the potential Y values
 		OneKey possibleKey1 = null;
@@ -724,7 +730,7 @@ public class SharedSecretCalculation {
 			rhs = keyX.modPow(BigInteger.valueOf(3), p).add(curve.getA().multiply(x)).add(curve.getB()).mod(p);
 			lhs = keyY.modPow(BigInteger.valueOf(2), p).mod(p);
 			if (!rhs.equals(lhs)) {
-				System.out.println("Key using first Y not on curve!");
+				// System.out.println("Key using first Y not on curve!");
 			} else {
 				return possibleKey1.get(KeyKeys.EC2_Y).GetByteString();
 			}
@@ -739,12 +745,12 @@ public class SharedSecretCalculation {
 			rhs = keyX.modPow(BigInteger.valueOf(3), p).add(curve.getA().multiply(x)).add(curve.getB()).mod(p);
 			lhs = keyY.modPow(BigInteger.valueOf(2), p).mod(p);
 			if (!rhs.equals(lhs)) {
-				System.out.println("Key using second Y not on curve!");
+				// System.out.println("Key using second Y not on curve!");
 			} else {
 				return possibleKey2.get(KeyKeys.EC2_Y).GetByteString();
 			}
 		}
-		System.out.println("Found no fitting Y value.");
+		// System.out.println("Found no fitting Y value.");
 		return null;
 	}
 
@@ -761,7 +767,7 @@ public class SharedSecretCalculation {
 		BigInteger three = new BigInteger("3");
 		BigInteger four = new BigInteger("4");
 		if (!prime.mod(four).equals(three)) {
-			System.err.println("Invalid prime! p must be congruent 3 mod 4");
+			// System.err.println("Invalid prime! p must be congruent 3 mod 4");
 		}
 
 		BigInteger power = prime.add(BigInteger.ONE).divide(new BigInteger("4"));
@@ -789,7 +795,7 @@ public class SharedSecretCalculation {
 		CBORObject publicCurve = publicKey.get(KeyKeys.EC2_Curve);
 
 		if (privateCurve != publicCurve) {
-			System.err.println("Public and private keys use different curves.");
+			// System.err.println("Public and private keys use different curves.");
 			return null;
 		}
 
@@ -804,7 +810,7 @@ public class SharedSecretCalculation {
 		publicCurve = publicKey.get(KeyKeys.OKP_Curve);
 
 		if (privateCurve != publicCurve) {
-			System.err.println("Public and private keys use different curves.");
+			// System.err.println("Public and private keys use different curves.");
 			return null;
 		}
 
@@ -819,7 +825,7 @@ public class SharedSecretCalculation {
 		}
 
 		
-		System.err.println("Failed to generate shared secret.");
+		// System.err.println("Failed to generate shared secret.");
 
 		return null;
 		
@@ -841,7 +847,7 @@ public class SharedSecretCalculation {
 			// Extract the y coordinate
 			y = KeyRemapping.extractCOSE_y(initialKey);
 		} catch (CoseException e) {
-			System.err.println("Failed to generate Curve25519 key: " + e);
+			// System.err.println("Failed to generate Curve25519 key: " + e);
 		}
 
 		// Calculate the corresponding Curve25519 u coordinate
@@ -859,8 +865,8 @@ public class SharedSecretCalculation {
 			byte[] privateScalar = Arrays.copyOf(privateHash, 32);
 			byte[] rgbD = privateScalar;
 			
-			// System.out.println("D bad: " + Utils.bytesToHex(rgbD_bad));
-			// System.out.println("D good: " + Utils.bytesToHex(rgbD));
+			// // System.out.println("D bad: " + Utils.bytesToHex(rgbD_bad));
+			// // System.out.println("D good: " + Utils.bytesToHex(rgbD));
 			
 			key.add(KeyKeys.OKP_D, CBORObject.FromObject(rgbD));
 		}
@@ -893,7 +899,7 @@ public class SharedSecretCalculation {
 		try {
 			initialKey = OneKey.generateKey(KeyKeys.OKP_Ed25519);
 		} catch (CoseException e) {
-			System.err.println("Failed to generate Curve25519 key: " + e);
+			// System.err.println("Failed to generate Curve25519 key: " + e);
 		}
 
 		// Convert and return it as an Curve25519 key
@@ -921,7 +927,7 @@ public class SharedSecretCalculation {
 
 			sharedSecret = keyAgreement.generateSecret();
 		} catch (InvalidKeyException | NoSuchAlgorithmException | CoseException e) {
-			System.err.println("Could not generate the shared secret: " + e);
+			// System.err.println("Could not generate the shared secret: " + e);
 		}
 
 		return sharedSecret;
@@ -940,7 +946,7 @@ public class SharedSecretCalculation {
 		try {
 			sharedSecret = SharedSecretCalculation.calculateSharedSecret(recipientPublicKey, senderPrivateKey);
 		} catch (CoseException e) {
-			System.err.println("Could not generate the shared secret: " + e);
+			// System.err.println("Could not generate the shared secret: " + e);
 		}
 
 		return sharedSecret;
@@ -959,7 +965,7 @@ public class SharedSecretCalculation {
 
 		/* -- Test decodeLittleEndian -- */
 
-		System.out.println("Test decodeLittleEndian");
+		// System.out.println("Test decodeLittleEndian");
 
 		// Input value:
 		// a546e36bf0527c9d3b16154b82465edd62144c0ac1fc5a18506a2244ba449ac4
@@ -976,9 +982,9 @@ public class SharedSecretCalculation {
 
 		BigInteger res = decodeLittleEndian(input, 255);
 
-		System.out.println("Expected: " + correct);
-		System.out.println("Actual: " + res);
-		System.out.println("Same: " + correct.equals(res));
+		// System.out.println("Expected: " + correct);
+		// System.out.println("Actual: " + res);
+		// System.out.println("Same: " + correct.equals(res));
 
 		// --
 
@@ -996,13 +1002,13 @@ public class SharedSecretCalculation {
 
 		res = decodeLittleEndian(input, 255);
 
-		System.out.println("Expected: " + correct);
-		System.out.println("Actual: " + res);
-		System.out.println("Same: " + correct.equals(res));
+		// System.out.println("Expected: " + correct);
+		// System.out.println("Actual: " + res);
+		// System.out.println("Same: " + correct.equals(res));
 
 		/* -- Test decodeScalar -- */
 
-		System.out.println("Test decodeScalar");
+		// System.out.println("Test decodeScalar");
 
 		// Input value:
 		// 3d262fddf9ec8e88495266fea19a34d28882acef045104d0d1aae121700a779c984c24f8cdd78fbff44943eba368f54b29259a4f1c600ad3
@@ -1021,9 +1027,9 @@ public class SharedSecretCalculation {
 
 		res = decodeScalar(input);
 
-		System.out.println("Expected: " + correct);
-		System.out.println("Actual: " + res);
-		System.out.println("Same: " + correct.equals(res));
+		// System.out.println("Expected: " + correct);
+		// System.out.println("Actual: " + res);
+		// System.out.println("Same: " + correct.equals(res));
 
 		// --
 
@@ -1041,13 +1047,13 @@ public class SharedSecretCalculation {
 
 		res = decodeScalar(input);
 
-		System.out.println("Expected: " + correct);
-		System.out.println("Actual: " + res);
-		System.out.println("Same: " + correct.equals(res));
+		// System.out.println("Expected: " + correct);
+		// System.out.println("Actual: " + res);
+		// System.out.println("Same: " + correct.equals(res));
 
 		/* -- Test decodeUCoordinate -- */
 
-		System.out.println("Test decodeUCoordinate");
+		// System.out.println("Test decodeUCoordinate");
 
 		// Input value:
 		// e5210f12786811d3f4b7959d0538ae2c31dbe7106fc03c3efc4cd549c715a493
@@ -1063,9 +1069,9 @@ public class SharedSecretCalculation {
 
 		res = decodeUCoordinate(input);
 
-		System.out.println("Expected: " + correct);
-		System.out.println("Actual: " + res);
-		System.out.println("Same: " + correct.equals(res));
+		// System.out.println("Expected: " + correct);
+		// System.out.println("Actual: " + res);
+		// System.out.println("Same: " + correct.equals(res));
 
 		// --
 
@@ -1086,13 +1092,13 @@ public class SharedSecretCalculation {
 
 		res = decodeUCoordinate(input);
 
-		System.out.println("Expected: " + correct);
-		System.out.println("Actual: " + res);
-		System.out.println("Same: " + correct.equals(res));
+		// System.out.println("Expected: " + correct);
+		// System.out.println("Actual: " + res);
+		// System.out.println("Same: " + correct.equals(res));
 
 		/* -- Test encodeUCoordinate -- */
 
-		System.out.println("Test encodeUCoordinate");
+		// System.out.println("Test encodeUCoordinate");
 
 		// Input value:
 		// 8883857351183929894090759386610649319417338800022198945255395922347792736741
@@ -1109,9 +1115,9 @@ public class SharedSecretCalculation {
 
 		byte[] resArray = encodeUCoordinate(inputInt);
 
-		System.out.println("Expected: " + Utils.bytesToHex(correctArray));
-		System.out.println("Actual: " + Utils.bytesToHex(resArray));
-		System.out.println("Same: " + Arrays.equals(correctArray, resArray));
+		// System.out.println("Expected: " + Utils.bytesToHex(correctArray));
+		// System.out.println("Actual: " + Utils.bytesToHex(resArray));
+		// System.out.println("Same: " + Arrays.equals(correctArray, resArray));
 
 		// --
 
@@ -1129,13 +1135,13 @@ public class SharedSecretCalculation {
 
 		resArray = encodeUCoordinate(inputInt);
 
-		System.out.println("Expected: " + Utils.bytesToHex(correctArray));
-		System.out.println("Actual: " + Utils.bytesToHex(resArray));
-		System.out.println("Same: " + Arrays.equals(correctArray, resArray));
+		// System.out.println("Expected: " + Utils.bytesToHex(correctArray));
+		// System.out.println("Actual: " + Utils.bytesToHex(resArray));
+		// System.out.println("Same: " + Arrays.equals(correctArray, resArray));
 
 		/* Test cswap */
 
-		System.out.println("Test cswap");
+		// System.out.println("Test cswap");
 
 		// First no swap
 
@@ -1150,17 +1156,17 @@ public class SharedSecretCalculation {
 		BigInteger swap = BigInteger.ZERO;
 
 		Tuple result = cswap(swap, a, b);
-		System.out.println("Swap correct: " + result.a.equals(a) + " and " + result.b.equals(b));
+		// System.out.println("Swap correct: " + result.a.equals(a) + " and " + result.b.equals(b));
 
 		// Now do swap
 
 		swap = BigInteger.ONE;
 		result = cswap(swap, a, b);
-		System.out.println("Swap correct: " + result.a.equals(b) + " and " + result.b.equals(a));
+		// System.out.println("Swap correct: " + result.a.equals(b) + " and " + result.b.equals(a));
 
 		/* Test X25519 */
 
-		System.out.println("Test X25519");
+		// System.out.println("Test X25519");
 
 		byte[] k = new byte[] { (byte) 0xa5, (byte) 0x46, (byte) 0xe3, (byte) 0x6b, (byte) 0xf0, (byte) 0x52,
 				(byte) 0x7c, (byte) 0x9d, (byte) 0x3b, (byte) 0x16, (byte) 0x15, (byte) 0x4b, (byte) 0x82, (byte) 0x46,
@@ -1180,13 +1186,13 @@ public class SharedSecretCalculation {
 
 		byte[] xresult = X25519(k, u);
 
-		System.out.println("R: " + Utils.bytesToHex(xresult));
-		System.out.println("X25519 result is correct: " + Arrays.equals(c, xresult));
+		// System.out.println("R: " + Utils.bytesToHex(xresult));
+		// System.out.println("X25519 result is correct: " + Arrays.equals(c, xresult));
 
 		/* Test X25519 test vectors */
 		// See https://tools.ietf.org/html/rfc7748#section-5.2
 
-		System.out.println("Test X25519 test vectors");
+		// System.out.println("Test X25519 test vectors");
 
 		// First X25519 test vector
 
@@ -1195,7 +1201,7 @@ public class SharedSecretCalculation {
 		byte[] outputUCoordinate = Utils.hexToBytes("c3da55379de9c6908e94ea4df28d084f32eccf03491c71f754b4075577a28552");
 
 		byte[] myResult = X25519(inputScalar, inputUCoordinate);
-		System.out.println("First test vector works: " + Arrays.equals(myResult, outputUCoordinate));
+		// System.out.println("First test vector works: " + Arrays.equals(myResult, outputUCoordinate));
 
 		// Second X25519 test vector
 
@@ -1204,7 +1210,7 @@ public class SharedSecretCalculation {
 		outputUCoordinate = Utils.hexToBytes("95cbde9476e8907d7aade45cb4b873f88b595a68799fa152e6f8f7647aac7957");
 
 		myResult = X25519(inputScalar, inputUCoordinate);
-		System.out.println("Second test vector works: " + Arrays.equals(myResult, outputUCoordinate));
+		// System.out.println("Second test vector works: " + Arrays.equals(myResult, outputUCoordinate));
 
 		// Third X25519 test vector (iterations)
 
@@ -1213,7 +1219,7 @@ public class SharedSecretCalculation {
 		byte[] resultIteration1 = Utils.hexToBytes("422c8e7a6227d7bca1350b3e2bb7279f7897b87bb6854b783c60e80311ae3079");
 
 		byte[] myResult_1 = X25519(inputScalar, inputUCoordinate);
-		System.out.println("Third test vector works (1 iteration): " + Arrays.equals(myResult_1, resultIteration1));
+		// System.out.println("Third test vector works (1 iteration): " + Arrays.equals(myResult_1, resultIteration1));
 
 		// 1000 iterations
 
@@ -1232,8 +1238,9 @@ public class SharedSecretCalculation {
 				.hexToBytes("684cf59ba83309552800ef566f2f4d3c1c3887c49360e3875f2eb94d99532c51");
 		byte[] myResult_1000 = tK;
 
-		System.out.println(
-				"Third test vector works (1000 iterations): " + Arrays.equals(myResult_1000, resultIteration1000));
+		// System.out.println(
+		// "Third test vector works (1000 iterations): " +
+		// Arrays.equals(myResult_1000, resultIteration1000));
 
 		// 1 000 000 iterations
 		// Takes a very long time ~45 minutes
@@ -1254,7 +1261,7 @@ public class SharedSecretCalculation {
 
 				if (i % 20000 == 0) {
 					long timeElapsed = System.nanoTime() - startTime;
-					System.out.println("Iteration: " + i + ". Time: " + timeElapsed / 1000000 / 1000 + " seconds");
+					// System.out.println("Iteration: " + i + ". Time: " + timeElapsed / 1000000 / 1000 + " seconds");
 				}
 			}
 
@@ -1262,8 +1269,8 @@ public class SharedSecretCalculation {
 					.hexToBytes("7c3911e0ab2586fd864497297e575e6f3bc601c0883c30df5f4dd2d24f665424");
 			byte[] myResult_1000000 = tK;
 
-			System.out.println("Third test vector works (1 000 000 iterations): "
-					+ Arrays.equals(myResult_1000000, resultIteration1000000));
+			// System.out.println("Third test vector works (1 000 000 iterations): "
+			//		+ Arrays.equals(myResult_1000000, resultIteration1000000));
 		}
 
 		/* Test Diffie Hellman */
@@ -1281,8 +1288,8 @@ public class SharedSecretCalculation {
 		byte[] public_key_KA_calc = X25519(private_key_a, nine);
 		byte[] public_key_KB_calc = X25519(private_key_b, nine);
 
-		System.out.println("Public Key KA correct: " + Arrays.equals(public_key_KA_calc, public_key_KA));
-		System.out.println("Public Key KB correct: " + Arrays.equals(public_key_KB_calc, public_key_KB));
+		// System.out.println("Public Key KA correct: " + Arrays.equals(public_key_KA_calc, public_key_KA));
+		// System.out.println("Public Key KB correct: " + Arrays.equals(public_key_KB_calc, public_key_KB));
 
 		byte[] sharedSecret = Utils.hexToBytes("4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742");
 
@@ -1290,8 +1297,8 @@ public class SharedSecretCalculation {
 		byte[] sharedSecret_calc_one = X25519(private_key_a, public_key_KB);
 		byte[] sharedSecret_calc_two = X25519(private_key_b, public_key_KA);
 
-		System.out.println(
-				"Shared secret matches each other: " + Arrays.equals(sharedSecret_calc_one, sharedSecret_calc_two));
+		// System.out.println(
+		//		"Shared secret matches each other: " + Arrays.equals(sharedSecret_calc_one, sharedSecret_calc_two));
 		System.out
 				.println("Shared secret matches correct value: " + Arrays.equals(sharedSecret_calc_one, sharedSecret));
 
@@ -1310,7 +1317,7 @@ public class SharedSecretCalculation {
 		 * https://blog.mozilla.org/warner/2011/11/29/ed25519-keys/
 		 */
 
-		System.out.println("Test starting from COSE Keys");
+		// System.out.println("Test starting from COSE Keys");
 
 		// Key one
 
@@ -1326,9 +1333,9 @@ public class SharedSecretCalculation {
 		byte[] privateKey1H = ((EdDSAPrivateKey) myKey1.AsPrivateKey()).getH();
 		privateKey1H = Arrays.copyOf(privateKey1H, 32);
 
-		System.out.println("H priv1: " + Utils.bytesToHex(privateKey1H));
-		System.out.println("u from key one (public part): " + uuu1);
-		// System.out.println("From key one (private part): " +
+		// System.out.println("H priv1: " + Utils.bytesToHex(privateKey1H));
+		// System.out.println("u from key one (public part): " + uuu1);
+		// // System.out.println("From key one (private part): " +
 		// Utils.bytesToHex(privateKey1));
 
 		// Key two
@@ -1345,9 +1352,9 @@ public class SharedSecretCalculation {
 		byte[] privateKey2H = ((EdDSAPrivateKey) myKey2.AsPrivateKey()).getH();
 		privateKey2H = Arrays.copyOf(privateKey2H, 32);
 
-		System.out.println("H priv2: " + Utils.bytesToHex(privateKey2H));
-		System.out.println("u from key two (public part): " + uuu2);
-		// System.out.println("From key two (private part): " +
+		// System.out.println("H priv2: " + Utils.bytesToHex(privateKey2H));
+		// System.out.println("u from key two (public part): " + uuu2);
+		// // System.out.println("From key two (private part): " +
 		// Utils.bytesToHex(privateKey2));
 
 		// Calculated shared secrets
@@ -1355,15 +1362,15 @@ public class SharedSecretCalculation {
 		byte[] sharedSecret1 = X25519(privateKey1H, publicKey2U);
 		byte[] sharedSecret2 = X25519(privateKey2H, publicKey1U);
 
-		System.out.println("Shared secret 1: " + Utils.bytesToHex(sharedSecret1));
-		System.out.println("Shared secret 2: " + Utils.bytesToHex(sharedSecret2));
-		System.out.println("Shared secrets match: " + Arrays.equals(sharedSecret1, sharedSecret2));
+		// System.out.println("Shared secret 1: " + Utils.bytesToHex(sharedSecret1));
+		// System.out.println("Shared secret 2: " + Utils.bytesToHex(sharedSecret2));
+		// System.out.println("Shared secrets match: " + Arrays.equals(sharedSecret1, sharedSecret2));
 
 		/* End testing */
 
 		sharedSecretTest();
 
-		System.out.println("Testing finished");
+		// System.out.println("Testing finished");
 
 		// --
 
@@ -1386,8 +1393,9 @@ public class SharedSecretCalculation {
 		/* Check that the keys are as expected (using Ed25519) */
 		if (publicKey.get(KeyKeys.OKP_Curve) != KeyKeys.OKP_Ed25519
 				|| privateKey.get(KeyKeys.OKP_Curve) != KeyKeys.OKP_Ed25519) {
-			System.err.println(
-					"Error: Keys for EdDSA shared secret calculation are not using Ed25519. Use X25519 directly.");
+			// System.err.println(
+			// "Error: Keys for EdDSA shared secret calculation are not using
+			// Ed25519. Use X25519 directly.");
 			return null;
 		}
 		
@@ -1444,9 +1452,9 @@ public class SharedSecretCalculation {
 		byte[] sharedSecret1 = X25519(bob_private_scalar, alice_u_array);
 		byte[] sharedSecret2 = X25519(alice_private_scalar, bob_u_array);
 
-		System.out.println("Shared secret 1: " + Utils.bytesToHex(sharedSecret1));
-		System.out.println("Shared secret 2: " + Utils.bytesToHex(sharedSecret2));
-		System.out.println("Shared secrets match: " + Arrays.equals(sharedSecret1, sharedSecret2));
+		// System.out.println("Shared secret 1: " + Utils.bytesToHex(sharedSecret1));
+		// System.out.println("Shared secret 2: " + Utils.bytesToHex(sharedSecret2));
+		// System.out.println("Shared secrets match: " + Arrays.equals(sharedSecret1, sharedSecret2));
 
 	}
 

@@ -117,16 +117,16 @@ public class EdhocLayer extends AbstractLayer {
 		this.OSCORE_REPLAY_WINDOW = OSCORE_REPLAY_WINDOW;
 		this.MAX_UNFRAGMENTED_SIZE = MAX_UNFRAGMENTED_SIZE;
 
-		LOGGER.warn("Initializing EDHOC layer");
+		// LOGGER.warn("Initializing EDHOC layer");
 	}
 
 	@Override
 	public void sendRequest(final Exchange exchange, final Request request) {
 
-		LOGGER.warn("Sending request through EDHOC layer");
+		// LOGGER.warn("Sending request through EDHOC layer");
 
 		if (request.getOptions().hasOscore() && request.getOptions().hasEdhoc()) {
-			LOGGER.warn("Combined EDHOC+OSCORE request");
+			// LOGGER.warn("Combined EDHOC+OSCORE request");
 			
 			// Retrieve the Security Context used to protect the request
 			OSCoreCtx ctx = getContextForOutgoing(exchange);
@@ -139,7 +139,7 @@ public class EdhocLayer extends AbstractLayer {
 			
 			// Consistency checks
 			if (session == null) {
-				System.err.println("Unable to retrieve the EDHOC session when sending an EDHOC+OSCORE request\n");
+				// System.err.println("Unable to retrieve the EDHOC session when sending an EDHOC+OSCORE request\n");
 				return;
 			}
 			CBORObject obj = EdhocSession.oscoreToEdhocId(ctx.getSenderId());
@@ -147,7 +147,7 @@ public class EdhocLayer extends AbstractLayer {
 				 session.getCurrentStep() != Constants.EDHOC_SENT_M3 ||		
 				!session.getPeerConnectionId().equals(obj)) {
 				
-				System.err.println("Retrieved inconsistent EDHOC session when sending an EDHOC+OSCORE request");
+				// System.err.println("Retrieved inconsistent EDHOC session when sending an EDHOC+OSCORE request");
 				return;
 			}
 			
@@ -189,7 +189,7 @@ public class EdhocLayer extends AbstractLayer {
 	@Override
 	public void sendResponse(Exchange exchange, Response response) {
 
-		LOGGER.warn("Sending response through EDHOC layer");
+		// LOGGER.warn("Sending response through EDHOC layer");
 
 		super.sendResponse(exchange, response);
 	}
@@ -197,19 +197,19 @@ public class EdhocLayer extends AbstractLayer {
 	@Override
 	public void receiveRequest(Exchange exchange, Request request) {
 
-		LOGGER.warn("Receiving request through EDHOC layer");
+		// LOGGER.warn("Receiving request through EDHOC layer");
 
 		if (request.getOptions().hasEdhoc()) {
 			
 			if (!request.getOptions().hasOscore()) {
     			String responseString = new String("Received a request including the EDHOC option but"
                         + " not including the OSCORE option\n");
-    			System.err.println(responseString);
+    			// System.err.println(responseString);
     			sendErrorResponse(exchange, responseString, ResponseCode.BAD_REQUEST);
     			return;
 			}
 			
-			LOGGER.warn("Combined EDHOC+OSCORE request");
+			// LOGGER.warn("Combined EDHOC+OSCORE request");
 			
 			
 			boolean error = false;
@@ -231,7 +231,7 @@ public class EdhocLayer extends AbstractLayer {
 			// The EDHOC+OSCORE request is malformed
 			if (error == true) {
 				String responseString = new String("Invalid EDHOC+OSCORE request");
-				System.err.println(responseString);
+				// System.err.println(responseString);
 				sendErrorResponse(exchange, responseString, ResponseCode.BAD_REQUEST);
 				return;
 			}
@@ -271,7 +271,7 @@ public class EdhocLayer extends AbstractLayer {
     		if (mySession == null) {
     			String responseString = new String("Unable to retrieve the EDHOC session when"
     					                         + " receiving an EDHOC+OSCORE request\n");
-				System.err.println(responseString);
+				// System.err.println(responseString);
 				sendErrorResponse(exchange, responseString, ResponseCode.BAD_REQUEST);
             	return;
     		}
@@ -280,13 +280,13 @@ public class EdhocLayer extends AbstractLayer {
 				mySession.getCurrentStep() != Constants.EDHOC_SENT_M2 ||		
 				!mySession.getConnectionId().equals(obj)) {
 				
-				System.err.println("Retrieved inconsistent EDHOC session when receiving an EDHOC+OSCORE request");
+				// System.err.println("Retrieved inconsistent EDHOC session when receiving an EDHOC+OSCORE request");
 				return;
 			}
     		   
     		// This EDHOC resource does not support the use of the EDHOC+OSCORE request
     		if (mySession.getApplicationProfile().getSupportCombinedRequest() == false) {
-				System.err.println("This EDHOC resource does not support the use of the EDHOC+OSCORE request\n");
+				// System.err.println("This EDHOC resource does not support the use of the EDHOC+OSCORE request\n");
     			Util.purgeSession(mySession, CBORObject.FromObject(kid), edhocSessions, usedConnectionIds);
     			
     			String errMsg = new String("This EDHOC resource does not support the use of the EDHOC+OSCORE request");
@@ -300,7 +300,7 @@ public class EdhocLayer extends AbstractLayer {
 			
     		// The combined request cannot be used if the Responder has to send message_4
     		if (mySession.getApplicationProfile().getUseMessage4() == true) {
-				System.err.println("Cannot receive the combined EDHOC+OSCORE request if message_4 is expected\n");
+				// System.err.println("Cannot receive the combined EDHOC+OSCORE request if message_4 is expected\n");
     			Util.purgeSession(mySession, CBORObject.FromObject(kid), edhocSessions, usedConnectionIds);
     			
     			String errMsg = new String("Cannot receive the combined EDHOC+OSCORE request if message_4 is expected");
@@ -323,7 +323,7 @@ public class EdhocLayer extends AbstractLayer {
 
 			if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
 				String responseString = new String("Internal error when processing EDHOC Message 3");
-				System.err.println(responseString);				
+				// System.err.println(responseString);				
 				sendErrorResponse(exchange, responseString, ResponseCode.INTERNAL_SERVER_ERROR);
 				return;
 			}
@@ -355,13 +355,13 @@ public class EdhocLayer extends AbstractLayer {
 				mySession = edhocSessions.get(cR);
 				
 				if (mySession == null) {
-					System.err.println("Inconsistent state before sending EDHOC Message 3");
+					// System.err.println("Inconsistent state before sending EDHOC Message 3");
 					String responseString = new String("Inconsistent state before sending EDHOC Message 3");
 					sendErrorResponse(exchange, responseString, ResponseCode.INTERNAL_SERVER_ERROR);
 					return;
 				}
 				if (mySession.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
-					System.err.println("Inconsistent state before sending EDHOC Message 3");							
+					// System.err.println("Inconsistent state before sending EDHOC Message 3");							
 					Util.purgeSession(mySession,
 							          CBORObject.FromObject(mySession.getConnectionId()), edhocSessions, usedConnectionIds);
 					String responseString = new String("Inconsistent state before sending EDHOC Message 3");
@@ -398,7 +398,7 @@ public class EdhocLayer extends AbstractLayer {
 					Util.purgeSession(mySession,
 									  CBORObject.FromObject(mySession.getConnectionId()), edhocSessions, usedConnectionIds);
 					String responseString = new String("Error when deriving the OSCORE Security Context");
-					System.err.println(responseString + " " + e.getMessage());
+					// System.err.println(responseString + " " + e.getMessage());
 					sendErrorResponse(exchange, responseString, ResponseCode.INTERNAL_SERVER_ERROR);
 					return;
 				}
@@ -409,7 +409,7 @@ public class EdhocLayer extends AbstractLayer {
 					Util.purgeSession(mySession,
 									  CBORObject.FromObject(mySession.getConnectionId()), edhocSessions, usedConnectionIds);
 					String responseString = new String("Error when adding the OSCORE Security Context to the context database");
-					System.err.println(responseString + " " + e.getMessage());
+					// System.err.println(responseString + " " + e.getMessage());
 					sendErrorResponse(exchange, responseString, ResponseCode.INTERNAL_SERVER_ERROR);
 					return;
 				}			        			        
@@ -437,7 +437,7 @@ public class EdhocLayer extends AbstractLayer {
 	@Override
 	public void receiveResponse(Exchange exchange, Response response) {
 
-		LOGGER.warn("Receiving response through EDHOC layer");
+		// LOGGER.warn("Receiving response through EDHOC layer");
 
 		super.receiveResponse(exchange, response);
 	}
@@ -468,7 +468,7 @@ public class EdhocLayer extends AbstractLayer {
 			try {
 				return ctxDb.getContext(uri);
 			} catch (OSException exception) {
-				System.err.println("Error when retrieving the OSCORE Security Context " + exception.getMessage());
+				// System.err.println("Error when retrieving the OSCORE Security Context " + exception.getMessage());
 				return null;
 			}
 		}
@@ -531,7 +531,7 @@ public class EdhocLayer extends AbstractLayer {
 	private void sendErrorMessage(Exchange exchange, byte[] nextMessage, ResponseCode responseCode) {
 	
 		if (!MessageProcessor.isErrorMessage(nextMessage, false)) {
-			System.err.println("Inconsistent state before sending EDHOC Error Message");
+			// System.err.println("Inconsistent state before sending EDHOC Error Message");
 			String responseString = new String("Inconsistent state before sending EDHOC Error Message");
 			sendErrorResponse(exchange, responseString, ResponseCode.INTERNAL_SERVER_ERROR);
 			return;

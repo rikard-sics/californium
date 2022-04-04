@@ -263,7 +263,7 @@ public class Phase2Client {
 				uri = new URI(args[0]);
 			}
 		} catch (URISyntaxException e) {
-			System.err.println("Invalid URI: " + e.getMessage());
+			// System.err.println("Invalid URI: " + e.getMessage());
 			System.exit(-1);
 		}
 		// helloWorldExchange(args, uri);
@@ -274,7 +274,7 @@ public class Phase2Client {
 			uri = new URI(edhocURI);
 		}
 		catch (URISyntaxException e) {
-			System.err.println("Invalid URI: " + e.getMessage());
+			// System.err.println("Invalid URI: " + e.getMessage());
 			System.exit(-1);
 		}
 		
@@ -401,7 +401,7 @@ public class Phase2Client {
 				// TODO
 				break;
 			case Constants.CRED_TYPE_CCS:
-			// System.out.print("My ");
+			// // System.out.print("My ");
 				CBORObject idCredKidCbor = CBORObject.FromObject(idCredKid);
 				ccsObject = CBORObject.DecodeFromBytes(Util.buildCredRawPublicKeyCcs(keyPair, subjectName, idCredKidCbor));
 				
@@ -493,7 +493,7 @@ public class Phase2Client {
 			// TODO
 			break;
 		case Constants.CRED_TYPE_CCS:				
-			// System.out.print("Peer ");
+			// // System.out.print("Peer ");
 			CBORObject peerKidCbor = CBORObject.FromObject(peerKid);
 			peerCcsObject = CBORObject.DecodeFromBytes(Util.buildCredRawPublicKeyCcs(peerPublicKey, subjectName, peerKidCbor));
 			
@@ -576,30 +576,30 @@ public class Phase2Client {
 		try {
 			response = client.get();
 		} catch (ConnectorException | IOException e) {
-			System.err.println("Got an error: " + e);
+			// System.err.println("Got an error: " + e);
 		}
 
 		if (response != null) {
 
-			// System.out.println(response.getCode());
-			// System.out.println(response.getOptions());
+			// // System.out.println(response.getCode());
+			// // System.out.println(response.getOptions());
 			if (args.length > 1) {
 				try (FileOutputStream out = new FileOutputStream(args[1])) {
 					out.write(response.getPayload());
 				} catch (IOException e) {
-					System.err.println("Error while writing the response payload to file: " + e.getMessage());
+					// System.err.println("Error while writing the response payload to file: " + e.getMessage());
 				}
 			} else {
-				// System.out.println(response.getResponseText());
+				// // System.out.println(response.getResponseText());
 
-				// System.out.println(System.lineSeparator() + "ADVANCED" +
+				// // System.out.println(System.lineSeparator() + "ADVANCED" +
 				// System.lineSeparator());
 				// access advanced API with access to more details through
 				// .advanced()
 				// System.out.println(Utils.prettyPrint(response));
 			}
 		} else {
-			// System.out.println("No response received.");
+			// // System.out.println("No response received.");
 		}
 		client.shutdown();
 		
@@ -617,24 +617,24 @@ public class Phase2Client {
 		 * CoapResponse response = null;
 		 * 
 		 * try { response = client.get(); } catch (ConnectorException |
-		 * IOException e) { System.err.println("Got an error: " + e); }
+		 * IOException e) { // System.err.println("Got an error: " + e); }
 		 * 
 		 * if (response != null) {
 		 * 
-		 * // System.out.println(response.getCode()); //
-		 * System.out.println(response.getOptions()); if (args.length > 1) { try
+		 * // // System.out.println(response.getCode()); //
+		 * // System.out.println(response.getOptions()); if (args.length > 1) { try
 		 * (FileOutputStream out = new FileOutputStream(args[1])) {
 		 * out.write(response.getPayload()); } catch (IOException e) {
 		 * System.err.
 		 * println("Error while writing the response payload to file: " +
 		 * e.getMessage()); } } else { //
-		 * System.out.println(response.getResponseText());
+		 * // System.out.println(response.getResponseText());
 		 * 
-		 * // System.out.println(System.lineSeparator() + "ADVANCED" +
+		 * // // System.out.println(System.lineSeparator() + "ADVANCED" +
 		 * System.lineSeparator()); // access advanced API with access to more
 		 * details through // .advanced() //
 		 * System.out.println(Utils.prettyPrint(response)); } } else { //
-		 * System.out.println("No response received."); }
+		 * // System.out.println("No response received."); }
 		 */
 		
 		// Simple test with a dummy payload
@@ -646,22 +646,22 @@ public class Phase2Client {
 		 * edhocMessage1.setPayload(requestPayload);
 		 * 
 		 * // Submit the request //
-		 * System.out.println("\nSent EDHOC Message1\n"); CoapResponse
+		 * // System.out.println("\nSent EDHOC Message1\n"); CoapResponse
 		 * edhocMessage2; try { edhocMessage2 = client.advanced(edhocMessage1);
 		 * } catch (ConnectorException e) {
-		 * System.err.println("ConnectorException when sending EDHOC Message1");
+		 * // System.err.println("ConnectorException when sending EDHOC Message1");
 		 * return; } catch (IOException e) {
-		 * System.err.println("IOException when sending EDHOC Message1");
+		 * // System.err.println("IOException when sending EDHOC Message1");
 		 * return; }
 		 * 
 		 * byte[] responsePayload = edhocMessage2.getPayload(); //
-		 * System.out.println("\nResponse: " + new String(responsePayload) +
+		 * // System.out.println("\nResponse: " + new String(responsePayload) +
 		 * "\n");
 		 */		
         
 		
 		/* Prepare and send EDHOC Message 1 */
-		// System.out.println("Phase 2 Client ready to execute EDHOC and send
+		// // System.out.println("Phase 2 Client ready to execute EDHOC and send
 		// following OSCORE request" + "\n");
 		Support.printPause("Press enter to execute EDHOC and turn on light");
 		beginTotal = System.nanoTime();
@@ -681,7 +681,7 @@ public class Phase2Client {
         byte[] nextPayload = MessageProcessor.writeMessage1(session, ead1);
         
 		if (nextPayload == null || session.getCurrentStep() != Constants.EDHOC_BEFORE_M1) {
-			System.err.println("Inconsistent state before sending EDHOC Message 1");
+			// System.err.println("Inconsistent state before sending EDHOC Message 1");
 			session.deleteTemporaryMaterial();
 			session = null;
 			client.shutdown();
@@ -703,19 +703,19 @@ public class Phase2Client {
 		Request edhocMessageReq = new Request(Code.POST, Type.CON);
 		edhocMessageReq.setPayload(nextPayload);
 		
-		// System.out.println("Sent EDHOC Message 1\n");
+		// // System.out.println("Sent EDHOC Message 1\n");
         
         CoapResponse edhocMessageResp;
         try {
         	session.setCurrentStep(Constants.EDHOC_SENT_M1);
         	edhocMessageResp = client.advanced(edhocMessageReq);
 		} catch (ConnectorException e) {
-			System.err.println("ConnectorException when sending EDHOC Message 1");
+			// System.err.println("ConnectorException when sending EDHOC Message 1");
 			Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 			client.shutdown();
 			return;
 		} catch (IOException e) {
-			System.err.println("IOException when sending EDHOC Message 1");
+			// System.err.println("IOException when sending EDHOC Message 1");
 			Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 			client.shutdown();
 			return;
@@ -733,14 +733,14 @@ public class Phase2Client {
         		discontinue = true;
         }
         if (discontinue == true) {
-			System.err.println("Received invalid reply to EDHOC Message 1");
+			// System.err.println("Received invalid reply to EDHOC Message 1");
         	Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
         	client.shutdown();
         	return;
         }
 		
         String myString = (responseType == Constants.EDHOC_MESSAGE_2) ? "EDHOC Message 2" : "EDHOC Error Message";
-		// System.out.println("Determined EDHOC message type: " + myString +
+		// // System.out.println("Determined EDHOC message type: " + myString +
 		// "\n");
         Util.nicePrint("EDHOC message " + responseType, responsePayload);
         
@@ -767,15 +767,15 @@ public class Phase2Client {
         		
         		// Retrieve ERR_CODE
         		int errorCode = objectList[0].AsInt32();
-				// System.out.println("ERR_CODE: " + errorCode + "\n");
+				// // System.out.println("ERR_CODE: " + errorCode + "\n");
 
         		// Retrieve ERR_INFO
         		if (errorCode == Constants.ERR_CODE_SUCCESS) {
-					// System.out.println("Success\n");
+					// // System.out.println("Success\n");
         		}
         		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED) {
         		    String errMsg = objectList[1].toString();
-					// System.out.println("ERR_INFO: " + errMsg + "\n");
+					// // System.out.println("ERR_INFO: " + errMsg + "\n");
         		}
         		else if (errorCode == Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE) {
         		    CBORObject suitesR = objectList[1];
@@ -783,17 +783,17 @@ public class Phase2Client {
         		    	int suite = suitesR.AsInt32();
     		    		peerSupportedCiphersuites.add(Integer.valueOf(suite));
     		    		session.setPeerSupportedCipherSuites(peerSupportedCiphersuites);
-						// System.out.println("SUITES_R: " + suitesR.AsInt32() +
+						// // System.out.println("SUITES_R: " + suitesR.AsInt32() +
 						// "\n");
         		    }
         		    else if (suitesR.getType() == CBORType.Array) {
-						// System.out.print("SUITES_R: [ ");
+						// // System.out.print("SUITES_R: [ ");
         		        for (int i = 0; i < suitesR.size(); i++) {
         		        	int suite = suitesR.get(i).AsInt32();
     		        		peerSupportedCiphersuites.add(Integer.valueOf(suite));
-							// System.out.print(suitesR.get(i).AsInt32() + " ");
+							// // System.out.print(suitesR.get(i).AsInt32() + " ");
         		        }
-						// System.out.println("]\n");
+						// // System.out.println("]\n");
         		        session.setPeerSupportedCipherSuites(peerSupportedCiphersuites);
         		    }
         		}
@@ -827,7 +827,7 @@ public class Phase2Client {
 					                                         peerCredentials, usedConnectionIds, ownIdCreds);
 			
 			if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
-				System.err.println("Internal error when processing EDHOC Message 2");
+				// System.err.println("Internal error when processing EDHOC Message 2");
 				Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 				client.shutdown();
 				return;
@@ -855,7 +855,7 @@ public class Phase2Client {
 				nextPayload = MessageProcessor.writeMessage3(session, ead3);
 		        
 				if (nextPayload == null || session.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
-					System.err.println("Inconsistent state before sending EDHOC Message 3");
+					// System.err.println("Inconsistent state before sending EDHOC Message 3");
 					Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 					client.shutdown();
 					return;
@@ -874,7 +874,7 @@ public class Phase2Client {
 				
 				if (requestType == Constants.EDHOC_MESSAGE_3) {
 			        
-					// System.out.println("Sent EDHOC Message 3\n");
+					// // System.out.println("Sent EDHOC Message 3\n");
 					
 			        if (session.getApplicationProfile().getUsedForOSCORE() == true) {
 			        
@@ -898,8 +898,8 @@ public class Phase2Client {
 				        OSCoreCtx ctx = null;
 				        byte[] recipientId = EdhocSession.edhocToOscoreId(connectionId);
 				        if (Arrays.equals(senderId, recipientId)) {
-							System.err.println("Error: the Sender ID coincides with the Recipient ID " +
-												Utils.toHexString(senderId));
+							// System.err.println("Error: the Sender ID coincides with the Recipient ID " +
+							//					Utils.toHexString(senderId));
 							Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 							client.shutdown();
 							return;
@@ -910,8 +910,8 @@ public class Phase2Client {
 									            OSCORE_REPLAY_WINDOW, masterSalt, null, MAX_UNFRAGMENTED_SIZE);
 							
 						} catch (OSException e) {
-							System.err.println("Error when deriving the OSCORE Security Context "
-						                        + e.getMessage());
+							// System.err.println("Error when deriving the OSCORE Security Context "
+						    //                    + e.getMessage());
 							Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 							client.shutdown();
 							return;
@@ -920,8 +920,8 @@ public class Phase2Client {
 				        try {
 							db.addContext(edhocURI, ctx);
 						} catch (OSException e) {
-							System.err.println("Error when adding the OSCORE Security Context to the context database "
-						                        + e.getMessage());
+							// System.err.println("Error when adding the OSCORE Security Context to the context database "
+						    //                    + e.getMessage());
 							Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 							client.shutdown();
 							return;
@@ -945,7 +945,7 @@ public class Phase2Client {
 					}
 					
 				    Util.purgeSession(session, cI, edhocSessions, usedConnectionIds);
-					// System.out.println("Sent EDHOC Error Message\n");
+					// // System.out.println("Sent EDHOC Error Message\n");
 			        if (debugPrint) {
 			        	Util.nicePrint("EDHOC Error Message", nextPayload);
 			        }
@@ -966,8 +966,9 @@ public class Phase2Client {
 		        		
 		        		// The combined request cannot be used if the Responder has to send message_4
 		        		if (session.getApplicationProfile().getUseMessage4() == true) {
-							System.err.println(
-									"Cannot send the combined EDHOC+OSCORE request if message_4 is expected\n");
+							// System.err.println(
+							// "Cannot send the combined EDHOC+OSCORE request if
+							// message_4 is expected\n");
 			    			Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 			            	client.shutdown();
 			            	return;
@@ -987,12 +988,12 @@ public class Phase2Client {
 							session.setCurrentStep(Constants.EDHOC_SENT_M3);
 							protectedResponse = client.advanced(edhocMessageReq2);
 						} catch (ConnectorException e) {
-							System.err.println("ConnectorException when sending a protected request\n");
+							// System.err.println("ConnectorException when sending a protected request\n");
 			    			Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 			            	client.shutdown();
 			            	return;
 						} catch (IOException e) {
-							System.err.println("IOException when sending a protected request\n");
+							// System.err.println("IOException when sending a protected request\n");
 			    			Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 			            	client.shutdown();
 			            	return;
@@ -1000,7 +1001,7 @@ public class Phase2Client {
 					
 						byte[] myPayload = protectedResponse.getPayload();
 						if (myPayload != null) {
-							// System.out.println(Utils.prettyPrint(protectedResponse));
+							// // System.out.println(Utils.prettyPrint(protectedResponse));
 							
 							int contentFormat = protectedResponse.getOptions().getContentFormat();
 							int restCode = protectedResponse.getCode().value;
@@ -1016,7 +1017,7 @@ public class Phase2Client {
 			            		
 				            	if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
 				            		
-									System.err.println("Received an EDHOC Error Message");
+									// System.err.println("Received an EDHOC Error Message");
 						        	CBORObject[] objectList = MessageProcessor.readErrorMessage(myPayload,
 						        			 													cI, edhocSessions);
 						        	processErrorMessageAsResponse(objectList, connectionId);
@@ -1046,18 +1047,17 @@ public class Phase2Client {
 		        		
 						long endEdhoc = System.nanoTime();
 						long edhocTotal = endEdhoc - beginEdhoc;
-						// System.out.println("Time elapsed for EDHOC
-						// processing: " + (edhocTotal / 1000000) + " ms");
+						System.out.println("Time elapsed for EDHOC processing: " + (edhocTotal / 1000000) + " ms");
 
 		        	}
 		        	
 				} catch (ConnectorException e) {
-					System.err.println("ConnectorException when sending " + myString + "\n");
+					// System.err.println("ConnectorException when sending " + myString + "\n");
 					Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 					client.shutdown();
 					return;
 				} catch (IOException e) {
-					System.err.println("IOException when sending " + myString + "\n");
+					// System.err.println("IOException when sending " + myString + "\n");
 					Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 					client.shutdown();
 					return;
@@ -1095,14 +1095,14 @@ public class Phase2Client {
 		            		}
 		            		else {
 		            			// Any other message than message_4 and Error Message
-								System.err.println("Received invalid reply to EDHOC Message 3");
+								// System.err.println("Received invalid reply to EDHOC Message 3");
 		            			discontinue = true;
 		            		}
 		            		
 		            	}
 		            	// It is an EDHOC Error Message
 		            	else {
-							System.err.println("Received an EDHOC Error Message");
+							// System.err.println("Received an EDHOC Error Message");
 				        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload, cI, edhocSessions);
 				        	processErrorMessageAsResponse(objectList, cI);
 				        	discontinue = true;
@@ -1129,7 +1129,7 @@ public class Phase2Client {
 							typeName = new String("EDHOC Message " + responseType);
 							break;		
 					}
-					// System.out.println("Determined EDHOC message type: " +
+					// // System.out.println("Determined EDHOC message type: " +
 					// typeName + "\n");
 		            Util.nicePrint(typeName, responsePayload);
 		            
@@ -1139,7 +1139,7 @@ public class Phase2Client {
 		            			                                         edhocSessions, usedConnectionIds);
 		            	
 						if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
-							System.err.println("Internal error when processing EDHOC Message 4");
+							// System.err.println("Internal error when processing EDHOC Message 4");
 							Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 			            	client.shutdown();
 			            	return;
@@ -1189,12 +1189,12 @@ public class Phase2Client {
 					        try {
 					        	edhocMessageResp = client.advanced(edhocMessageReq3);
 							} catch (ConnectorException e) {
-								System.err.println("ConnectorException when sending EDHOC Error Message");
+								// System.err.println("ConnectorException when sending EDHOC Error Message");
 								Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 								client.shutdown();
 								return;
 							} catch (IOException e) {
-								System.err.println("IOException when sending EDHOC Error Message");
+								// System.err.println("IOException when sending EDHOC Error Message");
 								Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
 								client.shutdown();
 								return;
@@ -1203,7 +1203,7 @@ public class Phase2Client {
 		            	
 		            }
 		            else if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
-						System.err.println("Received an EDHOC Error Message");
+						// System.err.println("Received an EDHOC Error Message");
 			        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload, cI, edhocSessions);
 			        	
 			        	processErrorMessageAsResponse(objectList, cI);
@@ -1228,13 +1228,13 @@ public class Phase2Client {
 					try {
 						protectedResponse = client.advanced(protectedRequest);
 					} catch (ConnectorException e) {
-						System.err.println("ConnectorException when sending a protected request\n");
+						// System.err.println("ConnectorException when sending a protected request\n");
 					} catch (IOException e) {
-						System.err.println("IOException when sending a protected request\n");
+						// System.err.println("IOException when sending a protected request\n");
 					}
 					byte[] myPayload = protectedResponse.getPayload();
 					if (myPayload != null) {
-						// System.out.println(Utils.prettyPrint(protectedResponse));
+						// // System.out.println(Utils.prettyPrint(protectedResponse));
 						long endTotal = System.nanoTime();
 						long timeTotal = endTotal - beginTotal;
 						System.out
@@ -1263,7 +1263,7 @@ public class Phase2Client {
 			} else if (command.equals("q")) {
 				System.exit(0);
 			} else {
-				// System.out.println("Unknown command!");
+				// // System.out.println("Unknown command!");
 			}
 
 			Request r = new Request(Code.POST);
@@ -1290,7 +1290,7 @@ public class Phase2Client {
 	 */
 	private static void processResponseAfterEdhoc(CoapResponse msg) {
 		// Do nothing
-		// System.out.println("ResponseAfterEdhoc()");
+		// // System.out.println("ResponseAfterEdhoc()");
 	}
 	
 	/*
@@ -1305,39 +1305,39 @@ public class Phase2Client {
         	// Retrieve ERR_CODE
         	int errorCode = objectList[index].AsInt32();
         	index++;
-			// System.out.println("ERR_CODE: " + errorCode + "\n");
+			// // System.out.println("ERR_CODE: " + errorCode + "\n");
         	
         	// Retrieve ERR_INFO
     		if (errorCode == Constants.ERR_CODE_SUCCESS) {
-				// System.out.println("Success\n");
+				// // System.out.println("Success\n");
     		}
     		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED) {
 	        	String errMsg = objectList[index].toString();
-				// System.out.println("DIAG_MSG: " + errMsg + "\n");
+				// // System.out.println("DIAG_MSG: " + errMsg + "\n");
     		}
     		else if (errorCode == Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE) {
     			CBORObject suitesR = objectList[index];
 				if (suitesR.getType() == CBORType.Integer) {
-					// System.out.println("SUITES_R: " + suitesR.AsInt32() +
+					// // System.out.println("SUITES_R: " + suitesR.AsInt32() +
 					// "\n");
 				}
 				else if (suitesR.getType() == CBORType.Array) {
-					// System.out.print("SUITES_R: [ ");
+					// // System.out.print("SUITES_R: [ ");
 					for (int i = 0; i < suitesR.size(); i++) {
-						// System.out.print(suitesR.get(i).AsInt32() + " ");
+						// // System.out.print(suitesR.get(i).AsInt32() + " ");
 					}
-					// System.out.println("]\n");
+					// // System.out.println("]\n");
 				}
     		}
     		
     		if (connectionId == null) {
-				System.err.println("Unavailable connection identifier to delete EDHOC session");
+				// System.err.println("Unavailable connection identifier to delete EDHOC session");
     			return;
     		}
     	
     		EdhocSession session = edhocSessions.get(connectionId);
     		if (session == null) {
-				System.err.println("EDHOC session to delete not found");
+				// System.err.println("EDHOC session to delete not found");
     			return;
     		}
     	
@@ -1373,8 +1373,8 @@ public class Phase2Client {
 		public void onLoad(CoapResponse response) {
 			on();
 
-			// // System.out.println("Receiving to: "); //TODO
-			// System.out.println("Receiving from: " +
+			// // // System.out.println("Receiving to: "); //TODO
+			// // System.out.println("Receiving from: " +
 			// response.advanced().getSourceContext().getPeerAddress());
 
 			// System.out.println(Utils.prettyPrint(response));
@@ -1382,7 +1382,7 @@ public class Phase2Client {
 
 		@Override
 		public void onError() {
-			System.err.println("error");
+			// System.err.println("error");
 		}
 	}
 

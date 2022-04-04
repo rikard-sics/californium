@@ -257,7 +257,6 @@
 						<compilerArgs>
 							<arg>-Xlint:deprecation</arg>
 						</compilerArgs>
-                                                <release>10</release>
 					</configuration>
 				</plugin>
 				<plugin>

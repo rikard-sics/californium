@@ -531,7 +531,7 @@ public class MessageProcessorTest {
 			Assert.fail("Error while running EDHOC-KeyUpdate(): " + e.getMessage());
 		}
         
-        System.out.println("Completed EDHOC-KeyUpdate()\n");
+        // System.out.println("Completed EDHOC-KeyUpdate()\n");
         
         // Following the key update, generate new OSCORE Master Secret and Master Salt
         masterSecret = EdhocSession.getMasterSecretOSCORE(session);
@@ -774,7 +774,7 @@ public class MessageProcessorTest {
 		/*
 		ByteArrayInputStream inputStream = new ByteArrayInputStream(credR);
 		try {
-			System.out.println((Utils.bytesToHex(inputStream.readAllBytes())));
+			// System.out.println((Utils.bytesToHex(inputStream.readAllBytes())));
 		} catch (IOException e) {
 			fail("Error when printing the input bytes: " + e.getMessage());
 			return;
@@ -1039,7 +1039,7 @@ public class MessageProcessorTest {
 			Assert.fail("Error while running EDHOC-KeyUpdate(): " + e.getMessage());
 		}
         
-        System.out.println("Completed EDHOC-KeyUpdate()\n");
+        // System.out.println("Completed EDHOC-KeyUpdate()\n");
         
         // Following the key update, generate new OSCORE Master Secret and Master Salt
         masterSecret = EdhocSession.getMasterSecretOSCORE(session);

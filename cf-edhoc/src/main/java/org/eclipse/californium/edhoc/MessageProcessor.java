@@ -68,7 +68,7 @@ public class MessageProcessor {
 		try {
 			myObjects = CBORObject.DecodeSequenceFromBytes(msg);
 		} catch (CBORException e) {
-			System.err.println("Error while parsing the CBOR sequence\n");
+			// System.err.println("Error while parsing the CBOR sequence\n");
 			return -1;
 		}
 		
@@ -223,7 +223,7 @@ public class MessageProcessor {
 		try {
 			myObjects = CBORObject.DecodeSequenceFromBytes(msg);
 		} catch (CBORException e) {
-			System.err.println("Error while parsing the CBOR sequence\n");
+			// System.err.println("Error while parsing the CBOR sequence\n");
 			return false;
 		}
 		
@@ -559,7 +559,7 @@ public class MessageProcessor {
 			processingResult.add(eadArray);
 		}
 		
-		System.out.println("\nCompleted processing of EDHOC Message 1");
+		// System.out.println("\nCompleted processing of EDHOC Message 1");
 		return processingResult;
 		
 	}
@@ -1092,7 +1092,7 @@ public class MessageProcessor {
 		    processingResult.add(eadArray);
 		}
 		
-		System.out.println("\nCompleted processing of EDHOC Message 2");
+		// System.out.println("\nCompleted processing of EDHOC Message 2");
 		return processingResult;
 		
 	}
@@ -1527,7 +1527,7 @@ public class MessageProcessor {
 		
 		session.setCurrentStep(Constants.EDHOC_AFTER_M3);
 		
-		System.out.println("\nCompleted processing of EDHOC Message 3\n");
+		// System.out.println("\nCompleted processing of EDHOC Message 3\n");
 		return processingResult;
 		
 	}
@@ -1819,7 +1819,7 @@ public class MessageProcessor {
 				
     	session.setCurrentStep(Constants.EDHOC_AFTER_M4);
 		
-		System.out.println("\nCompleted processing of EDHOC Message 4");
+		// System.out.println("\nCompleted processing of EDHOC Message 4");
 		return processingResult;
 		
 	}
@@ -1836,7 +1836,7 @@ public class MessageProcessor {
 			                                    Map<CBORObject, EdhocSession> edhocSessions) {
 		
 		if (edhocSessions == null || sequence == null) {
-			System.err.println("Error when processing EDHOC Error Message");
+			// System.err.println("Error when processing EDHOC Error Message");
 			return null;
 		}
 		
@@ -1847,12 +1847,12 @@ public class MessageProcessor {
 			objectList = CBORObject.DecodeSequenceFromBytes(sequence);
 		}
 		catch (Exception e) {
-			System.err.println("Malformed or invalid EDHOC Error Message");
+			// System.err.println("Malformed or invalid EDHOC Error Message");
 			return null;
 		}
 		
 		if (objectList.length == 0 || objectList.length > 3) {
-			System.err.println("Error when processing EDHOC Error Message - Zero or too many elements");
+			// System.err.println("Error when processing EDHOC Error Message - Zero or too many elements");
 			return null;
 		}
 		
@@ -1869,7 +1869,7 @@ public class MessageProcessor {
 				index++;		
 			}
 			else {
-				System.err.println("Error when processing EDHOC Error Message - Invalid format of C_X");
+				// System.err.println("Error when processing EDHOC Error Message - Invalid format of C_X");
 				return null;
 			}
 			
@@ -1877,14 +1877,14 @@ public class MessageProcessor {
 		
 		// No session for this Connection Identifier
 		if (mySession == null) {
-			System.err.println("Error when processing EDHOC Error Message - Impossible to retrieve a session from C_X");
+			// System.err.println("Error when processing EDHOC Error Message - Impossible to retrieve a session from C_X");
 			return null;
 		}
 		
 		boolean initiator = mySession.isInitiator();
 		
 		if (objectList[index].getType() != CBORType.Integer) {
-			System.err.println("Error when processing EDHOC Error Message - Invalid format of ERR_CODE");
+			// System.err.println("Error when processing EDHOC Error Message - Invalid format of ERR_CODE");
 			return null;
 		}
 		
@@ -1894,11 +1894,11 @@ public class MessageProcessor {
 		
 		// Check that the rest of the message is consistent
 		if (objectList.length == index){
-			System.err.println("Error when processing EDHOC Error Message - ERR_INFO expected but not included");
+			// System.err.println("Error when processing EDHOC Error Message - ERR_INFO expected but not included");
 			return null;
 		}
 		if (objectList.length > (index + 1)){
-			System.err.println("Error when processing EDHOC Error Message - Unexpected parameters following ERR_INFO");
+			// System.err.println("Error when processing EDHOC Error Message - Unexpected parameters following ERR_INFO");
 			return null;
 		}
 		if (errorCode == Constants.ERR_CODE_SUCCESS) {
@@ -1906,37 +1906,37 @@ public class MessageProcessor {
 		}
 		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED) {
 			if (objectList[index].getType() != CBORType.TextString) {
-				System.err.println("Error when processing EDHOC Error Message - Invalid format of ERR_INFO");
+				// System.err.println("Error when processing EDHOC Error Message - Invalid format of ERR_INFO");
 				return null;
 			}
 		}
 		else if (errorCode == Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE) {
 			if (initiator == true && mySession.getCurrentStep() == Constants.EDHOC_SENT_M1) {
 				if (objectList[index].getType() != CBORType.Array && objectList[index].getType() != CBORType.Integer) {
-					System.err.println("Error when processing EDHOC Error Message - Invalid format for SUITES_R");
+					// System.err.println("Error when processing EDHOC Error Message - Invalid format for SUITES_R");
 					return null;
 				}
 				if (objectList[index].getType() == CBORType.Array) {
 					for (int i = 0; i < objectList[index].size(); i++) {
 						if (objectList[index].get(i).getType() != CBORType.Integer) {
-							System.err.println("Error when processing EDHOC Error Message - "
-									         + "Invalid format for elements of SUITES_R");
+							// System.err.println("Error when processing EDHOC Error Message - "
+							// + "Invalid format for elements of SUITES_R");
 							return null;
 						}
 					}
 				}
 			}
 			else {
-				System.err.println("Unexpected EDHOC Error Message with Error Code " +
-								    Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE +
-								    " (Wrong selected cipher suite)");
+				// System.err.println("Unexpected EDHOC Error Message with Error Code " +
+				// Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE +
+				// " (Wrong selected cipher suite)");
 				return null;
 			}
 			
 		}
 		else {
 			// Unknown error code
-			System.err.println("Unknown error code in EDHOC Error Message: " + errorCode);
+			// System.err.println("Unknown error code in EDHOC Error Message: " + errorCode);
 			return null;
 		}
 		
@@ -1964,8 +1964,8 @@ public class MessageProcessor {
         int method = session.getMethod();
         objectList.add(CBORObject.FromObject(method));
         if (debugPrint) {
-        	System.out.println("===================================");
-        	System.out.println("EDHOC Message 1 content:\n");
+        	// System.out.println("===================================");
+        	// System.out.println("EDHOC Message 1 content:\n");
         	CBORObject obj = CBORObject.FromObject(method);
         	byte[] objBytes = obj.EncodeToBytes();
         	Util.nicePrint("METHOD", objBytes);
@@ -1994,7 +1994,7 @@ public class MessageProcessor {
     		}
     	}
     	if (selectedSuite == -1) {
-    		System.err.println("Impossible to agree on a mutually supported ciphersuite");
+    		// System.err.println("Impossible to agree on a mutually supported ciphersuite");
     		return null;
     	}
     	
@@ -2056,7 +2056,7 @@ public class MessageProcessor {
         		objectList.add(ead1[i]);
         }
         if (debugPrint) {
-        	System.out.println("===================================");
+        	// System.out.println("===================================");
         }
 		
         // Mark the session as used - Possible reusage will trigger the generation of new ephemeral keys
@@ -2089,8 +2089,8 @@ public class MessageProcessor {
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		
         if (debugPrint) {
-        	System.out.println("===================================");
-        	System.out.println("Start processing EDHOC Message 2:\n");
+        	// System.out.println("===================================");
+        	// System.out.println("Start processing EDHOC Message 2:\n");
         }
 		
         
@@ -2132,7 +2132,7 @@ public class MessageProcessor {
         
         byte[] th2 = computeTH2(session, hashMessage1SerializedCBOR, gYSerializedCBOR, cRSerializedCBOR);
         if (th2 == null) {
-    		System.err.println("Error when computing TH_2");
+    		// System.err.println("Error when computing TH_2");
     		errMsg = new String("Error when computing TH_2");
     		error = true;
         }
@@ -2153,7 +2153,7 @@ public class MessageProcessor {
         		                                                       session.getPeerEphemeralPublicKey());
     	
         if (dhSecret == null) {
-    		System.err.println("Error when computing the Diffie-Hellman Secret");
+    		// System.err.println("Error when computing the Diffie-Hellman Secret");
     		errMsg = new String("Error when computing the Diffie-Hellman Secret");
     		error = true;
         }
@@ -2166,7 +2166,7 @@ public class MessageProcessor {
     	prk2e = computePRK2e(dhSecret, hashAlgorithm);
     	dhSecret = null;
     	if (prk2e == null) {
-    		System.err.println("Error when computing PRK_2e");
+    		// System.err.println("Error when computing PRK_2e");
     		errMsg = new String("Error when computing PRK_2e");
     		error = true;
     	}
@@ -2178,7 +2178,7 @@ public class MessageProcessor {
         // Compute PRK_3e2m
     	prk3e2m = computePRK3e2m(session, prk2e);
     	if (prk3e2m == null) {
-    		System.err.println("Error when computing PRK_3e2m");
+    		// System.err.println("Error when computing PRK_3e2m");
     		errMsg = new String("Error when computing PRK_3e2m");
     		error = true;
     	}
@@ -2193,7 +2193,7 @@ public class MessageProcessor {
     	// Compute MAC_2
     	byte[] mac2 = computeMAC2(session, prk3e2m, th2, session.getIdCred(), session.getCred(), ead2);
     	if (mac2 == null) {
-    		System.err.println("Error when computing MAC_2");
+    		// System.err.println("Error when computing MAC_2");
     		errMsg = new String("Error when computing MAC_2");
     		error = true;
     	}
@@ -2207,7 +2207,7 @@ public class MessageProcessor {
         // Compute the external data for the external_aad, as a CBOR sequence
     	byte[] externalData = computeExternalData(th2, session.getCred(), ead2);
     	if (externalData == null) {
-    		System.err.println("Error when computing the external data for MAC_2");
+    		// System.err.println("Error when computing the external data for MAC_2");
     		errMsg = new String("Error when computing the external data for MAC_2");
     		error = true;
     	}
@@ -2217,7 +2217,7 @@ public class MessageProcessor {
     	
     	byte[] signatureOrMac2 = computeSignatureOrMac2(session, mac2, externalData);
     	if (signatureOrMac2 == null) {
-    		System.err.println("Error when computing Signature_or_MAC_2");
+    		// System.err.println("Error when computing Signature_or_MAC_2");
     		errMsg = new String("Error when computing Signature_or_MAC_2");
     		error = true;
     	}
@@ -2255,7 +2255,7 @@ public class MessageProcessor {
     	// Compute KEYSTREAM_2
     	byte[] keystream2 = computeKeystream2(session, plaintext.length);
     	if (keystream2== null) {
-    		System.err.println("Error when computing KEYSTREAM_2");
+    		// System.err.println("Error when computing KEYSTREAM_2");
     		errMsg = new String("Error when computing KEYSTREAM_2");
     		error = true;
     	}
@@ -2331,8 +2331,8 @@ public class MessageProcessor {
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		
         if (debugPrint) {
-        	System.out.println("===================================");
-        	System.out.println("Start processing EDHOC Message 3:\n");
+        	// System.out.println("===================================");
+        	// System.out.println("Start processing EDHOC Message 3:\n");
         }
 		
         /* Start preparing data_3 */
@@ -2360,7 +2360,7 @@ public class MessageProcessor {
 
         byte[] th3 = computeTH3(session, th2SerializedCBOR, ciphertext2SerializedCBOR);
         if (th3 == null) {
-        	System.err.println("Error when computing TH_3");
+        	// System.err.println("Error when computing TH_3");
     		errMsg = new String("Error when computing TH_3");
     		error = true;
         }
@@ -2372,7 +2372,7 @@ public class MessageProcessor {
         // Compute the key material
         byte[] prk4x3m = computePRK4x3m(session);
     	if (prk4x3m == null) {
-    		System.err.println("Error when computing PRK_4x3m");
+    		// System.err.println("Error when computing PRK_4x3m");
     		errMsg = new String("Error when computing PRK_4x3m");
     		error = true;
     	}
@@ -2387,7 +2387,7 @@ public class MessageProcessor {
     	// Compute MAC_3
     	byte[] mac3 = computeMAC3(session, prk4x3m, th3, session.getIdCred(), session.getCred(), ead3);
     	if (mac3 == null) {
-    		System.err.println("Error when computing MAC_3");
+    		// System.err.println("Error when computing MAC_3");
     		errMsg = new String("Error when computing MAC_3");
     		error = true;
     	}
@@ -2401,7 +2401,7 @@ public class MessageProcessor {
         // Compute the external data for the external_aad, as a CBOR sequence
     	byte[] externalData = computeExternalData(th3, session.getCred(), ead3);
     	if (externalData == null) {
-    		System.err.println("Error when computing the external data for MAC_3");
+    		// System.err.println("Error when computing the external data for MAC_3");
     		errMsg = new String("Error when computing the external data for MAC_3");
     		error = true;
     	}
@@ -2411,7 +2411,7 @@ public class MessageProcessor {
     	
     	byte[] signatureOrMac3 = computeSignatureOrMac3(session, mac3, externalData);
     	if (signatureOrMac3 == null) {
-    		System.err.println("Error when computing Signature_or_MAC_3");
+    		// System.err.println("Error when computing Signature_or_MAC_3");
     		errMsg = new String("Error when computing Signature_or_MAC_3");
     		error = true;
     	}
@@ -2428,7 +2428,7 @@ public class MessageProcessor {
 
     	byte[] k3ae = computeKey(Constants.EDHOC_K_3AE, session);
     	if (k3ae == null) {
-    		System.err.println("Error when computing K_3ae");
+    		// System.err.println("Error when computing K_3ae");
     		errMsg = new String("Error when computing K_3ae");
     		error = true;
     	}
@@ -2438,7 +2438,7 @@ public class MessageProcessor {
     	
     	byte[] iv3ae = computeIV(Constants.EDHOC_IV_3AE, session);
     	if (iv3ae == null) {
-    		System.err.println("Error when computing IV_3ae");
+    		// System.err.println("Error when computing IV_3ae");
     		errMsg = new String("Error when computing IV_3ae");
     		error = true;
     	}
@@ -2488,7 +2488,7 @@ public class MessageProcessor {
         byte[] ciphertext3SerializedCBOR = CBORObject.FromObject(ciphertext3).EncodeToBytes(); 
     	byte[] th4 = computeTH4(session, th3SerializedCBOR, ciphertext3SerializedCBOR);
         if (th4 == null) {
-        	System.err.println("Error when computing TH_4");
+        	// System.err.println("Error when computing TH_4");
     		errMsg = new String("Error when computing TH_4");
     		error = true;
         }
@@ -2546,8 +2546,8 @@ public class MessageProcessor {
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		
         if (debugPrint) {
-        	System.out.println("===================================");
-        	System.out.println("Start processing EDHOC Message 4:\n");
+        	// System.out.println("===================================");
+        	// System.out.println("Start processing EDHOC Message 4:\n");
         }
 		
         /* Start preparing data_4 */
@@ -2572,7 +2572,7 @@ public class MessageProcessor {
     	byte[] externalData = session.getTH4();
 
     	if (externalData == null) {
-    		System.err.println("Error when computing the external data for CIPHERTEXT_4");
+    		// System.err.println("Error when computing the external data for CIPHERTEXT_4");
     		errMsg = new String("Error when computing the external data for CIPHERTEXT_4");
     		error = true;
     	}
@@ -2605,7 +2605,7 @@ public class MessageProcessor {
     	if (error == false) {    	
 			k4ae = computeKey(Constants.EDHOC_K_4AE, session);
 			if (k4ae == null) {
-				System.err.println("Error when computing K_4ae");
+				// System.err.println("Error when computing K_4ae");
 				errMsg = new String("Error when computing K_4ae");
 				error = true;
 			}
@@ -2618,7 +2618,7 @@ public class MessageProcessor {
     	if (error == false) {
 	    	iv4ae = computeIV(Constants.EDHOC_IV_4AE, session);
 	    	if (iv4ae == null) {
-	    		System.err.println("Error when computing IV_4ae");
+	    		// System.err.println("Error when computing IV_4ae");
 	    		errMsg = new String("Error when computing IV_4ae");
 	    		error = true;
 	    	}
@@ -2633,7 +2633,7 @@ public class MessageProcessor {
     	if (error == false) {
 	    	ciphertext4 = computeCiphertext4(session, externalData, plaintext, k4ae, iv4ae);
 	    	if (ciphertext4 == null) {
-	    		System.err.println("Error when computing CIPHERTEXT_4");
+	    		// System.err.println("Error when computing CIPHERTEXT_4");
 	    		errMsg = new String("Error when computing CIPHERTEXT_4");
 	    		error = true;
 	    	}
@@ -2735,7 +2735,7 @@ public class MessageProcessor {
 		// Encode the EDHOC Error Message, as a CBOR sequence
 		payload = Util.buildCBORSequence(objectList);
 		
-		System.out.println("Completed preparation of EDHOC Error Message");
+		// System.out.println("Completed preparation of EDHOC Error Message");
 		
 		return payload;
 		
@@ -2768,7 +2768,7 @@ public class MessageProcessor {
 		processingResult.add(CBORObject.FromObject(responseCode.value));
 		
 		if (errMsg != null) {
-			System.err.println(errMsg);
+			// System.err.println(errMsg);
 		}
 		
 		// External Authorization Data (if present)
@@ -2946,9 +2946,9 @@ public class MessageProcessor {
 	            	break;
 	        }
 	    } catch (InvalidKeyException e) {
-	        System.err.println("Error when generating " + label + "\n" + e.getMessage());
+	        // System.err.println("Error when generating " + label + "\n" + e.getMessage());
 	    } catch (NoSuchAlgorithmException e) {
-	        System.err.println("Error when generating " + label + "\n" + e.getMessage());
+	        // System.err.println("Error when generating " + label + "\n" + e.getMessage());
 	    }
 	    
 	    return key;
@@ -2988,10 +2988,10 @@ public class MessageProcessor {
             	break;
         }
 	    } catch (InvalidKeyException e) {
-	    	System.err.println("Error when generating " + label + "\n" + e.getMessage());
+	    	// System.err.println("Error when generating " + label + "\n" + e.getMessage());
 	        return null;
 	    } catch (NoSuchAlgorithmException e) {
-	    	System.err.println("Error when generating " + label + "\n" + e.getMessage());
+	    	// System.err.println("Error when generating " + label + "\n" + e.getMessage());
 	        return null;
 	    }
 	    
@@ -3013,10 +3013,10 @@ public class MessageProcessor {
 		try {
 			keystream2 = session.edhocKDF(session.getPRK2e(), session.getTH2(), "KEYSTREAM_2", context, length);
 		} catch (InvalidKeyException e) {
-			System.err.println("Error when generating KEYSTREAM_2\n" + e.getMessage());
+			// System.err.println("Error when generating KEYSTREAM_2\n" + e.getMessage());
 			return null;
 		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Error when generating KEYSTREAM_2\n" + e.getMessage());
+			// System.err.println("Error when generating KEYSTREAM_2\n" + e.getMessage());
 			return null;
 		}
 
@@ -3039,10 +3039,10 @@ public class MessageProcessor {
 	    		prk2e = Hkdf.extract(new byte[] {}, dhSecret);
 	    	}
 		} catch (InvalidKeyException e) {
-			System.err.println("Error when generating PRK_2e\n" + e.getMessage());
+			// System.err.println("Error when generating PRK_2e\n" + e.getMessage());
 			return null;
 		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Error when generating PRK_2e\n" + e.getMessage());
+			// System.err.println("Error when generating PRK_2e\n" + e.getMessage());
 			return null;
 		}
 	    
@@ -3085,8 +3085,9 @@ public class MessageProcessor {
 	                	try {
 	                		privateKey = SharedSecretCalculation.convertEd25519ToCurve25519(identityKey);
 						} catch (CoseException e) {
-							System.err.println("Error when converting the Responder identity key" + 
-									           "from Edward to Montgomery format\n" + e.getMessage());
+							// System.err.println("Error when converting the Responder identity key" + 
+						// "from Edward to Montgomery format\n" +
+						// e.getMessage());
 							return null;
 						}
 	            	}
@@ -3107,8 +3108,9 @@ public class MessageProcessor {
 	                	try {
 							publicKey = SharedSecretCalculation.convertEd25519ToCurve25519(peerIdentityKey);
 						} catch (CoseException e) {
-							System.err.println("Error when converting the Responder identity key" + 
-									           "from Edward to Montgomery format\n" + e.getMessage());
+							// System.err.println("Error when converting the Responder identity key" + 
+						// "from Edward to Montgomery format\n" +
+						// e.getMessage());
 							return null;
 						}
 	            	}
@@ -3122,18 +3124,18 @@ public class MessageProcessor {
             	int selectedCipherSuite = session.getSelectedCiphersuite();
             	
             	if (Util.checkDiffieHellmanKeyAgainstCiphersuite(privateKey, selectedCipherSuite) == false) {
-            		System.err.println("Error when computing the Diffie-Hellman Secret");
+            		// System.err.println("Error when computing the Diffie-Hellman Secret");
             		return null;
             	}
             	if (Util.checkDiffieHellmanKeyAgainstCiphersuite(publicKey, selectedCipherSuite) == false) {
-            		System.err.println("Error when computing the Diffie-Hellman Secret");
+            		// System.err.println("Error when computing the Diffie-Hellman Secret");
             		return null;
             	}
             	
             	dhSecret = SharedSecretCalculation.generateSharedSecret(privateKey, publicKey);
             	
                 if (dhSecret == null) {
-            		System.err.println("Error when computing the Diffie-Hellman Secret");
+            		// System.err.println("Error when computing the Diffie-Hellman Secret");
             		return null;
                 }
             	
@@ -3147,10 +3149,10 @@ public class MessageProcessor {
             			prk3e2m = Hkdf.extract(prk2e, dhSecret);
             		}
 				} catch (InvalidKeyException e) {
-					System.err.println("Error when generating PRK_3e2m\n" + e.getMessage());
+					// System.err.println("Error when generating PRK_3e2m\n" + e.getMessage());
 					return null;
 				} catch (NoSuchAlgorithmException e) {
-					System.err.println("Error when generating PRK_3e2m\n" + e.getMessage());
+					// System.err.println("Error when generating PRK_3e2m\n" + e.getMessage());
 					return null;
 				}
             	finally {
@@ -3197,8 +3199,9 @@ public class MessageProcessor {
 	                	try {
 	                		publicKey = SharedSecretCalculation.convertEd25519ToCurve25519(identityKey);
 						} catch (CoseException e) {
-							System.err.println("Error when converting the Responder identity key" + 
-									           "from Edward to Montgomery format\n" + e.getMessage());
+							// System.err.println("Error when converting the Responder identity key" + 
+						// "from Edward to Montgomery format\n" +
+						// e.getMessage());
 							return null;
 						}
 	            	}
@@ -3218,8 +3221,9 @@ public class MessageProcessor {
 	                	try {
 							privateKey = SharedSecretCalculation.convertEd25519ToCurve25519(identityKey);
 						} catch (CoseException e) {
-							System.err.println("Error when converting the Responder identity key" + 
-									           "from Edward to Montgomery format\n" + e.getMessage());
+							// System.err.println("Error when converting the Responder identity key" + 
+						// "from Edward to Montgomery format\n" +
+						// e.getMessage());
 							return null;
 						}
 	            	}
@@ -3232,7 +3236,7 @@ public class MessageProcessor {
             	dhSecret = SharedSecretCalculation.generateSharedSecret(privateKey, publicKey);
             	
                 if (dhSecret == null) {
-            		System.err.println("Error when computing the Diffie-Hellman Secret");
+            		// System.err.println("Error when computing the Diffie-Hellman Secret");
             		return null;
                 }
             	
@@ -3246,10 +3250,10 @@ public class MessageProcessor {
             			prk4x3m = Hkdf.extract(prk3e2m, dhSecret);
             		}
 				} catch (InvalidKeyException e) {
-					System.err.println("Error when generating PRK_4x3m\n" + e.getMessage());
+					// System.err.println("Error when generating PRK_4x3m\n" + e.getMessage());
 					return null;
 				} catch (NoSuchAlgorithmException e) {
-					System.err.println("Error when generating PRK_4x3m\n" + e.getMessage());
+					// System.err.println("Error when generating PRK_4x3m\n" + e.getMessage());
 					return null;
 				}
             	finally {
@@ -3359,9 +3363,9 @@ public class MessageProcessor {
     	try {
 			mac2 = session.edhocKDF(prk3e2m, th2, "MAC_2", context, macLength);
 		} catch (InvalidKeyException e) {
-			System.err.println("Error when computing MAC_2\n" + e.getMessage());
+			// System.err.println("Error when computing MAC_2\n" + e.getMessage());
 		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Error when computing MAC_2\n" + e.getMessage());
+			// System.err.println("Error when computing MAC_2\n" + e.getMessage());
 		}
 		
 		return mac2;
@@ -3409,9 +3413,9 @@ public class MessageProcessor {
     	try {
 			mac3 = session.edhocKDF(prk4x3m, th3, "MAC_3", context, macLength);
 		} catch (InvalidKeyException e) {
-			System.err.println("Error when computing MAC_3\n" + e.getMessage());
+			// System.err.println("Error when computing MAC_3\n" + e.getMessage());
 		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Error when computing MAC_3\n" + e.getMessage());
+			// System.err.println("Error when computing MAC_3\n" + e.getMessage());
 		}
 		
 		return mac3;
@@ -3443,7 +3447,7 @@ public class MessageProcessor {
     	try {
     		ciphertext3 = Util.encrypt(emptyMap, externalData, plaintext, alg, iv3ae, k3ae);
 		} catch (CoseException e) {
-			System.err.println("Error when computing CIPHERTEXT_3\n" + e.getMessage());
+			// System.err.println("Error when computing CIPHERTEXT_3\n" + e.getMessage());
 			return null;
 		}
 		
@@ -3476,7 +3480,7 @@ public class MessageProcessor {
     	try {
 			ciphertext4 = Util.encrypt(emptyMap, externalData, plaintext, alg, iv4m, k4m);
 		} catch (CoseException e) {
-			System.err.println("Error when computing CIPHERTEXT_4\n" + e.getMessage());
+			// System.err.println("Error when computing CIPHERTEXT_4\n" + e.getMessage());
 			return null;
 		}
 		
@@ -3508,7 +3512,7 @@ public class MessageProcessor {
     	try {
     		plaintext = Util.decrypt(emptyMap, externalData, ciphertext, alg, iv3ae, k3ae);
 		} catch (CoseException e) {
-			System.err.println("Error when decrypting CIPHERTEXT_3\n" + e.getMessage());
+			// System.err.println("Error when decrypting CIPHERTEXT_3\n" + e.getMessage());
 			return null;
 		}
 		
@@ -3540,7 +3544,7 @@ public class MessageProcessor {
     	try {
     		plaintext = Util.decrypt(emptyMap, externalData, ciphertext, alg, iv4ae, k4ae);
 		} catch (CoseException e) {
-			System.err.println("Error when decrypting CIPHERTEXT_4\n" + e.getMessage());
+			// System.err.println("Error when decrypting CIPHERTEXT_4\n" + e.getMessage());
 			return null;
 		}
 		
@@ -3574,14 +3578,14 @@ public class MessageProcessor {
     			
     			// Consistency check of key type and curve against the selected ciphersuite
     			if (Util.checkSignatureKeyAgainstCiphersuite(identityKey, selectedCipherSuite) == false) {
-    				System.err.println("Error when signing MAC_2 to produce Signature_or_MAC_2\n");
+    				// System.err.println("Error when signing MAC_2 to produce Signature_or_MAC_2\n");
     				return null;
     			}
 
 				signatureOrMac2 = Util.computeSignature(session.getIdCred(), externalData, mac2, identityKey);
 				
 			} catch (CoseException e) {
-				System.err.println("Error when signing MAC_2 to produce Signature_or_MAC_2\n" + e.getMessage());
+				// System.err.println("Error when signing MAC_2 to produce Signature_or_MAC_2\n" + e.getMessage());
 				return null;
 			}
     	}
@@ -3616,14 +3620,14 @@ public class MessageProcessor {
     			
     			// Consistency check of key type and curve against the selected ciphersuite
     			if (Util.checkSignatureKeyAgainstCiphersuite(identityKey, selectedCipherSuite) == false) {
-    				System.err.println("Error when signing MAC_3 to produce Signature_or_MAC_3\n");
+    				// System.err.println("Error when signing MAC_3 to produce Signature_or_MAC_3\n");
     				return null;
     			}
     			
 				signatureOrMac3 = Util.computeSignature(session.getIdCred(), externalData, mac3, identityKey);
 				
 			} catch (CoseException e) {
-				System.err.println("Error when signing MAC_3 to produce Signature_or_MAC_3\n" + e.getMessage());
+				// System.err.println("Error when signing MAC_3 to produce Signature_or_MAC_3\n" + e.getMessage());
 				return null;
 			}
     	}
@@ -3657,7 +3661,7 @@ public class MessageProcessor {
 			
 			// Consistency check of key type and curve against the selected ciphersuite
 			if (Util.checkSignatureKeyAgainstCiphersuite(peerIdentityKey, selectedCipherSuite) == false) {
-				System.err.println("Error when verifying the signature of Signature_or_MAC_2\n");
+				// System.err.println("Error when verifying the signature of Signature_or_MAC_2\n");
 				return false;
 			}
     		
@@ -3665,7 +3669,7 @@ public class MessageProcessor {
 				return Util.verifySignature(signatureOrMac2, session.getPeerIdCred(),
 						                    externalData, mac2, peerIdentityKey);
 			} catch (CoseException e) {
-				System.err.println("Error when verifying the signature of Signature_or_MAC_2\n" + e.getMessage());
+				// System.err.println("Error when verifying the signature of Signature_or_MAC_2\n" + e.getMessage());
 				return false;
 			}
 		}
@@ -3699,7 +3703,7 @@ public class MessageProcessor {
 			
 			// Consistency check of key type and curve against the selected ciphersuite
 			if (Util.checkSignatureKeyAgainstCiphersuite(peerIdentityKey, selectedCipherSuite) == false) {
-				System.err.println("Error when verifying the signature of Signature_or_MAC_3\n");
+				// System.err.println("Error when verifying the signature of Signature_or_MAC_3\n");
 				return false;
 			}
     		
@@ -3707,7 +3711,7 @@ public class MessageProcessor {
 				return Util.verifySignature(signatureOrMac3, session.getPeerIdCred(),
 						                    externalData, mac3, peerIdentityKey);
 			} catch (CoseException e) {
-				System.err.println("Error when verifying the signature of Signature_or_MAC_3\n" + e.getMessage());
+				// System.err.println("Error when verifying the signature of Signature_or_MAC_3\n" + e.getMessage());
 				return false;
 			}
 		}
@@ -3742,7 +3746,7 @@ public class MessageProcessor {
         try {
 			th2 = Util.computeHash(hashInput, hashAlgorithm);
 		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Invalid hash algorithm when computing TH2\n" + e.getMessage());
+			// System.err.println("Invalid hash algorithm when computing TH2\n" + e.getMessage());
 			return null;
 			
 		}
@@ -3775,7 +3779,7 @@ public class MessageProcessor {
         try {
 			th3 = Util.computeHash(hashInput, hashAlgorithm);
 		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Invalid hash algorithm when computing TH3\n" + e.getMessage());
+			// System.err.println("Invalid hash algorithm when computing TH3\n" + e.getMessage());
 			return null;
 			
 		}
@@ -3806,7 +3810,7 @@ public class MessageProcessor {
         try {
         	th4 = Util.computeHash(hashInput, hashAlgorithm);
 		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Invalid hash algorithm when computing TH4\n" + e.getMessage());
+			// System.err.println("Invalid hash algorithm when computing TH4\n" + e.getMessage());
 			return null;
 			
 		}

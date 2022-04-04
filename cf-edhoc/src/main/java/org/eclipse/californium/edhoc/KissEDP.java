@@ -14,7 +14,7 @@ public class KissEDP implements EDP {
 	@Override
 	public void processEAD1(CBORObject[] ead1) {
 
-		System.out.println("Entered processEAD1()");
+		// System.out.println("Entered processEAD1()");
 		
 		overviewEAD(ead1);
 	}
@@ -23,7 +23,7 @@ public class KissEDP implements EDP {
 	@Override
 	public void processEAD2(CBORObject[] ead2) {
 
-		System.out.println("Entered processEAD2()");
+		// System.out.println("Entered processEAD2()");
 
 		overviewEAD(ead2);
 	}
@@ -32,7 +32,7 @@ public class KissEDP implements EDP {
 	@Override
 	public void processEAD3(CBORObject[] ead3) {
 
-		System.out.println("Entered processEAD3()");
+		// System.out.println("Entered processEAD3()");
 		
 		overviewEAD(ead3);
 	}
@@ -41,7 +41,7 @@ public class KissEDP implements EDP {
 	@Override
 	public void processEAD4(CBORObject[] ead4) {
 
-		System.out.println("Entered processEAD4()");
+		// System.out.println("Entered processEAD4()");
 		
 		overviewEAD(ead4);
 	}
@@ -49,18 +49,18 @@ public class KissEDP implements EDP {
 	// Print a generic overview of External Authorization Data from an EDHOC message
 	private void overviewEAD(CBORObject[] ead) {
 		
-		System.out.println("EAD overview\n");
+		// System.out.println("EAD overview\n");
 		
 		for (int i = 0; i < ead.length; i++) {
 			
 			// This element must be an integer indicating the EAD Label
 			if (i % 2 == 0) {
 				if (ead[i].getType() != CBORType.Integer) {
-					System.out.println("Malformed or invalid data item #" + (i/2));
+					// System.out.println("Malformed or invalid data item #" + (i/2));
 					i += 2; // skip the companion data element
 					continue;
 				}
-				System.out.println("The data item #" + (i/2) + " has EAD Label " + ead[i].AsInt32());
+				// System.out.println("The data item #" + (i/2) + " has EAD Label " + ead[i].AsInt32());
 			}
 			
 			// This element includes the actual EAD Value according to the specified EAD Label
@@ -70,7 +70,7 @@ public class KissEDP implements EDP {
 			
 		}
 
-		System.out.println("\n");
+		// System.out.println("\n");
 	}
 	
 }

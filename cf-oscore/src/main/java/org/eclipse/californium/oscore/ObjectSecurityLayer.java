@@ -144,13 +144,13 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				}
 
 				if (uri == null) {
-					LOGGER.error(ErrorDescriptions.URI_NULL);
+					// LOGGER.error(ErrorDescriptions.URI_NULL);
 					throw new OSException(ErrorDescriptions.URI_NULL);
 				}
 
 				OSCoreCtx ctx = ctxDb.getContext(uri);
 				if (ctx == null) {
-					LOGGER.error(ErrorDescriptions.CTX_NULL);
+					// LOGGER.error(ErrorDescriptions.CTX_NULL);
 					throw new OSException(ErrorDescriptions.CTX_NULL);
 				}
 
@@ -194,14 +194,15 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				exchange.setCryptographicContextID(req.getOptions().getOscore());
 
 			} catch (OSException e) {
-				LOGGER.error("Error sending request: " + e.getMessage());
+				// LOGGER.error("Error sending request: " + e.getMessage());
 				return;
 			} catch (IllegalArgumentException e) {
-				LOGGER.error("Unable to send request because of illegal argument: " + e.getMessage());
+				// LOGGER.error("Unable to send request because of illegal
+				// argument: " + e.getMessage());
 				return;
 			}
 		}
-		LOGGER.info("Request: " + exchange.getRequest().toString());
+		// LOGGER.info("Request: " + exchange.getRequest().toString());
 		super.sendRequest(exchange, req);
 	}
 
@@ -246,7 +247,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				response = preparedResponse;
 				exchange.setResponse(response);
 			} catch (OSException e) {
-				LOGGER.error("Error sending response: " + e.getMessage());
+				// LOGGER.error("Error sending response: " + e.getMessage());
 				return;
 			}
 		}
@@ -279,7 +280,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				ctx = ctxDb.getContext(rid, IDContext);
 			} catch (CoapOSException e) {
-				LOGGER.error("Error while receiving OSCore request: " + e.getMessage());
+				// LOGGER.error("Error while receiving OSCore request: " +
+				// e.getMessage());
 				Response error;
 				error = CoapOSExceptionHandler.manageError(e, request);
 				if (error != null) {
@@ -308,7 +310,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				request.getOptions().setOscore(Bytes.EMPTY);
 				exchange.setRequest(request);
 			} catch (CoapOSException e) {
-				LOGGER.error("Error while receiving OSCore request: " + e.getMessage());
+				// LOGGER.error("Error while receiving OSCore request: " +
+				// e.getMessage());
 				Response error;
 				error = CoapOSExceptionHandler.manageError(e, request);
 				if (error != null) {
@@ -327,7 +330,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		System.out.println("Receiving response");
 		Request request = exchange.getCurrentRequest();
 		if (request == null) {
-			LOGGER.error("No request tied to this response");
+			// LOGGER.error("No request tied to this response");
 			return;
 		}
 
@@ -336,11 +339,12 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			//Warns when expecting OSCORE response but unprotected response is received
 			boolean expectProtectedResponse = responseShouldBeProtected(exchange, response);
 			if (!isProtected(response) && expectProtectedResponse) {
-				LOGGER.warn("Incoming response is NOT OSCORE protected!");
+				// LOGGER.warn("Incoming response is NOT OSCORE protected!");
 			} else if (isProtected(response) && expectProtectedResponse) {
-				LOGGER.info("Incoming response is OSCORE protected");
+				// LOGGER.info("Incoming response is OSCORE protected");
 			} else {
-				LOGGER.warn("Incoming response is OSCORE protected but it should not be");
+				// LOGGER.warn("Incoming response is OSCORE protected but it
+				// should not be");
 			}
 
 			// For OSCORE-protected response with the outer block2-option let
@@ -365,7 +369,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				response = prepareReceive(ctxDb, response, requestSequenceNumber);
 			}
 		} catch (OSException e) {
-			LOGGER.error("Error while receiving OSCore response: " + e.getMessage());
+			// LOGGER.error("Error while receiving OSCore response: " +
+			// e.getMessage());
 			EmptyMessage error = CoapOSExceptionHandler.manageError(e, response);
 			if (error != null) {
 				sendEmptyMessage(exchange, error);
