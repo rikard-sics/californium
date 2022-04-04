@@ -50,7 +50,7 @@ import org.eclipse.californium.oscore.OSException;
  */
 public class EdhocLayer extends AbstractLayer {
 
-	private static final boolean debugPrint = true;
+	private static final boolean debugPrint = false;
 	
 	/**
 	 * The logger

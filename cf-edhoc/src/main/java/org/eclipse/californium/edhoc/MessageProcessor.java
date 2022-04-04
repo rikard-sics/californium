@@ -42,7 +42,7 @@ import net.i2p.crypto.eddsa.Utils;
 
 public class MessageProcessor {
 	
-	private static final boolean debugPrint = true;
+	private static final boolean debugPrint = false;
 	
     /**
      *  Determine the type of a received EDHOC message

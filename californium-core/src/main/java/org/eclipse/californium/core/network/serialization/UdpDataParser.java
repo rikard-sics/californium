@@ -26,6 +26,8 @@ import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.CoAPMessageFormatException;
 import org.eclipse.californium.core.coap.MessageFormatException;
 import org.eclipse.californium.core.coap.OptionSet;
+import org.eclipse.californium.core.coap.Request;
+import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.elements.util.DatagramReader;
 
@@ -40,6 +42,7 @@ public final class UdpDataParser extends DataParser {
 
 	@Override
 	protected MessageHeader parseHeader(final DatagramReader reader) {
+
 		if (!reader.bytesAvailable(4)) {
 			throw new MessageFormatException(
 					"UDP Message too short! " + (reader.bitsLeft() / Byte.SIZE) + " must be at least 4 bytes!");

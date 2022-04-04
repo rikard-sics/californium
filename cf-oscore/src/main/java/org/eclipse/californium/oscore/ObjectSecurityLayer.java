@@ -324,6 +324,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	//Always accepts unprotected responses, which is needed for reception of error messages
 	@Override
 	public void receiveResponse(Exchange exchange, Response response) {
+		System.out.println("Receiving response");
 		Request request = exchange.getCurrentRequest();
 		if (request == null) {
 			LOGGER.error("No request tied to this response");

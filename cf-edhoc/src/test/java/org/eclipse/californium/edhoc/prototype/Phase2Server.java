@@ -17,7 +17,7 @@
  *    Rikard Höglund (RISE)
  *    
  ******************************************************************************/
-package org.eclipse.californium.edhoc;
+package org.eclipse.californium.edhoc.prototype;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -35,6 +35,9 @@ import java.util.Set;
 
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
+import org.eclipse.californium.core.coap.Response;
+import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.server.resources.CoapExchange;
@@ -43,16 +46,27 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.edhoc.AppProfile;
+import org.eclipse.californium.edhoc.Constants;
+import org.eclipse.californium.edhoc.EdhocCoapStackFactory;
+import org.eclipse.californium.edhoc.EdhocEndpointInfo;
+import org.eclipse.californium.edhoc.EdhocResource;
+import org.eclipse.californium.edhoc.EdhocSession;
+import org.eclipse.californium.edhoc.KissEDP;
+import org.eclipse.californium.edhoc.SharedSecretCalculation;
+import org.eclipse.californium.edhoc.Util;
 import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
+import org.eclipse.californium.oscore.OSCoreResource;
 
 import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 import net.i2p.crypto.eddsa.Utils;
 
-public class EdhocServer extends CoapServer {
+
+public class Phase2Server extends CoapServer {
 
 	private static final int COAP_PORT = Configuration.getStandard().get(CoapConfig.COAP_PORT);
 
@@ -71,7 +85,7 @@ public class EdhocServer extends CoapServer {
 	
 	// The authentication method to include in EDHOC message 1 (Initiator only)
 	// Has to be aligned between Initiator and Responder, to choose which public keys to install for testing
-	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
+	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_3;
 	
     // The type of the credential of this peer
     // Possible values: CRED_TYPE_CWT ; CRED_TYPE_CCS ; CRED_TYPE_X509
@@ -154,6 +168,8 @@ public class EdhocServer extends CoapServer {
 	 */
 	public static void main(String[] args) {
 		
+		System.out.println("Started Phase 2 server");
+
 		// Insert EdDSA security provider
 		Security.insertProviderAt(EdDSA, 1);
 
@@ -190,7 +206,7 @@ public class EdhocServer extends CoapServer {
 			// create server
 			boolean udp = true;
 
-			EdhocServer server = new EdhocServer();
+			Phase2Server server = new Phase2Server();
 			// add endpoints on all IP addresses
 			server.addEndpoints(udp);
 			server.start();
@@ -227,11 +243,14 @@ public class EdhocServer extends CoapServer {
 	/*
 	 * Constructor for a new server. Here, the resources of the server are initialized.
 	 */
-	public EdhocServer() throws SocketException {
+	public Phase2Server() throws SocketException {
 
 		// provide an instance of a Hello-World resource
 		add(new HelloWorldResource());
 		
+		// Add light resource
+		add(new LightResource("light"));
+
 		// provide an instance of a .well-known resource
 		CoapResource wellKnownResource = new WellKnown();
 		add(wellKnownResource);
@@ -522,6 +541,40 @@ public class EdhocServer extends CoapServer {
 		peerCredentials.put(peerIdCred, CBORObject.FromObject(peerCred));
 
 	}
+
+	class LightResource extends OSCoreResource {
+
+		public LightResource(String name) {
+			super(name, true);
+		}
+
+		@Override
+		public void handleGET(CoapExchange exchange) {
+			System.out.println("Accessing light resource");
+			Response r = new Response(ResponseCode.CONTENT);
+			r.setPayload("Hello World!");
+			exchange.respond(r);
+		}
+
+		@Override
+		public void handlePOST(CoapExchange exchange) {
+
+			Response r = new Response(ResponseCode.CHANGED);
+			r.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
+
+			if (exchange.getRequestText().equals("1")) {
+				r.setPayload("Turning on light ");
+			} else if (exchange.getRequestText().equals("0")) {
+				r.setPayload("Turning off light");
+			} else {
+				r.setPayload("Invalid payload! ");
+			}
+
+			System.out.println("Accessing light resource");
+
+			exchange.respond(r);
+		}
+	};
 		
 	/*
 	 * Definition of the Hello-World Resource

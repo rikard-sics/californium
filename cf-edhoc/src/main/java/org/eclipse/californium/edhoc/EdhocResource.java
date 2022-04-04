@@ -39,12 +39,12 @@ import com.upokecenter.cbor.CBORType;
 /*
  * Definition of the EDHOC Resource
  */
-class EdhocResource extends CoapResource {
+public class EdhocResource extends CoapResource {
 
 	private EdhocEndpointInfo edhocEndpointInfo;
 	private Set<CBORObject> ownIdCreds;
 	
-	private static final boolean debugPrint = true;
+	private static final boolean debugPrint = false;
 	
 	public EdhocResource(String resourceIdentifier, EdhocEndpointInfo edhocEndpointInfo, Set<CBORObject> ownIdCreds) {
 		

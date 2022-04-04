@@ -67,6 +67,15 @@ public abstract class DataParser {
 		return message;
 	}
 
+	static int messageCounter = 0;
+	// Incoming
+	private static final String[] MESSAGES = { "EDHOC Message #2", "EDHOC Message #3 ACK", "OSCORE Response #1" };
+
+	static String phase = "";
+	public static void setPhase(String inPhase) {
+		phase = inPhase;
+	}
+
 	/**
 	 * Parses a byte array into a CoAP Message.
 	 * 
@@ -89,6 +98,29 @@ public abstract class DataParser {
 				message = parseMessage(reader, header, new EmptyMessage(header.getType()));
 			}
 
+			if (phase.contains("Client3") || phase.contains("Client4")) {
+				MESSAGES[0] = "EDHOC Message #2";
+				MESSAGES[1] = "OSCORE Response #1";
+				MESSAGES[2] = "OSCORE Response #2";
+			}
+
+			String messageName = "";
+			if (messageCounter <= 2) {
+				messageName = MESSAGES[messageCounter];
+				messageName = messageName + ": ";
+			}
+
+			if (message instanceof Request && phase.contains("Client")) {
+				System.out.println(
+						phase + ": " + messageName + ": Request " + " CoAP Payload: " + message.getPayloadSize());
+				System.out.println(phase + ": " + messageName + ": Request " + " UDP Payload: " + msg.length);
+			} else if (message instanceof Response && phase.contains("Client")) {
+				System.out.println(
+						phase + ": " + messageName + ": Response " + " CoAP Payload: " + message.getPayloadSize());
+				System.out.println(phase + ": " + messageName + ": Response " + " UDP Payload: " + msg.length);
+			}
+			messageCounter++;
+			
 			// Set the message's bytes and return the message
 			if (message != null) {
 				message.setBytes(msg);

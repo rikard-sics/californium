@@ -24,9 +24,12 @@ package org.eclipse.californium.core.network.serialization;
 
 import static org.eclipse.californium.core.coap.CoAP.MessageFormat.*;
 
+import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
+import org.eclipse.californium.core.coap.Request;
+import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.elements.util.DatagramWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +40,15 @@ import org.slf4j.LoggerFactory;
 public final class UdpDataSerializer extends DataSerializer {
 	/** the logger. */
 	private static final Logger LOGGER = LoggerFactory.getLogger(UdpDataSerializer.class);
+
+	static int messageCounter = 0;
+	// Outgoing
+	private static final String[] MESSAGES = { "EDHOC Message #1", "EDHOC Message #3", "OSCORE Request #1" };
+
+	static String phase = "";
+	public static void setPhase(String inPhase) {
+		phase = inPhase;
+	}
 
 	/**
 	 * {@inheritDoc}
@@ -59,6 +71,29 @@ public final class UdpDataSerializer extends DataSerializer {
 		serializeHeader(writer, header);
 		writer.writeCurrentByte();
 		serializeOptionsAndPayload(writer, message.getOptions(), message.getPayload());
+
+		if (phase.contains("Client3") || phase.contains("Client4")) {
+			MESSAGES[0] = "EDHOC Message #1";
+			MESSAGES[1] = "EDHOC Message #3 + OSCORE Request #1";
+			MESSAGES[2] = "OSCORE Request #2";
+		}
+
+		String messageName = "";
+		if (messageCounter <= 2) {
+			messageName = MESSAGES[messageCounter];
+			messageName = messageName + ": ";
+		}
+
+		if (message instanceof Request && phase.contains("Client")) {
+			System.out.println(phase + ": " + messageName + "Request " + " CoAP Payload: " + message.getPayloadSize());
+			System.out.println(phase + ": " + messageName + "Request " + " UDP Payload: " + writer.size());
+		} else if (message instanceof Response && phase.contains("Client")) {
+			System.out.println(phase + ": " + messageName + "Response " + " CoAP Payload: " + message.getPayloadSize());
+			System.out.println(phase + ": " + messageName + "Response " + " UDP Payload: " + writer.size());
+		}
+
+		System.out.println("Counter: " + messageCounter);
+		messageCounter++;
 	}
 
 	@Override 

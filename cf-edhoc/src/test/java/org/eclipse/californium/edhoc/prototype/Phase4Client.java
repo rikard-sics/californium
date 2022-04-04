@@ -17,7 +17,7 @@
  *    Rikard Höglund (RISE)
  *    
  ******************************************************************************/
-package org.eclipse.californium.edhoc;
+package org.eclipse.californium.edhoc.prototype;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -32,9 +32,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Set;
 
 import org.eclipse.californium.core.CoapClient;
+import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP.Code;
@@ -58,9 +60,23 @@ import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.edhoc.AppProfile;
+import org.eclipse.californium.edhoc.Constants;
+import org.eclipse.californium.edhoc.EdhocCoapStackFactory;
+import org.eclipse.californium.edhoc.EdhocEndpointInfo;
+import org.eclipse.californium.edhoc.EdhocSession;
+import org.eclipse.californium.edhoc.KissEDP;
+import org.eclipse.californium.edhoc.MessageProcessor;
+import org.eclipse.californium.edhoc.SharedSecretCalculation;
+import org.eclipse.californium.edhoc.Util;
 
-public class EdhocClient {
+public class Phase4Client {
 	
+	// Set accordingly
+	private static String serverAddress = "localhost";
+
+	private static long beginTotal;
+
 	private static final boolean debugPrint = false;
 	
 	private static final File CONFIG_FILE = new File("Californium.properties");
@@ -82,7 +98,7 @@ public class EdhocClient {
 	
 	// The authentication method to include in EDHOC message 1 (Initiator only)
 	// Has to be aligned between Initiator and Responder, to choose which public keys to install for testing
-	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
+	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_3;
 	
     // The type of the credential of this peer
     // Possible values: CRED_TYPE_CWT ; CRED_TYPE_CCS ; CRED_TYPE_X509
@@ -107,7 +123,7 @@ public class EdhocClient {
 	
 	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
 	// Note: the application profile pertaining the EDHOC resource must first indicate support for the combined request 
-	private static final boolean OSCORE_EDHOC_COMBINED = false;
+	private static final boolean OSCORE_EDHOC_COMBINED = true;
     
 	
     // The subject name used for the identity key of this peer
@@ -177,10 +193,10 @@ public class EdhocClient {
 		}
 
 	};
+
+	private static String lightURI = "coap://" + serverAddress + "/light";
 	
-	private static String helloWorldURI = "coap://localhost/helloWorld";
-	
-	private static String edhocURI = "coap://localhost/.well-known/edhoc";
+	private static String edhocURI = "coap://" + serverAddress + "/.well-known/edhoc";
 	// private static String edhocURI = "coap://51.75.194.248/.well-known/edhoc"; // Timothy
 	// private static String edhocURI = "coap://54.93.59.163/.well-known/edhoc"; // Stefan
 	// private static String edhocURI = "coap://195.251.58.203:5683/.well-known/edhoc"; // Lidia
@@ -191,8 +207,12 @@ public class EdhocClient {
 	 * Application entry point.
 	 * 
 	 */
-	public static void main(String args[]) {
-		String defaultUri = "coap://localhost/helloWorld";
+	public static void main(String args[]) throws ConnectorException, IOException, InterruptedException {
+
+		org.eclipse.californium.core.network.serialization.DataParser.setPhase("Client4");
+		org.eclipse.californium.core.network.serialization.UdpDataSerializer.setPhase("Client4");
+
+		String defaultUri = "coap://" + serverAddress + "/helloWorld";
 				
 		Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		Configuration.setStandard(config);
@@ -584,7 +604,8 @@ public class EdhocClient {
 	}
 	
 	private static void edhocExchangeAsInitiator(final String args[], final URI targetUri, Set<CBORObject> ownIdCreds,
-												 EdhocEndpointInfo edhocEndpointInfo, CBORObject[] ead1) {
+			EdhocEndpointInfo edhocEndpointInfo, CBORObject[] ead1)
+			throws ConnectorException, IOException, InterruptedException {
 		
 		CoapClient client = new CoapClient(targetUri);
 		
@@ -648,6 +669,9 @@ public class EdhocClient {
         
 		
 		/* Prepare and send EDHOC Message 1 */
+		System.out.println("Phase 4 Client ready to execute EDHOC combined with OSCORE request" + "\n");
+		Support.printPause("Press enter to execute EDHOC and turn on light");
+		beginTotal = System.nanoTime();
 		
 		String uriAsString = targetUri.toString();
 		AppProfile appProfile = edhocEndpointInfo.getAppProfiles().get(uriAsString);
@@ -952,9 +976,10 @@ public class EdhocClient {
 			            	return;
 		        		}
 		        		
-						client = new CoapClient(helloWorldURI);
+						client = new CoapClient(lightURI);
 						CoapResponse protectedResponse = null;
-						edhocMessageReq2 = Request.newGet();
+						edhocMessageReq2 = Request.newPost();
+						edhocMessageReq2.setPayload("1");
 						edhocMessageReq2.setType(Type.CON);
 						edhocMessageReq2.getOptions().setOscore(Bytes.EMPTY);
 						
@@ -979,6 +1004,11 @@ public class EdhocClient {
 						byte[] myPayload = protectedResponse.getPayload();
 						if (myPayload != null) {
 							System.out.println(Utils.prettyPrint(protectedResponse));
+							long endTotal = System.nanoTime();
+							long timeTotal = endTotal - beginTotal;
+							System.out.println(
+									"Time elapsed from start of EDHOC processing to first OSCORE response received:  "
+											+ (timeTotal / 1000000) + " ms");
 							
 							int contentFormat = protectedResponse.getOptions().getContentFormat();
 							int restCode = protectedResponse.getCode().value;
@@ -1191,8 +1221,9 @@ public class EdhocClient {
 				// Send a request protected with the just established Security Context
 		        boolean usedForOSCORE = session.getApplicationProfile().getUsedForOSCORE();
 		        if (POST_EDHOC_EXCHANGE && usedForOSCORE == true) {
-					client = new CoapClient(helloWorldURI);
-					Request protectedRequest = Request.newGet();
+					client = new CoapClient(lightURI);
+					Request protectedRequest = Request.newPost();
+					protectedRequest.setPayload("1");
 					CoapResponse protectedResponse = null;
 					protectedRequest.setType(Type.CON);
 					protectedRequest.getOptions().setOscore(Bytes.EMPTY);
@@ -1213,6 +1244,41 @@ public class EdhocClient {
 
         }
         
+		int HANDLER_TIMEOUT = 1000;
+		// Send follow-up requests
+		Scanner scanner = new Scanner(System.in);
+		String command = "";
+		String payload = null;
+		while (!command.equals("q")) {
+
+			System.out.println("Enter command: ");
+			command = scanner.next();
+
+			if (command.equals("1")) {
+				payload = "1";
+			} else if (command.equals("0")) {
+				payload = "0";
+			} else if (command.equals("q")) {
+				System.exit(0);
+			} else {
+				System.out.println("Unknown command!");
+			}
+
+			Request r = new Request(Code.POST);
+			r.getOptions().setOscore(Bytes.EMPTY);
+			r.setPayload(payload);
+			r.setURI(lightURI);
+
+			// sends a multicast request
+			client.advanced(handler, r);
+			while (handler.waitOn(HANDLER_TIMEOUT)) {
+				// Wait for responses
+			}
+
+			Thread.sleep(200);
+		}
+		scanner.close();
+
 		client.shutdown();
 		
 	}
@@ -1277,4 +1343,43 @@ public class EdhocClient {
 		
 	}
 	
+	private static final MultiCoapHandler handler = new MultiCoapHandler();
+
+	private static class MultiCoapHandler implements CoapHandler {
+
+		private boolean on;
+
+		public synchronized boolean waitOn(long timeout) {
+			on = false;
+			try {
+				wait(timeout);
+			} catch (InterruptedException e) {
+			}
+			return on;
+		}
+
+		private synchronized void on() {
+			on = true;
+			notifyAll();
+		}
+
+		/**
+		 * Handle and parse incoming responses.
+		 */
+		@Override
+		public void onLoad(CoapResponse response) {
+			on();
+
+			// System.out.println("Receiving to: "); //TODO
+			System.out.println("Receiving from: " + response.advanced().getSourceContext().getPeerAddress());
+
+			System.out.println(Utils.prettyPrint(response));
+		}
+
+		@Override
+		public void onError() {
+			System.err.println("error");
+		}
+	}
+
 }

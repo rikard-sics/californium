@@ -17,11 +17,12 @@
  *    Rikard Höglund (RISE)
  *    
  ******************************************************************************/
-package org.eclipse.californium.edhoc;
+package org.eclipse.californium.edhoc.prototype;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Provider;
@@ -32,9 +33,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Set;
 
 import org.eclipse.californium.core.CoapClient;
+import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP.Code;
@@ -58,9 +61,24 @@ import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.edhoc.AppProfile;
+import org.eclipse.californium.edhoc.Constants;
+import org.eclipse.californium.edhoc.EdhocCoapStackFactory;
+import org.eclipse.californium.edhoc.EdhocEndpointInfo;
+import org.eclipse.californium.edhoc.EdhocSession;
+import org.eclipse.californium.edhoc.KissEDP;
+import org.eclipse.californium.edhoc.MessageProcessor;
+import org.eclipse.californium.edhoc.SharedSecretCalculation;
+import org.eclipse.californium.edhoc.Util;
 
-public class EdhocClient {
+public class Phase1Client {
 	
+	// Set accordingly
+	private static String serverAddress = "localhost";
+
+	private static long beginTotal;
+	private static long beginEdhoc;
+
 	private static final boolean debugPrint = false;
 	
 	private static final File CONFIG_FILE = new File("Californium.properties");
@@ -103,7 +121,7 @@ public class EdhocClient {
     private static int peerIdCredType = Constants.ID_CRED_TYPE_X5T;
     
 	// Set to true if an OSCORE-protected exchange is performed after EDHOC completion
-	private static final boolean POST_EDHOC_EXCHANGE = false;
+	private static final boolean POST_EDHOC_EXCHANGE = true;
 	
 	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
 	// Note: the application profile pertaining the EDHOC resource must first indicate support for the combined request 
@@ -177,22 +195,27 @@ public class EdhocClient {
 		}
 
 	};
+
+	private static String lightURI = "coap://" + serverAddress + "/light";
 	
-	private static String helloWorldURI = "coap://localhost/helloWorld";
-	
-	private static String edhocURI = "coap://localhost/.well-known/edhoc";
+	private static String edhocURI = "coap://" + serverAddress + "/.well-known/edhoc";
 	// private static String edhocURI = "coap://51.75.194.248/.well-known/edhoc"; // Timothy
 	// private static String edhocURI = "coap://54.93.59.163/.well-known/edhoc"; // Stefan
 	// private static String edhocURI = "coap://195.251.58.203:5683/.well-known/edhoc"; // Lidia
 	// private static String edhocURI = "coap://hephaistos.proxy.rd.coap.amsuess.com:1234/.well-known/edhoc"; // Christian
 	
 	
+
 	/*
 	 * Application entry point.
 	 * 
 	 */
-	public static void main(String args[]) {
-		String defaultUri = "coap://localhost/helloWorld";
+	public static void main(String args[]) throws InterruptedException, ConnectorException, IOException {
+
+		org.eclipse.californium.core.network.serialization.DataParser.setPhase("Client1");
+		org.eclipse.californium.core.network.serialization.UdpDataSerializer.setPhase("Client1");
+
+		String defaultUri = "coap://" + serverAddress + "/helloWorld";
 				
 		Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		Configuration.setStandard(config);
@@ -380,7 +403,7 @@ public class EdhocClient {
 				// TODO
 				break;
 			case Constants.CRED_TYPE_CCS:
-				System.out.print("My   ");
+			System.out.print("My   ");
 				CBORObject idCredKidCbor = CBORObject.FromObject(idCredKid);
 				ccsObject = CBORObject.DecodeFromBytes(Util.buildCredRawPublicKeyCcs(keyPair, subjectName, idCredKidCbor));
 				
@@ -584,70 +607,64 @@ public class EdhocClient {
 	}
 	
 	private static void edhocExchangeAsInitiator(final String args[], final URI targetUri, Set<CBORObject> ownIdCreds,
-												 EdhocEndpointInfo edhocEndpointInfo, CBORObject[] ead1) {
+			EdhocEndpointInfo edhocEndpointInfo, CBORObject[] ead1)
+			throws InterruptedException, ConnectorException, IOException {
 		
 		CoapClient client = new CoapClient(targetUri);
 		
 		/*
-		// Simple sending of a GET request
-		 
-		CoapResponse response = null;
-		
-		try {
-			response = client.get();
-		} catch (ConnectorException | IOException e) {
-			System.err.println("Got an error: " + e);
-		}
-
-		if (response != null) {
-
-			System.out.println(response.getCode());
-			System.out.println(response.getOptions());
-			if (args.length > 1) {
-				try (FileOutputStream out = new FileOutputStream(args[1])) {
-					out.write(response.getPayload());
-				} catch (IOException e) {
-					System.err.println("Error while writing the response payload to file: " +  e.getMessage());
-				}
-			} else {
-				System.out.println(response.getResponseText());
-
-				System.out.println(System.lineSeparator() + "ADVANCED" + System.lineSeparator());
-				// access advanced API with access to more details through
-				// .advanced()
-				System.out.println(Utils.prettyPrint(response));
-			}
-		} else {
-			System.out.println("No response received.");
-		}
-		*/
+		 * // Simple sending of a GET request
+		 * 
+		 * CoapResponse response = null;
+		 * 
+		 * try { response = client.get(); } catch (ConnectorException |
+		 * IOException e) { System.err.println("Got an error: " + e); }
+		 * 
+		 * if (response != null) {
+		 * 
+		 * System.out.println(response.getCode());
+		 * System.out.println(response.getOptions()); if (args.length > 1) { try
+		 * (FileOutputStream out = new FileOutputStream(args[1])) {
+		 * out.write(response.getPayload()); } catch (IOException e) {
+		 * System.err.
+		 * println("Error while writing the response payload to file: " +
+		 * e.getMessage()); } } else {
+		 * System.out.println(response.getResponseText());
+		 * 
+		 * System.out.println(System.lineSeparator() + "ADVANCED" +
+		 * System.lineSeparator()); // access advanced API with access to more
+		 * details through // .advanced()
+		 * System.out.println(Utils.prettyPrint(response)); } } else {
+		 * System.out.println("No response received."); }
+		 */
 		
 		// Simple test with a dummy payload
 		/*
-		byte[] requestPayload = { (byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03 };
-		
-		Request edhocMessage1 = new Request(Code.POST, Type.CON);
-		edhocMessage1.setPayload(requestPayload);
-		
-        // Submit the request
-        System.out.println("\nSent EDHOC Message1\n");
-        CoapResponse edhocMessage2;
-        try {
-			edhocMessage2 = client.advanced(edhocMessage1);
-		} catch (ConnectorException e) {
-			System.err.println("ConnectorException when sending EDHOC Message1");
-			return;
-		} catch (IOException e) {
-			System.err.println("IOException when sending EDHOC Message1");
-			return;
-		}
-		
-        byte[] responsePayload = edhocMessage2.getPayload();
-        System.out.println("\nResponse: " + new String(responsePayload) + "\n");
-        */		
+		 * byte[] requestPayload = { (byte) 0x00, (byte) 0x01, (byte) 0x02,
+		 * (byte) 0x03 };
+		 * 
+		 * Request edhocMessage1 = new Request(Code.POST, Type.CON);
+		 * edhocMessage1.setPayload(requestPayload);
+		 * 
+		 * // Submit the request System.out.println("\nSent EDHOC Message1\n");
+		 * CoapResponse edhocMessage2; try { edhocMessage2 =
+		 * client.advanced(edhocMessage1); } catch (ConnectorException e) {
+		 * System.err.println("ConnectorException when sending EDHOC Message1");
+		 * return; } catch (IOException e) {
+		 * System.err.println("IOException when sending EDHOC Message1");
+		 * return; }
+		 * 
+		 * byte[] responsePayload = edhocMessage2.getPayload();
+		 * System.out.println("\nResponse: " + new String(responsePayload) +
+		 * "\n");
+		 */
         
 		
 		/* Prepare and send EDHOC Message 1 */
+		System.out.println("Phase 1 Client ready to execute EDHOC and send following OSCORE request." + "\n");
+		Support.printPause("Press enter to execute EDHOC and turn on light");
+		beginTotal = System.nanoTime();
+		beginEdhoc = System.nanoTime();
 		
 		String uriAsString = targetUri.toString();
 		AppProfile appProfile = edhocEndpointInfo.getAppProfiles().get(uriAsString);
@@ -685,7 +702,7 @@ public class EdhocClient {
 		Request edhocMessageReq = new Request(Code.POST, Type.CON);
 		edhocMessageReq.setPayload(nextPayload);
 		
-        System.out.println("Sent EDHOC Message 1\n");
+		System.out.println("Sent EDHOC Message 1\n");
         
         CoapResponse edhocMessageResp;
         try {
@@ -748,15 +765,15 @@ public class EdhocClient {
         		
         		// Retrieve ERR_CODE
         		int errorCode = objectList[0].AsInt32();
-        		System.out.println("ERR_CODE: " + errorCode + "\n");
+				System.out.println("ERR_CODE: " + errorCode + "\n");
 
         		// Retrieve ERR_INFO
         		if (errorCode == Constants.ERR_CODE_SUCCESS) {
-        		    System.out.println("Success\n");
+					System.out.println("Success\n");
         		}
         		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED) {
         		    String errMsg = objectList[1].toString();
-        		    System.out.println("ERR_INFO: " + errMsg + "\n");
+					System.out.println("ERR_INFO: " + errMsg + "\n");
         		}
         		else if (errorCode == Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE) {
         		    CBORObject suitesR = objectList[1];
@@ -764,16 +781,16 @@ public class EdhocClient {
         		    	int suite = suitesR.AsInt32();
     		    		peerSupportedCiphersuites.add(Integer.valueOf(suite));
     		    		session.setPeerSupportedCipherSuites(peerSupportedCiphersuites);
-        		        System.out.println("SUITES_R: " + suitesR.AsInt32() + "\n");
+						System.out.println("SUITES_R: " + suitesR.AsInt32() + "\n");
         		    }
         		    else if (suitesR.getType() == CBORType.Array) {
-        		        System.out.print("SUITES_R: [ " );
+						System.out.print("SUITES_R: [ ");
         		        for (int i = 0; i < suitesR.size(); i++) {
         		        	int suite = suitesR.get(i).AsInt32();
     		        		peerSupportedCiphersuites.add(Integer.valueOf(suite));
-        		            System.out.print(suitesR.get(i).AsInt32() + " " );
+							System.out.print(suitesR.get(i).AsInt32() + " ");
         		        }
-        		        System.out.println("]\n");
+						System.out.println("]\n");
         		        session.setPeerSupportedCipherSuites(peerSupportedCiphersuites);
         		    }
         		}
@@ -854,7 +871,7 @@ public class EdhocClient {
 				
 				if (requestType == Constants.EDHOC_MESSAGE_3) {
 			        
-			        System.out.println("Sent EDHOC Message 3\n");
+					System.out.println("Sent EDHOC Message 3\n");
 					
 			        if (session.getApplicationProfile().getUsedForOSCORE() == true) {
 			        
@@ -925,7 +942,7 @@ public class EdhocClient {
 					}
 					
 				    Util.purgeSession(session, cI, edhocSessions, usedConnectionIds);
-			        System.out.println("Sent EDHOC Error Message\n");
+					System.out.println("Sent EDHOC Error Message\n");
 			        if (debugPrint) {
 			        	Util.nicePrint("EDHOC Error Message", nextPayload);
 			        }
@@ -952,9 +969,10 @@ public class EdhocClient {
 			            	return;
 		        		}
 		        		
-						client = new CoapClient(helloWorldURI);
+						client = new CoapClient(lightURI);
 						CoapResponse protectedResponse = null;
-						edhocMessageReq2 = Request.newGet();
+						edhocMessageReq2 = Request.newPost();
+						edhocMessageReq2.setPayload("1");
 						edhocMessageReq2.setType(Type.CON);
 						edhocMessageReq2.getOptions().setOscore(Bytes.EMPTY);
 						
@@ -1022,6 +1040,10 @@ public class EdhocClient {
 		        		session.setCurrentStep(Constants.EDHOC_SENT_M3);
 		        		edhocMessageResp2 = client.advanced(edhocMessageReq2);
 		        		
+						long endEdhoc = System.nanoTime();
+						long edhocTotal = endEdhoc - beginEdhoc;
+						System.out.println("Time elapsed for EDHOC processing:  " + (edhocTotal / 1000000) + " ms");
+
 		        	}
 		        	
 				} catch (ConnectorException e) {
@@ -1102,7 +1124,7 @@ public class EdhocClient {
 							typeName = new String("EDHOC Message " + responseType);
 							break;		
 					}
-		    		System.out.println("Determined EDHOC message type: " + typeName + "\n");
+					System.out.println("Determined EDHOC message type: " + typeName + "\n");
 		            Util.nicePrint(typeName, responsePayload);
 		            
 		            
@@ -1160,6 +1182,7 @@ public class EdhocClient {
 							
 					        try {
 					        	edhocMessageResp = client.advanced(edhocMessageReq3);
+
 							} catch (ConnectorException e) {
 								System.err.println("ConnectorException when sending EDHOC Error Message");
 								Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
@@ -1191,8 +1214,9 @@ public class EdhocClient {
 				// Send a request protected with the just established Security Context
 		        boolean usedForOSCORE = session.getApplicationProfile().getUsedForOSCORE();
 		        if (POST_EDHOC_EXCHANGE && usedForOSCORE == true) {
-					client = new CoapClient(helloWorldURI);
-					Request protectedRequest = Request.newGet();
+					client = new CoapClient(lightURI);
+					Request protectedRequest = Request.newPost();
+					protectedRequest.setPayload("1");
 					CoapResponse protectedResponse = null;
 					protectedRequest.setType(Type.CON);
 					protectedRequest.getOptions().setOscore(Bytes.EMPTY);
@@ -1206,6 +1230,10 @@ public class EdhocClient {
 					byte[] myPayload = protectedResponse.getPayload();
 					if (myPayload != null) {
 						System.out.println(Utils.prettyPrint(protectedResponse));
+						long endTotal = System.nanoTime();
+						long timeTotal = endTotal - beginTotal;
+						System.out
+								.println("Time elapsed from start of EDHOC processing to first OSCORE response received:  " + (timeTotal / 1000000) + " ms");
 					}
 		        }
 				
@@ -1213,6 +1241,41 @@ public class EdhocClient {
 
         }
         
+		int HANDLER_TIMEOUT = 1000;
+		// Send follow-up requests
+		Scanner scanner = new Scanner(System.in);
+		String command = "";
+		String payload = null;
+		while (!command.equals("q")) {
+
+			System.out.println("Enter command: ");
+			command = scanner.next();
+
+			if (command.equals("1")) {
+				payload = "1";
+			} else if (command.equals("0")) {
+				payload = "0";
+			} else if (command.equals("q")) {
+				System.exit(0);
+			} else {
+				System.out.println("Unknown command!");
+			}
+
+			Request r = new Request(Code.POST);
+			r.getOptions().setOscore(Bytes.EMPTY);
+			r.setPayload(payload);
+			r.setURI(lightURI);
+
+			// sends a multicast request
+			client.advanced(handler, r);
+			while (handler.waitOn(HANDLER_TIMEOUT)) {
+				// Wait for responses
+			}
+
+			Thread.sleep(200);
+		}
+		scanner.close();
+
 		client.shutdown();
 		
 	}
@@ -1237,25 +1300,25 @@ public class EdhocClient {
         	// Retrieve ERR_CODE
         	int errorCode = objectList[index].AsInt32();
         	index++;
-        	System.out.println("ERR_CODE: " + errorCode + "\n");
+			System.out.println("ERR_CODE: " + errorCode + "\n");
         	
         	// Retrieve ERR_INFO
     		if (errorCode == Constants.ERR_CODE_SUCCESS) {
-    			System.out.println("Success\n");
+				System.out.println("Success\n");
     		}
     		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED) {
 	        	String errMsg = objectList[index].toString();
-	        	System.out.println("DIAG_MSG: " + errMsg + "\n");
+				System.out.println("DIAG_MSG: " + errMsg + "\n");
     		}
     		else if (errorCode == Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE) {
     			CBORObject suitesR = objectList[index];
 				if (suitesR.getType() == CBORType.Integer) {
-		        	System.out.println("SUITES_R: " + suitesR.AsInt32() + "\n");
+					System.out.println("SUITES_R: " + suitesR.AsInt32() + "\n");
 				}
 				else if (suitesR.getType() == CBORType.Array) {
-					System.out.print("SUITES_R: [ " );
+					System.out.print("SUITES_R: [ ");
 					for (int i = 0; i < suitesR.size(); i++) {
-						System.out.print(suitesR.get(i).AsInt32() + " " );
+						System.out.print(suitesR.get(i).AsInt32() + " ");
 					}
 					System.out.println("]\n");
 				}
@@ -1277,4 +1340,43 @@ public class EdhocClient {
 		
 	}
 	
+	private static final MultiCoapHandler handler = new MultiCoapHandler();
+
+	private static class MultiCoapHandler implements CoapHandler {
+
+		private boolean on;
+
+		public synchronized boolean waitOn(long timeout) {
+			on = false;
+			try {
+				wait(timeout);
+			} catch (InterruptedException e) {
+			}
+			return on;
+		}
+
+		private synchronized void on() {
+			on = true;
+			notifyAll();
+		}
+
+		/**
+		 * Handle and parse incoming responses.
+		 */
+		@Override
+		public void onLoad(CoapResponse response) {
+			on();
+
+			// System.out.println("Receiving to: "); //TODO
+			System.out.println("Receiving from: " + response.advanced().getSourceContext().getPeerAddress());
+
+			System.out.println(Utils.prettyPrint(response));
+		}
+
+		@Override
+		public void onError() {
+			System.err.println("error");
+		}
+	}
+
 }
