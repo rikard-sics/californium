@@ -1256,7 +1256,7 @@ public class Phase1Client {
 			} else if (command.equals("0")) {
 				payload = "0";
 			} else if (command.equals("q")) {
-				System.exit(0);
+				break;
 			} else {
 				// System.out.println("Unknown command!");
 			}
@@ -1275,6 +1275,40 @@ public class Phase1Client {
 			Thread.sleep(200);
 		}
 		scanner.close();
+
+		// Write collected info to file
+		Map<String, String> incoming = org.eclipse.californium.core.network.serialization.DataParser.getToPrint();
+		Map<String, String> outgoing = org.eclipse.californium.core.network.serialization.UdpDataSerializer
+				.getToPrint();
+
+		System.out.println(incoming.keySet());
+		System.out.println(outgoing.keySet());
+
+		System.out.println(outgoing.get("header"));
+
+		System.out.println(outgoing.get("EDHOC Message #1: " + "=coap"));
+		System.out.println(outgoing.get("EDHOC Message #1: " + "=udp"));
+
+		System.out.println(incoming.get("EDHOC Message #2: " + "=coap"));
+		System.out.println(incoming.get("EDHOC Message #2: " + "=udp"));
+
+		System.out.println(outgoing.get("EDHOC Message #3: " + "=coap"));
+		System.out.println(outgoing.get("EDHOC Message #3: " + "=udp"));
+
+		System.out.println(incoming.get("EDHOC Message #3 ACK: " + "=coap"));
+		System.out.println(incoming.get("EDHOC Message #3 ACK: " + "=udp"));
+
+		System.out.println(outgoing.get("OSCORE Request #1: " + "=coap"));
+		System.out.println(outgoing.get("OSCORE Request #1: " + "=udp"));
+
+		System.out.println(incoming.get("OSCORE Response #1: " + "=coap"));
+		System.out.println(incoming.get("OSCORE Response #1: " + "=udp"));
+
+		System.out.println(outgoing.get("cumulativeOutgoingCoap"));
+		System.out.println(outgoing.get("cumulativeOutgoingUdp"));
+
+		System.out.println(incoming.get("cumulativeIncomingCoap"));
+		System.out.println(incoming.get("cumulativeIncomingUdp"));
 
 		client.shutdown();
 		

@@ -24,6 +24,9 @@ package org.eclipse.californium.core.network.serialization;
 
 import static org.eclipse.californium.core.coap.CoAP.MessageFormat.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
@@ -38,20 +41,36 @@ import org.slf4j.LoggerFactory;
  * The DataSerialized serializes outgoing messages to byte arrays.
  */
 public final class UdpDataSerializer extends DataSerializer {
+
 	/** the logger. */
 	private static final Logger LOGGER = LoggerFactory.getLogger(UdpDataSerializer.class);
 
 	static int messageCounter = 0;
 	// Outgoing
-	private static final String[] MESSAGES = { "EDHOC Message #1", "EDHOC Message #3", "OSCORE Request #1" };
+	private static final String[] MESSAGES = { "EDHOC Message #1", "EDHOC Message #3", "OSCORE Request #1",
+			"OSCORE Request #2", "OSCORE Request #3", "OSCORE Request #4", "OSCORE Request #5" };
 
 	static String phase = "";
+
 	public static void setPhase(String inPhase) {
 		phase = inPhase;
+		toPrint.put("header", new String("\n" + " ===" + inPhase + "==="));
 	}
 
 	static int cumulativeOutgoingUdp = 0;
 	static int cumulativeOutgoingCoap = 0;
+
+	static Map<String, String> toPrint = new HashMap<String, String>();
+
+	public static Map<String, String> getToPrint() {
+
+		toPrint.put("cumulativeOutgoingCoap",
+				new String(phase + ": " + "Total outgoing CoAP payload:\t" + cumulativeOutgoingCoap + " bytes"));
+		toPrint.put("cumulativeOutgoingUdp",
+				new String(phase + ": " + "Total outgoing UDP payload:\t" + cumulativeOutgoingUdp + " bytes"));
+
+		return toPrint;
+	}
 
 	/**
 	 * {@inheritDoc}
@@ -79,22 +98,30 @@ public final class UdpDataSerializer extends DataSerializer {
 			MESSAGES[0] = "EDHOC Message #1";
 			MESSAGES[1] = "EDHOC Message #3 + OSCORE Request #1";
 			MESSAGES[2] = "OSCORE Request #2";
+			MESSAGES[3] = "OSCORE Request #3";
+			MESSAGES[4] = "OSCORE Request #4";
+			MESSAGES[5] = "OSCORE Request #5";
+			MESSAGES[6] = "OSCORE Request #6";
 		}
 
 		String messageName = "";
-		if (messageCounter <= 2) {
+		if (messageCounter < MESSAGES.length) {
 			messageName = MESSAGES[messageCounter];
 			messageName = messageName + ": ";
 		}
 
 		if (message instanceof Request && phase.contains("Client")) {
-			System.out.println(phase + ": " + messageName + "Request " + " CoAP Payload: " + message.getPayloadSize());
-			System.out.println(phase + ": " + messageName + "Request " + " UDP Payload: " + writer.size());
+			toPrint.put(messageName + "=coap", new String(phase + ": " + messageName + "Request: " + " CoAP Payload:\t"
+					+ message.getPayloadSize() + " bytes"));
+			toPrint.put(messageName + "=udp",
+					new String(phase + ": " + messageName + "Request:" + " UDP Payload:\t" + writer.size() + " bytes"));
 			cumulativeOutgoingUdp += writer.size();
 			cumulativeOutgoingCoap += message.getPayloadSize();
 		} else if (message instanceof Response && phase.contains("Client")) {
-			System.out.println(phase + ": " + messageName + "Response " + " CoAP Payload: " + message.getPayloadSize());
-			System.out.println(phase + ": " + messageName + "Response " + " UDP Payload: " + writer.size());
+			toPrint.put(messageName + "=coap", new String(phase + ": " + messageName + "Response: " + " CoAP Payload:\t"
+					+ message.getPayloadSize() + " bytes"));
+			toPrint.put(messageName + "=udp", new String(
+					phase + ": " + messageName + "Response: " + " UDP Payload:\t" + writer.size() + " bytes"));
 			cumulativeOutgoingUdp += writer.size();
 			cumulativeOutgoingCoap += message.getPayloadSize();
 		}
@@ -103,7 +130,7 @@ public final class UdpDataSerializer extends DataSerializer {
 		messageCounter++;
 	}
 
-	@Override 
+	@Override
 	protected void serializeHeader(final DatagramWriter writer, final MessageHeader header) {
 		writer.write(VERSION, VERSION_BITS);
 		writer.write(header.getType().value, TYPE_BITS);

@@ -34,6 +34,9 @@ import org.eclipse.californium.elements.util.DatagramReader;
 
 import static org.eclipse.californium.core.coap.CoAP.MessageFormat.PAYLOAD_MARKER;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * A base class for parsing CoAP messages from a byte array.
  */
@@ -69,9 +72,11 @@ public abstract class DataParser {
 
 	static int messageCounter = 0;
 	// Incoming
-	private static final String[] MESSAGES = { "EDHOC Message #2", "EDHOC Message #3 ACK", "OSCORE Response #1" };
+	private static final String[] MESSAGES = { "EDHOC Message #2", "EDHOC Message #3 ACK", "OSCORE Response #1",
+			"OSCORE Response #2", "OSCORE Response #3", "OSCORE Response #4", "OSCORE Response #5" };
 
 	static String phase = "";
+
 	public static void setPhase(String inPhase) {
 		phase = inPhase;
 	}
@@ -79,12 +84,25 @@ public abstract class DataParser {
 	static int cumulativeIncomingUdp = 0;
 	static int cumulativeIncomingCoap = 0;
 
+	static Map<String, String> toPrint = new HashMap<String, String>();
+
+	public static Map<String, String> getToPrint() {
+
+		toPrint.put("cumulativeIncomingCoap",
+				new String(phase + ": " + "Total incoming CoAP payload:\t" + cumulativeIncomingCoap + " bytes"));
+		toPrint.put("cumulativeIncomingUdp",
+				new String(phase + ": " + "Total incoming UDP payload:\t" + cumulativeIncomingUdp + " bytes"));
+
+		return toPrint;
+	}
+
 	/**
 	 * Parses a byte array into a CoAP Message.
 	 * 
 	 * @param msg the byte array to parse.
 	 * @return the message.
-	 * @throws MessageFormatException if the array cannot be parsed into a message.
+	 * @throws MessageFormatException if the array cannot be parsed into a
+	 *             message.
 	 */
 	public final Message parseMessage(final byte[] msg) {
 
@@ -105,29 +123,35 @@ public abstract class DataParser {
 				MESSAGES[0] = "EDHOC Message #2";
 				MESSAGES[1] = "OSCORE Response #1";
 				MESSAGES[2] = "OSCORE Response #2";
+				MESSAGES[3] = "OSCORE Response #3";
+				MESSAGES[4] = "OSCORE Response #4";
+				MESSAGES[5] = "OSCORE Response #5";
+				MESSAGES[6] = "OSCORE Response #6";
 			}
 
 			String messageName = "";
-			if (messageCounter <= 2) {
+			if (messageCounter < MESSAGES.length) {
 				messageName = MESSAGES[messageCounter];
 				messageName = messageName + ": ";
 			}
 
 			if (message instanceof Request && phase.contains("Client")) {
-				System.out.println(
-						phase + ": " + messageName + ": Request " + " CoAP Payload: " + message.getPayloadSize());
-				System.out.println(phase + ": " + messageName + ": Request " + " UDP Payload: " + msg.length);
+				toPrint.put(messageName + "=coap", new String(phase + ": " + messageName + "Request: "
+						+ " CoAP Payload:\t" + message.getPayloadSize() + " bytes"));
+				toPrint.put(messageName + "=udp", new String(
+						phase + ": " + messageName + "Request: " + " UDP Payload:\t" + msg.length + " bytes"));
 				cumulativeIncomingUdp += msg.length;
 				cumulativeIncomingCoap += message.getPayloadSize();
 			} else if (message instanceof Response && phase.contains("Client")) {
-				System.out.println(
-						phase + ": " + messageName + ": Response " + " CoAP Payload: " + message.getPayloadSize());
-				System.out.println(phase + ": " + messageName + ": Response " + " UDP Payload: " + msg.length);
+				toPrint.put(messageName + "=coap", new String(phase + ": " + messageName + "Response: "
+						+ " CoAP Payload:\t" + message.getPayloadSize() + " bytes"));
+				toPrint.put(messageName + "=udp", new String(
+						phase + ": " + messageName + "Response: " + " UDP Payload:\t" + msg.length + " bytes"));
 				cumulativeIncomingUdp += msg.length;
 				cumulativeIncomingCoap += message.getPayloadSize();
 			}
 			messageCounter++;
-			
+
 			// Set the message's bytes and return the message
 			if (message != null) {
 				message.setBytes(msg);
@@ -139,7 +163,8 @@ public abstract class DataParser {
 			/** use message to add CoAP message specific information */
 			errorMsg = e.getMessage();
 		}
-		throw new CoAPMessageFormatException(errorMsg, header.getToken(), header.getMID(), header.getCode(), CoAP.Type.CON == header.getType());
+		throw new CoAPMessageFormatException(errorMsg, header.getToken(), header.getMID(), header.getCode(),
+				CoAP.Type.CON == header.getType());
 	}
 
 	/**
@@ -164,8 +189,8 @@ public abstract class DataParser {
 	/**
 	 * Parses a byte array into a CoAP message header.
 	 * <p>
-	 * Subclasses need to override this method according to the concrete type of message
-	 * encoding to support.
+	 * Subclasses need to override this method according to the concrete type of
+	 * message encoding to support.
 	 * 
 	 * @param reader for reading the byte array to parse.
 	 * @return the message header the array has been parsed into.

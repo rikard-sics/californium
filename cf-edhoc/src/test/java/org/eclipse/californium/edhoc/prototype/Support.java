@@ -20,4 +20,10 @@ public class Support {
 			e.printStackTrace();
 		}
 	}
+
+	static void printIfNotNull(String str) {
+		if (str != null) {
+			System.out.println(str);
+		}
+	}
 }
