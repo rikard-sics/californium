@@ -19,9 +19,12 @@
  ******************************************************************************/
 package org.eclipse.californium.edhoc.prototype;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Provider;
@@ -77,6 +80,8 @@ public class Phase2Client {
 
 	private static long beginTotal;
 	private static long beginEdhoc;
+	private static long timeTotal;
+	private static long edhocTotal;
 
 	private static final boolean debugPrint = false;
 	
@@ -1046,7 +1051,7 @@ public class Phase2Client {
 		        		edhocMessageResp2 = client.advanced(edhocMessageReq2);
 		        		
 						long endEdhoc = System.nanoTime();
-						long edhocTotal = endEdhoc - beginEdhoc;
+						edhocTotal = endEdhoc - beginEdhoc;
 						System.out.println("Time elapsed for EDHOC processing: " + (edhocTotal / 1000000) + " ms");
 
 		        	}
@@ -1236,9 +1241,9 @@ public class Phase2Client {
 					if (myPayload != null) {
 						// // System.out.println(Utils.prettyPrint(protectedResponse));
 						long endTotal = System.nanoTime();
-						long timeTotal = endTotal - beginTotal;
+						timeTotal = endTotal - beginTotal;
 						System.out
-								.println("Time elapsed from start of EDHOC processing to first OSCORE response received:  " + (timeTotal / 1000000) + " ms");
+								.println("Time elapsed for EDHOC & 1st OSCORE response: " + (timeTotal / 1000000) + " ms");
 					}
 		        }
 				
@@ -1253,7 +1258,7 @@ public class Phase2Client {
 		String payload = null;
 		while (!command.equals("q")) {
 
-			// System.out.println("Enter command: ");
+			System.out.println("Enter command: ");
 			command = scanner.next();
 
 			if (command.equals("1")) {
@@ -1261,9 +1266,9 @@ public class Phase2Client {
 			} else if (command.equals("0")) {
 				payload = "0";
 			} else if (command.equals("q")) {
-				System.exit(0);
+				break;
 			} else {
-				// // System.out.println("Unknown command!");
+				// System.out.println("Unknown command!");
 			}
 
 			Request r = new Request(Code.POST);
@@ -1280,6 +1285,48 @@ public class Phase2Client {
 			Thread.sleep(200);
 		}
 		scanner.close();
+
+		// Write collected info to file
+		Map<String, String> incoming = org.eclipse.californium.core.network.serialization.DataParser.getToPrint();
+		Map<String, String> outgoing = org.eclipse.californium.core.network.serialization.UdpDataSerializer
+				.getToPrint();
+
+		try (FileWriter fw = new FileWriter("output-edhoc.txt", true);
+				BufferedWriter bw = new BufferedWriter(fw);
+				PrintWriter out = new PrintWriter(bw)) {
+
+			out.println(outgoing.get("header"));
+
+			out.println(outgoing.get("EDHOC Message #1: " + "=coap"));
+			out.println(outgoing.get("EDHOC Message #1: " + "=udp"));
+
+			out.println(incoming.get("EDHOC Message #2: " + "=coap"));
+			out.println(incoming.get("EDHOC Message #2: " + "=udp"));
+
+			out.println(outgoing.get("EDHOC Message #3: " + "=coap"));
+			out.println(outgoing.get("EDHOC Message #3: " + "=udp"));
+
+			out.println(incoming.get("EDHOC Message #3 ACK: " + "=coap"));
+			out.println(incoming.get("EDHOC Message #3 ACK: " + "=udp"));
+
+			out.println(outgoing.get("OSCORE Request #1: " + "=coap"));
+			out.println(outgoing.get("OSCORE Request #1: " + "=udp"));
+
+			out.println(incoming.get("OSCORE Response #1: " + "=coap"));
+			out.println(incoming.get("OSCORE Response #1: " + "=udp"));
+
+			out.println(outgoing.get("cumulativeOutgoingCoap"));
+			out.println(outgoing.get("cumulativeOutgoingUdp"));
+
+			out.println(incoming.get("cumulativeIncomingCoap"));
+			out.println(incoming.get("cumulativeIncomingUdp"));
+
+			out.println("Client2: " + "Time elapsed for EDHOC processing:\t\t" + (edhocTotal / 1000000) + " ms");
+			out.println("Client2: " + "Time elapsed for EDHOC & 1st OSCORE response: " + (timeTotal / 1000000) + " ms");
+
+		} catch (IOException e) {
+			// exception handling left as an exercise for the reader
+		}
 
 		client.shutdown();
 		

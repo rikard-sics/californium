@@ -54,7 +54,7 @@ public final class UdpDataSerializer extends DataSerializer {
 
 	public static void setPhase(String inPhase) {
 		phase = inPhase;
-		toPrint.put("header", new String("\n" + " ===" + inPhase + "==="));
+		toPrint.put("header", new String("\n" + " === " + inPhase + " ==="));
 	}
 
 	static int cumulativeOutgoingUdp = 0;
@@ -65,9 +65,9 @@ public final class UdpDataSerializer extends DataSerializer {
 	public static Map<String, String> getToPrint() {
 
 		toPrint.put("cumulativeOutgoingCoap",
-				new String(phase + ": " + "Total outgoing CoAP payload:\t" + cumulativeOutgoingCoap + " bytes"));
+				new String(phase + ": " + "Total outgoing CoAP payload:\t\t\t" + cumulativeOutgoingCoap + " bytes"));
 		toPrint.put("cumulativeOutgoingUdp",
-				new String(phase + ": " + "Total outgoing UDP payload:\t" + cumulativeOutgoingUdp + " bytes"));
+				new String(phase + ": " + "Total outgoing UDP payload:\t\t\t" + cumulativeOutgoingUdp + " bytes"));
 
 		return toPrint;
 	}

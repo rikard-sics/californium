@@ -1,0 +1,70 @@
+
+ === Client1 ===
+Client1: EDHOC Message #1: Request:  CoAP Payload:	38 bytes
+Client1: EDHOC Message #1: Request: UDP Payload:	79 bytes
+Client1: EDHOC Message #2: Response:  CoAP Payload:	115 bytes
+Client1: EDHOC Message #2: Response:  UDP Payload:	131 bytes
+Client1: EDHOC Message #3: Request:  CoAP Payload:	91 bytes
+Client1: EDHOC Message #3: Request: UDP Payload:	132 bytes
+Client1: EDHOC Message #3 ACK: Response:  CoAP Payload:	0 bytes
+Client1: EDHOC Message #3 ACK: Response:  UDP Payload:	12 bytes
+Client1: OSCORE Request #1: Request:  CoAP Payload:	17 bytes
+Client1: OSCORE Request #1: Request: UDP Payload:	44 bytes
+Client1: OSCORE Response #1: Response:  CoAP Payload:	28 bytes
+Client1: OSCORE Response #1: Response:  UDP Payload:	42 bytes
+Client1: Total outgoing CoAP payload:			146 bytes
+Client1: Total outgoing UDP payload:			255 bytes
+Client1: Total incoming CoAP payload:			143 bytes
+Client1: Total incoming UDP payload:			185 bytes
+Client1: Time elapsed for EDHOC and 1st OSCORE response: 986 ms
+Client1: Time elapsed for EDHOC processing:		914 ms
+
+ === Client2 ===
+Client2: EDHOC Message #1: Request:  CoAP Payload:	38 bytes
+Client2: EDHOC Message #1: Request: UDP Payload:	79 bytes
+Client2: EDHOC Message #2: Response:  CoAP Payload:	58 bytes
+Client2: EDHOC Message #2: Response:  UDP Payload:	74 bytes
+Client2: EDHOC Message #3: Request:  CoAP Payload:	34 bytes
+Client2: EDHOC Message #3: Request: UDP Payload:	75 bytes
+Client2: EDHOC Message #3 ACK: Response:  CoAP Payload:	0 bytes
+Client2: EDHOC Message #3 ACK: Response:  UDP Payload:	12 bytes
+Client2: OSCORE Request #1: Request:  CoAP Payload:	17 bytes
+Client2: OSCORE Request #1: Request: UDP Payload:	44 bytes
+Client2: OSCORE Response #1: Response:  CoAP Payload:	28 bytes
+Client2: OSCORE Response #1: Response:  UDP Payload:	42 bytes
+Client2: Total outgoing CoAP payload:			89 bytes
+Client2: Total outgoing UDP payload:			198 bytes
+Client2: Total incoming CoAP payload:			86 bytes
+Client2: Total incoming UDP payload:			128 bytes
+Client2: Time elapsed for EDHOC & 1st OSCORE response: 1291 ms
+Client2: Time elapsed for EDHOC processing:		1201 ms
+
+ === Client3 ===
+Client3: EDHOC Message #1: Request:  CoAP Payload:	38 bytes
+Client3: EDHOC Message #1: Request: UDP Payload:	79 bytes
+Client3: EDHOC Message #2: Response:  CoAP Payload:	115 bytes
+Client3: EDHOC Message #2: Response:  UDP Payload:	131 bytes
+Client3: EDHOC Message #3 + OSCORE Request #1: Request:  CoAP Payload:	108 bytes
+Client3: EDHOC Message #3 + OSCORE Request #1: Request: UDP Payload:	136 bytes
+Client3: OSCORE Response #1: Response:  CoAP Payload:	28 bytes
+Client3: OSCORE Response #1: Response:  UDP Payload:	42 bytes
+Client3: Total outgoing CoAP payload:			146 bytes
+Client3: Total outgoing UDP payload:			215 bytes
+Client3: Total incoming CoAP payload:			143 bytes
+Client3: Total incoming UDP payload:			173 bytes
+Client3: Time elapsed for EDHOC & 1st OSCORE response: 975 ms
+
+ === Client4 ===
+Client4: EDHOC Message #1: Request:  CoAP Payload:	38 bytes
+Client4: EDHOC Message #1: Request: UDP Payload:	79 bytes
+Client4: EDHOC Message #2: Response:  CoAP Payload:	58 bytes
+Client4: EDHOC Message #2: Response:  UDP Payload:	74 bytes
+Client4: EDHOC Message #3 + OSCORE Request #1: Request:  CoAP Payload:	51 bytes
+Client4: EDHOC Message #3 + OSCORE Request #1: Request: UDP Payload:	79 bytes
+Client4: OSCORE Response #1: Response:  CoAP Payload:	28 bytes
+Client4: OSCORE Response #1: Response:  UDP Payload:	42 bytes
+Client4: Total outgoing CoAP payload:			89 bytes
+Client4: Total outgoing UDP payload:			158 bytes
+Client4: Total incoming CoAP payload:			86 bytes
+Client4: Total incoming UDP payload:			116 bytes
+Client4: Time elapsed for EDHOC & 1st OSCORE response: 1193 ms

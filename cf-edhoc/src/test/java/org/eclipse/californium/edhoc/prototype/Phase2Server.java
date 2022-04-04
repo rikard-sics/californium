@@ -19,6 +19,7 @@
  ******************************************************************************/
 package org.eclipse.californium.edhoc.prototype;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
@@ -564,10 +565,31 @@ public class Phase2Server extends CoapServer {
 
 			if (exchange.getRequestText().equals("1")) {
 				r.setPayload("Turning on light ");
+				System.out.println("Turning on light ");
+
+				// Run script to turn on
+				try {
+					String command = "python LED-on.py";
+					Runtime.getRuntime().exec(command);
+				} catch (IOException e) {
+					System.err.print("Failed to run python script: ");
+					e.printStackTrace();
+				}
 			} else if (exchange.getRequestText().equals("0")) {
 				r.setPayload("Turning off light");
+				System.out.println("Turning off light");
+
+				// Run script to turn off
+				try {
+					String command = "python LED-off.py";
+					Runtime.getRuntime().exec(command);
+				} catch (IOException e) {
+					System.err.print("Failed to run python script: ");
+					e.printStackTrace();
+				}
 			} else {
 				r.setPayload("Invalid payload! ");
+				// System.out.println("Invalid payload! ");
 			}
 
 			// System.out.println("Accessing light resource");

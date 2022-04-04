@@ -89,9 +89,9 @@ public abstract class DataParser {
 	public static Map<String, String> getToPrint() {
 
 		toPrint.put("cumulativeIncomingCoap",
-				new String(phase + ": " + "Total incoming CoAP payload:\t" + cumulativeIncomingCoap + " bytes"));
+				new String(phase + ": " + "Total incoming CoAP payload:\t\t\t" + cumulativeIncomingCoap + " bytes"));
 		toPrint.put("cumulativeIncomingUdp",
-				new String(phase + ": " + "Total incoming UDP payload:\t" + cumulativeIncomingUdp + " bytes"));
+				new String(phase + ": " + "Total incoming UDP payload:\t\t\t" + cumulativeIncomingUdp + " bytes"));
 
 		return toPrint;
 	}
