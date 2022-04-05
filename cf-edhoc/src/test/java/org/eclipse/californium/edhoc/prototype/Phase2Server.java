@@ -90,21 +90,21 @@ public class Phase2Server extends CoapServer {
 	
     // The type of the credential of this peer
     // Possible values: CRED_TYPE_CWT ; CRED_TYPE_CCS ; CRED_TYPE_X509
-    private static int credType = Constants.CRED_TYPE_X509;
+	private static int credType = Constants.CRED_TYPE_CCS;
     
     // The type of the credential identifier of this peer
     // Possible values: ID_CRED_TYPE_KID ; ID_CRED_TYPE_CWT ; ID_CRED_TYPE_CCS ;
     //                  ID_CRED_TYPE_X5T ; ID_CRED_TYPE_X5U ; ID_CRED_TYPE_X5CHAIN
-    private static int idCredType = Constants.ID_CRED_TYPE_X5T;
+	private static int idCredType = Constants.ID_CRED_TYPE_KID;
     
     // The type of the credential of the other peer
     // Possible values: CRED_TYPE_CWT ; CRED_TYPE_CCS ; CRED_TYPE_X509
-    private static int peerCredType = Constants.CRED_TYPE_X509;
+	private static int peerCredType = Constants.CRED_TYPE_CCS;
     
     // The type of the credential identifier of the other peer
     // Possible values: ID_CRED_TYPE_KID ; ID_CRED_TYPE_CWT ; ID_CRED_TYPE_CCS ;
     //                  ID_CRED_TYPE_X5T ; ID_CRED_TYPE_X5U ; ID_CRED_TYPE_X5CHAIN
-    private static int peerIdCredType = Constants.ID_CRED_TYPE_X5T;
+	private static int peerIdCredType = Constants.ID_CRED_TYPE_KID;
     
     // The subject name used for the identity key of this peer
     private static String subjectName = "";
@@ -383,7 +383,8 @@ public class Phase2Server extends CoapServer {
 		CBORObject ccsObject = null;
 		
 		// Use 0x07 as kid for this peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x07
-		byte[] idCredKid = new byte[] {(byte) 0x07};
+		// byte[] idCredKid = new byte[] {(byte) 0x07};
+		int idCredKid = 7;
 		
 		switch (credType) {
 			case Constants.CRED_TYPE_CWT:
@@ -474,7 +475,8 @@ public class Phase2Server extends CoapServer {
 		CBORObject peerCcsObject = null;
 		
 		// Use 0x24 as kid for the other peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x24
-		byte[] peerKid = new byte[] {(byte) 0x24};
+		// byte[] peerKid = new byte[] {(byte) 0x24};
+		int peerKid = 5;
 		
 		switch (peerCredType) {
 		case Constants.CRED_TYPE_CWT:
