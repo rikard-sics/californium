@@ -386,6 +386,7 @@ public class EdhocResource extends CoapResource {
 			        	Util.nicePrint("OSCORE Master Secret", masterSecret);
 			        	Util.nicePrint("OSCORE Master Salt", masterSalt);
 			        }
+					System.out.println("Finished EDHOC and derived OSCORE security context");
 			        
 			        /* Setup the OSCORE Security Context */
 			        

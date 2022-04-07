@@ -1346,8 +1346,7 @@ public class Phase1Client {
 						long endTotal = System.nanoTime();
 						timeTotal = endTotal - beginTotal;
 						System.out.println(
-								"Duration of EDHOC and OSCORE exchange:\t\t\t"
-										+ (timeTotal / 1000000) + " ms");
+								"Duration of EDHOC and OSCORE exchange: " + (timeTotal / 1000000) + " ms");
 					}
 				}
 

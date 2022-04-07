@@ -36,3 +36,18 @@ Total outgoing traffic: CoAP Payload (UDP Payload):	76 bytes (145 bytes)
 Total incoming traffic: CoAP Payload (UDP Payload):	74 bytes (104 bytes)
 
 Duration of EDHOC and OSCORE exchange:			1241 ms
+
+ === Client1 ===
+EDHOC Message #1: CoAP Payload (UDP payload):		 38 bytes ( 79 bytes)
+EDHOC Message #2: CoAP Payload (UDP payload):		103 bytes (119 bytes)
+EDHOC Message #3: CoAP Payload (UDP payload):		 79 bytes (120 bytes)
+             ACK: CoAP Payload (UDP payload):		  0 bytes ( 12 bytes)
+
+OSCORE Request  #1: CoAP Payload (UDP payload):		 17 bytes ( 44 bytes)
+OSCORE Response #1: CoAP Payload (UDP payload):		 28 bytes ( 42 bytes)
+
+Total outgoing traffic: CoAP Payload (UDP Payload):	185 bytes (375 bytes)
+Total incoming traffic: CoAP Payload (UDP Payload):	215 bytes (299 bytes)
+
+Duration of EDHOC execution:				1114 ms
+Duration of EDHOC and OSCORE exchange:			1201 ms

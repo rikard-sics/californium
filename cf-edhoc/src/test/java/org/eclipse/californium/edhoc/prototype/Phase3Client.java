@@ -1025,7 +1025,7 @@ public class Phase3Client {
 							long endTotal = System.nanoTime();
 							timeTotal = endTotal - beginTotal;
 							System.out.println(
-									"Duration of EDHOC and OSCORE exchange:\t\t\t" + (timeTotal / 1000000) + " ms");
+									"Duration of EDHOC and OSCORE exchange: " + (timeTotal / 1000000) + " ms");
 							
 							int contentFormat = protectedResponse.getOptions().getContentFormat();
 							int restCode = protectedResponse.getCode().value;
