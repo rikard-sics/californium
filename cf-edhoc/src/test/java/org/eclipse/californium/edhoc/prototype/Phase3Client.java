@@ -105,23 +105,23 @@ public class Phase3Client {
 	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
 	
     // The type of the credential of this peer
-    // Possible values: CRED_TYPE_CWT ; CRED_TYPE_CCS ; CRED_TYPE_X509
-    private static int credType = Constants.CRED_TYPE_X509;
+	// Possible values: CRlong ED_TYPE_CWT ; CRED_TYPE_CCS ; CRED_TYPE_X509
+	private static int credType = Constants.CRED_TYPE_CCS;
     
     // The type of the credential identifier of this peer
     // Possible values: ID_CRED_TYPE_KID ; ID_CRED_TYPE_CWT ; ID_CRED_TYPE_CCS ;
     //                  ID_CRED_TYPE_X5T ; ID_CRED_TYPE_X5U ; ID_CRED_TYPE_X5CHAIN
-    private static int idCredType = Constants.ID_CRED_TYPE_X5T;
+	private static int idCredType = Constants.ID_CRED_TYPE_KID;
     
     // The type of the credential of the other peer
     // Possible values: CRED_TYPE_CWT ; CRED_TYPE_CCS ; CRED_TYPE_X509
-    private static int peerCredType = Constants.CRED_TYPE_X509;
+	private static int peerCredType = Constants.CRED_TYPE_CCS;
     
     // The type of the credential identifier of the other peer
     // Possible values: ID_CRED_TYPE_KID ; ID_CRED_TYPE_CWT ; ID_CRED_TYPE_CCS ;
     //                  ID_CRED_TYPE_X5T ; ID_CRED_TYPE_X5U ; ID_CRED_TYPE_X5CHAIN
-    private static int peerIdCredType = Constants.ID_CRED_TYPE_X5T;
-    
+	private static int peerIdCredType = Constants.ID_CRED_TYPE_KID;
+
 	// Set to true if an OSCORE-protected exchange is performed after EDHOC completion
 	private static final boolean POST_EDHOC_EXCHANGE = false;
 	
@@ -404,7 +404,7 @@ public class Phase3Client {
 				// TODO
 				break;
 			case Constants.CRED_TYPE_CCS:
-				// System.out.print("My   ");
+			// // System.out.print("My ");
 				CBORObject idCredKidCbor = CBORObject.FromObject(idCredKid);
 				ccsObject = CBORObject.DecodeFromBytes(Util.buildCredRawPublicKeyCcs(keyPair, subjectName, idCredKidCbor));
 				
@@ -414,10 +414,16 @@ public class Phase3Client {
 					cred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a501020241242001215820cd4177ba62433375ede279b5e18e8b91bc3ed8f1e174474a26fc0edb44ea5373225820a0391de29c5c5badda610d4e301eaaa18422367722289cd18cbe6624e89b9cfd");
 				}
 		 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
-					cred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a40101024124200621582038e5d54563c2b6a4ba26f3015f61bb706e5c2efdb556d2e1690b97fc3c6de149");
+				// cred =
+				// net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a40101024124200621582038e5d54563c2b6a4ba26f3015f61bb706e5c2efdb556d2e1690b97fc3c6de149");
+				cred = net.i2p.crypto.eddsa.Utils.hexToBytes(
+						"A2026008A101A401010205200621582038E5D54563C2B6A4BA26F3015F61BB706E5C2EFDB556D2E1690B97FC3C6DE149");
 		 		}
 		 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
-					cred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a4010102412420042158202c440cc121f8d7f24c3b0e41aedafe9caa4f4e7abb835ec30f1de88adb96ff71");
+				// cred =
+				// net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a4010102412420042158202c440cc121f8d7f24c3b0e41aedafe9caa4f4e7abb835ec30f1de88adb96ff71");
+				cred = net.i2p.crypto.eddsa.Utils.hexToBytes(
+						"A2026008A101A40101020520042158202C440CC121F8D7F24C3B0E41AEDAFE9CAA4F4E7ABB835EC30F1DE88ADB96FF71");
 		 		}
 				break;
 			case Constants.CRED_TYPE_X509:
@@ -496,21 +502,29 @@ public class Phase3Client {
 			// TODO
 			break;
 		case Constants.CRED_TYPE_CCS:				
-			// System.out.print("Peer ");
+			// // System.out.print("Peer ");
 			CBORObject peerKidCbor = CBORObject.FromObject(peerKid);
-			peerCcsObject = CBORObject.DecodeFromBytes(Util.buildCredRawPublicKeyCcs(peerPublicKey, subjectName, peerKidCbor));
-			
-			// These serializations have to be prepared manually, in order to ensure that
-			// the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
+			peerCcsObject = CBORObject
+					.DecodeFromBytes(Util.buildCredRawPublicKeyCcs(peerPublicKey, subjectName, peerKidCbor));
+
+			// These serializations have to be prepared manually, in order to
+			// ensure that
+			// the CBOR map used as CRED has its parameters encoded in bytewise
+			// lexicographic order
 			if (peerKeyCurve == KeyKeys.EC2_P256.AsInt32()) {
-				peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a5010202410720012158206f9702a66602d78f5e81bac1e0af01f8b52810c502e87ebb7c926c07426fd02f225820c8d33274c71c9b3ee57d842bbf2238b8283cb410eca216fb72a78ea7a870f800");
+				peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes(
+						"a2026008a101a5010202410720012158206f9702a66602d78f5e81bac1e0af01f8b52810c502e87ebb7c926c07426fd02f225820c8d33274c71c9b3ee57d842bbf2238b8283cb410eca216fb72a78ea7a870f800");
+			} else if (peerKeyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
+				// peerCred =
+				// net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a401010241072006215820dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
+				peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes(
+						"A2026008A101A4010102072006215820DBD9DC8CD03FB7C3913511462BB23816477C6BD8D66EF5A1A070AC854ED73FD2");
+			} else if (peerKeyCurve == KeyKeys.OKP_X25519.AsInt32()) {
+				// peerCred =
+				// net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a401010241072004215820a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
+				peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes(
+						"A2026008A101A4010102072004215820A3FF263595BEB377D1A0CE1D04DAD2D40966AC6BCB622051B84659184D5D9A32");
 			}
-	 		else if (peerKeyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
-				peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a401010241072006215820dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
-	 		}
-	 		else if (peerKeyCurve == KeyKeys.OKP_X25519.AsInt32()) {
-				peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a401010241072004215820a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
-	 		}
 			break;
 		case Constants.CRED_TYPE_X509:
     		// The x509 certificate of the other peer
@@ -1314,6 +1328,13 @@ public class Phase3Client {
 			out.println("Client3: " + "Time elapsed for EDHOC & 1st OSCORE response: "
 					+ (timeTotal / 1000000) + " ms");
 
+			// Flush and close
+			out.flush();
+			out.close();
+			bw.flush();
+			bw.close();
+			fw.flush();
+			fw.close();
 		} catch (IOException e) {
 			// exception handling left as an exercise for the reader
 		}

@@ -1338,6 +1338,13 @@ public class Phase2Client {
 			out.println("Client2: " + "Time elapsed for EDHOC processing:\t\t" + (edhocTotal / 1000000) + " ms");
 			out.println("Client2: " + "Time elapsed for EDHOC & 1st OSCORE response: " + (timeTotal / 1000000) + " ms");
 
+			// Flush and close
+			out.flush();
+			out.close();
+			bw.flush();
+			bw.close();
+			fw.flush();
+			fw.close();
 		} catch (IOException e) {
 			// exception handling left as an exercise for the reader
 		}
