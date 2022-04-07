@@ -1025,7 +1025,7 @@ public class Phase4Client {
 							long endTotal = System.nanoTime();
 							timeTotal = endTotal - beginTotal;
 							System.out.println(
-									"Time elapsed for EDHOC & 1st OSCORE response: "
+									"Duration of EDHOC and OSCORE exchange:\t\t\t"
 											+ (timeTotal / 1000000) + " ms");
 							
 							int contentFormat = protectedResponse.getOptions().getContentFormat();
@@ -1308,26 +1308,19 @@ public class Phase4Client {
 
 			out.println(outgoing.get("header"));
 
-			out.println(outgoing.get("EDHOC Message #1: " + "=coap"));
-			out.println(outgoing.get("EDHOC Message #1: " + "=udp"));
+			out.println(outgoing.get("EDHOC Message #1"));
+			out.println(incoming.get("EDHOC Message #2"));
 
-			out.println(incoming.get("EDHOC Message #2: " + "=coap"));
-			out.println(incoming.get("EDHOC Message #2: " + "=udp"));
 
-			out.println(outgoing.get("EDHOC Message #3 + OSCORE Request #1: " + "=coap"));
-			out.println(outgoing.get("EDHOC Message #3 + OSCORE Request #1: " + "=udp"));
+			out.println("\n" + outgoing.get("EDHOC Msg #3 + OSCORE Req #1"));
+			out.println(incoming.get("OSCORE Response #1"));
+			
 
-			out.println(incoming.get("OSCORE Response #1: " + "=coap"));
-			out.println(incoming.get("OSCORE Response #1: " + "=udp"));
+			out.println("\n" + outgoing.get("cumulativeOutgoingCoapUdp"));
+			out.println(incoming.get("cumulativeIncomingCoapUdp"));
+			
 
-			out.println(outgoing.get("cumulativeOutgoingCoap"));
-			out.println(outgoing.get("cumulativeOutgoingUdp"));
-
-			out.println(incoming.get("cumulativeIncomingCoap"));
-			out.println(incoming.get("cumulativeIncomingUdp"));
-
-			out.println("Client4: " + "Time elapsed for EDHOC & 1st OSCORE response: "
-					+ (timeTotal / 1000000) + " ms");
+			out.println("\n" + "Duration of EDHOC and OSCORE exchange:\t\t\t" + (timeTotal / 1000000) + " ms");
 
 			// Flush and close
 			out.flush();

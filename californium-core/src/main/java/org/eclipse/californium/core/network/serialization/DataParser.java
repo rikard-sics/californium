@@ -72,7 +72,7 @@ public abstract class DataParser {
 
 	static int messageCounter = 0;
 	// Incoming
-	private static final String[] MESSAGES = { "EDHOC Message #2", "EDHOC Message #3 ACK", "OSCORE Response #1",
+	private static final String[] MESSAGES = { "EDHOC Message #2", "             ACK", "OSCORE Response #1",
 			"OSCORE Response #2", "OSCORE Response #3", "OSCORE Response #4", "OSCORE Response #5" };
 
 	static String phase = "";
@@ -88,10 +88,9 @@ public abstract class DataParser {
 
 	public static Map<String, String> getToPrint() {
 
-		toPrint.put("cumulativeIncomingCoap",
-				new String(phase + ": " + "Total incoming CoAP payload:\t\t\t" + cumulativeIncomingCoap + " bytes"));
-		toPrint.put("cumulativeIncomingUdp",
-				new String(phase + ": " + "Total incoming UDP payload:\t\t\t" + cumulativeIncomingUdp + " bytes"));
+		toPrint.put("cumulativeIncomingCoapUdp",
+				new String(String.format("Total incoming traffic: CoAP Payload (UDP Payload):\t%d bytes (%d bytes)",
+						cumulativeIncomingCoap, cumulativeIncomingUdp)));
 
 		return toPrint;
 	}
@@ -132,21 +131,22 @@ public abstract class DataParser {
 			String messageName = "";
 			if (messageCounter < MESSAGES.length) {
 				messageName = MESSAGES[messageCounter];
-				messageName = messageName + ": ";
 			}
 
+			// CoAP Payload (UDP payload): 38 bytes ( 79 bytes)
+
 			if (message instanceof Request && phase.contains("Client")) {
-				toPrint.put(messageName + "=coap", new String(phase + ": " + messageName + "Request: "
-						+ " CoAP Payload:\t" + message.getPayloadSize() + " bytes"));
-				toPrint.put(messageName + "=udp", new String(
-						phase + ": " + messageName + "Request: " + " UDP Payload:\t" + msg.length + " bytes"));
+				toPrint.put(messageName,
+						messageName
+								+ String.format(": CoAP Payload (UDP payload):" + "\t\t" + "%3d bytes (%3d bytes)",
+								message.getPayloadSize(), msg.length));
 				cumulativeIncomingUdp += msg.length;
 				cumulativeIncomingCoap += message.getPayloadSize();
 			} else if (message instanceof Response && phase.contains("Client")) {
-				toPrint.put(messageName + "=coap", new String(phase + ": " + messageName + "Response: "
-						+ " CoAP Payload:\t" + message.getPayloadSize() + " bytes"));
-				toPrint.put(messageName + "=udp", new String(
-						phase + ": " + messageName + "Response: " + " UDP Payload:\t" + msg.length + " bytes"));
+				toPrint.put(messageName,
+						messageName
+								+ String.format(": CoAP Payload (UDP payload):" + "\t\t" + "%3d bytes (%3d bytes)",
+								message.getPayloadSize(), msg.length));
 				cumulativeIncomingUdp += msg.length;
 				cumulativeIncomingCoap += message.getPayloadSize();
 			}
