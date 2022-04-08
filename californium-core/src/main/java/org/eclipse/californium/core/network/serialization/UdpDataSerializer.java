@@ -54,7 +54,7 @@ public final class UdpDataSerializer extends DataSerializer {
 
 	public static void setPhase(String inPhase) {
 		phase = inPhase;
-		toPrint.put("header", new String("\n" + " === " + inPhase + " ==="));
+		toPrint.put("header", new String("\n"+ "\n" + "\n" + inPhase));
 	}
 
 	static int cumulativeOutgoingUdp = 0;
@@ -65,7 +65,7 @@ public final class UdpDataSerializer extends DataSerializer {
 	public static Map<String, String> getToPrint() {
 
 		toPrint.put("cumulativeOutgoingCoapUdp",
-				new String(String.format("Total outgoing traffic: CoAP Payload (UDP Payload):\t%d bytes (%d bytes)",
+				new String(String.format("Total outgoing traffic: CoAP Payload (UDP Payload):\t%3d bytes (%3d bytes)",
 						cumulativeOutgoingCoap, cumulativeOutgoingUdp)));
 
 		return toPrint;
@@ -95,7 +95,7 @@ public final class UdpDataSerializer extends DataSerializer {
 
 		if (phase.contains("Client3") || phase.contains("Client4")) {
 			MESSAGES[0] = "EDHOC Message #1";
-			MESSAGES[1] = "EDHOC #3 + OSCORE R #1";
+			MESSAGES[1] = "Msg #3 + OSCORE #1";
 			MESSAGES[2] = "OSCORE Request #2";
 			MESSAGES[3] = "OSCORE Request #3";
 			MESSAGES[4] = "OSCORE Request #4";

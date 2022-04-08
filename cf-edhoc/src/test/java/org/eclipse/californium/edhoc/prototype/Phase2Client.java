@@ -76,7 +76,7 @@ import org.eclipse.californium.edhoc.Util;
 public class Phase2Client {
 	
 	// Set accordingly
-	private static String serverAddress = "localhost";
+	private static String serverAddress = "192.168.0.99";
 
 	private static long beginTotal;
 	private static long beginEdhoc;
@@ -215,9 +215,11 @@ public class Phase2Client {
 	 */
 	public static void main(String args[]) throws InterruptedException, ConnectorException, IOException {
 
-		org.eclipse.californium.core.network.serialization.DataParser.setPhase("Client2");
-		org.eclipse.californium.core.network.serialization.UdpDataSerializer.setPhase("Client2");
-
+		String headerString = " == Client2 - Vanilla Workflow (Authentication with MACs) == ";
+		org.eclipse.californium.core.network.serialization.DataParser.setPhase(headerString);
+		org.eclipse.californium.core.network.serialization.UdpDataSerializer.setPhase(headerString);
+		System.out.println(headerString);
+		
 		String defaultUri = "coap://" + serverAddress + "/helloWorld";
 				
 		Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
@@ -1066,7 +1068,7 @@ public class Phase2Client {
 		        		
 						long endEdhoc = System.nanoTime();
 						edhocTotal = endEdhoc - beginEdhoc;
-						System.out.println("Time elapsed for EDHOC processing: " + (edhocTotal / 1000000) + " ms");
+//						System.out.println("Time elapsed for EDHOC processing: " + (edhocTotal / 1000000) + " ms");
 
 		        	}
 		        	
@@ -1256,8 +1258,8 @@ public class Phase2Client {
 						// // System.out.println(Utils.prettyPrint(protectedResponse));
 						long endTotal = System.nanoTime();
 						timeTotal = endTotal - beginTotal;
-						System.out
-								.println("Duration of EDHOC and OSCORE exchange: " + (timeTotal / 1000000) + " ms");
+//						System.out
+//								.println("Duration of EDHOC and OSCORE exchange: " + (timeTotal / 1000000) + " ms");
 					}
 		        }
 				
@@ -1325,8 +1327,8 @@ public class Phase2Client {
 			out.println(incoming.get("cumulativeIncomingCoapUdp"));
 			
 
-			out.println("\n" + "Duration of EDHOC execution:\t\t\t\t" + (edhocTotal / 1000000) + " ms");
-			out.println("Duration of EDHOC and OSCORE exchange:\t\t\t" + (timeTotal / 1000000) + " ms");
+			// out.println("\n" + "Duration of EDHOC execution:\t\t\t\t" + (edhocTotal / 1000000) + " ms");
+			// out.println("Duration of EDHOC and OSCORE exchange:\t\t\t" + (timeTotal / 1000000) + " ms");
 
 			// Flush and close
 			out.flush();

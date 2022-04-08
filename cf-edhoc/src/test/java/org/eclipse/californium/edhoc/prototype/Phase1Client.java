@@ -77,7 +77,7 @@ import org.eclipse.californium.edhoc.Util;
 public class Phase1Client {
 
 	// Set accordingly
-	private static String serverAddress = "localhost";
+	private static String serverAddress = "192.168.0.99";
 
 	private static long beginTotal;
 	private static long beginEdhoc;
@@ -228,10 +228,15 @@ public class Phase1Client {
 	 * 
 	 */
 	public static void main(String args[]) throws InterruptedException, ConnectorException, IOException {
-
-		org.eclipse.californium.core.network.serialization.DataParser.setPhase("Client1");
-		org.eclipse.californium.core.network.serialization.UdpDataSerializer.setPhase("Client1");
-
+//Add prints on EDHOC message processing
+		//First exchange
+		//Mesater secreat and salt
+		
+		String headerString = " == Client1 - Vanilla Workflow (Authentication with signatures) == ";
+		org.eclipse.californium.core.network.serialization.DataParser.setPhase(headerString);
+		org.eclipse.californium.core.network.serialization.UdpDataSerializer.setPhase(headerString);
+		System.out.println(headerString);
+		
 		String defaultUri = "coap://" + serverAddress + "/helloWorld";
 
 		Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
@@ -421,7 +426,7 @@ public class Phase1Client {
 
 		// Use 0x24 as kid for this peer, i.e. the serialized ID_CRED_X is 0xa1,
 		// 0x04, 0x41, 0x24
-		byte[] idCredKid = new byte[] { (byte) 0x24 };
+		int idCredKid = 5;
 
 		switch (credType) {
 		case Constants.CRED_TYPE_CWT:
@@ -528,7 +533,7 @@ public class Phase1Client {
 
 		// Use 0x07 as kid for the other peer, i.e. the serialized ID_CRED_X is
 		// 0xa1, 0x04, 0x41, 0x07
-		byte[] peerKid = new byte[] { (byte) 0x07 };
+		int peerKid = 7;
 
 		switch (peerCredType) {
 		case Constants.CRED_TYPE_CWT:
@@ -1133,9 +1138,9 @@ public class Phase1Client {
 
 						long endEdhoc = System.nanoTime();
 						edhocTotal = endEdhoc - beginEdhoc;
-						System.out.println(
-								"Time elapsed for EDHOC processing: "
-								+ (edhocTotal / 1000000) + " ms");
+//						System.out.println(
+//								"Time elapsed for EDHOC processing: "
+//								+ (edhocTotal / 1000000) + " ms");
 
 					}
 
@@ -1345,8 +1350,8 @@ public class Phase1Client {
 						// System.out.println(Utils.prettyPrint(protectedResponse));
 						long endTotal = System.nanoTime();
 						timeTotal = endTotal - beginTotal;
-						System.out.println(
-								"Duration of EDHOC and OSCORE exchange: " + (timeTotal / 1000000) + " ms");
+//						System.out.println(
+//								"Duration of EDHOC and OSCORE exchange: " + (timeTotal / 1000000) + " ms");
 					}
 				}
 
@@ -1414,8 +1419,8 @@ public class Phase1Client {
 			out.println(incoming.get("cumulativeIncomingCoapUdp"));
 			
 
-			out.println("\n" + "Duration of EDHOC execution:\t\t\t\t" + (edhocTotal / 1000000) + " ms");
-			out.println("Duration of EDHOC and OSCORE exchange:\t\t\t" + (timeTotal / 1000000) + " ms");
+			// out.println("\n" + "Duration of EDHOC execution:\t\t\t\t" + (edhocTotal / 1000000) + " ms");
+			// out.println("Duration of EDHOC and OSCORE exchange:\t\t\t" + (timeTotal / 1000000) + " ms");
 
 			// Flush and close
 			out.flush();

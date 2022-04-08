@@ -383,7 +383,7 @@ public class Phase3Server extends CoapServer {
 		CBORObject ccsObject = null;
 		
 		// Use 0x07 as kid for this peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x07
-		byte[] idCredKid = new byte[] {(byte) 0x07};
+		int idCredKid = 7;
 		
 		switch (credType) {
 			case Constants.CRED_TYPE_CWT:
@@ -480,7 +480,7 @@ public class Phase3Server extends CoapServer {
 		CBORObject peerCcsObject = null;
 		
 		// Use 0x24 as kid for the other peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x24
-		byte[] peerKid = new byte[] {(byte) 0x24};
+		int peerKid = 5;
 		
 		switch (peerCredType) {
 		case Constants.CRED_TYPE_CWT:

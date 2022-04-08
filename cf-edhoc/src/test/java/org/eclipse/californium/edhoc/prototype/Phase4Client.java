@@ -76,7 +76,7 @@ import org.eclipse.californium.edhoc.Util;
 public class Phase4Client {
 	
 	// Set accordingly
-	private static String serverAddress = "localhost";
+	private static String serverAddress = "192.168.0.99";
 
 	private static long beginTotal;
 	private static long timeTotal;
@@ -213,9 +213,11 @@ public class Phase4Client {
 	 */
 	public static void main(String args[]) throws ConnectorException, IOException, InterruptedException {
 
-		org.eclipse.californium.core.network.serialization.DataParser.setPhase("Client4");
-		org.eclipse.californium.core.network.serialization.UdpDataSerializer.setPhase("Client4");
-
+		String headerString = " == Client4 - Optimized Workflow (Authentication with MACs) == ";		
+		org.eclipse.californium.core.network.serialization.DataParser.setPhase(headerString);
+		org.eclipse.californium.core.network.serialization.UdpDataSerializer.setPhase(headerString);
+		System.out.println(headerString);
+		
 		String defaultUri = "coap://" + serverAddress + "/helloWorld";
 				
 		Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
@@ -397,7 +399,7 @@ public class Phase4Client {
 		CBORObject ccsObject = null;
 		
 		// Use 0x24 as kid for this peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x24
-	    byte[] idCredKid = new byte[] {(byte) 0x24};
+	    int idCredKid = 5;
 		
 		switch (credType) {
 			case Constants.CRED_TYPE_CWT:
@@ -495,7 +497,7 @@ public class Phase4Client {
 		CBORObject peerCcsObject = null;
 		
 		// Use 0x07 as kid for the other peer, i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x07
-		byte[] peerKid = new byte[] {(byte) 0x07};
+		int peerKid = 7;
 		
 		switch (peerCredType) {
 		case Constants.CRED_TYPE_CWT:
@@ -1024,8 +1026,8 @@ public class Phase4Client {
 							// System.out.println(Utils.prettyPrint(protectedResponse));
 							long endTotal = System.nanoTime();
 							timeTotal = endTotal - beginTotal;
-							System.out.println(
-									"Duration of EDHOC and OSCORE exchange: " + (timeTotal / 1000000) + " ms");
+//							System.out.println(
+//									"Duration of EDHOC and OSCORE exchange: " + (timeTotal / 1000000) + " ms");
 							
 							int contentFormat = protectedResponse.getOptions().getContentFormat();
 							int restCode = protectedResponse.getCode().value;
@@ -1311,7 +1313,7 @@ public class Phase4Client {
 			out.println(incoming.get("EDHOC Message #2"));
 
 
-			out.println("\n" + outgoing.get("EDHOC #3 + OSCORE R #1"));
+			out.println("\n" + outgoing.get("Msg #3 + OSCORE #1"));
 			out.println(incoming.get("OSCORE Response #1"));
 			
 
@@ -1319,7 +1321,7 @@ public class Phase4Client {
 			out.println(incoming.get("cumulativeIncomingCoapUdp"));
 			
 
-			out.println("\n" + "Duration of EDHOC and OSCORE exchange:\t\t\t" + (timeTotal / 1000000) + " ms");
+			// out.println("\n" + "Duration of EDHOC and OSCORE exchange:\t\t\t" + (timeTotal / 1000000) + " ms");
 
 			// Flush and close
 			out.flush();
