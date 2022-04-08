@@ -95,7 +95,7 @@ public final class UdpDataSerializer extends DataSerializer {
 
 		if (phase.contains("Client3") || phase.contains("Client4")) {
 			MESSAGES[0] = "EDHOC Message #1";
-			MESSAGES[1] = "EDHOC Msg #3 + OSCORE Req #1";
+			MESSAGES[1] = "EDHOC #3 + OSCORE R #1";
 			MESSAGES[2] = "OSCORE Request #2";
 			MESSAGES[3] = "OSCORE Request #3";
 			MESSAGES[4] = "OSCORE Request #4";

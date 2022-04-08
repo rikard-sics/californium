@@ -1311,7 +1311,7 @@ public class Phase4Client {
 			out.println(incoming.get("EDHOC Message #2"));
 
 
-			out.println("\n" + outgoing.get("EDHOC Msg #3 + OSCORE Req #1"));
+			out.println("\n" + outgoing.get("EDHOC #3 + OSCORE R #1"));
 			out.println(incoming.get("OSCORE Response #1"));
 			
 
