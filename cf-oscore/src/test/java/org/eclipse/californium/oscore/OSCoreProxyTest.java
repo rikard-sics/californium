@@ -13,7 +13,7 @@
  * This test class is based on org.eclipse.californium.integration.test.SecureBlockwiseTest
  * 
  * Contributors: 
- *    Rikard Höglund (RISE) - XXXX testing OSCORE outer Block-Wise messages
+ *    Rikard Höglund (RISE) - testing OSCORE over proxy servers
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.net.URI;
 import org.eclipse.californium.TestTools;
 import org.eclipse.californium.core.CoapClient;
-import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.Utils;
@@ -256,12 +255,12 @@ public class OSCoreProxyTest {
 		serverUri = TestTools.getUri(serverEndpoint, TARGET);
 	}
 
-	private static class MyResource extends CoapResource {
+	private static class MyResource extends OSCoreResource {
 
 		private volatile String currentPayload;
 
 		public MyResource(String name) {
-			super(name);
+			super(name, true);
 		}
 
 		@Override
