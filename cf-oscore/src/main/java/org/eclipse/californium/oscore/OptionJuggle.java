@@ -20,6 +20,7 @@
 package org.eclipse.californium.oscore;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -111,22 +112,21 @@ public class OptionJuggle {
 		}
 
 		if (hasProxyUri) {
-			// create Uri-Host, Uri-Port and Proxy-Scheme
+			// remove Path and Query from Proxy-Uri
 			URI proxyUri = URI.create(options.getProxyUri());
 			String uriHost = proxyUri.getHost();
 			int uriPort = proxyUri.getPort();
 			String proxyScheme = proxyUri.getScheme();
 
-			if (uriHost != null) {
-				ret.setUriHost(uriHost);
+			URI newProxyUri = null;
+			try {
+				newProxyUri = new URI(proxyScheme, null, uriHost, uriPort, null, null, null);
+			} catch (URISyntaxException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-
-			if (uriPort != -1) {
-				ret.setUriPort(uriPort);
-			}
-
-			if (proxyScheme != null) {
-				ret.setProxyScheme(proxyScheme);
+			if (newProxyUri != null) {
+				ret.setProxyUri(newProxyUri.toString());
 			}
 
 		}
@@ -163,7 +163,6 @@ public class OptionJuggle {
 				URI proxyUri = URI.create(o.getStringValue());
 				String uriPath = proxyUri.getPath();
 				String uriQuery = proxyUri.getQuery();
-
 				if (uriPath != null) {
 					ret.setUriPath(uriPath);
 				}
