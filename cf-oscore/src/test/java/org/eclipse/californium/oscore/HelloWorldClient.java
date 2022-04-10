@@ -33,7 +33,7 @@ import org.eclipse.californium.elements.exception.ConnectorException;
 public class HelloWorldClient {
 
 	private final static HashMapCtxDB db = new HashMapCtxDB();
-	private final static String uriLocal = "coap://localhost";
+	private final static String uriLocal = "coap://localhost:5685";
 	private final static String hello1 = "/hello/1";
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
 	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;

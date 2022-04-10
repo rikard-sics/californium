@@ -91,9 +91,12 @@ public class HelloWorldServer {
 
 		CoapResource hello1 = new CoapResource("1", true) {
 
+
 			@Override
 			public void handleGET(CoapExchange exchange) {
-				System.out.println("Accessing hello/1 resource");
+				boolean usingOscore = exchange.getRequestOptions().hasOscore();
+
+				System.out.println("Accessing hello/1 resource" + " with OSCORE: " + usingOscore);
 				Response r = new Response(ResponseCode.CONTENT);
 				r.setPayload("Hello World!");
 				exchange.respond(r);
