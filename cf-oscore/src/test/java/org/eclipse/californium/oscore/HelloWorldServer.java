@@ -96,7 +96,17 @@ public class HelloWorldServer {
 			public void handleGET(CoapExchange exchange) {
 				boolean usingOscore = exchange.getRequestOptions().hasOscore();
 
-				System.out.println("Accessing hello/1 resource" + " with OSCORE: " + usingOscore);
+				System.out.println("GET: Accessing hello/1 resource" + " with OSCORE: " + usingOscore);
+				Response r = new Response(ResponseCode.CONTENT);
+				r.setPayload("Hello World!");
+				exchange.respond(r);
+			}
+
+			@Override
+			public void handlePOST(CoapExchange exchange) {
+				boolean usingOscore = exchange.getRequestOptions().hasOscore();
+
+				System.out.println("POST: Accessing hello/1 resource" + " with OSCORE: " + usingOscore);
 				Response r = new Response(ResponseCode.CONTENT);
 				r.setPayload("Hello World!");
 				exchange.respond(r);

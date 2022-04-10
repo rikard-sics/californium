@@ -1,54 +1,27 @@
-/*******************************************************************************
- * Copyright (c) 2020 Bosch IO GmbH and others.
- * 
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v2.0
- * and Eclipse Distribution License v1.0 which accompany this distribution.
- * 
- * The Eclipse Public License is available at
- *    http://www.eclipse.org/legal/epl-v20.html
- * and the Eclipse Distribution License is available at
- *    http://www.eclipse.org/org/documents/edl-v10.html.
- * 
- * Contributors:
- *    Bosch IO GmbH - initial implementation
- ******************************************************************************/
-
-// USE WITH ExampleCrossProxy2 !!!!!!!!!!!!!!
-// and HelloWorldServer (OSCORE)
-
-// TAKEN FROM org.eclipse.californium.examples.ExampleProxy2HttpClient
-
 package org.eclipse.californium.oscore;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import org.apache.hc.client5.http.async.methods.SimpleBody;
 import org.apache.hc.client5.http.classic.HttpClient;
-import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
-import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpEntity;
-import org.apache.hc.core5.http.HttpEntityContainer;
-import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpRequest;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.ByteArrayEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
-import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.message.StatusLine;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.config.Configuration;
-import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.proxy2.TranslationException;
 import org.eclipse.californium.proxy2.http.Coap2HttpTranslator;
@@ -56,156 +29,150 @@ import org.eclipse.californium.proxy2.http.ContentTypedEntity;
 import org.eclipse.californium.proxy2.http.CrossProtocolTranslator;
 import org.eclipse.californium.proxy2.http.MappingProperties;
 import org.eclipse.californium.proxy2.http.ProxyRequestProducer;
-import org.eclipse.californium.proxy2.http.server.ProxyHttpServer;
 
 /**
- * USE HttpPost or ClassicHttpRequest???
+ * Notes/TODO: Use HttpPost or ClassicHttpRequest as objects? Use with
+ * ExampleCrossProxy2 and HelloWorldServer (OSCORE) (on port 5685)
  * 
+ * This code was taken from
+ * org.eclipse.californium.examples.ExampleProxy2HttpClient
  * 
+ * TODO: The sending HTTP endpoint uses [RFC8075] to translate the HTTP message
+ * into a CoAP message. The CoAP message is then processed with OSCORE as
+ * defined in this document. The OSCORE message is then mapped to HTTP as
+ * described in Section 11.2 and sent in compliance with the rules in Section
+ * 11.1.
  * 
- * // USE WITH ExampleCrossProxy2 !!!!!!!!!!!!!! // and HelloWorldServer
- * (OSCORE)
- * 
- * // TAKEN FROM org.eclipse.californium.examples.ExampleProxy2HttpClient
- * 
- * 
- * Class ExampleProxyHttpClient.<br/>
- * 
- * Example proxy Http client which sends a request via {@link ProxyHttpServer}
- * to a coap-server.<br/>
- * 
- * Http2Coap Uri:<br/>
- * <a href=
- * "http://localhost:8080/proxy/coap://localhost:5685/coap-target">http://localhost:8080/proxy/coap://localhost:5685/coap-target</a>.
  */
 public class ExampleOscoreHttpClient {
 
 	// Client OSCORE context information
-	// TODO: Reorder as in hello world client
-	// TODO: Use StringUtil
 	private final static HashMapCtxDB db = new HashMapCtxDB();
-	// test vector OSCORE draft Appendix C.1.2
-	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
-			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
-	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
-			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
-	private final static byte[] rid = new byte[] { 0x01 };
-	private final static byte[] sid = new byte[0];
-	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
-	private final static String serverResourceUri = "coap://localhost:5685/hello/1";
+	private final static String uriLocal = "coap://localhost:5685";
+	private final static String hello1 = "/hello/1";
+	private final static String serverResourceUri = uriLocal + hello1;
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
 	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
 
-	static private final String OSCORE_HTTP_HEADER = "oscore";
+	private final static byte[] master_secret = StringUtil.hex2ByteArray("0102030405060708090A0B0C0D0E0F10");
+	private final static byte[] master_salt = StringUtil.hex2ByteArray("9e7ca92223786340");
+	private final static byte[] sid = new byte[0];
+	private final static byte[] rid = StringUtil.hex2ByteArray("01");
+	private final static int MAX_UNFRAGMENTED_SIZE = Configuration.getStandard().get(CoapConfig.MAX_RESOURCE_BODY_SIZE);
+
 	private static Coap2HttpTranslator translator;
 	static CrossProtocolTranslator crossTranslator;
 
-	public static void init() {
+	private static void initTranslator() {
 		MappingProperties defaultMappings = new MappingProperties();
+		
+		// FIXME: Move? Improve?
+		// Maps CoAP 2.04 to HTTP 200 instead of 204 which is No Content
+		defaultMappings.setProperty("coap.response.code." + "2.04", String.valueOf(200));
+
 		crossTranslator = new CrossProtocolTranslator(defaultMappings);
+
+		// FIXME: Move? Improve?
+		// Maps CoAP 2.04 to HTTP 200 instead of 204 which is No Content
+		defaultMappings.setProperty("coap.response.code." + "2.04", String.valueOf(200));
+
 		translator = new Coap2HttpTranslator(crossTranslator, new CrossProtocolTranslator.HttpServerEtagTranslator());
 	}
 
-	private static HttpPost convert(HttpRequest httpRequest, ContentTypedEntity httpBodyData)
-			throws URISyntaxException {
-		HttpPost classicRequest = new HttpPost("");
+	/**
+	 * Convert between "HttpRequest" and "ClassicHttpRequest" (Not about CoAP to
+	 * HTTP translation, just internal HTTP stuff)
+	 * 
+	 * @param httpRequest the input httpRequest
+	 * @param httpEntity the desired payload of the new request
+	 * @return a new request of type ClassicHttpRequest
+	 * 
+	 * @throws URISyntaxException on failure
+	 * @throws IOException on failure
+	 */
+	private static HttpPost convertRequest(HttpRequest httpRequest, ContentTypedEntity httpEntity)
+			throws URISyntaxException, IOException {
 
-		System.out.println("httpRequest.getUri() " + httpRequest.getUri());
+		// Copy over Uri & Scheme
+		HttpPost classicRequest = new HttpPost("");
 		classicRequest.setUri(httpRequest.getUri());
 		classicRequest.setScheme(httpRequest.getScheme());
 
+		// Copy over Headers
 		Header[] headers = httpRequest.getHeaders();
 		for (int i = 0; i < headers.length; i++) {
 			classicRequest.setHeader(headers[i]);
 		}
-		
-		HttpEntity entityBody = new ByteArrayEntity(httpBodyData.getContent(), httpBodyData.getContentType());
-		// RequestEntity entityData = new RequestEntity();
-		// org.apache.hc.client5.http.impl.classic.
-		// HttpEntityContainer bodyData = new HttpEntityContainer("");
-		// classicRequest.set
-		;
 
-		classicRequest.setEntity(entityBody);
-
-		// httpRequest.g
-		
-		// HttpEntity entity;
-		// SimpleBody body = httpRequest.getBody();
-		// if(body != null){
-		// if (body.isBytes()){
-		// entity = new ByteArrayEntity(body.getBodyBytes(),
-		// body.getContentType());
-		// } else{
-		// entity = new StringEntity(body.getBodyText(),
-		// body.getContentType());
-		// }
-		// classicRequest.setEntity(entity);
+		// Set the "entity" (payload)
+		if (httpEntity != null) {
+			try (HttpEntity newEntity = new ByteArrayEntity(httpEntity.getContent(), httpEntity.getContentType());) {
+				classicRequest.setEntity(newEntity);
+				newEntity.close();
+			}
+		}
 
 		return classicRequest;
 	}
 
-	private static void request(HttpClient client, String uriXXX, boolean useOscore)
+	private static void request(HttpClient client, String httpReqUri, boolean useOscore)
 			throws OSException, TranslationException, URISyntaxException {
 		try {
-			System.out.println("=== " + uriXXX + " ===");
-			HttpGet requestW = new HttpGet(uriXXX);
+			System.out.println("=== " + httpReqUri + " ===");
 
+			// Create CoAP request
+			Request coapRequest = Request.newGet();
+			coapRequest.setProxyUri(serverResourceUri);
+
+			// Protect it with OSCORE
+			Request oscoreRequest;
 			if (useOscore) {
-				// Create CoAP request first
-				Request coapRequest = Request.newGet();
-				coapRequest.setProxyUri(serverResourceUri);
-
-				// Protect it with OSCORE
-				Request oscoreRequest = RequestEncryptor.encrypt(db, coapRequest);
-
-				System.out.println("OSCORE protected request: " + Utils.prettyPrint(oscoreRequest));
-
-				// Now translate it to HTTP
-				URI uri = translator.getDestinationURI(oscoreRequest, null);
-				ProxyRequestProducer translatedRequest = translator.getHttpRequest(uri, oscoreRequest);
-
-
-				ContentTypedEntity httpBodyData = crossTranslator.getHttpEntity(oscoreRequest);
-				System.out.println("HTTP Data: " + Utils.toHexString(httpBodyData.getContent()));
-				// TestRequestChannel channel = new TestRequestChannel();
-				// translatedRequest.sendRequest(channel, null);
-
-				HttpRequest httpRequest = translatedRequest.getHttpRequest();
-
-				// Set the URI
-				URI theUri = URI.create("http://localhost:8080/proxy?target_uri=" + serverResourceUri);
-				httpRequest.setUri(theUri);
-
-				// And send it
-				// System.out.println("HTTP request before conversion: " +
-				// httpRequest.);
-				HttpPost classicRequest = convert(httpRequest, httpBodyData);
-				HttpResponse response = client.execute(classicRequest);
-				System.out.println(new StatusLine(response));
-				Header[] headers = response.getHeaders();
-				for (Header header : headers) {
-					System.out.println(header.getName() + ": " + header.getValue());
-				}
-				if (response instanceof ClassicHttpResponse) {
-					HttpEntity entity = ((ClassicHttpResponse) response).getEntity();
-					System.out.println(EntityUtils.toString(entity));
-				}
-				return;
-
+				oscoreRequest = RequestEncryptor.encrypt(db, coapRequest);
+				System.out.println("OSCORE protected CoAP request: " + Utils.prettyPrint(oscoreRequest));
+			} else {
+				oscoreRequest = coapRequest;
 			}
 
-			HttpResponse response = client.execute(requestW);
+			// Now translate it to HTTP
+			URI uri = translator.getDestinationURI(oscoreRequest, null);
+			ProxyRequestProducer translatedRequest = translator.getHttpRequest(uri, oscoreRequest);
+			ContentTypedEntity httpBodyData = crossTranslator.getHttpEntity(oscoreRequest);
+			HttpRequest httpRequest = translatedRequest.getHttpRequest();
+
+			// Set the URI (do in CoAP request?)
+			URI theUri = URI.create(httpReqUri);
+			httpRequest.setUri(theUri);
+
+			// Convert it to "ClassicHttpRequest"
+			HttpPost classicRequest = convertRequest(httpRequest, httpBodyData);
+
+			// Send the HTTP request
+			HttpResponse response = client.execute(classicRequest);
+
+			// Print HTTP response
 			System.out.println(new StatusLine(response));
 			Header[] headers = response.getHeaders();
 			for (Header header : headers) {
 				System.out.println(header.getName() + ": " + header.getValue());
 			}
+
 			if (response instanceof ClassicHttpResponse) {
-				HttpEntity entity = ((ClassicHttpResponse) response).getEntity();
-				System.out.println("Entity true class: " + (((ClassicHttpResponse) response).getEntity()).getClass());
-				System.out.println(EntityUtils.toString(entity));
+				try (HttpEntity entity = ((ClassicHttpResponse) response).getEntity();) {
+
+					System.out.println(EntityUtils.toString(entity));
+				}
 			}
+
+			// Convert HTTP response to CoAP
+			uri = translator.getDestinationURI(oscoreRequest, null);
+			var a = translator.getCoapResponse(response, null);
+			// translatedRequest = translator.getHttpRequest(uri,
+			// oscoreRequest);
+			// httpBodyData = crossTranslator.getHttpEntity(oscoreRequest);
+			// httpRequest = translatedRequest.getHttpRequest();
+
+			return;
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (ParseException e) {
@@ -213,16 +180,31 @@ public class ExampleOscoreHttpClient {
 		}
 	}
 
-	public static void main(String[] args) throws OSException, TranslationException, URISyntaxException {
-		HttpClient client = HttpClientBuilder.create().build();
-
-		init();
-
+	public static void main(String[] args) throws OSException, TranslationException, URISyntaxException, IOException {
 		OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, null,
 				MAX_UNFRAGMENTED_SIZE);
 		db.addContext(serverResourceUri, ctx);
 		OSCoreCoapStackFactory.useAsDefault(db);
 
+		initTranslator();
+
+		try (CloseableHttpClient client = HttpClientBuilder.create().build();) {
+
+			// HTTP request via proxy, not using OSCORE
+			request(client, "http://localhost:8080/proxy?target_uri=" + serverResourceUri, false);
+
+			// Using OSCORE
+			request(client, "http://localhost:8080/proxy?target_uri=" + serverResourceUri, true);
+		}
+
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
 		// // simple request to proxy as httpp-server (no proxy function)
 		// request(client, "http://localhost:8080");
 		//
@@ -236,10 +218,6 @@ public class ExampleOscoreHttpClient {
 		// HTTP request via proxy, without OSCORE
 		// request(client, "http://localhost:8080/proxy?target_uri=" +
 		// serverResourceUri, false);
-
-		// HTTP request via proxy, with OSCORE
-		ctx.setSenderSeq(1);
-		request(client, "http://localhost:8080/proxy?target_uri=" + serverResourceUri, true);
 
 		// // not really intended, http2http
 		// request(client,
