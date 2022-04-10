@@ -3,25 +3,30 @@ package org.eclipse.californium.oscore;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Random;
 
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpRequest;
 import org.apache.hc.core5.http.HttpResponse;
-import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.Message;
+import org.apache.hc.core5.http.ProtocolException;
 import org.apache.hc.core5.http.io.entity.ByteArrayEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.message.StatusLine;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.Request;
+import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.config.Configuration;
+import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.proxy2.TranslationException;
 import org.eclipse.californium.proxy2.http.Coap2HttpTranslator;
@@ -61,7 +66,10 @@ public class ExampleOscoreHttpClient {
 	private final static int MAX_UNFRAGMENTED_SIZE = Configuration.getStandard().get(CoapConfig.MAX_RESOURCE_BODY_SIZE);
 
 	private static Coap2HttpTranslator translator;
-	static CrossProtocolTranslator crossTranslator;
+	private static CrossProtocolTranslator crossTranslator;
+	private static OSCoreCtx ctx;
+
+	private static Random rand;
 
 	private static void initTranslator() {
 		MappingProperties defaultMappings = new MappingProperties();
@@ -116,12 +124,13 @@ public class ExampleOscoreHttpClient {
 	}
 
 	private static void request(HttpClient client, String httpReqUri, boolean useOscore)
-			throws OSException, TranslationException, URISyntaxException {
+			throws OSException, TranslationException, URISyntaxException, ProtocolException {
 		try {
 			System.out.println("=== " + httpReqUri + " ===");
 
 			// Create CoAP request
 			Request coapRequest = Request.newGet();
+			coapRequest.setToken(Bytes.createBytes(rand, 4));
 			coapRequest.setProxyUri(serverResourceUri);
 
 			// Protect it with OSCORE
@@ -156,37 +165,57 @@ public class ExampleOscoreHttpClient {
 				System.out.println(header.getName() + ": " + header.getValue());
 			}
 
-			if (response instanceof ClassicHttpResponse) {
-				try (HttpEntity entity = ((ClassicHttpResponse) response).getEntity();) {
+			// if (response instanceof ClassicHttpResponse) {
+			// try (HttpEntity entity = ((ClassicHttpResponse)
+			// response).getEntity();) {
+			//
+			// System.out.println(EntityUtils.toString(entity));
+			// }
+			// }
 
-					System.out.println(EntityUtils.toString(entity));
-				}
-			}
-
-			// Convert HTTP response to CoAP
+			// Set up conversion from HTTP response to CoAP
 			uri = translator.getDestinationURI(oscoreRequest, null);
-			var a = translator.getCoapResponse(response, null);
-			// translatedRequest = translator.getHttpRequest(uri,
-			// oscoreRequest);
-			// httpBodyData = crossTranslator.getHttpEntity(oscoreRequest);
-			// httpRequest = translatedRequest.getHttpRequest();
+			ContentType responseContentType = ContentType.APPLICATION_OCTET_STREAM; // FIXME:
+			// String contentTypeHeader =
+			// response.getHeader("content-type").getValue();
+			// System.out.println("contentTypeHeader " + contentTypeHeader);
+
+			byte[] payload = EntityUtils.toByteArray(((ClassicHttpResponse) response).getEntity());
+			ContentTypedEntity responseEntity = new ContentTypedEntity(responseContentType, payload);
+			Message<HttpResponse, ContentTypedEntity> msg = new Message<HttpResponse, ContentTypedEntity>(response,
+					responseEntity);
+			
+			// Actually convert from HTTP response to CoAP
+			Response coapResponse = translator.getCoapResponse(msg, oscoreRequest);
+			System.out.println("CoAP Response: " + Utils.prettyPrint(coapResponse));
+			System.out.println("Payload: " + coapResponse.getPayloadString());
+
+			// Unprotect the CoAP response
+			if (coapResponse.getOptions().hasOscore()) {
+				db.addContext(coapRequest.getToken(), ctx);
+				coapResponse.setToken(coapRequest.getTokenBytes());
+				Response decrypted = ResponseDecryptor.decrypt(db, coapResponse, 0); // FIXME
+				System.out.println("Unprotected CoAP Response: " + Utils.prettyPrint(decrypted));
+				System.out.println("Payload: " + decrypted.getPayloadString());
+			}
 
 			return;
 
 		} catch (IOException e) {
 			e.printStackTrace();
-		} catch (ParseException e) {
-			e.printStackTrace();
 		}
 	}
 
-	public static void main(String[] args) throws OSException, TranslationException, URISyntaxException, IOException {
-		OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, null,
+	public static void main(String[] args)
+			throws OSException, TranslationException, URISyntaxException, IOException, ProtocolException {
+		ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, null,
 				MAX_UNFRAGMENTED_SIZE);
 		db.addContext(serverResourceUri, ctx);
 		OSCoreCoapStackFactory.useAsDefault(db);
 
 		initTranslator();
+
+		rand = new Random();
 
 		try (CloseableHttpClient client = HttpClientBuilder.create().build();) {
 
