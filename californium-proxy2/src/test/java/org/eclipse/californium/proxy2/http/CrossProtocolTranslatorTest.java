@@ -12,6 +12,7 @@
  * 
  * Contributors:
  *    Bosch IO GmbH - initial implementation
+ *    Rikard Höglund (RISE) - tests for OSCORE HTTP header
  ******************************************************************************/
 package org.eclipse.californium.proxy2.http;
 
@@ -19,6 +20,7 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringContains.containsString;
+import static org.hamcrest.core.IsEqual.equalTo;
 
 import java.util.Arrays;
 import java.util.List;
@@ -32,6 +34,7 @@ import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Option;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.elements.category.Small;
+import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.ExpectedExceptionWrapper;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.proxy2.InvalidMethodException;
@@ -245,6 +248,24 @@ public class CrossProtocolTranslatorTest {
 		Header[] headers = { new BasicHeader("Content-Type", "text/plain; charset=UTF-8") };
 		List<Option> coapOptions = translator.getCoapOptions(headers, httpEtagTranslator);
 		assertThat(coapOptions.size(), is(0));
+	}
+
+	@Test
+	public void testCoapOptionsOscore() throws Exception {
+		Header[] headers = { new BasicHeader("oscore", "CSU") };
+		List<Option> coapOptions = translator.getCoapOptions(headers, httpEtagTranslator);
+		assertThat(coapOptions.size(), is(1));
+		OptionSet options = new OptionSet().addOptions(coapOptions);
+		assertThat(options.getOscore(), is(equalTo(new byte[] { 0x09, 0x25 })));
+	}
+
+	@Test
+	public void testCoapOptionsOscoreEmpty() throws Exception {
+		Header[] headers = { new BasicHeader("oscore", "AA") };
+		List<Option> coapOptions = translator.getCoapOptions(headers, httpEtagTranslator);
+		assertThat(coapOptions.size(), is(1));
+		OptionSet options = new OptionSet().addOptions(coapOptions);
+		assertThat(options.getOscore(), is(equalTo(Bytes.EMPTY)));
 	}
 
 	@Test

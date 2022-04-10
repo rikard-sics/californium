@@ -12,6 +12,7 @@
  * 
  * Contributors:
  *    Bosch IO GmbH - derived from org.eclipse.californium.proxy
+ *    Rikard Höglund (RISE) - added values for OSCORE CoAP option and HTTP header
  ******************************************************************************/
 package org.eclipse.californium.proxy2.http;
 
@@ -648,6 +649,7 @@ public class MappingProperties extends Properties {
 		set(KEY_HTTP_HEADER + "if-none-match", OptionNumberRegistry.IF_NONE_MATCH);
 		set(KEY_HTTP_HEADER + "etag", OptionNumberRegistry.ETAG);
 		set(KEY_HTTP_HEADER + "cache-control", OptionNumberRegistry.MAX_AGE);
+		set(KEY_HTTP_HEADER + "oscore", OptionNumberRegistry.OSCORE);
 
 		/* CoAP header options */
 		set(KEY_COAP_OPTION + OptionNumberRegistry.CONTENT_FORMAT, "Content-Type");
@@ -658,6 +660,7 @@ public class MappingProperties extends Properties {
 		set(KEY_COAP_OPTION + OptionNumberRegistry.ACCEPT, "Accept");
 		set(KEY_COAP_OPTION + OptionNumberRegistry.IF_MATCH, "If-Match");
 		set(KEY_COAP_OPTION + OptionNumberRegistry.IF_NONE_MATCH, "If-None-Match");
+		set(KEY_COAP_OPTION + OptionNumberRegistry.OSCORE, "oscore");
 
 		/* Media types */
 		set(KEY_HTTP_CONTENT_TYPE + "text/plain", MediaTypeRegistry.TEXT_PLAIN);

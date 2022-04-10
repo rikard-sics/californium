@@ -16,13 +16,17 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
+import java.io.IOException;
+
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.elements.util.Base64;
 
 /**
  * 
@@ -47,7 +51,14 @@ public class HelloWorldServer {
 
 	private static int counter = 0;
 	
-	public static void main(String[] args) throws OSException {
+	public static void main(String[] args) throws OSException, IOException {
+
+		String theString = "QUJDREVGR0hJSks";
+		byte[] theBytes = theString.getBytes("US-ASCII");
+		byte[] oscore = Base64.decode(theBytes, 0, theBytes.length, Base64.URL_SAFE | Base64.NO_PADDING);
+		System.out.println("OSCORE: " + Utils.toHexString(oscore));
+		System.out.println("OSCORE: " + new String(oscore));
+
 		OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, null, MAX_UNFRAGMENTED_SIZE);
 		db.addContext(uriLocal, ctx);
 		OSCoreCoapStackFactory.useAsDefault(db);

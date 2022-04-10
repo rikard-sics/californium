@@ -12,12 +12,14 @@
  * 
  * Contributors:
  *    Bosch IO GmbH - derived from org.eclipse.californium.proxy.HttpTranslator
+ *    Rikard Höglund (RISE) - parsing of OSCORE CoAP option and HTTP header
  ******************************************************************************/
 package org.eclipse.californium.proxy2.http;
 
 import static org.eclipse.californium.elements.util.StandardCharsets.ISO_8859_1;
 import static org.eclipse.californium.elements.util.StandardCharsets.UTF_8;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
@@ -50,6 +52,7 @@ import org.eclipse.californium.core.coap.Option;
 import org.eclipse.californium.core.coap.OptionNumberRegistry;
 import org.eclipse.californium.core.coap.OptionNumberRegistry.OptionFormat;
 import org.eclipse.californium.core.coap.OptionSet;
+import org.eclipse.californium.elements.util.Base64;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.proxy2.InvalidMethodException;
@@ -337,6 +340,21 @@ public class CrossProtocolTranslator {
 					} else {
 						LOGGER.debug("'if-none-match' with etag '{}' is not supported!", headerValue);
 					}
+				} else if (optionNumber == OptionNumberRegistry.OSCORE) {
+					if (headerValue.equals("AA")) {
+						Option option = new Option(optionNumber, Bytes.EMPTY);
+						optionList.add(option);
+					} else {
+						try {
+							int len = 4 * (headerValue.length() / 4 + 1);
+							String padded = String.format("%-" + len + "s", headerValue).replace(' ', '=');
+							byte[] oscore = Base64.decode(padded, Base64.URL_SAFE | Base64.NO_PADDING);
+							Option option = new Option(optionNumber, oscore);
+							optionList.add(option);
+						} catch (IOException e) {
+							LOGGER.debug("failed to parse OSCORE HTTP header", headerValue);
+						}
+					}
 				} else if (optionNumber == OptionNumberRegistry.LOCATION_PATH) {
 					try {
 						URI uri = new URI(headerValue);
@@ -557,6 +575,17 @@ public class CrossProtocolTranslator {
 					stringOptionValue = etagTranslator.getHttpEtag(option.getValue());
 				} else if (optionNumber == OptionNumberRegistry.IF_NONE_MATCH) {
 					stringOptionValue = "*";
+				} else if (optionNumber == OptionNumberRegistry.OSCORE) {
+					if (option.getLength() == 0) {
+						stringOptionValue = new String("AA");
+					} else {
+						try {
+							stringOptionValue = new String(
+									Base64.encodeBytes(option.getValue(), Base64.URL_SAFE | Base64.NO_PADDING));
+						} catch (IOException e) {
+							continue;
+						}
+					}
 				} else if (optionNumber == OptionNumberRegistry.ACCEPT) {
 					try {
 						stringOptionValue = getHttpContentType(option.getIntegerValue()).toString();
