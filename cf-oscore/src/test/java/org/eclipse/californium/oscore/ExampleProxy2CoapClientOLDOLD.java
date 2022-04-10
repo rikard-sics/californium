@@ -33,6 +33,8 @@ import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.proxy2.resources.ProxyHttpClientResource;
 
+// OLD???
+
 // Use with:
 // cf-oscore/src/test/java/org/eclipse/californium/oscore/HelloWorldServer.java
 // demo-apps/cf-proxy2/src/main/java/org/eclipse/californium/examples/ExampleCrossProxy2.java
@@ -65,7 +67,7 @@ import org.eclipse.californium.proxy2.resources.ProxyHttpClientResource;
  * Proxy Uri: {@code coap://localhost:5685/coap-target}.<br/>
  * 
  */
-public class ExampleProxy2CoapClient {
+public class ExampleProxy2CoapClientOLDOLD {
 	
 	private final static HashMapCtxDB db = new HashMapCtxDB();
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;

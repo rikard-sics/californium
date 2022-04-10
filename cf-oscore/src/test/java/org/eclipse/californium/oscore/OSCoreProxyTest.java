@@ -44,6 +44,7 @@ import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.proxy2.Coap2CoapTranslator;
 import org.eclipse.californium.rule.CoapNetworkRule;
 import org.eclipse.californium.rule.CoapThreadsRule;
@@ -93,10 +94,8 @@ public class OSCoreProxyTest {
 	private final static HashMapCtxDB dbServer = new HashMapCtxDB();
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
 	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
-	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
-			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
-	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
-			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
+	private final static byte[] master_secret = StringUtil.hex2ByteArray("0102030405060708090A0B0C0D0E0F10");
+	private final static byte[] master_salt = StringUtil.hex2ByteArray("9e7ca92223786340");
 	private final static int MAX_UNFRAGMENTED_SIZE = Configuration.getStandard().get(CoapConfig.MAX_RESOURCE_BODY_SIZE);
 
 	private MyResource resource;
