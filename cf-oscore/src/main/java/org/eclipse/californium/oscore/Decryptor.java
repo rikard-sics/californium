@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
@@ -132,7 +133,7 @@ public abstract class Decryptor {
 		byte[] key = ctx.getRecipientKey();
 
 		enc.setExternal(aad);
-			
+
 		try {
 
 			enc.addAttribute(HeaderKeys.Algorithm, ctx.getAlg().AsCBOR(), Attribute.DO_NOT_SEND);

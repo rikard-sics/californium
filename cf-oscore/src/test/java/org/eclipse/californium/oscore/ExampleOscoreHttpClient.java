@@ -16,7 +16,6 @@ import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpRequest;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.Message;
-import org.apache.hc.core5.http.ProtocolException;
 import org.apache.hc.core5.http.io.entity.ByteArrayEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.message.StatusLine;
@@ -124,7 +123,7 @@ public class ExampleOscoreHttpClient {
 	}
 
 	private static void request(HttpClient client, String httpReqUri, boolean useOscore)
-			throws OSException, TranslationException, URISyntaxException, ProtocolException {
+			throws OSException, TranslationException, URISyntaxException {
 		try {
 			System.out.println("=== " + httpReqUri + " ===");
 
@@ -189,12 +188,14 @@ public class ExampleOscoreHttpClient {
 			Response coapResponse = translator.getCoapResponse(msg, oscoreRequest);
 			System.out.println("CoAP Response: " + Utils.prettyPrint(coapResponse));
 			System.out.println("Payload: " + coapResponse.getPayloadString());
+			System.out.println("Payload (bytes): " + Utils.toHexString(coapResponse.getPayload()));
 
 			// Unprotect the CoAP response
 			if (coapResponse.getOptions().hasOscore()) {
 				db.addContext(coapRequest.getToken(), ctx);
+				System.out.println(" ctx.getSenderSeq() " + ctx.getSenderSeq());
 				coapResponse.setToken(coapRequest.getTokenBytes());
-				Response decrypted = ResponseDecryptor.decrypt(db, coapResponse, 0); // FIXME
+				Response decrypted = ResponseDecryptor.decrypt(db, coapResponse, ctx.getSenderSeq() - 1); // FIXME
 				System.out.println("Unprotected CoAP Response: " + Utils.prettyPrint(decrypted));
 				System.out.println("Payload: " + decrypted.getPayloadString());
 			}
@@ -207,7 +208,7 @@ public class ExampleOscoreHttpClient {
 	}
 
 	public static void main(String[] args)
-			throws OSException, TranslationException, URISyntaxException, IOException, ProtocolException {
+			throws OSException, TranslationException, URISyntaxException, IOException {
 		ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, null,
 				MAX_UNFRAGMENTED_SIZE);
 		db.addContext(serverResourceUri, ctx);
@@ -220,9 +221,15 @@ public class ExampleOscoreHttpClient {
 		try (CloseableHttpClient client = HttpClientBuilder.create().build();) {
 
 			// HTTP request via proxy, not using OSCORE
+			System.out.println("\n=== Sending NON OSCORE HTTP Request ===");
 			request(client, "http://localhost:8080/proxy?target_uri=" + serverResourceUri, false);
 
-			// Using OSCORE
+			// Using OSCORE #1
+			System.out.println("\n=== Sending OSCORE HTTP Request #1 ===");
+			request(client, "http://localhost:8080/proxy?target_uri=" + serverResourceUri, true);
+
+			// Using OSCORE #2
+			System.out.println("\n=== Sending OSCORE HTTP Request #2 ==="); 
 			request(client, "http://localhost:8080/proxy?target_uri=" + serverResourceUri, true);
 		}
 
