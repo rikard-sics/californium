@@ -265,7 +265,7 @@ public class EdhocResource extends CoapResource {
 				String myString = (responseType == Constants.EDHOC_MESSAGE_2) ? "EDHOC Message 2" : "EDHOC Error Message";
 				// System.out.println("Response type: " + myString + "\n");
 				
-				if (responseType == Constants.EDHOC_MESSAGE_2) {
+				if (responseType == Constants.EDHOC_MESSAGE_2) { // System.out.println("Received EDHOC Message 2\n");
 			        // System.out.println("Sent EDHOC Message 2\n");
 				}
 				if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
@@ -287,7 +287,7 @@ public class EdhocResource extends CoapResource {
 			        }
 				}
 				
-				if (responseType == Constants.EDHOC_MESSAGE_2) {
+				if (responseType == Constants.EDHOC_MESSAGE_2) { // System.out.println("Received EDHOC Message 2\n");
 					session.setCurrentStep(Constants.EDHOC_SENT_M2);
 				}
 				
@@ -383,10 +383,11 @@ public class EdhocResource extends CoapResource {
 			        byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(mySession);
 			        byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(mySession);
 			        if (debugPrint) {
-			        	Util.nicePrint("OSCORE Master Secret", masterSecret);
-			        	Util.nicePrint("OSCORE Master Salt", masterSalt);
+			        	System.out.println("OSCORE Master Secret: " + Utils.toHexString(masterSecret));
+			        	System.out.println("OSCORE Master Salt: " + Utils.toHexString(masterSalt));
 			        }
-					System.out.println("Finished EDHOC and derived OSCORE security context");
+			        
+					System.out.println("Finished EDHOC and derived OSCORE security context\n");
 			        
 			        /* Setup the OSCORE Security Context */
 			        

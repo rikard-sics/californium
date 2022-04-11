@@ -148,3 +148,109 @@ OSCORE Response #1: CoAP Payload (UDP payload):		 28 bytes ( 42 bytes)
 
 Total outgoing traffic: CoAP Payload (UDP Payload):	 92 bytes (158 bytes)
 Total incoming traffic: CoAP Payload (UDP Payload):	101 bytes (145 bytes)
+
+
+
+ == Client1 - Vanilla Workflow (Authentication with signatures) == 
+EDHOC Message #1: CoAP Payload (UDP payload):		 38 bytes ( 79 bytes)
+EDHOC Message #2: CoAP Payload (UDP payload):		102 bytes (118 bytes)
+EDHOC Message #3: CoAP Payload (UDP payload):		 78 bytes (119 bytes)
+             ACK: CoAP Payload (UDP payload):		  0 bytes ( 12 bytes)
+
+OSCORE Request  #1: CoAP Payload (UDP payload):		 17 bytes ( 44 bytes)
+OSCORE Response #1: CoAP Payload (UDP payload):		 28 bytes ( 42 bytes)
+
+Total outgoing traffic: CoAP Payload (UDP Payload):	133 bytes (242 bytes)
+Total incoming traffic: CoAP Payload (UDP Payload):	130 bytes (172 bytes)
+
+
+
+ == Client1 - Vanilla Workflow (Authentication with signatures) == 
+EDHOC Message #1: CoAP Payload (UDP payload):		 38 bytes ( 79 bytes)
+EDHOC Message #2: CoAP Payload (UDP payload):		102 bytes (118 bytes)
+EDHOC Message #3: CoAP Payload (UDP payload):		 78 bytes (119 bytes)
+             ACK: CoAP Payload (UDP payload):		  0 bytes ( 12 bytes)
+
+OSCORE Request  #1: CoAP Payload (UDP payload):		 17 bytes ( 44 bytes)
+OSCORE Response #1: CoAP Payload (UDP payload):		 28 bytes ( 42 bytes)
+
+Total outgoing traffic: CoAP Payload (UDP Payload):	133 bytes (242 bytes)
+Total incoming traffic: CoAP Payload (UDP Payload):	130 bytes (172 bytes)
+
+
+
+ == Client3 - Optimized Workflow (Authentication with signatures) == 
+EDHOC Message #1: CoAP Payload (UDP payload):		 38 bytes ( 79 bytes)
+EDHOC Message #2: CoAP Payload (UDP payload):		102 bytes (118 bytes)
+
+Msg #3 + OSCORE #1: CoAP Payload (UDP payload):		 95 bytes (123 bytes)
+OSCORE Response #1: CoAP Payload (UDP payload):		 28 bytes ( 42 bytes)
+
+Total outgoing traffic: CoAP Payload (UDP Payload):	133 bytes (202 bytes)
+Total incoming traffic: CoAP Payload (UDP Payload):	130 bytes (160 bytes)
+
+
+
+ == Client2 - Vanilla Workflow (Authentication with MACs) == 
+EDHOC Message #1: CoAP Payload (UDP payload):		 38 bytes ( 79 bytes)
+EDHOC Message #2: CoAP Payload (UDP payload):		 45 bytes ( 61 bytes)
+EDHOC Message #3: CoAP Payload (UDP payload):		 20 bytes ( 61 bytes)
+             ACK: CoAP Payload (UDP payload):		  0 bytes ( 12 bytes)
+
+OSCORE Request  #1: CoAP Payload (UDP payload):		 17 bytes ( 44 bytes)
+OSCORE Response #1: CoAP Payload (UDP payload):		 28 bytes ( 42 bytes)
+
+Total outgoing traffic: CoAP Payload (UDP Payload):	 75 bytes (184 bytes)
+Total incoming traffic: CoAP Payload (UDP Payload):	 73 bytes (115 bytes)
+
+
+
+ == Client4 - Optimized Workflow (Authentication with MACs) == 
+EDHOC Message #1: CoAP Payload (UDP payload):		 38 bytes ( 79 bytes)
+EDHOC Message #2: CoAP Payload (UDP payload):		 45 bytes ( 61 bytes)
+
+Msg #3 + OSCORE #1: CoAP Payload (UDP payload):		 37 bytes ( 65 bytes)
+OSCORE Response #1: CoAP Payload (UDP payload):		 28 bytes ( 42 bytes)
+
+Total outgoing traffic: CoAP Payload (UDP Payload):	 75 bytes (144 bytes)
+Total incoming traffic: CoAP Payload (UDP Payload):	 73 bytes (103 bytes)
+
+
+
+ == Client1 - Vanilla Workflow (Authentication with signatures) == 
+EDHOC Message #1: CoAP Payload (UDP payload):		 38 bytes ( 79 bytes)
+EDHOC Message #2: CoAP Payload (UDP payload):		102 bytes (118 bytes)
+EDHOC Message #3: CoAP Payload (UDP payload):		 78 bytes (119 bytes)
+             ACK: CoAP Payload (UDP payload):		  0 bytes ( 12 bytes)
+
+OSCORE Request  #1: CoAP Payload (UDP payload):		 17 bytes ( 44 bytes)
+OSCORE Response #1: CoAP Payload (UDP payload):		 28 bytes ( 42 bytes)
+
+Total outgoing traffic: CoAP Payload (UDP Payload):	133 bytes (242 bytes)
+Total incoming traffic: CoAP Payload (UDP Payload):	130 bytes (172 bytes)
+
+
+
+ == Client3 - Optimized Workflow (Authentication with signatures) == 
+EDHOC Message #1: CoAP Payload (UDP payload):		 38 bytes ( 79 bytes)
+EDHOC Message #2: CoAP Payload (UDP payload):		102 bytes (118 bytes)
+
+Msg #3 + OSCORE #1: CoAP Payload (UDP payload):		 95 bytes (123 bytes)
+OSCORE Response #1: CoAP Payload (UDP payload):		 28 bytes ( 42 bytes)
+
+Total outgoing traffic: CoAP Payload (UDP Payload):	133 bytes (202 bytes)
+Total incoming traffic: CoAP Payload (UDP Payload):	130 bytes (160 bytes)
+
+
+
+ == Client1 - Vanilla Workflow (Authentication with signatures) == 
+EDHOC Message #1: CoAP Payload (UDP payload):		 38 bytes ( 79 bytes)
+EDHOC Message #2: CoAP Payload (UDP payload):		102 bytes (118 bytes)
+EDHOC Message #3: CoAP Payload (UDP payload):		 78 bytes (119 bytes)
+             ACK: CoAP Payload (UDP payload):		  0 bytes ( 12 bytes)
+
+OSCORE Request  #1: CoAP Payload (UDP payload):		 17 bytes ( 44 bytes)
+OSCORE Response #1: CoAP Payload (UDP payload):		 28 bytes ( 42 bytes)
+
+Total outgoing traffic: CoAP Payload (UDP Payload):	150 bytes (286 bytes)
+Total incoming traffic: CoAP Payload (UDP Payload):	158 bytes (214 bytes)

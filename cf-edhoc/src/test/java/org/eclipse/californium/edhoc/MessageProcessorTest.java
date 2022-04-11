@@ -515,8 +515,8 @@ public class MessageProcessorTest {
         Assert.assertArrayEquals(expectedMasterSecret, masterSecret);
         Assert.assertArrayEquals(expectedMasterSalt, masterSalt);
         
-       	Util.nicePrint("OSCORE Master Secret", masterSecret);
-        Util.nicePrint("OSCORE Master Salt", masterSalt);
+       	System.out.println("OSCORE Master Secret: " + org.eclipse.californium.core.Utils.toHexString(masterSecret));
+        System.out.println("OSCORE Master Salt: " + org.eclipse.californium.core.Utils.toHexString(masterSalt));
 		
         
         /* Invoke EDHOC-KeyUpdate to updated the EDHOC key material */
@@ -545,8 +545,8 @@ public class MessageProcessorTest {
         Assert.assertArrayEquals(expectedMasterSecret, masterSecret);
         Assert.assertArrayEquals(expectedMasterSalt, masterSalt);
         
-       	Util.nicePrint("OSCORE Master Secret", masterSecret);
-        Util.nicePrint("OSCORE Master Salt", masterSalt);
+       	System.out.println("OSCORE Master Secret: " + org.eclipse.californium.core.Utils.toHexString(masterSecret));
+        System.out.println("OSCORE Master Salt: " + org.eclipse.californium.core.Utils.toHexString(masterSalt));
         
 	}
 	
@@ -1023,8 +1023,8 @@ public class MessageProcessorTest {
         Assert.assertArrayEquals(expectedMasterSecret, masterSecret);
         Assert.assertArrayEquals(expectedMasterSalt, masterSalt);
         
-       	Util.nicePrint("OSCORE Master Secret", masterSecret);
-        Util.nicePrint("OSCORE Master Salt", masterSalt);
+       	System.out.println("OSCORE Master Secret: " + org.eclipse.californium.core.Utils.toHexString(masterSecret));
+        System.out.println("OSCORE Master Salt: " + org.eclipse.californium.core.Utils.toHexString(masterSalt));
 		
         
         /* Invoke EDHOC-KeyUpdate to updated the EDHOC key material */
@@ -1053,8 +1053,8 @@ public class MessageProcessorTest {
         Assert.assertArrayEquals(expectedMasterSecret, masterSecret);
         Assert.assertArrayEquals(expectedMasterSalt, masterSalt);
         
-       	Util.nicePrint("OSCORE Master Secret", masterSecret);
-        Util.nicePrint("OSCORE Master Salt", masterSalt);
+       	System.out.println("OSCORE Master Secret: " + org.eclipse.californium.core.Utils.toHexString(masterSecret));
+        System.out.println("OSCORE Master Salt: " + org.eclipse.californium.core.Utils.toHexString(masterSalt));
         
 	}
 	

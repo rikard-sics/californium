@@ -76,7 +76,7 @@ import org.eclipse.californium.edhoc.Util;
 public class Phase2Client {
 	
 	// Set accordingly
-	private static String serverAddress = "192.168.0.99";
+	private static String serverAddress = "localhost";
 
 	private static long beginTotal;
 	private static long beginEdhoc;
@@ -724,7 +724,7 @@ public class Phase2Client {
 		Request edhocMessageReq = new Request(Code.POST, Type.CON);
 		edhocMessageReq.setPayload(nextPayload);
 		
-		// // System.out.println("Sent EDHOC Message 1\n");
+		System.out.println("Sent EDHOC Message 1\n");
         
         CoapResponse edhocMessageResp;
         try {
@@ -834,7 +834,7 @@ public class Phase2Client {
         }
         
         // The received message is an EDHOC Message 2
-        if (responseType == Constants.EDHOC_MESSAGE_2) {
+        if (responseType == Constants.EDHOC_MESSAGE_2) { System.out.println("Received EDHOC Message 2\n");
         	
         	List<CBORObject> processingResult = new ArrayList<CBORObject>();
 			
@@ -895,16 +895,16 @@ public class Phase2Client {
 				
 				if (requestType == Constants.EDHOC_MESSAGE_3) {
 			        
-					// // System.out.println("Sent EDHOC Message 3\n");
+					System.out.println("Sent EDHOC Message 3\n");
 					
 			        if (session.getApplicationProfile().getUsedForOSCORE() == true) {
 			        
 				        /* Invoke the EDHOC-Exporter to produce OSCORE input material */
 				        byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(session);
 				        byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(session);
-				        if (debugPrint) {
-				        	Util.nicePrint("OSCORE Master Secret", masterSecret);
-				        	Util.nicePrint("OSCORE Master Salt", masterSalt);
+				        if (true) {
+				        	System.out.println("OSCORE Master Secret: " + Utils.toHexString(masterSecret));
+				        	System.out.println("OSCORE Master Salt: " + Utils.toHexString(masterSalt));
 				        }
 				        
 				        /* Setup the OSCORE Security Context */
@@ -1246,6 +1246,9 @@ public class Phase2Client {
 					CoapResponse protectedResponse = null;
 					protectedRequest.setType(Type.CON);
 					protectedRequest.getOptions().setOscore(Bytes.EMPTY);
+
+					System.out.println("Sent OSCORE Request 1\n");
+					
 					try {
 						protectedResponse = client.advanced(protectedRequest);
 					} catch (ConnectorException e) {
@@ -1253,6 +1256,7 @@ public class Phase2Client {
 					} catch (IOException e) {
 						// System.err.println("IOException when sending a protected request\n");
 					}
+					
 					byte[] myPayload = protectedResponse.getPayload();
 					if (myPayload != null) {
 						// // System.out.println(Utils.prettyPrint(protectedResponse));
@@ -1261,6 +1265,8 @@ public class Phase2Client {
 //						System.out
 //								.println("Duration of EDHOC and OSCORE exchange: " + (timeTotal / 1000000) + " ms");
 					}
+					
+					System.out.println("Received OSCORE Response 1\n");
 		        }
 				
 			}

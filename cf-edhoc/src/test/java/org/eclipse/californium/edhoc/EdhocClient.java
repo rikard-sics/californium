@@ -685,7 +685,7 @@ public class EdhocClient {
 		Request edhocMessageReq = new Request(Code.POST, Type.CON);
 		edhocMessageReq.setPayload(nextPayload);
 		
-        // System.out.println("Sent EDHOC Message 1\n");
+        System.out.println("Sent EDHOC Message 1\n");
         
         CoapResponse edhocMessageResp;
         try {
@@ -793,7 +793,7 @@ public class EdhocClient {
         }
         
         // The received message is an EDHOC Message 2
-        if (responseType == Constants.EDHOC_MESSAGE_2) {
+        if (responseType == Constants.EDHOC_MESSAGE_2) { System.out.println("Received EDHOC Message 2\n");
         	
         	List<CBORObject> processingResult = new ArrayList<CBORObject>();
 			
@@ -854,7 +854,7 @@ public class EdhocClient {
 				
 				if (requestType == Constants.EDHOC_MESSAGE_3) {
 			        
-			        // System.out.println("Sent EDHOC Message 3\n");
+			        System.out.println("Sent EDHOC Message 3\n");
 					
 			        if (session.getApplicationProfile().getUsedForOSCORE() == true) {
 			        
@@ -862,8 +862,8 @@ public class EdhocClient {
 				        byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(session);
 				        byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(session);
 				        if (debugPrint) {
-				        	Util.nicePrint("OSCORE Master Secret", masterSecret);
-				        	Util.nicePrint("OSCORE Master Salt", masterSalt);
+				        	System.out.println("OSCORE Master Secret: " + Utils.toHexString(masterSecret));
+				        	System.out.println("OSCORE Master Salt: " + Utils.toHexString(masterSalt));
 				        }
 				        
 				        /* Setup the OSCORE Security Context */

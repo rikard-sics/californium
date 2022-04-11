@@ -76,7 +76,7 @@ import org.eclipse.californium.edhoc.Util;
 public class Phase4Client {
 	
 	// Set accordingly
-	private static String serverAddress = "192.168.0.99";
+	private static String serverAddress = "localhost";
 
 	private static long beginTotal;
 	private static long timeTotal;
@@ -729,7 +729,7 @@ public class Phase4Client {
 		Request edhocMessageReq = new Request(Code.POST, Type.CON);
 		edhocMessageReq.setPayload(nextPayload);
 		
-        // System.out.println("Sent EDHOC Message 1\n");
+        System.out.println("Sent EDHOC Message 1\n");
         
         CoapResponse edhocMessageResp;
         try {
@@ -837,7 +837,7 @@ public class Phase4Client {
         }
         
         // The received message is an EDHOC Message 2
-        if (responseType == Constants.EDHOC_MESSAGE_2) {
+        if (responseType == Constants.EDHOC_MESSAGE_2) { System.out.println("Received EDHOC Message 2\n");
         	
         	List<CBORObject> processingResult = new ArrayList<CBORObject>();
 			
@@ -898,16 +898,14 @@ public class Phase4Client {
 				
 				if (requestType == Constants.EDHOC_MESSAGE_3) {
 			        
-			        // System.out.println("Sent EDHOC Message 3\n");
-					
 			        if (session.getApplicationProfile().getUsedForOSCORE() == true) {
 			        
 				        /* Invoke the EDHOC-Exporter to produce OSCORE input material */
 				        byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(session);
 				        byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(session);
-				        if (debugPrint) {
-				        	Util.nicePrint("OSCORE Master Secret", masterSecret);
-				        	Util.nicePrint("OSCORE Master Salt", masterSalt);
+				        if (true) {
+				        	System.out.println("OSCORE Master Secret: " + Utils.toHexString(masterSecret));
+				        	System.out.println("OSCORE Master Salt: " + Utils.toHexString(masterSalt));
 				        }
 				        
 				        /* Setup the OSCORE Security Context */
@@ -1006,6 +1004,8 @@ public class Phase4Client {
 		        		edhocMessageReq2.getOptions().setEdhoc(true);
 						session.setMessage3(nextPayload);
 						
+						System.out.println("Sent EDHOC Message 3 combined with OSCORE Request 1\n");
+						
 						try {
 							session.setCurrentStep(Constants.EDHOC_SENT_M3);
 							protectedResponse = client.advanced(edhocMessageReq2);
@@ -1021,6 +1021,9 @@ public class Phase4Client {
 			            	return;
 						}
 					
+						System.out.println("Received OSCORE Response 1\n");
+						
+						
 						byte[] myPayload = protectedResponse.getPayload();
 						if (myPayload != null) {
 							// System.out.println(Utils.prettyPrint(protectedResponse));

@@ -70,7 +70,7 @@ public class Phase0Client {
 		Request r = new Request(Code.POST);
 		r.setPayload("1");
 		CoapResponse resp = c.advanced(r);
-		printResponse(resp);
+		System.out.println(org.eclipse.californium.core.Utils.prettyPrint(resp));
 
 		Scanner scanner = new Scanner(System.in);
 		String command = "";

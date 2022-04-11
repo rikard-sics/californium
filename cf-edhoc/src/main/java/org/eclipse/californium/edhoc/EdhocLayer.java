@@ -372,9 +372,12 @@ public class EdhocLayer extends AbstractLayer {
 				/* Invoke the EDHOC-Exporter to produce OSCORE input material */
 				byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(mySession);
 				byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(mySession);
-				if (debugPrint) {
-					Util.nicePrint("OSCORE Master Secret", masterSecret);
-					Util.nicePrint("OSCORE Master Salt", masterSalt);
+				
+				System.out.println("Finished EDHOC and derived OSCORE security context\n");
+				
+				if (true) {
+					System.out.println("OSCORE Master Secret: " + org.eclipse.californium.core.Utils.toHexString(masterSecret));
+					System.out.println("OSCORE Master Salt: " + org.eclipse.californium.core.Utils.toHexString(masterSalt));
 				}
 				
 				/* Setup the OSCORE Security Context */
