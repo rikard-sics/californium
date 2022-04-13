@@ -25,6 +25,7 @@ import java.util.Arrays;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.cose.AlgorithmID;
@@ -362,6 +363,10 @@ public class OSCoreCtx {
 		// Initialize cipher object
 		initializeCipher(common_alg);
 
+		// Print information about the generated context
+		if (LOGGER.isDebugEnabled()) {
+			printContextInformation();
+		}
 	}
 
 	/**
@@ -922,5 +927,26 @@ public class OSCoreCtx {
 	 */
 	private static byte[] createByteArray(byte... values) {
 		return values;
+	}
+
+	/**
+	 * Print information about the context for debugging.
+	 */
+	private void printContextInformation() {
+
+		LOGGER.debug("Derived OSCORE context:");
+		LOGGER.debug("=======================");
+		LOGGER.debug("Alg:\t\t{}:", common_alg);
+		LOGGER.debug("HKDF:\t\t{}:", kdf);
+		LOGGER.debug("ID Context:\t{}:", Utils.toHexString(context_id));
+		LOGGER.debug("Master Secret:\t{}:", Utils.toHexString(common_master_secret));
+		LOGGER.debug("Master Salt:\t{}:", Utils.toHexString(common_master_salt));
+		LOGGER.debug("Common IV:\t{}:", Utils.toHexString(common_iv));
+		LOGGER.debug("Sender ID:\t{}:", Utils.toHexString(sender_id));
+		LOGGER.debug("Sender Key:\t{}:", Utils.toHexString(sender_key));
+		LOGGER.debug("Recipient ID:\t{}:", Utils.toHexString(recipient_id));
+		LOGGER.debug("Recipient Key:\t{}:", Utils.toHexString(recipient_key));
+		LOGGER.debug("=======================");
+
 	}
 }

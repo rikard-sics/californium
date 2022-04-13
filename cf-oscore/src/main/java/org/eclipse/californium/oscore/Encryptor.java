@@ -22,7 +22,7 @@ package org.eclipse.californium.oscore;
 import java.io.ByteArrayOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
@@ -100,6 +100,10 @@ public abstract class Encryptor {
 
 			enc.setExternal(aad);
 			
+			if (LOGGER.isDebugEnabled()) {
+				printEncryptorProcessing(ctx, nonce, aad, key, isRequest, newPartialIV);
+			}
+
 			enc.addAttribute(HeaderKeys.IV, CBORObject.FromObject(nonce), Attribute.DO_NOT_SEND);
 			enc.addAttribute(HeaderKeys.Algorithm, ctx.getAlg().AsCBOR(), Attribute.DO_NOT_SEND);
 			enc.encrypt(key);
@@ -190,5 +194,47 @@ public abstract class Encryptor {
 		}
 
 		return optionEncoder.getBytes();
+	}
+
+	/**
+	 * Print information about the message processing parameters for debugging.
+	 * 
+	 * @param ctx the OSCORE context
+	 * @param nonce the Nonce (IV)
+	 * @param aad the External AAD
+	 * @param oscoreOption the OSCORE option
+	 * @param key the key for processing this message
+	 * @param isRequest if the message is a request
+	 */
+	private static void printEncryptorProcessing(OSCoreCtx ctx, byte[] nonce, byte[] aad, byte[] key, boolean isRequest,
+			boolean newPartialIV) {
+
+		byte[] oscoreOption;
+		if (isRequest) {
+			oscoreOption = encodeOSCoreRequest(ctx);
+		} else {
+			oscoreOption = encodeOSCoreResponse(ctx, newPartialIV);
+		}
+
+		OscoreOptionDecoder decoder;
+		try {
+			decoder = new OscoreOptionDecoder(oscoreOption);
+		} catch (CoapOSException e) {
+			LOGGER.debug("Failed to parse OSCORE option for debug output: {}", e.getMessage());
+			return;
+		}
+
+		LOGGER.debug("Message processing info:");
+		LOGGER.debug("=======================");
+		LOGGER.debug("Processing {} message", isRequest ? "request" : "response");
+		LOGGER.debug("Alg:\t\t{}:", ctx.getAlg().toString());
+		LOGGER.debug("Key:\t\t{}:", Utils.toHexString(key));
+		LOGGER.debug("Partial IV:\t{}:", Utils.toHexString(decoder.getPartialIV()));
+		LOGGER.debug("Key ID:\t\t{}:", Utils.toHexString(decoder.getKid()));
+		LOGGER.debug("KID Context:\t{}:", Utils.toHexString(decoder.getIdContext()));
+		LOGGER.debug("OSCORE Option:\t{}:", Utils.toHexString(oscoreOption));
+		LOGGER.debug("Nonce:\t\t{}:", Utils.toHexString(nonce));
+		LOGGER.debug("External AAD:\t{}:", Utils.toHexString(aad));
+		LOGGER.debug("=======================");
 	}
 }
