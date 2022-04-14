@@ -135,7 +135,7 @@ public abstract class Decryptor {
 		enc.setExternal(aad);
 
 		if (LOGGER.isDebugEnabled()) {
-			printDecryptorProcessing(ctx, nonce, aad, message.getOptions().getOscore(), key, isRequest);
+			printDecryptorProcessing(ctx, partialIV, nonce, aad, message.getOptions().getOscore(), key, isRequest);
 		}
 			
 		try {
@@ -289,14 +289,15 @@ public abstract class Decryptor {
 	 * Print information about the message processing parameters for debugging.
 	 * 
 	 * @param ctx the OSCORE context
+	 * @param partialIV the Partial IV
 	 * @param nonce the Nonce (IV)
 	 * @param aad the External AAD
 	 * @param oscoreOption the OSCORE option
 	 * @param key the key for processing this message
 	 * @param isRequest if the message is a request
 	 */
-	private static void printDecryptorProcessing(OSCoreCtx ctx, byte[] nonce, byte[] aad, byte[] oscoreOption,
-			byte[] key, boolean isRequest) {
+	private static void printDecryptorProcessing(OSCoreCtx ctx, byte[] partialIV, byte[] nonce, byte[] aad,
+			byte[] oscoreOption, byte[] key, boolean isRequest) {
 
 		OscoreOptionDecoder decoder;
 		try {
@@ -306,13 +307,23 @@ public abstract class Decryptor {
 			return;
 		}
 
+		String pivDesc;
+		byte[] usedKid;
+		if (!isRequest && decoder.getPartialIV() == null) {
+			pivDesc = "PIV (from Req):\t{}";
+			usedKid = ctx.getSenderId();
+		} else {
+			pivDesc = "PIV:\t\t{}";
+			usedKid = ctx.getRecipientId();
+		}
+
 		LOGGER.debug("Message processing info:");
 		LOGGER.debug("=======================");
 		LOGGER.debug("Processing {} message", isRequest ? "request" : "response");
-		LOGGER.debug("Alg:\t\t{}:", ctx.getAlg().toString());
+		LOGGER.debug("AEAD Alg:\t{}:", ctx.getAlg().toString());
 		LOGGER.debug("Key:\t\t{}:", Utils.toHexString(key));
-		LOGGER.debug("Partial IV:\t{}:", Utils.toHexString(decoder.getPartialIV()));
-		LOGGER.debug("Key ID:\t\t{}:", Utils.toHexString(decoder.getKid()));
+		LOGGER.debug(pivDesc, Utils.toHexString(partialIV));
+		LOGGER.debug("KID (to nonce): {}", Utils.toHexString(usedKid));
 		LOGGER.debug("KID Context:\t{}:", Utils.toHexString(decoder.getIdContext()));
 		LOGGER.debug("OSCORE Option:\t{}:", Utils.toHexString(oscoreOption));
 		LOGGER.debug("Nonce:\t\t{}:", Utils.toHexString(nonce));

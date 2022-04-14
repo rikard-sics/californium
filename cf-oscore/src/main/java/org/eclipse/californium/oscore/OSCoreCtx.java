@@ -936,8 +936,8 @@ public class OSCoreCtx {
 
 		LOGGER.debug("Derived OSCORE context:");
 		LOGGER.debug("=======================");
-		LOGGER.debug("Alg:\t\t{}:", common_alg);
-		LOGGER.debug("HKDF:\t\t{}:", kdf);
+		LOGGER.debug("AEAD Alg:\t{}:", common_alg);
+		LOGGER.debug("HKDF Alg:\t{}:", kdf);
 		LOGGER.debug("ID Context:\t{}:", Utils.toHexString(context_id));
 		LOGGER.debug("Master Secret:\t{}:", Utils.toHexString(common_master_secret));
 		LOGGER.debug("Master Salt:\t{}:", Utils.toHexString(common_master_salt));

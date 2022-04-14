@@ -101,7 +101,7 @@ public abstract class Encryptor {
 			enc.setExternal(aad);
 			
 			if (LOGGER.isDebugEnabled()) {
-				printEncryptorProcessing(ctx, nonce, aad, key, isRequest, newPartialIV);
+				printEncryptorProcessing(ctx, partialIV, nonce, aad, key, isRequest, newPartialIV);
 			}
 
 			enc.addAttribute(HeaderKeys.IV, CBORObject.FromObject(nonce), Attribute.DO_NOT_SEND);
@@ -200,14 +200,15 @@ public abstract class Encryptor {
 	 * Print information about the message processing parameters for debugging.
 	 * 
 	 * @param ctx the OSCORE context
+	 * @param partialIV the Partial IV
 	 * @param nonce the Nonce (IV)
 	 * @param aad the External AAD
 	 * @param oscoreOption the OSCORE option
 	 * @param key the key for processing this message
 	 * @param isRequest if the message is a request
 	 */
-	private static void printEncryptorProcessing(OSCoreCtx ctx, byte[] nonce, byte[] aad, byte[] key, boolean isRequest,
-			boolean newPartialIV) {
+	private static void printEncryptorProcessing(OSCoreCtx ctx, byte[] partialIV, byte[] nonce, byte[] aad, byte[] key,
+			boolean isRequest, boolean newPartialIV) {
 
 		byte[] oscoreOption;
 		if (isRequest) {
@@ -224,13 +225,30 @@ public abstract class Encryptor {
 			return;
 		}
 
+		String pivDesc;
+		byte[] usedPiv;
+		byte[] usedKid;
+		if (!isRequest && decoder.getPartialIV() == null) {
+			pivDesc = "PIV (from Req):\t{}";
+			usedPiv = partialIV;
+			usedKid = ctx.getRecipientId();
+		} else if (!isRequest && decoder.getPartialIV() != null) {
+			pivDesc = "PIV (new):\t{}";
+			usedPiv = decoder.getPartialIV();
+			usedKid = ctx.getSenderId();
+		} else {
+			pivDesc = "PIV:\t\t{}";
+			usedPiv = partialIV;
+			usedKid = decoder.getKid();
+		}
+
 		LOGGER.debug("Message processing info:");
 		LOGGER.debug("=======================");
 		LOGGER.debug("Processing {} message", isRequest ? "request" : "response");
-		LOGGER.debug("Alg:\t\t{}:", ctx.getAlg().toString());
+		LOGGER.debug("AEAD Alg:\t{}:", ctx.getAlg().toString());
 		LOGGER.debug("Key:\t\t{}:", Utils.toHexString(key));
-		LOGGER.debug("Partial IV:\t{}:", Utils.toHexString(decoder.getPartialIV()));
-		LOGGER.debug("Key ID:\t\t{}:", Utils.toHexString(decoder.getKid()));
+		LOGGER.debug(pivDesc, Utils.toHexString(usedPiv));
+		LOGGER.debug("KID (to nonce): {}", Utils.toHexString(usedKid));
 		LOGGER.debug("KID Context:\t{}:", Utils.toHexString(decoder.getIdContext()));
 		LOGGER.debug("OSCORE Option:\t{}:", Utils.toHexString(oscoreOption));
 		LOGGER.debug("Nonce:\t\t{}:", Utils.toHexString(nonce));
