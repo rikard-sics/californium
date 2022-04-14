@@ -53,7 +53,7 @@ public class ResponseEncryptor extends Encryptor {
 	 * 
 	 * @throws OSException when encryption fails
 	 */
-	public static Response encrypt(OSCoreCtxDB db, Response response, OSCoreCtx ctx, final boolean newPartialIV,
+	public static Response encrypt(OSCoreCtxDB db, Response response, OSCoreCtx ctx, boolean newPartialIV,
 			boolean outerBlockwise, int requestSequenceNr) throws OSException {
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CTX_NULL);
@@ -63,6 +63,7 @@ public class ResponseEncryptor extends Encryptor {
 		// Perform context re-derivation procedure if ongoing
 		try {
 			ctx = ContextRederivation.outgoingResponse(db, ctx);
+			newPartialIV |= ctx.getResponsesIncludePartialIV();
 		} catch (OSException e) {
 			LOGGER.error(ErrorDescriptions.CONTEXT_REGENERATION_FAILED);
 			throw new OSException(ErrorDescriptions.CONTEXT_REGENERATION_FAILED);
