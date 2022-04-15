@@ -166,6 +166,7 @@ public class ContextRederivation {
 
 			// Generate a new context with the concatenated Context ID
 			OSCoreCtx newCtx = rederiveWithContextID(ctx, verifyContextID);
+			newCtx.setNonceHandover(ctx.getNonceHandover());
 
 			// Add the new context to the context DB (replacing the old)
 			newCtx.setContextRederivationPhase(PHASE.CLIENT_PHASE_2);
@@ -445,14 +446,12 @@ public class ContextRederivation {
 
 			// Generate a new context with the concatenated Context ID
 			OSCoreCtx newCtx = rederiveWithContextID(ctx, protectContextID);
+			newCtx.setNonceHandover(ctx.getNonceHandover());
 
 			// Outgoing response from this context only uses R2 as
 			// Context ID (not concatenated one used to generate the context).
 			// It will be encoded as a CBOR byte string.
 			newCtx.setIncludeContextId(encodeToCborBstrBytes(contextR2));
-
-			// Respond with new partial IV
-			newCtx.setResponsesIncludePartialIV(true);
 
 			// Indicate that the context re-derivation procedure is ongoing
 			newCtx.setContextRederivationPhase(PHASE.SERVER_PHASE_2);

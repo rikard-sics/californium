@@ -929,6 +929,16 @@ public class OSCoreCtx {
 		return values;
 	}
 
+	private byte[] nonceHandover;
+
+	protected void setNonceHandover(byte[] nonce) {
+		this.nonceHandover = nonce;
+	}
+
+	protected byte[] getNonceHandover() {
+		return nonceHandover;
+	}
+
 	/**
 	 * Print information about the context for debugging.
 	 */

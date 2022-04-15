@@ -264,7 +264,7 @@ public class ContextRederivationTest {
 		// Ensure that the ID Context in the OSCORE option in this response
 		// (response #1) is a CBOR byte string
 		byte[] respOscoreOpt = resp.getOptions().getOscore();
-		byte[] respIdContext = Arrays.copyOfRange(respOscoreOpt, 3, respOscoreOpt.length);
+		byte[] respIdContext = Arrays.copyOfRange(respOscoreOpt, 2, respOscoreOpt.length);
 		byte[] respIdContextDecoded = CBORObject.DecodeFromBytes(respIdContext).GetByteString();
 		// Check its length (R2)
 		assertEquals(2 * SEGMENT_LENGTH, respIdContextDecoded.length);
