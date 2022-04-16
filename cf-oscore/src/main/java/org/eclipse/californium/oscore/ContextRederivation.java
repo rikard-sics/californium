@@ -119,6 +119,8 @@ public class ContextRederivation {
 		// In the request include ID1 as a CBOR byte string (bstr)
 		newCtx.setIncludeContextId(encodeToCborBstrBytes(contextID1));
 		newCtx.setContextRederivationPhase(ContextRederivation.PHASE.CLIENT_PHASE_1);
+		newCtx.setNonceHandover(ctx.getNonceHandover());
+
 		db.removeContext(ctx);
 		db.addContext(uri, newCtx);
 	}
@@ -192,6 +194,10 @@ public class ContextRederivation {
 				return ctx;
 			}
 
+			// FIXME add to logging
+			String supplemental = "client received response with server initiated re-derivation";
+			LOGGER.debug("Context re-derivation phase: {} ({})", PHASE.INACTIVE, supplemental);
+
 			// The Context ID in the incoming response is identified as R2
 			// It is first decoded as it is a CBOR byte string
 			byte[] contextR2 = decodeFromCborBstrBytes(contextID);
@@ -207,8 +213,11 @@ public class ContextRederivation {
 
 			// Add the new context to the context DB (replacing the old)
 			newCtx.setContextRederivationPhase(PHASE.CLIENT_PHASE_2);
+			// FIXME: Phase 2 here makes sense? Or Phase 1?
+			newCtx.setNonceHandover(ctx.getNonceHandover());
 			db.removeContext(ctx);
 			db.addContext(SCHEME + ctx.getUri(), newCtx);
+
 			return newCtx;
 		}
 
@@ -360,7 +369,7 @@ public class ContextRederivation {
 
 			// Set next phase of the re-derivation procedure
 			newCtx.setContextRederivationPhase(PHASE.SERVER_PHASE_1);
-
+			
 			// Add the new context to the context DB (replacing the old)
 			db.removeContext(ctx);
 			db.addContext(newCtx);

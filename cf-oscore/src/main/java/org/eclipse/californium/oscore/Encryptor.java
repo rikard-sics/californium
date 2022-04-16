@@ -101,7 +101,8 @@ public abstract class Encryptor {
 
 			if (ctx.getContextRederivationPhase() == PHASE.SERVER_PHASE_2 && ctx.getNonceHandover() != null) {
 				nonce = ctx.getNonceHandover();
-			} else if (ctx.getContextRederivationPhase() == PHASE.CLIENT_PHASE_1) {
+			} else if (ctx.getContextRederivationPhase() == PHASE.CLIENT_PHASE_1
+					|| ctx.getContextRederivationPhase() == PHASE.INACTIVE) {
 				ctx.setNonceHandover(nonce);
 			}
 
