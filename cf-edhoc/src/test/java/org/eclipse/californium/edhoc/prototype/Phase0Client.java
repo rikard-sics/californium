@@ -40,7 +40,7 @@ import net.i2p.crypto.eddsa.Utils;
 public class Phase0Client {
 
 	// Set accordingly
-	private static String serverAddress = "localhost";
+	private static String serverAddress = "192.168.0.99";
 
 	private final static HashMapCtxDB db = new HashMapCtxDB();
 	private final static String uriLocal = "coap://" + serverAddress;

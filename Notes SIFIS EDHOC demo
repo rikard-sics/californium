@@ -1,0 +1,15 @@
+Terminal output
+Switch off LED
+Show file
+Show Wireshark (mark messages)
+
+
+OSCORE for end-to-end security
+
+Recap Vanilla (EDHOC first, then OSCORE) vs. optimized workflow (EDHOC #3 + OSCORE combined in a single message)
+
+Smaller sizes are due to MAC
+ For Phase 2 and Phase 4
+
+Show UDP payload at end
+

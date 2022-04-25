@@ -77,7 +77,7 @@ import org.eclipse.californium.edhoc.Util;
 public class Phase1Client {
 
 	// Set accordingly
-	private static String serverAddress = "localhost";
+	private static String serverAddress = "192.168.0.99";
 
 	private static long beginTotal;
 	private static long beginEdhoc;
