@@ -57,8 +57,7 @@ public class MessageProcessor {
      * @param cX   The connection identifier of this peer, it can be null and then it has to be retrieved from the message
      * @return  The type of the EDHOC message, or -1 if it not a recognized type
      */
-	public static int messageType(byte[] msg, boolean isReq, Map<CBORObject, EdhocSession> edhocSessions,
-			                      CBORObject cX, AppProfile appProfile) {
+	public static int messageType(byte[] msg, boolean isReq, Map<CBORObject, EdhocSession> edhocSessions, CBORObject cX) {
 				
 		CBORObject[] myObjects = null;
 		
