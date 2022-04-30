@@ -710,7 +710,7 @@ public class EdhocClient {
         if (responsePayload == null)
         	discontinue = true;
         else {
-        	responseType = MessageProcessor.messageType(responsePayload, false, edhocSessions, connectionId, appProfile);
+        	responseType = MessageProcessor.messageType(responsePayload, false, edhocSessions, connectionId);
         	if (responseType != Constants.EDHOC_MESSAGE_2 && responseType != Constants.EDHOC_ERROR_MESSAGE)
         		discontinue = true;
         }
@@ -843,7 +843,7 @@ public class EdhocClient {
 				
 			}
 
-			int requestType = MessageProcessor.messageType(nextPayload, true, edhocSessions, connectionId,  appProfile);
+			int requestType = MessageProcessor.messageType(nextPayload, true, edhocSessions, connectionId);
 			
 			if (requestType != Constants.EDHOC_MESSAGE_3 && requestType != Constants.EDHOC_ERROR_MESSAGE) {
 				nextPayload = null;
@@ -990,7 +990,7 @@ public class EdhocClient {
 			            	       (restCode == ResponseCode.INTERNAL_SERVER_ERROR.value)) ) {
 			            	
 				            	responseType = MessageProcessor.messageType(myPayload, false,
-		                                                                    edhocSessions, connectionId, appProfile);
+		                                                                    edhocSessions, connectionId);
 			            		
 				            	if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
 				            		
@@ -1055,8 +1055,7 @@ public class EdhocClient {
 		            if (responsePayload == null)
 		            	discontinue = true;
 		            else {
-		            	responseType = MessageProcessor.messageType(responsePayload, false,
-		            			                                    edhocSessions, connectionId, appProfile);
+		            	responseType = MessageProcessor.messageType(responsePayload, false, edhocSessions, connectionId);
 		            	
 		            	// It is always consistent to receive an Error Message
 		            	if (responseType != Constants.EDHOC_ERROR_MESSAGE) {

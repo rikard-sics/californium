@@ -112,9 +112,7 @@ class EdhocResource extends CoapResource {
 			return;
 		}
 
-		int messageType = MessageProcessor.messageType(message, true,
-				                                       edhocEndpointInfo.getEdhocSessions(),
-				                                       null, appProfile);
+		int messageType = MessageProcessor.messageType(message, true, edhocEndpointInfo.getEdhocSessions(), null);
 		
 		// Invalid EDHOC message type
 		if (messageType == -1) {
@@ -231,8 +229,7 @@ class EdhocResource extends CoapResource {
 				connectionIdentifier = session.getConnectionId();
 			}
 			
-			responseType = MessageProcessor.messageType(nextMessage, false, edhocEndpointInfo.getEdhocSessions(),
-														connectionIdentifier, appProfile);
+			responseType = MessageProcessor.messageType(nextMessage, false, edhocEndpointInfo.getEdhocSessions(), connectionIdentifier);
 			
 			if (responseType != Constants.EDHOC_MESSAGE_2 && responseType != Constants.EDHOC_ERROR_MESSAGE) {
 				nextMessage = null;
@@ -471,9 +468,7 @@ class EdhocResource extends CoapResource {
 						return;
 					}
 					
-					int responseType = MessageProcessor.messageType(nextMessage, false,
-																	edhocEndpointInfo.getEdhocSessions(),
-                            										connectionId, appProfile);
+					int responseType = MessageProcessor.messageType(nextMessage, false, edhocEndpointInfo.getEdhocSessions(), connectionId);
 
 					if (responseType == Constants.EDHOC_MESSAGE_4 || responseType == Constants.EDHOC_ERROR_MESSAGE) {
 						
@@ -623,9 +618,7 @@ class EdhocResource extends CoapResource {
 	private void sendErrorMessage(CoapExchange exchange, byte[] nextMessage,
 			                      AppProfile appProfile, ResponseCode responseCode) {
 		
-		int responseType = MessageProcessor.messageType(nextMessage, false,
-														edhocEndpointInfo.getEdhocSessions(),
-														null, appProfile);
+		int responseType = MessageProcessor.messageType(nextMessage, false, edhocEndpointInfo.getEdhocSessions(), null);
 		
 		if (responseType != Constants.EDHOC_ERROR_MESSAGE) {
 			System.err.println("Inconsistent state before sending EDHOC Error Message");	
