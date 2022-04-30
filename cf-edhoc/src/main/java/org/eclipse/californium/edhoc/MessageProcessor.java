@@ -2210,9 +2210,6 @@ public class MessageProcessor {
     		errMsg = new String("Error when computing the external data for MAC_2");
     		error = true;
     	}
-    	else if (debugPrint) {
-    		Util.nicePrint("External Data to compute MAC_2", externalData);
-    	}
     	
     	byte[] signatureOrMac2 = computeSignatureOrMac2(session, mac2, externalData);
     	if (signatureOrMac2 == null) {
@@ -2403,9 +2400,6 @@ public class MessageProcessor {
     		System.err.println("Error when computing the external data for MAC_3");
     		errMsg = new String("Error when computing the external data for MAC_3");
     		error = true;
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("External Data to compute MAC_3", externalData);
     	}
     	
     	byte[] signatureOrMac3 = computeSignatureOrMac3(session, mac3, externalData);
@@ -3577,6 +3571,10 @@ public class MessageProcessor {
     				return null;
     			}
 
+    			if (debugPrint) {
+		    		Util.nicePrint("External Data for signing MAC_2 to produce Signature_or_MAC_2", externalData);
+		    	}
+    			
 				signatureOrMac2 = Util.computeSignature(session.getIdCred(), externalData, mac2, identityKey);
 				
 			} catch (CoseException e) {
@@ -3617,6 +3615,10 @@ public class MessageProcessor {
     			if (Util.checkSignatureKeyAgainstCiphersuite(identityKey, selectedCipherSuite) == false) {
     				System.err.println("Error when signing MAC_3 to produce Signature_or_MAC_3\n");
     				return null;
+    			}
+    			
+    			if (debugPrint) {
+    			    Util.nicePrint("External Data for signing MAC_3 to produce Signature_or_MAC_3", externalData);
     			}
     			
 				signatureOrMac3 = Util.computeSignature(session.getIdCred(), externalData, mac3, identityKey);
