@@ -164,13 +164,22 @@ public class EdhocLayer extends AbstractLayer {
 				Util.nicePrint("EDHOC+OSCORE: CIPHERTEXT_3", ciphertext3);
 				Util.nicePrint("EDHOC+OSCORE: Old OSCORE payload", oldOscorePayload);
 			}
-				
+			
 			// Build the new OSCORE payload, as a CBOR sequence of two elements
 			// 1. A CBOR byte string, i.e. EDHOC CIPHERTEXT_3 as is
 			// 2. A CBOR byte string, with value the original OSCORE payload
 			byte[] ciphertext3CBOR = CBORObject.FromObject(ciphertext3).EncodeToBytes();
 			byte[] oldOscorePayloadCBOR = CBORObject.FromObject(oldOscorePayload).EncodeToBytes();
-			byte[] newOscorePayload = new byte[ciphertext3CBOR.length + oldOscorePayloadCBOR.length];
+			
+			int newOscorePayloadLength = ciphertext3CBOR.length + oldOscorePayloadCBOR.length;
+			
+			// Abort if the payload of the EDHOC+OSCORE request exceeds MAX_UNFRAGMENTED_SIZE
+			int maxUnfragmentedSize = ctx.getMaxUnfragmentedSize();
+		    if (newOscorePayloadLength > maxUnfragmentedSize) {
+		        throw new IllegalStateException("The payload of the EDHOC+OSCORE request is exceeding MAX_UNFRAGMENTED_SIZE");
+		    }
+			
+			byte[] newOscorePayload = new byte[newOscorePayloadLength];
 			System.arraycopy(ciphertext3CBOR, 0, newOscorePayload, 0, ciphertext3CBOR.length);
 			System.arraycopy(oldOscorePayloadCBOR, 0, newOscorePayload, ciphertext3CBOR.length, oldOscorePayloadCBOR.length);
 			
