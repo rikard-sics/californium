@@ -143,24 +143,24 @@ public class MessageProcessorTest {
 		
 		// Test from the point of view of the Initiator as Client
 		Assert.assertEquals(Constants.EDHOC_MESSAGE_1, MessageProcessor.messageType(
-				message1, true, edhocSessions, connectionIdInitiator, appProfile));
+								message1, true, edhocSessions, connectionIdInitiator));
 		sessionInitiator.setCurrentStep(Constants.EDHOC_SENT_M1);
 		Assert.assertEquals(Constants.EDHOC_MESSAGE_2, MessageProcessor.messageType(
-				message2, false, edhocSessions,connectionIdInitiator, appProfile));
+								message2, false, edhocSessions,connectionIdInitiator));
 		sessionInitiator.setCurrentStep(Constants.EDHOC_AFTER_M3);
 		Assert.assertEquals(Constants.EDHOC_MESSAGE_3, MessageProcessor.messageType(
-				message3, true, edhocSessions, connectionIdInitiator, appProfile));
+								message3, true, edhocSessions, connectionIdInitiator));
 
 		
 		// Test from the point of view of the Responder as Server
 		Assert.assertEquals(Constants.EDHOC_MESSAGE_1, MessageProcessor.messageType(
-				message1, true, edhocSessions, null, appProfile));
+								message1, true, edhocSessions, null));
 		sessionResponder.setCurrentStep(Constants.EDHOC_AFTER_M2);
 		Assert.assertEquals(Constants.EDHOC_MESSAGE_2, MessageProcessor.messageType(
-				message2, false, edhocSessions, connectionIdResponder, appProfile));
+								message2, false, edhocSessions, connectionIdResponder));
 		sessionResponder.setCurrentStep(Constants.EDHOC_SENT_M2);
 		Assert.assertEquals(Constants.EDHOC_MESSAGE_3, MessageProcessor.messageType(
-				message3, true, edhocSessions, null, appProfile));
+								message3, true, edhocSessions, null));
 		
 		
 		// Error message is not from test vectors
@@ -175,13 +175,13 @@ public class MessageProcessorTest {
 		errorMessageList.add(errMsg);
 		byte[] errorMessage = Util.buildCBORSequence(errorMessageList);
 		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
-				            errorMessage, false, edhocSessions, connectionIdInitiator, appProfile));
+				            	errorMessage, false, edhocSessions, connectionIdInitiator));
 		errorMessageList = new ArrayList<CBORObject>();
 		errorMessageList.add(CBORObject.FromObject(Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE));
 		errorMessageList.add(suitesR);
 		errorMessage = Util.buildCBORSequence(errorMessageList);
 		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
-				            errorMessage, false, edhocSessions, connectionIdInitiator, appProfile));
+				            	errorMessage, false, edhocSessions, connectionIdInitiator));
 		
 		// Test for an EDHOC error message as an incoming/outgoing request
 		errorMessageList = new ArrayList<CBORObject>();
@@ -190,14 +190,14 @@ public class MessageProcessorTest {
 		errorMessageList.add(errMsg);
 		errorMessage = Util.buildCBORSequence(errorMessageList);
 		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
-				            errorMessage, true, edhocSessions, connectionIdInitiator, appProfile));
+				            	errorMessage, true, edhocSessions, connectionIdInitiator));
 		errorMessageList = new ArrayList<CBORObject>();
 		errorMessageList.add(cX);
 		errorMessageList.add(CBORObject.FromObject(Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE));
 		errorMessageList.add(suitesR);
 		errorMessage = Util.buildCBORSequence(errorMessageList);
 		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
-				            errorMessage, true, edhocSessions, connectionIdInitiator, appProfile));
+				            	errorMessage, true, edhocSessions, connectionIdInitiator));
 		
 	}
 
