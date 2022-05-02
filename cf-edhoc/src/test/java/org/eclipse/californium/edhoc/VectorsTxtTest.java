@@ -22,9 +22,11 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.californium.cose.KeyKeys;
@@ -185,7 +187,7 @@ public class VectorsTxtTest {
 	private void testWriteMessage1Vector(int index) {
 
 		// Set up the session to use
-		OneKey ltk = Util.generateKeyPair(KeyKeys.OKP_Ed25519.AsInt32()); // Dummy
+		OneKey identityKey = Util.generateKeyPair(KeyKeys.OKP_Ed25519.AsInt32()); // Dummy
 		boolean initiator = true;
 		int methodCorr = methodCorrList.get(index);
 		CBORObject connectionId = connectionIdList.get(index);
@@ -199,7 +201,7 @@ public class VectorsTxtTest {
 		// Just for method compatibility; it is not used for EDHOC Message 1
 		byte[] idCredKid = new byte[] {(byte) 0x24};
 		CBORObject idCred = Util.buildIdCredKid(idCredKid);
-		byte[] cred = Util.buildCredRawPublicKey(ltk, "");
+		byte[] cred = Util.buildCredRawPublicKey(identityKey, "");
 
 		// Set the application profile
 		// - Supported authentication methods
@@ -224,8 +226,15 @@ public class VectorsTxtTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
-		EdhocSession session = new EdhocSession(initiator, true, methodCorr, connectionId, ltk,
-				                                idCred, cred, cipherSuites, appProfile, edp, db);
+		Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
+		Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
+		Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
+		keyPairs.put(Integer.valueOf(Constants.CURVE_Ed25519), identityKey);
+		creds.put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(cred));
+		idCreds.put(Integer.valueOf(Constants.CURVE_Ed25519), idCred);
+		
+		EdhocSession session = new EdhocSession(initiator, true, methodCorr, connectionId, keyPairs,
+				                                idCreds, creds, cipherSuites, appProfile, edp, db);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = initiatorEphemeralPrivateList.get(index);

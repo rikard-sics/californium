@@ -102,12 +102,20 @@ public class MessageProcessorTest {
 		// ID_CRED_I for the identity key of the initiator, built from the x509 certificate using x5t
 		CBORObject idCredI = Util.buildIdCredX5t(serializedCertInit);
 
+		Map<Integer, OneKey> keyPairsI = new HashMap<Integer, OneKey>();
+	    Map<Integer, CBORObject> credsI = new HashMap<Integer, CBORObject>();
+	    Map<Integer, CBORObject> idCredsI = new HashMap<Integer, CBORObject>();
+	    keyPairsI.put(Integer.valueOf(Constants.CURVE_Ed25519), identityKeyInit);
+	    credsI.put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(credI));
+	    idCredsI.put(Integer.valueOf(Constants.CURVE_Ed25519), idCredI);
+
 		// Create the session for the Initiator (with only the minimal set of information required for this test)
 		boolean initiator = true;
 		KissEDP edp = new KissEDP();
 		HashMapCtxDB db = new HashMapCtxDB();
 		EdhocSession sessionInitiator = new EdhocSession(initiator, true, method, connectionIdInitiator,
-												identityKeyInit, idCredI, credI, supportedCipherSuites, appProfile, edp, db);
+														 keyPairsI, idCredsI, credsI, supportedCipherSuites,
+														 appProfile, edp, db);
 		
 		edhocSessions.put(CBORObject.FromObject(connectionIdInitiator), sessionInitiator);
 
@@ -131,12 +139,20 @@ public class MessageProcessorTest {
 		// ID_CRED_R for the identity key of the Responder, built from the x509 certificate using x5t
 		CBORObject idCredR = Util.buildIdCredX5t(serializedCertResp);
 
+		Map<Integer, OneKey> keyPairsR = new HashMap<Integer, OneKey>();
+	    Map<Integer, CBORObject> credsR = new HashMap<Integer, CBORObject>();
+	    Map<Integer, CBORObject> idCredsR = new HashMap<Integer, CBORObject>();
+	    keyPairsR.put(Integer.valueOf(Constants.CURVE_Ed25519), identityKeyResp);
+	    credsR.put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(credR));
+	    idCredsR.put(Integer.valueOf(Constants.CURVE_Ed25519), idCredR);
+		
 		// Create the session for the Responder (with only the minimal set of information required for this test)
 		initiator = false;
 		KissEDP edp2 = new KissEDP();
 		HashMapCtxDB db2 = new HashMapCtxDB();
 		EdhocSession sessionResponder = new EdhocSession(initiator, true, method, connectionIdResponder,
-												identityKeyResp, idCredR, credR, supportedCipherSuites, appProfile, edp2, db2);
+														 keyPairsR, idCredsR, credsR, supportedCipherSuites,
+														 appProfile, edp2, db2);
 		
 		edhocSessions.put(CBORObject.FromObject(connectionIdResponder), sessionResponder);
 		
@@ -224,7 +240,11 @@ public class MessageProcessorTest {
 		List<Integer> cipherSuites = new ArrayList<Integer>();
 		cipherSuites.add(0);
 		
-		OneKey ltk = Util.generateKeyPair(KeyKeys.OKP_X25519.AsInt32());
+		// The identity key of the Initiator
+		byte[] privateIdentityKeyBytes = Utils.hexToBytes("4c5b25878f507c6b9dae68fbd4fd3ff997533db0af00b25d324ea28e6c213bc8");
+		byte[] publicIdentityKeyBytes = Utils.hexToBytes("ed06a8ae61a829ba5fa54525c9d07f48dd44a302f43e0f23d8cc20b73085141e");
+		OneKey identityKey = SharedSecretCalculation.buildEd25519OneKey(privateIdentityKeyBytes, publicIdentityKeyBytes);
+		
 		CBORObject[] ead1 = null;
 		
 		// Just for method compatibility; it is not used for EDHOC Message 1
@@ -260,8 +280,15 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
-		EdhocSession session = new EdhocSession(initiator, true, method, connectionId, ltk,
-				                                idCred, cred, cipherSuites, appProfile, edp, db);
+		Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
+		Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
+		Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
+		keyPairs.put(Integer.valueOf(Constants.CURVE_Ed25519), identityKey);
+		creds.put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(cred));
+		idCreds.put(Integer.valueOf(Constants.CURVE_Ed25519), idCred);
+	    
+		EdhocSession session = new EdhocSession(initiator, true, method, connectionId, keyPairs,
+				                                idCreds, creds, cipherSuites, appProfile, edp, db);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = Utils.hexToBytes("892ec28e5cb6669108470539500b705e60d008d347c5817ee9f3327c8a87bb03");
@@ -408,9 +435,16 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
+		Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
+		Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
+		Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
+		keyPairs.put(Integer.valueOf(Constants.CURVE_Ed25519), identityKey);
+		creds.put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(credR));
+		idCreds.put(Integer.valueOf(Constants.CURVE_Ed25519), idCredR);
+	    
 		// Create the session
-		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdResponder,
-												identityKey, idCredR, credR, supportedCipherSuites, appProfile, edp, db);
+		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdResponder, keyPairs,
+												idCreds, creds, supportedCipherSuites, appProfile, edp, db);
 
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -418,6 +452,9 @@ public class MessageProcessorTest {
 
 		// Set the selected cipher suite
 		session.setSelectedCiphersuite(0);
+		
+		// Set the asymmetric key pair, CRED and ID_CRED of the Initiator to use in this session
+    	session.setAuthenticationCredential();
 		
 		// Set the Connection Identifier of the peer
 		session.setPeerConnectionId(connectionIdInitiator);
@@ -531,9 +568,16 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
+		Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
+		Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
+		Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
+		keyPairs.put(Integer.valueOf(Constants.CURVE_Ed25519), identityKey);
+		creds.put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(credI));
+		idCreds.put(Integer.valueOf(Constants.CURVE_Ed25519), idCredI);
+		
 		// Create the session
-		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdInitiator,
-												identityKey, idCredI, credI, supportedCipherSuites, appProfile, edp, db);
+		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdInitiator, keyPairs,
+												idCreds, creds, supportedCipherSuites, appProfile, edp, db);
 
 		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -541,6 +585,9 @@ public class MessageProcessorTest {
 
 		// Set the selected cipher suite
 		session.setSelectedCiphersuite(0);
+		
+		// Set the asymmetric key pair, CRED and ID_CRED of the Initiator to use in this session
+		session.setAuthenticationCredential();
 		
 		// Set the Connection Identifier of the peer
 		session.setPeerConnectionId(connectionIdResponder);
@@ -696,11 +743,17 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
+		Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
+		Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
+		Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
+		keyPairs.put(Integer.valueOf(Constants.CURVE_Ed25519), identityKey);
+		creds.put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(credR));
+		idCreds.put(Integer.valueOf(Constants.CURVE_Ed25519), idCredR);
+		
 		// Create the session
-		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdResponder,
-												identityKey, idCredR, credR, supportedCipherSuites, appProfile, edp, db);
+		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdResponder, keyPairs,
+												idCreds, creds, supportedCipherSuites, appProfile, edp, db);
 
-		session.setSelectedCiphersuite(0);
 		session.setCurrentStep(Constants.EDHOC_AFTER_M3);
 		
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
@@ -709,6 +762,9 @@ public class MessageProcessorTest {
 
 		// Set the selected cipher suite
 		session.setSelectedCiphersuite(0);
+		
+		// Set the asymmetric key pair, CRED and ID_CRED of the Initiator to use in this session
+		session.setAuthenticationCredential();
 		
 		// Set the Connection Identifier of the peer
 		session.setPeerConnectionId(connectionIdInitiator);
@@ -754,7 +810,7 @@ public class MessageProcessorTest {
 		List<Integer> cipherSuitesPeer = new ArrayList<Integer>();
 		cipherSuitesPeer.add(2);
 		
-		OneKey ltk = Util.generateKeyPair(KeyKeys.EC2_P256.AsInt32());
+		OneKey identityKey = Util.generateKeyPair(KeyKeys.EC2_P256.AsInt32());
 		CBORObject[] ead1 = null;
 		
 		// Just for method compatibility; it is not used for EDHOC Message 1
@@ -790,8 +846,15 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
-		EdhocSession session = new EdhocSession(initiator, true, method, connectionId, ltk,
-				                                idCred, cred, supportedCipherSuites, appProfile, edp, db);
+		Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
+		Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
+		Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
+		keyPairs.put(Integer.valueOf(Constants.CURVE_P256), identityKey);
+		creds.put(Integer.valueOf(Constants.CURVE_P256), CBORObject.FromObject(cred));
+		idCreds.put(Integer.valueOf(Constants.CURVE_P256), idCred);
+		
+		EdhocSession session = new EdhocSession(initiator, true, method, connectionId, keyPairs,
+				                                idCreds, creds, supportedCipherSuites, appProfile, edp, db);
 
 		// Force the early knowledge of cipher suites supported by the other peer
 		session.setPeerSupportedCipherSuites(cipherSuitesPeer);
@@ -897,9 +960,16 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
+		Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
+		Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
+		Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
+		keyPairs.put(Integer.valueOf(Constants.CURVE_P256), identityKey);
+		creds.put(Integer.valueOf(Constants.CURVE_P256), CBORObject.FromObject(credR));
+		idCreds.put(Integer.valueOf(Constants.CURVE_P256), idCredR);
+		
 		// Create the session
-		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdResponder,
-												identityKey, idCredR, credR, supportedCipherSuites, appProfile, edp, db);
+		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdResponder, keyPairs,
+												idCreds, creds, supportedCipherSuites, appProfile, edp, db);
 
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -907,6 +977,9 @@ public class MessageProcessorTest {
 
 		// Set the selected cipher suite
 		session.setSelectedCiphersuite(2);
+		
+		// Set the asymmetric key pair, CRED and ID_CRED of the Initiator to use in this session
+		session.setAuthenticationCredential();
 		
 		// Set the Connection Identifier of the peer
 		session.setPeerConnectionId(connectionIdInitiator);
@@ -1022,9 +1095,16 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
+		Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
+		Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
+		Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
+		keyPairs.put(Integer.valueOf(Constants.CURVE_P256), identityKey);
+		creds.put(Integer.valueOf(Constants.CURVE_P256), CBORObject.FromObject(credI));
+		idCreds.put(Integer.valueOf(Constants.CURVE_P256), idCredI);
+		
 		// Create the session
-		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdInitiator,
-												identityKey, idCredI, credI, supportedCipherSuites, appProfile, edp, db);
+		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdInitiator, keyPairs,
+												idCreds, creds, supportedCipherSuites, appProfile, edp, db);
 
 		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -1032,6 +1112,9 @@ public class MessageProcessorTest {
 
 		// Set the selected cipher suite
 		session.setSelectedCiphersuite(2);
+		
+		// Set the asymmetric key pair, CRED and ID_CRED of the Initiator to use in this session
+		session.setAuthenticationCredential();
 		
 		// Set the Connection Identifier of the peer
 		session.setPeerConnectionId(connectionIdResponder);
@@ -1189,9 +1272,16 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
+		Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
+		Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
+		Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
+		keyPairs.put(Integer.valueOf(Constants.CURVE_P256), identityKey);
+		creds.put(Integer.valueOf(Constants.CURVE_P256), CBORObject.FromObject(credR));
+		idCreds.put(Integer.valueOf(Constants.CURVE_P256), idCredR);
+		
 		// Create the session
-		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdResponder,
-												identityKey, idCredR, credR, supportedCipherSuites, appProfile, edp, db);
+		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdResponder, keyPairs,
+												idCreds, creds, supportedCipherSuites, appProfile, edp, db);
 
 		session.setCurrentStep(Constants.EDHOC_AFTER_M3);
 		
