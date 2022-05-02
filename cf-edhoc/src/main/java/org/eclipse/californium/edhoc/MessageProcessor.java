@@ -1997,6 +1997,16 @@ public class MessageProcessor {
     		return null;
     	}
     	
+		// Set the selected cipher suite
+    	session.setSelectedCiphersuite(selectedSuite);
+    	
+		// Set the asymmetric key pair, CRED and ID_CRED of the Initiator to use in this session
+    	session.setAuthenticationCredential();
+    	
+    	// Set the ephemeral keys of the Initiator to use in this session
+    	if (session.getEphemeralKey() == null)
+    		session.setEphemeralKey();
+    	
     	CBORObject suitesI;
     	if (selectedSuite == preferredSuite) {
     		// SUITES_I is only the selected suite, as a CBOR integer
@@ -2020,13 +2030,7 @@ public class MessageProcessor {
         	byte[] objBytes = suitesI.EncodeToBytes();
         	Util.nicePrint("SUITES_I", objBytes);
         }
-    	                
-        // The session has been reused, e.g. following an EDHOC Error Message
-        // Generate new ephemeral key, according to the (updated) selected ciphersuite
-        if (session.getFirstUse() == false) {
-        	session.setEphemeralKey();
-        }
-        
+
         // G_X as a CBOR byte string
         CBORObject gX = null;
 		if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_1) {
@@ -2058,9 +2062,6 @@ public class MessageProcessor {
         	System.out.println("===================================");
         }
 		
-        // Mark the session as used - Possible reusage will trigger the generation of new ephemeral keys
-        session.setAsUsed();
-        
         
     	/* Prepare EDHOC Message 1 */
     	
@@ -2101,6 +2102,10 @@ public class MessageProcessor {
 	        	Util.nicePrint("C_I", cI.EncodeToBytes());
 	        }
 		}
+		
+    	// Set the ephemeral keys of the Responder to use in this session
+    	if (session.getEphemeralKey() == null)
+    		session.setEphemeralKey();
 		
 		// G_Y as a CBOR byte string
 		int selectedSuite = session.getSelectedCiphersuite();
@@ -2781,9 +2786,9 @@ public class MessageProcessor {
     /**
      *  Create a new EDHOC session as an Initiator
      * @param method   The authentication method signaled by the Initiator
-     * @param keyPair   The identity key of the Initiator
-     * @param idCredI   ID_CRED_I for the identity key of the Initiator
-     * @param credI   CRED_I for the identity key of the Initiator, as the serialization of a CBOR object
+     * @param keyPairs   The key pairs of the Initiator (one per supported curve)
+     * @param idCreds   The identifiers of the authentication credentials of the Initiator
+     * @param creds    The authentication credentials of the Initiator (one per supported curve), as the serialization of a CBOR object
      * @param supportedCipherSuites   The list of ciphersuites supported by the Initiator
      * @param usedConnectionIds   The set of allocated Connection Identifiers for the Initiator
      * @param appProfile   The application profile used for this session
@@ -2791,12 +2796,10 @@ public class MessageProcessor {
      * @param db   The database of OSCORE Security Contexts
      * @return  The newly created EDHOC session
      */
-	public static EdhocSession createSessionAsInitiator(int method, OneKey keyPair,
-												        CBORObject idCredI, byte[] credI,
-			  									        List<Integer> supportedCiphersuites,
-			  									        Set<CBORObject> usedConnectionIds,
-			  									        AppProfile appProfile,
-			  									        EDP edp, HashMapCtxDB db) {
+	public static EdhocSession createSessionAsInitiator(int method, Map<Integer, OneKey> keyPairs,
+														Map<Integer, CBORObject> idCreds, Map<Integer, CBORObject> creds,
+			  									        List<Integer> supportedCiphersuites, Set<CBORObject> usedConnectionIds,
+			  									        AppProfile appProfile, EDP edp, HashMapCtxDB db) {
 		
 		CBORObject connectionId = null;
 		HashMapCtxDB oscoreDB = (appProfile.getUsedForOSCORE() == true) ? db : null;
@@ -2806,8 +2809,8 @@ public class MessageProcessor {
 		// connectionId = CBORObject.FromObject(new byte[] {(byte) 0x1c});
 		
 		usedConnectionIds.add(connectionId);
-        EdhocSession mySession = new EdhocSession(true, true, method, connectionId, keyPair,
-        										  idCredI, credI, supportedCiphersuites, appProfile, edp, oscoreDB);
+        EdhocSession mySession = new EdhocSession(true, true, method, connectionId, keyPairs, idCreds, creds,
+        										  supportedCiphersuites, appProfile, edp, oscoreDB);
 		
 		return mySession;
 		
@@ -2816,9 +2819,9 @@ public class MessageProcessor {
     /**
      *  Create a new EDHOC session as a Responder
      * @param message1   The payload of the received EDHOC Message 1
-     * @param keyPair   The identity key of the Responder
-     * @param idCredR   ID_CRED_R for the identity key of the Responder
-     * @param credR   CRED_R for the identity key of the Responder, as the serialization of a CBOR object
+     * @param keyPairs   The key pairs of the Responder (one per supported curve)
+     * @param idCreds   The identifiers of the authentication credentials of the Responder
+     * @param creds    The authentication credentials of the Responder (one per supported curve), as the serialization of a CBOR object
      * @param supportedCipherSuites   The list of ciphersuites supported by the Responder
      * @param usedConnectionIds   The set of allocated Connection Identifiers for the Responder
      * @param appProfile   The application profile used for this session
@@ -2826,12 +2829,10 @@ public class MessageProcessor {
      * @param db   The database of OSCORE Security Contexts
      * @return  The newly created EDHOC session
      */
-	public static EdhocSession createSessionAsResponder(byte[] message1, boolean isReq, OneKey keyPair,
-			                                            CBORObject idCredR, byte[] credR,
-			  									        List<Integer> supportedCiphersuites,
-			  									        Set<CBORObject> usedConnectionIds,
-			  									        AppProfile appProfile,
-			  									        EDP edp, HashMapCtxDB db) {
+	public static EdhocSession createSessionAsResponder(byte[] message1, boolean isReq, Map<Integer, OneKey> keyPairs,
+														Map<Integer, CBORObject> idCreds, Map<Integer, CBORObject> creds,
+			  									        List<Integer> supportedCiphersuites, Set<CBORObject> usedConnectionIds,
+			  									        AppProfile appProfile, EDP edp, HashMapCtxDB db) {
 		
 		CBORObject[] objectListMessage1 = CBORObject.DecodeSequenceFromBytes(message1);
 		int index = -1;
@@ -2875,16 +2876,19 @@ public class MessageProcessor {
 		// connectionId = CBORObject.FromObject(new byte[] {(byte) 0x1d});
 		
 		usedConnectionIds.add(connectionId);
-		EdhocSession mySession = new EdhocSession(false, isReq, method, connectionId, keyPair,
-												  idCredR, credR, supportedCiphersuites, appProfile, edp, oscoreDB);
+		EdhocSession mySession = new EdhocSession(false, isReq, method, connectionId, keyPairs, idCreds, creds,
+												  supportedCiphersuites, appProfile, edp, oscoreDB);
 		
 		// Set the selected cipher suite
 		mySession.setSelectedCiphersuite(selectedCipherSuite);
 		
+		// Set the asymmetric key pair, CRED and ID_CRED of the Responder to use in this session
+		mySession.setAuthenticationCredential();
+		
 		// Set the Connection Identifier of the peer
 		mySession.setPeerConnectionId(cI);
 		
-		// Set the ephemeral public key of the initiator
+		// Set the ephemeral public key of the Initiator
 		OneKey peerEphemeralKey = null;
 		
 		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_1) {
@@ -3068,7 +3072,7 @@ public class MessageProcessor {
             	
             	if (session.isInitiator() == false) {
             		// Use the long-term key of the Responder as private key
-                	OneKey identityKey = session.getLongTermKey();
+                	OneKey identityKey = session.getKeyPair();
                 	
             		// Use the ephemeral key of the Initiator as public key
             		publicKey = session.getPeerEphemeralPublicKey();
@@ -3204,7 +3208,7 @@ public class MessageProcessor {
             		publicKey = session.getPeerEphemeralPublicKey();
             		
             		// Use the long-term key of the Initiator as private key
-            		OneKey identityKey = session.getLongTermKey();
+            		OneKey identityKey = session.getKeyPair();
             		
 	            	if (identityKey.get(KeyKeys.OKP_Curve).AsInt32() == KeyKeys.OKP_Ed25519.AsInt32()) {
 	                	// Convert the identity key from Edward to Montgomery form
@@ -3562,7 +3566,7 @@ public class MessageProcessor {
     	else if (authenticationMethod == Constants.EDHOC_AUTH_METHOD_0 || authenticationMethod == Constants.EDHOC_AUTH_METHOD_2) {
     		// The responder uses signatures as authentication method, then Signature_or_MAC_2 has to be computed
     		try {
-    			OneKey identityKey = session.getLongTermKey();
+    			OneKey identityKey = session.getKeyPair();
     			int selectedCipherSuite = session.getSelectedCiphersuite();
     			
     			// Consistency check of key type and curve against the selected ciphersuite
@@ -3608,7 +3612,7 @@ public class MessageProcessor {
     	else if (authenticationMethod == Constants.EDHOC_AUTH_METHOD_0 || authenticationMethod == Constants.EDHOC_AUTH_METHOD_1) {
     		// The initiator uses signatures as authentication method, then Signature_or_MAC_3 has to be computed
     		try {
-    			OneKey identityKey = session.getLongTermKey();
+    			OneKey identityKey = session.getKeyPair();
     			int selectedCipherSuite = session.getSelectedCiphersuite();
     			
     			// Consistency check of key type and curve against the selected ciphersuite

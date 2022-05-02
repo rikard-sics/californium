@@ -190,9 +190,10 @@ class EdhocResource extends CoapResource {
 					edhocEndpointInfo.getEdp().processEAD1(ead1);
 				}
 				
-				session = MessageProcessor.createSessionAsResponder(message, true, edhocEndpointInfo.getKeyPair(),
-																    edhocEndpointInfo.getIdCred(),
-																    edhocEndpointInfo.getCred(),
+				session = MessageProcessor.createSessionAsResponder(message, true,
+																	edhocEndpointInfo.getKeyPairs(),
+																    edhocEndpointInfo.getIdCreds(),
+																    edhocEndpointInfo.getCreds(),
 																    edhocEndpointInfo.getSupportedCiphersuites(),
 																    edhocEndpointInfo.getUsedConnectionIds(),
 																    appProfile, edhocEndpointInfo.getEdp(),
