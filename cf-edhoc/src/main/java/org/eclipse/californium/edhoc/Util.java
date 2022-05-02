@@ -1252,6 +1252,7 @@ public class Util {
 		idCredElem.Add(truncatedHash);
 		
 		idCred.Add(Constants.COSE_HEADER_PARAM_X5T, idCredElem);
+				
 		return idCred;
 		
 	}

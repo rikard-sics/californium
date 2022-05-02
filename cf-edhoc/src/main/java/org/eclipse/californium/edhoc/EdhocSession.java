@@ -21,7 +21,9 @@ package org.eclipse.californium.edhoc;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.KeyKeys;
@@ -33,18 +35,14 @@ import com.upokecenter.cbor.CBORType;
 
 public class EdhocSession {
 	
-	private boolean firstUse;
-	
-	private boolean initiator;
-	private boolean clientInitiated;
-	private int method;
-	private CBORObject connectionId;
-	private OneKey longTermKey;
-	private CBORObject idCred;
-	private byte[] cred; // This is the serialization of a CBOR object
-	private OneKey ephemeralKey;
-	private List<Integer> supportedCiphersuites;
-	private AppProfile appProfile;
+    // The asymmetric key pairs of this peer (one per supported curve)
+	private Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
+    
+    // The identifiers of the authentication credentials of this peer
+	private Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
+    
+    // The authentication credentials of this peer (one per supported curve)
+	private Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
 	
 	// The processor to use for External Authorization Data.
 	//
@@ -59,13 +57,25 @@ public class EdhocSession {
 	private HashMapCtxDB db;
 	
 	private int currentStep;
+	
+	private boolean initiator;
+	private boolean clientInitiated;
+	private int method;
 	private int selectedCiphersuite;
+	private CBORObject connectionId;
+	private OneKey keyPair;
+	private CBORObject idCred;
+	private byte[] cred; // This is the serialization of a CBOR object
+	private OneKey ephemeralKey;
+	
+	private List<Integer> supportedCiphersuites;
+	private AppProfile appProfile;
 	
 	private CBORObject peerConnectionId;
-	private List<Integer> peerSupportedCiphersuites = null;
 	private CBORObject peerIdCred = null;
 	private OneKey peerLongTermPublicKey = null;
 	private OneKey peerEphemeralPublicKey = null;
+	private List<Integer> peerSupportedCiphersuites = null;
 	
 	// Stored hash of EDHOC Message 1
 	private byte[] hashMessage1 = null;
@@ -86,26 +96,30 @@ public class EdhocSession {
 	// EDHOC message_3 , to be used for building an EDHOC+OSCORE request
 	private byte[] message3 = null;
 	
-	public EdhocSession(boolean initiator, boolean clientInitiated, int method, CBORObject connectionId, OneKey ltk,
-						CBORObject idCred, byte[] cred, List<Integer> cipherSuites,
+	public EdhocSession(boolean initiator, boolean clientInitiated, int method, CBORObject connectionId, Map<Integer, OneKey> keyPairs,
+						Map<Integer, CBORObject> idCreds, Map<Integer, CBORObject> creds, List<Integer> cipherSuites,
 						AppProfile appProfile, EDP edp, HashMapCtxDB db) {
-		
-		this.firstUse = true;
 		
 		this.initiator = initiator;
 		this.clientInitiated = clientInitiated;
 		this.method = method;
 		this.connectionId = connectionId;
-		this.longTermKey = ltk;
-		this.idCred = idCred;
-		this.cred = cred;
+		
+		this.keyPairs = keyPairs;
+		this.idCreds = idCreds;
+		this.creds = creds;
+		
+		this.keyPair = null;
+		this.idCred = null;
+		this.cred = null;
+		this.ephemeralKey = null;
+		
 		this.supportedCiphersuites = cipherSuites;
 		this.appProfile = appProfile;
 		this.edp = edp;
 		this.db = db;
 		
-		this.selectedCiphersuite = supportedCiphersuites.get(0);		
-		setEphemeralKey();
+		this.selectedCiphersuite = -1;
 		
 		this.peerConnectionId = null;
 		
@@ -125,19 +139,6 @@ public class EdhocSession {
 		this.TH2 = null;
 		this.TH3 = null;
 		
-	}
-	
-	/**
-	 */
-	public void setAsUsed() {
-		this.firstUse = false;
-	}
-
-	/**
-	 * @return  True if this is the first use of this session, or false otherwise 
-	 */
-	public boolean getFirstUse() {
-		return this.firstUse;
 	}
 	
 	/**
@@ -169,11 +170,11 @@ public class EdhocSession {
 	}	
 	
 	/**
-	 * @return  the long-term key pair of this peer 
+	 * @return  the key pair of this peer 
 	 */
-	public OneKey getLongTermKey() {
+	public OneKey getKeyPair() {
 		
-		return this.longTermKey;
+		return this.keyPair;
 		
 	}
 	
@@ -193,6 +194,38 @@ public class EdhocSession {
 		
 		return this.cred;
 		
+	}
+	
+	/** 
+	 */
+	public void setAuthenticationCredential() {
+		
+		int curve = 0;
+		
+		if (this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_0 || this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_1) {
+			
+			if (this.method == Constants.EDHOC_AUTH_METHOD_0) {
+				curve = Constants.CURVE_Ed25519;
+			}
+			if (this.method == Constants.EDHOC_AUTH_METHOD_1) {
+				curve = initiator ? Constants.CURVE_Ed25519 : Constants.CURVE_X25519;
+			}
+			if (this.method == Constants.EDHOC_AUTH_METHOD_2) {
+				curve = initiator ? Constants.CURVE_X25519 : Constants.CURVE_Ed25519;
+			}
+			if (this.method == Constants.EDHOC_AUTH_METHOD_3) {
+				curve = Constants.CURVE_X25519;
+			}
+			
+		}
+		if (this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_2 || this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_3) {
+				curve = Constants.CURVE_P256;
+		}
+		
+		this.keyPair = this.keyPairs.get(Integer.valueOf(curve));
+		this.cred = this.creds.get(Integer.valueOf(curve)).GetByteString();
+		this.idCred = this.idCreds.get(Integer.valueOf(curve));
+				
 	}
 	
 	/**
