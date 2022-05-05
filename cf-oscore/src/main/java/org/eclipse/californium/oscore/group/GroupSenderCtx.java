@@ -19,16 +19,14 @@ package org.eclipse.californium.oscore.group;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
-import javax.xml.bind.DatatypeConverter;
-
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.Base64;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ByteId;
 import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSException;
-import org.junit.Assert;
 
 /**
  * Class implementing a Group OSCORE sender context.
@@ -218,14 +216,14 @@ public class GroupSenderCtx extends OSCoreCtx {
 
 		// Print base64 encoded version with both public & private keys
 		byte[] keyObjectBytes = myKey.EncodeToBytes();
-		String base64_encoded = DatatypeConverter.printBase64Binary(keyObjectBytes);
+		String base64_encoded = Base64.encodeBytes(keyObjectBytes);
 		System.out.println("Public & Private: " + base64_encoded);
 
 		// Print base64 encoded version with only public keys
 		OneKey publicKey = myKey.PublicKey();
 
 		keyObjectBytes = publicKey.EncodeToBytes();
-		base64_encoded = DatatypeConverter.printBase64Binary(keyObjectBytes);
+		base64_encoded = Base64.encodeBytes(keyObjectBytes);
 		System.out.println("Public only: " + base64_encoded);
 
 	}
@@ -262,8 +260,7 @@ public class GroupSenderCtx extends OSCoreCtx {
 	public void setRecipientKey(byte[] recipientKey) {
 		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
 		System.err.println("Bad call to setRecipientKey on GroupSenderCtx" + stackTraceElements[2].toString());
-		Assert.fail();
-		Assert.fail();
+		assert (false);
 		super.setRecipientKey(recipientKey);
 	}
 
@@ -300,6 +297,7 @@ public class GroupSenderCtx extends OSCoreCtx {
 	/**
 	 * @return the repipient's identifier
 	 */
+	@Override
 	public byte[] getRecipientId() {
 		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
 		// System.err.println("Bad call to getRecipientId on GroupSenderCtx. " +
@@ -307,7 +305,7 @@ public class GroupSenderCtx extends OSCoreCtx {
 		System.err.println("Bad call to getRecipientId on GroupSenderCtx. " + stackTraceElements[2].toString());
 		// System.err.println("Bad call to getRecipientId on GroupSenderCtx. " +
 		// stackTraceElements[3].toString());
-		Assert.fail();
+		assert (false);
 		return super.getRecipientId();
 	}
 
@@ -317,17 +315,18 @@ public class GroupSenderCtx extends OSCoreCtx {
 	public synchronized int getReceiverSeq() {
 		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
 		System.err.println("Bad call to getReceiverSeq on GroupSenderCtx" + stackTraceElements[2].toString());
-		Assert.fail();
+		assert (false);
 		return super.getLowestRecipientSeq();
 	}
 
 	/**
 	 * @return get the recipient key
 	 */
+	@Override
 	public byte[] getRecipientKey() {
 		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
 		System.err.println("Bad call to getRecipientKey on GroupSenderCtx" + stackTraceElements[2].toString());
-		Assert.fail();
+		assert (false);
 		return super.getRecipientKey();
 	}
 

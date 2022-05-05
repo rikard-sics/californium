@@ -63,16 +63,14 @@ public class KeyRemappingTest {
 	@BeforeClass
 	public static void installCryptoProvider() {
 		Provider EdDSA = new EdDSASecurityProvider();
-		Security.insertProviderAt(EdDSA, 0);
+		Security.insertProviderAt(EdDSA, 1);
 	}
 
 	/**
 	 * Test from values in RFC7748.
-	 * 
-	 * @throws CoseException on error in operations with COSE keys
 	 */
 	@Test
-	public void testRfcVectors() throws CoseException {
+	public void testRfcVectors() {
 		// Define test values x and y from RFC7748. Created as field elements to
 		// use for calculations in the field.
 		BigIntegerFieldElement x = new BigIntegerFieldElement(ed25519Field,
