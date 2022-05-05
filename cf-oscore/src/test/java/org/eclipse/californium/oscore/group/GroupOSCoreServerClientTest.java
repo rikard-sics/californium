@@ -448,6 +448,7 @@ public class GroupOSCoreServerClientTest {
 		assertNotNull("Client received no response", response);
 		System.out.println("client received response");
 		assertEquals(SERVER_RESPONSE, response.advanced().getPayloadString());
+		assertArrayEquals(token, response.advanced().getTokenBytes());
 
 		// Parse the flag byte group bit (expect non-zero value)
 		byte flagByte = response.getOptions().getOscore()[0];
