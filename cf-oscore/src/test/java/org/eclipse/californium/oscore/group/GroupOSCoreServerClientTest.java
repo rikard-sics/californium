@@ -364,17 +364,17 @@ public class GroupOSCoreServerClientTest {
 		// Send a second request first adding the public key of the client to
 		// the server group context. Now it should work successfully.
 
-		Request secondRequest = Request.newGet();
-		secondRequest.setType(Type.NON);
+		Request request2 = Request.newGet();
+		request2.setType(Type.NON);
 		byte[] secondToken = Bytes.createBytes(rand, 8);
-		secondRequest.setToken(secondToken);
-		secondRequest.getOptions().setOscore(Bytes.EMPTY);
+		request2.setToken(secondToken);
+		request2.getOptions().setOscore(Bytes.EMPTY);
 
 		OneKey clientPublicKey = new OneKey(
 				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString))).PublicKey();
 		commonCtx.addPublicKeyForRID(new byte[] { 0x25 }, clientPublicKey);
 
-		response = client.advanced(secondRequest);
+		response = client.advanced(request2);
 		System.out.println("client sent request");
 		System.out.println(Utils.prettyPrint(response));
 
@@ -409,53 +409,38 @@ public class GroupOSCoreServerClientTest {
 		CoapEndpoint clientEndpoint = createClientEndpoint();
 		cleanup.add(clientEndpoint);
 
-		// Remove all client recipient contexts
+		// Retrive common context
 		GroupRecipientCtx clientRecipientCtx1 = (GroupRecipientCtx) dbClient.getContext(new byte[] { 0x77 },
 				context_id);
 		GroupRecipientCtx clientRecipientCtx2 = (GroupRecipientCtx) dbClient.getContext(new byte[] { 0x66 },
 				context_id);
-		GroupCtx commonCtx = clientRecipientCtx1.commonCtx;
+		GroupCtx commonCtx = clientRecipientCtx2.commonCtx;
+
+		// Remove all client recipient contexts
 		// dbClient.removeContext(clientRecipientCtx1);
-		// dbClient.removeContext(clientRecipientCtx2);
+		dbClient.removeContext(clientRecipientCtx2);
 
 		// create request
 		CoapClient client = new CoapClient();
 		client.setEndpoint(clientEndpoint);
-		// // Reduce timeout and disable retransmissions since the first request
-		// // will not get a response
-		client.setTimeout((long) 250);
-		clientEndpoint.getConfig().set(CoapConfig.MAX_RETRANSMIT, 1);
-		//
 		client.setURI(uri);
-		// Request request = Request.newGet();
-		// request.setType(Type.NON);
-		// request.getOptions().setOscore(Bytes.EMPTY);
-		//
-		// // First send a request without adding the public key of the server
-		// to
-		// // the client group context
-		//
-		// // send a request
-		// System.out.println("client will now send request");
-		// CoapResponse response = client.advanced(request);
-		// System.out.println("client sent request");
-		//
-		// // no response will be received for the first request
-		// assertNull(response);
 
-		// Send a second request first adding the public key of the server to
-		// the client group context. Now it should work successfully.
+		// Send a request first adding the public key of the server to
+		// the client group context.
 
 		OneKey serverPublicKey = new OneKey(
 				CBORObject.DecodeFromBytes(Base64.decode(serverKeyString))).PublicKey();
 		commonCtx.addPublicKeyForRID(new byte[] { 0x77 }, serverPublicKey);
 
 		// create request
-		Request secondRequest = Request.newGet();
-		secondRequest.setType(Type.NON);
-		secondRequest.getOptions().setOscore(Bytes.EMPTY);
+		Request request = Request.newGet();
+		request.setType(Type.NON);
+		byte[] token = Bytes.createBytes(rand, 8);
+		request.setToken(token);
+		request.setMID(rand.nextInt(1000));
+		request.getOptions().setOscore(Bytes.EMPTY);
 
-		CoapResponse response = client.advanced(secondRequest);
+		CoapResponse response = client.advanced(request);
 		System.out.println("client sent request");
 		System.out.println(Utils.prettyPrint(response));
 
@@ -463,6 +448,7 @@ public class GroupOSCoreServerClientTest {
 		assertNotNull("Client received no response", response);
 		System.out.println("client received response");
 		assertEquals(SERVER_RESPONSE, response.advanced().getPayloadString());
+		assertArrayEquals(token, response.advanced().getTokenBytes());
 
 		// Parse the flag byte group bit (expect non-zero value)
 		byte flagByte = response.getOptions().getOscore()[0];
@@ -527,6 +513,15 @@ public class GroupOSCoreServerClientTest {
 
 		// Set up OSCORE context information for request (client)
 		setClientContext();
+
+		// Add also the recipient context for RID 0x77
+		GroupRecipientCtx clientRecipientCtx2 = (GroupRecipientCtx) dbClient.getContext(new byte[] { 0x66 },
+				context_id);
+		GroupCtx commonCtx = clientRecipientCtx2.commonCtx;
+		byte[] rid1 = new byte[] { 0x77 };
+		OneKey serverPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(serverKeyString))).PublicKey();
+		commonCtx.addRecipientCtx(rid1, REPLAY_WINDOW, serverPublicKey);
+		dbClient.addContext(uri, commonCtx);
 
 		// Create client endpoint with OSCORE context DB
 		CoapEndpoint clientEndpoint = createClientEndpoint();
@@ -606,13 +601,13 @@ public class GroupOSCoreServerClientTest {
 		GroupSenderCtx clientCtx = (GroupSenderCtx) dbClient.getContext(uri);
 		clientCtx.setSenderSeq(0); // Reset sender seq.
 
-		Request secondRequest = Request.newGet();
-		secondRequest.setType(Type.NON);
+		Request request2 = Request.newGet();
+		request2.setType(Type.NON);
 		byte[] secondToken = Bytes.createBytes(rand, 8);
-		secondRequest.setToken(secondToken);
-		secondRequest.getOptions().setOscore(Bytes.EMPTY);
+		request2.setToken(secondToken);
+		request2.getOptions().setOscore(Bytes.EMPTY);
 
-		response = client.advanced(secondRequest);
+		response = client.advanced(request2);
 		System.out.println("client sent request");
 		System.out.println(Utils.prettyPrint(response));
 
@@ -750,7 +745,6 @@ public class GroupOSCoreServerClientTest {
 	public void setClientContext() throws OSException, CoseException, IOException {
 		// Set up OSCORE context information for request (client)
 		byte[] sid = new byte[] { 0x25 };
-		byte[] rid1 = new byte[] { 0x77 };
 		byte[] rid2 = new byte[] { 0x66 };
 
 		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
@@ -760,9 +754,6 @@ public class GroupOSCoreServerClientTest {
 				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
 		commonCtx.addSenderCtx(sid, clientFullKey);
 
-		OneKey serverPublicKey = new OneKey(
-				CBORObject.DecodeFromBytes(Base64.decode(serverKeyString))).PublicKey();
-		commonCtx.addRecipientCtx(rid1, REPLAY_WINDOW, serverPublicKey);
 		commonCtx.addRecipientCtx(rid2, REPLAY_WINDOW, null);
 
 		dbClient.addContext(uri, commonCtx);
@@ -820,6 +811,11 @@ public class GroupOSCoreServerClientTest {
 	 */
 	public void createServer(boolean responsePartialIV, boolean pairwiseResponse)
 			throws OSException, CoseException, IOException {
+		// Do not create server if it is already running
+		if (serverEndpoint != null) {
+			// TODO: Check if this ever happens
+			return;
+		}
 
 		setServerContext(responsePartialIV, pairwiseResponse);
 
