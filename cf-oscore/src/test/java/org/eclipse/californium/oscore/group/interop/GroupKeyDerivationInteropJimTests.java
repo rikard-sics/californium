@@ -22,7 +22,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -44,7 +43,6 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.UdpEndpointContext;
-import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.HashMapCtxDB;
@@ -57,6 +55,7 @@ import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
 import org.eclipse.californium.oscore.group.OneKeyDecoder;
 import org.eclipse.californium.oscore.group.SharedSecretCalculation;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -142,7 +141,7 @@ public class GroupKeyDerivationInteropJimTests {
 		deriveContexts();
 		// Install EdDSA cryptographic provider
 		Provider EdDSA = new EdDSASecurityProvider();
-		Security.insertProviderAt(EdDSA, 0);
+		Security.insertProviderAt(EdDSA, 1);
 
 		OneKey senderKey = new OneKey(OneKeyDecoder.parseDiagnosticToCbor(senderFullKeyEddsa));
 		OneKey recipient1Key = new OneKey(OneKeyDecoder.parseDiagnosticToCbor(recipient1PublicKeyEddsa));
@@ -173,11 +172,9 @@ public class GroupKeyDerivationInteropJimTests {
 	 * Create a message based on Jim Test 1 Entity 1 data.
 	 * 
 	 * @throws OSException on failure
-	 * @throws IOException on failure
-	 * @throws ConnectorException on failure
 	 */
 	@Test
-	public void testMessage1Creation() throws OSException, ConnectorException, IOException {
+	public void testMessage1Creation() throws OSException {
 		String destinationUri = "coap://127.0.0.1/test";
 
 		GroupCtx groupCtxJim = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256, null);
@@ -215,11 +212,9 @@ public class GroupKeyDerivationInteropJimTests {
 	 * bytes
 	 * 
 	 * @throws OSException on failure
-	 * @throws IOException on failure
-	 * @throws ConnectorException on failure
 	 */
 	@Test
-	public void testMessage1CreationAlt() throws OSException, ConnectorException, IOException {
+	public void testMessage1CreationAlt() throws OSException {
 		// String destinationUri = "coap://127.0.0.1/test";
 
 		GroupCtx groupCtxJim = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256, null);
@@ -243,6 +238,7 @@ public class GroupKeyDerivationInteropJimTests {
 		if (mess instanceof Request) {
 			r = (Request) mess;
 		}
+		Assert.assertNotNull(r);
 		r.getOptions().setOscore(Bytes.EMPTY);
 
 		db.addContext(r.getURI(), groupCtxJim);
@@ -272,8 +268,6 @@ public class GroupKeyDerivationInteropJimTests {
 	@Ignore // TODO: Recalculate
 	public void testMessage1Reception() throws OSException {
 
-		int seq = 1;
-
 		// --- Try decryption ---
 		String destinationUri = "coap://127.0.0.1/test";
 
@@ -302,6 +296,7 @@ public class GroupKeyDerivationInteropJimTests {
 		OSCoreCtxDB db = new HashMapCtxDB();
 		// FIXME: //recipientCtx.setReceiverSeq(seq - 1);
 		db.addContext(recipientCtx);
+		Assert.assertNotNull(r);
 		r.setSourceContext(new UdpEndpointContext(new InetSocketAddress(0)));
 
 		System.out.println("Common IV: " + Utils.bytesToHex(recipientCtx.getCommonIV()));
@@ -593,7 +588,7 @@ public class GroupKeyDerivationInteropJimTests {
 
 		// Install EdDSA cryptographic provider
 		Provider EdDSA = new EdDSASecurityProvider();
-		Security.insertProviderAt(EdDSA, 0);
+		Security.insertProviderAt(EdDSA, 1);
 
 		GroupCtx groupCtxEddsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.EDDSA, null);
 

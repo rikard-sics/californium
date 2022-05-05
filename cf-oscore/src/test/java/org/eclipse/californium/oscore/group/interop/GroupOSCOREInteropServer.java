@@ -165,7 +165,7 @@ public class GroupOSCOREInteropServer {
 
 		// Install cryptographic providers
 		Provider EdDSA = new EdDSASecurityProvider();
-		Security.insertProviderAt(EdDSA, 0);
+		Security.insertProviderAt(EdDSA, 1);
 
 		// Set sender & receiver keys for countersignatures
 		sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_1_KEY_ECDSA);
@@ -290,6 +290,7 @@ public class GroupOSCOREInteropServer {
 
 	private static CoapEndpoint createEndpoints(Configuration config) throws UnknownHostException {
 
+		@SuppressWarnings("unused")
 		InetSocketAddress localAddress;
 		// Set a random loopback address in 127.0.0.0/8
 		if (randomUnicastIP) {
