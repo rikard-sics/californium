@@ -65,6 +65,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -363,11 +364,17 @@ public class GroupOSCoreServerClientTest {
 		// Send a second request first adding the public key of the client to
 		// the server group context. Now it should work successfully.
 
+		Request secondRequest = Request.newGet();
+		secondRequest.setType(Type.NON);
+		byte[] secondToken = Bytes.createBytes(rand, 8);
+		secondRequest.setToken(secondToken);
+		secondRequest.getOptions().setOscore(Bytes.EMPTY);
+
 		OneKey clientPublicKey = new OneKey(
 				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(clientKeyString))).PublicKey();
 		commonCtx.addPublicKeyForRID(new byte[] { 0x25 }, clientPublicKey);
 
-		response = client.advanced(request);
+		response = client.advanced(secondRequest);
 		System.out.println("client sent request");
 		System.out.println(Utils.prettyPrint(response));
 
@@ -375,7 +382,7 @@ public class GroupOSCoreServerClientTest {
 		assertNotNull("Client received no response", response);
 		System.out.println("client received response");
 		assertEquals(SERVER_RESPONSE, response.advanced().getPayloadString());
-		assertArrayEquals(token, response.advanced().getTokenBytes());
+		assertArrayEquals(secondToken, response.advanced().getTokenBytes());
 
 		// Parse the flag byte group bit (expect non-zero value)
 		byte flagByte = response.getOptions().getOscore()[0];
@@ -603,7 +610,13 @@ public class GroupOSCoreServerClientTest {
 		GroupSenderCtx clientCtx = (GroupSenderCtx) dbClient.getContext(uri);
 		clientCtx.setSenderSeq(0); // Reset sender seq.
 
-		response = client.advanced(request);
+		Request secondRequest = Request.newGet();
+		secondRequest.setType(Type.NON);
+		byte[] secondToken = Bytes.createBytes(rand, 8);
+		secondRequest.setToken(secondToken);
+		secondRequest.getOptions().setOscore(Bytes.EMPTY);
+
+		response = client.advanced(secondRequest);
 		System.out.println("client sent request");
 		System.out.println(Utils.prettyPrint(response));
 
@@ -611,7 +624,7 @@ public class GroupOSCoreServerClientTest {
 		assertNotNull("Client received no response", response);
 		System.out.println("client received response");
 		assertEquals("Replay detected", response.advanced().getPayloadString());
-		assertArrayEquals(token, response.advanced().getTokenBytes());
+		assertArrayEquals(secondToken, response.advanced().getTokenBytes());
 	}
 
 	/**
