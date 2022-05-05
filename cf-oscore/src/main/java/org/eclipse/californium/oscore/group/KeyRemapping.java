@@ -68,7 +68,7 @@ public class KeyRemapping {
 	 */
 	public static void main(String args[]) throws Exception {
 		Provider EdDSA = new EdDSASecurityProvider();
-		Security.insertProviderAt(EdDSA, 0);
+		Security.insertProviderAt(EdDSA, 1);
 
 		// Define test values x and y from RFC7748. Created as field elements to
 		// use for calculations in the field.
@@ -233,10 +233,8 @@ public class KeyRemapping {
 	 * 
 	 * @param key the COSE key
 	 * @return the y point coordinate
-	 * 
-	 * @throws CoseException if retrieving public key part fails
 	 */
-	static FieldElement extractCOSE_y(OneKey key) throws CoseException {
+	static FieldElement extractCOSE_y(OneKey key) {
 
 		// Retrieve X value from COSE key as byte array
 		byte[] X_value = key.get(KeyKeys.OKP_X).GetByteString();

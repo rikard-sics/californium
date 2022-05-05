@@ -51,6 +51,7 @@ import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
 import org.eclipse.californium.oscore.group.OneKeyDecoder;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -146,7 +147,7 @@ public class GroupInteropRikardEcdsaTests {
 	}
 
 	@Test
-	public void testContextsAlgCountersign() throws OSException {
+	public void testContextsAlgCountersign() {
 		// Check that the contexts use the correct countersignature algorithms
 
 		assertEquals(AlgorithmID.ECDSA_256, senderCtxEcdsa.getAlgSign());
@@ -156,7 +157,7 @@ public class GroupInteropRikardEcdsaTests {
 	}
 
 	@Test
-	public void testSenderKeys() throws OSException {
+	public void testSenderKeys() {
 
 		// Check that they match expected value
 		byte[] expectedSenderKey = Utils.hexToBytes("e39a0c7c77b43f03b4b39ab9a268699f");
@@ -164,7 +165,7 @@ public class GroupInteropRikardEcdsaTests {
 	}
 
 	@Test
-	public void testRecipientKeys() throws OSException {
+	public void testRecipientKeys() {
 
 		// Check that they match expected value
 		byte[] expectedRecipient1Key = Utils.hexToBytes("af2a1300a5e95788b356336eeecd2b92");
@@ -176,7 +177,7 @@ public class GroupInteropRikardEcdsaTests {
 
 	@Test
 	@Ignore // FIXME
-	public void testPairwiseRecipientKeys() throws OSException {
+	public void testPairwiseRecipientKeys() {
 		byte[] recipient1EcdsaPairwiseKey = recipient1CtxEcdsa.getPairwiseRecipientKey();
 		byte[] recipient2EcdsaPairwiseKey = recipient2CtxEcdsa.getPairwiseRecipientKey();
 
@@ -195,7 +196,7 @@ public class GroupInteropRikardEcdsaTests {
 
 	@Test
 	@Ignore // FIXME
-	public void testPairwiseSenderKeys() throws OSException {
+	public void testPairwiseSenderKeys() {
 		byte[] senderEcdsaPairwiseKey1 = senderCtxEcdsa.getPairwiseSenderKey(rid1);
 		byte[] senderEcdsaPairwiseKey2 = senderCtxEcdsa.getPairwiseSenderKey(rid2);
 
@@ -248,8 +249,6 @@ public class GroupInteropRikardEcdsaTests {
 
 		db.purge();
 
-		int seq = 0;
-
 		// --- Try decryption ---
 		String destinationUri = "coap://127.0.0.1/test";
 
@@ -279,6 +278,7 @@ public class GroupInteropRikardEcdsaTests {
 		OSCoreCtxDB db = new HashMapCtxDB();
 		// FIXME: //recipientCtx.setReceiverSeq(seq - 1);
 		db.addContext(recipientCtx);
+		Assert.assertNotNull(r);
 		r.setSourceContext(new UdpEndpointContext(new InetSocketAddress(0)));
 
 		System.out.println("Common IV: " + Utils.bytesToHex(recipientCtx.getCommonIV()));
@@ -338,10 +338,9 @@ public class GroupInteropRikardEcdsaTests {
 	 * Derives OSCORE context information for tests
 	 *
 	 * @throws OSException on failure to create the contexts
-	 * @throws CoseException on failure to create the contexts
 	 */
 	@BeforeClass
-	public static void deriveContexts() throws OSException, CoseException {
+	public static void deriveContexts() throws OSException {
 
 		// Create context using ECDSA_256
 

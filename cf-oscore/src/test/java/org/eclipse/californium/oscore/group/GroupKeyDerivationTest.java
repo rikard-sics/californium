@@ -21,6 +21,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
+import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
@@ -30,13 +31,12 @@ import java.security.interfaces.ECPublicKey;
 import java.util.Arrays;
 
 import javax.crypto.KeyAgreement;
-import javax.xml.bind.DatatypeConverter;
-
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
+import org.eclipse.californium.elements.util.Base64;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSException;
@@ -84,7 +84,7 @@ public class GroupKeyDerivationTest {
 
 	// Key for the GM
 	private static String gmPublicKeyString = "pQF4GmNvYXBzOi8vbXlzaXRlLmV4YW1wbGUuY29tAmxncm91cG1hbmFnZXIDeBpjb2FwczovL2RvbWFpbi5leGFtcGxlLm9yZwQaq5sVTwihAaQDJwEBIAYhWCDN4+/TvD+ZycnuIQQVxsulUGG1BG6WO4pYyRQ6YRZkcg==";
-	private static byte[] gmPublicKey = DatatypeConverter.parseBase64Binary(gmPublicKeyString);
+	private static byte[] gmPublicKey;
 
 	// Keys for sender and recipients
 	private static String senderFullKeyEcdsa256 = "pgECI1gglNzgRMuHlfN2GkwWR4NdyWHxtOLRb2MS91r01cs9U40iWCAZbxTFset0hvgSSr5uXDkA8XW1yDxdTu73tsjbHZZwIiFYIPK3Cfi/BEfAQ4AflFK1LHPTDDAjAGZliQ0TJsQWcDbAIAEDJg==";
@@ -113,14 +113,14 @@ public class GroupKeyDerivationTest {
 	public void testEDDSAKeys() throws Exception {
 		// Install EdDSA cryptographic provider
 		Provider EdDSA = new EdDSASecurityProvider();
-		Security.insertProviderAt(EdDSA, 0);
+		Security.insertProviderAt(EdDSA, 1);
 
 		OneKey senderKey = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(senderFullKeyEddsa)));
+				CBORObject.DecodeFromBytes(Base64.decode(senderFullKeyEddsa)));
 		OneKey recipient1Key = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(recipient1PublicKeyEddsa)));
+				CBORObject.DecodeFromBytes(Base64.decode(recipient1PublicKeyEddsa)));
 		OneKey recipient2Key = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(recipient2PublicKeyEddsa)));
+				CBORObject.DecodeFromBytes(Base64.decode(recipient2PublicKeyEddsa)));
 
 		// Check the properties of the decoded keys
 
@@ -144,11 +144,11 @@ public class GroupKeyDerivationTest {
 	public void testECDSA256Keys() throws Exception {
 
 		OneKey senderKey = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(senderFullKeyEcdsa256)));
+				CBORObject.DecodeFromBytes(Base64.decode(senderFullKeyEcdsa256)));
 		OneKey recipient1Key = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(recipient1PublicKeyEcdsa256)));
+				CBORObject.DecodeFromBytes(Base64.decode(recipient1PublicKeyEcdsa256)));
 		OneKey recipient2Key = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(recipient2PublicKeyEcdsa256)));
+				CBORObject.DecodeFromBytes(Base64.decode(recipient2PublicKeyEcdsa256)));
 
 		// Check the properties of the decoded keys
 
@@ -169,7 +169,7 @@ public class GroupKeyDerivationTest {
 	}
 
 	@Test
-	public void testContextsAlgCountersign() throws OSException {
+	public void testContextsAlgCountersign() {
 		// Check that the contexts use the correct countersignature algorithms
 
 		assertEquals(AlgorithmID.ECDSA_256, senderCtxEcdsa.getAlgSign());
@@ -182,7 +182,7 @@ public class GroupKeyDerivationTest {
 	}
 
 	@Test
-	public void testSenderKeys() throws OSException {
+	public void testSenderKeys() {
 		// Check that sender keys match in both contexts
 		assertArrayEquals(senderCtxEcdsa.getSenderKey(), senderCtxEddsa.getSenderKey());
 
@@ -192,7 +192,7 @@ public class GroupKeyDerivationTest {
 	}
 
 	@Test
-	public void testRecipientKeys() throws OSException {
+	public void testRecipientKeys() {
 		// Check that recipient keys match in both contexts
 		assertArrayEquals(recipient1CtxEcdsa.getRecipientKey(), recipient1CtxEddsa.getRecipientKey());
 		assertArrayEquals(recipient2CtxEcdsa.getRecipientKey(), recipient2CtxEddsa.getRecipientKey());
@@ -207,7 +207,7 @@ public class GroupKeyDerivationTest {
 
 	@Test
 	@Ignore // FIXME
-	public void testPairwiseRecipientKeys() throws OSException {
+	public void testPairwiseRecipientKeys() {
 		byte[] recipient1EcdsaPairwiseKey = recipient1CtxEcdsa.getPairwiseRecipientKey();
 		byte[] recipient2EcdsaPairwiseKey = recipient2CtxEcdsa.getPairwiseRecipientKey();
 
@@ -233,7 +233,7 @@ public class GroupKeyDerivationTest {
 
 	@Test
 	@Ignore // FIXME
-	public void testPairwiseSenderKeys() throws OSException {
+	public void testPairwiseSenderKeys() {
 		byte[] senderEcdsaPairwiseKey1 = senderCtxEcdsa.getPairwiseSenderKey(rid1);
 		byte[] senderEcdsaPairwiseKey2 = senderCtxEcdsa.getPairwiseSenderKey(rid2);
 
@@ -310,9 +310,12 @@ public class GroupKeyDerivationTest {
 	 *
 	 * @throws OSException on failure to create the contexts
 	 * @throws CoseException on failure to create the contexts
+	 * @throws IOException on failure to decode GM public key
 	 */
 	@BeforeClass
-	public static void deriveContexts() throws OSException, CoseException {
+	public static void deriveContexts() throws OSException, CoseException, IOException {
+
+		gmPublicKey = Base64.decode(gmPublicKeyString);
 
 		// Create context using ECDSA_256
 
@@ -320,13 +323,13 @@ public class GroupKeyDerivationTest {
 				gmPublicKey);
 
 		OneKey senderFullKey = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(senderFullKeyEcdsa256)));
+				CBORObject.DecodeFromBytes(Base64.decode(senderFullKeyEcdsa256)));
 		groupCtxEcdsa.addSenderCtx(sid, senderFullKey);
 
 		OneKey recipient1PublicKey = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(recipient1PublicKeyEcdsa256)));
+				CBORObject.DecodeFromBytes(Base64.decode(recipient1PublicKeyEcdsa256)));
 		OneKey recipient2PublicKey = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(recipient2PublicKeyEcdsa256)));
+				CBORObject.DecodeFromBytes(Base64.decode(recipient2PublicKeyEcdsa256)));
 		groupCtxEcdsa.addRecipientCtx(rid1, REPLAY_WINDOW, recipient1PublicKey);
 		groupCtxEcdsa.addRecipientCtx(rid2, REPLAY_WINDOW, recipient2PublicKey);
 
@@ -345,18 +348,18 @@ public class GroupKeyDerivationTest {
 
 		// Install EdDSA cryptographic provider
 		Provider EdDSA = new EdDSASecurityProvider();
-		Security.insertProviderAt(EdDSA, 0);
+		Security.insertProviderAt(EdDSA, 1);
 
 		GroupCtx groupCtxEddsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.EDDSA,
 				gmPublicKey);
 
-		senderFullKey = new OneKey(CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(senderFullKeyEddsa)));
+		senderFullKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(senderFullKeyEddsa)));
 		groupCtxEddsa.addSenderCtx(sid, senderFullKey);
 
 		recipient1PublicKey = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(recipient1PublicKeyEddsa)));
+				CBORObject.DecodeFromBytes(Base64.decode(recipient1PublicKeyEddsa)));
 		recipient2PublicKey = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(recipient2PublicKeyEddsa)));
+				CBORObject.DecodeFromBytes(Base64.decode(recipient2PublicKeyEddsa)));
 		groupCtxEddsa.addRecipientCtx(rid1, REPLAY_WINDOW, recipient1PublicKey);
 		groupCtxEddsa.addRecipientCtx(rid2, REPLAY_WINDOW, recipient2PublicKey);
 

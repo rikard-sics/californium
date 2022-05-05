@@ -21,7 +21,6 @@ import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSException;
-import org.junit.Assert;
 
 /**
  * Class implementing a Group OSCORE Recipient context.
@@ -186,7 +185,7 @@ public class GroupRecipientCtx extends OSCoreCtx {
 	public OneKey getPrivateKey() {
 		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
 		System.err.println("Bad call to getPrivateKey on GroupRecipientCtx" + stackTraceElements[2].toString());
-		Assert.fail();
+		assert (false);
 		return null;
 	}
 
@@ -197,7 +196,7 @@ public class GroupRecipientCtx extends OSCoreCtx {
 	public synchronized int getSenderSeq() {
 		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
 		System.err.println("Bad call to getSenderSeq on GroupRecipientCtx" + stackTraceElements[2].toString());
-		Assert.fail();
+		assert (false);
 		return sender_seq;
 	}
 
@@ -209,7 +208,7 @@ public class GroupRecipientCtx extends OSCoreCtx {
 		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
 		System.err.println("Bad call to getSenderKey on GroupRecipientCtx" + stackTraceElements[2].toString());
 		System.out.println("Bad call to getSenderKey");
-		Assert.fail();
+		assert (false);
 		return sender_key;
 	}
 

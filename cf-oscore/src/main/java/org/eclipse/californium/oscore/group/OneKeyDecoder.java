@@ -1,11 +1,12 @@
 package org.eclipse.californium.oscore.group;
 
-import javax.xml.bind.DatatypeConverter;
+
 
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.Base64;
 
 import com.upokecenter.cbor.CBORObject;
 
@@ -62,7 +63,7 @@ public class OneKeyDecoder {
 
 				// Convert to base64
 				byte[] array = Utils.hexToBytes(arrayString);
-				String arrayBase64 = DatatypeConverter.printBase64Binary(array);
+				String arrayBase64 = Base64.encodeBytes(array);
 
 				// Change it to base64url encoding
 				arrayBase64 = arrayBase64.replace("+", "-");
@@ -172,7 +173,7 @@ public class OneKeyDecoder {
 
 		OneKey key = parseDiagnostic(keyString);
 		byte[] keyObjectBytes = key.EncodeToBytes();
-		String base64Encoded = DatatypeConverter.printBase64Binary(keyObjectBytes);
+		String base64Encoded = Base64.encodeBytes(keyObjectBytes);
 
 		return base64Encoded;
 	}
