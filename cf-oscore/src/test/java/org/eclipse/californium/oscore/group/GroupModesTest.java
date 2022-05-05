@@ -28,8 +28,6 @@ import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
-import java.util.ArrayList;
 import java.util.Arrays;
 import org.eclipse.californium.TestTools;
 import org.eclipse.californium.core.CoapClient;
@@ -52,12 +50,9 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.EndpointContext;
 import org.eclipse.californium.elements.MapBasedEndpointContext;
-import org.eclipse.californium.elements.UDPConnector;
-import org.eclipse.californium.elements.UdpMulticastConnector;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
 import org.eclipse.californium.elements.util.Base64;
 import org.eclipse.californium.elements.util.Bytes;
-import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
@@ -70,8 +65,6 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
@@ -87,8 +80,6 @@ import com.upokecenter.cbor.CBORObject;
  * 
  */
 public class GroupModesTest {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(GroupModesTest.class);
 
 	/**
 	 * File name for network configuration.
