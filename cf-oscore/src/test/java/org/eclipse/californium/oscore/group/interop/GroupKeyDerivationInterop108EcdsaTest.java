@@ -135,7 +135,7 @@ public class GroupKeyDerivationInterop108EcdsaTest {
 	public void testEDDSAKeys() throws Exception {
 		// Install EdDSA cryptographic provider
 		Provider EdDSA = new EdDSASecurityProvider();
-		Security.insertProviderAt(EdDSA, 0);
+		Security.insertProviderAt(EdDSA, 1);
 
 		OneKey senderKey = new OneKey(OneKeyDecoder.parseDiagnosticToCbor(senderFullKeyEddsa));
 		OneKey recipient1Key = new OneKey(OneKeyDecoder.parseDiagnosticToCbor(recipient1PublicKeyEddsa));
@@ -191,7 +191,7 @@ public class GroupKeyDerivationInterop108EcdsaTest {
 	}
 
 	@Test
-	public void testContextsAlgCountersign() throws OSException {
+	public void testContextsAlgCountersign() {
 		// Check that the contexts use the correct countersignature algorithms
 
 		assertEquals(AlgorithmID.ECDSA_256, senderCtxEcdsa.getAlgSign());
@@ -204,7 +204,7 @@ public class GroupKeyDerivationInterop108EcdsaTest {
 	}
 
 	@Test
-	public void testSenderKeys() throws OSException {
+	public void testSenderKeys() {
 		// Check that sender keys match in both contexts
 		assertArrayEquals(senderCtxEcdsa.getSenderKey(), senderCtxEddsa.getSenderKey());
 
@@ -214,7 +214,7 @@ public class GroupKeyDerivationInterop108EcdsaTest {
 	}
 
 	@Test
-	public void testRecipientKeys() throws OSException {
+	public void testRecipientKeys() {
 		// Check that recipient keys match in both contexts
 		assertArrayEquals(recipient1CtxEcdsa.getRecipientKey(), recipient1CtxEddsa.getRecipientKey());
 		assertArrayEquals(recipient2CtxEcdsa.getRecipientKey(), recipient2CtxEddsa.getRecipientKey());
@@ -228,7 +228,7 @@ public class GroupKeyDerivationInterop108EcdsaTest {
 	}
 
 	@Test
-	public void testPairwiseRecipientKeys() throws OSException {
+	public void testPairwiseRecipientKeys() {
 		byte[] recipient1EcdsaPairwiseKey = recipient1CtxEcdsa.getPairwiseRecipientKey();
 		byte[] recipient2EcdsaPairwiseKey = recipient2CtxEcdsa.getPairwiseRecipientKey();
 
@@ -253,7 +253,7 @@ public class GroupKeyDerivationInterop108EcdsaTest {
 	}
 
 	@Test
-	public void testPairwiseSenderKeys() throws OSException {
+	public void testPairwiseSenderKeys() {
 		byte[] senderEcdsaPairwiseKey1 = senderCtxEcdsa.getPairwiseSenderKey(rid1);
 		byte[] senderEcdsaPairwiseKey2 = senderCtxEcdsa.getPairwiseSenderKey(rid2);
 
@@ -363,7 +363,7 @@ public class GroupKeyDerivationInterop108EcdsaTest {
 
 		// Install EdDSA cryptographic provider
 		Provider EdDSA = new EdDSASecurityProvider();
-		Security.insertProviderAt(EdDSA, 0);
+		Security.insertProviderAt(EdDSA, 1);
 
 		GroupCtx groupCtxEddsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.EDDSA, null);
 

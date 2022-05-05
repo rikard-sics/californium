@@ -55,6 +55,7 @@ import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
 import org.eclipse.californium.oscore.group.OneKeyDecoder;
+import org.junit.Assert;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
@@ -178,7 +179,7 @@ public class GroupOSCOREInteropClientNonTransparentBWAllMcast {
 
 		// Install cryptographic providers
 		Provider EdDSA = new EdDSASecurityProvider();
-		Security.insertProviderAt(EdDSA, 0);
+		Security.insertProviderAt(EdDSA, 1);
 		// InstallCryptoProviders.generateCounterSignKey();
 
 		// Add private & public keys for sender & receiver(s)
@@ -294,6 +295,7 @@ public class GroupOSCOREInteropClientNonTransparentBWAllMcast {
 		}
 
 		// Use non-confirmable for multicast requests
+		Assert.assertNotNull(multicastRequest);
 		if (destinationIP.isMulticastAddress()) {
 			multicastRequest.setType(Type.NON);
 		} else {
@@ -347,6 +349,7 @@ public class GroupOSCOREInteropClientNonTransparentBWAllMcast {
 			}
 
 			// Use non-confirmable for multicast requests
+			Assert.assertNotNull(multicastRequest);
 			if (destinationIP.isMulticastAddress()) {
 				multicastRequest.setType(Type.NON);
 			} else {
