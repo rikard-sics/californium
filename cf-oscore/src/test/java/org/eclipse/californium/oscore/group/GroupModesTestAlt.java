@@ -49,7 +49,6 @@ import org.eclipse.californium.elements.MapBasedEndpointContext;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
 import org.eclipse.californium.elements.util.Base64;
 import org.eclipse.californium.elements.util.Bytes;
-import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
@@ -506,121 +505,6 @@ public class GroupModesTestAlt {
 		}
 
 		return true;
-	}
-
-	/**
-	 * From MulticastTestServer
-	 * 
-	 * @param server
-	 * @param unicastPort
-	 * @param multicastPort
-	 * @param config
-	 */
-	private static void createEndpoints(CoapServer server, int unicastPort, int multicastPort, Configuration config) {
-		// UDPConnector udpConnector = new UDPConnector(new
-		// InetSocketAddress(unicastPort));
-		// udpConnector.setReuseAddress(true);
-		// CoapEndpoint coapEndpoint = new
-		// CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector).build();
-
-		NetworkInterface networkInterface = NetworkInterfacesUtil.getMulticastInterface();
-		if (networkInterface == null) {
-			LOGGER.warn("No multicast network-interface found!");
-			throw new Error("No multicast network-interface found!");
-		}
-		LOGGER.info("Multicast Network Interface: {}", networkInterface.getDisplayName());
-
-		UdpMulticastConnector.Builder builder = new UdpMulticastConnector.Builder();
-
-		if (!ipv4 && NetworkInterfacesUtil.isAnyIpv6()) {
-			Inet6Address ipv6 = NetworkInterfacesUtil.getMulticastInterfaceIpv6();
-			LOGGER.info("Multicast: IPv6 Network Address: {}", StringUtil.toString(ipv6));
-			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv6, unicastPort), config);
-			udpConnector.setReuseAddress(true);
-			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector)
-					.setCustomCoapStackArgument(dbServer).build();
-
-			builder = new UdpMulticastConnector.Builder().setLocalAddress(CoAP.MULTICAST_IPV6_SITELOCAL, multicastPort)
-					.addMulticastGroup(CoAP.MULTICAST_IPV6_SITELOCAL, networkInterface);
-			createReceiver(builder, udpConnector);
-
-			/*
-			 * https://bugs.openjdk.java.net/browse/JDK-8210493 link-local
-			 * multicast is broken
-			 */
-			builder = new UdpMulticastConnector.Builder().setLocalAddress(CoAP.MULTICAST_IPV6_LINKLOCAL, multicastPort)
-					.addMulticastGroup(CoAP.MULTICAST_IPV6_LINKLOCAL, networkInterface);
-			createReceiver(builder, udpConnector);
-
-			server.addEndpoint(coapEndpoint);
-			LOGGER.info("IPv6 - multicast");
-		}
-
-		if (ipv4 && NetworkInterfacesUtil.isAnyIpv4()) {
-			Inet4Address ipv4 = NetworkInterfacesUtil.getMulticastInterfaceIpv4();
-			LOGGER.info("Multicast: IPv4 Network Address: {}", StringUtil.toString(ipv4));
-			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv4, unicastPort), config);
-			udpConnector.setReuseAddress(true);
-			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector)
-					.setCustomCoapStackArgument(dbServer).build();
-
-			builder = new UdpMulticastConnector.Builder().setLocalAddress(CoAP.MULTICAST_IPV4, multicastPort)
-					.addMulticastGroup(CoAP.MULTICAST_IPV4, networkInterface);
-			createReceiver(builder, udpConnector);
-
-			Inet4Address broadcast = NetworkInterfacesUtil.getBroadcastIpv4();
-			if (broadcast != null) {
-				// windows seems to fail to open a broadcast receiver
-				builder = new UdpMulticastConnector.Builder().setLocalAddress(broadcast, multicastPort);
-				createReceiver(builder, udpConnector);
-			}
-			server.addEndpoint(coapEndpoint);
-			LOGGER.info("IPv4 - multicast");
-		}
-		UDPConnector udpConnector = new UDPConnector(
-				new InetSocketAddress(InetAddress.getLoopbackAddress(), unicastPort), config);
-		udpConnector.setReuseAddress(true);
-		CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector)
-				.setCustomCoapStackArgument(dbServer).build();
-		server.addEndpoint(coapEndpoint);
-		LOGGER.info("loopback");
-	}
-
-	/**
-	 * From MulticastTestServer
-	 * 
-	 * @param builder
-	 * @param connector
-	 */
-	private static void createReceiver(UdpMulticastConnector.Builder builder, UDPConnector connector) {
-		UdpMulticastConnector multicastConnector = builder.setMulticastReceiver(true).build();
-		multicastConnector.setLoopbackMode(LOOPBACK);
-		try {
-			multicastConnector.start();
-		} catch (BindException ex) {
-			// binding to multicast seems to fail on windows
-			if (builder.getLocalAddress().getAddress().isMulticastAddress()) {
-				int port = builder.getLocalAddress().getPort();
-				builder.setLocalPort(port);
-				multicastConnector = builder.build();
-				multicastConnector.setLoopbackMode(LOOPBACK);
-				try {
-					multicastConnector.start();
-				} catch (IOException e) {
-					e.printStackTrace();
-					multicastConnector = null;
-				}
-			} else {
-				ex.printStackTrace();
-				multicastConnector = null;
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			multicastConnector = null;
-		}
-		if (multicastConnector != null && connector != null) {
-			connector.addMulticastReceiver(multicastConnector);
-		}
 	}
 
 }
