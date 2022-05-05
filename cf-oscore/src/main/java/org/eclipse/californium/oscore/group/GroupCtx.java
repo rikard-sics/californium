@@ -85,7 +85,7 @@ public class GroupCtx {
 
 	boolean pairwiseModeResponses = false;
 	boolean pairwiseModeRequests = false;
-
+	
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 	
 	/**

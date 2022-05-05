@@ -90,6 +90,7 @@ public class GroupOSCORESenderDeterministic {
 	 */
 	private static DefinitionsProvider DEFAULTS = new DefinitionsProvider() {
 
+
 		@Override
 		public void applyDefinitions(Configuration config) {
 			config.set(CoapConfig.MULTICAST_BASE_MID, 65000);
