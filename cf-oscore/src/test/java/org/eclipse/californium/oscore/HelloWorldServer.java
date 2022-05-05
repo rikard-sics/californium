@@ -17,7 +17,6 @@
 package org.eclipse.californium.oscore;
 
 import org.eclipse.californium.core.CoapExchange;
-import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.Response;
@@ -47,11 +46,11 @@ public class HelloWorldServer {
 	public static void main(String[] args) throws OSException {
 		OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, null, MAX_UNFRAGMENTED_SIZE);
 		db.addContext(uriLocal, ctx);
-		// OSCoreCoapStackFactory.useAsDefault(db);
+		OSCoreCoapStackFactory.useAsDefault(db);
 
 		final CoapServer server = new CoapServer(5683);
 
-		CoapResource hello = new CoapResource("hello", true) {
+		OSCoreResource hello = new OSCoreResource("hello", true) {
 
 			@Override
 			public void handleGET(CoapExchange exchange) {
@@ -62,7 +61,7 @@ public class HelloWorldServer {
 			}
 		};
 
-		CoapResource hello1 = new CoapResource("1", true) {
+		OSCoreResource hello1 = new OSCoreResource("1", true) {
 
 			@Override
 			public void handleGET(CoapExchange exchange) {
@@ -70,7 +69,7 @@ public class HelloWorldServer {
 				Response r = new Response(ResponseCode.CONTENT);
 				r.setPayload("Hello World!");
 				exchange.respond(r);
-				// server.destroy();
+				server.destroy();
 			}
 		};
 
