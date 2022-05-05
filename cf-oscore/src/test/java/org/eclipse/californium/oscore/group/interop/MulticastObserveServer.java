@@ -24,14 +24,11 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
-import java.net.UnknownHostException;
 import java.security.Provider;
 import java.security.Security;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import javax.xml.bind.DatatypeConverter;
 
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
@@ -45,6 +42,7 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.UDPConnector;
 import org.eclipse.californium.elements.UdpMulticastConnector;
+import org.eclipse.californium.elements.util.Base64;
 import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
@@ -119,20 +117,20 @@ public class MulticastObserveServer {
 	private static CoapServer server;
 
 	public static void main(String[] args)
-			throws InterruptedException, UnknownHostException, CoseException, OSException {
+			throws InterruptedException, CoseException, OSException, IOException {
 
 		// If OSCORE is being used
 		if (useOSCORE) {
 
 			// Install cryptographic providers
 			Provider EdDSA = new EdDSASecurityProvider();
-			Security.insertProviderAt(EdDSA, 0);
+			Security.insertProviderAt(EdDSA, 1);
 
 			// Set sender & receiver keys for countersignatures
 			sid_private_key = new OneKey(
-					CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(sid_private_key_string)));
+					CBORObject.DecodeFromBytes(Base64.decode(sid_private_key_string)));
 			rid1_public_key = new OneKey(
-					CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(rid1_public_key_string)));
+					CBORObject.DecodeFromBytes(Base64.decode(rid1_public_key_string)));
 
 			// Check command line arguments (flag to use different sid and sid
 			// key)
@@ -141,7 +139,7 @@ public class MulticastObserveServer {
 				sid = new byte[] { 0x77 };
 				sid_private_key_string = "pQMnAQEgBiFYIBBbjGqMiAGb8MNUWSk0EwuqgAc5nMKsO+hFiEYT1bouI1gge/Yvdn7Rz0xgkR/En9/Mub1HzH6fr0HLZjadXIUIsjk=";
 				sid_private_key = new OneKey(
-						CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(sid_private_key_string)));
+						CBORObject.DecodeFromBytes(Base64.decode(sid_private_key_string)));
 			} else {
 				System.out.println("Starting with sid 0x52.");
 			}
@@ -164,10 +162,8 @@ public class MulticastObserveServer {
 
 	/**
 	 * Creates server with resources to test Observe functionality
-	 * 
-	 * @throws InterruptedException if resource update task fails
 	 */
-	public static void createServer() throws InterruptedException {
+	public static void createServer() {
 
 		Random rand = new Random();
 		final int serverID = rand.nextInt(100);

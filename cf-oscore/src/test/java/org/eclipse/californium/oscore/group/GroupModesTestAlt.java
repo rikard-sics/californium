@@ -21,24 +21,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import java.io.File;
 import java.io.IOException;
-import java.net.BindException;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import javax.xml.bind.DatatypeConverter;
-
 import org.eclipse.californium.TestTools;
 import org.eclipse.californium.core.CoapClient;
-import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.CoapServer;
-import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
@@ -56,11 +46,9 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.EndpointContext;
 import org.eclipse.californium.elements.MapBasedEndpointContext;
-import org.eclipse.californium.elements.UDPConnector;
-import org.eclipse.californium.elements.UdpMulticastConnector;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
+import org.eclipse.californium.elements.util.Base64;
 import org.eclipse.californium.elements.util.Bytes;
-import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
@@ -68,14 +56,12 @@ import org.eclipse.californium.oscore.OSCoreEndpointContextInfo;
 import org.eclipse.californium.oscore.OSException;
 import org.eclipse.californium.rule.CoapNetworkRule;
 import org.eclipse.californium.rule.CoapThreadsRule;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.upokecenter.cbor.CBORObject;
 
 /**
@@ -90,8 +76,6 @@ import com.upokecenter.cbor.CBORObject;
  * 
  */
 public class GroupModesTestAlt {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(GroupModesTestAlt.class);
 
 	/**
 	 * File name for network configuration.
@@ -112,15 +96,6 @@ public class GroupModesTestAlt {
 		}
 
 	};
-
-	// Use IPv4
-	private static boolean ipv4 = true;
-	private static final boolean LOOPBACK = false;
-
-	/**
-	 * Time to wait for replies to the multicast request
-	 */
-	private static final int HANDLER_TIMEOUT = 1000;
 
 	@ClassRule
 	public static CoapNetworkRule network = new CoapNetworkRule(CoapNetworkRule.Mode.DIRECT,
@@ -157,12 +132,14 @@ public class GroupModesTestAlt {
 			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
 	private final static byte[] context_id = { 0x74, 0x65, 0x73, 0x74, 0x74, 0x65, 0x73, 0x74 };
 
+	private byte[] clientSenderId = new byte[] { 0x44 };
+
 	// Group OSCORE specific values for the countersignature (ECDSA 256)
 	private final static AlgorithmID algCountersign = AlgorithmID.ECDSA_256;
 
 	// Key for the GM
 	private static String gmPublicKeyString = "pQF4GmNvYXBzOi8vbXlzaXRlLmV4YW1wbGUuY29tAmxncm91cG1hbmFnZXIDeBpjb2FwczovL2RvbWFpbi5leGFtcGxlLm9yZwQaq5sVTwihAaQDJwEBIAYhWCDN4+/TvD+ZycnuIQQVxsulUGG1BG6WO4pYyRQ6YRZkcg==";
-	private static byte[] gmPublicKey = DatatypeConverter.parseBase64Binary(gmPublicKeyString);
+	private static byte[] gmPublicKey;
 
 	// Keys for client and server (ECDSA full private and public keys)
 	private static String clientKeyString = "pgECI1gg2qPzgLjNqAaJWnjh9trtVjX2Gp2mbzyAQLSJt9LD2j8iWCDe8qCLkQ59ZOIwmFVk2oGtfoz4epMe/Fg2nvKQwkQ+XiFYIKb0PXRXX/6hU45EpcXUAQPufU03fkYA+W6gPoiZ+d0YIAEDJg==";
@@ -172,16 +149,26 @@ public class GroupModesTestAlt {
 
 	private String multicastUri;
 	private String unicastUri;
+	private static CoapServer server;
 
 	@Before
-	public void init() {
+	public void init() throws IOException {
 		EndpointManager.clear();
+		dbClient.purge();
+		dbServer.purge();
+
+		gmPublicKey = Base64.decode(gmPublicKeyString);
 	}
 
 	// Use the OSCORE stack factory
 	@BeforeClass
 	public static void setStackFactory() {
 		OSCoreCoapStackFactory.useAsDefault(null); // TODO: Better way?
+	}
+
+	@After
+	public void shutdownServer() {
+		server.destroy();
 	}
 
 	/* --- Client tests follow --- */
@@ -220,15 +207,7 @@ public class GroupModesTestAlt {
 		// multicastUri));
 
 		// sends a multicast request
-		MultiCoapHandler handler = new MultiCoapHandler();
-		client.advanced(handler, request);
-		while (handler.waitOn(HANDLER_TIMEOUT)) {
-			// Wait for responses
-		}
-
-		// check the response
-		List<CoapResponse> responsesList = handler.getResponses();
-		CoapResponse response = responsesList.get(0);
+		CoapResponse response = client.advanced(request);
 
 		assertNotNull("Client received no response", response);
 		System.out.println("client received response");
@@ -272,15 +251,7 @@ public class GroupModesTestAlt {
 		request.getOptions().setOscore(OptionEncoder.set(true, multicastUri, new byte[] { 0x77 }));
 
 		// sends a multicast request
-		MultiCoapHandler handler = new MultiCoapHandler();
-		client.advanced(handler, request);
-		while (handler.waitOn(HANDLER_TIMEOUT)) {
-			// Wait for responses
-		}
-
-		// check the response
-		List<CoapResponse> responsesList = handler.getResponses();
-		CoapResponse response = responsesList.get(0);
+		CoapResponse response = client.advanced(request);
 
 		assertNotNull("Client received no response", response);
 		System.out.println("client received response");
@@ -380,51 +351,6 @@ public class GroupModesTestAlt {
 		assertEquals(0, groupModeBit);
 	}
 
-	private static class MultiCoapHandler implements CoapHandler {
-
-		List<CoapResponse> responsesList = new ArrayList<CoapResponse>();
-
-		private boolean on;
-
-		public List<CoapResponse> getResponses() {
-			return responsesList;
-		}
-
-		public synchronized boolean waitOn(long timeout) {
-			on = false;
-			try {
-				wait(timeout);
-			} catch (InterruptedException e) {
-			}
-			return on;
-		}
-
-		private synchronized void on() {
-			on = true;
-			notifyAll();
-		}
-
-		/**
-		 * Handle and parse incoming responses.
-		 */
-		@Override
-		public void onLoad(CoapResponse response) {
-			on();
-
-			// System.out.println("Receiving to: "); //TODO
-			System.out.println("Receiving from: " + response.advanced().getSourceContext().getPeerAddress());
-
-			System.out.println(Utils.prettyPrint(response));
-
-			responsesList.add(response);
-		}
-
-		@Override
-		public void onError() {
-			System.err.println("error");
-		}
-	}
-
 	/* --- End of client tests --- */
 
 	/**
@@ -432,10 +358,12 @@ public class GroupModesTestAlt {
 	 * 
 	 * @throws OSException on failure to create the contexts
 	 * @throws CoseException on failure to create the contexts
+	 * @throws IOException on test failure
 	 */
-	public void setClientContext() throws OSException, CoseException {
+	public void setClientContext() throws OSException, CoseException, IOException {
 		// Set up OSCORE context information for request (client)
-		byte[] sid = new byte[] { 0x25 };
+
+		byte[] sid = clientSenderId;
 		byte[] rid1 = new byte[] { 0x77 };
 		byte[] rid2 = new byte[] { 0x66 };
 
@@ -443,11 +371,11 @@ public class GroupModesTestAlt {
 				gmPublicKey);
 
 		OneKey clientFullKey = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(clientKeyString)));
+				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
 		commonCtx.addSenderCtx(sid, clientFullKey);
 
 		OneKey serverPublicKey = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(serverKeyString))).PublicKey();
+				CBORObject.DecodeFromBytes(Base64.decode(serverKeyString))).PublicKey();
 		commonCtx.addRecipientCtx(rid1, REPLAY_WINDOW, serverPublicKey);
 		commonCtx.addRecipientCtx(rid2, REPLAY_WINDOW, null);
 
@@ -464,23 +392,24 @@ public class GroupModesTestAlt {
 	 * 
 	 * @throws OSException on failure to create the contexts
 	 * @throws CoseException on failure to create the contexts
+	 * @throws IOException on test failure
 	 */
 	public void setServerContext(boolean responsePartialIV, boolean pairwiseResponse)
-			throws OSException, CoseException {
+			throws OSException, CoseException, IOException {
 		// Set up OSCORE context information for response (server)
 
 		byte[] sid = new byte[] { 0x77 };
-		byte[] rid = new byte[] { 0x25 };
+		byte[] rid = clientSenderId;
 
 		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
 				gmPublicKey);
 
 		OneKey serverFullKey = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(serverKeyString)));
+				CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
 		commonCtx.addSenderCtx(sid, serverFullKey);
 
 		OneKey clientPublicKey = new OneKey(
-				CBORObject.DecodeFromBytes(DatatypeConverter.parseBase64Binary(clientKeyString))).PublicKey();
+				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString))).PublicKey();
 		commonCtx.addRecipientCtx(rid, REPLAY_WINDOW, clientPublicKey);
 
 		commonCtx.setResponsesIncludePartialIV(responsePartialIV);
@@ -495,25 +424,23 @@ public class GroupModesTestAlt {
 	 * @param responsePartialIV if responses should include a Partial IV
 	 * @param pairwiseResponse if responses should be in pairwise mode
 	 * 
-	 * @throws InterruptedException if resource update task fails
 	 * @throws OSException on test failure
 	 * @throws CoseException on test failure
+	 * @throws IOException on test failure
 	 */
 	public void createServer(boolean responsePartialIV, boolean pairwiseResponse)
-			throws InterruptedException, OSException, CoseException {
-		// Do not create server if it is already running
-		if (serverEndpoint != null) {
-			// TODO: Check if this ever happens
-			return;
-		}
+			throws OSException, CoseException, IOException {
 
 		setServerContext(responsePartialIV, pairwiseResponse);
 
-		// Create server and multicast configuration
-		CoapServer server = new CoapServer();
-		Configuration config = Configuration.getStandard();
-		createEndpoints(server, CoAP.DEFAULT_COAP_PORT, CoAP.DEFAULT_COAP_PORT, config);
-		serverEndpoint = server.getEndpoint(CoAP.DEFAULT_COAP_PORT);
+		// Create server
+		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
+		builder.setCustomCoapStackArgument(dbServer);
+		builder.setInetSocketAddress(TestTools.LOCALHOST_EPHEMERAL);
+		serverEndpoint = builder.build();
+		server = new CoapServer();
+		server.addEndpoint(serverEndpoint);
+		cleanup.add(serverEndpoint);
 
 		/** --- Resources for tests follow --- **/
 
@@ -578,121 +505,6 @@ public class GroupModesTestAlt {
 		}
 
 		return true;
-	}
-
-	/**
-	 * From MulticastTestServer
-	 * 
-	 * @param server
-	 * @param unicastPort
-	 * @param multicastPort
-	 * @param config
-	 */
-	private static void createEndpoints(CoapServer server, int unicastPort, int multicastPort, Configuration config) {
-		// UDPConnector udpConnector = new UDPConnector(new
-		// InetSocketAddress(unicastPort));
-		// udpConnector.setReuseAddress(true);
-		// CoapEndpoint coapEndpoint = new
-		// CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector).build();
-
-		NetworkInterface networkInterface = NetworkInterfacesUtil.getMulticastInterface();
-		if (networkInterface == null) {
-			LOGGER.warn("No multicast network-interface found!");
-			throw new Error("No multicast network-interface found!");
-		}
-		LOGGER.info("Multicast Network Interface: {}", networkInterface.getDisplayName());
-
-		UdpMulticastConnector.Builder builder = new UdpMulticastConnector.Builder();
-
-		if (!ipv4 && NetworkInterfacesUtil.isAnyIpv6()) {
-			Inet6Address ipv6 = NetworkInterfacesUtil.getMulticastInterfaceIpv6();
-			LOGGER.info("Multicast: IPv6 Network Address: {}", StringUtil.toString(ipv6));
-			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv6, unicastPort), config);
-			udpConnector.setReuseAddress(true);
-			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector)
-					.setCustomCoapStackArgument(dbServer).build();
-
-			builder = new UdpMulticastConnector.Builder().setLocalAddress(CoAP.MULTICAST_IPV6_SITELOCAL, multicastPort)
-					.addMulticastGroup(CoAP.MULTICAST_IPV6_SITELOCAL, networkInterface);
-			createReceiver(builder, udpConnector);
-
-			/*
-			 * https://bugs.openjdk.java.net/browse/JDK-8210493 link-local
-			 * multicast is broken
-			 */
-			builder = new UdpMulticastConnector.Builder().setLocalAddress(CoAP.MULTICAST_IPV6_LINKLOCAL, multicastPort)
-					.addMulticastGroup(CoAP.MULTICAST_IPV6_LINKLOCAL, networkInterface);
-			createReceiver(builder, udpConnector);
-
-			server.addEndpoint(coapEndpoint);
-			LOGGER.info("IPv6 - multicast");
-		}
-
-		if (ipv4 && NetworkInterfacesUtil.isAnyIpv4()) {
-			Inet4Address ipv4 = NetworkInterfacesUtil.getMulticastInterfaceIpv4();
-			LOGGER.info("Multicast: IPv4 Network Address: {}", StringUtil.toString(ipv4));
-			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv4, unicastPort), config);
-			udpConnector.setReuseAddress(true);
-			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector)
-					.setCustomCoapStackArgument(dbServer).build();
-
-			builder = new UdpMulticastConnector.Builder().setLocalAddress(CoAP.MULTICAST_IPV4, multicastPort)
-					.addMulticastGroup(CoAP.MULTICAST_IPV4, networkInterface);
-			createReceiver(builder, udpConnector);
-
-			Inet4Address broadcast = NetworkInterfacesUtil.getBroadcastIpv4();
-			if (broadcast != null) {
-				// windows seems to fail to open a broadcast receiver
-				builder = new UdpMulticastConnector.Builder().setLocalAddress(broadcast, multicastPort);
-				createReceiver(builder, udpConnector);
-			}
-			server.addEndpoint(coapEndpoint);
-			LOGGER.info("IPv4 - multicast");
-		}
-		UDPConnector udpConnector = new UDPConnector(
-				new InetSocketAddress(InetAddress.getLoopbackAddress(), unicastPort), config);
-		udpConnector.setReuseAddress(true);
-		CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector)
-				.setCustomCoapStackArgument(dbServer).build();
-		server.addEndpoint(coapEndpoint);
-		LOGGER.info("loopback");
-	}
-
-	/**
-	 * From MulticastTestServer
-	 * 
-	 * @param builder
-	 * @param connector
-	 */
-	private static void createReceiver(UdpMulticastConnector.Builder builder, UDPConnector connector) {
-		UdpMulticastConnector multicastConnector = builder.setMulticastReceiver(true).build();
-		multicastConnector.setLoopbackMode(LOOPBACK);
-		try {
-			multicastConnector.start();
-		} catch (BindException ex) {
-			// binding to multicast seems to fail on windows
-			if (builder.getLocalAddress().getAddress().isMulticastAddress()) {
-				int port = builder.getLocalAddress().getPort();
-				builder.setLocalPort(port);
-				multicastConnector = builder.build();
-				multicastConnector.setLoopbackMode(LOOPBACK);
-				try {
-					multicastConnector.start();
-				} catch (IOException e) {
-					e.printStackTrace();
-					multicastConnector = null;
-				}
-			} else {
-				ex.printStackTrace();
-				multicastConnector = null;
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			multicastConnector = null;
-		}
-		if (multicastConnector != null && connector != null) {
-			connector.addMulticastReceiver(multicastConnector);
-		}
 	}
 
 }
