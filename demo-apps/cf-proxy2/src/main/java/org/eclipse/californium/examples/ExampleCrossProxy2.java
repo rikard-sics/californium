@@ -256,7 +256,6 @@ public class ExampleCrossProxy2 {
 		Configuration proxyConfig = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 
 		// M.T.
-		// proxyConfig.set(Proxy2Config.COAP_PORT, COAP_PORT);
 		proxyConfig.set(Proxy2Config.HTTP_PORT, HTTP_PORT);
 
 		ExampleCrossProxy2 proxy = new ExampleCrossProxy2(proxyConfig, false, true);

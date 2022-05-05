@@ -94,7 +94,6 @@ public class GroupOSCORESenderDeterministic {
 		public void applyDefinitions(Configuration config) {
 			config.set(CoapConfig.MULTICAST_BASE_MID, 65000);
 		}
-
 	};
 
 	/**
@@ -233,10 +232,7 @@ public class GroupOSCORESenderDeterministic {
 		String multicastRequestURI = "";
 		String unicastRequestURI = "";
 		String unicastProxyURI = "";
-<<<<<<< HEAD
 
-=======
->>>>>>> 34431041c (Improvements in configuring setup with proxy)
 		if (multicastIP instanceof Inet6Address) {
 			multicastRequestURI = "coap://" + "[" + multicastIP.getHostAddress() + "]" + ":" + destinationPort + requestResource;
 		} else {
@@ -252,11 +248,7 @@ public class GroupOSCORESenderDeterministic {
 		} else {
 			unicastProxyURI = "coap://" + proxyIP.getHostAddress() + ":" + proxyPort + proxyResource;
 		}
-<<<<<<< HEAD
 
-=======
-		
->>>>>>> 34431041c (Improvements in configuring setup with proxy)
 		
 		// Test with Christian
 		// unicastRequestURI = "coap://detsrv.proxy.rd.coap.amsuess.com/.well-known/core";
@@ -372,12 +364,6 @@ public class GroupOSCORESenderDeterministic {
 				path = new URI(client.getURI()).getPath();
 			}
 			else {
-<<<<<<< HEAD
-=======
-				
-				
-				
->>>>>>> 34431041c (Improvements in configuring setup with proxy)
 				host = new URI(unicastProxyURI).getHost();
 				port = proxyPort;
 				path = proxyResource;
@@ -454,7 +440,6 @@ public class GroupOSCORESenderDeterministic {
 				request.setURI(unicastRequestURI);
 				request.setProxyScheme("coap");
 				*/
-<<<<<<< HEAD
 			}
 			
 			// Send the second request
@@ -481,8 +466,6 @@ public class GroupOSCORESenderDeterministic {
 				
 				// Protect the request in pairwise mode as a deterministic request
 				request.getOptions().setOscore(OptionEncoder.set(true, multicastRequestURI, null, true));
-=======
->>>>>>> 34431041c (Improvements in configuring setup with proxy)
 			}
 			
 			// Send the second request
