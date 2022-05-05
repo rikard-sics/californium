@@ -152,7 +152,7 @@ public class GroupOSCOREReceiver {
 	public static void main(String[] args) throws Exception {
 		// Install cryptographic providers
 		Provider EdDSA = new EdDSASecurityProvider();
-		Security.insertProviderAt(EdDSA, 0);
+		Security.insertProviderAt(EdDSA, 1);
 
 		// Set sender & receiver keys for countersignatures
 		sid_private_key = new MultiKey(sid_public_key_bytes, sid_private_key_bytes);

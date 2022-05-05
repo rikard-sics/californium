@@ -122,6 +122,10 @@ public class MultiKey {
 	/**
 	 * Search the data byte array for the first occurrence of the byte array
 	 * pattern.
+	 * 
+	 * @param data data to search through
+	 * @param pattern pattern to find
+	 * @return index of found pattern
 	 */
 	public static int indexOf(byte[] data, byte[] pattern) {
 		int[] failure = computeFailure(pattern);
