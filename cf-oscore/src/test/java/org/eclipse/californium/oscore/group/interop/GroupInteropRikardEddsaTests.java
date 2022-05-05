@@ -49,6 +49,7 @@ import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
 import org.eclipse.californium.oscore.group.OneKeyDecoder;
 import org.eclipse.californium.oscore.group.SharedSecretCalculation;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -108,7 +109,7 @@ public class GroupInteropRikardEddsaTests {
 	public void testEDDSAKeys() throws Exception {
 		// Install EdDSA cryptographic provider
 		Provider EdDSA = new EdDSASecurityProvider();
-		Security.insertProviderAt(EdDSA, 0);
+		Security.insertProviderAt(EdDSA, 1);
 
 		OneKey senderKey = OneKeyDecoder.parseDiagnostic(senderFullKeyEddsa);
 		OneKey recipient1Key = OneKeyDecoder.parseDiagnostic(recipient1PublicKeyEddsa);
@@ -146,7 +147,7 @@ public class GroupInteropRikardEddsaTests {
 	}
 
 	@Test
-	public void testContextsAlgCountersign() throws OSException {
+	public void testContextsAlgCountersign() {
 		// Check that the contexts use the correct countersignature algorithms
 
 		assertEquals(AlgorithmID.EDDSA, senderCtxEddsa.getAlgSign());
@@ -155,7 +156,7 @@ public class GroupInteropRikardEddsaTests {
 	}
 
 	@Test
-	public void testSenderKeys() throws OSException {
+	public void testSenderKeys() {
 
 		System.out.println("Sender key: " + Utils.bytesToHex(senderCtxEddsa.getSenderKey()));
 
@@ -165,7 +166,7 @@ public class GroupInteropRikardEddsaTests {
 	}
 
 	@Test
-	public void testRecipientKeys() throws OSException {
+	public void testRecipientKeys() {
 
 		System.out.println("Recipient 1 key: " + Utils.bytesToHex(recipient1CtxEddsa.getRecipientKey()));
 		System.out.println("Recipient 2 key: " + Utils.bytesToHex(recipient2CtxEddsa.getRecipientKey()));
@@ -181,7 +182,7 @@ public class GroupInteropRikardEddsaTests {
 
 	@Test
 	@Ignore // FIXME
-	public void testPairwiseRecipientKeys() throws OSException {
+	public void testPairwiseRecipientKeys() {
 
 		byte[] recipient1EddsaPairwiseKey = recipient1CtxEddsa.getPairwiseRecipientKey();
 		byte[] recipient2EddsaPairwiseKey = recipient2CtxEddsa.getPairwiseRecipientKey();
@@ -201,7 +202,7 @@ public class GroupInteropRikardEddsaTests {
 
 	@Test
 	@Ignore // FIXME
-	public void testPairwiseSenderKeys() throws OSException {
+	public void testPairwiseSenderKeys() {
 		byte[] senderEddsaPairwiseKey1 = senderCtxEddsa.getPairwiseSenderKey(rid1);
 		byte[] senderEddsaPairwiseKey2 = senderCtxEddsa.getPairwiseSenderKey(rid2);
 
@@ -245,8 +246,6 @@ public class GroupInteropRikardEddsaTests {
 
 		db.purge();
 
-		int seq = 1;
-
 		// --- Try decryption ---
 		String destinationUri = "coap://127.0.0.1/test";
 
@@ -277,6 +276,7 @@ public class GroupInteropRikardEddsaTests {
 		OSCoreCtxDB db = new HashMapCtxDB();
 		// FIXME: //recipientCtx.setReceiverSeq(seq - 1);
 		db.addContext(recipientCtx);
+		Assert.assertNotNull(r);
 		r.setSourceContext(new UdpEndpointContext(new InetSocketAddress(0)));
 
 		System.out.println("Common IV: " + Utils.bytesToHex(recipientCtx.getCommonIV()));
@@ -337,16 +337,15 @@ public class GroupInteropRikardEddsaTests {
 	 * Derives OSCORE context information for tests
 	 *
 	 * @throws OSException on failure to create the contexts
-	 * @throws CoseException on failure to create the contexts
 	 */
 	@BeforeClass
-	public static void deriveContexts() throws OSException, CoseException {
+	public static void deriveContexts() throws OSException {
 
 		// Create context using EdDSA
 
 		// Install EdDSA cryptographic provider
 		Provider EdDSA = new EdDSASecurityProvider();
-		Security.insertProviderAt(EdDSA, 0);
+		Security.insertProviderAt(EdDSA, 1);
 
 		GroupCtx groupCtxEddsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.EDDSA, null);
 

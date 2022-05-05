@@ -123,7 +123,7 @@
 				<groupId>net.i2p.crypto</groupId>
 				<artifactId>eddsa</artifactId>
 				<version>${eddsa.version}</version>
-				<!-- <scope>runtime</scope> -->
+				<scope>runtime</scope>
 			</dependency>
 
 			<dependency>

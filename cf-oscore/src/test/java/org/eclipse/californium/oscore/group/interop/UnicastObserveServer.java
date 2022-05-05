@@ -42,10 +42,8 @@ public class UnicastObserveServer {
 
 	/**
 	 * Creates server with resources to test Observe functionality
-	 * 
-	 * @throws InterruptedException if resource update task fails
 	 */
-	public static void createServer() throws InterruptedException {
+	public static void createServer() {
 
 		Random rand = new Random();
 		final int serverID = rand.nextInt(100);
