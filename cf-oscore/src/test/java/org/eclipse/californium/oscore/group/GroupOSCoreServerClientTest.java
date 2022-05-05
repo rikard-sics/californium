@@ -65,7 +65,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -450,7 +449,6 @@ public class GroupOSCoreServerClientTest {
 		assertNotNull("Client received no response", response);
 		System.out.println("client received response");
 		assertEquals(SERVER_RESPONSE, response.advanced().getPayloadString());
-		assertArrayEquals(token, response.advanced().getTokenBytes());
 
 		// Parse the flag byte group bit (expect non-zero value)
 		byte flagByte = response.getOptions().getOscore()[0];
@@ -815,6 +813,7 @@ public class GroupOSCoreServerClientTest {
 	 */
 	public void createServer(boolean responsePartialIV, boolean pairwiseResponse)
 			throws OSException, CoseException, IOException {
+
 		// Do not create server if it is already running
 		if (serverEndpoint != null) {
 			// TODO: Check if this ever happens

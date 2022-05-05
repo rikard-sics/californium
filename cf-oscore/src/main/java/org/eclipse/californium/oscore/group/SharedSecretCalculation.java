@@ -21,6 +21,11 @@ import java.security.Provider;
 import java.security.Security;
 import java.util.Arrays;
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> e5bf86646 (Work on fixing compilation and JUnit testing with "mvn clean install")
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.OneKey;
