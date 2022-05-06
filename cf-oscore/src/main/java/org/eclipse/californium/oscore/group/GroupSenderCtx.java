@@ -141,12 +141,6 @@ public class GroupSenderCtx extends OSCoreCtx {
 		return commonCtx.algKeyAgreement;
 	}
 	
-	/**
-	 * Get the length of the countersignature depending on the countersignature
-	 * algorithm currently used.
-	 * 
-	 * @return the length of the countersiganture
-	 */
 	public int getCountersignatureLen() {
 		return commonCtx.getCountersignatureLen();
 	}

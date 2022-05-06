@@ -25,6 +25,8 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
 import org.eclipse.californium.core.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
@@ -32,16 +34,16 @@ import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.cose.Attribute;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.CounterSign1;
+
 import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
+
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupDeterministicSenderCtx;
 import org.eclipse.californium.oscore.group.OptionEncoder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
@@ -62,6 +64,7 @@ public abstract class Encryptor {
 			boolean newPartialIV) throws OSException {
 		return encryptAndEncode(enc, ctx, message, newPartialIV, null, null);
 	}
+	
 	/**
 	 * Encrypt the COSE message using the OSCore context.
 	 * 
@@ -156,16 +159,6 @@ public abstract class Encryptor {
 						message.getOptions());
 
 			}
-
-			if (isRequest) {
-				System.out.println("Deterministic request: " + isDetReq + "\n");
-			}
-			System.out.println("Encrypting outgoing " + message.getClass().getSimpleName());
-			System.out.println("Key " + Utils.toHexString(ctx.getSenderKey()));
-			System.out.println("Plaintext " + Utils.toHexString(enc.GetContent()));
-			System.out.println("PartialIV " + Utils.toHexString(partialIV));
-			System.out.println("Nonce " + Utils.toHexString(nonce));
-			System.out.println("AAD " + Utils.toHexString(aad));
 
 			// Handle Group OSCORE messages
 			boolean groupModeMessage = false;
@@ -394,21 +387,41 @@ public abstract class Encryptor {
 	 * @return the Object-Security value as byte array
 	 */
 	public static byte[] encodeOSCoreRequest(OSCoreCtx ctx, boolean groupModeRequest) {
-
-		OscoreOptionEncoder optionEncoder = new OscoreOptionEncoder();
+		int firstByte = 0x00;
+		ByteArrayOutputStream bRes = new ByteArrayOutputStream();
+		byte[] partialIV = OSSerializer.processPartialIV(ctx.getSenderSeq());
+		firstByte = firstByte | (partialIV.length & 0x07); //PartialIV length
+		firstByte = firstByte | 0x08; //Set the KID bit
+		
+		//If the Context ID should be included for this context, set its bit
 		if (ctx.getIncludeContextId() || ctx.isGroupContext()) {
-			optionEncoder.setIdContext(ctx.getMessageIdContext());
+			firstByte = firstByte | 0x10;
 		}
 
+		// If this is a group mode request
 		if (groupModeRequest) {
-			optionEncoder.setGroupFlag(true);
+			firstByte = firstByte | 0x20;
 		}
 
-		optionEncoder.setPartialIV(ctx.getSenderSeq());
-		optionEncoder.setKid(ctx.getSenderId());
+		bRes.write(firstByte);
 
-		return optionEncoder.getBytes();
+		try {
+			bRes.write(partialIV);
+
+			//Encode the Context ID length and value if to be included
+			if (ctx.getIncludeContextId() || ctx.isGroupContext()) {
+				bRes.write(ctx.getMessageIdContext().length);
+				bRes.write(ctx.getMessageIdContext());
+			}
+
+			//Encode Sender ID (KID)
+			bRes.write(ctx.getSenderId());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return bRes.toByteArray();
 	}
+
 
 	/**
 	 * Encodes the Object-Security value for a Response.
@@ -419,26 +432,65 @@ public abstract class Encryptor {
 	 * @return the Object-Security value as byte array
 	 */
 	public static byte[] encodeOSCoreResponse(OSCoreCtx ctx, final boolean newPartialIV) {
+		int firstByte = 0x00;
+		ByteArrayOutputStream bRes = new ByteArrayOutputStream();
 
-		OscoreOptionEncoder optionEncoder = new OscoreOptionEncoder();
+		//If the Context ID should be included for this context, set its bit
 		if (ctx.getIncludeContextId()) {
-			optionEncoder.setIdContext(ctx.getMessageIdContext());
-		}
-		if (newPartialIV) {
-			optionEncoder.setPartialIV(ctx.getSenderSeq());
+			firstByte = firstByte | 0x10;
 		}
 
-		// If this is a group mode response, set flag bit
-		if (ctx instanceof GroupSenderCtx && ((GroupSenderCtx) ctx).getPairwiseModeResponses() == false) {
-			optionEncoder.setGroupFlag(true);
-		}
-
-		// Always include KID for Group OSCORE (for now)
+		// If the KID should be included (Group OSCORE), set its bit
 		if (ctx.isGroupContext()) {
-			optionEncoder.setKid(ctx.getSenderId());
+			firstByte = firstByte | 0x08;
 		}
 
-		return optionEncoder.getBytes();
+		// If this is a group mode response
+		if (ctx instanceof GroupSenderCtx && ((GroupSenderCtx) ctx).getPairwiseModeResponses() == false) {
+			firstByte = firstByte | 0x20;
+		}
+
+		if (newPartialIV) {
+			byte[] partialIV = OSSerializer.processPartialIV(ctx.getSenderSeq());
+			firstByte = firstByte | (partialIV.length & 0x07);
+
+			bRes.write(firstByte);
+			try {
+				bRes.write(partialIV);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} else {
+			bRes.write(firstByte);
+		}
+
+		//Encode the Context ID length and value if to be included
+		if (ctx.getIncludeContextId()) {
+			try {
+				bRes.write(ctx.getMessageIdContext().length);
+				bRes.write(ctx.getMessageIdContext());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		//For Group OSCORE always include the KID (Sender ID) in responses
+		if (ctx.isGroupContext()) {
+			try {
+				bRes.write(ctx.getSenderId());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		//If the OSCORE option is length 1 and 0x00, it should be empty
+		//See https://tools.ietf.org/html/draft-ietf-core-object-security-16#section-2
+		byte[] optionBytes = bRes.toByteArray();
+		if (optionBytes.length == 1 && optionBytes[0] == 0x00) {
+			return Bytes.EMPTY;
+		} else {
+			return optionBytes;
+		}
 	}
 
 	private static void prepareSignature(Encrypt0Message enc, OSCoreCtx ctx, byte[] aad, Message message) {

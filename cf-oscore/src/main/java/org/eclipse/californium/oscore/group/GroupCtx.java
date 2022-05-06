@@ -34,6 +34,10 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
+
+import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.oscore.ByteId;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCtx;
@@ -81,7 +85,7 @@ public class GroupCtx {
 
 	boolean pairwiseModeResponses = false;
 	boolean pairwiseModeRequests = false;
-	
+
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 	
 	/**
@@ -297,6 +301,7 @@ public class GroupCtx {
 			return 132; // Why 132 and not 128?
 		default:
 			throw new RuntimeException("Unsupported countersignature algorithm!");
+
 		}
 	}
 
@@ -410,14 +415,9 @@ public class GroupCtx {
 
 			db.addContext(recipientCtx);
 		}
-		
-		// Add the deterministic recipient context
-		if (deterministicRecipientCtx != null) {
-			db.addContext(deterministicRecipientCtx);
-		}
 
 	}
-
+	
 	// TODO: Merge with below?
 	byte[] deriveGroupEncryptionKey() {
 
@@ -488,7 +488,7 @@ public class GroupCtx {
 		info.Add(this.aeadAlg.AsCBOR());
 		info.Add(CBORObject.FromObject("Key"));
 		info.Add(this.aeadAlg.getKeySize() / 8);
-		
+
 		byte[] keysConcatenated = Bytes.concatenate(senderCtx.getPublicKeyRaw(), recipientPublicKeyRaw);
 		byte[] ikmSender = Bytes.concatenate(keysConcatenated, sharedSecret);
 
@@ -600,7 +600,7 @@ public class GroupCtx {
 
 		return sharedSecret;
 	}
-	
+
 	/**
 	 * Get the group encryption key from the common context (used for making a
 	 * keystream to encrypt the signature).

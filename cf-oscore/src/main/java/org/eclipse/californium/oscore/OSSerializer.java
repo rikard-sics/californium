@@ -36,6 +36,8 @@ import org.eclipse.californium.oscore.group.GroupSenderCtx;
 import org.eclipse.californium.oscore.group.OptionEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.eclipse.californium.oscore.group.GroupRecipientCtx;
+import org.eclipse.californium.oscore.group.GroupSenderCtx;
 
 import com.upokecenter.cbor.CBORObject;
 

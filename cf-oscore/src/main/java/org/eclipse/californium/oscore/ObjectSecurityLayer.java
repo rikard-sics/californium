@@ -349,7 +349,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				super.receiveRequest(exchange, request);
 				return;
 			}
-
+			
 			byte[] requestOscoreOption;
 			try {
 				requestOscoreOption = request.getOptions().getOscore();

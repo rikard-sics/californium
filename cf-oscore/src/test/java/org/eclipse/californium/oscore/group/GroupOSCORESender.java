@@ -201,7 +201,7 @@ public class GroupOSCORESender {
 
 			OSCoreCoapStackFactory.useAsDefault(db);
 		}
-
+		
 		Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 
 		CoapEndpoint endpoint = new CoapEndpoint.Builder().setConfiguration(config).build();
