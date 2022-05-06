@@ -42,6 +42,7 @@ import org.eclipse.californium.oscore.ContextRederivation.PHASE;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupDeterministicSenderCtx;
