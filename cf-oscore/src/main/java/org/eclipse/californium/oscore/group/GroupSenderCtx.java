@@ -261,7 +261,7 @@ public class GroupSenderCtx extends OSCoreCtx {
 	// Assert.fail();
 	// return recipient_replay_window;
 	// }
-
+	
 	@Override
 	public void setRecipientKey(byte[] recipientKey) {
 		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();

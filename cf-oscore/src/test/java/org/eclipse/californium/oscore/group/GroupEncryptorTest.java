@@ -33,6 +33,7 @@ import org.eclipse.californium.core.network.serialization.UdpDataParser;
 import org.eclipse.californium.core.network.serialization.UdpDataSerializer;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
 import org.eclipse.californium.elements.util.Base64;
@@ -76,7 +77,7 @@ public class GroupEncryptorTest {
 
 	// Group OSCORE specific values for the countersignature (ECDSA 256)
 	private final static AlgorithmID algCountersign = AlgorithmID.ECDSA_256;
-
+	
 	// Key for the GM
 	private static String gmPublicKeyString = "pQF4GmNvYXBzOi8vbXlzaXRlLmV4YW1wbGUuY29tAmxncm91cG1hbmFnZXIDeBpjb2FwczovL2RvbWFpbi5leGFtcGxlLm9yZwQaq5sVTwihAaQDJwEBIAYhWCDN4+/TvD+ZycnuIQQVxsulUGG1BG6WO4pYyRQ6YRZkcg==";
 	private static byte[] gmPublicKey;
@@ -353,8 +354,7 @@ public class GroupEncryptorTest {
 		int seq = 20;
 
 		// Create server context
-		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
-				gmPublicKey);
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign, gmPublicKey);
 		OneKey serverFullKey = new OneKey(
 				CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
 		commonCtx.addSenderCtx(sid, serverFullKey);
