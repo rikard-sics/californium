@@ -180,7 +180,7 @@ public class GroupRecipientCtx extends OSCoreCtx {
 	 */
 
 
-	/** ------- TODO: Remove methods below ------- */
+	// ------- TODO: Remove methods below -------
 
 	/**
 	 * 

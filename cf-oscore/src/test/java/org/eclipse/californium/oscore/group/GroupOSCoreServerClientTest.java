@@ -309,9 +309,14 @@ public class GroupOSCoreServerClientTest {
 	}
 
 	/**
+<<<<<<< HEAD
 	 * Tests working OSCORE non-confirmable request where the recipient server
 	 * does not yet have a recipient context for that RID and dynamically
 	 * generates it.
+=======
+	 * Tests working OSCORE non-confirmable request where the recipient does not
+	 * yet have a recipient context for that RID and dynamically generates it.
+>>>>>>> e4c6e0592 (Added further comments to some methods)
 	 * 
 	 * @throws Exception on test failure
 	 */
@@ -716,8 +721,6 @@ public class GroupOSCoreServerClientTest {
 		assertEquals(sendCount, responseCount);
 	}
 
-
-
 	/* --- End of client tests --- */
 
 	/**
@@ -741,7 +744,10 @@ public class GroupOSCoreServerClientTest {
 	 * 
 	 * @throws OSException on failure to create the contexts
 	 * @throws CoseException on failure to create the contexts
+<<<<<<< HEAD
 	 * @throws IOException on failure to decode GM public key
+=======
+>>>>>>> e4c6e0592 (Added further comments to some methods)
 	 */
 	public void setClientContext() throws OSException, CoseException, IOException {
 		// Set up OSCORE context information for request (client)
@@ -769,7 +775,10 @@ public class GroupOSCoreServerClientTest {
 	 * 
 	 * @throws OSException on failure to create the contexts
 	 * @throws CoseException on failure to create the contexts
+<<<<<<< HEAD
 	 * @throws IOException on failure to decode GM public key
+=======
+>>>>>>> e4c6e0592 (Added further comments to some methods)
 	 */
 	public void setServerContext(boolean responsePartialIV, boolean pairwiseResponse)
 			throws OSException, CoseException, IOException {
@@ -804,9 +813,15 @@ public class GroupOSCoreServerClientTest {
 	 * @param responsePartialIV if responses should include a Partial IV
 	 * @param pairwiseResponse if responses should be in pairwise mode
 	 * 
+<<<<<<< HEAD
 	 * @throws OSException on test failure
 	 * @throws CoseException on test failure
 	 * @throws IOException on test failure
+=======
+	 * @throws InterruptedException if resource update task fails
+	 * @throws OSException on test failure
+	 * @throws CoseException on test failure
+>>>>>>> e4c6e0592 (Added further comments to some methods)
 	 */
 	public void createServer(boolean responsePartialIV, boolean pairwiseResponse)
 			throws OSException, CoseException, IOException {
