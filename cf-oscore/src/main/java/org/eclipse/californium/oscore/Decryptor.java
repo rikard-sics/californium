@@ -105,7 +105,7 @@ public abstract class Decryptor {
 				partialIV = piv.GetByteString();
 				partialIV = expandToIntSize(partialIV);
 				seq = ByteBuffer.wrap(partialIV).getInt();
-				
+
 				// DET_REQ
 				// Understand if the request is a deterministic request. This requires that:
 				// 
@@ -206,7 +206,7 @@ public abstract class Decryptor {
 			else {
 				senderId = ctx.getSenderId();
 			}
-			
+
 			//Nonce calculation uses partial IV in response (if present).
 			//AAD calculation always uses partial IV (seq. nr.) of original request.  
 			aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), seq, senderId, message.getOptions());

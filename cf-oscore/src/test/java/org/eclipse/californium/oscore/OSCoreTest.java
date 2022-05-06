@@ -545,6 +545,7 @@ public class OSCoreTest {
 		response.setToken(token);
 
 		return ObjectSecurityLayer.prepareSend(null, response, tid, false, false, clientCtx.getSenderSeq(), null);
+
 	}
 
 	public Token generateToken() {

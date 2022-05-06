@@ -80,6 +80,7 @@ public class ResponseDecryptor extends Decryptor {
 		OSCoreCtx ctx = null;
 		OptionSet uOptions = response.getOptions();
 
+
 		if (token != null) {
 			ctx = db.getContextByToken(token);
 

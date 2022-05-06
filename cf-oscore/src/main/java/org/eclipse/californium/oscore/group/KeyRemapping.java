@@ -283,6 +283,12 @@ public class KeyRemapping {
 	 * @param input the input byte array
 	 * @return the inverted byte array
 	 */
+	/**
+	 * Invert a byte array
+	 * 
+	 * @param input the input byte array
+	 * @return the inverted byte array
+	 */
 	public static byte[] invertArray(byte[] input) {
 		byte[] output = input.clone();
 		for (int i = 0; i < input.length; i++) {
