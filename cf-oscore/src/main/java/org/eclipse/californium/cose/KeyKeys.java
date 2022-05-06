@@ -35,7 +35,7 @@ public enum KeyKeys {
     
     public final static CBORObject EC2_P256 = CBORObject.FromObject(1);
     public final static CBORObject EC2_P384 = CBORObject.FromObject(2);
-    public final static CBORObject EC2_P521 = CBORObject.FromObject(3);
+    public final static CBORObject EC2_P512 = CBORObject.FromObject(3);
     
     public final static CBORObject OKP_X25519 = CBORObject.FromObject(4);
     public final static CBORObject OKP_X448 = CBORObject.FromObject(5);
