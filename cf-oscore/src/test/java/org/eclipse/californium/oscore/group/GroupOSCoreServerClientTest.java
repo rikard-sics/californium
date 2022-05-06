@@ -21,6 +21,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -309,14 +310,9 @@ public class GroupOSCoreServerClientTest {
 	}
 
 	/**
-<<<<<<< HEAD
 	 * Tests working OSCORE non-confirmable request where the recipient server
 	 * does not yet have a recipient context for that RID and dynamically
 	 * generates it.
-=======
-	 * Tests working OSCORE non-confirmable request where the recipient does not
-	 * yet have a recipient context for that RID and dynamically generates it.
->>>>>>> e4c6e0592 (Added further comments to some methods)
 	 * 
 	 * @throws Exception on test failure
 	 */
@@ -744,17 +740,15 @@ public class GroupOSCoreServerClientTest {
 	 * 
 	 * @throws OSException on failure to create the contexts
 	 * @throws CoseException on failure to create the contexts
-<<<<<<< HEAD
 	 * @throws IOException on failure to decode GM public key
-=======
->>>>>>> e4c6e0592 (Added further comments to some methods)
 	 */
 	public void setClientContext() throws OSException, CoseException, IOException {
 		// Set up OSCORE context information for request (client)
 		byte[] sid = new byte[] { 0x25 };
 		byte[] rid2 = new byte[] { 0x66 };
 
-		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign, gmPublicKey);
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
+				gmPublicKey);
 
 		OneKey clientFullKey = new OneKey(
 				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
@@ -775,10 +769,7 @@ public class GroupOSCoreServerClientTest {
 	 * 
 	 * @throws OSException on failure to create the contexts
 	 * @throws CoseException on failure to create the contexts
-<<<<<<< HEAD
 	 * @throws IOException on failure to decode GM public key
-=======
->>>>>>> e4c6e0592 (Added further comments to some methods)
 	 */
 	public void setServerContext(boolean responsePartialIV, boolean pairwiseResponse)
 			throws OSException, CoseException, IOException {
@@ -787,7 +778,8 @@ public class GroupOSCoreServerClientTest {
 		byte[] sid = new byte[] { 0x77 };
 		byte[] rid = new byte[] { 0x25 };
 
-		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign, gmPublicKey);
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
+				gmPublicKey);
 
 		OneKey serverFullKey = new OneKey(
 				CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
@@ -813,15 +805,9 @@ public class GroupOSCoreServerClientTest {
 	 * @param responsePartialIV if responses should include a Partial IV
 	 * @param pairwiseResponse if responses should be in pairwise mode
 	 * 
-<<<<<<< HEAD
 	 * @throws OSException on test failure
 	 * @throws CoseException on test failure
 	 * @throws IOException on test failure
-=======
-	 * @throws InterruptedException if resource update task fails
-	 * @throws OSException on test failure
-	 * @throws CoseException on test failure
->>>>>>> e4c6e0592 (Added further comments to some methods)
 	 */
 	public void createServer(boolean responsePartialIV, boolean pairwiseResponse)
 			throws OSException, CoseException, IOException {

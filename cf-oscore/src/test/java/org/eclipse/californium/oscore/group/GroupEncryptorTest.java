@@ -106,10 +106,7 @@ public class GroupEncryptorTest {
 	/**
 	 * @throws OSException if encryption fails
 	 * @throws CoseException on test failure
-<<<<<<< HEAD
 	 * @throws IOException on test failure
-=======
->>>>>>> e4c6e0592 (Added further comments to some methods)
 	 */
 	@Test
 	@Ignore // TODO: Recalculate
@@ -190,10 +187,7 @@ public class GroupEncryptorTest {
 	 *
 	 * @throws OSException if encryption fails
 	 * @throws CoseException on test failure
-<<<<<<< HEAD
 	 * @throws IOException on test failure
-=======
->>>>>>> e4c6e0592 (Added further comments to some methods)
 	 */
 	@Test
 	@Ignore // TODO: Recalculate
