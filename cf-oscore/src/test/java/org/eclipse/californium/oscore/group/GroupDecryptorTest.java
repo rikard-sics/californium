@@ -23,8 +23,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.security.Provider;
-import java.security.Security;
 import java.util.Random;
 
 import org.eclipse.californium.core.coap.Message;
@@ -59,8 +57,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.upokecenter.cbor.CBORObject;
-
-import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 public class GroupDecryptorTest {
 

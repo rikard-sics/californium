@@ -21,6 +21,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -749,7 +750,8 @@ public class GroupOSCoreServerClientTest {
 		byte[] sid = new byte[] { 0x25 };
 		byte[] rid2 = new byte[] { 0x66 };
 
-		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign, gmPublicKey);
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
+				gmPublicKey);
 
 		OneKey clientFullKey = new OneKey(
 				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
@@ -779,7 +781,8 @@ public class GroupOSCoreServerClientTest {
 		byte[] sid = new byte[] { 0x77 };
 		byte[] rid = new byte[] { 0x25 };
 
-		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign, gmPublicKey);
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
+				gmPublicKey);
 
 		OneKey serverFullKey = new OneKey(
 				CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
