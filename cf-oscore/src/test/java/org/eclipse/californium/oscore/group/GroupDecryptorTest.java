@@ -23,6 +23,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.security.Provider;
+import java.security.Security;
 import java.util.Random;
 
 import org.eclipse.californium.core.coap.Message;
@@ -33,6 +35,7 @@ import org.eclipse.californium.core.network.serialization.UdpDataParser;
 import org.eclipse.californium.core.network.serialization.UdpDataSerializer;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.UdpEndpointContext;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
@@ -57,6 +60,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.upokecenter.cbor.CBORObject;
+
+import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 public class GroupDecryptorTest {
 
@@ -113,8 +118,7 @@ public class GroupDecryptorTest {
 		byte[] rid = new byte[] { 0x00 };
 
 		// Create client context
-		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
-				gmPublicKey);
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign, gmPublicKey);
 		OneKey clientPublicKey = new OneKey(
 				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString))).PublicKey();
 		commonCtx.addRecipientCtx(rid, REPLAY_WINDOW, clientPublicKey);
@@ -173,6 +177,7 @@ public class GroupDecryptorTest {
 
 	}
 
+
 	@Test
 	@Ignore // TODO: Recalculate
 	public void testResponseDecryptorPairwiseMode() throws OSException, CoseException, IOException {
@@ -184,8 +189,7 @@ public class GroupDecryptorTest {
 		int seq = 20;
 
 		// Create server context
-		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
-				gmPublicKey);
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign, gmPublicKey);
 		OneKey serverFullKey = new OneKey(
 				CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
 		commonCtx.addSenderCtx(sid, serverFullKey);
@@ -419,8 +423,7 @@ public class GroupDecryptorTest {
 		byte[] rid = new byte[] { 0x00 };
 
 		// Create client context
-		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
-				gmPublicKey);
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign, gmPublicKey);
 		OneKey clientFullKey = new OneKey(
 				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
 		commonCtx.addSenderCtx(sid, clientFullKey);
