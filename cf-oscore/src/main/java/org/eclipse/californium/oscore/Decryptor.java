@@ -377,7 +377,7 @@ public abstract class Decryptor {
 						+ "with the hash from the Request-Hash option");
 				throw new OSException(ErrorDescriptions.DECRYPTION_FAILED);
 			}
-			
+
 		}
 		
 		return plaintext;

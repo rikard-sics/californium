@@ -33,9 +33,9 @@ import com.upokecenter.cbor.CBORObject;
  * 
  * Non-empty OSCORE option:
  * 
- * The option is decoded to extract the following 4 parameters. Pairwise mode
- * used, URI of the associated Sender Context, RID of the recipient (from the
- * Sender's point of view), request as a Deterministic Request.
+ * The option is decoded to extract the following 3 parameters. Pairwise mode
+ * used, URI of the associated Sender Context, and RID of the recipient (from
+ * the Sender's point of view).
  * 
  * The URI in the option is then used to retrieve the context.
  * 
@@ -61,7 +61,7 @@ public class OptionEncoder {
 
 		return option.EncodeToBytes();
 	}
-	
+
 	/**
 	 * Generate an OSCORE option using parameters from the application.
 	 * 

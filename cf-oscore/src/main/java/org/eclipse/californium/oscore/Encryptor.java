@@ -41,6 +41,7 @@ import org.eclipse.californium.oscore.ContextRederivation.PHASE;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupDeterministicSenderCtx;
@@ -390,8 +391,7 @@ public abstract class Encryptor {
 	 * Encodes the Object-Security value for a Request.
 	 * 
 	 * @param ctx the context
-	 * @param groupModeRequest if the request is using group mode
-	 * 
+	 * @param groupModeRequest if this is a Group OSCORE group mode request
 	 * @return the Object-Security value as byte array
 	 */
 	public static byte[] encodeOSCoreRequest(OSCoreCtx ctx, boolean groupModeRequest) {
