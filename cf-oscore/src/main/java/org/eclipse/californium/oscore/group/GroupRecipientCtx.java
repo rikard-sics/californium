@@ -50,7 +50,7 @@ public class GroupRecipientCtx extends OSCoreCtx {
 			this.otherEndpointPubKeyRaw = otherEndpointPubKeyRaw;
 		}
 	}
-	
+
 	/**
 	 * Get the public key associated to this recipient context, meaning the
 	 * public key of the other endpoint.
@@ -81,6 +81,7 @@ public class GroupRecipientCtx extends OSCoreCtx {
 	}
 
 	/**
+<<<<<<< HEAD
 	 * Get the alg sign value.
 	 * 
 	 * @return the alg sign value
@@ -107,12 +108,22 @@ public class GroupRecipientCtx extends OSCoreCtx {
 		return commonCtx.algKeyAgreement;
 	}
 
+	/**
+	 * Get the length of the countersignature depending on the countersignature
+	 * algorithm currently used.
+	 * 
+	 * @return the length of the countersiganture
+	 */
 	public int getCountersignatureLen() {
 		return commonCtx.getCountersignatureLen();
 	}
 
 	/**
+<<<<<<< HEAD
 	 * Get the par countersign value for the external aad.
+=======
+	 * Get the par countersign value
+>>>>>>> f4cabdfe7 (Added more comments describing more detail on multiple methods)
 	 * 
 	 * @return the par countersign value
 	 */
@@ -121,7 +132,11 @@ public class GroupRecipientCtx extends OSCoreCtx {
 	}
 
 	/**
+<<<<<<< HEAD
 	 * Get the par countersign key value for the external aad.
+=======
+	 * Get the par countersign key value
+>>>>>>> f4cabdfe7 (Added more comments describing more detail on multiple methods)
 	 * 
 	 * @return the par countersign key value
 	 */
