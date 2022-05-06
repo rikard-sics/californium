@@ -104,7 +104,7 @@ public class OneKeyDecoder {
 
 			System.out.println("ec2Curve" + ec2Curve);
 
-			if (ec2Curve == KeyKeys.EC2_P256 || ec2Curve == KeyKeys.EC2_P384 || ec2Curve == KeyKeys.EC2_P512) {
+			if (ec2Curve == KeyKeys.EC2_P256 || ec2Curve == KeyKeys.EC2_P384 || ec2Curve == KeyKeys.EC2_P521) {
 				System.out.println("HELLo1");
 				keyCbor.set(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
 			}
@@ -272,7 +272,7 @@ public class OneKeyDecoder {
 		} else if (ec2Curve == KeyKeys.EC2_P384) {
 			// ECDSA 384
 			return AlgorithmID.ECDSA_384;
-		} else if (ec2Curve == KeyKeys.EC2_P512) {
+		} else if (ec2Curve == KeyKeys.EC2_P521) {
 			// ECDSA 512
 			return AlgorithmID.ECDSA_256;
 		} else if (okpCurve == KeyKeys.OKP_Ed25519) {
@@ -300,7 +300,7 @@ public class OneKeyDecoder {
 		} else if (ec2Curve == KeyKeys.EC2_P384) {
 			// ECDSA 384
 			return AlgorithmID.ECDSA_384;
-		} else if (ec2Curve == KeyKeys.EC2_P512) {
+		} else if (ec2Curve == KeyKeys.EC2_P521) {
 			// ECDSA 512
 			return AlgorithmID.ECDSA_256;
 		} else if (okpCurve == KeyKeys.OKP_Ed25519) {
