@@ -60,7 +60,7 @@ import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 public class GroupOSCOREReceiver {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GroupOSCOREReceiver.class);
-
+	
 	/**
 	 * Controls whether or not the receiver will reply to incoming multicast
 	 * non-confirmable requests.
@@ -92,7 +92,7 @@ public class GroupOSCOREReceiver {
 	// Use IPv4
 	private static boolean ipv4 = true;
 	private static final boolean LOOPBACK = false;
-
+	
 	/**
 	 * Port to listen to.
 	 */
