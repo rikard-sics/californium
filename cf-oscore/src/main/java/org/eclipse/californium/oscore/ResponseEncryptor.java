@@ -39,22 +39,6 @@ public class ResponseEncryptor extends Encryptor {
 	 */
 	private static final Logger LOGGER = LoggerFactory.getLogger(ResponseEncryptor.class);
 
-	/**
-	 * @param db the context DB
-	 * @param response the response
-	 * @param ctx the OSCore context
-	 * @param newPartialIV boolean to indicate whether to use a new partial IV
-	 *            or not
-	 * @param outerBlockwise boolean to indicate whether the block-wise options
-	 *            should be encrypted or not
-	 * @param requestSequenceNr sequence number (Partial IV) from the request
-	 *            (if encrypting a response)
-	 * @param requestOption the OSCORE option of the corresponding request
-	 * 
-	 * @return the response with the encrypted OSCore option
-	 * 
-	 * @throws OSException when encryption fails
-	 */
 	public static Response encrypt(OSCoreCtxDB db, Response response, OSCoreCtx ctx, boolean newPartialIV,
 			boolean outerBlockwise, int requestSequenceNr, byte[] requestOption) throws OSException {
 

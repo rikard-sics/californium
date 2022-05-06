@@ -35,16 +35,16 @@ import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.cose.Attribute;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.CounterSign1;
+
 import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
+
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupDeterministicSenderCtx;
 import org.eclipse.californium.oscore.group.OptionEncoder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
