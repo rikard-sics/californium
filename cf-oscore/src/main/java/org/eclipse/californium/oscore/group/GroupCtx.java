@@ -130,6 +130,7 @@ public class GroupCtx {
 	 * @param gmPublicKey
 	 * @param algSignEnc
 	 * @param algKeyAgreement
+	 * @param gmPublicKey
 	 */
 	public GroupCtx(byte[] masterSecret, byte[] masterSalt, AlgorithmID aeadAlg, AlgorithmID hkdfAlg, byte[] idContext,
 			AlgorithmID algSign, AlgorithmID algSignEnc, AlgorithmID algKeyAgreement, byte[] gmPublicKey) {
@@ -343,7 +344,7 @@ public class GroupCtx {
 		case ECDSA_384:
 			return new int[] { KeyKeys.KeyType_EC2.AsInt32(), KeyKeys.EC2_P384.AsInt32() };
 		case ECDSA_512:
-			return new int[] { KeyKeys.KeyType_EC2.AsInt32(), KeyKeys.EC2_P521.AsInt32() };
+			return new int[] { KeyKeys.KeyType_EC2.AsInt32(), KeyKeys.EC2_P512.AsInt32() };
 		default:
 			return null;
 		}
