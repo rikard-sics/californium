@@ -234,8 +234,8 @@ public class CountersignAlgorithmsTest {
 		assertEquals(KeyKeys.KeyType_EC2, clientKey.get(KeyKeys.KeyType));
 
 		// Curve
-		assertEquals(KeyKeys.EC2_P521, serverKey.get(KeyKeys.EC2_Curve));
-		assertEquals(KeyKeys.EC2_P521, clientKey.get(KeyKeys.EC2_Curve));
+		assertEquals(KeyKeys.EC2_P512, serverKey.get(KeyKeys.EC2_Curve));
+		assertEquals(KeyKeys.EC2_P512, clientKey.get(KeyKeys.EC2_Curve));
 
 		sendRequest(AlgorithmID.ECDSA_512, clientKey, serverKey);
 	}
