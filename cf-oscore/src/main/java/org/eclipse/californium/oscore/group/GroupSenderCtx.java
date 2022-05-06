@@ -151,6 +151,7 @@ public class GroupSenderCtx extends OSCoreCtx {
 		return commonCtx.getCountersignatureLen();
 	}
 
+
 	/**
 	 * Get the par countersign value for the external aad.
 	 * 
