@@ -113,7 +113,8 @@ public class GroupDecryptorTest {
 		byte[] rid = new byte[] { 0x00 };
 
 		// Create client context
-		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign, gmPublicKey);
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
+				gmPublicKey);
 		OneKey clientPublicKey = new OneKey(
 				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString))).PublicKey();
 		commonCtx.addRecipientCtx(rid, REPLAY_WINDOW, clientPublicKey);
@@ -172,7 +173,6 @@ public class GroupDecryptorTest {
 
 	}
 
-
 	@Test
 	@Ignore // TODO: Recalculate
 	public void testResponseDecryptorPairwiseMode() throws OSException, CoseException, IOException {
@@ -184,7 +184,8 @@ public class GroupDecryptorTest {
 		int seq = 20;
 
 		// Create server context
-		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign, gmPublicKey);
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
+				gmPublicKey);
 		OneKey serverFullKey = new OneKey(
 				CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
 		commonCtx.addSenderCtx(sid, serverFullKey);
@@ -254,7 +255,8 @@ public class GroupDecryptorTest {
 		int seq = 20;
 
 		// Create client context
-		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign, gmPublicKey);
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
+				gmPublicKey);
 		commonCtx.addSenderCtx(requestKID, null);
 
 		OneKey serverPublicKey = new OneKey(
@@ -324,10 +326,7 @@ public class GroupDecryptorTest {
 	 *
 	 * @throws OSException if encryption fails
 	 * @throws CoseException on test failure
-<<<<<<< HEAD
 	 * @throws IOException on test failure
-=======
->>>>>>> e4c6e0592 (Added further comments to some methods)
 	 */
 	@Test
 	@Ignore // TODO: Recalculate
@@ -337,7 +336,8 @@ public class GroupDecryptorTest {
 		byte[] rid = new byte[] { 0x00 };
 
 		// Create client context
-		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign, gmPublicKey);
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
+				gmPublicKey);
 		OneKey clientFullKey = new OneKey(
 				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
 		commonCtx.addSenderCtx(sid, clientFullKey);
@@ -406,10 +406,7 @@ public class GroupDecryptorTest {
 	 * 
 	 * @throws OSException if encryption fails
 	 * @throws CoseException on test failure
-<<<<<<< HEAD
 	 * @throws IOException on test failure
-=======
->>>>>>> e4c6e0592 (Added further comments to some methods)
 	 */
 	@Test
 	@Ignore
@@ -422,7 +419,8 @@ public class GroupDecryptorTest {
 		byte[] rid = new byte[] { 0x00 };
 
 		// Create client context
-		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign, gmPublicKey);
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
+				gmPublicKey);
 		OneKey clientFullKey = new OneKey(
 				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
 		commonCtx.addSenderCtx(sid, clientFullKey);
