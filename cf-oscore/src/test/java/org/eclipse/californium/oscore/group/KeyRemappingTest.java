@@ -68,11 +68,6 @@ public class KeyRemappingTest {
 
 	/**
 	 * Test from values in RFC7748.
-<<<<<<< HEAD
-=======
-	 * 
-	 * @throws CoseException on error in operations with COSE keys
->>>>>>> e4c6e0592 (Added further comments to some methods)
 	 */
 	@Test
 	public void testRfcVectors() {
