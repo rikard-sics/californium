@@ -129,20 +129,11 @@ public class GroupOSCORESenderDeterministic {
 	static final String requestPayload = "test";
 
 	/**
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 12fb01d37 (Improvements in configuring setup with proxy)
 	 * Unicast address of the proxy, if used
 	 */
 	static final InetAddress proxyIP = new InetSocketAddress("127.0.0.1", 0).getAddress();
 	
 	/**
-<<<<<<< HEAD
-=======
->>>>>>> 76175c0d1 (Cacheable OSCORE with a CoAP-to-CoAP forward proxy)
-=======
->>>>>>> 12fb01d37 (Improvements in configuring setup with proxy)
 	 * Port number of the CoAP-to-CoAP proxy
 	 */
 	private static final int proxyPort = 5685;
