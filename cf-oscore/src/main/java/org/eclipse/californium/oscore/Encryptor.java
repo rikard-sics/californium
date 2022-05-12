@@ -148,7 +148,7 @@ public abstract class Encryptor {
 				if (ctx.isGroupContext() == false && isDetReq == false) {
 					recipientId = ctx.getRecipientId();
 					requestSeq = requestSequenceNr;
-				} else if (ctx.isGroupContext()) {
+				} else if (ctx.isGroupContext() || isDetReq == true) {
 					// For Group OSCORE use RID and seq from request
 					recipientId = OptionJuggle.getRid(correspondingReqOption);
 					requestSeq = OptionJuggle.getPartialIV(correspondingReqOption);
@@ -185,6 +185,7 @@ public abstract class Encryptor {
 					pairwiseResponse = false;
 					groupModeMessage = true;
 				}
+				
 				LOGGER.debug("Encrypting outgoing " + message.getClass().getSimpleName()
 						+ " using Group OSCORE. Pairwise mode: " + !groupModeMessage);
 				
@@ -240,15 +241,8 @@ public abstract class Encryptor {
 					}
 					message.getOptions().removeRequestHash();
 					aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
-
 				}
 				
-				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with AAD "
-						+ Utils.toHexString(aad));
-
-				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with nonce "
-						+ Utils.toHexString(nonce));
-
 				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName() + " with AAD "
 						+ Utils.toHexString(aad));
 

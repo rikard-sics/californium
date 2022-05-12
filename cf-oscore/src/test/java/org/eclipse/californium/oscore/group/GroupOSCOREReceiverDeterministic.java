@@ -267,7 +267,7 @@ public class GroupOSCOREReceiverDeterministic {
 		// Added for handling GET
 		@Override
 		public void handleGET(CoapExchange exchange) {
-
+			
 			System.out.println("Reached the GET handler");
 			
 			if (ObjectSecurityLayer.isDeterministicRequest(db, exchange.advanced())) {
