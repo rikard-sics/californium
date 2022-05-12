@@ -19,6 +19,7 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
+import java.io.IOException;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.URI;

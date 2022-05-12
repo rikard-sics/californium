@@ -21,6 +21,8 @@ package org.eclipse.californium.oscore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.i2p.crypto.eddsa.Utils;
+
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
@@ -226,7 +228,18 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			}
 		}
 		LOGGER.trace("Request: {}", exchange.getRequest());
+		
+		// DET_REQ
+		// A deterministic request includes the Request-Hash option. In such a case, add the Request-Hash option
+		// to the copy of the request already present in the Exchange, as previously stored by BaseCoapStack.
+		// This allows the client to retrieve the hash value when later receiving the response.
+		if (req.getOptions().hasRequestHash()) {
+			byte[] requestHash = req.getOptions().getRequestHash();
+			exchange.getRequest().getOptions().setRequestHash(requestHash);
+		}
+		
 		super.sendRequest(exchange, req);
+		
 	}
 
 	@Override
@@ -262,13 +275,23 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				// Or actually use the requestOption KID and KID Context
 				// directly. (Indirectly using the Token).
 				OSCoreCtx ctx = ctxDb.getContextByToken(exchange.getCurrentRequest().getToken());
-				addPartialIV = (ctx !=null && ctx.getResponsesIncludePartialIV()) || exchange.getRequest().getOptions().hasObserve();
+				
+				// DET_REQ
+				isDetReq = ctx instanceof GroupDeterministicRecipientCtx;
+				if (isDetReq) {
+					// If the request was a deterministic request,
+					// the response must include the Partial IV
+					addPartialIV = true;
+				}
+				else {
+					addPartialIV = ctx.getResponsesIncludePartialIV() || exchange.getRequest().getOptions().hasObserve();
+				}
 
 				// Parse the OSCORE option from the corresponding request
 				byte[] requestOption = exchange.getCryptographicContextID();
 				OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(requestOption);
 				int requestSequenceNumber = optionDecoder.getSequenceNumber();
-
+				
 				// DET_REQ
 				if (isDetReq) {
 					// Retrieve the Request-Hash option from the deterministic request, and
@@ -327,6 +350,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				byte[] IDContext = optionDecoder.getIdContext();
 
 				ctx = ctxDb.getContext(rid, IDContext);
+
 			} catch (CoapOSException e) {
 				LOGGER.error("Error while receiving OSCore request: {}", e.getMessage());
 				Response error;

@@ -187,12 +187,6 @@ public class GroupCtx {
 		this.deterministicRecipientCtx = deterministicRecipientCtx;
 
 	}
-
-	public GroupDeterministicSenderCtx getDeterministicSenderCtx() {
-		
-		return this.deterministicSenderCtx;
-		
-	}
 	
 	/**
 	 * Add a sender context.
@@ -256,7 +250,6 @@ public class GroupCtx {
 
 		this.groupEncryptionKey = deriveGroupEncryptionKey();
 	}
-	//
 	
 	/**
 	 * Add a deterministic sender context.
@@ -279,6 +272,12 @@ public class GroupCtx {
 		
 		this.deterministicSenderCtx = deterministicSenderCtx;
 		this.deterministicSenderCtx.setIncludeContextId(true);
+	}
+	
+	public GroupDeterministicSenderCtx getDeterministicSenderCtx() {
+		
+		return this.deterministicSenderCtx;
+		
 	}
 	
 	/**
@@ -413,6 +412,11 @@ public class GroupCtx {
 			recipientCtx.derivePairwiseKey();
 
 			db.addContext(recipientCtx);
+		}
+		
+		// Add the deterministic recipient context
+		if (deterministicRecipientCtx != null) {
+			db.addContext(deterministicRecipientCtx);
 		}
 
 	}

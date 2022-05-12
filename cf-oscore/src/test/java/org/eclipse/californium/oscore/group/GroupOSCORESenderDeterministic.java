@@ -61,14 +61,14 @@ public class GroupOSCORESenderDeterministic {
 	 * 
 	 * If set to true, the request will be sent over unicast, otherwise over multicast
 	 */
-	static final boolean pairwiseMode = false;
+	static final boolean pairwiseMode = true;
 	
 	/**
 	 * Whether to send the request as a deterministic request or not
 	 * 
 	 * It must be set to false if "pairwiseMode" is set to false
 	 */
-	static final boolean deterministicRequest = false;
+	static final boolean deterministicRequest = true;
 	
 	/**
 	 * Whether to send the request through a proxy or not
@@ -90,11 +90,11 @@ public class GroupOSCORESenderDeterministic {
 	 */
 	private static DefinitionsProvider DEFAULTS = new DefinitionsProvider() {
 
-
 		@Override
 		public void applyDefinitions(Configuration config) {
 			config.set(CoapConfig.MULTICAST_BASE_MID, 65000);
 		}
+
 	};
 
 	/**
@@ -134,7 +134,6 @@ public class GroupOSCORESenderDeterministic {
 	 */
 	static final InetAddress proxyIP = new InetSocketAddress("127.0.0.1", 0).getAddress();
 	
-
 	/**
 	 * Port number of the CoAP-to-CoAP proxy
 	 */
@@ -170,6 +169,7 @@ public class GroupOSCORESenderDeterministic {
 			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
 	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
 			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
+	
 
 	/*
 	// Test with Christian
@@ -250,10 +250,6 @@ public class GroupOSCORESenderDeterministic {
 			unicastProxyURI = "coap://" + proxyIP.getHostAddress() + ":" + proxyPort + proxyResource;
 		}
 
-		
-		// Test with Christian
-		// unicastRequestURI = "coap://detsrv.proxy.rd.coap.amsuess.com/.well-known/core";
-		
 		
 		// Test with Christian
 		// unicastRequestURI = "coap://detsrv.proxy.rd.coap.amsuess.com/.well-known/core";
@@ -445,58 +441,6 @@ public class GroupOSCORESenderDeterministic {
 				request.setURI(unicastRequestURI);
 				request.setProxyScheme("coap");
 				*/
-			}
-			
-			// Send the second request
-			client.advanced(handler, request);
-			while (handler.waitOn(HANDLER_TIMEOUT)) {
-				// Wait for responses
-			}
-			
-			// Prepare a second request, with the same type and payload of the first one
-			requestCode = Code.POST;
-			if (!deterministicRequest) {
-				request = Request.newPost();
-				request.setPayload(requestPayload);
-				request.setType(Type.CON);
-				
-				// Protect the request in pairwise mode for a particular group member
-				request.getOptions().setOscore(OptionEncoder.set(true, multicastRequestURI, rid1, false));
-			}
-			else {
-
-				request = new Request(Code.GET);
-				request.setType(Type.CON);
-				requestCode = Code.GET;
-				
-				// Protect the request in pairwise mode as a deterministic request
-				request.getOptions().setOscore(OptionEncoder.set(true, multicastRequestURI, null, true));
-			}
-			
-			// Send the second request
-			client.advanced(handler, request);
-			while (handler.waitOn(HANDLER_TIMEOUT)) {
-				// Wait for responses
-			}
-			
-			// Prepare a second request, with the same type and payload of the first one
-			requestCode = Code.POST;
-			if (!deterministicRequest) {
-				request = Request.newPost();
-				request.setPayload(requestPayload);
-				request.setType(Type.CON);
-				
-				// Protect the request in pairwise mode for a particular group member
-				request.getOptions().setOscore(OptionEncoder.set(true, multicastRequestURI, rid1, false));
-			}
-			else {
-
-				request = new Request(Code.GET);
-				request.setType(Type.CON);
-				requestCode = Code.GET;
-				
-				// Protect the request in pairwise mode as a deterministic request
-				request.getOptions().setOscore(OptionEncoder.set(true, multicastRequestURI, null, true));
 			}
 			
 			// Send the second request
