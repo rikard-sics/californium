@@ -547,7 +547,7 @@ public class EdhocLayer extends AbstractLayer {
 		}
 		
 		Response myResponse = new Response(responseCode);
-		myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
+		myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC_CBOR_SEQ);
 		myResponse.setPayload(nextMessage);
 		exchange.sendResponse(myResponse);
 		return;

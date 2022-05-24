@@ -92,17 +92,22 @@ class EdhocResource extends CoapResource {
 		
 		byte[] message = exchange.getRequestPayload();
 		
-		if ((message == null && !exchange.getRequestOptions().hasContentFormat()) ||
-			(message != null && exchange.getRequestOptions().hasContentFormat() &&
-			 exchange.getRequestOptions().getContentFormat() != Constants.APPLICATION_EDHOC)) {
+		boolean hasContentFormat = exchange.getRequestOptions().hasContentFormat();
+		int contentFormat = exchange.getRequestOptions().getContentFormat();
+		
+		if ( (message == null && !hasContentFormat) ||
+			 (message != null && hasContentFormat && contentFormat != Constants.APPLICATION_CID_EDHOC_CBOR_SEQ &&
+			  contentFormat != Constants.APPLICATION_EDHOC_CBOR_SEQ) ) {
 			// The server can start acting as Initiator and send an EDHOC Message 1 as a CoAP response
 			processTriggerRequest(exchange, appProfile);
 			return;
 		}
 		
-		if (message == null || exchange.getRequestOptions().hasContentFormat()) {
+		if ( message == null ||
+			(message != null && hasContentFormat && contentFormat != Constants.APPLICATION_CID_EDHOC_CBOR_SEQ) ) {
 			String responseString = new String("Error when receiving a request to the EDHOC resource"
-					+ "EDHOC message_1 must be included in a request without content-format");
+					+ "An EDHOC message must be included in a request either without content-format "
+					+ "or with content-format application/cid-edhoc+cbor-seq");
 			System.err.println(responseString);
 			
 			nextMessage = responseString.getBytes(Constants.charset);
@@ -257,7 +262,7 @@ class EdhocResource extends CoapResource {
 				}
 
 				Response myResponse = new Response(responseCode);
-				myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
+				myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC_CBOR_SEQ);
 				myResponse.setPayload(nextMessage);
 				
 				String myString = (responseType == Constants.EDHOC_MESSAGE_2) ? "EDHOC Message 2" : "EDHOC Error Message";
@@ -473,7 +478,7 @@ class EdhocResource extends CoapResource {
 
 					if (responseType == Constants.EDHOC_MESSAGE_4 || responseType == Constants.EDHOC_ERROR_MESSAGE) {
 						
-						myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
+						myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC_CBOR_SEQ);
 						myResponse.setConfirmable(true);
 						myResponse.setPayload(nextMessage);
 						
@@ -627,7 +632,7 @@ class EdhocResource extends CoapResource {
 		}
 		
 		Response myResponse = new Response(responseCode);
-		myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC);
+		myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC_CBOR_SEQ);
 		myResponse.setPayload(nextMessage);
 		
 		exchange.respond(myResponse);
@@ -639,7 +644,7 @@ class EdhocResource extends CoapResource {
 	 */
 	private void processTriggerRequest(CoapExchange request, AppProfile appProfile) {
 		// Do nothing
-		System.out.println("Entered processNonEdhocMessage()");
+		System.out.println("Entered processTriggerRequest()");
 		
 		// Here the server can start acting as Initiator and send an EDHOC Message 1 as a CoAP response
 	}

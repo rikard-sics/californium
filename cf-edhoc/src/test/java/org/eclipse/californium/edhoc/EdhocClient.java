@@ -42,12 +42,16 @@ import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.config.CoapConfig;
+import org.eclipse.californium.elements.EndpointContext;
+import org.eclipse.californium.elements.MapBasedEndpointContext;
 import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
 import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCtx;
+import org.eclipse.californium.oscore.OSCoreEndpointContextInfo;
 import org.eclipse.californium.oscore.OSException;
 
 import com.upokecenter.cbor.CBORObject;
@@ -394,6 +398,7 @@ public class EdhocClient {
 		edhocSessions.put(connectionId, session);
 		
 		Request edhocMessageReq = new Request(Code.POST, Type.CON);
+		edhocMessageReq.getOptions().setContentFormat(Constants.APPLICATION_CID_EDHOC_CBOR_SEQ);
 		edhocMessageReq.setPayload(nextPayload);
 		
         System.out.println("Sent EDHOC Message 1\n");
@@ -693,10 +698,10 @@ public class EdhocClient {
 							
 							int contentFormat = protectedResponse.getOptions().getContentFormat();
 							int restCode = protectedResponse.getCode().value;
-			            	
+							
 							// Check if it is an EDHOC Error Message returned by the server
 							// when processing the combined EDHOC + OSCORE request
-			            	if (contentFormat == Constants.APPLICATION_EDHOC &&
+			            	if (contentFormat == Constants.APPLICATION_EDHOC_CBOR_SEQ &&
 			            	      ((restCode == ResponseCode.BAD_REQUEST.value) ||
 			            	       (restCode == ResponseCode.INTERNAL_SERVER_ERROR.value)) ) {
 			            	
@@ -721,8 +726,8 @@ public class EdhocClient {
 		        	}
 		        	else {
 		        		
-		        		// The request to send is an EDHOC Error Mssage
 		        		if (requestType == Constants.EDHOC_ERROR_MESSAGE) {
+			        		// The request to send is an EDHOC Error Message
 		        			edhocMessageReq2.setConfirmable(true);
 		        			edhocMessageReq2.setURI(targetUri);
 		        			edhocMessageReq2.send();
@@ -731,6 +736,7 @@ public class EdhocClient {
 		        		}
 		        		
 		        		session.setCurrentStep(Constants.EDHOC_SENT_M3);
+		        		edhocMessageReq2.getOptions().setContentFormat(Constants.APPLICATION_CID_EDHOC_CBOR_SEQ);
 		        		edhocMessageResp2 = client.advanced(edhocMessageReq2);
 		        		
 		        	}
@@ -749,15 +755,8 @@ public class EdhocClient {
 				
 				// Wait for a possible response. For how long?
 		        
-		        // This is a generic response, to be passed to the application
-		        if (edhocMessageResp2 != null &&
-		        	edhocMessageResp2.getOptions().getContentFormat() != Constants.APPLICATION_EDHOC) {
-		        	
-		        	processResponseAfterEdhoc(edhocMessageResp2);
-		        	
-		        }
-		        // Only an EDHOC message_4 or an EDHOC Error Message is legitimate at this point
-		        else if (edhocMessageResp2 != null) {
+		        // Only an EDHOC message_4 or an EDHOC Error Message is a legitimate EDHOC message at this point
+		        if (edhocMessageResp2 != null) {
 
 		        	responseType = -1;
 		        	boolean expectMessage4 = session.getApplicationProfile().getUseMessage4();
@@ -774,12 +773,19 @@ public class EdhocClient {
 		            		if (responseType == Constants.EDHOC_MESSAGE_4) {
 		            			if (expectMessage4 == false)
 		            				discontinue = true;
-		            			// Else it is fine, i.e. it is message_4 and it is expected
+		            			// Else it is fine, i.e., it is message_4 and it is expected
 		            		}
 		            		else {
 		            			// Any other message than message_4 and Error Message
-				            	System.err.println("Received invalid reply to EDHOC Message 3");
-		            			discontinue = true;
+		            			if (expectMessage4 == true) {
+					            	System.err.println("Received invalid reply to EDHOC Message 3 while expecting Message 4");
+					            	System.err.println("responseType: " + responseType);
+			            			discontinue = true;
+		            			}
+		            			else {
+		            				// This is a generic response received as reply to EDHOC Message 3
+		        		        	processResponseAfterEdhoc(edhocMessageResp2);
+		            			}
 		            		}
 		            		
 		            	}
@@ -812,8 +818,10 @@ public class EdhocClient {
 							typeName = new String("EDHOC Message " + responseType);
 							break;		
 					}
-		    		System.out.println("Determined EDHOC message type: " + typeName + "\n");
-		            Util.nicePrint(typeName, responsePayload);
+					if (responseType != -1) {
+			    		System.out.println("Determined EDHOC message type: " + typeName + "\n");
+			            Util.nicePrint(typeName, responsePayload);
+					}
 		            
 		            
 		            if (responseType == Constants.EDHOC_MESSAGE_4) {
