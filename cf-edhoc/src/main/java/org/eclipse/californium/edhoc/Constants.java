@@ -38,9 +38,14 @@ public static final Charset charset = Charset.forName("UTF-8");
 	
 
 /**
- * Content-Format application/edhoc
+ * Content-Format application/edhoc+cbor-seq
  */
-public static final int APPLICATION_EDHOC = 65000;
+public static final int APPLICATION_EDHOC_CBOR_SEQ = 65000;
+
+/**
+ * Content-Format application/cid-edhoc+cbor-seq
+ */
+public static final int APPLICATION_CID_EDHOC_CBOR_SEQ = 65001;
 
 
 /**
