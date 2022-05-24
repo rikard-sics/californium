@@ -42,16 +42,12 @@ import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.config.CoapConfig;
-import org.eclipse.californium.elements.EndpointContext;
-import org.eclipse.californium.elements.MapBasedEndpointContext;
 import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
 import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.util.Bytes;
-import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCtx;
-import org.eclipse.californium.oscore.OSCoreEndpointContextInfo;
 import org.eclipse.californium.oscore.OSException;
 
 import com.upokecenter.cbor.CBORObject;
