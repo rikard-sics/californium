@@ -1737,7 +1737,7 @@ public class MessageProcessor {
     	
     	
     	// Parse the outer plaintext as a CBOR sequence. To be valid, this is either the empty plaintext,
-    	// or the External Authorization Data EAD_4 possibly prepended by padding 
+    	// or padding, or padding followed by the External Authorization Data EAD_4 possibly 
     	error = false;
     	int baseIndex = 0;
     	CBORObject[] plaintextElementList = null;
