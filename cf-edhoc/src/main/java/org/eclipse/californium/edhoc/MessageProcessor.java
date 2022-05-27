@@ -508,15 +508,17 @@ public class MessageProcessor {
 		    else {
 		        ead1 = new CBORObject[length];
 		        
+		        int eadIndex = 0;
+		        
 		        for (int i = index; i < objectListRequest.length; i++) {
-		            if ((i % 2) == 0 && objectListRequest[i].getType() != CBORType.Integer) {
+		            if ((eadIndex % 2) == 0 && objectListRequest[i].getType() != CBORType.Integer) {
 		                ead1 = null;
 		                errMsg = new String("Malformed or invalid EAD_1");
 		                responseCode = ResponseCode.BAD_REQUEST;
 		                error = true;
 		                break;
 		            }
-		            if ((i % 2) == 1 && objectListRequest[i].getType() != CBORType.ByteString) {
+		            if ((eadIndex % 2) == 1 && objectListRequest[i].getType() != CBORType.ByteString) {
 		                ead1 = null;
 		                errMsg = new String("Malformed or invalid EAD_1");
 		                responseCode = ResponseCode.BAD_REQUEST;
@@ -526,7 +528,8 @@ public class MessageProcessor {
 		            // Make a hard copy
 		            byte[] serializedObject = objectListRequest[i].EncodeToBytes();
 		            CBORObject element = CBORObject.DecodeFromBytes(serializedObject);
-		            ead1[i] = element;
+		            ead1[eadIndex] = element;
+		            eadIndex++;
 		        }
 		    }
 			
@@ -943,15 +946,17 @@ public class MessageProcessor {
     		else {
     	        ead2 = new CBORObject[length];
     	        
+    	        int eadIndex = 0;
+    	        
     	        for (int i = baseIndex + 2; i < plaintextElementList.length; i++) {
-        	        if ((i % 2) == 0 && plaintextElementList[i].getType() != CBORType.Integer) {
+        	        if ((eadIndex % 2) == 0 && plaintextElementList[i].getType() != CBORType.Integer) {
         	        	ead2 = null;
         	        	errMsg = new String("Malformed or invalid EAD_2");
         	        	responseCode = ResponseCode.BAD_REQUEST;
         	        	error = true;
         	        	break;
         	        }
-        	        if ((i % 2) == 1 && plaintextElementList[i].getType() != CBORType.ByteString) {
+        	        if ((eadIndex % 2) == 1 && plaintextElementList[i].getType() != CBORType.ByteString) {
         	        	ead2 = null;
         	        	errMsg = new String("Malformed or invalid EAD_2");
         	        	responseCode = ResponseCode.BAD_REQUEST;
@@ -961,7 +966,8 @@ public class MessageProcessor {
     	            // Make a hard copy
     	            byte[] serializedObject = plaintextElementList[i].EncodeToBytes();
     	            CBORObject element = CBORObject.DecodeFromBytes(serializedObject);
-    	            ead2[i] = element;
+    	            ead2[eadIndex] = element;
+    	            eadIndex++;
     	        }
     		}
     	}
@@ -1357,15 +1363,17 @@ public class MessageProcessor {
     	    else {
     	        ead3 = new CBORObject[length];
     	        
+    	        int eadIndex = 0;
+    	        
     	        for (int i = baseIndex + 2; i < plaintextElementList.length; i++) {
-    	            if ((i % 2) == 0 && plaintextElementList[i].getType() != CBORType.Integer) {
+    	            if ((eadIndex % 2) == 0 && plaintextElementList[i].getType() != CBORType.Integer) {
     	                ead3 = null;
     	                errMsg = new String("Malformed or invalid EAD_3");
     	                responseCode = ResponseCode.BAD_REQUEST;
     	                error = true;
     	                break;
     	            }
-    	            if ((i % 2) == 1 && plaintextElementList[i].getType() != CBORType.ByteString) {
+    	            if ((eadIndex % 2) == 1 && plaintextElementList[i].getType() != CBORType.ByteString) {
     	                ead3 = null;
     	                errMsg = new String("Malformed or invalid EAD_3");
     	                responseCode = ResponseCode.BAD_REQUEST;
@@ -1375,7 +1383,8 @@ public class MessageProcessor {
     	            // Make a hard copy
     	            byte[] serializedObject = plaintextElementList[i].EncodeToBytes();
     	            CBORObject element = CBORObject.DecodeFromBytes(serializedObject);
-    	            ead3[i] = element;
+    	            ead3[eadIndex] = element;
+    	            eadIndex++;
     	        }
     	    }
     	}
@@ -1518,7 +1527,7 @@ public class MessageProcessor {
 		// External Authorization Data from EAD_3 (if present)
 		if (ead3 != null) {
 		    CBORObject eadArray = CBORObject.NewArray();
-		    for (int i = 0; i< ead3.length; i++) {
+		    for (int i = 0; i < ead3.length; i++) {
 		        eadArray.Add(ead3[i]);
 		    }
 		    processingResult.add(eadArray);
@@ -1769,15 +1778,17 @@ public class MessageProcessor {
         	    else {
         	        ead4 = new CBORObject[length];
         	        
+        	        int eadIndex = 0;
+        	        
         	        for (int i = baseIndex; i < plaintextElementList.length; i++) {
-        	            if ((i % 2) == 0 && plaintextElementList[i].getType() != CBORType.Integer) {
+        	            if ((eadIndex % 2) == 0 && plaintextElementList[i].getType() != CBORType.Integer) {
         	                ead4 = null;
         	                errMsg = new String("Malformed or invalid EAD_4");
         	                responseCode = ResponseCode.BAD_REQUEST;
         	                error = true;
         	                break;
         	            }
-        	            if ((i % 2) == 1 && plaintextElementList[i].getType() != CBORType.ByteString) {
+        	            if ((eadIndex % 2) == 1 && plaintextElementList[i].getType() != CBORType.ByteString) {
         	                ead4 = null;
         	                errMsg = new String("Malformed or invalid EAD_4");
         	                responseCode = ResponseCode.BAD_REQUEST;
@@ -1787,7 +1798,8 @@ public class MessageProcessor {
         	            // Make a hard copy
         	            byte[] serializedObject = plaintextElementList[i].EncodeToBytes();
         	            CBORObject element = CBORObject.DecodeFromBytes(serializedObject);
-        	            ead4[i] = element;
+        	            ead4[eadIndex] = element;
+        	            eadIndex++;
         	        }
         	    }
         	}
