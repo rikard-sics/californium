@@ -574,7 +574,7 @@ class EdhocResource extends CoapResource {
 	    		if (errorCode == Constants.ERR_CODE_SUCCESS) {
 	    			System.out.println("Success\n");
 	    		}
-	    		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED) {
+	    		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED_ERROR) {
 		        	String errMsg = objectList[2].toString();
 		        	System.out.println("ERR_INFO: " + errMsg + "\n");
 	    		}

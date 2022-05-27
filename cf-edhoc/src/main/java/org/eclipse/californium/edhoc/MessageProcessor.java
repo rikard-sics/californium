@@ -269,7 +269,7 @@ public class MessageProcessor {
 		byte[] replyPayload = new byte[] {};
 		
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
-		int errorCode = Constants.ERR_CODE_UNSPECIFIED; // The error code to use for the EDHOC Error Message
+		int errorCode = Constants.ERR_CODE_UNSPECIFIED_ERROR; // The error code to use for the EDHOC Error Message
 		ResponseCode responseCode = null; // Will be set to the CoAP response code to use for the EDHOC Error Message
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		CBORObject cI = null; // The Connection Identifier C_I, or left to null in case of invalid message
@@ -603,7 +603,7 @@ public class MessageProcessor {
 		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
 		
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
-		int errorCode = Constants.ERR_CODE_UNSPECIFIED; // The error code to use for the EDHOC Error Message
+		int errorCode = Constants.ERR_CODE_UNSPECIFIED_ERROR; // The error code to use for the EDHOC Error Message
 		ResponseCode responseCode = null; // Will be set to the CoAP response code to use for the EDHOC Error Message
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		CBORObject cR = null; // The Connection Identifier C_R, or left to null in case of invalid message
@@ -1135,7 +1135,7 @@ public class MessageProcessor {
 		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
 		
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
-		int errorCode = Constants.ERR_CODE_UNSPECIFIED; // The error code to use for the EDHOC Error Message
+		int errorCode = Constants.ERR_CODE_UNSPECIFIED_ERROR; // The error code to use for the EDHOC Error Message
 		ResponseCode responseCode = null; // Will be set to the CoAP response code to use for the EDHOC Error Message
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		CBORObject cI = null; // The Connection Identifier C_I, or left to null in case of invalid message
@@ -1567,7 +1567,7 @@ public class MessageProcessor {
 		List<CBORObject> processingResult = new ArrayList<CBORObject>(); // List of CBOR Objects to return as result
 		
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
-		int errorCode = Constants.ERR_CODE_UNSPECIFIED; // The error code to use for the EDHOC Error Message
+		int errorCode = Constants.ERR_CODE_UNSPECIFIED_ERROR; // The error code to use for the EDHOC Error Message
 		ResponseCode responseCode = null; // Will be set to the CoAP response code to use for the EDHOC Error Message
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		CBORObject cR = null; // The Connection Identifier C_R, or left to null in case of invalid message
@@ -1903,7 +1903,7 @@ public class MessageProcessor {
 		if (errorCode == Constants.ERR_CODE_SUCCESS) {
 			// Do nothing
 		}
-		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED) {
+		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED_ERROR) {
 			if (objectList[index].getType() != CBORType.TextString) {
 				System.err.println("Error when processing EDHOC Error Message - Invalid format of ERR_INFO");
 				return null;
@@ -2084,7 +2084,7 @@ public class MessageProcessor {
 		
 		List<CBORObject> objectList = new ArrayList<>();
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
-		int errorCode = Constants.ERR_CODE_UNSPECIFIED; // The error code to use for the EDHOC Error Message
+		int errorCode = Constants.ERR_CODE_UNSPECIFIED_ERROR; // The error code to use for the EDHOC Error Message
 		ResponseCode responseCode = ResponseCode.INTERNAL_SERVER_ERROR;; // The CoAP response code to use for the EDHOC Error Message
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		
@@ -2327,7 +2327,7 @@ public class MessageProcessor {
 		
 		List<CBORObject> objectList = new ArrayList<>();
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
-		int errorCode = Constants.ERR_CODE_UNSPECIFIED; // The error code to use for the EDHOC Error Message
+		int errorCode = Constants.ERR_CODE_UNSPECIFIED_ERROR; // The error code to use for the EDHOC Error Message
 		ResponseCode responseCode = ResponseCode.INTERNAL_SERVER_ERROR; // The CoAP response code to use for the EDHOC Error Message
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		
@@ -2539,7 +2539,7 @@ public class MessageProcessor {
 		
 		List<CBORObject> objectList = new ArrayList<>();
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
-		int errorCode = Constants.ERR_CODE_UNSPECIFIED; // The error code to use for the EDHOC Error Message
+		int errorCode = Constants.ERR_CODE_UNSPECIFIED_ERROR; // The error code to use for the EDHOC Error Message
 		ResponseCode responseCode = ResponseCode.INTERNAL_SERVER_ERROR; // The CoAP response code to use for the EDHOC Error Message
 		String errMsg = null; // The text string to be possibly returned as DIAG_MSG in an EDHOC Error Message
 		
@@ -2713,7 +2713,7 @@ public class MessageProcessor {
 		objectList.add(CBORObject.FromObject(errorCode));
 		
 		// Include ERR_INFO
-		if (errorCode == Constants.ERR_CODE_UNSPECIFIED) {
+		if (errorCode == Constants.ERR_CODE_UNSPECIFIED_ERROR) {
 			if (errMsg == null)
 				return null;
 			

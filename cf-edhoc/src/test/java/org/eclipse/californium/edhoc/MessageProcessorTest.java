@@ -187,7 +187,7 @@ public class MessageProcessorTest {
 		
 		// Test for an EDHOC error message as an incoming/outgoing response
 		errorMessageList = new ArrayList<CBORObject>();
-		errorMessageList.add(CBORObject.FromObject(Constants.ERR_CODE_UNSPECIFIED));
+		errorMessageList.add(CBORObject.FromObject(Constants.ERR_CODE_UNSPECIFIED_ERROR));
 		errorMessageList.add(errMsg);
 		byte[] errorMessage = Util.buildCBORSequence(errorMessageList);
 		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
@@ -202,7 +202,7 @@ public class MessageProcessorTest {
 		// Test for an EDHOC error message as an incoming/outgoing request
 		errorMessageList = new ArrayList<CBORObject>();
 		errorMessageList.add(cX);
-		errorMessageList.add(CBORObject.FromObject(Constants.ERR_CODE_UNSPECIFIED));
+		errorMessageList.add(CBORObject.FromObject(Constants.ERR_CODE_UNSPECIFIED_ERROR));
 		errorMessageList.add(errMsg);
 		errorMessage = Util.buildCBORSequence(errorMessageList);
 		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
