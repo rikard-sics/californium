@@ -223,6 +223,7 @@ public class MessageProcessorTest {
 	 * 
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
+	@Ignore
 	@Test
 	public void testWriteMessage1Ciphersuite0Method0() {
 		
@@ -316,6 +317,7 @@ public class MessageProcessorTest {
 	 * 
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
+	@Ignore
 	@Test
 	public void testWriteMessage2Ciphersuite0Method0() {
 
@@ -485,6 +487,7 @@ public class MessageProcessorTest {
 	 * 
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
+	@Ignore
 	@Test
 	public void testWriteMessage3Ciphersuite0Method0() {
 
@@ -667,6 +670,7 @@ public class MessageProcessorTest {
 	 * 
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
+	@Ignore
 	@Test
 	public void testWriteMessage4Ciphersuite0Method0() {
 
@@ -794,6 +798,7 @@ public class MessageProcessorTest {
 	 * 
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
+	@Ignore
 	@Test
 	public void testWriteMessage1Ciphersuite2Method3() {
 		
@@ -885,6 +890,7 @@ public class MessageProcessorTest {
 	 * 
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
+	@Ignore
 	@Test
 	public void testWriteMessage2Ciphersuite2Method3() {
 
@@ -1010,6 +1016,7 @@ public class MessageProcessorTest {
 	 * 
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
+	@Ignore
 	@Test
 	public void testWriteMessage3Ciphersuite2Method3() {
 
@@ -1195,6 +1202,7 @@ public class MessageProcessorTest {
 	 * 
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
+	@Ignore
 	@Test
 	public void testWriteMessage4Ciphersuite2Method3() {
 
