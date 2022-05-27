@@ -299,7 +299,7 @@ public class EdhocLayer extends AbstractLayer {
     			Util.purgeSession(mySession, CBORObject.FromObject(kid), edhocSessions, usedConnectionIds);
     			
     			String errMsg = new String("This EDHOC resource does not support the use of the EDHOC+OSCORE request");
-    			byte[] nextMessage = MessageProcessor.writeErrorMessage(Constants.ERR_CODE_UNSPECIFIED,
+    			byte[] nextMessage = MessageProcessor.writeErrorMessage(Constants.ERR_CODE_UNSPECIFIED_ERROR,
     																	Constants.EDHOC_MESSAGE_3,
 												                        false, null, errMsg, null);
 				ResponseCode responseCode = ResponseCode.BAD_REQUEST;
@@ -313,7 +313,7 @@ public class EdhocLayer extends AbstractLayer {
     			Util.purgeSession(mySession, CBORObject.FromObject(kid), edhocSessions, usedConnectionIds);
     			
     			String errMsg = new String("Cannot receive the combined EDHOC+OSCORE request if message_4 is expected");
-    			byte[] nextMessage = MessageProcessor.writeErrorMessage(Constants.ERR_CODE_UNSPECIFIED,
+    			byte[] nextMessage = MessageProcessor.writeErrorMessage(Constants.ERR_CODE_UNSPECIFIED_ERROR,
     																	Constants.EDHOC_MESSAGE_3,
 												                        false, null, errMsg, null);
 				ResponseCode responseCode = ResponseCode.BAD_REQUEST;
