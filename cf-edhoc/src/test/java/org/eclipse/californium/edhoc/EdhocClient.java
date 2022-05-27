@@ -466,7 +466,7 @@ public class EdhocClient {
         		if (errorCode == Constants.ERR_CODE_SUCCESS) {
         		    System.out.println("Success\n");
         		}
-        		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED) {
+        		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED_ERROR) {
         		    String errMsg = objectList[1].toString();
         		    System.out.println("ERR_INFO: " + errMsg + "\n");
         		}
@@ -957,7 +957,7 @@ public class EdhocClient {
     		if (errorCode == Constants.ERR_CODE_SUCCESS) {
     			System.out.println("Success\n");
     		}
-    		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED) {
+    		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED_ERROR) {
 	        	String errMsg = objectList[index].toString();
 	        	System.out.println("DIAG_MSG: " + errMsg + "\n");
     		}

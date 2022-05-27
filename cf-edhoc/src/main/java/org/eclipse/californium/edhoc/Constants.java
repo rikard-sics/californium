@@ -110,7 +110,7 @@ public static final int EDHOC_MESSAGE_4 = 4;
  * EDHOC Error Codes
  */
 public static final int ERR_CODE_SUCCESS = 0;
-public static final int ERR_CODE_UNSPECIFIED = 1;
+public static final int ERR_CODE_UNSPECIFIED_ERROR = 1;
 public static final int ERR_CODE_WRONG_SELECTED_CIPHER_SUITE = 2;
 
 
