@@ -80,8 +80,9 @@ public class EdhocSession {
 	// Stored hash of EDHOC Message 1
 	private byte[] hashMessage1 = null;
 	
-	// Stored CIPHERTEXT 2
-	private byte[] ciphertext2 = null;
+	// v-14
+	// Stored PLAINTEXT_2, as serialized CBOR sequence
+	private byte[] plaintext2 = null;
 	
 	// Inner Key-Derivation Keys
 	private byte[] prk_2e = null;
@@ -564,19 +565,21 @@ public class EdhocSession {
 		this.message3 = null;
 	}
 	
+	// v-14
 	/**
-	 * @return  the CIPHERTEXT 2
+	 * @return  the PLAINTEXT_2
 	 */
-	public byte[] getCiphertext2() {
-		return this.ciphertext2;
+	public byte[] getPlaintext2() {
+		return this.plaintext2;
 	}
-	
+
+	// v-14
 	/**
-	 * @param ct  store a CIPHERTEXT 2 for later computation of TH3
+	 * @param ct  store a PLAINTEXT_2 for the later computation of TH3
 	 */
-	public void setCiphertext2(byte[] ct) {
-		this.ciphertext2 = new byte[ct.length];
-		System.arraycopy(ct, 0, this.ciphertext2, 0, ct.length);
+	public void setPlaintext2(byte[] ct) {
+		this.plaintext2 = new byte[ct.length];
+		System.arraycopy(ct, 0, this.plaintext2, 0, ct.length);
 	}
 	
 	/**
