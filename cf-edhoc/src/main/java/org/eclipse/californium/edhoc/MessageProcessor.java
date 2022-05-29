@@ -821,7 +821,7 @@ public class MessageProcessor {
         byte[] gYSerializedCBOR = CBORObject.FromObject(gY).EncodeToBytes();
         byte[] cRSerializedCBOR = cR.EncodeToBytes();
         
-        th2 = computeTH2(session, gYSerializedCBOR, cRSerializedCBOR, hashMessage1SerializedCBOR);
+        th2 = computeTH2(session, gYSerializedCBOR, cRSerializedCBOR, hashMessage1SerializedCBOR); // v-14
         if (th2 == null) {
         	errMsg = new String("Error when computing TH2");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
@@ -2147,7 +2147,7 @@ public class MessageProcessor {
         byte[] gYSerializedCBOR = gY.EncodeToBytes();
         byte[] cRSerializedCBOR = cR.EncodeToBytes();
         
-        byte[] th2 = computeTH2(session, gYSerializedCBOR, cRSerializedCBOR, hashMessage1SerializedCBOR);
+        byte[] th2 = computeTH2(session, gYSerializedCBOR, cRSerializedCBOR, hashMessage1SerializedCBOR); // v-14
         if (th2 == null) {
     		System.err.println("Error when computing TH_2");
     		errMsg = new String("Error when computing TH_2");
