@@ -246,12 +246,28 @@ public static final String[] APP_HASH_ALGS = {
 		"SHA-256",  // cipher suite 3
 };
 
+/**
+ * Labels for EDHOC-KDF
+ * 
+ */
+public static final int KDF_LABEL_KEYSTREAM_2 = 0;
+public static final int KDF_LABEL_SALT_3E2M = 1;
+public static final int KDF_LABEL_MAC_2 = 2;
+public static final int KDF_LABEL_K_3 = 3;
+public static final int KDF_LABEL_IV_3 = 4;
+public static final int KDF_LABEL_SALT_4E3M = 5;
+public static final int KDF_LABEL_MAC_3 = 6;
+public static final int KDF_LABEL_PRK_OUT = 7;
+public static final int KDF_LABEL_K_4 = 8;
+public static final int KDF_LABEL_IV_4 = 9;
+public static final int KDF_LABEL_PRK_EXPORTER = 10;
+public static final int KDF_LABEL_PRK_OUT_KEY_UPDATE = 11;
 
 /**
  * Temporary keys
  * 
  */
-public static final int EDHOC_K_3AE = 0;  // Key K_3ae for message_3
+public static final int EDHOC_K_3AE = 0;   // Key K_3ae for message_3
 public static final int EDHOC_K_4AE  = 1;  // Key K for message_4
 
 
@@ -259,7 +275,7 @@ public static final int EDHOC_K_4AE  = 1;  // Key K for message_4
  * Temporary IVs
  * 
  */
-public static final int EDHOC_IV_3AE = 1;  // IV_3ae for message_3
+public static final int EDHOC_IV_3AE = 1;   // IV_3ae for message_3
 public static final int EDHOC_IV_4AE  = 2;  // IV for message_4
 
 
