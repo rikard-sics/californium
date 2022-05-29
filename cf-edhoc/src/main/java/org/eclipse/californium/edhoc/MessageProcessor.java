@@ -1292,21 +1292,21 @@ public class MessageProcessor {
     	byte[] externalData = th3;
 
     	
-    	// Compute the outer plaintext
+    	// Compute the plaintext
     	
     	if (debugPrint && ciphertext3 != null) {
     		Util.nicePrint("CIPHERTEXT_3", ciphertext3);
     	}
 
-    	byte[] outerPlaintext = decryptCiphertext3(session, externalData, ciphertext3, k3ae, iv3ae);
-    	if (outerPlaintext == null) {
+    	byte[] plaintext3 = decryptCiphertext3(session, externalData, ciphertext3, k3ae, iv3ae);
+    	if (plaintext3 == null) {
         	errMsg = new String("Error when decrypting CIPHERTEXT_3");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(errorCode, Constants.EDHOC_MESSAGE_3, !isReq, cI, errMsg, null, responseCode, ead3);
     	}
     	else if (debugPrint) {
-    		Util.nicePrint("Plaintext retrieved from CIPHERTEXT_3", outerPlaintext);
+    		Util.nicePrint("Plaintext retrieved from CIPHERTEXT_3", plaintext3);
     	}
     	
     	error = false;
@@ -1315,7 +1315,7 @@ public class MessageProcessor {
     	int baseIndex = 0;
     	CBORObject[] plaintextElementList = null;
     	try {
-    		plaintextElementList = CBORObject.DecodeSequenceFromBytes(outerPlaintext);
+    		plaintextElementList = CBORObject.DecodeSequenceFromBytes(plaintext3);
     	}
     	catch (Exception e) {
     	    errMsg = new String("Malformed or invalid plaintext from CIPHERTEXT_3");
@@ -1496,8 +1496,7 @@ public class MessageProcessor {
     	/* Compute TH4 */
     	
         byte[] th3SerializedCBOR = CBORObject.FromObject(th3).EncodeToBytes();
-        byte[] ciphertext3SerializedCBOR = CBORObject.FromObject(ciphertext3).EncodeToBytes();
-    	byte[] th4 = computeTH4(session, th3SerializedCBOR, ciphertext3SerializedCBOR);
+    	byte[] th4 = computeTH4(session, th3SerializedCBOR, plaintext3); // v-14
         if (th4 == null) {
         	errMsg = new String("Error when computing TH_4");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
@@ -2475,15 +2474,15 @@ public class MessageProcessor {
     		for (int i = 0; i < ead3.length; i++)
     			plaintextElementList.add(ead3[i]);
     	}    	
-    	byte[] plaintext = Util.buildCBORSequence(plaintextElementList);
-    	if (debugPrint && plaintext != null) {
-    		Util.nicePrint("Plaintext to compute CIPHERTEXT_3", plaintext);
+    	byte[] plaintext3 = Util.buildCBORSequence(plaintextElementList);
+    	if (debugPrint && plaintext3 != null) {
+    		Util.nicePrint("Plaintext to compute CIPHERTEXT_3", plaintext3);
     	}
     	
     	
     	// Compute CIPHERTEXT_3 and add it to the outer CBOR sequence
     	
-    	byte[] ciphertext3 = computeCiphertext3(session, externalData, plaintext, k3ae, iv3ae);
+    	byte[] ciphertext3 = computeCiphertext3(session, externalData, plaintext3, k3ae, iv3ae);
     	objectList.add(CBORObject.FromObject(ciphertext3));
     	if (debugPrint && ciphertext3 != null) {
     		Util.nicePrint("CIPHERTEXT_3", ciphertext3);
@@ -2495,8 +2494,7 @@ public class MessageProcessor {
     	/* Compute TH4 */
     	
         byte[] th3SerializedCBOR = CBORObject.FromObject(th3).EncodeToBytes();
-        byte[] ciphertext3SerializedCBOR = CBORObject.FromObject(ciphertext3).EncodeToBytes(); 
-    	byte[] th4 = computeTH4(session, th3SerializedCBOR, ciphertext3SerializedCBOR);
+    	byte[] th4 = computeTH4(session, th3SerializedCBOR, plaintext3); // v-14
         if (th4 == null) {
         	System.err.println("Error when computing TH_4");
     		errMsg = new String("Error when computing TH_4");
@@ -3801,25 +3799,25 @@ public class MessageProcessor {
 		
 	}
 	
-	
+	// v-14
     /**
      *  Compute the transcript hash TH4
      * @param session   The used EDHOC session
      * @param th3   The transcript hash TH3, as a serialized CBOR byte string
-     * @param ciphertext3   The CIPHERTEXT_3 from EDHOC Message 3, as a serialized CBOR byte string
+     * @param plaintext3   The PLAINTEXT_3 from EDHOC Message 3, as a serialized CBOR byte string
      * @return  The computed TH4
      */
-	public static byte[] computeTH4(EdhocSession session, byte[] th3, byte[] ciphertext3) {
+	public static byte[] computeTH4(EdhocSession session, byte[] th3, byte[] plaintext3) {
 	
         byte[] th4 = null;
-        int inputLength = th3.length + ciphertext3.length;
+        int inputLength = th3.length + plaintext3.length;
         
         int selectedCiphersuite = session.getSelectedCiphersuite();
         String hashAlgorithm = EdhocSession.getEdhocHashAlg(selectedCiphersuite);
         
         byte[] hashInput = new byte[inputLength];
         System.arraycopy(th3, 0, hashInput, 0, th3.length);
-        System.arraycopy(ciphertext3, 0, hashInput, th3.length, ciphertext3.length);
+        System.arraycopy(plaintext3, 0, hashInput, th3.length, plaintext3.length);
         try {
         	th4 = Util.computeHash(hashInput, hashAlgorithm);
 		} catch (NoSuchAlgorithmException e) {
