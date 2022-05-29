@@ -3088,11 +3088,17 @@ public class MessageProcessor {
             	OneKey publicKey = null;
             	
             	if (session.isInitiator() == false) {
-            		// Use the long-term key of the Responder as private key
-                	OneKey identityKey = session.getKeyPair();
-                	
             		// Use the ephemeral key of the Initiator as public key
             		publicKey = session.getPeerEphemeralPublicKey();
+            		
+            		// Use the long-term key of the Responder as private key
+            		privateKey = session.getKeyPair();
+            		
+                	// v-14
+                	// For the time being, this is not relevant, since the same
+                	// key pair cannot be used for both signing and Diffie-Hellman.
+            		/*
+                	OneKey identityKey = session.getKeyPair();
             		
 	            	if (identityKey.get(KeyKeys.OKP_Curve).AsInt32() == KeyKeys.OKP_Ed25519.AsInt32()) {
 	                	// Convert the identity key from Edward to Montgomery form
@@ -3107,14 +3113,21 @@ public class MessageProcessor {
 	            	else {
 	            		privateKey = identityKey;
 	            	}
+	            	*/
             	}
             	else if (session.isInitiator() == true) {
             		// Use the ephemeral key of the Initiator as private key
             		privateKey = session.getEphemeralKey();
             		
             		// Use the long-term key of the Responder as public key
-            		OneKey peerIdentityKey = session.getPeerLongTermPublicKey();
+            		publicKey = session.getPeerLongTermPublicKey();
             		
+                	// v-14
+                	// For the time being, this is not relevant, since the same
+                	// key pair cannot be used for both signing and Diffie-Hellman.
+            		/*
+            		/*
+            		OneKey peerIdentityKey = session.getPeerLongTermPublicKey();
             		
 	            	if (peerIdentityKey.get(KeyKeys.OKP_Curve).AsInt32() == KeyKeys.OKP_Ed25519.AsInt32()) {
 	                	// Convert the identity key from Edward to Montgomery form
@@ -3129,6 +3142,7 @@ public class MessageProcessor {
 	            	else {
 	            		publicKey = peerIdentityKey;
 	            	}
+	            	*/
 	            	
             	}
             	
@@ -3204,6 +3218,12 @@ public class MessageProcessor {
                 	privateKey = session.getEphemeralKey();
                 	
             		// Use the long-term key of the Initiator as public key
+                	publicKey = session.getPeerLongTermPublicKey();
+                	
+                	// v-14
+                	// For the time being, this is not relevant, since the same
+                	// key pair cannot be used for both signing and Diffie-Hellman.
+                	/*
             		OneKey identityKey = session.getPeerLongTermPublicKey();
             		
 	            	if (identityKey.get(KeyKeys.OKP_Curve).AsInt32() == KeyKeys.OKP_Ed25519.AsInt32()) {
@@ -3219,12 +3239,19 @@ public class MessageProcessor {
 	            	else {
 	            		publicKey = identityKey;
 	            	}
+	            	*/
             	}
             	else if (session.isInitiator() == true) {
             		// Use the ephemeral key of the Responder as public key
             		publicKey = session.getPeerEphemeralPublicKey();
             		
             		// Use the long-term key of the Initiator as private key
+            		privateKey = session.getKeyPair();
+            		
+                	// v-14
+                	// For the time being, this is not relevant, since the same
+                	// key pair cannot be used for both signing and Diffie-Hellman.
+            		/*
             		OneKey identityKey = session.getKeyPair();
             		
 	            	if (identityKey.get(KeyKeys.OKP_Curve).AsInt32() == KeyKeys.OKP_Ed25519.AsInt32()) {
@@ -3240,6 +3267,7 @@ public class MessageProcessor {
 	            	else {
 	            		privateKey = identityKey;
 	            	}
+	            	*/
 	            	
             	}
             	
