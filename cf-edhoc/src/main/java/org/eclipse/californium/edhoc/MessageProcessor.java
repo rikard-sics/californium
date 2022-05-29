@@ -821,7 +821,7 @@ public class MessageProcessor {
         byte[] gYSerializedCBOR = CBORObject.FromObject(gY).EncodeToBytes();
         byte[] cRSerializedCBOR = cR.EncodeToBytes();
         
-        th2 = computeTH2(session, hashMessage1SerializedCBOR, gYSerializedCBOR, cRSerializedCBOR);
+        th2 = computeTH2(session, gYSerializedCBOR, cRSerializedCBOR, hashMessage1SerializedCBOR);
         if (th2 == null) {
         	errMsg = new String("Error when computing TH2");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
@@ -2147,7 +2147,7 @@ public class MessageProcessor {
         byte[] gYSerializedCBOR = gY.EncodeToBytes();
         byte[] cRSerializedCBOR = cR.EncodeToBytes();
         
-        byte[] th2 = computeTH2(session, hashMessage1SerializedCBOR, gYSerializedCBOR, cRSerializedCBOR);
+        byte[] th2 = computeTH2(session, gYSerializedCBOR, cRSerializedCBOR, hashMessage1SerializedCBOR);
         if (th2 == null) {
     		System.err.println("Error when computing TH_2");
     		errMsg = new String("Error when computing TH_2");
@@ -3738,29 +3738,31 @@ public class MessageProcessor {
 		
 	}
 	
-	
+	// v-14
     /**
      *  Compute the transcript hash TH2
      * @param session   The used EDHOC session
-     * @param message1   The hash of EDHOC Message 1, as a serialized CBOR byte string
      * @param gY   The G_Y ephemeral key from the EDHOC Message 2, as a serialized CBOR byte string
      * @param cR   The C_R connection identifier from the EDHOC Message 2, as a serialized CBOR Object
+     * @param hashMessage1   The hash of EDHOC Message 1, as a serialized CBOR byte string
      * @return  The computed TH2
      */
-	public static byte[] computeTH2(EdhocSession session, byte[] hashMessage1, byte[] gY, byte[] cR) {
+	public static byte[] computeTH2(EdhocSession session, byte[] gY, byte[] cR, byte[] hashMessage1) {
 	
         byte[] th2 = null;
         
         int selectedCiphersuite = session.getSelectedCiphersuite();
         String hashAlgorithm = EdhocSession.getEdhocHashAlg(selectedCiphersuite);
         
+        // v-14
         int offset = 0;
-        byte[] hashInput = new byte[hashMessage1.length + gY.length + cR.length];
-        System.arraycopy(hashMessage1, 0, hashInput, 0, hashMessage1.length);
-        offset += hashMessage1.length;
+        byte[] hashInput = new byte[gY.length + cR.length + hashMessage1.length];
         System.arraycopy(gY, 0, hashInput, offset, gY.length);
         offset += gY.length;
         System.arraycopy(cR, 0, hashInput, offset, cR.length);
+        offset += cR.length;
+        System.arraycopy(hashMessage1, 0, hashInput, offset, hashMessage1.length);
+        
         try {
 			th2 = Util.computeHash(hashInput, hashAlgorithm);
 		} catch (NoSuchAlgorithmException e) {
