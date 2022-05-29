@@ -1732,15 +1732,15 @@ public class MessageProcessor {
     		Util.nicePrint("IV", iv4ae);
     	}
         
-    	byte[] outerPlaintext = decryptCiphertext4(session, externalData, ciphertext4, k4ae, iv4ae);
-    	if (outerPlaintext == null) {
+    	byte[] plaintext4 = decryptCiphertext4(session, externalData, ciphertext4, k4ae, iv4ae);
+    	if (plaintext4 == null) {
     	    errMsg = new String("Error when decrypting CIPHERTEXT_4");
     	    responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
     	    Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
     	    return processError(errorCode, Constants.EDHOC_MESSAGE_4, !isReq, cI, errMsg, null, responseCode, null);
     	}
     	else if (debugPrint) {
-    	    Util.nicePrint("Plaintext retrieved from CIPHERTEXT_4", outerPlaintext);
+    	    Util.nicePrint("Plaintext retrieved from CIPHERTEXT_4", plaintext4);
     	}
     	
         /* End computing the plaintext */
@@ -1752,9 +1752,9 @@ public class MessageProcessor {
     	int baseIndex = 0;
     	CBORObject[] plaintextElementList = null;
     	
-    	if (outerPlaintext.length != 0) {
+    	if (plaintext4.length != 0) {
     		try {
-    			plaintextElementList = CBORObject.DecodeSequenceFromBytes(outerPlaintext);
+    			plaintextElementList = CBORObject.DecodeSequenceFromBytes(plaintext4);
     		}
     		catch (Exception e) {
         		errMsg = new String("Malformed or invalid EAD_4");
@@ -2597,17 +2597,17 @@ public class MessageProcessor {
     	    	
     	
         // Prepare the plaintext
-    	byte[] plaintext = new byte[] {};
+    	byte[] plaintext4 = new byte[] {};
     	if (error == false) {
 	    	if (ead4 != null) {
 	    		List<CBORObject> plaintextElementList = new ArrayList<>();
 	    	    for (int i = 0; i < ead4.length; i++) {
 	    	        plaintextElementList.add(ead4[i]);
 	    	    }
-	    	    	plaintext = Util.buildCBORSequence(plaintextElementList);
+	    	    	plaintext4 = Util.buildCBORSequence(plaintextElementList);
 	    	}
-	    	if (debugPrint && error == false && plaintext != null) {
-		        Util.nicePrint("Plaintext to compute CIPHERTEXT_4", plaintext);
+	    	if (debugPrint && error == false && plaintext4 != null) {
+		        Util.nicePrint("Plaintext to compute CIPHERTEXT_4", plaintext4);
 		    }
     	}
     	
@@ -2646,7 +2646,7 @@ public class MessageProcessor {
     	// Encrypt the COSE object and take the ciphertext as CIPHERTEXT_4
     	byte[] ciphertext4 = null;
     	if (error == false) {
-	    	ciphertext4 = computeCiphertext4(session, externalData, plaintext, k4ae, iv4ae);
+	    	ciphertext4 = computeCiphertext4(session, externalData, plaintext4, k4ae, iv4ae);
 	    	if (ciphertext4 == null) {
 	    		System.err.println("Error when computing CIPHERTEXT_4");
 	    		errMsg = new String("Error when computing CIPHERTEXT_4");
