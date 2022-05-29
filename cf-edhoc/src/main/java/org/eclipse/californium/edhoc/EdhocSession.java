@@ -575,11 +575,11 @@ public class EdhocSession {
 
 	// v-14
 	/**
-	 * @param ct  store a PLAINTEXT_2 for the later computation of TH3
+	 * @param pt  store a PLAINTEXT_2 for the later computation of TH3
 	 */
-	public void setPlaintext2(byte[] ct) {
-		this.plaintext2 = new byte[ct.length];
-		System.arraycopy(ct, 0, this.plaintext2, 0, ct.length);
+	public void setPlaintext2(byte[] pt) {
+		this.plaintext2 = new byte[pt.length];
+		System.arraycopy(pt, 0, this.plaintext2, 0, pt.length);
 	}
 	
 	/**
