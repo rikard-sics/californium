@@ -598,8 +598,10 @@ public class MessageProcessorTest {
 		// Set TH_2 from the previous protocol step
 		session.setTH2(th2);
 		
-		// Set CIPHERTEXT_2 from the previous protocol step
-		session.setCiphertext2(ciphertext2);
+		// v-14
+		// Set PLAINTEXT_2 from the previous protocol step
+		byte[] plaintext2 = Utils.hexToBytes("a11822822e4879f2a41b510c1f9b584039a1296e81f38e018ac98fab94c796ea951a89db2b866a8f2ad1aa9f64639fefc93174f0de868c3260d48ac89db9f69541a12421a086eb43b0a2eb44c89e9107");
+		session.setPlaintext2(plaintext2);
 		
 		// Set PRK_3e2m from the previous protocol step
 		session.setPRK3e2m(prk3e2m);
@@ -1129,8 +1131,10 @@ public class MessageProcessorTest {
 		// Set TH_2 from the previous protocol step
 		session.setTH2(th2);
 		
-		// Set CIPHERTEXT_2 from the previous protocol step
-		session.setCiphertext2(ciphertext2);
+		// v-14
+		// Set PLAINTEXT_2 from the previous protocol step
+		byte[] plaintext2 = Utils.hexToBytes("32483324d5a4afcd4326");
+		session.setPlaintext2(plaintext2);
 		
 		// Set PRK_3e2m from the previous protocol step
 		session.setPRK3e2m(prk3e2m);
