@@ -246,6 +246,7 @@ public static final String[] APP_HASH_ALGS = {
 		"SHA-256",  // cipher suite 3
 };
 
+// v-14
 /**
  * Labels for EDHOC-KDF
  * 
@@ -262,6 +263,14 @@ public static final int KDF_LABEL_K_4 = 8;
 public static final int KDF_LABEL_IV_4 = 9;
 public static final int KDF_LABEL_PRK_EXPORTER = 10;
 public static final int KDF_LABEL_PRK_OUT_KEY_UPDATE = 11;
+
+//v-14
+/**
+ * Labels for EDHOC-Exporter
+ * 
+ */
+public static final int EXPORTER_LABEL_OSCORE_MASTER_SECRET = 0;
+public static final int EXPORTER_LABEL_OSCORE_MASTER_SALT = 1;
 
 /**
  * Temporary keys
