@@ -920,8 +920,7 @@ public class MessageProcessor {
         	error = true;
     	}
     	else if (error == false &&
-    			 plaintextElementList[baseIndex].getType() != CBORType.ByteString &&
-    			 plaintextElementList[baseIndex].getType() != CBORType.Integer &&
+    			 plaintextElementList[baseIndex].getType() != CBORType.ByteString && // v-14 identifiers
     			 plaintextElementList[baseIndex].getType() != CBORType.Map) {
         	errMsg = new String("Invalid format of ID_CRED_R");
         	responseCode = ResponseCode.BAD_REQUEST;
@@ -982,7 +981,7 @@ public class MessageProcessor {
     	error = false;
     	
     	// ID_CRED_R is a CBOR map with 'kid', and only 'kid' was transported
-    	if (rawIdCredR.getType() == CBORType.Integer || rawIdCredR.getType() == CBORType.ByteString) {
+    	if (rawIdCredR.getType() == CBORType.ByteString) { // v-14 identifiers
     		idCredR.Add(HeaderKeys.KID.AsCBOR(), rawIdCredR);
     	}
     	else if (rawIdCredR.getType() == CBORType.Map) {
@@ -1341,8 +1340,7 @@ public class MessageProcessor {
     	    error = true;
     	}
     	else if (error == false &&
-                plaintextElementList[baseIndex].getType() != CBORType.ByteString &&
-                plaintextElementList[baseIndex].getType() != CBORType.Integer &&
+                plaintextElementList[baseIndex].getType() != CBORType.ByteString && // v-14 identifiers
                 plaintextElementList[baseIndex].getType() != CBORType.Map) {
         errMsg = new String("Invalid format of ID_CRED_I");
         responseCode = ResponseCode.BAD_REQUEST;
@@ -1402,7 +1400,7 @@ public class MessageProcessor {
     	error = false;
     	
     	// ID_CRED_I is a CBOR map with 'kid', and only 'kid' was transported
-    	if (rawIdCredI.getType() == CBORType.Integer || rawIdCredI.getType() == CBORType.ByteString) {
+    	if (rawIdCredI.getType() == CBORType.ByteString) { // v-14 identifiers
     	    idCredI.Add(HeaderKeys.KID.AsCBOR(), rawIdCredI);
     	}
     	else if (rawIdCredI.getType() == CBORType.Map) {
