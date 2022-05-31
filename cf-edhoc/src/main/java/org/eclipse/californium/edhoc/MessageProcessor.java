@@ -1268,7 +1268,7 @@ public class MessageProcessor {
 		
 		
     	// Compute K_3ae and IV_3ae to protect the outer COSE object
-    	byte[] k3ae = computeKey(Constants.EDHOC_K_3AE, session);
+    	byte[] k3ae = computeKey(Constants.EDHOC_K_3, session);
     	if (k3ae == null) {
         	errMsg = new String("Error when computing TH3");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
@@ -1279,7 +1279,7 @@ public class MessageProcessor {
     		Util.nicePrint("K_3ae", k3ae);
     	}
     	
-    	byte[] iv3ae = computeIV(Constants.EDHOC_IV_3AE, session);
+    	byte[] iv3ae = computeIV(Constants.EDHOC_IV_3, session);
     	if (iv3ae == null) {
         	errMsg = new String("Error when computing IV_3ae");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
@@ -1438,23 +1438,23 @@ public class MessageProcessor {
     	byte[] peerCredential = peerCredentialCBOR.GetByteString();
     	
         // Compute the key material
-        byte[] prk4x3m = computePRK4x3m(session);
-    	if (prk4x3m == null) {
-    		errMsg = new String("Error when computing PRK_4x3m");
+        byte[] prk4e3m = computePRK4e3m(session);
+    	if (prk4e3m == null) {
+    		errMsg = new String("Error when computing PRK_4e3m");
     		responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
     		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(errorCode, Constants.EDHOC_MESSAGE_3, !isReq, cI, errMsg, null, responseCode, ead3);
     	}
     	else if (debugPrint) {
-    		Util.nicePrint("PRK_4x3m", prk4x3m);
+    		Util.nicePrint("PRK_4e3m", prk4e3m);
     	}
-    	session.setPRK4x3m(prk4x3m);
+    	session.setPRK4e3m(prk4e3m);
 
     	
     	/* Start verifying Signature_or_MAC_3 */
 
     	// Compute MAC_3
-    	byte[] mac3 = computeMAC3(session, prk4x3m, th3, idCredI, peerCredential, ead3);
+    	byte[] mac3 = computeMAC3(session, prk4e3m, th3, idCredI, peerCredential, ead3);
     	if (mac3 == null) {
     		errMsg = new String("Error when computing MAC_3");
     		responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
@@ -1510,6 +1510,32 @@ public class MessageProcessor {
     	}
         session.setTH4(th4);
     	
+    	// v-14
+    	/* Compute PRK_out */
+    	byte[] prkOut = computePRKout(session, prk4e3m);
+        if (prkOut == null) {
+        	System.err.println("Error when computing PRK_out");
+    		errMsg = new String("Error when computing PRK_out");
+    		error = true;
+        }
+        else if (debugPrint) {
+    		Util.nicePrint("PRK_out", prkOut);
+    	}
+    	session.setPRKout(prkOut);
+    	
+    	// v-14
+    	/* Compute PRK_exporter */
+    	byte[] prkExporter = computePRKexporter(session, prkOut);
+        if (prkExporter == null) {
+        	System.err.println("Error when computing PRK_exporter");
+    		errMsg = new String("Error when computing PRK_exporter");
+    		error = true;
+        }
+        else if (debugPrint) {
+    		Util.nicePrint("PRK_exporter", prkExporter);
+    	}
+    	session.setPRKexporter(prkExporter);
+        
     	
     	/* Delete ephemeral keys and other temporary material */
     	
@@ -1712,7 +1738,7 @@ public class MessageProcessor {
       
     	// Compute K and IV to protect the COSE object
     	
-    	byte[] k4ae = computeKey(Constants.EDHOC_K_4AE, session);
+    	byte[] k4ae = computeKey(Constants.EDHOC_K_4, session);
     	if (k4ae == null) {
     		errMsg = new String("Error when computing K");
     		responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
@@ -1722,7 +1748,7 @@ public class MessageProcessor {
     		Util.nicePrint("K", k4ae);
     	}
 
-    	byte[] iv4ae = computeIV(Constants.EDHOC_IV_4AE, session);
+    	byte[] iv4ae = computeIV(Constants.EDHOC_IV_4, session);
     	if (iv4ae == null) {
     		errMsg = new String("Error when computing IV");
     		responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
@@ -1806,12 +1832,18 @@ public class MessageProcessor {
         	}
     		
     	}
+    	    	
     	
     	// Return an EDHOC Error Message
     	if (error == true) {
         	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			return processError(errorCode, Constants.EDHOC_MESSAGE_4, !isReq, cR, errMsg, null, responseCode, ead4);
     	}
+    	
+    	
+    	// v-14
+    	session.setPRK4e3m(null);
+    	session.setTH4(null);
     	
 		
 		/* Return an indication that message_4 is fine */
@@ -2389,22 +2421,22 @@ public class MessageProcessor {
         session.setTH3(th3);
 
         // Compute the key material
-        byte[] prk4x3m = computePRK4x3m(session);
-    	if (prk4x3m == null) {
-    		System.err.println("Error when computing PRK_4x3m");
-    		errMsg = new String("Error when computing PRK_4x3m");
+        byte[] prk4e3m = computePRK4e3m(session);
+    	if (prk4e3m == null) {
+    		System.err.println("Error when computing PRK_4e3m");
+    		errMsg = new String("Error when computing PRK_4e3m");
     		error = true;
     	}
     	else if (debugPrint) {
-    		Util.nicePrint("PRK_4x3m", prk4x3m);
+    		Util.nicePrint("PRK_4e3m", prk4e3m);
     	}
-    	session.setPRK4x3m(prk4x3m);
+    	session.setPRK4e3m(prk4e3m);
         
 		
     	/* Start computing Signature_or_MAC_3 */
     	
     	// Compute MAC_3
-    	byte[] mac3 = computeMAC3(session, prk4x3m, th3, session.getIdCred(), session.getCred(), ead3);
+    	byte[] mac3 = computeMAC3(session, prk4e3m, th3, session.getIdCred(), session.getCred(), ead3);
     	if (mac3 == null) {
     		System.err.println("Error when computing MAC_3");
     		errMsg = new String("Error when computing MAC_3");
@@ -2442,7 +2474,7 @@ public class MessageProcessor {
     	
     	// Compute K_3ae and IV_3ae to protect the outer COSE object
 
-    	byte[] k3ae = computeKey(Constants.EDHOC_K_3AE, session);
+    	byte[] k3ae = computeKey(Constants.EDHOC_K_3, session);
     	if (k3ae == null) {
     		System.err.println("Error when computing K_3ae");
     		errMsg = new String("Error when computing K_3ae");
@@ -2452,7 +2484,7 @@ public class MessageProcessor {
     		Util.nicePrint("K_3ae", k3ae);
     	}
     	
-    	byte[] iv3ae = computeIV(Constants.EDHOC_IV_3AE, session);
+    	byte[] iv3ae = computeIV(Constants.EDHOC_IV_3, session);
     	if (iv3ae == null) {
     		System.err.println("Error when computing IV_3ae");
     		errMsg = new String("Error when computing IV_3ae");
@@ -2511,6 +2543,34 @@ public class MessageProcessor {
     		Util.nicePrint("TH_4", th4);
     	}
     	session.setTH4(th4);
+    	
+    	
+    	// v-14
+    	/* Compute PRK_out */
+    	byte[] prkOut = computePRKout(session, prk4e3m);
+        if (prkOut == null) {
+        	System.err.println("Error when computing PRK_out");
+    		errMsg = new String("Error when computing PRK_out");
+    		error = true;
+        }
+        else if (debugPrint) {
+    		Util.nicePrint("PRK_out", prkOut);
+    	}
+    	session.setPRKout(prkOut);
+    	
+    	// v-14
+    	/* Compute PRK_exporter */
+    	byte[] prkExporter = computePRKexporter(session, prkOut);
+        if (prkExporter == null) {
+        	System.err.println("Error when computing PRK_exporter");
+    		errMsg = new String("Error when computing PRK_exporter");
+    		error = true;
+        }
+        else if (debugPrint) {
+    		Util.nicePrint("PRK_exporter", prkExporter);
+    	}
+    	session.setPRKexporter(prkExporter);
+    	
     	
     	session.setCurrentStep(Constants.EDHOC_AFTER_M3);
     	
@@ -2618,7 +2678,7 @@ public class MessageProcessor {
     	
     	byte[] k4ae = null;
     	if (error == false) {    	
-			k4ae = computeKey(Constants.EDHOC_K_4AE, session);
+			k4ae = computeKey(Constants.EDHOC_K_4, session);
 			if (k4ae == null) {
 				System.err.println("Error when computing K_4ae");
 				errMsg = new String("Error when computing K_4ae");
@@ -2631,7 +2691,7 @@ public class MessageProcessor {
 
     	byte[] iv4ae = null;
     	if (error == false) {
-	    	iv4ae = computeIV(Constants.EDHOC_IV_4AE, session);
+	    	iv4ae = computeIV(Constants.EDHOC_IV_4, session);
 	    	if (iv4ae == null) {
 	    		System.err.println("Error when computing IV_4ae");
 	    		errMsg = new String("Error when computing IV_4ae");
@@ -2674,6 +2734,9 @@ public class MessageProcessor {
     	    
     	}
     	
+    	// v-14
+    	session.setPRK4e3m(null);
+    	session.setTH4(null);
     	
     	/* Prepare EDHOC Message 4 */
     	
@@ -2941,28 +3004,38 @@ public class MessageProcessor {
 	    if (keyLength == 0)
 	        return null;
 	    
-	    byte[] key = new byte[keyLength];
-	    String label = null;
-	    CBORObject context = CBORObject.FromObject(new byte[0]);
+	    byte[] key = null; // v-14
+	    String output = null;
+	    CBORObject context = null; // v-14
 	    
 	    try {
 	        switch(keyName) {
-	            case Constants.EDHOC_K_3AE:
-	            	label = new String("K_3");
-	                key = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), label, context, keyLength);
+	            case Constants.EDHOC_K_3:
+	            	
+	            	// v-14
+	            	output = new String("K_3");
+	            	byte[] th3 = session.getTH3();
+	            	context = CBORObject.FromObject(th3);
+	                key = session.edhocKDF(session.getPRK3e2m(), Constants.KDF_LABEL_K_3, context, keyLength);
+	                
 	                break;
-	            case Constants.EDHOC_K_4AE:
-	            	label = new String("EDHOC_K_4");
-	                key = session.edhocExporter(label, context, keyLength);
+	            case Constants.EDHOC_K_4:
+	            	
+	                // v-14
+	            	output = new String("K_4");
+	                byte[] th4 = session.getTH4();
+	            	context = CBORObject.FromObject(th4);
+	                key = session.edhocKDF(session.getPRK4e3m(), Constants.KDF_LABEL_K_4, context, keyLength);
+	                
 	                break;
 	            default:
 	            	key = null;
 	            	break;
 	        }
 	    } catch (InvalidKeyException e) {
-	        System.err.println("Error when generating " + label + "\n" + e.getMessage());
+	        System.err.println("Error when generating " + output + "\n" + e.getMessage());
 	    } catch (NoSuchAlgorithmException e) {
-	        System.err.println("Error when generating " + label + "\n" + e.getMessage());
+	        System.err.println("Error when generating " + output + "\n" + e.getMessage());
 	    }
 	    
 	    return key;
@@ -2983,29 +3056,39 @@ public class MessageProcessor {
 	    if (ivLength == 0)
 	        return null;
 	    
-	    byte[] iv = new byte[ivLength];
-	    String label = null;
-	    CBORObject context = CBORObject.FromObject(new byte[0]);
+	    byte[] iv = null; // v-14
+	    String output = null;
+	    CBORObject context = null; // v-14
 	    
 	    try {
 	        switch(ivName) {
-            case Constants.EDHOC_IV_3AE:
-            	label = new String("IV_3");
-                iv = session.edhocKDF(session.getPRK3e2m(), session.getTH3(), label, context, ivLength);
+            case Constants.EDHOC_IV_3:
+            	
+            	// v-14
+            	output = new String("IV_3");
+            	byte[] th3 = session.getTH3();
+            	context = CBORObject.FromObject(th3);
+                iv = session.edhocKDF(session.getPRK3e2m(), Constants.KDF_LABEL_IV_3, context, ivLength);
+            	
                 break;
-            case Constants.EDHOC_IV_4AE:
-            	label = new String("EDHOC_IV_4");
-                iv = session.edhocExporter(label, context, ivLength);
+            case Constants.EDHOC_IV_4:
+            	
+                // v-14
+            	output = new String("IV_4");
+                byte[] th4 = session.getTH4();
+            	context = CBORObject.FromObject(th4);
+                iv = session.edhocKDF(session.getPRK4e3m(), Constants.KDF_LABEL_IV_4, context, ivLength);
+                
                 break;
             default:
             	iv = null;
             	break;
         }
 	    } catch (InvalidKeyException e) {
-	    	System.err.println("Error when generating " + label + "\n" + e.getMessage());
+	    	System.err.println("Error when generating " + output + "\n" + e.getMessage());
 	        return null;
 	    } catch (NoSuchAlgorithmException e) {
-	    	System.err.println("Error when generating " + label + "\n" + e.getMessage());
+	    	System.err.println("Error when generating " + output + "\n" + e.getMessage());
 	        return null;
 	    }
 	    
@@ -3013,7 +3096,7 @@ public class MessageProcessor {
 	    
 	}
 
-	
+	// v-14
     /**
      *  Compute the keystream KEYSTREAM_2
      * @param session   The used EDHOC session
@@ -3022,10 +3105,11 @@ public class MessageProcessor {
      */
 	public static byte[] computeKeystream2(EdhocSession session, int length) {
     	
-		byte[] keystream2 = new byte[length];
-		CBORObject context = CBORObject.FromObject(new byte[0]);
+		byte[] keystream2 = null; // v-14
+		CBORObject context = CBORObject.FromObject(session.getTH2());
+		
 		try {
-			keystream2 = session.edhocKDF(session.getPRK2e(), session.getTH2(), "KEYSTREAM_2", context, length);
+			keystream2 = session.edhocKDF(session.getPRK2e(), Constants.KDF_LABEL_KEYSTREAM_2, context, length);
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when generating KEYSTREAM_2\n" + e.getMessage());
 			return null;
@@ -3064,7 +3148,7 @@ public class MessageProcessor {
 		
 	}
 	
-	
+	// v-14
     /**
      *  Compute the key PRK_3e2m
      * @param session   The used EDHOC session
@@ -3170,9 +3254,21 @@ public class MessageProcessor {
             	}
             	
             	String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCiphersuite());
+            	
+            	// v-14
+            	// Compute SALT_3e2m
+            	byte[] salt3e2m = computeSALT3e2m(session, prk2e);
+            	if (salt3e2m == null) {
+            		System.err.println("Error when computing SALT_3e2m");
+            		return null;
+            	}
+            	else if (debugPrint) {
+            		Util.nicePrint("SALT_3e2m", salt3e2m);
+            	}
+            	
             	try {
             		if (hashAlgorithm.equals("SHA-256") || hashAlgorithm.equals("SHA-384") || hashAlgorithm.equals("SHA-512")) {
-            			prk3e2m = Hkdf.extract(prk2e, dhSecret);
+            			prk3e2m = Hkdf.extract(salt3e2m, dhSecret); // v-14
             		}
 				} catch (InvalidKeyException e) {
 					System.err.println("Error when generating PRK_3e2m\n" + e.getMessage());
@@ -3190,25 +3286,25 @@ public class MessageProcessor {
         
 	}
 	
-	
+	// v-14
     /**
-     *  Compute the key PRK_4x3m
+     *  Compute the key PRK_4e3m
      * @param session   The used EDHOC session
-     * @return  The computed key PRK_4x3m
+     * @return  The computed key PRK_4e3m
      */
-	public static byte[] computePRK4x3m(EdhocSession session) {
+	public static byte[] computePRK4e3m(EdhocSession session) {
 		
-		byte[] prk4x3m = null;
+		byte[] prk4e3m = null;
 		byte[] prk3e2m = session.getPRK3e2m();
 		int authenticationMethod = session.getMethod();
 		
         if (authenticationMethod == Constants.EDHOC_AUTH_METHOD_0 || authenticationMethod == Constants.EDHOC_AUTH_METHOD_1) {
-        	// The initiator uses signatures as authentication method, then PRK_4x3m is equal to PRK_3e2m 
-        	prk4x3m = new byte[prk3e2m.length];
-        	System.arraycopy(prk3e2m, 0, prk4x3m, 0, prk3e2m.length);
+        	// The initiator uses signatures as authentication method, then PRK_4e3m is equal to PRK_3e2m 
+        	prk4e3m = new byte[prk3e2m.length];
+        	System.arraycopy(prk3e2m, 0, prk4e3m, 0, prk3e2m.length);
         }
         else if (authenticationMethod == Constants.EDHOC_AUTH_METHOD_2 || authenticationMethod == Constants.EDHOC_AUTH_METHOD_3) {
-        		// The initiator does not use signatures as authentication method, then PRK_4x3m has to be computed
+        		// The initiator does not use signatures as authentication method, then PRK_4e3m has to be computed
             	byte[] dhSecret;
             	OneKey privateKey = null;
             	OneKey publicKey = null;
@@ -3283,15 +3379,27 @@ public class MessageProcessor {
             	}
             	
             	String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCiphersuite());
+            	
+            	// v-14
+            	// Compute SALT_4e3m
+            	byte[] salt4e3m = computeSALT4e3m(session, prk3e2m);
+            	if (salt4e3m == null) {
+            		System.err.println("Error when computing SALT_4e3m");
+            		return null;
+            	}
+            	else if (debugPrint) {
+            		Util.nicePrint("SALT_4e3m", salt4e3m);
+            	}
+            	
             	try {
             		if (hashAlgorithm.equals("SHA-256") || hashAlgorithm.equals("SHA-384") || hashAlgorithm.equals("SHA-512")) {
-            			prk4x3m = Hkdf.extract(prk3e2m, dhSecret);
+            			prk4e3m = Hkdf.extract(salt4e3m, dhSecret); // v-14
             		}
 				} catch (InvalidKeyException e) {
-					System.err.println("Error when generating PRK_4x3m\n" + e.getMessage());
+					System.err.println("Error when generating PRK_4e3m\n" + e.getMessage());
 					return null;
 				} catch (NoSuchAlgorithmException e) {
-					System.err.println("Error when generating PRK_4x3m\n" + e.getMessage());
+					System.err.println("Error when generating PRK_4e3m\n" + e.getMessage());
 					return null;
 				}
             	finally {
@@ -3299,10 +3407,121 @@ public class MessageProcessor {
             	}
     	}
         
-        return prk4x3m;
+        return prk4e3m;
         
-	}	
+	}
+
+	// v-14
+    /**
+     *  Compute the PRK_out
+     * @param session   The used EDHOC session
+     * @param prk4e3m   The key PRK_4e3m
+     * @return  The computed PRK_out
+     */
+	public static byte[] computePRKout(EdhocSession session, byte[] prk4e3m) {
+		
+		byte[] prkOut = null; // v-14
+		int selectedCipherSuite = session.getSelectedCiphersuite();
+		int length = EdhocSession.getEdhocHashAlgOutputSize(selectedCipherSuite);
+		CBORObject context = CBORObject.FromObject(session.getTH4());
+		
+		try {
+			prkOut = session.edhocKDF(prk4e3m, Constants.KDF_LABEL_PRK_OUT, context, length);
+		} catch (InvalidKeyException e) {
+			System.err.println("Error when generating PRK_out\n" + e.getMessage());
+			return null;
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("Error when generating PRK_out\n" + e.getMessage());
+			return null;
+		}
+
+		return prkOut;
+		
+	}
 	
+	// v-14
+    /**
+     *  Compute the PRK_exporter
+     * @param session   The used EDHOC session
+     * @param prkOut   The key PRK_out
+     * @return  The computed PRK_exporter
+     */
+	public static byte[] computePRKexporter(EdhocSession session, byte[] prkOut) {
+		
+		byte[] prkExporter = null;
+		int selectedCipherSuite = session.getSelectedCiphersuite();
+		int length = EdhocSession.getEdhocHashAlgOutputSize(selectedCipherSuite);
+	    CBORObject context = CBORObject.FromObject(new byte[0]);
+	    
+		try {
+			prkExporter = session.edhocKDF(prkOut, Constants.KDF_LABEL_PRK_EXPORTER, context, length);
+		} catch (InvalidKeyException e) {
+			System.err.println("Error when generating PRK_exporter\n" + e.getMessage());
+			return null;
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("Error when generating PRK_exporter\n" + e.getMessage());
+			return null;
+		}
+
+		return prkExporter;
+		
+	}
+	
+	// v-14
+    /**
+     *  Compute the SALT_3e2m
+     * @param session   The used EDHOC session
+     * @param prk2e   The key PRK_2e
+     * @return  The computed SALT_3e2m
+     */
+	public static byte[] computeSALT3e2m(EdhocSession session, byte[] prk2e) {
+		
+		byte[] salt3e2m = null;
+		int selectedCipherSuite = session.getSelectedCiphersuite();
+		int length = EdhocSession.getEdhocHashAlgOutputSize(selectedCipherSuite);
+		CBORObject context = CBORObject.FromObject(session.getTH2());
+		
+		try {
+			salt3e2m = session.edhocKDF(prk2e, Constants.KDF_LABEL_SALT_3E2M, context, length);
+		} catch (InvalidKeyException e) {
+			System.err.println("Error when generating SALT_3e2m\n" + e.getMessage());
+			return null;
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("Error when generating SALT_3e2m\n" + e.getMessage());
+			return null;
+		}
+
+		return salt3e2m;
+		
+	}
+	
+	// v-14
+    /**
+     *  Compute the SALT_4e3m
+     * @param session   The used EDHOC session
+     * @param prk3e2m   The key PRK_3e2m
+     * @return  The computed SALT_4e3m
+     */
+	public static byte[] computeSALT4e3m(EdhocSession session, byte[] prk3e2m) {
+		
+		byte[] salt4e3m = null;
+		int selectedCipherSuite = session.getSelectedCiphersuite();
+		int length = EdhocSession.getEdhocHashAlgOutputSize(selectedCipherSuite);
+		CBORObject context = CBORObject.FromObject(session.getTH3());
+		
+		try {
+			salt4e3m = session.edhocKDF(prk3e2m, Constants.KDF_LABEL_SALT_4E3M, context, length);
+		} catch (InvalidKeyException e) {
+			System.err.println("Error when generating SALT_4e3m\n" + e.getMessage());
+			return null;
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("Error when generating SALT_4e3m\n" + e.getMessage());
+			return null;
+		}
+
+		return salt4e3m;
+		
+	}
 	
     /**
      *  Compute External_Data_2 / External_Data_3 for computing/verifying Signature_or_MAC_2 and Signature_or_MAC_3
@@ -3360,7 +3579,7 @@ public class MessageProcessor {
         
 	}
 	
-	
+	// v-14
     /**
      *  Compute MAC_2
      * @param session   The used EDHOC session
@@ -3374,10 +3593,11 @@ public class MessageProcessor {
 	public static byte[] computeMAC2(EdhocSession session, byte[] prk3e2m, byte[] th2,
 			                         CBORObject idCredR, byte[] credR, CBORObject[] ead2) {
 		
-		// Build the CBOR sequence to use for 'context': ( ID_CRED_R, CRED_R, ? EAD_2 )
+		// Build the CBOR sequence to use for 'context': ( ID_CRED_R, TH_2, CRED_R, ? EAD_2 )
 		// The actual 'context' is a CBOR byte string with value the serialization of the CBOR sequence
         List<CBORObject> objectList = new ArrayList<>();
     	objectList.add(idCredR);
+    	objectList.add(CBORObject.FromObject(th2)); // v-14
     	objectList.add(CBORObject.DecodeFromBytes(credR));
     	
     	if (ead2 != null) {
@@ -3397,9 +3617,10 @@ public class MessageProcessor {
     		macLength = EdhocSession.getTagLengthEdhocAEAD(selectedCipherSuite);
     	}
     	
-    	byte[] mac2 = new byte[macLength];
+    	byte[] mac2 = null; // v-14
+    	
     	try {
-			mac2 = session.edhocKDF(prk3e2m, th2, "MAC_2", context, macLength);
+			mac2 = session.edhocKDF(prk3e2m, Constants.KDF_LABEL_MAC_2, context, macLength); // v-14
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when computing MAC_2\n" + e.getMessage());
 		} catch (NoSuchAlgorithmException e) {
@@ -3410,24 +3631,24 @@ public class MessageProcessor {
 		
 	}
 
-	
+	// v-14
     /**
      *  Compute MAC_3
      * @param session   The used EDHOC session
-     * @param prk4x3m   The PRK used to compute MAC_3
-     * @param th3   The transcript hash TH3
+     * @param prk4e3m   The PRK used to compute MAC_3
      * @param idCredI   The ID_CRED_I associated to the long-term public key of the Initiator
      * @param credI   The long-term public key of the Initiator, as the serialization of a CBOR object
      * @param ead3   The External Authorization Data from EDHOC Message 3, it can be null
      * @return  The computed MAC_3
      */
-	public static byte[] computeMAC3(EdhocSession session, byte[] prk4x3m, byte[] th3,
+	public static byte[] computeMAC3(EdhocSession session, byte[] prk4e3m, byte[] th3,
             						 CBORObject idCredI, byte[] credI, CBORObject[] ead3) {
 				
-		// Build the CBOR sequence for 'context': ( ID_CRED_I, CRED_I, ? EAD_3 )
+		// Build the CBOR sequence for 'context': ( ID_CRED_I, TH_3, CRED_I, ? EAD_3 )
 		// The actual 'context' is a CBOR byte string with value the serialization of the CBOR sequence
         List<CBORObject> objectList = new ArrayList<>();
     	objectList.add(idCredI);
+    	objectList.add(CBORObject.FromObject(th3)); // v-14
     	objectList.add(CBORObject.DecodeFromBytes(credI));
     	
     	if (ead3 != null) {
@@ -3447,9 +3668,10 @@ public class MessageProcessor {
     		macLength = EdhocSession.getTagLengthEdhocAEAD(selectedCipherSuite);
     	}
     	
-    	byte[] mac3 = new byte[macLength];
+    	byte[] mac3 = null; // v-14
+    	
     	try {
-			mac3 = session.edhocKDF(prk4x3m, th3, "MAC_3", context, macLength);
+			mac3 = session.edhocKDF(prk4e3m, Constants.KDF_LABEL_MAC_3, context, macLength); // v-14
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when computing MAC_3\n" + e.getMessage());
 		} catch (NoSuchAlgorithmException e) {

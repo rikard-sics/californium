@@ -276,16 +276,16 @@ public static final int EXPORTER_LABEL_OSCORE_MASTER_SALT = 1;
  * Temporary keys
  * 
  */
-public static final int EDHOC_K_3AE = 0;   // Key K_3ae for message_3
-public static final int EDHOC_K_4AE  = 1;  // Key K for message_4
+public static final int EDHOC_K_3 = 0;  // Key K_3 for message_3
+public static final int EDHOC_K_4 = 1;  // Key K_4 for message_4
 
 
 /**
  * Temporary IVs
  * 
  */
-public static final int EDHOC_IV_3AE = 1;   // IV_3ae for message_3
-public static final int EDHOC_IV_4AE  = 2;  // IV for message_4
+public static final int EDHOC_IV_3 = 0;  // IV_3 for message_3
+public static final int EDHOC_IV_4 = 1;  // IV_4 for message_4
 
 
 /**

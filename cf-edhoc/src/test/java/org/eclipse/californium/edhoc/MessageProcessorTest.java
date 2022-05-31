@@ -640,7 +640,7 @@ public class MessageProcessorTest {
         byte[] nonce = Utils.hexToBytes("d6be169602b8bceaa01158fdb820890c");
        
         try {
-			session.edhocKeyUpdate(nonce);
+			session.edhocKeyUpdate(CBORObject.FromObject(nonce));
 		} catch (InvalidKeyException e) {
 			Assert.fail("Error while running EDHOC-KeyUpdate(): " + e.getMessage());
 		} catch (NoSuchAlgorithmException e) {
@@ -775,9 +775,9 @@ public class MessageProcessorTest {
 		// Set the Connection Identifier of the peer
 		session.setPeerConnectionId(connectionIdInitiator);
 		
-		// Store TH_4 computed from the previous protocol step
-		byte[] prk4x3m = Utils.hexToBytes("c576105d95b4d8c18e8f655f546880a854f2da106ce5a3a02d8b3ede7baabca6");
-		session.setPRK4x3m(prk4x3m);
+		// Store PRK_4e3m computed from the previous protocol step
+		byte[] prk4e3m = Utils.hexToBytes("c576105d95b4d8c18e8f655f546880a854f2da106ce5a3a02d8b3ede7baabca6");
+		session.setPRK4e3m(prk4e3m);
 		
 		// Store TH_4 computed from the previous protocol step
 		byte[] th4 = Utils.hexToBytes("993a2990963178043a151d1e10fa0ac968fd9c24e287c12d958f65d26fab56fa");
@@ -1174,7 +1174,7 @@ public class MessageProcessorTest {
         byte[] nonce = Utils.hexToBytes("05bd1ffd85c546da863c970a34b743a3");
        
         try {
-			session.edhocKeyUpdate(nonce);
+			session.edhocKeyUpdate(CBORObject.FromObject(nonce));
 		} catch (InvalidKeyException e) {
 			Assert.fail("Error while running EDHOC-KeyUpdate(): " + e.getMessage());
 		} catch (NoSuchAlgorithmException e) {
@@ -1308,9 +1308,9 @@ public class MessageProcessorTest {
 		session.setPeerConnectionId(connectionIdInitiator);
 		
 		
-		// Store PRK_4x3m computed from the previous protocol step
-		byte[] prk4x3m = Utils.hexToBytes("4a40f2aca7e1d9dbaf2b276bce75f0ce6d513f75a95af8905f2a14f2493b2477");
-		session.setPRK4x3m(prk4x3m);
+		// Store PRK_4e3m computed from the previous protocol step
+		byte[] prk4e3m = Utils.hexToBytes("4a40f2aca7e1d9dbaf2b276bce75f0ce6d513f75a95af8905f2a14f2493b2477");
+		session.setPRK4e3m(prk4e3m);
 		
 		// Store TH_4 computed from the previous protocol step
 		byte[] th4 = Utils.hexToBytes("ba682e7165e9d484bd2ebb031c09da1ea5b82eb332439c4c7ec73c2c239e3450");
