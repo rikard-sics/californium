@@ -4089,4 +4089,80 @@ public class MessageProcessor {
 		
 	}
 	
+	// v-14 identifiers
+    /**
+     *  Encode an EDHOC connection identifier to the CBOR Object to include in an EDHOC message
+     * @param identifier   The EDHOC connection identifier
+     * @return  The CBOR object encoding the EDHOC connection identifier, or null in case of error
+     */
+	public static CBORObject encodeIdentifier(byte[] identifier) {
+	
+		CBORObject identifierCBOR = null;
+		
+		if (identifier != null && identifier.length != 1) {
+			// Encode the EDHOC connection identifier as a CBOR byte string
+			identifierCBOR = CBORObject.FromObject(identifier);
+		}
+
+		if (identifier != null && identifier.length == 1) {
+			int byteValue = Util.bytesToInt(identifier);
+			
+			if (byteValue >= 0 && byteValue <= 23 && byteValue >= 32 && byteValue <= 55) {
+				// The EDHOC connection identifier is in the range 0x00-0x17 or in the range 0x20-0x37.
+				// That is, it happens to be the serialization of a CBOR integer with numeric value -24..23
+				
+				// Encode the EDHOC connection identifier as a CBOR integer
+				identifierCBOR = CBORObject.DecodeFromBytes(identifier);
+			}
+			else {
+				// Encode the EDHOC connection identifier as a CBOR byte string
+				identifierCBOR = CBORObject.FromObject(identifier);
+			}
+		}
+		
+		return identifierCBOR;
+		
+	}
+	
+	// v-14 identifiers
+    /**
+     *  Decode an EDHOC connection identifier from the CBOR Object included in an EDHOC message
+     * @param identifier   The CBOR object encoding the EDHOC connection identifier
+     * @return  The EDHOC connection identifier, or null in case of error
+     */
+	public static byte[] decodeIdentifier(CBORObject identifierCbor) {
+	
+		byte[] identifier = null;
+			
+		if (identifierCbor != null && identifierCbor.getType() == CBORType.ByteString) {
+			identifier = identifierCbor.GetByteString();
+			
+			// Consistency check
+			if (identifier.length == 1) {
+				int byteValue = Util.bytesToInt(identifier);
+				if (byteValue >= 0 && byteValue <= 23 && byteValue >= 32 && byteValue <= 55)
+					// This EDHOC connection identifier should have been encoded as a CBOR integer
+					identifier = null;
+			}			
+		}
+		else if (identifierCbor != null && identifierCbor.getType() == CBORType.Integer) {
+			int value = identifierCbor.AsInt32();
+			identifier = identifierCbor.EncodeToBytes();
+			
+			if (identifier.length != 1) {
+				// This EDHOC connection identifier was not encoded according to deterministic CBOR
+				identifier = null;
+			}
+			
+			if (value < -24 || value > 23) {
+				// This EDHOC connection identifier should have been encoded as a CBOR byte string
+				identifier = null;
+			}
+			
+		}
+
+		return identifier;
+		
+	}
+	
 }
