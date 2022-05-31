@@ -4148,7 +4148,7 @@ public class MessageProcessor {
 			identifier = identifierCbor.EncodeToBytes();
 			
 			if (identifier.length != 1) {
-				// This EDHOC connection identifier was not encoded according to deterministic CBOR
+				// This EDHOC connection identifier is not valid or was not encoded according to deterministic CBOR
 				identifier = null;
 			}
 			
