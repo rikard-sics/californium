@@ -4144,16 +4144,10 @@ public class MessageProcessor {
 			}			
 		}
 		else if (identifierCbor != null && identifierCbor.getType() == CBORType.Integer) {
-			int value = identifierCbor.AsInt32();
 			identifier = identifierCbor.EncodeToBytes();
 			
 			if (identifier.length != 1) {
 				// This EDHOC connection identifier is not valid or was not encoded according to deterministic CBOR
-				identifier = null;
-			}
-			
-			if (value < -24 || value > 23) {
-				// This EDHOC connection identifier should have been encoded as a CBOR byte string
 				identifier = null;
 			}
 			
