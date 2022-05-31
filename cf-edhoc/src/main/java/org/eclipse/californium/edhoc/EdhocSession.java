@@ -87,12 +87,17 @@ public class EdhocSession {
 	// Inner Key-Derivation Keys
 	private byte[] prk_2e = null;
 	private byte[] prk_3e2m = null;
-	private byte[] prk_4x3m = null;
+	private byte[] prk_4e3m = null;
 	
 	// Transcript Hashes
 	private byte[] TH2 = null;
 	private byte[] TH3 = null;
 	private byte[] TH4 = null;
+	
+	// v-14
+	// Key to store after a successful EDHOC execution
+	private byte[] prk_out = null;
+	private byte[] prk_exporter = null;
 	
 	// EDHOC message_3 , to be used for building an EDHOC+OSCORE request
 	private byte[] message3 = null;
@@ -128,6 +133,8 @@ public class EdhocSession {
 		
 	}
 	
+	
+	// v-14
 	/**
 	 * Delete all ephemeral keys and other temporary material used during the session
 	 */
@@ -139,6 +146,12 @@ public class EdhocSession {
 		this.prk_3e2m = null;
 		this.TH2 = null;
 		this.TH3 = null;
+		
+		// v-14
+		if (this.appProfile.getUseMessage4() == false) {
+			this.prk_4e3m = null;
+			this.TH4 = null;
+		}
 		
 	}
 	
@@ -305,6 +318,13 @@ public class EdhocSession {
 	public HashMapCtxDB getOscoreDb() {
 		return this.db;
 	}
+
+	/**
+	 * @return  the current step in the execution of the EDHOC protocol 
+	 */
+	public int getCurrentStep() {
+		return this.currentStep;
+	}
 	
 	/**
 	 * Set the current step in the execution of the EDHOC protocol
@@ -315,12 +335,12 @@ public class EdhocSession {
 	}
 	
 	/**
-	 * @return  the current step in the execution of the EDHOC protocol 
+	 * @return  the selected ciphersuite for this EDHOC session 
 	 */
-	public int getCurrentStep() {
-		return this.currentStep;
+	public int getSelectedCiphersuite() {
+		return this.selectedCiphersuite;
 	}
-
+	
 	/**
 	 * Set the selected ciphersuite for this EDHOC session
 	 * @param cipherSuite   the selected ciphersuite 
@@ -328,12 +348,12 @@ public class EdhocSession {
 	public void setSelectedCiphersuite(int ciphersuite) {
 		this.selectedCiphersuite = ciphersuite;
 	}
-
+	
 	/**
-	 * @return  the selected ciphersuite for this EDHOC session 
+	 * @return  the Connection Identifier of the other peer
 	 */
-	public int getSelectedCiphersuite() {
-		return this.selectedCiphersuite;
+	public CBORObject getPeerConnectionId() {
+		return this.peerConnectionId;
 	}
 	
 	/**
@@ -343,12 +363,12 @@ public class EdhocSession {
 	public void setPeerConnectionId(CBORObject peerId) {
 		this.peerConnectionId = peerId;
 	}
-
+	
 	/**
-	 * @return  the Connection Identifier of the other peer
+	 * @return  the list of the ciphersuites supported by the peer
 	 */
-	public CBORObject getPeerConnectionId() {
-		return this.peerConnectionId;
+	public List<Integer> getPeerSupportedCipherSuites() {
+		return this.peerSupportedCiphersuites;
 	}
 	
 	/**
@@ -358,12 +378,12 @@ public class EdhocSession {
 	public void setPeerSupportedCipherSuites(List<Integer> peerSupportedCiphersuites) {
 		this.peerSupportedCiphersuites = peerSupportedCiphersuites;
 	}
-
+	
 	/**
-	 * @return  the list of the ciphersuites supported by the peer
+	 * @return  the long-term public key of the other peer
 	 */
-	public List<Integer> getPeerSupportedCipherSuites() {
-		return this.peerSupportedCiphersuites;
+	public OneKey getPeerLongTermPublicKey() {
+		return this.peerLongTermPublicKey;
 	}
 	
 	/**
@@ -375,10 +395,10 @@ public class EdhocSession {
 	}
 
 	/**
-	 * @return  the long-term public key of the other peer
+	 * @return  the ID_CRED of the long-term public key of the other peer
 	 */
-	public OneKey getPeerLongTermPublicKey() {
-		return this.peerLongTermPublicKey;
+	public CBORObject getPeerIdCred() {
+		return this.peerIdCred;
 	}
 	
 	/**
@@ -387,12 +407,12 @@ public class EdhocSession {
 	public void setPeerIdCred(CBORObject idCred) {
 		this.peerIdCred = idCred;
 	}
-	
+
 	/**
-	 * @return  the ID_CRED of the long-term public key of the other peer
+	 * @return  the ephemeral public key of the other peer
 	 */
-	public CBORObject getPeerIdCred() {
-		return this.peerIdCred;
+	public OneKey getPeerEphemeralPublicKey() {
+		return this.peerEphemeralPublicKey;
 	}
 	
 	/**
@@ -404,10 +424,10 @@ public class EdhocSession {
 	}
 
 	/**
-	 * @return  the ephemeral public key of the other peer
+	 * @return  the inner key PRK_2e
 	 */
-	public OneKey getPeerEphemeralPublicKey() {
-		return this.peerEphemeralPublicKey;
+	public byte[] getPRK2e() {
+		return this.prk_2e;
 	}
 	
 	/**
@@ -417,14 +437,14 @@ public class EdhocSession {
 		this.prk_2e = new byte[prk2e.length];
 		System.arraycopy(prk2e,  0, this.prk_2e, 0, prk2e.length);
 	}
-	
-	/**
-	 * @return  the inner key PRK_2e
-	 */
-	public byte[] getPRK2e() {
-		return this.prk_2e;
-	}
 
+	/**
+	 * @return  the inner key PRK_3e2m
+	 */
+	public byte[] getPRK3e2m() {
+		return this.prk_3e2m;
+	}
+	
 	/**
 	 * @param prk3e2m   the inner key PRK_3e2m
 	 */
@@ -432,27 +452,31 @@ public class EdhocSession {
 		this.prk_3e2m = new byte[prk3e2m.length];
 		System.arraycopy(prk3e2m,  0, this.prk_3e2m, 0, prk3e2m.length);
 	}
-	
+
 	/**
-	 * @return  the inner key PRK3e2m
+	 * @return  the inner key PRK_4e3m
 	 */
-	public byte[] getPRK3e2m() {
-		return this.prk_3e2m;
+	public byte[] getPRK4e3m() {
+		return this.prk_4e3m;
 	}
 	
 	/**
-	 * @param prk4x3m   the inner key PRK4x3m
+	 * @param prk4e3m   the inner key PRK_4e3m
 	 */
-	public void setPRK4x3m(byte[] prk4x3m) {
-		this.prk_4x3m = new byte[prk4x3m.length];
-		System.arraycopy(prk4x3m,  0, this.prk_4x3m, 0, prk4x3m.length);
+	public void setPRK4e3m(byte[] prk4e3m) {
+		if (prk4e3m == null)
+			this.prk_4e3m = null;
+		else {
+			this.prk_4e3m = new byte[prk4e3m.length];
+			System.arraycopy(prk4e3m,  0, this.prk_4e3m, 0, prk4e3m.length);
+		}
 	}
 	
 	/**
-	 * @return  the inner key PRK4x3m
+	 * @return  the Transcript Hash TH2
 	 */
-	public byte[] getPRK4x3m() {
-		return this.prk_4x3m;
+	public byte[] getTH2() {
+		return this.TH2;
 	}
 	
 	/**
@@ -462,12 +486,12 @@ public class EdhocSession {
 	public void setTH2(byte[] inputTH) {
 		this.TH2 = inputTH;
 	}
-	
+		
 	/**
-	 * @return  the Transcript Hash TH2
+	 * @return  the Transcript Hash TH3
 	 */
-	public byte[] getTH2() {
-		return this.TH2;
+	public byte[] getTH3() {
+		return this.TH3;
 	}
 	
 	/**
@@ -479,10 +503,10 @@ public class EdhocSession {
 	}
 	
 	/**
-	 * @return  the Transcript Hash TH3
+	 * @return  the Transcript Hash TH4
 	 */
-	public byte[] getTH3() {
-		return this.TH3;
+	public byte[] getTH4() {
+		return this.TH4;
 	}
 	
 	/**
@@ -492,14 +516,41 @@ public class EdhocSession {
 	public void setTH4(byte[] inputTH) {
 		this.TH4 = inputTH;
 	}
-	
-	/**
-	 * @return  the Transcript Hash TH4
-	 */
-	public byte[] getTH4() {
-		return this.TH4;
-	}
 
+	// v-14
+	/**
+	 * @return  the key PRK_out
+	 */
+	public byte[] getPRKout() {
+		return this.prk_out;
+	}
+	
+	// v-14
+	/**
+	 * @param prkOut   the key PRK_out
+	 */
+	public void setPRKout(byte[] prkOut) {
+		this.prk_out = new byte[prkOut.length];
+		System.arraycopy(prkOut,  0, this.prk_out, 0, prkOut.length);
+	}
+	
+	// v-14
+	/**
+	 * @return  the key PRK_exporter
+	 */
+	public byte[] getPRKexporter() {
+		return this.prk_exporter;
+	}
+	
+	// v-14
+	/**
+	 * @param prkOut   the key PRK_exporter
+	 */
+	public void setPRKexporter(byte[] prkExporter) {
+		this.prk_exporter = new byte[prkExporter.length];
+		System.arraycopy(prkExporter,  0, this.prk_exporter, 0, prkExporter.length);
+	}
+	
 	/**
 	 * @return  the hash of EDHOC Message 1
 	 */
@@ -582,60 +633,80 @@ public class EdhocSession {
 		System.arraycopy(pt, 0, this.plaintext2, 0, pt.length);
 	}
 	
+	// v-14
 	/**
-	 * EDHOC-Exporter interface
+	 * EDHOC-Exporter function, to derive application keys
 	 * @param label   The label to use to derive the OKM
 	 * @param context   The context to use to derive the OKM, as a CBOR byte string
 	 * @param len   The intended length of the OKM to derive, in bytes
-	 * @return  the application key, or null if the EDHOC execution is not completed yet
+	 * @return  the application key, or null in case of errors
 	 */
-	public byte[] edhocExporter(String label, CBORObject context, int len) throws InvalidKeyException, NoSuchAlgorithmException {
+	public byte[] edhocExporter(int label, CBORObject context, int len) throws InvalidKeyException, NoSuchAlgorithmException {
+		
+		if (label < 0 || context.getType() != CBORType.ByteString || len < 0)
+			return null;
 		
 		if (this.currentStep != Constants.EDHOC_AFTER_M3 && this.currentStep != Constants.EDHOC_SENT_M3)
 			return null;
-		
-		if (label == null)
-			return null;
-		
-		return edhocKDF(this.prk_4x3m, this.TH4, label, context, len);
+	
+		return edhocKDF(this.prk_exporter, label, context, len);
 		
 	}
 	
+	// v-14
 	/**
-	 * EDHOC-KeyUpdate function, to preserve Perfect Forward Secrecy by updating the key PRK_4x3m
-	 * @param nonce   The nonce to use for renewing PRK_4x3m
-	 * @return  true in case of success, or false if the EDHOC execution is not completed yet
+	 * EDHOC-KeyUpdate function, to update the keys PRK_out and PRK_exporter
+	 * @param context   The context to use, as a CBOR byte string
+	 * @return  true in case of success, or false otherwise
 	 */
-	public boolean edhocKeyUpdate(byte[] nonce) throws InvalidKeyException, NoSuchAlgorithmException {
+	public boolean edhocKeyUpdate(CBORObject context) throws InvalidKeyException, NoSuchAlgorithmException {
 		
+		// The EDHOC execution is not completed yet
 		if (this.currentStep != Constants.EDHOC_AFTER_M3)
 			return false;
 		
-		String hashAlgorithm = getEdhocHashAlg(selectedCiphersuite);
-		
-		if (hashAlgorithm.equals("SHA-256") || hashAlgorithm.equals("SHA-384") || hashAlgorithm.equals("SHA-512")) {
-			this.prk_4x3m = Hkdf.extract(nonce, this.prk_4x3m);
-	        Util.nicePrint("PRK_4x3m", this.prk_4x3m);
-			return true;
+		// The provided context is not valid
+		if (context == null || context.getType() != CBORType.ByteString)
+			return false;
+	
+		// Update PRK_out
+		int length = EdhocSession.getEdhocHashAlgOutputSize(this.selectedCiphersuite);
+		try {
+			this.prk_out = edhocKDF(this.prk_out, Constants.KDF_LABEL_PRK_OUT_KEY_UPDATE, context, length);
+		} catch (InvalidKeyException e) {
+			System.err.println("Error when updating PRK_out\n" + e.getMessage());
+			return false;
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("Error when updating PRK_out\n" + e.getMessage());
+			return false;
 		}
+	    Util.nicePrint("PRK_out (updated)", this.prk_out);
 		
-		return false;
-		
+		// Update PRK_exporter
+	    this.prk_exporter = MessageProcessor.computePRKexporter(this, this.prk_out);
+	    if (prk_exporter == null) {
+			System.err.println("Error when updating PRK_exporter\n");
+			return false;
+		}
+	    Util.nicePrint("PRK_exporter (updated)", this.prk_exporter);
+
+		return true;
+
 	}
 	
+	// v-14
 	/**
-	 * EDHOC-specific version of KDF, building the 'info' parameter of HKDF-Expand from a transcript_hash and a label
+	 * EDHOC-KDF
 	 * @param prk   The Pseudo Random Key
-	 * @param transcript_hash   The transcript hash
 	 * @param label   The label to use to derive the OKM
 	 * @param context   The context to use to derive the OKM, as a CBOR byte string
-	 * @param len   The intended length of the OKM to derive, in bytes
+	 * @param length   The intended length of the OKM to derive, in bytes
 	 * @return  the OKM generated by HKDF-Expand
 	 */
-	public byte[] edhocKDF(byte[] prk, byte[] transcript_hash, String label, CBORObject context, int len)
+	public byte[] edhocKDF(byte[] prk, int label, CBORObject context, int length)
 			throws InvalidKeyException, NoSuchAlgorithmException {
 		
-		if (prk == null || transcript_hash == null || label == null || context == null)
+		if (prk == null || context == null)
 			return null;
 		
 		if (context.getType() != CBORType.ByteString)
@@ -643,22 +714,23 @@ public class EdhocSession {
 		
         // Prepare the 'info' CBOR sequence
         List<CBORObject> objectList = new ArrayList<>();
-        objectList.add(CBORObject.FromObject(transcript_hash));
         objectList.add(CBORObject.FromObject(label));
         objectList.add(context);
-        objectList.add(CBORObject.FromObject(len));
+        objectList.add(CBORObject.FromObject(length));
 		byte[] info = Util.buildCBORSequence(objectList);
+		
 		byte[] okm = null;
 		String hashAlgorithm = EdhocSession.getEdhocHashAlg(selectedCiphersuite);
 		
 		if (hashAlgorithm.equals("SHA-256") || hashAlgorithm.equals("SHA-384") || hashAlgorithm.equals("SHA-512")) {
-			okm = Hkdf.expand(prk, info, len);
+			okm = Hkdf.expand(prk, info, length);
 		}
 		
 		return okm;
 		
 	}
 
+	// v-14
     /**
      *  Get an OSCORE Master Secret using the EDHOC-Exporter
      * @param session   The used EDHOC session
@@ -673,7 +745,7 @@ public class EdhocSession {
 	    int keyLength = getKeyLengthAppAEAD(selectedCiphersuite);
 	    
 	    try {
-			masterSecret = session.edhocExporter("OSCORE_Secret", context, keyLength);
+			masterSecret = session.edhocExporter(Constants.EXPORTER_LABEL_OSCORE_MASTER_SECRET, context, keyLength); // v-14
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when the OSCORE Master Secret" + e.getMessage());
 		} catch (NoSuchAlgorithmException e) {
@@ -684,6 +756,7 @@ public class EdhocSession {
 		
 	}
 	
+	// v-14
     /**
      *  Get an OSCORE Master Salt using the EDHOC-Exporter
      * @param session   The used EDHOC session
@@ -695,7 +768,7 @@ public class EdhocSession {
 	    CBORObject context = CBORObject.FromObject(new byte[0]);
 	    
 	    try {
-			masterSalt = session.edhocExporter("OSCORE_Salt", context, 8);
+			masterSalt = session.edhocExporter(Constants.EXPORTER_LABEL_OSCORE_MASTER_SECRET, context, 8); // v-14
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when the OSCORE Master Salt" + e.getMessage());
 		} catch (NoSuchAlgorithmException e) {
