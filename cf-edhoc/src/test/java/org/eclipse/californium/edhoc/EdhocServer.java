@@ -159,9 +159,7 @@ public class EdhocServer extends CoapServer {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = true; // If set to true, it overrides the ID conversion method to CONVERSION_ID_CORE
-		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED; // Undefined yields using CONVERSION_ID_CORE
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
-											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		
 		appProfiles.put(uriLocal + "/.well-known/edhoc", appProfile);
 		
