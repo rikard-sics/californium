@@ -80,7 +80,7 @@ public class EdhocClient {
 
 	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
 	// Note: the application profile pertaining the EDHOC resource must first indicate support for the combined request 
-	private static final boolean OSCORE_EDHOC_COMBINED = true;
+	private static final boolean OSCORE_EDHOC_COMBINED = false;
 	
 	// The authentication method to include in EDHOC message_1 (relevant only when Initiator)
 	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
