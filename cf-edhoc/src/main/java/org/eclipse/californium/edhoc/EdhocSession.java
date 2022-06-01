@@ -35,14 +35,19 @@ import com.upokecenter.cbor.CBORType;
 
 public class EdhocSession {
 	
+	// Authentication credentials of this peer
+	//
+    // At the top level, authentication credential are sorted by key usage of the authentication keys.
+    // The outer map has label SIGNATURE_KEY or ECDH_KEY for distinguishing the two key usages. 
+    
     // The asymmetric key pairs of this peer (one per supported curve)
-	private Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
+	private Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
     
     // The identifiers of the authentication credentials of this peer
-	private Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
+	private Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
     
     // The authentication credentials of this peer (one per supported curve)
-	private Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
+	private Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
 	
 	// The processor to use for External Authorization Data.
 	//
@@ -102,9 +107,12 @@ public class EdhocSession {
 	// EDHOC message_3 , to be used for building an EDHOC+OSCORE request
 	private byte[] message3 = null;
 	
-	public EdhocSession(boolean initiator, boolean clientInitiated, int method, byte[] connectionId, Map<Integer, OneKey> keyPairs,
-						Map<Integer, CBORObject> idCreds, Map<Integer, CBORObject> creds, List<Integer> cipherSuites,
-						AppProfile appProfile, EDP edp, HashMapCtxDB db) {
+	public EdhocSession(boolean initiator, boolean clientInitiated, int method, byte[] connectionId,
+						Map<Integer, Map<Integer, OneKey>> keyPairs,
+						Map<Integer, Map<Integer, CBORObject>> idCreds,
+						Map<Integer, Map<Integer, CBORObject>> creds,
+						List<Integer> cipherSuites, AppProfile appProfile,
+						EDP edp, HashMapCtxDB db) {
 		
 		this.initiator = initiator;
 		this.clientInitiated = clientInitiated;
@@ -214,7 +222,21 @@ public class EdhocSession {
 	 */
 	public void setAuthenticationCredential() {
 		
-		int curve = 0;
+		int keyUsage = -1;
+		int curve = -1;
+		
+		if (this.method == Constants.EDHOC_AUTH_METHOD_0) {
+			keyUsage = Constants.SIGNATURE_KEY;
+		}
+		if (this.method == Constants.EDHOC_AUTH_METHOD_1) {
+			keyUsage = initiator ? Constants.SIGNATURE_KEY : Constants.ECDH_KEY;
+		}
+		if (this.method == Constants.EDHOC_AUTH_METHOD_2) {
+			keyUsage = initiator ? Constants.ECDH_KEY : Constants.SIGNATURE_KEY;
+		}
+		if (this.method == Constants.EDHOC_AUTH_METHOD_3) {
+			keyUsage = Constants.ECDH_KEY;
+		}
 		
 		if (this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_0 || this.selectedCiphersuite == Constants.EDHOC_CIPHER_SUITE_1) {
 			
@@ -236,9 +258,12 @@ public class EdhocSession {
 				curve = Constants.CURVE_P256;
 		}
 		
-		this.keyPair = this.keyPairs.get(Integer.valueOf(curve));
-		this.cred = this.creds.get(Integer.valueOf(curve)).GetByteString();
-		this.idCred = this.idCreds.get(Integer.valueOf(curve));
+		this.keyPair = this.keyPairs.get(Integer.valueOf(keyUsage)).
+									 get(Integer.valueOf(curve));
+		this.cred = this.creds.get(Integer.valueOf(keyUsage)).
+							   get(Integer.valueOf(curve)).GetByteString();
+		this.idCred = this.idCreds.get(Integer.valueOf(keyUsage)).
+								   get(Integer.valueOf(curve));
 				
 	}
 	

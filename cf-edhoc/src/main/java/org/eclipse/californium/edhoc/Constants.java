@@ -47,6 +47,11 @@ public static final int APPLICATION_EDHOC_CBOR_SEQ = 65000;
  */
 public static final int APPLICATION_CID_EDHOC_CBOR_SEQ = 65001;
 
+/**
+ * Key Usage
+ */
+public static final int SIGNATURE_KEY = 0;
+public static final int ECDH_KEY = 1;
 
 /**
  * Key Curve

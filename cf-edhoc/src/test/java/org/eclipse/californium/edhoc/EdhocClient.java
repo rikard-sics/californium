@@ -95,19 +95,26 @@ public class EdhocClient {
     //                  ID_CRED_TYPE_X5T ; ID_CRED_TYPE_X5U ; ID_CRED_TYPE_X5CHAIN
     private static int idCredType = Constants.ID_CRED_TYPE_X5T;
 
+    
+    // Authentication credentials of this peer
+    //
+    // At the top level, authentication credentials are sorted by key usage of the authentication keys.
+    // The outer map has label SIGNATURE_KEY or ECDH_KEY for distinguishing the two key usages. 
+    //
     // The asymmetric key pairs of this peer (one per supported curve)
-	private static Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
+	private static Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
     
     // The identifiers of the authentication credentials of this peer
-	private static Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
+	private static Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
     
     // The authentication credentials of this peer (one per supported curve)
-	private static Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
+	private static Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
     
 	// Each element is the ID_CRED_X used for an authentication credential associated to this peer
 	private static Set<CBORObject> ownIdCreds = new HashSet<>();
 	
-	// Public keys of other peers
+	
+    // Authentication credentials of the other peers
 	// 
 	// The map label is a CBOR Map used as ID_CRED_X
 	private static Map<CBORObject, OneKey> peerPublicKeys = new HashMap<CBORObject, OneKey>();
@@ -416,7 +423,10 @@ public class EdhocClient {
         
         boolean discontinue = false;
         int responseType = -1;
-        byte[] responsePayload = edhocMessageResp.getPayload();
+        byte[] responsePayload = null; 
+        		
+        if (edhocMessageResp != null)
+        	responsePayload = edhocMessageResp.getPayload();
         
         if (responsePayload == null)
         	discontinue = true;
@@ -688,7 +698,9 @@ public class EdhocClient {
 			            	return;
 						}
 					
-						byte[] myPayload = protectedResponse.getPayload();
+						byte[] myPayload = null;
+						if (protectedResponse != null)
+							myPayload = protectedResponse.getPayload();
 						if (myPayload != null) {
 							System.out.println(Utils.prettyPrint(protectedResponse));
 							
@@ -756,8 +768,11 @@ public class EdhocClient {
 		        if (edhocMessageResp2 != null) {
 
 		        	responseType = -1;
+		        	responsePayload = null;
 		        	boolean expectMessage4 = session.getApplicationProfile().getUseMessage4();
-		            responsePayload = edhocMessageResp2.getPayload();
+		        	
+		        	if (edhocMessageResp2 != null)
+		        		responsePayload = edhocMessageResp2.getPayload();
 		            
 		            if (responsePayload == null)
 		            	discontinue = true;
@@ -922,7 +937,9 @@ public class EdhocClient {
 					} catch (IOException e) {
 						System.err.println("IOException when sending a protected request\n");
 					}
-					byte[] myPayload = protectedResponse.getPayload();
+					byte[] myPayload = null;
+					if (protectedResponse != null)
+						myPayload = protectedResponse.getPayload();
 					if (myPayload != null) {
 						System.out.println(Utils.prettyPrint(protectedResponse));
 					}
@@ -1004,6 +1021,7 @@ public class EdhocClient {
 		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_1);
 		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_2);
 		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_3);
+
 	
 	}
 	
@@ -1014,6 +1032,12 @@ public class EdhocClient {
 		byte[] publicKeyBinaryY = null;
 		byte[] serializedCert = null;
 		
+		keyPairs.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, OneKey>());
+		keyPairs.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, OneKey>());
+		creds.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, CBORObject>());
+		creds.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, CBORObject>());
+		idCreds.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, CBORObject>());
+		idCreds.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, CBORObject>());
 		
 		// A single type will be used for all these authentication credentials.
 		// A single type will be used for identifiers of the authentication credentials.
@@ -1035,9 +1059,9 @@ public class EdhocClient {
 			CBORObject idCredEd25519 = null;
 			CBORObject ccsObjectEd25519 = null;
 			
-			// If the type of credential identifier is 'kid', use 0x24,
-			// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x24
-			byte[] kidEd25519 = new byte[] {(byte) 0x24};
+			// If the type of credential identifier is 'kid', use 0x00,
+			// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x00
+			byte[] kidEd25519 = new byte[] {(byte) 0x00};
 			
 			// Build the key pair
 			
@@ -1058,7 +1082,7 @@ public class EdhocClient {
 		        
 		        // These serializations have to be prepared manually, in order to ensure that
 		        // the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
-		        credEd25519 = net.i2p.crypto.eddsa.Utils.hexToBytes("a2026008a101a40101024124200621582038e5d54563c2b6a4ba26f3015f61bb706e5c2efdb556d2e1690b97fc3c6de149");
+		        credEd25519 = net.i2p.crypto.eddsa.Utils.hexToBytes("A2026008A101A40101024100200621582038E5D54563C2B6A4BA26F3015F61BB706E5C2EFDB556D2E1690B97FC3C6DE149");
 		        break;
 		    case Constants.CRED_TYPE_X509:
 		        // The x509 certificate of this peer
@@ -1096,9 +1120,12 @@ public class EdhocClient {
 			}
 			
 			// Add the key pair, CRED and ID_CRED to the respective collections
-			keyPairs.put(Integer.valueOf(Constants.CURVE_Ed25519), keyPairEd25519);
-			creds.put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(credEd25519));
-			idCreds.put(Integer.valueOf(Constants.CURVE_Ed25519), idCredEd25519);
+			keyPairs.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+					 put(Integer.valueOf(Constants.CURVE_Ed25519), keyPairEd25519);
+			creds.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+				  	 put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(credEd25519));
+			idCreds.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+			  		 put(Integer.valueOf(Constants.CURVE_Ed25519), idCredEd25519);
 			
 		    // Add this ID_CRED to the whole collection of ID_CRED_X for this peer 
 			ownIdCreds.add(idCredEd25519);
@@ -1111,9 +1138,9 @@ public class EdhocClient {
 			CBORObject idCredX25519 = null;
 			CBORObject ccsObjectX25519 = null;
 			
-			// If the type of credential identifier is 'kid', use 0x25,
-			// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x25
-			byte[] kidX25519 = new byte[] {(byte) 0x25};
+			// If the type of credential identifier is 'kid', use 0x01,
+			// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x01
+			byte[] kidX25519 = new byte[] {(byte) 0x01};
 			
 			// Build the key pair
 			
@@ -1134,7 +1161,7 @@ public class EdhocClient {
 		        
 		        // These serializations have to be prepared manually, in order to ensure that
 		        // the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
-	            credX25519 = net.i2p.crypto.eddsa.Utils.hexToBytes("A2026008A101A4010102412520042158202C440CC121F8D7F24C3B0E41AEDAFE9CAA4F4E7ABB835EC30F1DE88ADB96FF71");
+	            credX25519 = net.i2p.crypto.eddsa.Utils.hexToBytes("A2026008A101A4010102410120042158202C440CC121F8D7F24C3B0E41AEDAFE9CAA4F4E7ABB835EC30F1DE88ADB96FF71");
 		        break;
 		    case Constants.CRED_TYPE_X509:
 		        // The x509 certificate of this peer
@@ -1170,11 +1197,14 @@ public class EdhocClient {
 				idCredX25519 = Util.buildIdCredX5u("http://example.repo.com/hostA-x509-X25519");
 				break;
 			}
-			
+
 			// Add the key pair, CRED and ID_CRED to the respective collections
-			keyPairs.put(Integer.valueOf(Constants.CURVE_X25519), keyPairX25519);
-			creds.put(Integer.valueOf(Constants.CURVE_X25519), CBORObject.FromObject(credX25519));
-			idCreds.put(Integer.valueOf(Constants.CURVE_X25519), idCredX25519);
+			keyPairs.get(Integer.valueOf(Constants.ECDH_KEY)).
+					 put(Integer.valueOf(Constants.CURVE_X25519), keyPairX25519);
+			creds.get(Integer.valueOf(Constants.ECDH_KEY)).
+            		 put(Integer.valueOf(Constants.CURVE_X25519), CBORObject.FromObject(credX25519));
+			idCreds.get(Integer.valueOf(Constants.ECDH_KEY)).
+            		 put(Integer.valueOf(Constants.CURVE_X25519), idCredX25519);
 			
 		    // Add this ID_CRED to the whole collection of ID_CRED_X for this peer 
 			ownIdCreds.add(idCredX25519);
@@ -1182,18 +1212,20 @@ public class EdhocClient {
 		}
 
 
-		// Add one authentication credential for curve P-256
+		// Add two authentication credentials for curve P-256 (one for signing only, one for ECDH only)
 		if (supportedCiphersuites.contains(Integer.valueOf(Constants.EDHOC_CIPHER_SUITE_2)) ||
 			supportedCiphersuites.contains(Integer.valueOf(Constants.EDHOC_CIPHER_SUITE_3))) {
 		
+			// Signing authentication credential
+			
 			OneKey keyPairP256 = null;
 			byte[] credP256 = null;
 			CBORObject idCredP256 = null;
 			CBORObject ccsObjectP256 = null;
 			
-			// If the type of credential identifier is 'kid', use 0x26,
-			// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x26
-			byte[] kidP256 = new byte[] {(byte) 0x26};
+			// If the type of credential identifier is 'kid', use 0x02,
+			// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x02
+			byte[] kidP256 = new byte[] {(byte) 0x02};
 			
 			// Build the key pair
 			
@@ -1214,7 +1246,7 @@ public class EdhocClient {
 		        
 		        // These serializations have to be prepared manually, in order to ensure that
 		        // the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
-	            credP256 = net.i2p.crypto.eddsa.Utils.hexToBytes("A2026008A101A501020241262001215820CD4177BA62433375EDE279B5E18E8B91BC3ED8F1E174474A26FC0EDB44EA5373225820A0391DE29C5C5BADDA610D4E301EAAA18422367722289CD18CBE6624E89B9CFD");
+	            credP256 = net.i2p.crypto.eddsa.Utils.hexToBytes("A2026008A101A501020241022001215820CD4177BA62433375EDE279B5E18E8B91BC3ED8F1E174474A26FC0EDB44EA5373225820A0391DE29C5C5BADDA610D4E301EAAA18422367722289CD18CBE6624E89B9CFD");
 		        break;
 		    case Constants.CRED_TYPE_X509:
 		        // The x509 certificate of this peer
@@ -1247,17 +1279,100 @@ public class EdhocClient {
 				idCredP256 = Util.buildIdCredX5t(serializedCert);
 				break;
 			case Constants.ID_CRED_TYPE_X5U:
-				idCredP256 = Util.buildIdCredX5u("http://example.repo.com/hostA-x509-P256");
+				idCredP256 = Util.buildIdCredX5u("http://example.repo.com/hostA-x509-P256-signing");
 				break;
 			}
 			
 			// Add the key pair, CRED and ID_CRED to the respective collections
-			keyPairs.put(Integer.valueOf(Constants.CURVE_P256), keyPairP256);
-			creds.put(Integer.valueOf(Constants.CURVE_P256), CBORObject.FromObject(credP256));
-			idCreds.put(Integer.valueOf(Constants.CURVE_P256), idCredP256);
-			
+			keyPairs.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+					 put(Integer.valueOf(Constants.CURVE_P256), keyPairP256);
+			creds.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+            		 put(Integer.valueOf(Constants.CURVE_P256), CBORObject.FromObject(credP256));
+			idCreds.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+            		 put(Integer.valueOf(Constants.CURVE_P256), idCredP256);
+						
 		    // Add this ID_CRED to the whole collection of ID_CRED_X for this peer 
 			ownIdCreds.add(idCredP256);
+			
+			
+			
+			// ECDH authentication credential
+			
+			OneKey keyPairP256dh = null;
+			byte[] credP256dh = null;
+			CBORObject idCredP256dh = null;
+			CBORObject ccsObjectP256dh = null;
+			
+			// If the type of credential identifier is 'kid', use 0x03,
+			// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x03
+			byte[] kidP256dh = new byte[] {(byte) 0x03};
+			
+			// Build the key pair
+			
+			privateKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("fb13adeb6518cee5f88417660841142e830a81fe334380a953406a1305e8706b");
+			publicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("ac75e9ece3e50bfc8ed60399889522405c47bf16df96660a41298cb4307f7eb6");
+			publicKeyBinaryY = net.i2p.crypto.eddsa.Utils.hexToBytes("6e5de611388a4b8a8211334ac7d37ecb52a387d257e6db3c2a93df21ff3affc8");
+			keyPairP256dh =  SharedSecretCalculation.buildEcdsa256OneKey(privateKeyBinary, publicKeyBinary, publicKeyBinaryY);
+		
+			// Build CRED
+			switch (credType) {
+		    case Constants.CRED_TYPE_CWT:
+		        // TODO
+		        break;
+		    case Constants.CRED_TYPE_CCS:
+		        System.out.print("My   ");
+		        CBORObject idCredKidCbor = CBORObject.FromObject(kidP256dh);
+		        ccsObjectP256dh = CBORObject.DecodeFromBytes(Util.buildCredRawPublicKeyCcs(keyPairP256dh, subjectName, idCredKidCbor));
+		        
+		        // These serializations have to be prepared manually, in order to ensure that
+		        // the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
+	            credP256dh = net.i2p.crypto.eddsa.Utils.hexToBytes("A2026008A101A501020241032001215820AC75E9ECE3E50BFC8ED60399889522405C47BF16DF96660A41298CB4307F7EB62258206E5DE611388A4B8A8211334AC7D37ECB52A387D257E6DB3C2A93DF21FF3AFFC8");
+		        break;
+		    case Constants.CRED_TYPE_X509:
+		        // The x509 certificate of this peer
+		    	serializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("7713204c3ebc3428a6cf57e24c9def59651770449bce7ec6561e52433aa55e71f1fa34b22a9ca4a1e12924eae1d1766088098449cb848ffc795f88afc49cbe8afdd1ba009f21675e8f6c77a4a2c30195601f6f0a0852978bd43d28207d44486502ff7bdda8");
+		        
+		        // Test with Peter (real DER certificate for the same identity key)
+		        // serializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("30820225308201cba003020102020711223344556600300a06082a8648ce3d040302306f310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31153013060355040b0c0c6d616e7566616374757265723115301306035504030c0c6d6173612e73746f6b2e6e6c3020170d3231303230393039333131345a180f39393939313233313233353935395a308190310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31163014060355040b0c0d6d616e75666163747572696e67311c301a06035504030c13757569643a706c656467652e312e322e332e34311730150603550405130e706c656467652e312e322e332e343059301306072a8648ce3d020106082a8648ce3d03010703420004d474715902aa13cd63984076ea4aeb38818f99a80413fcdd9e033c3c50318817eb1cd945afce48b64479441d1095fb0cf5c31774c786d07959935839bb147defa32e302c30090603551d1304023000301f0603551d23041830168014707f9105ed9e1e1c3fe0cf869d810b2d43d10042300a06082a8648ce3d040302034800304502200fdaaaf09f44ccdafa54a467de952c1e90d1a9a8f60b96793bc9497af318671202210086fddeb42703574df21c7c36a66a3807034fa3366a72b812567f0ed0249a2b31");
+		        
+		        // CRED, as serialization of a CBOR byte string wrapping the serialized certificate
+		        credP256dh = CBORObject.FromObject(serializedCert).EncodeToBytes();
+		        break;
+			}
+			
+			// Build ID_CRED
+
+			switch (idCredType) {
+			case Constants.ID_CRED_TYPE_CWT:
+				// TODO
+				break;
+			case Constants.ID_CRED_TYPE_CCS:
+				idCredP256dh = Util.buildIdCredKccs(ccsObjectP256dh);
+				break;
+			case Constants.ID_CRED_TYPE_KID:
+				idCredP256dh = Util.buildIdCredKid(kidP256dh);
+				break;
+			case Constants.ID_CRED_TYPE_X5CHAIN:
+				idCredP256dh = Util.buildIdCredX5chain(serializedCert);
+				break;
+			case Constants.ID_CRED_TYPE_X5T:
+				idCredP256dh = Util.buildIdCredX5t(serializedCert);
+				break;
+			case Constants.ID_CRED_TYPE_X5U:
+				idCredP256dh = Util.buildIdCredX5u("http://example.repo.com/hostA-x509-P256-dh");
+				break;
+			}
+			
+			// Add the key pair, CRED and ID_CRED to the respective collections
+			keyPairs.get(Integer.valueOf(Constants.ECDH_KEY)).
+					 put(Integer.valueOf(Constants.CURVE_P256), keyPairP256dh);
+			creds.get(Integer.valueOf(Constants.ECDH_KEY)).
+            		 put(Integer.valueOf(Constants.CURVE_P256), CBORObject.FromObject(credP256dh));
+			idCreds.get(Integer.valueOf(Constants.ECDH_KEY)).
+            		 put(Integer.valueOf(Constants.CURVE_P256), idCredP256dh);
+			
+		    // Add this ID_CRED to the whole collection of ID_CRED_X for this peer 
+			ownIdCreds.add(idCredP256dh);
 			
 		}
 
@@ -1405,9 +1520,11 @@ public class EdhocClient {
 	
 		/* *** *** *** *** */
 		//
-		// Add other peers' authentication credentials for curve P-256
+		// Add other peers' authentication credentials for curve P-256 (one for signing only, one for ECDH only)
 		//
 		/* *** *** *** *** */
+		
+		// Signing authentication credential
 		
 	    OneKey peer1PublicKeyP256 = null;
 		CBORObject peer1CcsObjectP256 = null;
@@ -1458,7 +1575,7 @@ public class EdhocClient {
 		
 		peer1IdCredP256x5chain = Util.buildIdCredX5chain(peerSerializedCert); // ID_CRED as 'x5chain'
 		peer1IdCredP256x5t = Util.buildIdCredX5t(peerSerializedCert); // ID_CRED as 'x5t'
-		peer1IdCredP256x5u = Util.buildIdCredX5u("http://example.repo.com/hostB-x509-P256"); // ID_CRED as 'x5u'
+		peer1IdCredP256x5u = Util.buildIdCredX5u("http://example.repo.com/hostB-x509-P256-signing"); // ID_CRED as 'x5u'
 		
 		peerPublicKeys.put(peer1IdCredP256x5chain, peer1PublicKeyP256);
 		peerCredentials.put(peer1IdCredP256x5chain, CBORObject.FromObject(peerCred));
@@ -1468,7 +1585,72 @@ public class EdhocClient {
 		
 		peerPublicKeys.put(peer1IdCredP256x5u, peer1PublicKeyP256);
 		peerCredentials.put(peer1IdCredP256x5u, CBORObject.FromObject(peerCred));
-
+		
+		
+		
+		// ECDH authentication credential
+		
+	    OneKey peer1PublicKeyP256DH = null;
+		CBORObject peer1CcsObjectP256DH = null;
+		CBORObject peer1IdCredP256DHkccs = null;
+		CBORObject peer1IdCredP256DHkid = null;
+		CBORObject peer1IdCredP256DHx5chain = null;
+		CBORObject peer1IdCredP256DHx5t = null;
+		CBORObject peer1IdCredP256DHx5u = null;
+	    
+		// If the type of credential identifier is 'kid', use 0x0a,
+		// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x0a
+		byte[] peer1KidP256DH = new byte[] {(byte) 0x0a};
+		
+		// Build the public key
+		
+		peerPublicKeyBinary = net.i2p.crypto.eddsa.Utils.hexToBytes("bbc34960526ea4d32e940cad2a234148ddc21791a12afbcbac93622046dd44f0");
+		peerPublicKeyBinaryY = net.i2p.crypto.eddsa.Utils.hexToBytes("4519e257236b2a0ce2023f0931f1f386ca7afda64fcde0108c224c51eabf6072");
+		peer1PublicKeyP256DH =  SharedSecretCalculation.buildEcdsa256OneKey(null, peerPublicKeyBinary, peerPublicKeyBinaryY);
+		
+		
+		// Build CRED as a CCS, and the corresponding ID_CRED as 'kccs' and 'kid'
+		
+		System.out.print("Peer ");
+		CBORObject peer1KidCborP256DH = CBORObject.FromObject(peer1KidP256DH);
+		peer1CcsObjectP256DH = CBORObject.DecodeFromBytes(Util.buildCredRawPublicKeyCcs(
+														peer1PublicKeyP256DH, peerSubjectName, peer1KidCborP256DH));
+		
+		// These serializations have to be prepared manually, in order to ensure that
+		// the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
+		peerCred = net.i2p.crypto.eddsa.Utils.hexToBytes("A2026008A101A5010202410A2001215820BBC34960526EA4D32E940CAD2A234148DDC21791A12AFBCBAC93622046DD44F02258204519E257236B2A0CE2023F0931F1F386CA7AFDA64FCDE0108C224C51EABF6072");
+ 		
+		peer1IdCredP256DHkccs = Util.buildIdCredKccs(peer1CcsObjectP256DH); // ID_CRED as 'kccs'
+		peer1IdCredP256DHkid = Util.buildIdCredKid(peer1KidP256DH); // ID_CRED as 'kid'
+		
+		peerPublicKeys.put(peer1IdCredP256DHkccs, peer1PublicKeyP256DH);
+		peerCredentials.put(peer1IdCredP256DHkccs, CBORObject.FromObject(peerCred));
+		peerPublicKeys.put(peer1IdCredP256DHkid, peer1PublicKeyP256DH);
+		peerCredentials.put(peer1IdCredP256DHkid, CBORObject.FromObject(peerCred));
+		
+		
+		// Build CRED as an X.509 certificate, and the corresponding ID_CRED as 'x5chain', 'x5t' and 'x5u'
+		peerSerializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("4488370016b8965bdb2074bff82e5a20e09bec21f8406e86442b87ec3ff245b70a47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb4");
+		
+		// Test with Peter (real DER certificate for the same identity key)
+		// peerSerializedCert = net.i2p.crypto.eddsa.Utils.hexToBytes("308202763082021ca00302010202144aebaeff99a7ec4c9b398e007e3074d6d24fd779300a06082a8648ce3d0403023073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c301e170d3231303230393039333131345a170d3232303230393039333131345a3073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c3059301306072a8648ce3d020106082a8648ce3d030107034200040d75040e117b0fed769f235a4c831ff3b6699b8e310af28094fe3baea003b5e9772a4def5d8d4ee362e9ae9ef615215d115341f531338e3fa4030b6257b25d66a3818d30818a301d0603551d0e0416041444f3cf92db3cda030a3faf611872b90c601c0f74301f0603551d2304183016801444f3cf92db3cda030a3faf611872b90c601c0f74300f0603551d130101ff040530030101ff30270603551d250420301e06082b0601050507031c06082b0601050507030106082b06010505070302300e0603551d0f0101ff0404030201f6300a06082a8648ce3d0403020348003045022100ee29fb91849d8f0c617de9f817e016b535cac732235eed8a6711e68a3a634d0802205d1750bc02f0f1dde19a7c48d82fb5442c560d13f3d1a7e99546a6c39a28f38b");
+		
+		// CRED, as serialization of a CBOR byte string wrapping the serialized certificate
+		peerCred = CBORObject.FromObject(peerSerializedCert).EncodeToBytes();
+		
+		peer1IdCredP256DHx5chain = Util.buildIdCredX5chain(peerSerializedCert); // ID_CRED as 'x5chain'
+		peer1IdCredP256DHx5t = Util.buildIdCredX5t(peerSerializedCert); // ID_CRED as 'x5t'
+		peer1IdCredP256DHx5u = Util.buildIdCredX5u("http://example.repo.com/hostB-x509-P256-dh"); // ID_CRED as 'x5u'
+		
+		peerPublicKeys.put(peer1IdCredP256DHx5chain, peer1PublicKeyP256DH);
+		peerCredentials.put(peer1IdCredP256DHx5chain, CBORObject.FromObject(peerCred));
+		
+		peerPublicKeys.put(peer1IdCredP256DHx5t, peer1PublicKeyP256DH);
+		peerCredentials.put(peer1IdCredP256DHx5t, CBORObject.FromObject(peerCred));
+		
+		peerPublicKeys.put(peer1IdCredP256DHx5u, peer1PublicKeyP256DH);
+		peerCredentials.put(peer1IdCredP256DHx5u, CBORObject.FromObject(peerCred));
+		
 	}
 	
 }
