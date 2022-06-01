@@ -74,9 +74,7 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
-											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		
 		int method = 0;
 		
@@ -85,8 +83,8 @@ public class MessageProcessorTest {
 		
 		/* Initiator information*/
 
-		// C_I, in plain binary format
-		CBORObject connectionIdInitiator = CBORObject.FromObject(14);
+		// Connection Identifier of the Initiator
+		byte[] connectionIdentifierInitiator = new byte[] {(byte) 0x0e};
 		
 		// The identity key of the Initiator
 		byte[] privateIdentityKeyBytesInit = Utils.hexToBytes("366a5859a4cd65cfaeaf0566c9fc7e1a93306fdec17763e05813a70f21ff59db");
@@ -113,17 +111,17 @@ public class MessageProcessorTest {
 		boolean initiator = true;
 		KissEDP edp = new KissEDP();
 		HashMapCtxDB db = new HashMapCtxDB();
-		EdhocSession sessionInitiator = new EdhocSession(initiator, true, method, connectionIdInitiator,
+		EdhocSession sessionInitiator = new EdhocSession(initiator, true, method, connectionIdentifierInitiator,
 														 keyPairsI, idCredsI, credsI, supportedCipherSuites,
 														 appProfile, edp, db);
 		
-		edhocSessions.put(CBORObject.FromObject(connectionIdInitiator), sessionInitiator);
+		edhocSessions.put(CBORObject.FromObject(connectionIdentifierInitiator), sessionInitiator);
 
 		
 		/* Responder information*/
 		
-		// C_R, in plain binary format
-		CBORObject connectionIdResponder = CBORObject.FromObject(-19);
+		// Connection Identifier of the Responder
+		byte[] connectionIdentifierResponder = new byte[] {(byte) 0x32};
 		
 		// The identity key of the Responder
 		byte[] privateIdentityKeyBytesResp = Utils.hexToBytes("bc4d4f9882612233b402db75e6c4cf3032a70a0d2e3ee6d01b11ddde5f419cfc");
@@ -150,22 +148,22 @@ public class MessageProcessorTest {
 		initiator = false;
 		KissEDP edp2 = new KissEDP();
 		HashMapCtxDB db2 = new HashMapCtxDB();
-		EdhocSession sessionResponder = new EdhocSession(initiator, true, method, connectionIdResponder,
+		EdhocSession sessionResponder = new EdhocSession(initiator, true, method, connectionIdentifierResponder,
 														 keyPairsR, idCredsR, credsR, supportedCipherSuites,
 														 appProfile, edp2, db2);
 		
-		edhocSessions.put(CBORObject.FromObject(connectionIdResponder), sessionResponder);
+		edhocSessions.put(CBORObject.FromObject(connectionIdentifierResponder), sessionResponder);
 		
 		
 		// Test from the point of view of the Initiator as Client
 		Assert.assertEquals(Constants.EDHOC_MESSAGE_1, MessageProcessor.messageType(
-								message1, true, edhocSessions, connectionIdInitiator));
+								message1, true, edhocSessions, connectionIdentifierInitiator));
 		sessionInitiator.setCurrentStep(Constants.EDHOC_SENT_M1);
 		Assert.assertEquals(Constants.EDHOC_MESSAGE_2, MessageProcessor.messageType(
-								message2, false, edhocSessions,connectionIdInitiator));
+								message2, false, edhocSessions, connectionIdentifierInitiator));
 		sessionInitiator.setCurrentStep(Constants.EDHOC_AFTER_M3);
 		Assert.assertEquals(Constants.EDHOC_MESSAGE_3, MessageProcessor.messageType(
-								message3, true, edhocSessions, connectionIdInitiator));
+								message3, true, edhocSessions, connectionIdentifierInitiator));
 
 		
 		// Test from the point of view of the Responder as Server
@@ -173,7 +171,7 @@ public class MessageProcessorTest {
 								message1, true, edhocSessions, null));
 		sessionResponder.setCurrentStep(Constants.EDHOC_AFTER_M2);
 		Assert.assertEquals(Constants.EDHOC_MESSAGE_2, MessageProcessor.messageType(
-								message2, false, edhocSessions, connectionIdResponder));
+								message2, false, edhocSessions, connectionIdentifierResponder));
 		sessionResponder.setCurrentStep(Constants.EDHOC_SENT_M2);
 		Assert.assertEquals(Constants.EDHOC_MESSAGE_3, MessageProcessor.messageType(
 								message3, true, edhocSessions, null));
@@ -191,13 +189,13 @@ public class MessageProcessorTest {
 		errorMessageList.add(errMsg);
 		byte[] errorMessage = Util.buildCBORSequence(errorMessageList);
 		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
-				            	errorMessage, false, edhocSessions, connectionIdInitiator));
+				            	errorMessage, false, edhocSessions, connectionIdentifierInitiator));
 		errorMessageList = new ArrayList<CBORObject>();
 		errorMessageList.add(CBORObject.FromObject(Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE));
 		errorMessageList.add(suitesR);
 		errorMessage = Util.buildCBORSequence(errorMessageList);
 		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
-				            	errorMessage, false, edhocSessions, connectionIdInitiator));
+				            	errorMessage, false, edhocSessions, connectionIdentifierInitiator));
 		
 		// Test for an EDHOC error message as an incoming/outgoing request
 		errorMessageList = new ArrayList<CBORObject>();
@@ -206,14 +204,14 @@ public class MessageProcessorTest {
 		errorMessageList.add(errMsg);
 		errorMessage = Util.buildCBORSequence(errorMessageList);
 		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
-				            	errorMessage, true, edhocSessions, connectionIdInitiator));
+				            	errorMessage, true, edhocSessions, connectionIdentifierInitiator));
 		errorMessageList = new ArrayList<CBORObject>();
 		errorMessageList.add(cX);
 		errorMessageList.add(CBORObject.FromObject(Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE));
 		errorMessageList.add(suitesR);
 		errorMessage = Util.buildCBORSequence(errorMessageList);
 		Assert.assertEquals(Constants.EDHOC_ERROR_MESSAGE, MessageProcessor.messageType(
-				            	errorMessage, true, edhocSessions, connectionIdInitiator));
+				            	errorMessage, true, edhocSessions, connectionIdentifierInitiator));
 		
 	}
 
@@ -235,8 +233,8 @@ public class MessageProcessorTest {
 		int method = 0;
 		
 		
-		// C_I
-		CBORObject connectionId = CBORObject.FromObject(-14);
+		// Connection Identifier of the Initiator
+		byte[] connectionIdentifierInitiator = new byte[] {(byte) 0x2d};
 		
 		List<Integer> cipherSuites = new ArrayList<Integer>();
 		cipherSuites.add(0);
@@ -271,9 +269,7 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
-											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -288,7 +284,7 @@ public class MessageProcessorTest {
 		creds.put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(cred));
 		idCreds.put(Integer.valueOf(Constants.CURVE_Ed25519), idCred);
 	    
-		EdhocSession session = new EdhocSession(initiator, true, method, connectionId, keyPairs,
+		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
 				                                idCreds, creds, cipherSuites, appProfile, edp, db);
 
 		// Force a specific ephemeral key
@@ -332,8 +328,8 @@ public class MessageProcessorTest {
 		
 		/* Responder information*/
 
-		// C_R, in plain binary format
-		CBORObject connectionIdResponder = CBORObject.FromObject(23);
+		// Connection Identifier of the Responder
+		byte[] connectionIdentifierResponder = new byte[] {(byte) 0x17};
 		
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(0);
@@ -404,8 +400,8 @@ public class MessageProcessorTest {
 		
 		/* Initiator information*/
 		
-		// C_I, in plain binary format
-		CBORObject connectionIdInitiator = CBORObject.FromObject(-14);
+		// Connection Identifier of the Initiator
+		byte[] connectionIdentifierInitiator = new byte[] {(byte) 0x2d};
 
 		// The ephemeral key of the Initiator
 		byte[] peerEphemeralPublicKeyBytes = Utils.hexToBytes("31f82c7b5b9cbbf0f194d913cc12ef1532d328ef32632a4881a1c0701e237f04");
@@ -427,9 +423,7 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
-											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -445,7 +439,7 @@ public class MessageProcessorTest {
 		idCreds.put(Integer.valueOf(Constants.CURVE_Ed25519), idCredR);
 	    
 		// Create the session
-		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdResponder, keyPairs,
+		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
 												idCreds, creds, supportedCipherSuites, appProfile, edp, db);
 
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
@@ -459,7 +453,7 @@ public class MessageProcessorTest {
     	session.setAuthenticationCredential();
 		
 		// Set the Connection Identifier of the peer
-		session.setPeerConnectionId(connectionIdInitiator);
+		session.setPeerConnectionId(connectionIdentifierInitiator);
 		
 		// Store the EDHOC Message 1
 		// Note: this is the actual EDHOC message 1, so it does not include the byte 0xf5 (True) prepended on the wire
@@ -502,8 +496,8 @@ public class MessageProcessorTest {
 		
 		/* Initiator information*/
 
-		// C_I, in plain binary format
-		CBORObject connectionIdInitiator = CBORObject.FromObject(-14);
+		// Connection Identifier of the Initiator
+		byte[] connectionIdentifierInitiator = new byte[] {(byte) 0x2d};
 		
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(0);
@@ -531,8 +525,8 @@ public class MessageProcessorTest {
 		
 		/* Responder information*/
 
-		// C_R, in plain binary format
-		CBORObject connectionIdResponder = CBORObject.FromObject(23);
+		// Connection Identifier of the Responder
+		byte[] connectionIdentifierResponder = new byte[] {(byte) 0x17};
 		
 		// The ephemeral key of the Responder
 		byte[] peerEphemeralPublicKeyBytes = Utils.hexToBytes("dc88d2d51da5ed67fc4616356bc8ca74ef9ebe8b387e623a360ba480b9b29d1c");
@@ -541,7 +535,6 @@ public class MessageProcessorTest {
 		
 		/* Status from after receiving EDHOC Message 2 */
 		byte[] th2 = Utils.hexToBytes("3c3e0e79269592a2f4b3cce01642adca36728226d2221597fd8c7fe6b0e2ca75");
-		byte[] ciphertext2 = Utils.hexToBytes("e912f9236086b02242ad56a988829c32a282fbd0c6c2d065479548ced626e8dc3b6d6ef2a588ff33fd2d01c00e189eb68ca9e717007aed62143dfae75622300e166ed3456cd9884b44b6963477aa3e1f");
 		byte[] prk3e2m = Utils.hexToBytes("c576105d95b4d8c18e8f655f546880a854f2da106ce5a3a02d8b3ede7baabca6");
 		
 		
@@ -561,9 +554,7 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
-											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -579,7 +570,7 @@ public class MessageProcessorTest {
 		idCreds.put(Integer.valueOf(Constants.CURVE_Ed25519), idCredI);
 		
 		// Create the session
-		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdInitiator, keyPairs,
+		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
 												idCreds, creds, supportedCipherSuites, appProfile, edp, db);
 
 		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
@@ -593,7 +584,7 @@ public class MessageProcessorTest {
 		session.setAuthenticationCredential();
 		
 		// Set the Connection Identifier of the peer
-		session.setPeerConnectionId(connectionIdResponder);
+		session.setPeerConnectionId(connectionIdentifierResponder);
 		
 		// Set TH_2 from the previous protocol step
 		session.setTH2(th2);
@@ -687,8 +678,8 @@ public class MessageProcessorTest {
 		
 		/* Responder information*/
 
-		// C_R, in plain binary format
-		CBORObject connectionIdResponder = CBORObject.FromObject(23);
+		// Connection Identifier of the Responder
+		byte[] connectionIdentifierResponder = new byte[] {(byte) 0x17};
 		
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(0);
@@ -716,8 +707,8 @@ public class MessageProcessorTest {
 		
 		/* Initiator information*/
 		
-		// C_I, in plain binary format
-		CBORObject connectionIdInitiator = CBORObject.FromObject(-14);
+		// Connection Identifier of the Initiator
+		byte[] connectionIdentifierInitiator = new byte[] {(byte) 0x2d};
 
 		// The ephemeral key of the Initiator
 		byte[] peerEphemeralPublicKeyBytes = Utils.hexToBytes("31f82c7b5b9cbbf0f194d913cc12ef1532d328ef32632a4881a1c0701e237f04");
@@ -739,9 +730,7 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
-											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -757,7 +746,7 @@ public class MessageProcessorTest {
 		idCreds.put(Integer.valueOf(Constants.CURVE_Ed25519), idCredR);
 		
 		// Create the session
-		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdResponder, keyPairs,
+		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
 												idCreds, creds, supportedCipherSuites, appProfile, edp, db);
 
 		session.setCurrentStep(Constants.EDHOC_AFTER_M3);
@@ -773,7 +762,7 @@ public class MessageProcessorTest {
 		session.setAuthenticationCredential();
 		
 		// Set the Connection Identifier of the peer
-		session.setPeerConnectionId(connectionIdInitiator);
+		session.setPeerConnectionId(connectionIdentifierInitiator);
 		
 		// Store PRK_4e3m computed from the previous protocol step
 		byte[] prk4e3m = Utils.hexToBytes("c576105d95b4d8c18e8f655f546880a854f2da106ce5a3a02d8b3ede7baabca6");
@@ -807,8 +796,8 @@ public class MessageProcessorTest {
 		boolean initiator = true;
 		int method = 3;
 		
-		// C_I
-		CBORObject connectionId = CBORObject.FromObject(-24);
+		// Connection Identifier of the Initiator
+		byte[] connectionIdentifierInitiator = new byte[] {(byte) 0x37};
 		
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(6);
@@ -843,9 +832,7 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
-											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -860,7 +847,7 @@ public class MessageProcessorTest {
 		creds.put(Integer.valueOf(Constants.CURVE_P256), CBORObject.FromObject(cred));
 		idCreds.put(Integer.valueOf(Constants.CURVE_P256), idCred);
 		
-		EdhocSession session = new EdhocSession(initiator, true, method, connectionId, keyPairs,
+		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
 				                                idCreds, creds, supportedCipherSuites, appProfile, edp, db);
 
 		// Force the early knowledge of cipher suites supported by the other peer
@@ -902,8 +889,8 @@ public class MessageProcessorTest {
 		
 		/* Responder information*/
 
-		// C_R
-		CBORObject connectionIdResponder = CBORObject.FromObject(-8);
+		// Connection Identifier of the Responder
+		byte[] connectionIdentifierResponder = new byte[] {(byte) 0x27};
 		
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(2);
@@ -933,8 +920,8 @@ public class MessageProcessorTest {
 
 		/* Initiator information*/
 		
-		// C_I, in plain binary format
-		CBORObject connectionIdInitiator = CBORObject.FromObject(-24);
+		// Connection Identifier of the Initiator
+		byte[] connectionIdentifierInitiator = new byte[] {(byte) 0x37};
 
 		// The ephemeral key of the Initiator
 		byte[] publicPeerEphemeralKeyBytesX = Utils.hexToBytes("8af6f430ebe18d34184017a9a11bf511c8dff8f834730b96c1b7c8dbca2fc3b6");
@@ -958,9 +945,7 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
-											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -976,7 +961,7 @@ public class MessageProcessorTest {
 		idCreds.put(Integer.valueOf(Constants.CURVE_P256), idCredR);
 		
 		// Create the session
-		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdResponder, keyPairs,
+		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
 												idCreds, creds, supportedCipherSuites, appProfile, edp, db);
 
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
@@ -990,7 +975,7 @@ public class MessageProcessorTest {
 		session.setAuthenticationCredential();
 		
 		// Set the Connection Identifier of the peer
-		session.setPeerConnectionId(connectionIdInitiator);
+		session.setPeerConnectionId(connectionIdentifierInitiator);
 		
 		// Store the EDHOC Message 1
 		// Note: this is the actual EDHOC message 1, so it does not include the byte 0xf5 (True) prepended on the wire
@@ -1028,8 +1013,8 @@ public class MessageProcessorTest {
 		
 		/* Initiator information*/
 
-		// C_I, in plain binary format
-		CBORObject connectionIdInitiator = CBORObject.FromObject(-24);
+		// Connection Identifier of the Initiator
+		byte[] connectionIdentifierInitiator = new byte[] {(byte) 0x37};
 		
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(6);
@@ -1059,8 +1044,8 @@ public class MessageProcessorTest {
 		
 		/* Responder information*/
 
-		// C_R, in plain binary format
-		CBORObject connectionIdResponder = CBORObject.FromObject(-8);
+		// Connection Identifier of the Responder
+		byte[] connectionIdentifierResponder = new byte[] {(byte) 0x27};
 		
 		// The ephemeral key of the Responder
 		byte[] peerEphemeralPublicKeyBytesX = Utils.hexToBytes("419701d7f00a26c2dc587a36dd752549f33763c893422c8ea0f955a13a4ff5d5");
@@ -1073,8 +1058,6 @@ public class MessageProcessorTest {
 		/* Status from after receiving EDHOC Message 2 */
 		
 		byte[] th2 = Utils.hexToBytes("9b99cfd7afdcbcc9950a6373507f2a81013319625697e4f9bf7a448fc8e633ca");
-		
-		byte[] ciphertext2 = Utils.hexToBytes("49cef36e229fff1e5849");
 		
 		byte[] prk3e2m = Utils.hexToBytes("af4b5918682adf4c96fd7305b69f8fb78efc9a230dd21f4c61be7d3c109446b3");
 		
@@ -1094,9 +1077,7 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
-											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -1112,7 +1093,7 @@ public class MessageProcessorTest {
 		idCreds.put(Integer.valueOf(Constants.CURVE_P256), idCredI);
 		
 		// Create the session
-		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdInitiator, keyPairs,
+		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
 												idCreds, creds, supportedCipherSuites, appProfile, edp, db);
 
 		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
@@ -1126,7 +1107,7 @@ public class MessageProcessorTest {
 		session.setAuthenticationCredential();
 		
 		// Set the Connection Identifier of the peer
-		session.setPeerConnectionId(connectionIdResponder);
+		session.setPeerConnectionId(connectionIdentifierResponder);
 		
 		// Set TH_2 from the previous protocol step
 		session.setTH2(th2);
@@ -1216,8 +1197,8 @@ public class MessageProcessorTest {
 		
 		/* Responder information*/
 
-		// C_R
-		CBORObject connectionIdResponder = CBORObject.FromObject(-8);
+		// Connection Identifier of the Responder
+		byte[] connectionIdentifierResponder = new byte[] {(byte) 0x27};
 		
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(2);
@@ -1248,8 +1229,8 @@ public class MessageProcessorTest {
 		
 		/* Initiator information*/
 		
-		// C_I, in plain binary format
-		CBORObject connectionIdInitiator = CBORObject.FromObject(-24);
+		// Connection Identifier of the Initiator
+		byte[] connectionIdentifierInitiator = new byte[] {(byte) 0x37};
 
 		// The ephemeral key of the Initiator
 		byte[] publicPeerEphemeralKeyBytesX = Utils.hexToBytes("8af6f430ebe18d34184017a9a11bf511c8dff8f834730b96c1b7c8dbca2fc3b6");
@@ -1274,9 +1255,7 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
-											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -1292,7 +1271,7 @@ public class MessageProcessorTest {
 		idCreds.put(Integer.valueOf(Constants.CURVE_P256), idCredR);
 		
 		// Create the session
-		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdResponder, keyPairs,
+		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
 												idCreds, creds, supportedCipherSuites, appProfile, edp, db);
 
 		session.setCurrentStep(Constants.EDHOC_AFTER_M3);
@@ -1305,7 +1284,7 @@ public class MessageProcessorTest {
 		session.setSelectedCiphersuite(2);
 		
 		// Set the Connection Identifier of the peer
-		session.setPeerConnectionId(connectionIdInitiator);
+		session.setPeerConnectionId(connectionIdentifierInitiator);
 		
 		
 		// Store PRK_4e3m computed from the previous protocol step

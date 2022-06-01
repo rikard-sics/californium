@@ -80,7 +80,7 @@ public class EdhocClient {
 
 	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
 	// Note: the application profile pertaining the EDHOC resource must first indicate support for the combined request 
-	private static final boolean OSCORE_EDHOC_COMBINED = false;
+	private static final boolean OSCORE_EDHOC_COMBINED = true;
 	
 	// The authentication method to include in EDHOC message_1 (relevant only when Initiator)
 	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
@@ -205,9 +205,7 @@ public class EdhocClient {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = true; // If set to true, it overrides the ID conversion method to CONVERSION_ID_CORE
-		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED; // Undefined yields using CONVERSION_ID_CORE
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
-											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		
 		appProfiles.put(edhocURI, appProfile);
 		
@@ -390,8 +388,9 @@ public class EdhocClient {
 		System.arraycopy(nextPayload, 1, hashInput, 0, hashInput.length);
 		session.setHashMessage1(hashInput);
 		
-		CBORObject connectionId = session.getConnectionId();
-		edhocSessions.put(connectionId, session);
+		byte[] connectionIdentifier = session.getConnectionId(); // v-14 identifiers
+		CBORObject connectionIdentifierCbor = CBORObject.FromObject(connectionIdentifier); // v-14 identifiers
+		edhocSessions.put(connectionIdentifierCbor, session);
 		
 		Request edhocMessageReq = new Request(Code.POST, Type.CON);
 		edhocMessageReq.getOptions().setContentFormat(Constants.APPLICATION_CID_EDHOC_CBOR_SEQ);
@@ -405,12 +404,12 @@ public class EdhocClient {
         	edhocMessageResp = client.advanced(edhocMessageReq);
 		} catch (ConnectorException e) {
 			System.err.println("ConnectorException when sending EDHOC Message 1");
-			Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds); // v-14 identifiers
 			client.shutdown();
 			return;
 		} catch (IOException e) {
 			System.err.println("IOException when sending EDHOC Message 1");
-			Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds); // v-14 identifiers
 			client.shutdown();
 			return;
 		}
@@ -421,14 +420,15 @@ public class EdhocClient {
         
         if (responsePayload == null)
         	discontinue = true;
-        else {
-        	responseType = MessageProcessor.messageType(responsePayload, false, edhocSessions, connectionId);
+        else { 
+        	// v-14 identifiers
+        	responseType = MessageProcessor.messageType(responsePayload, false, edhocSessions, connectionIdentifier);
         	if (responseType != Constants.EDHOC_MESSAGE_2 && responseType != Constants.EDHOC_ERROR_MESSAGE)
         		discontinue = true;
         }
         if (discontinue == true) {
         	System.err.println("Received invalid reply to EDHOC Message 1");
-        	Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+        	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
         	client.shutdown();
         	return;
         }
@@ -442,7 +442,6 @@ public class EdhocClient {
         
         // This response relates to the previous request through the CoAP Token.
         // Hence, the Initiator knows what session to refer to, from which the correct C_I can be retrieved
-    	CBORObject cI = session.getConnectionId();
  
     	nextPayload = new byte[] {};
     	
@@ -451,7 +450,7 @@ public class EdhocClient {
         	
         	List<Integer> peerSupportedCiphersuites = new ArrayList<Integer>();
         	
-        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload, cI, edhocSessions);
+        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload, connectionIdentifier, edhocSessions);
         	
         	if (objectList != null) {
         	
@@ -495,7 +494,7 @@ public class EdhocClient {
 		    	// In fact, the session is marked as "used", hence new ephemeral keys would be generated when
 		    	// preparing a new EDHOC Message 1.        	
 		    	
-		    	Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+		    	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 		    	
         	}
         	
@@ -515,12 +514,12 @@ public class EdhocClient {
 			
 			/* Start handling EDHOC Message 2 */
 			
-			processingResult = MessageProcessor.readMessage2(responsePayload, false, cI, edhocSessions, peerPublicKeys,
-					                                         peerCredentials, usedConnectionIds, ownIdCreds);
+			processingResult = MessageProcessor.readMessage2(responsePayload, false, connectionIdentifier, edhocSessions,
+															 peerPublicKeys, peerCredentials, usedConnectionIds, ownIdCreds);
 			
 			if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
 				System.err.println("Internal error when processing EDHOC Message 2");
-				Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+				Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 				client.shutdown();
 				return;
 			}
@@ -548,14 +547,15 @@ public class EdhocClient {
 		        
 				if (nextPayload == null || session.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
 					System.err.println("Inconsistent state before sending EDHOC Message 3");
-					Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+					Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 					client.shutdown();
 					return;
 				}
 				
 			}
 
-			int requestType = MessageProcessor.messageType(nextPayload, true, edhocSessions, connectionId);
+			// v-14 identifiers
+			int requestType = MessageProcessor.messageType(nextPayload, true, edhocSessions, connectionIdentifier);
 			
 			if (requestType != Constants.EDHOC_MESSAGE_3 && requestType != Constants.EDHOC_ERROR_MESSAGE) {
 				nextPayload = null;
@@ -581,18 +581,18 @@ public class EdhocClient {
 				        /* Setup the OSCORE Security Context */
 				        
 				        // The Sender ID of this peer is the EDHOC connection identifier of the other peer
-				        byte[] senderId = EdhocSession.edhocToOscoreId(session.getPeerConnectionId());
+				        byte[] senderId = session.getPeerConnectionId(); // v-14 identifiers
 				        
 				        int selectedCiphersuite = session.getSelectedCiphersuite();
 				        AlgorithmID alg = EdhocSession.getAppAEAD(selectedCiphersuite);
 				        AlgorithmID hkdf = EdhocSession.getAppHkdf(selectedCiphersuite);
 				        
 				        OSCoreCtx ctx = null;
-				        byte[] recipientId = EdhocSession.edhocToOscoreId(connectionId);
+				        byte[] recipientId = connectionIdentifier;
 				        if (Arrays.equals(senderId, recipientId)) {
 							System.err.println("Error: the Sender ID coincides with the Recipient ID " +
 												Utils.toHexString(senderId));
-							Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+							Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 							client.shutdown();
 							return;
 				        }
@@ -604,7 +604,7 @@ public class EdhocClient {
 						} catch (OSException e) {
 							System.err.println("Error when deriving the OSCORE Security Context "
 						                        + e.getMessage());
-							Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+							Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 							client.shutdown();
 							return;
 						}
@@ -614,7 +614,7 @@ public class EdhocClient {
 						} catch (OSException e) {
 							System.err.println("Error when adding the OSCORE Security Context to the context database "
 						                        + e.getMessage());
-							Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+							Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 							client.shutdown();
 							return;
 						}
@@ -636,7 +636,7 @@ public class EdhocClient {
 					    edhocEndpointInfo.getEdp().processEAD2(ead2);
 					}
 					
-				    Util.purgeSession(session, cI, edhocSessions, usedConnectionIds);
+				    Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			        System.out.println("Sent EDHOC Error Message\n");
 			        if (debugPrint) {
 			        	Util.nicePrint("EDHOC Error Message", nextPayload);
@@ -659,7 +659,7 @@ public class EdhocClient {
 		        		// The combined request cannot be used if the Responder has to send message_4
 		        		if (session.getApplicationProfile().getUseMessage4() == true) {
 							System.err.println("Cannot send the combined EDHOC+OSCORE request if message_4 is expected\n");
-			    			Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+			    			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			            	client.shutdown();
 			            	return;
 		        		}
@@ -678,12 +678,12 @@ public class EdhocClient {
 							protectedResponse = client.advanced(edhocMessageReq2);
 						} catch (ConnectorException e) {
 							System.err.println("ConnectorException when sending a protected request\n");
-			    			Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+			    			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			            	client.shutdown();
 			            	return;
 						} catch (IOException e) {
 							System.err.println("IOException when sending a protected request\n");
-			    			Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+			    			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			            	client.shutdown();
 			            	return;
 						}
@@ -702,14 +702,15 @@ public class EdhocClient {
 			            	       (restCode == ResponseCode.INTERNAL_SERVER_ERROR.value)) ) {
 			            	
 				            	responseType = MessageProcessor.messageType(myPayload, false,
-		                                                                    edhocSessions, connectionId);
+		                                                                    edhocSessions, connectionIdentifier);
 			            		
 				            	if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
 				            		
 				            		System.err.println("Received an EDHOC Error Message");
 						        	CBORObject[] objectList = MessageProcessor.readErrorMessage(myPayload,
-						        			 													cI, edhocSessions);
-						        	processErrorMessageAsResponse(objectList, connectionId);
+						        																connectionIdentifier,
+						        																edhocSessions);
+						        	processErrorMessageAsResponse(objectList, connectionIdentifier);
 				            		
 				            	}
 			            	
@@ -739,12 +740,12 @@ public class EdhocClient {
 		        	
 				} catch (ConnectorException e) {
 					System.err.println("ConnectorException when sending " + myString + "\n");
-					Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+					Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 					client.shutdown();
 					return;
 				} catch (IOException e) {
 					System.err.println("IOException when sending "  + myString + "\n");
-					Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+					Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 					client.shutdown();
 					return;
 				}
@@ -761,7 +762,7 @@ public class EdhocClient {
 		            if (responsePayload == null)
 		            	discontinue = true;
 		            else {
-		            	responseType = MessageProcessor.messageType(responsePayload, false, edhocSessions, connectionId);
+		            	responseType = MessageProcessor.messageType(responsePayload, false, edhocSessions, connectionIdentifier);
 		            	
 		            	// It is always consistent to receive an Error Message
 		            	if (responseType != Constants.EDHOC_ERROR_MESSAGE) {
@@ -788,14 +789,16 @@ public class EdhocClient {
 		            	// It is an EDHOC Error Message
 		            	else {
 		            		System.err.println("Received an EDHOC Error Message");
-				        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload, cI, edhocSessions);
-				        	processErrorMessageAsResponse(objectList, cI);
+				        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload,
+				        																connectionIdentifier,
+				        																edhocSessions);
+				        	processErrorMessageAsResponse(objectList, connectionIdentifier);
 				        	discontinue = true;
 		            	}
 
 		            }
 		            if (discontinue == true) {
-		    			Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+		    			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 		            	client.shutdown();
 		            	return;
 		            }
@@ -821,12 +824,12 @@ public class EdhocClient {
 		            
 		            
 		            if (responseType == Constants.EDHOC_MESSAGE_4) {
-		            	processingResult = MessageProcessor.readMessage4(responsePayload, false, cI,
+		            	processingResult = MessageProcessor.readMessage4(responsePayload, false, connectionIdentifier,
 		            			                                         edhocSessions, usedConnectionIds);
 		            	
 						if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
 							System.err.println("Internal error when processing EDHOC Message 4");
-							Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+							Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			            	client.shutdown();
 			            	return;
 						}
@@ -876,12 +879,12 @@ public class EdhocClient {
 					        	edhocMessageResp = client.advanced(edhocMessageReq3);
 							} catch (ConnectorException e) {
 								System.err.println("ConnectorException when sending EDHOC Error Message");
-								Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+								Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 								client.shutdown();
 								return;
 							} catch (IOException e) {
 								System.err.println("IOException when sending EDHOC Error Message");
-								Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+								Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 								client.shutdown();
 								return;
 							}
@@ -890,10 +893,12 @@ public class EdhocClient {
 		            }
 		            else if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
 		            	System.err.println("Received an EDHOC Error Message");
-			        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload, cI, edhocSessions);
+			        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload,
+			        																connectionIdentifier,
+			        																edhocSessions);
 			        	
-			        	processErrorMessageAsResponse(objectList, cI);
-			        	Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+			        	processErrorMessageAsResponse(objectList, connectionIdentifier);
+			        	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			        	
 						client.shutdown();
 			    		return;
@@ -942,7 +947,7 @@ public class EdhocClient {
 	/*
 	 * Process an EDHOC Error Message as a CoAP response
 	 */
-	private static void processErrorMessageAsResponse(CBORObject[] objectList, CBORObject connectionId) {
+	private static void processErrorMessageAsResponse(CBORObject[] objectList, byte[] connectionIdentifier) {
 		
     	if (objectList != null) {
     		
@@ -975,18 +980,19 @@ public class EdhocClient {
 				}
     		}
     		
-    		if (connectionId == null) {
+    		if (connectionIdentifier == null) {
     			System.err.println("Unavailable connection identifier to delete EDHOC session");
     			return;
     		}
     	
-    		EdhocSession session = edhocSessions.get(connectionId);
+    		CBORObject connectionIdentifierCbor = CBORObject.FromObject(connectionIdentifier);
+    		EdhocSession session = edhocSessions.get(connectionIdentifierCbor);
     		if (session == null) {
     			System.err.println("EDHOC session to delete not found");
     			return;
     		}
     	
-    		Util.purgeSession(session, connectionId, edhocSessions, usedConnectionIds);
+    		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
     	}
 		
 	}

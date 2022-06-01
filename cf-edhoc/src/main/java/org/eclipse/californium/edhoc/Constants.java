@@ -313,14 +313,6 @@ public static final int EDHOC_SENT_M3   = 8; // After sending EDHOC Message 3
 // Responder steps
 public static final int EDHOC_SENT_M4   = 9; // After sending EDHOC Message 4
 
-
-/**
- * Method for converting from OSCORE Recipient/Sender ID to EDHOC Connection Identifier
- * 
- */
-public static final int CONVERSION_ID_UNDEFINED = 0; // Each EDHOC peer can use whatever method
-public static final int CONVERSION_ID_CORE = 1; // Deterministic method defined in draft-ietf-core-oscore-edhoc
-
 }
 
 

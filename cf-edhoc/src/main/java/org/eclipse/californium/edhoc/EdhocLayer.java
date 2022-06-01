@@ -131,27 +131,31 @@ public class EdhocLayer extends AbstractLayer {
 			// Retrieve the Security Context used to protect the request
 			OSCoreCtx ctx = getContextForOutgoing(exchange);
 			
-			// The connectionIdentifier C_I is the Recipient ID for this peer
-			byte[] cI = ctx.getRecipientId();
+			// v-14 identifiers
+			// The connection identifier of this peer is its Recipient ID
+			byte[] recipientId = ctx.getRecipientId();
+			CBORObject connectionIdentifierInitiatorCbor = CBORObject.FromObject(recipientId);
 			
 			// Retrieve the EDHOC session associated to C_R and storing EDHOC message_3
-			EdhocSession session = this.edhocSessions.get(EdhocSession.oscoreToEdhocId(cI));
+			EdhocSession session = this.edhocSessions.get(connectionIdentifierInitiatorCbor);
 			
 			// Consistency checks
 			if (session == null) {
 				System.err.println("Unable to retrieve the EDHOC session when sending an EDHOC+OSCORE request\n");
 				return;
 			}
-			CBORObject obj = EdhocSession.oscoreToEdhocId(ctx.getSenderId());
+			
+			// v-14 identifiers
+			byte[] connectionIdentifierInitiator = session.getConnectionId(); 
 			if (!session.isInitiator() ||
 				 session.getCurrentStep() != Constants.EDHOC_SENT_M3 ||		
-				!session.getPeerConnectionId().equals(obj)) {
+				!Arrays.equals(recipientId, connectionIdentifierInitiator)) {
 				
 				System.err.println("Retrieved inconsistent EDHOC session when sending an EDHOC+OSCORE request");
 				return;
 			}
 			
-			// Extract CIPHERTEXT_3 as second element of EDHOC message_3
+			// Extract CIPHERTEXT_3 as the second element of EDHOC message_3
 			byte[] message3 = session.getMessage3();
 			CBORObject[] message3Elements = CBORObject.DecodeSequenceFromBytes(message3);
 			byte[] ciphertext3 = message3Elements[1].GetByteString();
@@ -168,10 +172,10 @@ public class EdhocLayer extends AbstractLayer {
 			// Build the new OSCORE payload, as a CBOR sequence of two elements
 			// 1. A CBOR byte string, i.e. EDHOC CIPHERTEXT_3 as is
 			// 2. A CBOR byte string, with value the original OSCORE payload
-			byte[] ciphertext3CBOR = CBORObject.FromObject(ciphertext3).EncodeToBytes();
-			byte[] oldOscorePayloadCBOR = CBORObject.FromObject(oldOscorePayload).EncodeToBytes();
+			byte[] ciphertext3Cbor = CBORObject.FromObject(ciphertext3).EncodeToBytes();
+			byte[] oldOscorePayloadCbor = CBORObject.FromObject(oldOscorePayload).EncodeToBytes();
 			
-			int newOscorePayloadLength = ciphertext3CBOR.length + oldOscorePayloadCBOR.length;
+			int newOscorePayloadLength = ciphertext3Cbor.length + oldOscorePayloadCbor.length;
 			
 			// Abort if the payload of the EDHOC+OSCORE request exceeds MAX_UNFRAGMENTED_SIZE
 			int maxUnfragmentedSize = ctx.getMaxUnfragmentedSize();
@@ -180,8 +184,8 @@ public class EdhocLayer extends AbstractLayer {
 		    }
 			
 			byte[] newOscorePayload = new byte[newOscorePayloadLength];
-			System.arraycopy(ciphertext3CBOR, 0, newOscorePayload, 0, ciphertext3CBOR.length);
-			System.arraycopy(oldOscorePayloadCBOR, 0, newOscorePayload, ciphertext3CBOR.length, oldOscorePayloadCBOR.length);
+			System.arraycopy(ciphertext3Cbor, 0, newOscorePayload, 0, ciphertext3Cbor.length);
+			System.arraycopy(oldOscorePayloadCbor, 0, newOscorePayload, ciphertext3Cbor.length, oldOscorePayloadCbor.length);
 			
 			if (debugPrint) {
 				Util.nicePrint("EDHOC+OSCORE: New OSCORE payload", newOscorePayload);
@@ -259,9 +263,10 @@ public class EdhocLayer extends AbstractLayer {
 
 		    List<CBORObject> edhocObjectList = new ArrayList<>();
 		    
-		    // Add C_R, i.e. the 'kid' from the OSCORE option encoded as a bstr_identifier
+		    // v-14 identifiers
+		    // Add C_R, by encoding the 'kid' from the OSCORE option
 			byte[] kid = getKid(request.getOptions().getOscore());		    
-			CBORObject cR = EdhocSession.oscoreToEdhocId(kid);
+			CBORObject cR = MessageProcessor.encodeIdentifier(kid);
 		    edhocObjectList.add(cR);
 		    
 		    // Add CIPHERTEXT_3, i.e. the CBOR string as is from the received CBOR sequence
@@ -274,7 +279,9 @@ public class EdhocLayer extends AbstractLayer {
 				Util.nicePrint("EDHOC+OSCORE: rebuilt EDHOC message_3", edhocMessage3);
 			}
 			
-			EdhocSession mySession = edhocSessions.get(EdhocSession.oscoreToEdhocId(kid));
+			// v-14 identifiers
+			CBORObject kidCbor = CBORObject.FromObject(kid);
+			EdhocSession mySession = edhocSessions.get(kidCbor);
 			
 			// Consistency checks
     		if (mySession == null) {
@@ -284,10 +291,13 @@ public class EdhocLayer extends AbstractLayer {
 				sendErrorResponse(exchange, responseString, ResponseCode.BAD_REQUEST);
             	return;
     		}
-    		CBORObject obj = EdhocSession.oscoreToEdhocId(kid);
+
+    		// v.14 identifiers
+			byte[] connectionIdentifierInitiator = mySession.getPeerConnectionId();
+			byte[] connectionIdentifierResponder = mySession.getConnectionId();
 			if (mySession.isInitiator() ||
-				mySession.getCurrentStep() != Constants.EDHOC_SENT_M2 ||		
-				!mySession.getConnectionId().equals(obj)) {
+				mySession.getCurrentStep() != Constants.EDHOC_SENT_M2 ||
+				!Arrays.equals(kid, connectionIdentifierResponder)) {
 				
 				System.err.println("Retrieved inconsistent EDHOC session when receiving an EDHOC+OSCORE request");
 				return;
@@ -296,12 +306,15 @@ public class EdhocLayer extends AbstractLayer {
     		// This EDHOC resource does not support the use of the EDHOC+OSCORE request
     		if (mySession.getApplicationProfile().getSupportCombinedRequest() == false) {
 				System.err.println("This EDHOC resource does not support the use of the EDHOC+OSCORE request\n");
-    			Util.purgeSession(mySession, CBORObject.FromObject(kid), edhocSessions, usedConnectionIds);
+    			Util.purgeSession(mySession, connectionIdentifierResponder, edhocSessions, usedConnectionIds); // v-14 identifiers
     			
     			String errMsg = new String("This EDHOC resource does not support the use of the EDHOC+OSCORE request");
+    			
+    			// v-14 identifiers
     			byte[] nextMessage = MessageProcessor.writeErrorMessage(Constants.ERR_CODE_UNSPECIFIED_ERROR,
     																	Constants.EDHOC_MESSAGE_3,
-												                        false, null, errMsg, null);
+												                        false, connectionIdentifierInitiator,
+												                        errMsg, null);
 				ResponseCode responseCode = ResponseCode.BAD_REQUEST;
     			sendErrorMessage(exchange, nextMessage, responseCode);
             	return;
@@ -310,12 +323,13 @@ public class EdhocLayer extends AbstractLayer {
     		// The combined request cannot be used if the Responder has to send message_4
     		if (mySession.getApplicationProfile().getUseMessage4() == true) {
 				System.err.println("Cannot receive the combined EDHOC+OSCORE request if message_4 is expected\n");
-    			Util.purgeSession(mySession, CBORObject.FromObject(kid), edhocSessions, usedConnectionIds);
+    			Util.purgeSession(mySession, connectionIdentifierResponder, edhocSessions, usedConnectionIds);
     			
     			String errMsg = new String("Cannot receive the combined EDHOC+OSCORE request if message_4 is expected");
     			byte[] nextMessage = MessageProcessor.writeErrorMessage(Constants.ERR_CODE_UNSPECIFIED_ERROR,
     																	Constants.EDHOC_MESSAGE_3,
-												                        false, null, errMsg, null);
+												                        false, connectionIdentifierInitiator,
+												                        errMsg, null);
 				ResponseCode responseCode = ResponseCode.BAD_REQUEST;
     			sendErrorMessage(exchange, nextMessage, responseCode);
             	return;
@@ -371,8 +385,7 @@ public class EdhocLayer extends AbstractLayer {
 				}
 				if (mySession.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
 					System.err.println("Inconsistent state before sending EDHOC Message 3");							
-					Util.purgeSession(mySession,
-							          CBORObject.FromObject(mySession.getConnectionId()), edhocSessions, usedConnectionIds);
+					Util.purgeSession(mySession, connectionIdentifierResponder, edhocSessions, usedConnectionIds);
 					String responseString = new String("Inconsistent state before sending EDHOC Message 3");
 					sendErrorResponse(exchange, responseString, ResponseCode.BAD_REQUEST);
 					return;
@@ -389,10 +402,10 @@ public class EdhocLayer extends AbstractLayer {
 				/* Setup the OSCORE Security Context */
 				
 				// The Sender ID of this peer is the EDHOC connection identifier of the other peer
-				byte[] senderId = EdhocSession.edhocToOscoreId(mySession.getPeerConnectionId());
+				byte[] senderId = connectionIdentifierInitiator;
 				
 				// The Recipient ID of this peer is the EDHOC connection identifier of this peer
-				byte[] recipientId = EdhocSession.edhocToOscoreId(mySession.getConnectionId());
+				byte[] recipientId = connectionIdentifierResponder;
 				
 				int selectedCiphersuite = mySession.getSelectedCiphersuite();
 				AlgorithmID alg = EdhocSession.getAppAEAD(selectedCiphersuite);
@@ -404,8 +417,7 @@ public class EdhocLayer extends AbstractLayer {
 					recipientId, hkdf, OSCORE_REPLAY_WINDOW, masterSalt, null, MAX_UNFRAGMENTED_SIZE);
 					
 				} catch (OSException e) {							
-					Util.purgeSession(mySession,
-									  CBORObject.FromObject(mySession.getConnectionId()), edhocSessions, usedConnectionIds);
+					Util.purgeSession(mySession, connectionIdentifierResponder, edhocSessions, usedConnectionIds);
 					String responseString = new String("Error when deriving the OSCORE Security Context");
 					System.err.println(responseString + " " + e.getMessage());
 					sendErrorResponse(exchange, responseString, ResponseCode.INTERNAL_SERVER_ERROR);
@@ -415,8 +427,7 @@ public class EdhocLayer extends AbstractLayer {
 				try {
 					ctxDb.addContext(uriLocal, ctx);
 				} catch (OSException e) {							
-					Util.purgeSession(mySession,
-									  CBORObject.FromObject(mySession.getConnectionId()), edhocSessions, usedConnectionIds);
+					Util.purgeSession(mySession, connectionIdentifierResponder, edhocSessions, usedConnectionIds);
 					String responseString = new String("Error when adding the OSCORE Security Context to the context database");
 					System.err.println(responseString + " " + e.getMessage());
 					sendErrorResponse(exchange, responseString, ResponseCode.INTERNAL_SERVER_ERROR);

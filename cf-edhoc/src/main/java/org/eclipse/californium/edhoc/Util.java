@@ -19,6 +19,7 @@
 package org.eclipse.californium.edhoc;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -549,16 +550,16 @@ public class Util {
     	
     }
     
+    // v-14 identifiers
     /**
      * Get an available Connection Identifier to offer to the other peer
      *  
      * @param usedConnectionIds   The set of already allocated Connection Identifiers
      * @param db   The database of OSCORE security contexts when using EDHOC to key OSCORE, it can be null
      * @param forbiddenIdentifier   The connection identifier C_I, it is null when the caller is the Initiator
-     * @return   the newly allocated connection identifier, or null in case of errors
+     * @return   the newly allocated connection identifier, or null in case of errors or if no connection identifier is available
      */
-    public static CBORObject getConnectionId(Set<CBORObject> usedConnectionIds,
-    										  OSCoreCtxDB db, CBORObject forbiddenIdentifier) {
+    public static byte[] getConnectionId(Set<CBORObject> usedConnectionIds, OSCoreCtxDB db, byte[] forbiddenIdentifier) {
     	
     	if (usedConnectionIds == null)
     		return null;
@@ -570,144 +571,105 @@ public class Util {
     	}
     	
     }
-    
+        
+    // v-14 identifiers
     /**
      * Actually allocate an available Connection Identifier to offer to the other peer
      *  
      * @param usedConnectionIds   The set of already allocated Connection Identifiers
      * @param db   The database of OSCORE security contexts when using EDHOC to key OSCORE, it can be null
      * @param forbiddenIdentifier   The connection identifier C_I, it is null when the caller is the Initiator
-     * @return   the newly allocated connection identifier, or null in case of errors
+     * @return   the newly allocated connection identifier, or null in case of errors or if no connection identifiers are available
      */
-    private static CBORObject allocateConnectionId(Set<CBORObject> usedConnectionIds,
-    											   OSCoreCtxDB db, CBORObject forbiddenIdentifier) {
-    
-    	// If EDHOC is used for keying OSCORE, run a dedicated procedure
-        if (db != null) {
-        	synchronized (db) {
-        		return allocateConnectionIdForOSCORE(usedConnectionIds, db, forbiddenIdentifier);
-        	}
-        }
+    private static byte[] allocateConnectionId(Set<CBORObject> usedConnectionIds,
+    										   OSCoreCtxDB db, byte[] forbiddenIdentifier) {
+
+        byte[] identifier = null;
+         
+        /* Check if the empty connection identifier 0x is available */
         
-        CBORObject connectionIdentifier = null;
-        
-        /* Consider the 1-byte space */
-        
-        // Check for available (1+0) CBOR integers
-        int min = -24;
-        int max = 23;
-        for (int i = min; i <= max; i++) {
-        	
-        	connectionIdentifier = CBORObject.FromObject(i);
-        	if (usedConnectionIds.contains(connectionIdentifier) == false) {
-        		usedConnectionIds.add(connectionIdentifier);
-        		return connectionIdentifier;
-        	}
-        	
-        }
-        // Check if the empty CBOR byte string h'' (0x40) is available
-	    byte[] emptyArray = new byte[0];
-	    connectionIdentifier = CBORObject.FromObject(emptyArray);
-    	if (usedConnectionIds.contains(connectionIdentifier) == false) {
-    		usedConnectionIds.add(connectionIdentifier);
-    		return connectionIdentifier;
-    	}
+	    identifier = new byte[0];
+	    identifier = checkAndCommitConnectionId(identifier, usedConnectionIds, db, forbiddenIdentifier);
+        if (identifier != null)
+        	return identifier;
         
     	
-        /* Consider the 2-byte space */
+        /* Check if a 1-byte connection identifier is available */
         
-        // Check for available(1+1) CBOR integers
-    	min = -256;
-    	max = 255;
-        int minSkip = -24;
-        int maxSkip = 23;
-        for (int i = min; i <= max; i++) {
+    	identifier = new byte[1];
+
+    	// Check the range encoding the values 0..23. These connection identifiers
+    	// encode on the wire as a CBOR integer C_X, with numeric value 0..23
+        for (int i = 0; i <= 23; i++) {
         	
-        	// Values -24 ... 23 are rather encoded as a (1+0) CBOR integer
-        	if (i >= minSkip || i <= maxSkip)
-        		continue;
-        	
-        	connectionIdentifier = CBORObject.FromObject(i);
-        	if (usedConnectionIds.contains(connectionIdentifier) == false) {
-        		usedConnectionIds.add(connectionIdentifier);
-        		return connectionIdentifier;
-        	}
-        	
-        }
-        // Check for available (1+1) CBOR byte strings
-    	byte[] bytes = new byte[1];
-        for (int i = 0; i <= 255; i++) {
-        	
-        	bytes[0] = (byte) (i & 0xff);
-        	connectionIdentifier = CBORObject.FromObject(bytes);
-        	if (usedConnectionIds.contains(connectionIdentifier) == false) {
-        		usedConnectionIds.add(connectionIdentifier);
-        		return connectionIdentifier;
-        	}
+        	identifier[0] = (byte) (i & 0xff);
+    	    identifier = checkAndCommitConnectionId(identifier, usedConnectionIds, db, forbiddenIdentifier);
+            if (identifier != null)
+            	return identifier;
         	
     	}
         
-        
-        /* Consider the 3-byte space */
-        
-        // Check for available(1+2) CBOR integers
-    	min = -65536;
-    	max = 65535;
-        minSkip = -256;
-        maxSkip = 255;
-        for (int i = min; i <= max; i++) {
+    	// Check the range encoding the values 32..55. These connection identifiers
+    	// encode on the wire as a CBOR integer C_X, with numeric value -24..-1
+        for (int i = 32; i <= 55; i++) {
         	
-        	// Values -24 ... 23 are rather encoded as a (1+0) CBOR integer
-        	// Values -256 ... 255 are rather encoded as a (1+1) CBOR integer
-        	if (i >= minSkip || i <= maxSkip)
+        	identifier[0] = (byte) (i & 0xff);
+    	    identifier = checkAndCommitConnectionId(identifier, usedConnectionIds, db, forbiddenIdentifier);
+            if (identifier != null)
+            	return identifier;
+        	
+    	}
+
+    	// Check the remaining ranges 24..31 and 56..255
+        for (int i = 24; i <= 255; i++) {
+        	
+        	// Skip this range as it was already checked before
+        	if (i <= 32 || i <= 55)
         		continue;
         	
-        	connectionIdentifier = CBORObject.FromObject(i);
-        	if (usedConnectionIds.contains(connectionIdentifier) == false) {
-        		usedConnectionIds.add(connectionIdentifier);
-        		return connectionIdentifier;
-        	}
+        	identifier[0] = (byte) (i & 0xff);
+    	    identifier = checkAndCommitConnectionId(identifier, usedConnectionIds, db, forbiddenIdentifier);
+            if (identifier != null)
+            	return identifier;
         	
-        }
-        // Check for available (1+2) CBOR byte strings
-    	bytes = new byte[2];
+    	}
+    	
+    	
+    	/* Check if a 2-byte connection identifier is available */
+        
+        identifier = new byte[2];
         for (int i = 0; i <= 255; i++) {
         	
-        	bytes[0] = (byte) (i & 0xff);
+        	identifier[0] = (byte) (i & 0xff);
         	
         	for (int j = 0; j <= 255; j++) {
         		
-            	bytes[1] = (byte) (j & 0xff);
-		    	connectionIdentifier = CBORObject.FromObject(bytes);
-		    	if (usedConnectionIds.contains(connectionIdentifier) == false) {
-		    		usedConnectionIds.add(connectionIdentifier);
-		    		return connectionIdentifier;
-		    	}
+        		identifier[1] = (byte) (j & 0xff);
+        	    identifier = checkAndCommitConnectionId(identifier, usedConnectionIds, db, forbiddenIdentifier);
+                if (identifier != null)
+                	return identifier;
 		    	
         	}
         	
     	}
+      
+    	/* Check if a 3-byte connection identifier is available */
         
-        /* Consider the 4-byte space */
-        
-        // Check for available (1+3) CBOR byte strings
-    	bytes = new byte[3];
+    	identifier = new byte[3];
         for (int i = 0; i <= 255; i++) {
         	
-        	bytes[0] = (byte) (i & 0xff);
+        	identifier[0] = (byte) (i & 0xff);
         	
         	for (int j = 0; j <= 255; j++) {
         		
-            	bytes[1] = (byte) (j & 0xff);
+        		identifier[1] = (byte) (j & 0xff);
             	
             	for (int k = 0; k <= 255; k++) {
             		
-                	bytes[2] = (byte) (k & 0xff);
-			    	connectionIdentifier = CBORObject.FromObject(bytes);
-			    	if (usedConnectionIds.contains(connectionIdentifier) == false) {
-			    		usedConnectionIds.add(connectionIdentifier);
-			    		return connectionIdentifier;
-			    	}
+            		identifier[2] = (byte) (k & 0xff);
+            	    identifier = checkAndCommitConnectionId(identifier, usedConnectionIds, db, forbiddenIdentifier);
+                    if (identifier != null)
+                    	return identifier;
         		}
 		    	
         	}
@@ -718,23 +680,56 @@ public class Util {
     	
     }
     
-    
+    // v-14 identifiers
     /**
-     * Check for the availability of an OSCORE Recipient ID and the corresponding EDHOC Connection Identifier.
+     * Check if a Connection Identifier is available to offer to the other peer
+     *
+     * @param recipientID   The candidate connection identifier to use as OSCORE Recipient ID
+     * @param usedConnectionIds   The set of already allocated Connection Identifiers
+     * @param db   The database of OSCORE security contexts when using EDHOC to key OSCORE, it can be null
+     * @param forbiddenIdentifier   The connection identifier C_I, it is null when the caller is the Initiator
+     * @return   the newly allocated connection identifier, or null in case it is not available
+     */
+    private static byte[] checkAndCommitConnectionId(byte[] identifier, Set<CBORObject> usedConnectionIds,
+    												 OSCoreCtxDB db, byte[] forbiddenIdentifier) {
+    	
+        if (db != null) {
+        	// EDHOC is used for keying OSCORE
+        	synchronized (db) {
+        		return commitConnectionIdForOSCORE(identifier, db, usedConnectionIds, forbiddenIdentifier);
+        	}
+        }
+        else {
+    	    CBORObject identifierCbor = CBORObject.FromObject(identifier);
+        	
+        	if (usedConnectionIds.contains(identifierCbor) == false) {
+	    		usedConnectionIds.add(identifierCbor);
+	    		return identifier;
+        	}
+        }
+        
+        return null;
+    	
+    }
+    
+    // v-14 identifiers
+    /**
+     * Check for the availability of an OSCORE Recipient ID and the corresponding, identical EDHOC Connection Identifier.
      * If they are both available, mark them as used and return the Connection Identifier. Otherwise, return null.
      *  
-     * @param recipientID   The OSCORE Recipient ID
+     * @param recipientID   The candidate connection identifier to use as OSCORE Recipient ID
      * @param db   The database of OSCORE security contexts when using EDHOC to key OSCORE
      * @param usedConnectionIds   The set of already allocated Connection Identifiers
      * @param forbiddenIdentifier   The connection identifier to avoid, it can be null if there is no constraint
      * @return   the newly allocated connection identifier, or null in case of errors or unavailability
      */
-    private static CBORObject commitEdhocIdentifierForOSCORE(byte[] recipientId, OSCoreCtxDB db,
-    														 Set<CBORObject> usedConnectionIds,
-    														 CBORObject forbiddenIdentifier) {
+    private static byte[] commitConnectionIdForOSCORE(byte[] recipientId, OSCoreCtxDB db,
+    												  Set<CBORObject> usedConnectionIds, byte[] forbiddenIdentifier) {
     
     	OSCoreCtx ctx = null;
-    	CBORObject connectionIdentifier = null;
+    	
+    	if (recipientId == null || db == null)
+    		return null;
     	
         try {
             ctx = db.getContext(recipientId, null);
@@ -746,30 +741,34 @@ public class Util {
     		// The Recipient ID is available for OSCORE, i.e., it is
     		// currently not used in the sets of all the Recipient Contexts
     		
-        	connectionIdentifier = EdhocSession.oscoreToEdhocId(recipientId);
-        	
         	// The EDHOC Connection Identifier coincides with the one to avoid (i.e., C_I offered by the Initiator) 
-        	if (connectionIdentifier != null && forbiddenIdentifier != null &&
-        		connectionIdentifier.equals(forbiddenIdentifier) == true)
+        	if (forbiddenIdentifier != null && Arrays.equals(recipientId, forbiddenIdentifier) == true)
         		return null;
 
-        	if (usedConnectionIds.contains(connectionIdentifier) == false) {
+        	CBORObject identifierCbor = CBORObject.FromObject(recipientId);
+        	if (usedConnectionIds.contains(identifierCbor) == false) {
 	        	// The corresponding EDHOC Connection Identifier is also available
         		
-        		usedConnectionIds.add(connectionIdentifier);
+        		usedConnectionIds.add(identifierCbor);
         		
         		// Allocate a non-finalized OSCORE Security Context, to have the Recipient ID as taken
         		try {
         			byte[] emptyArray = new byte[0];
     				ctx = new OSCoreCtx(emptyArray, true, null, null, recipientId, AlgorithmID.HKDF_HMAC_SHA_256, 0, null, null, 0);
-    			} catch (OSException e) {
+    				db.addContext(ctx);
+    			} catch (OSException | NullPointerException e) {
     				System.err.println("Error when allocating an EDHOC Connection Identifier to use as "
     						           + "OSCORE Recipient ID" + e.getMessage());
-    				usedConnectionIds.remove(connectionIdentifier);
+    				
+    				// Rollback
+    				usedConnectionIds.remove(identifierCbor);
+    				if (ctx != null)
+    					db.removeContext(ctx);
+    				
     				return null;
     			}
         		
-        		return connectionIdentifier;
+        		return recipientId;
         	}
     	}
     	
@@ -777,179 +776,7 @@ public class Util {
     	
     }
     
-    /**
-     * Actually allocate an available Connection Identifier to offer to the other peer,
-     * when EDHOC is used for keying OSCORE. Recipient IDs are used as Connect Identifiers
-     *  
-     * @param usedConnectionIds   The set of already allocated Connection Identifiers
-     * @param db   The database of OSCORE security contexts when using EDHOC to key OSCORE, it can be null
-     * @param forbiddenIdentifier   The connection identifier C_I, it is null when the caller is the Initiator
-     * @return   the newly allocated connection identifier, or null in case of errors or unavailability
-     */
-    private static CBORObject allocateConnectionIdForOSCORE(Set<CBORObject> usedConnectionIds,
-    														OSCoreCtxDB db, CBORObject forbiddenIdentifier) {
-    	
-        byte[] recipientId = null;
-        CBORObject connectionIdentifier = null;
-        
-        /* Consider 1-byte Recipient IDs */
-        
-    	recipientId = new byte[1];
-    	
-        // 0x00-0x17 (0-23) and 0x20-0x37 (32-55) can become a (1+0) CBOR integer
-        int min = 0;
-        int max = 55;
-        for (int i = min; i <= max; i++) {
-        	
-        	if (i > 23 && i < 32)
-        		continue;
-        	
-        	recipientId[0] = (byte) (i & 0xff);
-        	
-        	connectionIdentifier = commitEdhocIdentifierForOSCORE(recipientId, db, usedConnectionIds, forbiddenIdentifier);
-        	if (connectionIdentifier != null)
-        		return connectionIdentifier;
-        	
-    	}
-        
-        // Check if the empty CBOR byte string h'' (0x40) is available
-        recipientId = new byte[0];
-    	connectionIdentifier = commitEdhocIdentifierForOSCORE(recipientId, db, usedConnectionIds, forbiddenIdentifier);
-    	if (connectionIdentifier != null)
-    		return connectionIdentifier;
-        
-        // 0x18-0x1F (24-31) and 0x38-0xFF (56-255) can become a (1+1) CBOR Byte string
-        min = 24;
-        max = 255;
-        for (int i = min; i <= max; i++) {
-        	
-        	if (i > 31 && i < 56)
-        		continue;
-        	
-        	recipientId[0] = (byte) (i & 0xff);
-        	connectionIdentifier = commitEdhocIdentifierForOSCORE(recipientId, db, usedConnectionIds, forbiddenIdentifier);
-        	if (connectionIdentifier != null)
-        		return connectionIdentifier;
-        	
-    	}
-
-        
-        /* Consider 2-byte Recipient IDs */
-        
-    	recipientId = new byte[2];
-        
-        // 0x1818-0x18FF (6168-6399) and 0x3818-0x38FF (14360-14591) can become a (1+1) CBOR integer
-        min = 6168;
-        max = 14591;
-        for (int i = min; i <= max; i++) {
-        	
-        	if (i > 6399 && i < 14360)
-        		continue;
-        	
-        	recipientId = intToBytes(i);
-        	connectionIdentifier = commitEdhocIdentifierForOSCORE(recipientId, db, usedConnectionIds, forbiddenIdentifier);
-        	if (connectionIdentifier != null)
-        		return connectionIdentifier;
-        	
-    	}
-        
-        // 0x0000-0x1817 (0-6167), 0x1900-0x3817 (6400-14359) and 0x3900-0xFFFF (14592-65535)
-        // can become a (1+2) CBOR byte string
-        min = 0;
-        max = 65535;
-        for (int i = min; i <= max; i++) {
-        	
-        	if ( (i > 6167 && i < 6400) || (i > 14359 && i < 14592) )
-        		continue;
-        	
-        	byte[] aux = intToBytes(i);
-        	System.arraycopy(aux, 0, recipientId, 0, aux.length);
-        	if (i <= 255) {
-        		recipientId[1] = (byte) 0x00;
-        	}
-        	connectionIdentifier = commitEdhocIdentifierForOSCORE(recipientId, db, usedConnectionIds, forbiddenIdentifier);
-        	if (connectionIdentifier != null)
-        		return connectionIdentifier;
-        	
-    	}
-	        
-        
-        /* Consider 3-byte Recipient IDs */
-        
-    	recipientId = new byte[3];
-        
-        // 0x190100-0x19FFFF (1638656-1703935) and 0x390100-0x39FFFF (3735808-3801087) can become a (1+2) CBOR integer
-        min = 1638656;
-        max = 3801087;
-        for (int i = min; i <= max; i++) {
-        	
-        	if (i > 1703935 && i < 3735808)
-        		continue;
-        	
-        	recipientId = intToBytes(i);
-        	connectionIdentifier = commitEdhocIdentifierForOSCORE(recipientId, db, usedConnectionIds, forbiddenIdentifier);
-        	if (connectionIdentifier != null)
-        		return connectionIdentifier;
-        	
-    	}
-        
-        // 0x000000-0x1900FF (0-1638655), 0x1A0000-0x3900FF (1703936-3735807) and 0x3A0000-0xFFFFFF (3801088-16777215)
-        // can become a (1+3) CBOR byte string
-        min = 0;
-        max = 16777215;
-        for (int i = min; i <= max; i++) {
-        	
-        	if ( (i > 1638655 && i < 1703936) || (i > 3735807 && i < 3801088) )
-        		continue;
-
-        	byte[] aux = intToBytes(i);
-        	System.arraycopy(aux, 0, recipientId, 0, aux.length);
-        	if (i <= 65535) {
-        		recipientId[2] = (byte) 0x00;
-        		
-	        	if (i <= 255) {
-	        		recipientId[1] = (byte) 0x00;
-	        	}
-        	}
-        	connectionIdentifier = commitEdhocIdentifierForOSCORE(recipientId, db, usedConnectionIds, forbiddenIdentifier);
-        	if (connectionIdentifier != null)
-        		return connectionIdentifier;
-        	
-    	}
-        
-        
-        /* Consider 4-byte Recipient IDs */
-        
-    	recipientId = new byte[4];
-        	        
-        // 0x00000000-0x7FFFFFFF (0-2147483647) can become a (1+4) CBOR byte string
-        min = 0;
-        max = 2147483647;
-        for (int i = min; i <= max; i++) {
-        		        	
-        	byte[] aux = intToBytes(i);
-        	System.arraycopy(aux, 0, recipientId, 0, aux.length);
-        	if (i <= 16777215) {	        		
-        		recipientId[3] = (byte) 0x00;
-        		
-	        	if (i <= 65535) {
-	        		recipientId[2] = (byte) 0x00;
-	        		
-		        	if (i <= 255) {
-		        		recipientId[1] = (byte) 0x00;
-		        	}
-	        	}
-        	}
-        	connectionIdentifier = commitEdhocIdentifierForOSCORE(recipientId, db, usedConnectionIds, forbiddenIdentifier);
-        	if (connectionIdentifier != null)
-        		return connectionIdentifier;
-        	
-    	}
-        
-        return null;
-    }
-    
-    
+    // v-14 identifiers
     /**
      * Deallocate a Connection Identifier previously locked to offer to a peer
      * Note that, if this was an OSCORE Recipient ID, the Recipient ID itself will not be deallocated
@@ -958,27 +785,26 @@ public class Util {
      * @param usedConnectionIds   The set of already allocated Connection Identifiers
      * @param db   The database of OSCORE security contexts when using EDHOC to key OSCORE, it can be null
      */
-    public static void releaseConnectionId (CBORObject connectionId, Set<CBORObject> usedConnectionIds, OSCoreCtxDB db) {
+    public static void releaseConnectionId (byte[] connectionId, Set<CBORObject> usedConnectionIds, OSCoreCtxDB db) {
     	
-    	if (connectionId == null ||
-    		connectionId.getType() != CBORType.Integer ||
-    		connectionId.getType() != CBORType.ByteString)
+    	if (connectionId == null)
     		return;
     	
     	synchronized (usedConnectionIds) {
-    		usedConnectionIds.remove(connectionId);
+    		CBORObject connectionIdCbor = CBORObject.FromObject(connectionId); 
+    		usedConnectionIds.remove(connectionIdCbor);
     	}
     	
     	if (db != null) {
+        	// EDHOC is used for keying OSCORE. The EDHOC connection identifier is the OSCORE Recipient ID.
     		
     		synchronized (db) {
-	    		byte[] recipientId = EdhocSession.edhocToOscoreId(connectionId);
 	    		OSCoreCtx ctx = null;
 				try {
-					ctx = db.getContext(recipientId, null);
+					ctx = db.getContext(connectionId, null);
 				} catch (CoapOSException e) {
 					System.err.println("Found multiple OSCORE Security Contexts with the same Recipient ID " +
-									   Utils.bytesToHex(recipientId) + "\n" + e.getMessage());
+									   Utils.bytesToHex(connectionId) + "\n" + e.getMessage());
 				}
 	    		if (ctx != null) {
 	    			db.removeContext(ctx);
@@ -989,6 +815,7 @@ public class Util {
     	
     }
     
+    // v-14 identifiers
 	/**
 	 * Remove an EDHOC session from the list of active sessions; release the used Connection Identifier; invalidate the session
 	 * @param session   The EDHOC session to invalidate
@@ -996,11 +823,12 @@ public class Util {
 	 * @param edhocSessions   The set of active EDHOC sessions of the recipient
      * @param usedConnectionIds   The collection of already allocated Connection Identifiers
 	 */
-	public static void purgeSession(EdhocSession session, CBORObject connectionIdentifier,
+	public static void purgeSession(EdhocSession session, byte[] connectionIdentifier,
 			                        Map<CBORObject, EdhocSession> edhocSessions, Set<CBORObject> usedConnectionIds) {
 		if (session != null) {
-		    edhocSessions.remove(connectionIdentifier, session);
-		    Util.releaseConnectionId(connectionIdentifier, usedConnectionIds, session.getOscoreDb());
+			CBORObject connectionIdentifierCbor = CBORObject.FromObject(connectionIdentifier);
+		    edhocSessions.remove(connectionIdentifierCbor, session);
+		    releaseConnectionId(connectionIdentifier, usedConnectionIds, session.getOscoreDb());
 		    session.deleteTemporaryMaterial();
 		    session = null;
 		}
@@ -1432,60 +1260,7 @@ public class Util {
 		return true;
 		
 	}
-	
-    /**
-     * Check if the serialization of a CBOR object corresponds to a CBOR integer
-     *  
-     * @param buffer   The serialization to check
-     * @return True in case the serialized CBOR object is a CBOR integer, or false otherwise
-     */
-	public static boolean isCborIntegerEncoding (byte[] buffer) {
-		
-		if (buffer == null || buffer.length == 0)
-			return false;
-		
-		int bufferLength = buffer.length;
-		
-		byte[] selection = new byte[1];
-		System.arraycopy(buffer, 0, selection, 0, 1);
-		int value = Util.bytesToInt(selection);
-		
-		switch (bufferLength) {
-			case 1: // Possibly a (1+0) CBOR integer
-				if ( (value >= 0 && value <= 23) || (value >= 32 && value <= 55) ) {
-					// 0x00-0x17 or 0x20-0x37
-					
-					return true;
-				}
-			case 2: // Possibly a (1+1) CBOR integer
-				if (value == 24 || value == 56) {
-					// 0x18 or 0x38
-					
-					return true;
-				}
-			case 3: // Possibly a (1+2) CBOR integer
-				if (value == 25 || value == 57) {
-					// 0x19 or 0x39
-					
-					return true;
-				}
-			case 5: // Possibly a (1+4) CBOR integer
-				if (value == 26 || value == 58) {
-					// 0x1A or 0x3A
-					
-					return true;
-				}
-			case 9: // Possibly a (1+8) CBOR integer
-				if (value == 27 || value == 59) {
-					// 0x1B or 0x3B
-					
-					return true;
-				}
-		}
-		
-		return false;
-		
-	}
+
 	
     /**
      * Check if a CBOR integer complies with deterministic CBOR encoding

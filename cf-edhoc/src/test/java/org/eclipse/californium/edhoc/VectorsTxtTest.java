@@ -190,7 +190,7 @@ public class VectorsTxtTest {
 		OneKey identityKey = Util.generateKeyPair(KeyKeys.OKP_Ed25519.AsInt32()); // Dummy
 		boolean initiator = true;
 		int methodCorr = methodCorrList.get(index);
-		CBORObject connectionId = connectionIdList.get(index);
+		byte[] connectionId = connectionIdList.get(index).GetByteString(); // v-14 identifiers
 		List<Integer> cipherSuites = new ArrayList<Integer>();
 		cipherSuites.add(supportedCipherSuitesList.get(index)); // 1 suite only
 		byte[] ead1 = ad1List.get(index);
@@ -216,9 +216,7 @@ public class VectorsTxtTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		int conversionMethodOscoreToEdhoc = Constants.CONVERSION_ID_UNDEFINED;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE,
-											   supportCombinedRequest, conversionMethodOscoreToEdhoc);
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		
 		// Specify the processor of External Authorization Data
 		KissEDP edp = new KissEDP();
@@ -262,7 +260,7 @@ public class VectorsTxtTest {
 
 		// Print parameters used
 		System.out.println("methodCorr " + methodCorr);
-		System.out.println("connectionId " + Utils.bytesToHex(connectionId.EncodeToBytes()));
+		System.out.println("connectionId " + Utils.bytesToHex(connectionId)); // v-14 identifiers
 		System.out.println("ead1 " + Utils.bytesToHex(ead1));
 		System.out.println("privateEkeyBytes " + Utils.bytesToHex(privateEkeyBytes));
 		System.out.println("publicEkeyBytes " + Utils.bytesToHex(publicEkeyBytes));
