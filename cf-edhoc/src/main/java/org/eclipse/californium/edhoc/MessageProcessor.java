@@ -2224,136 +2224,155 @@ public class MessageProcessor {
     	}
         
         // Compute PRK_2e
-        String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCiphersuite());
-    	prk2e = computePRK2e(dhSecret, hashAlgorithm);
-    	dhSecret = null;
-    	if (prk2e == null) {
-    		System.err.println("Error when computing PRK_2e");
-    		errMsg = new String("Error when computing PRK_2e");
-    		error = true;
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("PRK_2e", prk2e);
-    	}
-        session.setPRK2e(prk2e);
+        if (error == false) {
+	        String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCiphersuite());
+	    	prk2e = computePRK2e(dhSecret, hashAlgorithm);
+	    	dhSecret = null;
+	    	if (prk2e == null) {
+	    		System.err.println("Error when computing PRK_2e");
+	    		errMsg = new String("Error when computing PRK_2e");
+	    		error = true;
+	    	}
+	    	else if (debugPrint) {
+	    		Util.nicePrint("PRK_2e", prk2e);
+	    	}
+	        session.setPRK2e(prk2e);
+        }
         
         // Compute PRK_3e2m
-    	prk3e2m = computePRK3e2m(session, prk2e);
-    	if (prk3e2m == null) {
-    		System.err.println("Error when computing PRK_3e2m");
-    		errMsg = new String("Error when computing PRK_3e2m");
-    		error = true;
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("PRK_3e2m", prk3e2m);
-    	}
-    	session.setPRK3e2m(prk3e2m);
+        if (error == false) {
+	    	prk3e2m = computePRK3e2m(session, prk2e);
+	    	if (prk3e2m == null) {
+	    		System.err.println("Error when computing PRK_3e2m");
+	    		errMsg = new String("Error when computing PRK_3e2m");
+	    		error = true;
+	    	}
+	    	else if (debugPrint) {
+	    		Util.nicePrint("PRK_3e2m", prk3e2m);
+	    	}
+	    	session.setPRK3e2m(prk3e2m);
+        }
     	
         
     	/* Start computing Signature_or_MAC_2 */    	
     	
+        byte[] mac2 = null;
+        byte[] externalData = null;
+        
     	// Compute MAC_2
-    	byte[] mac2 = computeMAC2(session, prk3e2m, th2, session.getIdCred(), session.getCred(), ead2);
-    	if (mac2 == null) {
-    		System.err.println("Error when computing MAC_2");
-    		errMsg = new String("Error when computing MAC_2");
-    		error = true;
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("MAC_2", mac2);
-    	}
-    	
+        if (error == false) {
+	    	mac2 = computeMAC2(session, prk3e2m, th2, session.getIdCred(), session.getCred(), ead2);
+	    	if (mac2 == null) {
+	    		System.err.println("Error when computing MAC_2");
+	    		errMsg = new String("Error when computing MAC_2");
+	    		error = true;
+	    	}
+	    	else if (debugPrint) {
+	    		Util.nicePrint("MAC_2", mac2);
+	    	}
+        }
     	
     	// Compute Signature_or_MAC_2
     	
         // Compute the external data for the external_aad, as a CBOR sequence
-    	byte[] externalData = computeExternalData(th2, session.getCred(), ead2);
-    	if (externalData == null) {
-    		System.err.println("Error when computing the external data for MAC_2");
-    		errMsg = new String("Error when computing the external data for MAC_2");
-    		error = true;
-    	}
+        if (error == false) {
+			externalData = computeExternalData(th2, session.getCred(), ead2);
+			if (externalData == null) {
+				System.err.println("Error when computing the external data for MAC_2");
+				errMsg = new String("Error when computing the external data for MAC_2");
+				error = true;
+			}
+        }
     	
     	byte[] signatureOrMac2 = computeSignatureOrMac2(session, mac2, externalData);
-    	if (signatureOrMac2 == null) {
-    		System.err.println("Error when computing Signature_or_MAC_2");
-    		errMsg = new String("Error when computing Signature_or_MAC_2");
-    		error = true;
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("Signature_or_MAC_2", signatureOrMac2);
-    	}
+        if (error == false) {
+			if (signatureOrMac2 == null) {
+				System.err.println("Error when computing Signature_or_MAC_2");
+				errMsg = new String("Error when computing Signature_or_MAC_2");
+				error = true;
+			}
+			else if (debugPrint) {
+				Util.nicePrint("Signature_or_MAC_2", signatureOrMac2);
+			}
+        }
     	
     	/* End computing Signature_or_MAC_2 */ 
     
     	
     	/* Start computing CIPHERTEXT_2 */
     
-    	// Prepare the plaintext
-    	List<CBORObject> plaintextElementList = new ArrayList<>();
-    	CBORObject plaintextElement = null;
-    	if (session.getIdCred().ContainsKey(HeaderKeys.KID.AsCBOR())) {
-    		// ID_CRED_R uses 'kid', whose value is the only thing to include in the plaintext
-    		plaintextElement = session.getIdCred().get(HeaderKeys.KID.AsCBOR());
-    	}
-    	else {
-    		plaintextElement = session.getIdCred();
-    	}
-    	plaintextElementList.add(plaintextElement);
-    	plaintextElementList.add(CBORObject.FromObject(signatureOrMac2));
-    	if (ead2 != null) {
-    		for (int i = 0; i < ead2.length; i++)
-    			plaintextElementList.add(ead2[i]);
-    	}
-    	byte[] plaintext2 = Util.buildCBORSequence(plaintextElementList);
-    	if (debugPrint && plaintext2 != null) {
-    		Util.nicePrint("Plaintext to compute CIPHERTEXT_2", plaintext2);
-    	}
-    	
-    	
-    	// Compute KEYSTREAM_2
-    	byte[] keystream2 = computeKeystream2(session, plaintext2.length);
-    	if (keystream2== null) {
-    		System.err.println("Error when computing KEYSTREAM_2");
-    		errMsg = new String("Error when computing KEYSTREAM_2");
-    		error = true;
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("KEYSTREAM_2", keystream2);
-    	}
-
+        byte[] plaintext2 = null;
+    	byte[] keystream2 = null;
+        if (error == false) {
+	    	// Prepare the plaintext
+	    	List<CBORObject> plaintextElementList = new ArrayList<>();
+	    	CBORObject plaintextElement = null;
+	    	if (session.getIdCred().ContainsKey(HeaderKeys.KID.AsCBOR())) {
+	    		// ID_CRED_R uses 'kid', whose value is the only thing to include in the plaintext
+	    		plaintextElement = session.getIdCred().get(HeaderKeys.KID.AsCBOR());
+	    	}
+	    	else {
+	    		plaintextElement = session.getIdCred();
+	    	}
+	    	plaintextElementList.add(plaintextElement);
+	    	plaintextElementList.add(CBORObject.FromObject(signatureOrMac2));
+	    	if (ead2 != null) {
+	    		for (int i = 0; i < ead2.length; i++)
+	    			plaintextElementList.add(ead2[i]);
+	    	}
+	    	plaintext2 = Util.buildCBORSequence(plaintextElementList);
+	    	if (debugPrint && plaintext2 != null) {
+	    		Util.nicePrint("Plaintext to compute CIPHERTEXT_2", plaintext2);
+	    	}
+	    	
+	    	// Compute KEYSTREAM_2
+	        if (error == false) {
+		    	keystream2 = computeKeystream2(session, plaintext2.length);
+		    	if (keystream2== null) {
+		    		System.err.println("Error when computing KEYSTREAM_2");
+		    		errMsg = new String("Error when computing KEYSTREAM_2");
+		    		error = true;
+		    	}
+		    	else if (debugPrint) {
+		    		Util.nicePrint("KEYSTREAM_2", keystream2);
+		    	}
+	        }
+		}
+        
     	
     	// Compute CIPHERTEXT_2
-    	byte[] ciphertext2 = Util.arrayXor(plaintext2, keystream2);
-    	
-    	// v-14
-    	// Store PLAINTEXT_2 for the later computation of TH_3
-    	session.setPlaintext2(plaintext2);
-    	
-    	if (debugPrint && ciphertext2 != null) {
-    		Util.nicePrint("CIPHERTEXT_2", ciphertext2);
-    	}
+	        if (error == false) {
+	        
+	    	byte[] ciphertext2 = Util.arrayXor(plaintext2, keystream2);
+	    	
+	    	// v-14
+	    	// Store PLAINTEXT_2 for the later computation of TH_3
+	    	session.setPlaintext2(plaintext2);
+	    	
+	    	if (debugPrint && ciphertext2 != null) {
+	    		Util.nicePrint("CIPHERTEXT_2", ciphertext2);
+	    	}
+	
+	    	/* End computing CIPHERTEXT_2 */
+	    	
+	    	
+	    	// Finish building the outer CBOR sequence
+	    	
+	    	// Concatenate G_Y with CIPHERTEXT_2
+	    	byte[] gY_Ciphertext2 = new byte[gY.GetByteString().length + ciphertext2.length];
+	    	System.arraycopy(gY.GetByteString(), 0, gY_Ciphertext2, 0, gY.GetByteString().length);
+	    	System.arraycopy(ciphertext2, 0, gY_Ciphertext2, gY.GetByteString().length, ciphertext2.length);
+	    	
+	    	// Wrap the result in a single CBOR byte string, included in the outer CBOR sequence of EDHOC Message 2
+	    	objectList.add(CBORObject.FromObject(gY_Ciphertext2));
+	    	if (debugPrint) {
+	    	    Util.nicePrint("G_Y | CIPHERTEXT_2", gY_Ciphertext2);
+	    	}
+	    	
+	    	// The outer CBOR sequence finishes with the connection identifier C_R
+	    	objectList.add(cR);
+        }
 
-    	/* End computing CIPHERTEXT_2 */
-    	
-    	
-    	// Finish building the outer CBOR sequence
-    	
-    	// Concatenate G_Y with CIPHERTEXT_2
-    	byte[] gY_Ciphertext2 = new byte[gY.GetByteString().length + ciphertext2.length];
-    	System.arraycopy(gY.GetByteString(), 0, gY_Ciphertext2, 0, gY.GetByteString().length);
-    	System.arraycopy(ciphertext2, 0, gY_Ciphertext2, gY.GetByteString().length, ciphertext2.length);
-    	
-    	// Wrap the result in a single CBOR byte string, included in the outer CBOR sequence of EDHOC Message 2
-    	objectList.add(CBORObject.FromObject(gY_Ciphertext2));
-    	if (debugPrint) {
-    	    Util.nicePrint("G_Y | CIPHERTEXT_2", gY_Ciphertext2);
-    	}
-    	
-    	// The outer CBOR sequence finishes with the connection identifier C_R
-    	objectList.add(cR);
-
-    	
     	
 		/* Prepare an EDHOC Error Message */
 		
@@ -2438,51 +2457,63 @@ public class MessageProcessor {
         session.setTH3(th3);
 
         // Compute the key material
-        byte[] prk4e3m = computePRK4e3m(session);
-    	if (prk4e3m == null) {
-    		System.err.println("Error when computing PRK_4e3m");
-    		errMsg = new String("Error when computing PRK_4e3m");
-    		error = true;
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("PRK_4e3m", prk4e3m);
-    	}
-    	session.setPRK4e3m(prk4e3m);
+        byte[] prk4e3m = null;
+        if (error == false) {
+	        prk4e3m = computePRK4e3m(session);
+	    	if (prk4e3m == null) {
+	    		System.err.println("Error when computing PRK_4e3m");
+	    		errMsg = new String("Error when computing PRK_4e3m");
+	    		error = true;
+	    	}
+	    	else if (debugPrint) {
+	    		Util.nicePrint("PRK_4e3m", prk4e3m);
+	    	}
+	    	session.setPRK4e3m(prk4e3m);
+        }
         
 		
     	/* Start computing Signature_or_MAC_3 */
     	
     	// Compute MAC_3
-    	byte[] mac3 = computeMAC3(session, prk4e3m, th3, session.getIdCred(), session.getCred(), ead3);
-    	if (mac3 == null) {
-    		System.err.println("Error when computing MAC_3");
-    		errMsg = new String("Error when computing MAC_3");
-    		error = true;
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("MAC_3", mac3);
-    	}
+        byte[] mac3 = null;
+        if (error == false) {
+	    	mac3 = computeMAC3(session, prk4e3m, th3, session.getIdCred(), session.getCred(), ead3);
+	    	if (mac3 == null) {
+	    		System.err.println("Error when computing MAC_3");
+	    		errMsg = new String("Error when computing MAC_3");
+	    		error = true;
+	    	}
+	    	else if (debugPrint) {
+	    		Util.nicePrint("MAC_3", mac3);
+	    	}
+        }
     	
     	
     	// Compute Signature_or_MAC_3
     	
         // Compute the external data for the external_aad, as a CBOR sequence
-    	byte[] externalData = computeExternalData(th3, session.getCred(), ead3);
-    	if (externalData == null) {
-    		System.err.println("Error when computing the external data for MAC_3");
-    		errMsg = new String("Error when computing the external data for MAC_3");
-    		error = true;
-    	}
+        byte[] externalData = null;
+        if (error == false) {
+	    	externalData = computeExternalData(th3, session.getCred(), ead3);
+	    	if (externalData == null) {
+	    		System.err.println("Error when computing the external data for MAC_3");
+	    		errMsg = new String("Error when computing the external data for MAC_3");
+	    		error = true;
+	    	}
+        }
     	
-    	byte[] signatureOrMac3 = computeSignatureOrMac3(session, mac3, externalData);
-    	if (signatureOrMac3 == null) {
-    		System.err.println("Error when computing Signature_or_MAC_3");
-    		errMsg = new String("Error when computing Signature_or_MAC_3");
-    		error = true;
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("Signature_or_MAC_3", signatureOrMac3);
-    	}
+        byte[] signatureOrMac3 = null;
+        if (error == false) {
+	    	signatureOrMac3 = computeSignatureOrMac3(session, mac3, externalData);
+	    	if (signatureOrMac3 == null) {
+	    		System.err.println("Error when computing Signature_or_MAC_3");
+	    		errMsg = new String("Error when computing Signature_or_MAC_3");
+	    		error = true;
+	    	}
+	    	else if (debugPrint) {
+	    		Util.nicePrint("Signature_or_MAC_3", signatureOrMac3);
+	    	}
+        }
     	
     	/* End computing Signature_or_MAC_3 */
     	
@@ -2491,110 +2522,126 @@ public class MessageProcessor {
     	
     	// Compute K_3ae and IV_3ae to protect the outer COSE object
 
-    	byte[] k3ae = computeKey(Constants.EDHOC_K_3, session);
-    	if (k3ae == null) {
-    		System.err.println("Error when computing K_3ae");
-    		errMsg = new String("Error when computing K_3ae");
-    		error = true;
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("K_3ae", k3ae);
-    	}
-    	
-    	byte[] iv3ae = computeIV(Constants.EDHOC_IV_3, session);
-    	if (iv3ae == null) {
-    		System.err.println("Error when computing IV_3ae");
-    		errMsg = new String("Error when computing IV_3ae");
-    		error = true;
-    	}
-    	else if (debugPrint) {
-    		Util.nicePrint("IV_3ae", iv3ae);
-    	}
-    	    	
-    	// Prepare the External Data as including only TH3
-    	externalData = th3;
-    	
-    	// Prepare the plaintext
-    	List<CBORObject> plaintextElementList = new ArrayList<>();
-    	CBORObject plaintextElement = null;
-    	if (session.getIdCred().ContainsKey(HeaderKeys.KID.AsCBOR())) {
-    	    // ID_CRED_I uses 'kid', whose value is the only thing to include in the plaintext
-    	    plaintextElement = session.getIdCred().get(HeaderKeys.KID.AsCBOR());
-    	}
-    	else {
-    	    plaintextElement = session.getIdCred();
-    	}    	
-    	plaintextElementList.add(plaintextElement);
-    	plaintextElementList.add(CBORObject.FromObject(signatureOrMac3));
-    	if (ead3 != null) {
-    		for (int i = 0; i < ead3.length; i++)
-    			plaintextElementList.add(ead3[i]);
-    	}    	
-    	byte[] plaintext3 = Util.buildCBORSequence(plaintextElementList);
-    	if (debugPrint && plaintext3 != null) {
-    		Util.nicePrint("Plaintext to compute CIPHERTEXT_3", plaintext3);
-    	}
-    	
-    	
-    	// Compute CIPHERTEXT_3 and add it to the outer CBOR sequence
-    	
-    	byte[] ciphertext3 = computeCiphertext3(session, externalData, plaintext3, k3ae, iv3ae);
-    	objectList.add(CBORObject.FromObject(ciphertext3));
-    	if (debugPrint && ciphertext3 != null) {
-    		Util.nicePrint("CIPHERTEXT_3", ciphertext3);
-    	}
-    	
-    	/* End computing CIPHERTEXT_3 */
-    	
-    	
-    	/* Compute TH4 */
-    	
-        byte[] th3SerializedCBOR = CBORObject.FromObject(th3).EncodeToBytes();
-    	byte[] th4 = computeTH4(session, th3SerializedCBOR, plaintext3); // v-14
-        if (th4 == null) {
-        	System.err.println("Error when computing TH_4");
-    		errMsg = new String("Error when computing TH_4");
-    		error = true;
+        byte[] k3ae = null;
+        if (error == false) {
+	    	k3ae = computeKey(Constants.EDHOC_K_3, session);
+	    	if (k3ae == null) {
+	    		System.err.println("Error when computing K_3ae");
+	    		errMsg = new String("Error when computing K_3ae");
+	    		error = true;
+	    	}
+	    	else if (debugPrint) {
+	    		Util.nicePrint("K_3ae", k3ae);
+	    	}
         }
-        else if (debugPrint) {
-    		Util.nicePrint("TH_4", th4);
-    	}
-    	session.setTH4(th4);
+    	
+        byte[] iv3ae = null;
+        if (error == false) {
+	    	iv3ae = computeIV(Constants.EDHOC_IV_3, session);
+	    	if (iv3ae == null) {
+	    		System.err.println("Error when computing IV_3ae");
+	    		errMsg = new String("Error when computing IV_3ae");
+	    		error = true;
+	    	}
+	    	else if (debugPrint) {
+	    		Util.nicePrint("IV_3ae", iv3ae);
+	    	}
+        }
+    	    	
+        
+        if (error == false) {
+	    	// Prepare the External Data as including only TH3
+	    	externalData = th3;
+	    	
+	    	// Prepare the plaintext
+	    	List<CBORObject> plaintextElementList = new ArrayList<>();
+	    	CBORObject plaintextElement = null;
+	    	if (session.getIdCred().ContainsKey(HeaderKeys.KID.AsCBOR())) {
+	    	    // ID_CRED_I uses 'kid', whose value is the only thing to include in the plaintext
+	    	    plaintextElement = session.getIdCred().get(HeaderKeys.KID.AsCBOR());
+	    	}
+	    	else {
+	    	    plaintextElement = session.getIdCred();
+	    	}    	
+	    	plaintextElementList.add(plaintextElement);
+	    	plaintextElementList.add(CBORObject.FromObject(signatureOrMac3));
+	    	if (ead3 != null) {
+	    		for (int i = 0; i < ead3.length; i++)
+	    			plaintextElementList.add(ead3[i]);
+	    	}    	
+	    	byte[] plaintext3 = Util.buildCBORSequence(plaintextElementList);
+	    	if (debugPrint && plaintext3 != null) {
+	    		Util.nicePrint("Plaintext to compute CIPHERTEXT_3", plaintext3);
+	    	}
+	    	
+	    	
+	    	// Compute CIPHERTEXT_3 and add it to the outer CBOR sequence
+	    	
+	    	byte[] ciphertext3 = computeCiphertext3(session, externalData, plaintext3, k3ae, iv3ae);
+	    	objectList.add(CBORObject.FromObject(ciphertext3));
+	    	if (debugPrint && ciphertext3 != null) {
+	    		Util.nicePrint("CIPHERTEXT_3", ciphertext3);
+	    	}
+	    	
+	    	/* End computing CIPHERTEXT_3 */
+	    	
+	    	
+	    	/* Compute TH4 */
+	    	
+	        byte[] th3SerializedCBOR = CBORObject.FromObject(th3).EncodeToBytes();
+	    	byte[] th4 = computeTH4(session, th3SerializedCBOR, plaintext3); // v-14
+	        if (th4 == null) {
+	        	System.err.println("Error when computing TH_4");
+	    		errMsg = new String("Error when computing TH_4");
+	    		error = true;
+	        }
+	        else if (debugPrint) {
+	    		Util.nicePrint("TH_4", th4);
+	    	}
+	    	session.setTH4(th4);
+		}
     	
     	
     	// v-14
     	/* Compute PRK_out */
-    	byte[] prkOut = computePRKout(session, prk4e3m);
-        if (prkOut == null) {
-        	System.err.println("Error when computing PRK_out");
-    		errMsg = new String("Error when computing PRK_out");
-    		error = true;
+        byte[] prkOut = null;
+        if (error == false) {
+	    	prkOut = computePRKout(session, prk4e3m);
+	        if (prkOut == null) {
+	        	System.err.println("Error when computing PRK_out");
+	    		errMsg = new String("Error when computing PRK_out");
+	    		error = true;
+	        }
+	        else if (debugPrint) {
+	    		Util.nicePrint("PRK_out", prkOut);
+	    	}
+	    	session.setPRKout(prkOut);
         }
-        else if (debugPrint) {
-    		Util.nicePrint("PRK_out", prkOut);
-    	}
-    	session.setPRKout(prkOut);
     	
     	// v-14
     	/* Compute PRK_exporter */
-    	byte[] prkExporter = computePRKexporter(session, prkOut);
-        if (prkExporter == null) {
-        	System.err.println("Error when computing PRK_exporter");
-    		errMsg = new String("Error when computing PRK_exporter");
-    		error = true;
+        byte[] prkExporter = null;
+        if (error == false) {
+	    	prkExporter = computePRKexporter(session, prkOut);
+	        if (prkExporter == null) {
+	        	System.err.println("Error when computing PRK_exporter");
+	    		errMsg = new String("Error when computing PRK_exporter");
+	    		error = true;
+	        }
+	        else if (debugPrint) {
+	    		Util.nicePrint("PRK_exporter", prkExporter);
+	    	}
         }
-        else if (debugPrint) {
-    		Util.nicePrint("PRK_exporter", prkExporter);
-    	}
-    	session.setPRKexporter(prkExporter);
+        
     	
-    	
-    	session.setCurrentStep(Constants.EDHOC_AFTER_M3);
-    	
-    	
-    	/* Delete ephemeral keys and other temporary material */
-    	
-    	session.deleteTemporaryMaterial();
+        if (error == false) {
+	        session.setPRKexporter(prkExporter);
+	    	
+	    	session.setCurrentStep(Constants.EDHOC_AFTER_M3);
+	    	
+	    	/* Delete ephemeral keys and other temporary material */
+	    	session.deleteTemporaryMaterial();
+        }
     	
     	
     	/* Prepare an EDHOC Error Message */
@@ -2902,9 +2949,11 @@ public class MessageProcessor {
      * @param db   The database of OSCORE Security Contexts
      * @return  The newly created EDHOC session
      */
-	public static EdhocSession createSessionAsInitiator(int method, Map<Integer, OneKey> keyPairs,
-														Map<Integer, CBORObject> idCreds, Map<Integer, CBORObject> creds,
-			  									        List<Integer> supportedCiphersuites, Set<CBORObject> usedConnectionIds,
+	public static EdhocSession createSessionAsInitiator(int method, Map<Integer, Map<Integer, OneKey>> keyPairs,
+														Map<Integer, Map<Integer, CBORObject>> idCreds,
+														Map<Integer, Map<Integer, CBORObject>> creds,
+			  									        List<Integer> supportedCiphersuites,
+			  									        Set<CBORObject> usedConnectionIds,
 			  									        AppProfile appProfile, EDP edp, HashMapCtxDB db) {
 		
 		byte[] connectionId = null; // v-14 identifiers
@@ -2934,9 +2983,12 @@ public class MessageProcessor {
      * @param db   The database of OSCORE Security Contexts
      * @return  The newly created EDHOC session
      */
-	public static EdhocSession createSessionAsResponder(byte[] message1, boolean isReq, Map<Integer, OneKey> keyPairs,
-														Map<Integer, CBORObject> idCreds, Map<Integer, CBORObject> creds,
-			  									        List<Integer> supportedCiphersuites, Set<CBORObject> usedConnectionIds,
+	public static EdhocSession createSessionAsResponder(byte[] message1, boolean isReq,
+														Map<Integer, Map<Integer, OneKey>> keyPairs,
+														Map<Integer, Map<Integer, CBORObject>> idCreds,
+														Map<Integer, Map<Integer, CBORObject>> creds,
+			  									        List<Integer> supportedCiphersuites,
+			  									        Set<CBORObject> usedConnectionIds,
 			  									        AppProfile appProfile, EDP edp, HashMapCtxDB db) {
 		
 		CBORObject[] objectListMessage1 = CBORObject.DecodeSequenceFromBytes(message1);

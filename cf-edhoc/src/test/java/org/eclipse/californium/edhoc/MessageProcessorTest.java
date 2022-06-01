@@ -100,12 +100,20 @@ public class MessageProcessorTest {
 		// ID_CRED_I for the identity key of the initiator, built from the x509 certificate using x5t
 		CBORObject idCredI = Util.buildIdCredX5t(serializedCertInit);
 
-		Map<Integer, OneKey> keyPairsI = new HashMap<Integer, OneKey>();
-	    Map<Integer, CBORObject> credsI = new HashMap<Integer, CBORObject>();
-	    Map<Integer, CBORObject> idCredsI = new HashMap<Integer, CBORObject>();
-	    keyPairsI.put(Integer.valueOf(Constants.CURVE_Ed25519), identityKeyInit);
-	    credsI.put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(credI));
-	    idCredsI.put(Integer.valueOf(Constants.CURVE_Ed25519), idCredI);
+		Map<Integer, Map<Integer, OneKey>> keyPairsI = new HashMap<Integer, Map<Integer, OneKey>>();
+		Map<Integer, Map<Integer, CBORObject>> credsI = new HashMap<Integer, Map<Integer, CBORObject>>();
+		Map<Integer, Map<Integer, CBORObject>> idCredsI = new HashMap<Integer, Map<Integer, CBORObject>>();
+		
+		keyPairsI.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, OneKey>());
+		credsI.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, CBORObject>());
+		idCredsI.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, CBORObject>());
+		
+	    keyPairsI.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+	    		  put(Integer.valueOf(Constants.CURVE_Ed25519), identityKeyInit);
+	    credsI.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+	    	      put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(credI));
+	    idCredsI.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+	    		  put(Integer.valueOf(Constants.CURVE_Ed25519), idCredI);
 
 		// Create the session for the Initiator (with only the minimal set of information required for this test)
 		boolean initiator = true;
@@ -137,12 +145,20 @@ public class MessageProcessorTest {
 		// ID_CRED_R for the identity key of the Responder, built from the x509 certificate using x5t
 		CBORObject idCredR = Util.buildIdCredX5t(serializedCertResp);
 
-		Map<Integer, OneKey> keyPairsR = new HashMap<Integer, OneKey>();
-	    Map<Integer, CBORObject> credsR = new HashMap<Integer, CBORObject>();
-	    Map<Integer, CBORObject> idCredsR = new HashMap<Integer, CBORObject>();
-	    keyPairsR.put(Integer.valueOf(Constants.CURVE_Ed25519), identityKeyResp);
-	    credsR.put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(credR));
-	    idCredsR.put(Integer.valueOf(Constants.CURVE_Ed25519), idCredR);
+		Map<Integer, Map<Integer, OneKey>> keyPairsR = new HashMap<Integer, Map<Integer, OneKey>>();
+		Map<Integer, Map<Integer, CBORObject>> credsR = new HashMap<Integer, Map<Integer, CBORObject>>();
+		Map<Integer, Map<Integer, CBORObject>> idCredsR = new HashMap<Integer, Map<Integer, CBORObject>>();
+		
+		keyPairsR.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, OneKey>());
+		credsR.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, CBORObject>());
+		idCredsR.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, CBORObject>());
+		
+	    keyPairsR.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+	    		  put(Integer.valueOf(Constants.CURVE_Ed25519), identityKeyResp);
+	    credsR.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+	    	      put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(credR));
+	    idCredsR.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+	    		  put(Integer.valueOf(Constants.CURVE_Ed25519), idCredR);
 		
 		// Create the session for the Responder (with only the minimal set of information required for this test)
 		initiator = false;
@@ -277,12 +293,20 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
-		Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
-		Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
-		Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
-		keyPairs.put(Integer.valueOf(Constants.CURVE_Ed25519), identityKey);
-		creds.put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(cred));
-		idCreds.put(Integer.valueOf(Constants.CURVE_Ed25519), idCred);
+		Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
+		Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		
+		keyPairs.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, OneKey>());
+		creds.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, CBORObject>());
+		idCreds.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, CBORObject>());
+		
+		keyPairs.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_Ed25519), identityKey);
+		creds.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+			     put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(cred));
+		idCreds.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_Ed25519), idCred);
 	    
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
 				                                idCreds, creds, cipherSuites, appProfile, edp, db);
@@ -431,12 +455,20 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
-		Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
-		Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
-		Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
-		keyPairs.put(Integer.valueOf(Constants.CURVE_Ed25519), identityKey);
-		creds.put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(credR));
-		idCreds.put(Integer.valueOf(Constants.CURVE_Ed25519), idCredR);
+		Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
+		Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		
+		keyPairs.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, OneKey>());
+		creds.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, CBORObject>());
+		idCreds.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, CBORObject>());
+		
+		keyPairs.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_Ed25519), identityKey);
+		creds.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+			     put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(credR));
+		idCreds.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_Ed25519), idCredR);
 	    
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
@@ -562,12 +594,20 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
-		Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
-		Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
-		Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
-		keyPairs.put(Integer.valueOf(Constants.CURVE_Ed25519), identityKey);
-		creds.put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(credI));
-		idCreds.put(Integer.valueOf(Constants.CURVE_Ed25519), idCredI);
+		Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
+		Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		
+		keyPairs.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, OneKey>());
+		creds.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, CBORObject>());
+		idCreds.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, CBORObject>());
+		
+		keyPairs.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_Ed25519), identityKey);
+		creds.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(credI));
+		idCreds.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_Ed25519), idCredI);
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
@@ -738,12 +778,20 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
-		Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
-		Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
-		Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
-		keyPairs.put(Integer.valueOf(Constants.CURVE_Ed25519), identityKey);
-		creds.put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(credR));
-		idCreds.put(Integer.valueOf(Constants.CURVE_Ed25519), idCredR);
+		Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
+		Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		
+		keyPairs.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, OneKey>());
+		creds.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, CBORObject>());
+		idCreds.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, CBORObject>());
+		
+		keyPairs.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_Ed25519), identityKey);
+		creds.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+			     put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(credR));
+		idCreds.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_Ed25519), idCredR);
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
@@ -840,12 +888,20 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
-		Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
-		Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
-		Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
-		keyPairs.put(Integer.valueOf(Constants.CURVE_P256), identityKey);
-		creds.put(Integer.valueOf(Constants.CURVE_P256), CBORObject.FromObject(cred));
-		idCreds.put(Integer.valueOf(Constants.CURVE_P256), idCred);
+		Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
+		Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		
+		keyPairs.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, OneKey>());
+		creds.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, CBORObject>());
+		idCreds.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, CBORObject>());
+		
+		keyPairs.get(Integer.valueOf(Constants.ECDH_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_P256), identityKey);
+		creds.get(Integer.valueOf(Constants.ECDH_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_P256), CBORObject.FromObject(cred));
+		idCreds.get(Integer.valueOf(Constants.ECDH_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_P256), idCred);
 		
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
 				                                idCreds, creds, supportedCipherSuites, appProfile, edp, db);
@@ -953,12 +1009,20 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
-		Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
-		Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
-		Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
-		keyPairs.put(Integer.valueOf(Constants.CURVE_P256), identityKey);
-		creds.put(Integer.valueOf(Constants.CURVE_P256), CBORObject.FromObject(credR));
-		idCreds.put(Integer.valueOf(Constants.CURVE_P256), idCredR);
+		Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
+		Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		
+		keyPairs.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, OneKey>());
+		creds.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, CBORObject>());
+		idCreds.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, CBORObject>());
+		
+		keyPairs.get(Integer.valueOf(Constants.ECDH_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_P256), identityKey);
+		creds.get(Integer.valueOf(Constants.ECDH_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_P256), CBORObject.FromObject(credR));
+		idCreds.get(Integer.valueOf(Constants.ECDH_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_P256), idCredR);
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
@@ -1085,12 +1149,20 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
-		Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
-		Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
-		Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
-		keyPairs.put(Integer.valueOf(Constants.CURVE_P256), identityKey);
-		creds.put(Integer.valueOf(Constants.CURVE_P256), CBORObject.FromObject(credI));
-		idCreds.put(Integer.valueOf(Constants.CURVE_P256), idCredI);
+		Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
+		Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		
+		keyPairs.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, OneKey>());
+		creds.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, CBORObject>());
+		idCreds.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, CBORObject>());
+		
+		keyPairs.get(Integer.valueOf(Constants.ECDH_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_P256), identityKey);
+		creds.get(Integer.valueOf(Constants.ECDH_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_P256), CBORObject.FromObject(credI));
+		idCreds.get(Integer.valueOf(Constants.ECDH_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_P256), idCredI);
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
@@ -1263,12 +1335,20 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
-		Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
-		Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
-		Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
-		keyPairs.put(Integer.valueOf(Constants.CURVE_P256), identityKey);
-		creds.put(Integer.valueOf(Constants.CURVE_P256), CBORObject.FromObject(credR));
-		idCreds.put(Integer.valueOf(Constants.CURVE_P256), idCredR);
+		Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
+		Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		
+		keyPairs.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, OneKey>());
+		creds.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, CBORObject>());
+		idCreds.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, CBORObject>());
+		
+		keyPairs.get(Integer.valueOf(Constants.ECDH_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_P256), identityKey);
+		creds.get(Integer.valueOf(Constants.ECDH_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_P256), CBORObject.FromObject(credR));
+		idCreds.get(Integer.valueOf(Constants.ECDH_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_P256), idCredR);
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
