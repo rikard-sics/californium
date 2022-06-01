@@ -482,32 +482,6 @@ public class MessageProcessor {
 			error = true;
 		}
 		
-		// NNN
-		/*
-		if (error == false && objectListRequest[index].getType() == CBORType.Integer &&
-			Util.isDeterministicCborInteger(objectListRequest[index]) == false) {
-				errMsg = new String("C_I is an integer but it does not comply with deterministic CBOR encoding");
-				responseCode = ResponseCode.BAD_REQUEST;
-				error = true;
-		}
-		if (error == false && objectListRequest[index].getType() == CBORType.ByteString) {
-			
-			if (appProfile.getSupportCombinedRequest() == true ||
-			    appProfile.getConversionMethodOscoreToEdhoc() == Constants.CONVERSION_ID_CORE) {
-				
-				byte[] buffer = objectListRequest[index].GetByteString();
-				if (Util.isCborIntegerEncoding(buffer) == true) {
-					errMsg = new String("C_I does not comply with the method for converting from "
-							            + "OSCORE Recipient/Sender IDs to EDHOC Connection Identifiers");
-					responseCode = ResponseCode.BAD_REQUEST;
-					error = true;
-				}
-				
-			}
-			
-		}
-		*/
-		
 		if (error == false) {
 			cI = objectListRequest[index];
 			
@@ -656,24 +630,7 @@ public class MessageProcessor {
 		
 		
 		/* Consistency checks */
-		
-		
-		// NNN
-		/*
-		if (error == false && connectionIdInitiator == null && objectListRequest.length != 3) {
-			errMsg = new String("C_I must be specified");
-			responseCode = ResponseCode.BAD_REQUEST;
-			error = true;
-		}
-		
-		if (error == false && connectionIdInitiator != null && objectListRequest.length != 2) {
-			errMsg = new String("C_I must not be specified");
-			responseCode = ResponseCode.BAD_REQUEST;
-			error = true;
-		}
-		*/
-		
-		
+				
 		// If EDHOC Message 2 is transported in a CoAP request, C_I is present as first element of the CBOR sequence
 		if (error == false && isReq == true) {
 			if (error == false && objectListRequest[index].getType() != CBORType.ByteString &&
@@ -702,15 +659,6 @@ public class MessageProcessor {
 				}
 			}
 			
-			// NNN
-			/*
-			if (error == false && objectListRequest[index].getType() == CBORType.Integer &&
-				    Util.isDeterministicCborInteger(objectListRequest[index]) == false) {
-				        errMsg = new String("C_I is an integer but it does not comply with deterministic CBOR encoding");
-				        responseCode = ResponseCode.BAD_REQUEST;
-				        error = true;
-			}
-			*/
 		}
 		
 		if (error == false && isReq == false) {
@@ -836,41 +784,6 @@ public class MessageProcessor {
 					}
 				}
 			}
-			
-			// NNN
-			/*
-			if (error == false && cR.getType() == CBORType.Integer &&
-				Util.isDeterministicCborInteger(cR) == false) {
-			        errMsg = new String("C_R is an integer but it does not comply with deterministic CBOR encoding");
-			        responseCode = ResponseCode.BAD_REQUEST;
-			        error = true;
-			}
-			if (error == false && session.getApplicationProfile().getUsedForOSCORE() == true) {
-				byte[] recipientId = EdhocSession.edhocToOscoreId(session.getConnectionId());
-				byte[] senderId = EdhocSession.edhocToOscoreId(cR);
-				if (Arrays.equals(recipientId, senderId)) {
-			        errMsg = new String("C_I and C_R cannot be equivalent and yield the same OSCORE Sender/Recipient ID");
-			        responseCode = ResponseCode.BAD_REQUEST;
-			        error = true;
-				}
-			}
-			if (error == false && objectListRequest[index].getType() == CBORType.ByteString) {
-				
-				if (session.getApplicationProfile().getSupportCombinedRequest() == true ||
-					session.getApplicationProfile().getConversionMethodOscoreToEdhoc() == Constants.CONVERSION_ID_CORE) {
-					
-					byte[] buffer = objectListRequest[index].GetByteString();
-					if (Util.isCborIntegerEncoding(buffer) == true) {
-						errMsg = new String("C_R does not comply with the method for converting from "
-								            + "OSCORE Recipient/Sender IDs to EDHOC Connection Identifiers");
-						responseCode = ResponseCode.BAD_REQUEST;
-						error = true;
-					}
-					
-				}
-				
-			}
-			*/
 			
 		}
 		
@@ -1250,21 +1163,6 @@ public class MessageProcessor {
 		
 		/* Consistency checks */
 		
-		// NNN
-		/*
-		if (error == false && cR == null && objectListRequest.length != 2) {
-			errMsg = new String("C_R must be specified");
-			responseCode = ResponseCode.BAD_REQUEST;
-			error = true;
-		}
-		
-		if (error == false && cR != null && objectListRequest.length != 1) {
-			errMsg = new String("C_R must not be specified");
-			responseCode = ResponseCode.BAD_REQUEST;
-			error = true;
-		}
-		*/
-		
 		// If EDHOC Message 3 is transported in a CoAP request, C_R is present as first element of the CBOR sequence
 		if (error == false && isReq == true) {
 			if (error == false && objectListRequest[index].getType() != CBORType.ByteString &&
@@ -1284,17 +1182,7 @@ public class MessageProcessor {
 		        else
 		            index++;
 		    }
-			
-			
-			// NNN
-			/*
-			if (error == false && objectListRequest[index].getType() == CBORType.Integer &&
-				    Util.isDeterministicCborInteger(objectListRequest[index]) == false) {
-				        errMsg = new String("C_R is an integer but it does not comply with deterministic CBOR encoding");
-				        responseCode = ResponseCode.BAD_REQUEST;
-				        error = true;
-			}
-			*/
+
 		}
 		
 		if (error == false && isReq == false) {
@@ -1740,21 +1628,6 @@ public class MessageProcessor {
 
 		
 		/* Consistency checks */
-
-		// NNN
-		/*
-		if (error == false && cI == null && objectListRequest.length != 2) {
-			errMsg = new String("C_I must be specified");
-			responseCode = ResponseCode.BAD_REQUEST;
-			error = true;
-		}
-		
-		if (error == false && cI != null && objectListRequest.length != 1) {
-			errMsg = new String("C_I must not be specified");
-			responseCode = ResponseCode.BAD_REQUEST;
-			error = true;
-		}
-		*/
 		
 		// If EDHOC Message 4 is transported in a CoAP request, C_I is present as first element of the CBOR sequence
 		if (error == false && isReq == true) {
@@ -1777,15 +1650,6 @@ public class MessageProcessor {
 					index++;
 			}
 			
-			// NNN
-			/*
-			if (error == false && objectListRequest[index].getType() == CBORType.Integer &&
-				    Util.isDeterministicCborInteger(objectListRequest[index]) == false) {
-				        errMsg = new String("C_I is an integer but it does not comply with deterministic CBOR encoding");
-				        responseCode = ResponseCode.BAD_REQUEST;
-				        error = true;
-			}
-			*/
 		}
 		
 		if (error == false && isReq == false) {
