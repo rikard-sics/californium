@@ -1021,7 +1021,6 @@ public class EdhocClient {
 		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_1);
 		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_2);
 		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_3);
-
 	
 	}
 	
