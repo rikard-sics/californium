@@ -207,11 +207,11 @@ class EdhocResource extends CoapResource {
 				// Compute the EDHOC Message 2
 				nextMessage = MessageProcessor.writeMessage2(session, ead2);
 
-				CBORObject connectionId = session.getConnectionId();
+				byte[] connectionIdentifier = session.getConnectionId(); // v-14 identifiers
 				
 				// Deallocate the assigned Connection Identifier for this peer
 				if (nextMessage == null || session.getCurrentStep() != Constants.EDHOC_BEFORE_M2) {
-					Util.releaseConnectionId(connectionId, edhocEndpointInfo.getUsedConnectionIds(), session.getOscoreDb());
+					Util.releaseConnectionId(connectionIdentifier, edhocEndpointInfo.getUsedConnectionIds(), session.getOscoreDb());
 					session.deleteTemporaryMaterial();
 					session = null;
 					
@@ -226,16 +226,19 @@ class EdhocResource extends CoapResource {
 				
 				// Add the new session to the list of existing EDHOC sessions
 				session.setCurrentStep(Constants.EDHOC_AFTER_M2);
-				edhocEndpointInfo.getEdhocSessions().put(connectionId, session);
+				CBORObject connectionIdentifierCbor = CBORObject.FromObject(connectionIdentifier);
+				edhocEndpointInfo.getEdhocSessions().put(connectionIdentifierCbor, session);
 				
 			}
 			
-			CBORObject connectionIdentifier = null;
+			byte[] connectionIdentifier = null; // v-14 identifiers
 			if (session != null) {
 				connectionIdentifier = session.getConnectionId();
 			}
 			
-			responseType = MessageProcessor.messageType(nextMessage, false, edhocEndpointInfo.getEdhocSessions(), connectionIdentifier);
+			// v-14 identifiers
+			responseType = MessageProcessor.messageType(nextMessage, false,
+														edhocEndpointInfo.getEdhocSessions(), connectionIdentifier);
 			
 			if (responseType != Constants.EDHOC_MESSAGE_2 && responseType != Constants.EDHOC_ERROR_MESSAGE) {
 				nextMessage = null;
@@ -393,10 +396,10 @@ class EdhocResource extends CoapResource {
 			        /* Setup the OSCORE Security Context */
 			        
 			        // The Sender ID of this peer is the EDHOC connection identifier of the other peer
-			        byte[] senderId = EdhocSession.edhocToOscoreId(mySession.getPeerConnectionId());
+			        byte[] senderId = mySession.getPeerConnectionId();
 			        
 			        // The Recipient ID of this peer is the EDHOC connection identifier of this peer
-			        byte[] recipientId = EdhocSession.edhocToOscoreId(mySession.getConnectionId());
+			        byte[] recipientId = mySession.getConnectionId();
 			        
 			        if (Arrays.equals(senderId, recipientId)) {
 						System.err.println("Error: the Sender ID coincides with the Recipient ID " +
@@ -462,19 +465,21 @@ class EdhocResource extends CoapResource {
 					CBORObject[] ead4 = null;
 		        	
 					// Compute the EDHOC Message 4
-					CBORObject connectionId = mySession.getConnectionId();
+					byte[] connectionIdentifierResponder = mySession.getConnectionId();
 					nextMessage = MessageProcessor.writeMessage4(mySession, ead4);
 					
 					// Deallocate the assigned Connection Identifier for this peer
 					if (nextMessage == null || mySession.getCurrentStep() != Constants.EDHOC_AFTER_M4) {
 						System.err.println("Inconsistent state before sending EDHOC Message 4");
-						Util.purgeSession(mySession, connectionId,
+						Util.purgeSession(mySession, connectionIdentifierResponder,
 										  edhocEndpointInfo.getEdhocSessions(),
 										  edhocEndpointInfo.getUsedConnectionIds());
 						return;
 					}
 					
-					int responseType = MessageProcessor.messageType(nextMessage, false, edhocEndpointInfo.getEdhocSessions(), connectionId);
+					int responseType = MessageProcessor.messageType(nextMessage, false,
+																	edhocEndpointInfo.getEdhocSessions(),
+																	connectionIdentifierResponder);
 
 					if (responseType == Constants.EDHOC_MESSAGE_4 || responseType == Constants.EDHOC_ERROR_MESSAGE) {
 						
@@ -501,7 +506,7 @@ class EdhocResource extends CoapResource {
 							ResponseCode responseCode = ResponseCode.valueOf(responseCodeValue);
 					        sendErrorMessage(exchange, nextMessage, appProfile, responseCode);
 					        
-					        Util.purgeSession(mySession, connectionId,
+					        Util.purgeSession(mySession, connectionIdentifierResponder,
 							        		  edhocEndpointInfo.getEdhocSessions(),
 							        		  edhocEndpointInfo.getUsedConnectionIds());
 					        
@@ -515,7 +520,7 @@ class EdhocResource extends CoapResource {
 					}
 					else {
 						System.err.println("Inconsistent state before sending EDHOC Message 4");
-						Util.purgeSession(mySession, connectionId,
+						Util.purgeSession(mySession, connectionIdentifierResponder,
 										  edhocEndpointInfo.getEdhocSessions(),
 										  edhocEndpointInfo.getUsedConnectionIds());
 						return;
@@ -559,7 +564,8 @@ class EdhocResource extends CoapResource {
         	if (objectList != null) {
         	
 	        	// The first element is always C_X.
-	        	CBORObject connectionIdentifier = objectList[0];
+	        	CBORObject cX = objectList[0];
+	        	byte[] connectionIdentifier = MessageProcessor.decodeIdentifier(cX);
 	        	
 	    		if (connectionIdentifier == null) {
 	    			System.err.println("Malformed or invalid connection identifier in EDHOC Error Message");
@@ -598,7 +604,8 @@ class EdhocResource extends CoapResource {
 	        	// In fact, the session is marked as "used", hence new ephemeral keys would be generated when
 	        	// preparing a new EDHOC Message 1. 
 	        	
-	        	EdhocSession mySession = edhocEndpointInfo.getEdhocSessions().get(connectionIdentifier);
+	    		CBORObject connectionIdentifierCbor = CBORObject.FromObject(connectionIdentifier);
+	        	EdhocSession mySession = edhocEndpointInfo.getEdhocSessions().get(connectionIdentifierCbor);
 	    		if (mySession == null) {
 	    			System.err.println("EDHOC session to delete not found");
 	    			return;
