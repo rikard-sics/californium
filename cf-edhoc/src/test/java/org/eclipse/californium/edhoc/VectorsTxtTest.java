@@ -224,12 +224,16 @@ public class VectorsTxtTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
-		Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
-		Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
-		Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
-		keyPairs.put(Integer.valueOf(Constants.CURVE_Ed25519), identityKey);
-		creds.put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(cred));
-		idCreds.put(Integer.valueOf(Constants.CURVE_Ed25519), idCred);
+		Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
+		Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		
+		keyPairs.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_Ed25519), identityKey);
+		creds.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+			     put(Integer.valueOf(Constants.CURVE_Ed25519), CBORObject.FromObject(cred));
+		idCreds.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
+				 put(Integer.valueOf(Constants.CURVE_Ed25519), idCred);
 		
 		EdhocSession session = new EdhocSession(initiator, true, methodCorr, connectionId, keyPairs,
 				                                idCreds, creds, cipherSuites, appProfile, edp, db);

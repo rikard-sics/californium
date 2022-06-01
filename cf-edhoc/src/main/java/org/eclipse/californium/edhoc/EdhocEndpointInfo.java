@@ -19,14 +19,19 @@ import com.upokecenter.cbor.CBORObject;
  */
 public class EdhocEndpointInfo {
 	
+	// Authentication credentials of this peer
+    //
+    // At the top level, authentication credential are sorted by key usage of the authentication keys.
+    // The outer map has label SIGNATURE_KEY or ECDH_KEY for distinguishing the two key usages. 
+    
     // The asymmetric key pairs of this peer (one per supported curve)
-	private Map<Integer, OneKey> keyPairs = new HashMap<Integer, OneKey>();
+	private Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
     
     // The identifiers of the authentication credentials of this peer
-	private Map<Integer, CBORObject> idCreds = new HashMap<Integer, CBORObject>();
+	private Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
     
     // The authentication credentials of this peer (one per supported curve)
-	private Map<Integer, CBORObject> creds = new HashMap<Integer, CBORObject>();
+	private Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
 	
 	// Public keys of other peers
 	// 
@@ -69,8 +74,8 @@ public class EdhocEndpointInfo {
 	private EDP edp;
 	
 	
-	public EdhocEndpointInfo(Map<Integer, CBORObject> idCreds, Map<Integer, CBORObject> creds,
-							 Map<Integer, OneKey> keyPairs, Map<CBORObject, OneKey> peerPublicKeys,
+	public EdhocEndpointInfo(Map<Integer, Map<Integer, CBORObject>> idCreds, Map<Integer, Map<Integer, CBORObject>> creds,
+							 Map<Integer, Map<Integer, OneKey>> keyPairs, Map<CBORObject, OneKey> peerPublicKeys,
 							 Map<CBORObject, CBORObject> peerCredentials, Map<CBORObject, EdhocSession> edhocSessions,
 							 Set<CBORObject> usedConnectionIds, List<Integer> supportedCiphersuites, HashMapCtxDB db,
 							 String uri, int OSCORE_REPLAY_WINDOW, int MAX_UNFRAGMENTED_SIZE,
@@ -111,17 +116,17 @@ public class EdhocEndpointInfo {
 	}
 	
 	// Return the identity key pair
-	public Map<Integer, OneKey> getKeyPairs() {
+	public Map<Integer, Map<Integer, OneKey>> getKeyPairs() {
 		return this.keyPairs;
 	}
 	
 	// Return the ID_CRED used by this peer
-	public Map<Integer, CBORObject> getIdCreds() {
+	public Map<Integer, Map<Integer, CBORObject>> getIdCreds() {
 		return this.idCreds;
 	}
 	
 	// Return the CRED used by this peer
-	public Map<Integer, CBORObject> getCreds() {
+	public Map<Integer, Map<Integer, CBORObject>> getCreds() {
 		return this.creds;
 	}
 	
