@@ -913,7 +913,8 @@ public class MessageProcessor {
         	error = true;
     	}
     	else if (error == false &&
-    			 plaintextElementList[baseIndex].getType() != CBORType.ByteString && // v-14 identifiers
+    			 plaintextElementList[baseIndex].getType() != CBORType.ByteString &&
+    			 plaintextElementList[baseIndex].getType() != CBORType.Integer &&
     			 plaintextElementList[baseIndex].getType() != CBORType.Map) {
         	errMsg = new String("Invalid format of ID_CRED_R");
         	responseCode = ResponseCode.BAD_REQUEST;
@@ -975,8 +976,10 @@ public class MessageProcessor {
     	error = false;
     	
     	// ID_CRED_R is a CBOR map with 'kid', and only 'kid' was transported
-    	if (rawIdCredR.getType() == CBORType.ByteString) { // v-14 identifiers
-    		idCredR.Add(HeaderKeys.KID.AsCBOR(), rawIdCredR);
+    	// v-14 identifiers
+    	if (rawIdCredR.getType() == CBORType.ByteString || rawIdCredR.getType() == CBORType.Integer) {
+    		byte[] kidValue = MessageProcessor.decodeIdentifier(rawIdCredR);
+    		idCredR.Add(HeaderKeys.KID.AsCBOR(), kidValue);
     	}
     	else if (rawIdCredR.getType() == CBORType.Map) {
     		idCredR = rawIdCredR;
@@ -1337,7 +1340,8 @@ public class MessageProcessor {
     	    error = true;
     	}
     	else if (error == false &&
-                plaintextElementList[baseIndex].getType() != CBORType.ByteString && // v-14 identifiers
+                plaintextElementList[baseIndex].getType() != CBORType.ByteString &&
+                plaintextElementList[baseIndex].getType() != CBORType.Integer &&
                 plaintextElementList[baseIndex].getType() != CBORType.Map) {
         errMsg = new String("Invalid format of ID_CRED_I");
         responseCode = ResponseCode.BAD_REQUEST;
@@ -1398,8 +1402,10 @@ public class MessageProcessor {
     	error = false;
     	
     	// ID_CRED_I is a CBOR map with 'kid', and only 'kid' was transported
-    	if (rawIdCredI.getType() == CBORType.ByteString) { // v-14 identifiers
-    	    idCredI.Add(HeaderKeys.KID.AsCBOR(), rawIdCredI);
+    	// v-14 identifiers
+    	if (rawIdCredI.getType() == CBORType.ByteString || rawIdCredI.getType() == CBORType.Integer) {
+    	    byte[] kidValue = MessageProcessor.decodeIdentifier(rawIdCredI);
+    	    idCredI.Add(HeaderKeys.KID.AsCBOR(), kidValue);
     	}
     	else if (rawIdCredI.getType() == CBORType.Map) {
     	    idCredI = rawIdCredI;
@@ -2309,7 +2315,8 @@ public class MessageProcessor {
 	    	CBORObject plaintextElement = null;
 	    	if (session.getIdCred().ContainsKey(HeaderKeys.KID.AsCBOR())) {
 	    		// ID_CRED_R uses 'kid', whose value is the only thing to include in the plaintext
-	    		plaintextElement = session.getIdCred().get(HeaderKeys.KID.AsCBOR());
+	    		CBORObject kid = session.getIdCred().get(HeaderKeys.KID.AsCBOR()); // v-14 identifiers
+	    		plaintextElement = MessageProcessor.encodeIdentifier(kid.GetByteString());  // v-14 identifiers
 	    	}
 	    	else {
 	    		plaintextElement = session.getIdCred();
@@ -2558,7 +2565,8 @@ public class MessageProcessor {
 	    	CBORObject plaintextElement = null;
 	    	if (session.getIdCred().ContainsKey(HeaderKeys.KID.AsCBOR())) {
 	    	    // ID_CRED_I uses 'kid', whose value is the only thing to include in the plaintext
-	    	    plaintextElement = session.getIdCred().get(HeaderKeys.KID.AsCBOR());
+	    		CBORObject kid = session.getIdCred().get(HeaderKeys.KID.AsCBOR()); // v-14 identifiers
+	    		plaintextElement = MessageProcessor.encodeIdentifier(kid.GetByteString());  // v-14 identifiers
 	    	}
 	    	else {
 	    	    plaintextElement = session.getIdCred();
@@ -4188,8 +4196,8 @@ public class MessageProcessor {
 
 		if (identifier != null && identifier.length == 1) {
 			int byteValue = Util.bytesToInt(identifier);
-			
-			if (byteValue >= 0 && byteValue <= 23 && byteValue >= 32 && byteValue <= 55) {
+					
+			if ((byteValue >= 0 && byteValue <= 23) || (byteValue >= 32 && byteValue <= 55)) {
 				// The EDHOC connection identifier is in the range 0x00-0x17 or in the range 0x20-0x37.
 				// That is, it happens to be the serialization of a CBOR integer with numeric value -24..23
 				
@@ -4222,7 +4230,7 @@ public class MessageProcessor {
 			// Consistency check
 			if (identifier.length == 1) {
 				int byteValue = Util.bytesToInt(identifier);
-				if (byteValue >= 0 && byteValue <= 23 && byteValue >= 32 && byteValue <= 55)
+				if ((byteValue >= 0 && byteValue <= 23) || (byteValue >= 32 && byteValue <= 55))
 					// This EDHOC connection identifier should have been encoded as a CBOR integer
 					identifier = null;
 			}			
