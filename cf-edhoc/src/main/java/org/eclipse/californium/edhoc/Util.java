@@ -596,12 +596,11 @@ public class Util {
     	
         /* Check if a 1-byte connection identifier is available */
         
-    	identifier = new byte[1];
-
     	// Check the range encoding the values 0..23. These connection identifiers
     	// encode on the wire as a CBOR integer C_X, with numeric value 0..23
         for (int i = 0; i <= 23; i++) {
         	
+        	identifier = new byte[1];
         	identifier[0] = (byte) (i & 0xff);
     	    identifier = checkAndCommitConnectionId(identifier, usedConnectionIds, db, forbiddenIdentifier);
             if (identifier != null)
@@ -613,6 +612,7 @@ public class Util {
     	// encode on the wire as a CBOR integer C_X, with numeric value -24..-1
         for (int i = 32; i <= 55; i++) {
         	
+        	identifier = new byte[1];
         	identifier[0] = (byte) (i & 0xff);
     	    identifier = checkAndCommitConnectionId(identifier, usedConnectionIds, db, forbiddenIdentifier);
             if (identifier != null)
@@ -624,11 +624,12 @@ public class Util {
         for (int i = 24; i <= 255; i++) {
         	
         	// Skip this range as it was already checked before
-        	if (i <= 32 || i <= 55)
+        	if (i >= 32 && i <= 55)
         		continue;
         	
+        	identifier = new byte[1];
         	identifier[0] = (byte) (i & 0xff);
-    	    identifier = checkAndCommitConnectionId(identifier, usedConnectionIds, db, forbiddenIdentifier);
+    	    identifier = checkAndCommitConnectionId(identifier, usedConnectionIds, db, forbiddenIdentifier);    	    	
             if (identifier != null)
             	return identifier;
         	
@@ -637,9 +638,9 @@ public class Util {
     	
     	/* Check if a 2-byte connection identifier is available */
         
-        identifier = new byte[2];
         for (int i = 0; i <= 255; i++) {
         	
+            identifier = new byte[2];
         	identifier[0] = (byte) (i & 0xff);
         	
         	for (int j = 0; j <= 255; j++) {
@@ -655,9 +656,9 @@ public class Util {
       
     	/* Check if a 3-byte connection identifier is available */
         
-    	identifier = new byte[3];
         for (int i = 0; i <= 255; i++) {
         	
+        	identifier = new byte[3];
         	identifier[0] = (byte) (i & 0xff);
         	
         	for (int j = 0; j <= 255; j++) {
