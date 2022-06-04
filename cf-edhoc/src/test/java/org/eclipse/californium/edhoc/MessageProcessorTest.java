@@ -237,7 +237,6 @@ public class MessageProcessorTest {
 	 * 
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
-	@Ignore
 	@Test
 	public void testWriteMessage1Ciphersuite0Method0() {
 		
@@ -327,6 +326,8 @@ public class MessageProcessorTest {
 		byte[] expectedMessage1 = Utils
 				.hexToBytes("f50000582031f82c7b5b9cbbf0f194d913cc12ef1532d328ef32632a4881a1c0701e237f042d");
 
+		
+		// v-14 TO BE ENABLED
 		Assert.assertArrayEquals(expectedMessage1, message1);
 		
 	}
@@ -337,7 +338,6 @@ public class MessageProcessorTest {
 	 * 
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
-	@Ignore
 	@Test
 	public void testWriteMessage2Ciphersuite0Method0() {
 
@@ -353,7 +353,7 @@ public class MessageProcessorTest {
 		/* Responder information*/
 
 		// Connection Identifier of the Responder
-		byte[] connectionIdentifierResponder = new byte[] {(byte) 0x17};
+		byte[] connectionIdentifierResponder = new byte[] {(byte) 0x18};
 		
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(0);
@@ -499,7 +499,7 @@ public class MessageProcessorTest {
 		// Compare with the expected value from the test vectors
 		
 		byte[] expectedMessage2 = Utils
-				.hexToBytes("5870dc88d2d51da5ed67fc4616356bc8ca74ef9ebe8b387e623a360ba480b9b29d1ce912f9236086b02242ad56a988829c32a282fbd0c6c2d065479548ced626e8dc3b6d6ef2a588ff33fd2d01c00e189eb68ca9e717007aed62143dfae75622300e166ed3456cd9884b44b6963477aa3e1f17");
+				.hexToBytes("5870dc88d2d51da5ed67fc4616356bc8ca74ef9ebe8b387e623a360ba480b9b29d1c9b2f43ba6ee11c4e6c005c0a3e4cb5ddcbf41c938eaa3e0f9f4f9d76fe80c07cf8b09b2861331f7ce118404a354b89fc8651915eb227cd06c074601783f9706a1bf442fb5902c5c12f6e298631898b3d4118");
 
 		Assert.assertArrayEquals(expectedMessage2, message2);
 		
@@ -513,7 +513,6 @@ public class MessageProcessorTest {
 	 * 
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
-	@Ignore
 	@Test
 	public void testWriteMessage3Ciphersuite0Method0() {
 
@@ -558,7 +557,7 @@ public class MessageProcessorTest {
 		/* Responder information*/
 
 		// Connection Identifier of the Responder
-		byte[] connectionIdentifierResponder = new byte[] {(byte) 0x17};
+		byte[] connectionIdentifierResponder = new byte[] {(byte) 0x18};
 		
 		// The ephemeral key of the Responder
 		byte[] peerEphemeralPublicKeyBytes = Utils.hexToBytes("dc88d2d51da5ed67fc4616356bc8ca74ef9ebe8b387e623a360ba480b9b29d1c");
@@ -566,7 +565,7 @@ public class MessageProcessorTest {
 
 		
 		/* Status from after receiving EDHOC Message 2 */
-		byte[] th2 = Utils.hexToBytes("3c3e0e79269592a2f4b3cce01642adca36728226d2221597fd8c7fe6b0e2ca75");
+		byte[] th2 = Utils.hexToBytes("3ab11700841fce193c323911edb317b046dcf24b9950fd624884f7f57cd98b07");
 		byte[] prk3e2m = Utils.hexToBytes("c576105d95b4d8c18e8f655f546880a854f2da106ce5a3a02d8b3ede7baabca6");
 		
 		
@@ -631,7 +630,7 @@ public class MessageProcessorTest {
 		
 		// v-14
 		// Set PLAINTEXT_2 from the previous protocol step
-		byte[] plaintext2 = Utils.hexToBytes("a11822822e4879f2a41b510c1f9b584039a1296e81f38e018ac98fab94c796ea951a89db2b866a8f2ad1aa9f64639fefc93174f0de868c3260d48ac89db9f69541a12421a086eb43b0a2eb44c89e9107");
+		byte[] plaintext2 = Utils.hexToBytes("a11822822e4879f2a41b510c1f9b5840f373a7203efa7df0738c360ee080171aca67fcb175f26d785d095b55eb1484655c39e03a3f5f9bdd87ef8c5f2ec3dfe6fbba49b7b4625b126f27de301767270c");
 		session.setPlaintext2(plaintext2);
 		
 		// Set PRK_3e2m from the previous protocol step
@@ -642,9 +641,9 @@ public class MessageProcessorTest {
 		byte[] message3 = MessageProcessor.writeMessage3(session, ead3);
 
 		// Compare with the expected value from the test vectors
-		// Note: the actual EDHOC message 3 starts with 0x58. The byte 0x17 (CBOR encoding for 23) is prepended as C_R,
+		// Note: the actual EDHOC message 3 starts with 0x58. The bytes 0x1718 (CBOR encoding for h'18') is prepended as C_R,
 		//       in order to pass the check against what returned by the EDHOC engine, to be sent as a CoAP request payload. 
-		byte[] expectedMessage3 = Utils.hexToBytes("1758580a21aaaa204a69ece8ebc2a7b357ab5aaed04613898529912f2c8a6724cb114ec92cdd3dfee8c54c119236b4d1e846416ae78c25aa0f93df2de551aa13e31497cae661a5fd392acd4058254badf24dee9550387d7106434a");
+		byte[] expectedMessage3 = Utils.hexToBytes("411858582fc19556f67c929a9734789ecec60aaf8f50324fc31bd07801d57cec00d3bf1ea4dbafac342fe1686cbcea0cec4502959805b153819e274638cc23bbc4f4e39477f8a8fff5caaf5e32d4ca4e7c748d2b519d21b8d7577248");
 
 		Assert.assertArrayEquals(expectedMessage3, message3);
 		
@@ -656,8 +655,8 @@ public class MessageProcessorTest {
         
 		// Compare with the expected value from the test vectors
 		
-		byte[] expectedMasterSecret = Utils.hexToBytes("99313e45905e15f1290f7dd6f4583601");
-		byte[] expectedMasterSalt = Utils.hexToBytes("a849e3e5d3fe5d90");
+		byte[] expectedMasterSecret = Utils.hexToBytes("d6dd09b137359f0ad215dd021962c05c");
+		byte[] expectedMasterSalt = Utils.hexToBytes("67ecd7d5bb494617");
        
        	Util.nicePrint("OSCORE Master Secret", masterSecret);
         Util.nicePrint("OSCORE Master Salt", masterSalt);
@@ -689,8 +688,8 @@ public class MessageProcessorTest {
        	Util.nicePrint("OSCORE Master Secret", masterSecret);
         Util.nicePrint("OSCORE Master Salt", masterSalt);
         
-		expectedMasterSecret = Utils.hexToBytes("3ff347134e74a6c655a1180b2bf23535");
-		expectedMasterSalt = Utils.hexToBytes("28b608adbbfcaa2c");
+		expectedMasterSecret = Utils.hexToBytes("66ecb0db0a9e496f67c0b55554796e3e");
+		expectedMasterSalt = Utils.hexToBytes("18f57dc34ed54917");
         
         Assert.assertArrayEquals(expectedMasterSecret, masterSecret);
         Assert.assertArrayEquals(expectedMasterSalt, masterSalt);
@@ -703,7 +702,6 @@ public class MessageProcessorTest {
 	 * 
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
-	@Ignore
 	@Test
 	public void testWriteMessage4Ciphersuite0Method0() {
 
@@ -719,7 +717,7 @@ public class MessageProcessorTest {
 		/* Responder information*/
 
 		// Connection Identifier of the Responder
-		byte[] connectionIdentifierResponder = new byte[] {(byte) 0x17};
+		byte[] connectionIdentifierResponder = new byte[] {(byte) 0x18};
 		
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(0);
@@ -817,7 +815,7 @@ public class MessageProcessorTest {
 		session.setPRK4e3m(prk4e3m);
 		
 		// Store TH_4 computed from the previous protocol step
-		byte[] th4 = Utils.hexToBytes("993a2990963178043a151d1e10fa0ac968fd9c24e287c12d958f65d26fab56fa");
+		byte[] th4 = Utils.hexToBytes("ddccc14e32330d2da93d134b0c571e2e22a28e6208135e7cda45231d850dcec3");
 		session.setTH4(th4);
 		
 		// Now write EDHOC message 4
@@ -825,7 +823,7 @@ public class MessageProcessorTest {
 
 		// Compare with the expected value from the test vectors
 
-		byte[] expectedMessage4 = Utils.hexToBytes("4831d93d503ba3f95d");
+		byte[] expectedMessage4 = Utils.hexToBytes("48523b0282a13c8923");
 		
 		Assert.assertArrayEquals(expectedMessage4, message4);
 		
@@ -833,11 +831,10 @@ public class MessageProcessorTest {
 	
 	
 	/**
-	 * Test writing of message 1, for static-static authentication with MACs, with X.509 certificates identified by 'x5t'
+	 * Test writing of message 1, for static-static authentication with MACs, with CCS identified by 'kid'
 	 * 
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
-	@Ignore
 	@Test
 	public void testWriteMessage1Ciphersuite2Method3() {
 		
@@ -931,7 +928,7 @@ public class MessageProcessorTest {
 	
 	
 	/**
-	 * Test writing of message 2, for static-static authentication with MACs, with X.509 certificates identified by 'x5t'
+	 * Test writing of message 2, for static-static authentication with MACs, with CCS identified by 'kid'
 	 * 
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
@@ -1061,7 +1058,7 @@ public class MessageProcessorTest {
 	
 	
 	/**
-	 * Test writing of message 3, for static-static authentication with MACs, with X.509 certificates identified by 'x5t'
+	 * Test writing of message 3, for static-static authentication with MACs, with CCS identified by 'kid'
 	 * Test the derivation of OSCORE Master Secret and Master Salt
 	 * Test EDHOC-KeyUpdate and a second derivation of OSCORE Master Secret and Master Salt 
 	 * 
@@ -1255,7 +1252,7 @@ public class MessageProcessorTest {
 	
 	
 	/**
-	 * Test writing of message 4, for static-static authentication with MACs, with X.509 certificates identified by 'x5t'
+	 * Test writing of message 4, for static-static authentication with MACs, with CCS identified by 'kid'
 	 * 
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
