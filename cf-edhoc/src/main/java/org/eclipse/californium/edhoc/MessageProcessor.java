@@ -819,6 +819,7 @@ public class MessageProcessor {
 								errMsg, null, responseCode, ead2);
         }
         else if (debugPrint) {
+        	Util.nicePrint("H(message_1)", hashMessage1);
     		Util.nicePrint("TH_2", th2);
     	}
         session.setTH2(th2);
@@ -2099,9 +2100,7 @@ public class MessageProcessor {
 		}
 		objectList.add(gX);
         if (debugPrint) {
-        	CBORObject obj = CBORObject.FromObject(gX);
-        	byte[] objBytes = obj.EncodeToBytes();
-        	Util.nicePrint("G_X", objBytes);
+        	Util.nicePrint("G_X", gX.GetByteString());
         }
 		
 		// C_I
@@ -2179,7 +2178,7 @@ public class MessageProcessor {
 			gY = session.getEphemeralKey().PublicKey().get(KeyKeys.EC2_X);
 		}
     	if (debugPrint) {
-    	    Util.nicePrint("G_Y", gY.EncodeToBytes());
+    	    Util.nicePrint("G_Y", gY.GetByteString());
     	}
 		
 		// C_R
@@ -2205,6 +2204,7 @@ public class MessageProcessor {
     		error = true;
         }
         else if (debugPrint) {
+        	Util.nicePrint("H(message_1)", hashMessage1);
     		Util.nicePrint("TH_2", th2);
     	}
         session.setTH2(th2);
@@ -3716,6 +3716,9 @@ public class MessageProcessor {
 		} catch (NoSuchAlgorithmException e) {
 			System.err.println("Error when computing MAC_2\n" + e.getMessage());
 		}
+        if (debugPrint) {
+        	Util.nicePrint("context_2", contextSequence);
+        }
 		
 		return mac2;
 		
@@ -3767,6 +3770,9 @@ public class MessageProcessor {
 		} catch (NoSuchAlgorithmException e) {
 			System.err.println("Error when computing MAC_3\n" + e.getMessage());
 		}
+        if (debugPrint) {
+        	Util.nicePrint("context_3", contextSequence);
+        }
 		
 		return mac3;
 		
