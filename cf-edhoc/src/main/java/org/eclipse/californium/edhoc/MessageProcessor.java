@@ -784,6 +784,16 @@ public class MessageProcessor {
 					}
 				}
 			}
+			// v-14
+			if (error == false) {
+				if (session.getApplicationProfile().getUsedForOSCORE() == true && 
+					Arrays.equals(connectionIdentifierInitiator, connectionIdentifierResponder) == true) {
+				    errMsg = new String("C_R must be different from C_I");
+				    responseCode = ResponseCode.BAD_REQUEST;
+				    error = true;
+				}
+					
+			}
 			
 		}
 		
