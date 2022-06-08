@@ -1274,9 +1274,9 @@ public class MessageProcessor {
         session.setTH3(th3);
 		
 		
-    	// Compute K_3ae and IV_3ae to protect the outer COSE object
-    	byte[] k3ae = computeKey(Constants.EDHOC_K_3, session);
-    	if (k3ae == null) {
+    	// Compute K_3 and IV_3 to protect the outer COSE object
+    	byte[] k3 = computeKey(Constants.EDHOC_K_3, session);
+    	if (k3 == null) {
         	errMsg = new String("Error when computing TH3");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifierResponder, edhocSessions, usedConnectionIds);
@@ -1284,11 +1284,11 @@ public class MessageProcessor {
 								errMsg, null, responseCode, ead3);
     	}
     	else if (debugPrint) {
-    		Util.nicePrint("K_3ae", k3ae);
+    		Util.nicePrint("K_3", k3);
     	}
     	
-    	byte[] iv3ae = computeIV(Constants.EDHOC_IV_3, session);
-    	if (iv3ae == null) {
+    	byte[] iv3 = computeIV(Constants.EDHOC_IV_3, session);
+    	if (iv3 == null) {
         	errMsg = new String("Error when computing IV_3ae");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifierResponder, edhocSessions, usedConnectionIds);
@@ -1296,7 +1296,7 @@ public class MessageProcessor {
 								errMsg, null, responseCode, ead3);
     	}
     	else if (debugPrint) {
-    		Util.nicePrint("IV_3ae", iv3ae);
+    		Util.nicePrint("IV_3", iv3);
     	}
     	
     	// Prepare the external_aad as including only TH3
@@ -1309,7 +1309,7 @@ public class MessageProcessor {
     		Util.nicePrint("CIPHERTEXT_3", ciphertext3);
     	}
 
-    	byte[] plaintext3 = decryptCiphertext3(session, externalData, ciphertext3, k3ae, iv3ae);
+    	byte[] plaintext3 = decryptCiphertext3(session, externalData, ciphertext3, k3, iv3);
     	if (plaintext3 == null) {
         	errMsg = new String("Error when decrypting CIPHERTEXT_3");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
@@ -2537,31 +2537,31 @@ public class MessageProcessor {
     	
     	/* Start computing CIPHERTEXT_3 */
     	
-    	// Compute K_3ae and IV_3ae to protect the outer COSE object
+    	// Compute K_3 and IV_3 to protect the outer COSE object
 
-        byte[] k3ae = null;
+        byte[] k3 = null;
         if (error == false) {
-	    	k3ae = computeKey(Constants.EDHOC_K_3, session);
-	    	if (k3ae == null) {
-	    		System.err.println("Error when computing K_3ae");
-	    		errMsg = new String("Error when computing K_3ae");
+	    	k3 = computeKey(Constants.EDHOC_K_3, session);
+	    	if (k3 == null) {
+	    		System.err.println("Error when computing K_3");
+	    		errMsg = new String("Error when computing K_3");
 	    		error = true;
 	    	}
 	    	else if (debugPrint) {
-	    		Util.nicePrint("K_3ae", k3ae);
+	    		Util.nicePrint("K_3", k3);
 	    	}
         }
     	
-        byte[] iv3ae = null;
+        byte[] iv3 = null;
         if (error == false) {
-	    	iv3ae = computeIV(Constants.EDHOC_IV_3, session);
-	    	if (iv3ae == null) {
-	    		System.err.println("Error when computing IV_3ae");
-	    		errMsg = new String("Error when computing IV_3ae");
+	    	iv3 = computeIV(Constants.EDHOC_IV_3, session);
+	    	if (iv3 == null) {
+	    		System.err.println("Error when computing IV_3");
+	    		errMsg = new String("Error when computing IV_3");
 	    		error = true;
 	    	}
 	    	else if (debugPrint) {
-	    		Util.nicePrint("IV_3ae", iv3ae);
+	    		Util.nicePrint("IV_3", iv3);
 	    	}
         }
     	    	
@@ -2595,7 +2595,7 @@ public class MessageProcessor {
 	    	
 	    	// Compute CIPHERTEXT_3 and add it to the outer CBOR sequence
 	    	
-	    	byte[] ciphertext3 = computeCiphertext3(session, externalData, plaintext3, k3ae, iv3ae);
+	    	byte[] ciphertext3 = computeCiphertext3(session, externalData, plaintext3, k3, iv3);
 	    	objectList.add(CBORObject.FromObject(ciphertext3));
 	    	if (debugPrint && ciphertext3 != null) {
 	    		Util.nicePrint("CIPHERTEXT_3", ciphertext3);
@@ -2763,29 +2763,29 @@ public class MessageProcessor {
       
     	// Compute K and IV to protect the COSE object
     	
-    	byte[] k4ae = null;
+    	byte[] k4 = null;
     	if (error == false) {    	
-			k4ae = computeKey(Constants.EDHOC_K_4, session);
-			if (k4ae == null) {
-				System.err.println("Error when computing K_4ae");
-				errMsg = new String("Error when computing K_4ae");
+			k4 = computeKey(Constants.EDHOC_K_4, session);
+			if (k4 == null) {
+				System.err.println("Error when computing K_4");
+				errMsg = new String("Error when computing K_4");
 				error = true;
 			}
 			else if (debugPrint) {
-				Util.nicePrint("K_4ae", k4ae);
+				Util.nicePrint("K_4", k4);
 			}
     	}
 
-    	byte[] iv4ae = null;
+    	byte[] iv4 = null;
     	if (error == false) {
-	    	iv4ae = computeIV(Constants.EDHOC_IV_4, session);
-	    	if (iv4ae == null) {
-	    		System.err.println("Error when computing IV_4ae");
-	    		errMsg = new String("Error when computing IV_4ae");
+	    	iv4 = computeIV(Constants.EDHOC_IV_4, session);
+	    	if (iv4 == null) {
+	    		System.err.println("Error when computing IV_4");
+	    		errMsg = new String("Error when computing IV_4");
 	    		error = true;
 	    	}
 	    	else if (debugPrint) {
-	    		Util.nicePrint("IV_4ae", iv4ae);
+	    		Util.nicePrint("IV_4", iv4);
 	    	}
     	}
     	
@@ -2793,7 +2793,7 @@ public class MessageProcessor {
     	// Encrypt the COSE object and take the ciphertext as CIPHERTEXT_4
     	byte[] ciphertext4 = null;
     	if (error == false) {
-	    	ciphertext4 = computeCiphertext4(session, externalData, plaintext4, k4ae, iv4ae);
+	    	ciphertext4 = computeCiphertext4(session, externalData, plaintext4, k4, iv4);
 	    	if (ciphertext4 == null) {
 	    		System.err.println("Error when computing CIPHERTEXT_4");
 	    		errMsg = new String("Error when computing CIPHERTEXT_4");
