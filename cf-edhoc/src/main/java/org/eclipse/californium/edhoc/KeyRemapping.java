@@ -68,7 +68,7 @@ public class KeyRemapping {
 	 */
 	public static void main(String args[]) throws Exception {
 		Provider EdDSA = new EdDSASecurityProvider();
-		Security.insertProviderAt(EdDSA, 0);
+		Security.insertProviderAt(EdDSA, 1);
 
 		// Define test values x and y from RFC7748. Created as field elements to
 		// use for calculations in the field.

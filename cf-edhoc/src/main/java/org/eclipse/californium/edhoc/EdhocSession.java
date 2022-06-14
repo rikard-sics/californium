@@ -23,7 +23,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.KeyKeys;
@@ -41,13 +40,13 @@ public class EdhocSession {
     // The outer map has label SIGNATURE_KEY or ECDH_KEY for distinguishing the two key usages. 
     
     // The asymmetric key pairs of this peer (one per supported curve)
-	private Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
+	private HashMap<Integer, HashMap<Integer, OneKey>> keyPairs = new HashMap<Integer, HashMap<Integer, OneKey>>();
     
     // The identifiers of the authentication credentials of this peer
-	private Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
+	private HashMap<Integer, HashMap<Integer, CBORObject>> idCreds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
     
     // The authentication credentials of this peer (one per supported curve)
-	private Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
+	private HashMap<Integer, HashMap<Integer, CBORObject>> creds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
 	
 	// The processor to use for External Authorization Data.
 	//
@@ -108,9 +107,9 @@ public class EdhocSession {
 	private byte[] message3 = null;
 	
 	public EdhocSession(boolean initiator, boolean clientInitiated, int method, byte[] connectionId,
-						Map<Integer, Map<Integer, OneKey>> keyPairs,
-						Map<Integer, Map<Integer, CBORObject>> idCreds,
-						Map<Integer, Map<Integer, CBORObject>> creds,
+						HashMap<Integer, HashMap<Integer, OneKey>> keyPairs,
+						HashMap<Integer, HashMap<Integer, CBORObject>> idCreds,
+						HashMap<Integer, HashMap<Integer, CBORObject>> creds,
 						List<Integer> cipherSuites, AppProfile appProfile,
 						EDP edp, HashMapCtxDB db) {
 		

@@ -2,7 +2,7 @@ package org.eclipse.californium.edhoc;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 
 import org.eclipse.californium.cose.OneKey;
@@ -25,28 +25,28 @@ public class EdhocEndpointInfo {
     // The outer map has label SIGNATURE_KEY or ECDH_KEY for distinguishing the two key usages. 
     
     // The asymmetric key pairs of this peer (one per supported curve)
-	private Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
+	private HashMap<Integer, HashMap<Integer, OneKey>> keyPairs = new HashMap<Integer, HashMap<Integer, OneKey>>();
     
     // The identifiers of the authentication credentials of this peer
-	private Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
+	private HashMap<Integer, HashMap<Integer, CBORObject>> idCreds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
     
     // The authentication credentials of this peer (one per supported curve)
-	private Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
+	private HashMap<Integer, HashMap<Integer, CBORObject>> creds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
 	
 	// Public keys of other peers
 	// 
 	// The map label is a CBOR Map used as ID_CRED_X
-	private Map<CBORObject, OneKey> peerPublicKeys;
+	private HashMap<CBORObject, OneKey> peerPublicKeys;
 	
 	// Authentication credentials of other peers
 	// 
 	// The map label is a CBOR Map used as ID_CRED_X
 	// The map value is a CBOR Byte String, with value the serialization of CRED_X
-	private Map<CBORObject, CBORObject> peerCredentials;
+	private HashMap<CBORObject, CBORObject> peerCredentials;
 
 	// Existing EDHOC Sessions, including completed ones
 	// The map label is C_X, i.e. the connection identifier offered to the other peer, as a CBOR byte string
-	private Map<CBORObject, EdhocSession> edhocSessions;
+	private HashMap<CBORObject, EdhocSession> edhocSessions;
 	
 	// Each element is a used Connection Identifier offered to the other peers.
 	// Connection Identifiers are stored as CBOR integers (if numeric) or as CBOR byte strings (if binary)
@@ -68,18 +68,21 @@ public class EdhocEndpointInfo {
 	private int MAX_UNFRAGMENTED_SIZE;
 	
 	// The collection of application profiles - The lookup key is the full URI of the EDHOC resource
-	private Map<String, AppProfile> appProfiles;
+	private HashMap<String, AppProfile> appProfiles;
 	
 	// The processor of External Authorization Data
 	private EDP edp;
 	
 	
-	public EdhocEndpointInfo(Map<Integer, Map<Integer, CBORObject>> idCreds, Map<Integer, Map<Integer, CBORObject>> creds,
-							 Map<Integer, Map<Integer, OneKey>> keyPairs, Map<CBORObject, OneKey> peerPublicKeys,
-							 Map<CBORObject, CBORObject> peerCredentials, Map<CBORObject, EdhocSession> edhocSessions,
-							 Set<CBORObject> usedConnectionIds, List<Integer> supportedCiphersuites, HashMapCtxDB db,
-							 String uri, int OSCORE_REPLAY_WINDOW, int MAX_UNFRAGMENTED_SIZE,
-							 Map<String, AppProfile> appProfiles, EDP edp) {
+	public EdhocEndpointInfo(HashMap<Integer, HashMap<Integer, CBORObject>> idCreds,
+							 HashMap<Integer, HashMap<Integer, CBORObject>> creds,
+							 HashMap<Integer, HashMap<Integer, OneKey>> keyPairs,
+							 HashMap<CBORObject, OneKey> peerPublicKeys,
+							 HashMap<CBORObject, CBORObject> peerCredentials,
+							 HashMap<CBORObject, EdhocSession> edhocSessions,
+							 Set<CBORObject> usedConnectionIds, List<Integer> supportedCiphersuites,
+							 HashMapCtxDB db, String uri, int OSCORE_REPLAY_WINDOW, int MAX_UNFRAGMENTED_SIZE,
+							 HashMap<String, AppProfile> appProfiles, EDP edp) {
 
 		
 		this.keyPairs = keyPairs;
@@ -101,12 +104,12 @@ public class EdhocEndpointInfo {
 	}
 	
 	//Return a reference to the set of EDHOC sessions
-	public Map<CBORObject, EdhocSession> getEdhocSessions() {
+	public HashMap<CBORObject, EdhocSession> getEdhocSessions() {
 		return edhocSessions;
 	}
 
 	// Return a reference to the set of Application Profiles
-	public Map<String, AppProfile> getAppProfiles() {
+	public HashMap<String, AppProfile> getAppProfiles() {
 		return appProfiles;
 	}
 	
@@ -116,27 +119,27 @@ public class EdhocEndpointInfo {
 	}
 	
 	// Return the identity key pair
-	public Map<Integer, Map<Integer, OneKey>> getKeyPairs() {
+	public HashMap<Integer, HashMap<Integer, OneKey>> getKeyPairs() {
 		return this.keyPairs;
 	}
 	
 	// Return the ID_CRED used by this peer
-	public Map<Integer, Map<Integer, CBORObject>> getIdCreds() {
+	public HashMap<Integer, HashMap<Integer, CBORObject>> getIdCreds() {
 		return this.idCreds;
 	}
 	
 	// Return the CRED used by this peer
-	public Map<Integer, Map<Integer, CBORObject>> getCreds() {
+	public HashMap<Integer, HashMap<Integer, CBORObject>> getCreds() {
 		return this.creds;
 	}
 	
 	// Return the set of peer public keys
-	public Map<CBORObject, OneKey> getPeerPublicKeys() {
+	public HashMap<CBORObject, OneKey> getPeerPublicKeys() {
 		return peerPublicKeys;
 	}
 	
 	// Return the set of peer credentials
-	public Map<CBORObject, CBORObject> getPeerCredentials() {
+	public HashMap<CBORObject, CBORObject> getPeerCredentials() {
 		return peerCredentials;
 	}
 	

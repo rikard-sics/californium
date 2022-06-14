@@ -63,7 +63,7 @@ public class KeyRemappingTest {
 	@BeforeClass
 	public static void installCryptoProvider() {
 		Provider EdDSA = new EdDSASecurityProvider();
-		Security.insertProviderAt(EdDSA, 0);
+		Security.insertProviderAt(EdDSA, 1);
 	}
 
 	/**

@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.californium.cose.AlgorithmID;
@@ -56,7 +55,7 @@ public class MessageProcessorTest {
 		byte[] message3 = Utils.hexToBytes(
 				"3258584c53ed22c45fb00cad889b4c06f2a26cf49154cb8bdf4eee44e2b50221ab1f029d3d3e0523ddf9d7610c376c728a1e901692f1da0782a3472ff6eb1bb6810c6f686879c9a5594f8f170ca5a2b5bf05a74f42cdd9c854e01e");
 
-		Map<CBORObject, EdhocSession> edhocSessions = new HashMap<CBORObject, EdhocSession>();
+		HashMap<CBORObject, EdhocSession> edhocSessions = new HashMap<CBORObject, EdhocSession>();
 		
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 1);
@@ -100,9 +99,9 @@ public class MessageProcessorTest {
 		// ID_CRED_I for the identity key of the initiator, built from the x509 certificate using x5t
 		CBORObject idCredI = Util.buildIdCredX5t(serializedCertInit);
 
-		Map<Integer, Map<Integer, OneKey>> keyPairsI = new HashMap<Integer, Map<Integer, OneKey>>();
-		Map<Integer, Map<Integer, CBORObject>> credsI = new HashMap<Integer, Map<Integer, CBORObject>>();
-		Map<Integer, Map<Integer, CBORObject>> idCredsI = new HashMap<Integer, Map<Integer, CBORObject>>();
+		HashMap<Integer, HashMap<Integer, OneKey>> keyPairsI = new HashMap<Integer, HashMap<Integer, OneKey>>();
+		HashMap<Integer, HashMap<Integer, CBORObject>> credsI = new HashMap<Integer, HashMap<Integer, CBORObject>>();
+		HashMap<Integer, HashMap<Integer, CBORObject>> idCredsI = new HashMap<Integer, HashMap<Integer, CBORObject>>();
 		
 		keyPairsI.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, OneKey>());
 		credsI.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, CBORObject>());
@@ -145,9 +144,9 @@ public class MessageProcessorTest {
 		// ID_CRED_R for the identity key of the Responder, built from the x509 certificate using x5t
 		CBORObject idCredR = Util.buildIdCredX5t(serializedCertResp);
 
-		Map<Integer, Map<Integer, OneKey>> keyPairsR = new HashMap<Integer, Map<Integer, OneKey>>();
-		Map<Integer, Map<Integer, CBORObject>> credsR = new HashMap<Integer, Map<Integer, CBORObject>>();
-		Map<Integer, Map<Integer, CBORObject>> idCredsR = new HashMap<Integer, Map<Integer, CBORObject>>();
+		HashMap<Integer, HashMap<Integer, OneKey>> keyPairsR = new HashMap<Integer, HashMap<Integer, OneKey>>();
+		HashMap<Integer, HashMap<Integer, CBORObject>> credsR = new HashMap<Integer, HashMap<Integer, CBORObject>>();
+		HashMap<Integer, HashMap<Integer, CBORObject>> idCredsR = new HashMap<Integer, HashMap<Integer, CBORObject>>();
 		
 		keyPairsR.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, OneKey>());
 		credsR.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, CBORObject>());
@@ -292,9 +291,9 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
-		Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
-		Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
-		Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		HashMap<Integer, HashMap<Integer, OneKey>> keyPairs = new HashMap<Integer, HashMap<Integer, OneKey>>();
+		HashMap<Integer, HashMap<Integer, CBORObject>> creds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
+		HashMap<Integer, HashMap<Integer, CBORObject>> idCreds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
 		
 		keyPairs.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, OneKey>());
 		creds.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, CBORObject>());
@@ -455,9 +454,9 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
-		Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
-		Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
-		Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		HashMap<Integer, HashMap<Integer, OneKey>> keyPairs = new HashMap<Integer, HashMap<Integer, OneKey>>();
+		HashMap<Integer, HashMap<Integer, CBORObject>> creds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
+		HashMap<Integer, HashMap<Integer, CBORObject>> idCreds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
 		
 		keyPairs.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, OneKey>());
 		creds.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, CBORObject>());
@@ -593,9 +592,9 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
-		Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
-		Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
-		Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		HashMap<Integer, HashMap<Integer, OneKey>> keyPairs = new HashMap<Integer, HashMap<Integer, OneKey>>();
+		HashMap<Integer, HashMap<Integer, CBORObject>> creds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
+		HashMap<Integer, HashMap<Integer, CBORObject>> idCreds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
 		
 		keyPairs.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, OneKey>());
 		creds.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, CBORObject>());
@@ -776,9 +775,9 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
-		Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
-		Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
-		Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		HashMap<Integer, HashMap<Integer, OneKey>> keyPairs = new HashMap<Integer, HashMap<Integer, OneKey>>();
+		HashMap<Integer, HashMap<Integer, CBORObject>> creds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
+		HashMap<Integer, HashMap<Integer, CBORObject>> idCreds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
 		
 		keyPairs.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, OneKey>());
 		creds.put(Integer.valueOf(Constants.SIGNATURE_KEY), new HashMap<Integer, CBORObject>());
@@ -885,9 +884,9 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
-		Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
-		Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
-		Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		HashMap<Integer, HashMap<Integer, OneKey>> keyPairs = new HashMap<Integer, HashMap<Integer, OneKey>>();
+		HashMap<Integer, HashMap<Integer, CBORObject>> creds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
+		HashMap<Integer, HashMap<Integer, CBORObject>> idCreds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
 		
 		keyPairs.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, OneKey>());
 		creds.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, CBORObject>());
@@ -1005,9 +1004,9 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
-		Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
-		Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
-		Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		HashMap<Integer, HashMap<Integer, OneKey>> keyPairs = new HashMap<Integer, HashMap<Integer, OneKey>>();
+		HashMap<Integer, HashMap<Integer, CBORObject>> creds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
+		HashMap<Integer, HashMap<Integer, CBORObject>> idCreds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
 		
 		keyPairs.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, OneKey>());
 		creds.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, CBORObject>());
@@ -1144,9 +1143,9 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
-		Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
-		Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
-		Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		HashMap<Integer, HashMap<Integer, OneKey>> keyPairs = new HashMap<Integer, HashMap<Integer, OneKey>>();
+		HashMap<Integer, HashMap<Integer, CBORObject>> creds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
+		HashMap<Integer, HashMap<Integer, CBORObject>> idCreds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
 		
 		keyPairs.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, OneKey>());
 		creds.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, CBORObject>());
@@ -1329,9 +1328,9 @@ public class MessageProcessorTest {
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
-		Map<Integer, Map<Integer, OneKey>> keyPairs = new HashMap<Integer, Map<Integer, OneKey>>();
-		Map<Integer, Map<Integer, CBORObject>> creds = new HashMap<Integer, Map<Integer, CBORObject>>();
-		Map<Integer, Map<Integer, CBORObject>> idCreds = new HashMap<Integer, Map<Integer, CBORObject>>();
+		HashMap<Integer, HashMap<Integer, OneKey>> keyPairs = new HashMap<Integer, HashMap<Integer, OneKey>>();
+		HashMap<Integer, HashMap<Integer, CBORObject>> creds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
+		HashMap<Integer, HashMap<Integer, CBORObject>> idCreds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
 		
 		keyPairs.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, OneKey>());
 		creds.put(Integer.valueOf(Constants.ECDH_KEY), new HashMap<Integer, CBORObject>());
