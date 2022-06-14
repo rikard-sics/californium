@@ -261,10 +261,10 @@ public class MessageProcessor {
      *           to deliver to the application.
      */
 	public static List<CBORObject> readMessage1(byte[] sequence, boolean isReq,
-												List<Integer> supportedCiphersuites,
+												List<Integer> supportedCipherSuites,
 												AppProfile appProfile) {
 		
-		if (sequence == null || supportedCiphersuites == null)
+		if (sequence == null || supportedCipherSuites == null)
 				return null;
 		
 		CBORObject[] ead1 = null; // Will be set if External Authorization Data is present as EAD1
@@ -380,75 +380,75 @@ public class MessageProcessor {
 				}
 		}
 
-		// Check if the selected ciphersuite is supported and that no prior ciphersuite in SUITES_I is supported
-		List<Integer> ciphersuitesToOffer = new ArrayList<Integer>();
+		// Check if the selected cipher suite is supported and that no prior cipher suite in SUITES_I is supported
+		List<Integer> cipherSuitesToOffer = new ArrayList<Integer>();
 		if (error == false) {
-			int selectedCiphersuite;
+			int selectedCipherSuite;
 			
 			if (objectListRequest[index].getType() == CBORType.Integer) {
-				// SUITES_I is the selected ciphersuite
-				selectedCiphersuite = objectListRequest[index].AsInt32();
+				// SUITES_I is the selected cipher suite
+				selectedCipherSuite = objectListRequest[index].AsInt32();
 				
-				// This peer does not support the selected ciphersuite
-				if (!supportedCiphersuites.contains(Integer.valueOf(selectedCiphersuite))) {
-					errMsg = new String("The selected ciphersuite is not supported");
+				// This peer does not support the selected cipher suite
+				if (!supportedCipherSuites.contains(Integer.valueOf(selectedCipherSuite))) {
+					errMsg = new String("The selected cipher suite is not supported");
 					errorCode = Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE;
 					responseCode = ResponseCode.BAD_REQUEST;
 					error = true;
 					
-					// SUITE_R will include all the ciphersuites supported by the Responder
-					ciphersuitesToOffer = supportedCiphersuites;
+					// SUITE_R will include all the cipher suites supported by the Responder
+					cipherSuitesToOffer = supportedCipherSuites;
 				}
 			}
 			
 			else if (objectListRequest[index].getType() == CBORType.Array) {
-				// The selected ciphersuite is the last element of SUITES_I
+				// The selected cipher suite is the last element of SUITES_I
 				int size = objectListRequest[index].size(); 
-				selectedCiphersuite = objectListRequest[index].get(size-1).AsInt32();
+				selectedCipherSuite = objectListRequest[index].get(size-1).AsInt32();
 				
-				int firstSharedCiphersuite = -1;
-				// Find the first commonly supported ciphersuite, i.e. the ciphersuite both
+				int firstSharedCipherSuite = -1;
+				// Find the first commonly supported cipher suite, i.e. the cipher suite both
 				// supported by the Responder and specified as early as possible in SUITES_I
 				for (int i = 0; i < size; i++) {
 					int suite = objectListRequest[index].get(i).AsInt32();
-					if (supportedCiphersuites.contains(Integer.valueOf(suite))) {
-						firstSharedCiphersuite = suite;
+					if (supportedCipherSuites.contains(Integer.valueOf(suite))) {
+						firstSharedCipherSuite = suite;
 						break;
 					}
 				}
 				
-				if (!supportedCiphersuites.contains(Integer.valueOf(selectedCiphersuite))) {
-					// The Responder does not support the selected ciphersuite
+				if (!supportedCipherSuites.contains(Integer.valueOf(selectedCipherSuite))) {
+					// The Responder does not support the selected cipher suite
 					
-					errMsg = new String("The selected ciphersuite is not supported");
+					errMsg = new String("The selected cipher suite is not supported");
 					errorCode = Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE;
 					responseCode = ResponseCode.BAD_REQUEST;
 					error = true;
 					
-					if (firstSharedCiphersuite == -1) {
-						// The Responder does not support any ciphersuites in SUITE_I.
-						// SUITE_R will include all the ciphersuites supported by the Responder
-						ciphersuitesToOffer = supportedCiphersuites;
+					if (firstSharedCipherSuite == -1) {
+						// The Responder does not support any cipher suites in SUITE_I.
+						// SUITE_R will include all the cipher suites supported by the Responder
+						cipherSuitesToOffer = supportedCipherSuites;
 					}
 					else {
-						// SUITES_R will include only the ciphersuite supported
+						// SUITES_R will include only the cipher suite supported
 						// by both peers and most preferred by the Initiator.
-						ciphersuitesToOffer.add(firstSharedCiphersuite);
+						cipherSuitesToOffer.add(firstSharedCipherSuite);
 					}
 					
 				}
-				else if (firstSharedCiphersuite != selectedCiphersuite) {
-					// The Responder supports the selected ciphersuite, but it has to reply with an EDHOC Error Message
+				else if (firstSharedCipherSuite != selectedCipherSuite) {
+					// The Responder supports the selected cipher suite, but it has to reply with an EDHOC Error Message
 					// if it supports a cipher suite more preferred by the Initiator than the selected cipher suite
 					
-					errMsg = new String("The selected ciphersuite is not supported");
+					errMsg = new String("The selected cipher suite is not supported");
 					errorCode = Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE;
 					responseCode = ResponseCode.BAD_REQUEST;
 					error = true;
 					
-					// SUITES_R will include only the ciphersuite supported
+					// SUITES_R will include only the cipher suite supported
 					// by both peers and most preferred by the Initiator.
-					ciphersuitesToOffer.add(firstSharedCiphersuite);
+					cipherSuitesToOffer.add(firstSharedCipherSuite);
 					
 				}
 				
@@ -539,7 +539,7 @@ public class MessageProcessor {
 		if (error == true) {
 			
 			// Prepare SUITES_R
-			suitesR = Util.buildSuitesR(ciphersuitesToOffer);
+			suitesR = Util.buildSuitesR(cipherSuitesToOffer);
 			
 			byte[] connectionIdentifier = decodeIdentifier(cI);
 			return processError(errorCode, Constants.EDHOC_MESSAGE_1, !isReq,
@@ -703,7 +703,7 @@ public class MessageProcessor {
 		if (error == false) {
 			gY_Ciphertext2 = objectListRequest[index].GetByteString();
 			
-			gYLength = EdhocSession.getEphermeralKeyLength(session.getSelectedCiphersuite());
+			gYLength = EdhocSession.getEphermeralKeyLength(session.getSelectedCipherSuite());
 			ciphetertext2Length = gY_Ciphertext2.length - gYLength;
 			
 			if (ciphetertext2Length <= 0) {
@@ -725,7 +725,7 @@ public class MessageProcessor {
 			// Set the ephemeral public key of the Responder
 			OneKey peerEphemeralKey = null;
 			
-			int selectedCipherSuite = session.getSelectedCiphersuite();
+			int selectedCipherSuite = session.getSelectedCipherSuite();
 			
 			if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_0 ||
 				selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_1) {
@@ -858,7 +858,7 @@ public class MessageProcessor {
     	}
         
         // Compute PRK_2e
-    	String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCiphersuite());
+    	String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCipherSuite());
     	prk2e = computePRK2e(dhSecret, hashAlgorithm);
     	dhSecret = null;
     	if (prk2e == null) {
@@ -2044,34 +2044,34 @@ public class MessageProcessor {
         }
         
         // SUITES_I as CBOR integer or CBOR array
-        List<Integer> supportedCiphersuites = session.getSupportedCipherSuites();
-        List<Integer> peerSupportedCiphersuites = session.getPeerSupportedCipherSuites();
+        List<Integer> supportedCipherSuites = session.getSupportedCipherSuites();
+        List<Integer> peerSupportedCipherSuites = session.getPeerSupportedCipherSuites();
         
     	int selectedSuite = -1;
-    	int preferredSuite = supportedCiphersuites.get(0).intValue();
+    	int preferredSuite = supportedCipherSuites.get(0).intValue();
     	
-    	// No SUITES_R has been received, so it is not known what ciphersuites the responder supports
-    	if (peerSupportedCiphersuites == null) {
-    		// The selected ciphersuite is the most preferred by the initiator
+    	// No SUITES_R has been received, so it is not known what cipher suites the responder supports
+    	if (peerSupportedCipherSuites == null) {
+    		// The selected cipher suite is the most preferred by the initiator
     		selectedSuite = preferredSuite;
     	}
-    	// SUITES_R has been received, so it is known what ciphersuites the responder supports
+    	// SUITES_R has been received, so it is known what cipher suites the responder supports
     	else {
-    		// Pick the selected ciphersuite as the most preferred by the Initiator from the ones supported by the Responder
-    		for (Integer i : supportedCiphersuites) {
-    			if (peerSupportedCiphersuites.contains(i)) {
+    		// Pick the selected cipher suite as the most preferred by the Initiator from the ones supported by the Responder
+    		for (Integer i : supportedCipherSuites) {
+    			if (peerSupportedCipherSuites.contains(i)) {
     				selectedSuite = i.intValue();
     				break;
     			}
     		}
     	}
     	if (selectedSuite == -1) {
-    		System.err.println("Impossible to agree on a mutually supported ciphersuite");
+    		System.err.println("Impossible to agree on a mutually supported cipher suite");
     		return null;
     	}
     	
 		// Set the selected cipher suite
-    	session.setSelectedCiphersuite(selectedSuite);
+    	session.setSelectedCipherSuite(selectedSuite);
     	
 		// Set the asymmetric key pair, CRED and ID_CRED of the Initiator to use in this session
     	session.setAuthenticationCredential();
@@ -2090,7 +2090,7 @@ public class MessageProcessor {
     		// The elements are the Initiator's supported cipher suite in decreasing order of preference,
     		// up until and including the selected suite as last element of the array.
     		suitesI = CBORObject.NewArray();
-    		for (Integer i : supportedCiphersuites) {
+    		for (Integer i : supportedCipherSuites) {
     			int suite = i.intValue();
     			suitesI.Add(suite);
     			if (suite == selectedSuite) {
@@ -2183,7 +2183,7 @@ public class MessageProcessor {
     		session.setEphemeralKey();
 		
 		// G_Y as a CBOR byte string
-		int selectedSuite = session.getSelectedCiphersuite();
+		int selectedSuite = session.getSelectedCipherSuite();
         CBORObject gY = null;
         if (selectedSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedSuite == Constants.EDHOC_CIPHER_SUITE_1) {
 			gY = session.getEphemeralKey().PublicKey().get(KeyKeys.OKP_X);
@@ -2245,7 +2245,7 @@ public class MessageProcessor {
         
         // Compute PRK_2e
         if (error == false) {
-	        String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCiphersuite());
+	        String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCipherSuite());
 	    	prk2e = computePRK2e(dhSecret, hashAlgorithm);
 	    	dhSecret = null;
 	    	if (prk2e == null) {
@@ -2963,7 +2963,7 @@ public class MessageProcessor {
      * @param idCreds   The identifiers of the authentication credentials of the Initiator
      * @param creds    The authentication credentials of the Initiator (one per supported curve),
      *                 as the serialization of a CBOR object
-     * @param supportedCipherSuites   The list of ciphersuites supported by the Initiator
+     * @param supportedCipherSuites   The list of cipher suites supported by the Initiator
      * @param usedConnectionIds   The set of allocated Connection Identifiers for the Initiator.
      *                            Each identifier is wrapped in a CBOR byte string.
      * @param appProfile   The application profile used for this session
@@ -2974,7 +2974,7 @@ public class MessageProcessor {
 	public static EdhocSession createSessionAsInitiator(int method, HashMap<Integer, HashMap<Integer, OneKey>> keyPairs,
 														HashMap<Integer, HashMap<Integer, CBORObject>> idCreds,
 														HashMap<Integer, HashMap<Integer, CBORObject>> creds,
-			  									        List<Integer> supportedCiphersuites,
+			  									        List<Integer> supportedCipherSuites,
 			  									        Set<CBORObject> usedConnectionIds,
 			  									        AppProfile appProfile, EDP edp, HashMapCtxDB db) {
 		
@@ -2986,7 +2986,7 @@ public class MessageProcessor {
 		// connectionId = new byte[] {(byte) 0x1c};
 
         EdhocSession mySession = new EdhocSession(true, true, method, connectionId, keyPairs, idCreds, creds,
-        										  supportedCiphersuites, appProfile, edp, oscoreDB);
+        										  supportedCipherSuites, appProfile, edp, oscoreDB);
 		
 		return mySession;
 		
@@ -2998,7 +2998,7 @@ public class MessageProcessor {
      * @param keyPairs   The key pairs of the Responder (one per supported curve)
      * @param idCreds   The identifiers of the authentication credentials of the Responder
      * @param creds    The authentication credentials of the Responder (one per supported curve), as the serialization of a CBOR object
-     * @param supportedCipherSuites   The list of ciphersuites supported by the Responder
+     * @param supportedCipherSuites   The list of cipher suites supported by the Responder
      * @param usedConnectionIds   The set of allocated Connection Identifiers for the Responder
      * @param appProfile   The application profile used for this session
      * @param epd   The processor of External Authentication Data used for this session
@@ -3009,7 +3009,7 @@ public class MessageProcessor {
 														HashMap<Integer, HashMap<Integer, OneKey>> keyPairs,
 														HashMap<Integer, HashMap<Integer, CBORObject>> idCreds,
 														HashMap<Integer, HashMap<Integer, CBORObject>> creds,
-			  									        List<Integer> supportedCiphersuites,
+			  									        List<Integer> supportedCipherSuites,
 			  									        Set<CBORObject> usedConnectionIds,
 			  									        AppProfile appProfile, EDP edp, HashMapCtxDB db) {
 		
@@ -3028,7 +3028,7 @@ public class MessageProcessor {
 	    index++;
 		int method = objectListMessage1[index].AsInt32();
 		
-		// Selected ciphersuites from SUITES_I
+		// Selected cipher suites from SUITES_I
 		index++;
 		int selectedCipherSuite = -1;
 		if (objectListMessage1[index].getType() == CBORType.Integer)
@@ -3061,10 +3061,10 @@ public class MessageProcessor {
 		
 		// v-14 identifiers
 		EdhocSession mySession = new EdhocSession(false, isReq, method, connectionIdentifierResponder, keyPairs, idCreds, creds,
-												  supportedCiphersuites, appProfile, edp, oscoreDB);
+												  supportedCipherSuites, appProfile, edp, oscoreDB);
 		
 		// Set the selected cipher suite
-		mySession.setSelectedCiphersuite(selectedCipherSuite);
+		mySession.setSelectedCipherSuite(selectedCipherSuite);
 		
 		// Set the asymmetric key pair, CRED and ID_CRED of the Responder to use in this session
 		mySession.setAuthenticationCredential();
@@ -3103,8 +3103,8 @@ public class MessageProcessor {
     */
 	public static byte[] computeKey(int keyName, EdhocSession session) {
 	    
-	    int selectedCiphersuite = session.getSelectedCiphersuite();
-	    int keyLength = EdhocSession.getKeyLengthEdhocAEAD(selectedCiphersuite);
+	    int selectedCipherSuite = session.getSelectedCipherSuite();
+	    int keyLength = EdhocSession.getKeyLengthEdhocAEAD(selectedCipherSuite);
 	    if (keyLength == 0)
 	        return null;
 	    
@@ -3155,8 +3155,8 @@ public class MessageProcessor {
     */
 	public static byte[] computeIV(int ivName, EdhocSession session) {
 	    
-	    int selectedCiphersuite = session.getSelectedCiphersuite();
-	    int ivLength = EdhocSession.getIvLengthEdhocAEAD(selectedCiphersuite);
+	    int selectedCipherSuite = session.getSelectedCipherSuite();
+	    int ivLength = EdhocSession.getIvLengthEdhocAEAD(selectedCipherSuite);
 	    if (ivLength == 0)
 	        return null;
 	    
@@ -3334,14 +3334,14 @@ public class MessageProcessor {
 	            	
             	}
             	
-    			// Consistency check of key type and curve against the selected ciphersuite
-            	int selectedCipherSuite = session.getSelectedCiphersuite();
+    			// Consistency check of key type and curve against the selected cipher suite
+            	int selectedCipherSuite = session.getSelectedCipherSuite();
             	
-            	if (Util.checkDiffieHellmanKeyAgainstCiphersuite(privateKey, selectedCipherSuite) == false) {
+            	if (Util.checkDiffieHellmanKeyAgainstCipherSuite(privateKey, selectedCipherSuite) == false) {
             		System.err.println("Error when computing the Diffie-Hellman Secret");
             		return null;
             	}
-            	if (Util.checkDiffieHellmanKeyAgainstCiphersuite(publicKey, selectedCipherSuite) == false) {
+            	if (Util.checkDiffieHellmanKeyAgainstCipherSuite(publicKey, selectedCipherSuite) == false) {
             		System.err.println("Error when computing the Diffie-Hellman Secret");
             		return null;
             	}
@@ -3357,7 +3357,7 @@ public class MessageProcessor {
             		Util.nicePrint("G_RX", dhSecret);
             	}
             	
-            	String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCiphersuite());
+            	String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCipherSuite());
             	
             	// v-14
             	// Compute SALT_3e2m
@@ -3482,7 +3482,7 @@ public class MessageProcessor {
             		Util.nicePrint("G_IY", dhSecret);
             	}
             	
-            	String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCiphersuite());
+            	String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCipherSuite());
             	
             	// v-14
             	// Compute SALT_4e3m
@@ -3525,7 +3525,7 @@ public class MessageProcessor {
 	public static byte[] computePRKout(EdhocSession session, byte[] prk4e3m) {
 		
 		byte[] prkOut = null; // v-14
-		int selectedCipherSuite = session.getSelectedCiphersuite();
+		int selectedCipherSuite = session.getSelectedCipherSuite();
 		int length = EdhocSession.getEdhocHashAlgOutputSize(selectedCipherSuite);
 		CBORObject context = CBORObject.FromObject(session.getTH4());
 		
@@ -3553,7 +3553,7 @@ public class MessageProcessor {
 	public static byte[] computePRKexporter(EdhocSession session, byte[] prkOut) {
 		
 		byte[] prkExporter = null;
-		int selectedCipherSuite = session.getSelectedCiphersuite();
+		int selectedCipherSuite = session.getSelectedCipherSuite();
 		int length = EdhocSession.getEdhocHashAlgOutputSize(selectedCipherSuite);
 	    CBORObject context = CBORObject.FromObject(new byte[0]);
 	    
@@ -3581,7 +3581,7 @@ public class MessageProcessor {
 	public static byte[] computeSALT3e2m(EdhocSession session, byte[] prk2e) {
 		
 		byte[] salt3e2m = null;
-		int selectedCipherSuite = session.getSelectedCiphersuite();
+		int selectedCipherSuite = session.getSelectedCipherSuite();
 		int length = EdhocSession.getEdhocHashAlgOutputSize(selectedCipherSuite);
 		CBORObject context = CBORObject.FromObject(session.getTH2());
 		
@@ -3609,7 +3609,7 @@ public class MessageProcessor {
 	public static byte[] computeSALT4e3m(EdhocSession session, byte[] prk3e2m) {
 		
 		byte[] salt4e3m = null;
-		int selectedCipherSuite = session.getSelectedCiphersuite();
+		int selectedCipherSuite = session.getSelectedCipherSuite();
 		int length = EdhocSession.getEdhocHashAlgOutputSize(selectedCipherSuite);
 		CBORObject context = CBORObject.FromObject(session.getTH3());
 		
@@ -3713,7 +3713,7 @@ public class MessageProcessor {
     	
     	int macLength = 0;
     	int method = session.getMethod();
-    	int selectedCipherSuite = session.getSelectedCiphersuite();
+    	int selectedCipherSuite = session.getSelectedCipherSuite();
     	if (method == 0 || method == 2) {
     		macLength = EdhocSession.getEdhocHashAlgOutputSize(selectedCipherSuite);
     	}
@@ -3767,7 +3767,7 @@ public class MessageProcessor {
     	
     	int macLength = 0;
     	int method = session.getMethod();
-    	int selectedCipherSuite = session.getSelectedCiphersuite();
+    	int selectedCipherSuite = session.getSelectedCipherSuite();
     	if (method == 0 || method == 1) {
     		macLength = EdhocSession.getEdhocHashAlgOutputSize(selectedCipherSuite);
     	}
@@ -3808,8 +3808,8 @@ public class MessageProcessor {
     	
     	byte[] ciphertext3 = null;
     	
-    	int selectedCiphersuite = session.getSelectedCiphersuite();
-    	AlgorithmID alg = EdhocSession.getEdhocAEADAlg(selectedCiphersuite);
+    	int selectedCipherSuite = session.getSelectedCipherSuite();
+    	AlgorithmID alg = EdhocSession.getEdhocAEADAlg(selectedCipherSuite);
     	
     	// Prepare the empty content for the COSE protected header
     	CBORObject emptyMap = CBORObject.NewMap();
@@ -3841,8 +3841,8 @@ public class MessageProcessor {
 		
     	byte[] ciphertext4 = null;
     	
-    	int selectedCiphersuite = session.getSelectedCiphersuite();
-    	AlgorithmID alg = EdhocSession.getEdhocAEADAlg(selectedCiphersuite);
+    	int selectedCipherSuite = session.getSelectedCipherSuite();
+    	AlgorithmID alg = EdhocSession.getEdhocAEADAlg(selectedCipherSuite);
     	
     	// Prepare the empty content for the COSE protected header
     	CBORObject emptyMap = CBORObject.NewMap();
@@ -3873,8 +3873,8 @@ public class MessageProcessor {
 		
     	byte[] plaintext = null;
     	
-    	int selectedCiphersuite = session.getSelectedCiphersuite();
-    	AlgorithmID alg = EdhocSession.getEdhocAEADAlg(selectedCiphersuite);
+    	int selectedCipherSuite = session.getSelectedCipherSuite();
+    	AlgorithmID alg = EdhocSession.getEdhocAEADAlg(selectedCipherSuite);
     	
     	// Prepare the empty content for the COSE protected header
     	CBORObject emptyMap = CBORObject.NewMap();
@@ -3905,8 +3905,8 @@ public class MessageProcessor {
 		
     	byte[] plaintext = null;
     	
-    	int selectedCiphersuite = session.getSelectedCiphersuite();
-    	AlgorithmID alg = EdhocSession.getEdhocAEADAlg(selectedCiphersuite);
+    	int selectedCipherSuite = session.getSelectedCipherSuite();
+    	AlgorithmID alg = EdhocSession.getEdhocAEADAlg(selectedCipherSuite);
     	
     	// Prepare the empty content for the COSE protected header
     	CBORObject emptyMap = CBORObject.NewMap();
@@ -3944,10 +3944,10 @@ public class MessageProcessor {
     		// The responder uses signatures as authentication method, then Signature_or_MAC_2 has to be computed
     		try {
     			OneKey identityKey = session.getKeyPair();
-    			int selectedCipherSuite = session.getSelectedCiphersuite();
+    			int selectedCipherSuite = session.getSelectedCipherSuite();
     			
-    			// Consistency check of key type and curve against the selected ciphersuite
-    			if (Util.checkSignatureKeyAgainstCiphersuite(identityKey, selectedCipherSuite) == false) {
+    			// Consistency check of key type and curve against the selected cipher suite
+    			if (Util.checkSignatureKeyAgainstCipherSuite(identityKey, selectedCipherSuite) == false) {
     				System.err.println("Error when signing MAC_2 to produce Signature_or_MAC_2\n");
     				return null;
     			}
@@ -3990,10 +3990,10 @@ public class MessageProcessor {
     		// The initiator uses signatures as authentication method, then Signature_or_MAC_3 has to be computed
     		try {
     			OneKey identityKey = session.getKeyPair();
-    			int selectedCipherSuite = session.getSelectedCiphersuite();
+    			int selectedCipherSuite = session.getSelectedCipherSuite();
     			
-    			// Consistency check of key type and curve against the selected ciphersuite
-    			if (Util.checkSignatureKeyAgainstCiphersuite(identityKey, selectedCipherSuite) == false) {
+    			// Consistency check of key type and curve against the selected cipher suite
+    			if (Util.checkSignatureKeyAgainstCipherSuite(identityKey, selectedCipherSuite) == false) {
     				System.err.println("Error when signing MAC_3 to produce Signature_or_MAC_3\n");
     				return null;
     			}
@@ -4035,10 +4035,10 @@ public class MessageProcessor {
     		// The responder uses signatures as authentication method, then Signature_or_MAC_2 is a signature to verify
     		
     		OneKey peerIdentityKey = session.getPeerLongTermPublicKey();
-			int selectedCipherSuite = session.getSelectedCiphersuite();
+			int selectedCipherSuite = session.getSelectedCipherSuite();
 			
-			// Consistency check of key type and curve against the selected ciphersuite
-			if (Util.checkSignatureKeyAgainstCiphersuite(peerIdentityKey, selectedCipherSuite) == false) {
+			// Consistency check of key type and curve against the selected cipher suite
+			if (Util.checkSignatureKeyAgainstCipherSuite(peerIdentityKey, selectedCipherSuite) == false) {
 				System.err.println("Error when verifying the signature of Signature_or_MAC_2\n");
 				return false;
 			}
@@ -4077,10 +4077,10 @@ public class MessageProcessor {
     		// The initiator uses signatures as authentication method, then Signature_or_MAC_3 is a signature to verify
 
     		OneKey peerIdentityKey = session.getPeerLongTermPublicKey();
-			int selectedCipherSuite = session.getSelectedCiphersuite();
+			int selectedCipherSuite = session.getSelectedCipherSuite();
 			
-			// Consistency check of key type and curve against the selected ciphersuite
-			if (Util.checkSignatureKeyAgainstCiphersuite(peerIdentityKey, selectedCipherSuite) == false) {
+			// Consistency check of key type and curve against the selected cipher suite
+			if (Util.checkSignatureKeyAgainstCipherSuite(peerIdentityKey, selectedCipherSuite) == false) {
 				System.err.println("Error when verifying the signature of Signature_or_MAC_3\n");
 				return false;
 			}
@@ -4111,8 +4111,8 @@ public class MessageProcessor {
 	
         byte[] th2 = null;
         
-        int selectedCiphersuite = session.getSelectedCiphersuite();
-        String hashAlgorithm = EdhocSession.getEdhocHashAlg(selectedCiphersuite);
+        int selectedCipherSuite = session.getSelectedCipherSuite();
+        String hashAlgorithm = EdhocSession.getEdhocHashAlg(selectedCipherSuite);
         
         // v-14
         int offset = 0;
@@ -4148,8 +4148,8 @@ public class MessageProcessor {
         byte[] th3 = null;
         int inputLength = th2.length + plaintext2.length;
         
-        int selectedCiphersuite = session.getSelectedCiphersuite();
-        String hashAlgorithm = EdhocSession.getEdhocHashAlg(selectedCiphersuite);
+        int selectedCipherSuite = session.getSelectedCipherSuite();
+        String hashAlgorithm = EdhocSession.getEdhocHashAlg(selectedCipherSuite);
         
         int offset = 0;
         byte[] hashInput = new byte[inputLength];
@@ -4181,8 +4181,8 @@ public class MessageProcessor {
         byte[] th4 = null;
         int inputLength = th3.length + plaintext3.length;
         
-        int selectedCiphersuite = session.getSelectedCiphersuite();
-        String hashAlgorithm = EdhocSession.getEdhocHashAlg(selectedCiphersuite);
+        int selectedCipherSuite = session.getSelectedCipherSuite();
+        String hashAlgorithm = EdhocSession.getEdhocHashAlg(selectedCipherSuite);
         
         byte[] hashInput = new byte[inputLength];
         System.arraycopy(th3, 0, hashInput, 0, th3.length);

@@ -114,7 +114,7 @@ public class EdhocServer extends CoapServer {
 	private static Set<CBORObject> usedConnectionIds = new HashSet<>();
 	
 	// List of supported cipher suites, in decreasing order of preference.
-	private static List<Integer> supportedCiphersuites = new ArrayList<Integer>();
+	private static List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 	
 	// The collection of application profiles - The lookup key is the full URI of the EDHOC resource
 	private static HashMap<String, AppProfile> appProfiles = new HashMap<String, AppProfile>();
@@ -143,7 +143,7 @@ public class EdhocServer extends CoapServer {
 		EdhocCoapStackFactory.useAsDefault(db, edhocSessions, peerPublicKeys, peerCredentials,
 				                           usedConnectionIds, OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE);
 
-		// Add the supported ciphersuites
+		// Add the supported cipher suites
 		setupSupportedCipherSuites();
 		
 		// Set up the authentication credentials for this peer and the other peer
@@ -225,7 +225,7 @@ public class EdhocServer extends CoapServer {
 		// prepare the set of information for this EDHOC endpoint
 		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCreds, creds, keyPairs, peerPublicKeys,
 																	peerCredentials, edhocSessions, usedConnectionIds,
-																	supportedCiphersuites, db, uriLocal,
+																	supportedCipherSuites, db, uriLocal,
 																	OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE,
 																	appProfiles, edp);
 		
@@ -362,11 +362,11 @@ public class EdhocServer extends CoapServer {
 	
 	private static void setupSupportedCipherSuites() {
 		
-		// Add the supported ciphersuites in decreasing order of preference
-		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
-		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_1);
-		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_2);
-		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_3);
+		// Add the supported cipher suites in decreasing order of preference
+		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_0);
+		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_1);
+		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_2);
+		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_3);
 				
 	}
 
@@ -393,8 +393,8 @@ public class EdhocServer extends CoapServer {
 	    
 		// Add one authentication credential for curve Ed25519 and one for curve X25519
 		
-		if (supportedCiphersuites.contains(Integer.valueOf(Constants.EDHOC_CIPHER_SUITE_0)) ||
-			supportedCiphersuites.contains(Integer.valueOf(Constants.EDHOC_CIPHER_SUITE_1))) {
+		if (supportedCipherSuites.contains(Integer.valueOf(Constants.EDHOC_CIPHER_SUITE_0)) ||
+			supportedCipherSuites.contains(Integer.valueOf(Constants.EDHOC_CIPHER_SUITE_1))) {
 
 			
 			// Curve Ed25519
@@ -558,8 +558,8 @@ public class EdhocServer extends CoapServer {
 
 
 		// Add two authentication credentials for curve P-256 (one for signing only, one for ECDH only)
-		if (supportedCiphersuites.contains(Integer.valueOf(Constants.EDHOC_CIPHER_SUITE_2)) ||
-			supportedCiphersuites.contains(Integer.valueOf(Constants.EDHOC_CIPHER_SUITE_3))) {
+		if (supportedCipherSuites.contains(Integer.valueOf(Constants.EDHOC_CIPHER_SUITE_2)) ||
+			supportedCipherSuites.contains(Integer.valueOf(Constants.EDHOC_CIPHER_SUITE_3))) {
 		
 			// Signing authentication credential
 			
