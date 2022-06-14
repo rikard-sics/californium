@@ -25,7 +25,7 @@ import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
+
 import java.util.List;
 import java.util.Random;
 
@@ -35,11 +35,11 @@ import org.eclipse.californium.cose.EncryptCommon;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.elements.util.Base64;
 import org.junit.Assert;
 import org.junit.Test;
 
 import com.upokecenter.cbor.CBORObject;
-import com.upokecenter.cbor.CBORType;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 import net.i2p.crypto.eddsa.Utils;
@@ -116,15 +116,16 @@ public class UtilTest {
 	 * Test a signature computation and verification with EdDSA Ed25519.
 	 * 
 	 * @throws CoseException on test failure
+	 * @throws IOException on test failure
 	 */
 	@Test
-	public void testComputeVerifySignatureEd25519() throws CoseException {
+	public void testComputeVerifySignatureEd25519() throws CoseException, IOException {
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 1);
 
 		// Set up needed parameters
 		String keyStringEd25519 = "pQMnAQEgBiFYIDzQyFH694a7CcXQasH9RcqnmwQAy2FIX97dGGGy+bpSI1gg5aAfgdGCH2/2KFsQH5lXtDc8JUn1a+OkF0zOG6lIWXQ=";
-		OneKey keyPair = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyStringEd25519)));
+		OneKey keyPair = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(keyStringEd25519)));
 
 		byte[] payloadToSign = new byte[] { (byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0,
 				(byte) 0x5c };
@@ -151,13 +152,14 @@ public class UtilTest {
 	 * Test a signature computation and verification with ECDSA_256.
 	 * 
 	 * @throws CoseException on signing or verification failure
+	 * @throws IOException on test failure
 	 */
 	@Test
-	public void testComputeVerifySignatureEcdsa256() throws CoseException {
+	public void testComputeVerifySignatureEcdsa256() throws CoseException, IOException {
 
 		// Set up needed parameters
 		String keyStringEcdsa256 = "pgMmAQIgASFYIPWSTdB9SCF/+CGXpy7gty8qipdR30t6HgdFGQo8ViiAIlggXvJCtXVXBJwmjMa4YdRbcdgjpXqM57S2CZENPrUGQnMjWCDXCb+hy1ybUu18KTAJMvjsmXch4W3Hd7Rw7mTF3ocbLQ==";
-		OneKey keyPair = new OneKey(CBORObject.DecodeFromBytes(Base64.getDecoder().decode(keyStringEcdsa256)));
+		OneKey keyPair = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(keyStringEcdsa256)));
 
 		byte[] payloadToSign = new byte[] { (byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0,
 				(byte) 0x5c };
