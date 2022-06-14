@@ -21,7 +21,7 @@ package org.eclipse.californium.edhoc;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 
 import org.eclipse.californium.cose.AlgorithmID;
@@ -34,6 +34,7 @@ import org.eclipse.californium.cose.Message;
 import org.eclipse.californium.cose.MessageTag;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.cose.Sign1Message;
+import org.eclipse.californium.elements.util.Base64;
 import org.eclipse.californium.oscore.CoapOSException;
 import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSCoreCtxDB;
@@ -825,10 +826,10 @@ public class Util {
      * @param usedConnectionIds   The collection of already allocated Connection Identifiers
 	 */
 	public static void purgeSession(EdhocSession session, byte[] connectionIdentifier,
-			                        Map<CBORObject, EdhocSession> edhocSessions, Set<CBORObject> usedConnectionIds) {
+									HashMap<CBORObject, EdhocSession> edhocSessions, Set<CBORObject> usedConnectionIds) {
 		if (session != null) {
 			CBORObject connectionIdentifierCbor = CBORObject.FromObject(connectionIdentifier);
-		    edhocSessions.remove(connectionIdentifierCbor, session);
+		    edhocSessions.remove(connectionIdentifierCbor);
 		    releaseConnectionId(connectionIdentifier, usedConnectionIds, session.getOscoreDb());
 		    session.deleteTemporaryMaterial();
 		    session = null;
@@ -852,7 +853,7 @@ public class Util {
 	 		}
 	 		else if (keyCurve == KeyKeys.OKP_Ed25519.AsInt32()) {
 	    		Provider EdDSA = new EdDSASecurityProvider();
-	        	Security.insertProviderAt(EdDSA, 0);
+	        	Security.insertProviderAt(EdDSA, 1);
 	    		keyPair = OneKey.generateKey(AlgorithmID.EDDSA);
 	    	}
 	 		else if (keyCurve == KeyKeys.OKP_X25519.AsInt32()) {
@@ -867,7 +868,7 @@ public class Util {
 		// Print out the base64 serialization of the key pair
 		/*
 		byte[] keyPairBytes = keyPair.EncodeToBytes();
-    	String testKeyBytesBase64 = Base64.getEncoder().encodeToString(keyPairBytes);
+    	String testKeyBytesBase64 = Base64.encodeBytes(keyPairBytes);
     	System.out.println(testKeyBytesBase64);
     	
     	System.out.println(keyCurve);
@@ -878,7 +879,7 @@ public class Util {
 		/*
     	OneKey testPublicKey = keyPair.PublicKey();
     	byte[] testPublicKeyBytes = testPublicKey.EncodeToBytes();
-    	String testPublicKeyBytesBase64 = Base64.getEncoder().encodeToString(testPublicKeyBytes);
+    	String testPublicKeyBytesBase64 = Base64.encodeBytes(testPublicKeyBytes);
     	System.out.println(testPublicKeyBytesBase64);
     	
     	System.out.println(keyCurve);

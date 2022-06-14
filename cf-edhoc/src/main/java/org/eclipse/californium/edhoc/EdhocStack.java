@@ -19,7 +19,7 @@ package org.eclipse.californium.edhoc;
 
 import com.upokecenter.cbor.CBORObject;
 
-import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 
 import org.eclipse.californium.core.network.Outbox;
@@ -59,8 +59,8 @@ public class EdhocStack extends BaseCoapStack {
 	 * 
 	 */
 	public EdhocStack(String tag, final Configuration config, final Outbox outbox, final OSCoreCtxDB ctxDb,
-			Map<CBORObject, EdhocSession> edhocSessions, Map<CBORObject, OneKey> peerPublicKeys,
-			Map<CBORObject, CBORObject> peerCredentials, Set<CBORObject> usedConnectionIds,
+			HashMap<CBORObject, EdhocSession> edhocSessions, HashMap<CBORObject, OneKey> peerPublicKeys,
+			HashMap<CBORObject, CBORObject> peerCredentials, Set<CBORObject> usedConnectionIds,
 			int OSCORE_REPLAY_WINDOW, int MAX_UNFRAGMENTED_SIZE) {
 		super(outbox);
 

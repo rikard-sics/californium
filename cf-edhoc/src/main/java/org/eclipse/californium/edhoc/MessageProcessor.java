@@ -23,7 +23,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
@@ -59,7 +59,7 @@ public class MessageProcessor {
      * @return  The type of the EDHOC message, or -1 if it not a recognized type
      */
 	public static int messageType(byte[] msg, boolean isReq,
-								  Map<CBORObject, EdhocSession> edhocSessions,
+								  HashMap<CBORObject, EdhocSession> edhocSessions,
 								  byte[] connectionIdentifier) {
 				
 		CBORObject[] myObjects = null;
@@ -592,9 +592,11 @@ public class MessageProcessor {
      *           present as a CBOR array, with elements the same elements of the external authorization data EAD2
      *           to deliver to the application.
      */
-	public static List<CBORObject> readMessage2(byte[] sequence, boolean isReq, byte[] connectionIdInitiator, Map<CBORObject,
-			                                    EdhocSession> edhocSessions, Map<CBORObject, OneKey> peerPublicKeys,
-			                                    Map<CBORObject, CBORObject> peerCredentials, Set<CBORObject> usedConnectionIds,
+	public static List<CBORObject> readMessage2(byte[] sequence, boolean isReq, byte[] connectionIdInitiator,
+												HashMap<CBORObject, EdhocSession> edhocSessions,
+												HashMap<CBORObject, OneKey> peerPublicKeys,
+												HashMap<CBORObject, CBORObject> peerCredentials,
+												Set<CBORObject> usedConnectionIds,
 			                                    Set<CBORObject> ownIdCreds) {
 		
 		if (sequence == null || edhocSessions == null ||
@@ -1141,9 +1143,11 @@ public class MessageProcessor {
      *           The third element is optionally present in both cases (i) and (ii). If present, it is a CBOR array,
      *           with elements the same elements of the external authorization data EAD1 to deliver to the application.
      */
-	public static List<CBORObject> readMessage3(byte[] sequence, boolean isReq, byte[] connectionIdResponder, Map<CBORObject,
-            								EdhocSession> edhocSessions, Map<CBORObject, OneKey> peerPublicKeys,
-            								Map<CBORObject, CBORObject> peerCredentials, Set<CBORObject> usedConnectionIds) {
+	public static List<CBORObject> readMessage3(byte[] sequence, boolean isReq, byte[] connectionIdResponder,
+												HashMap<CBORObject, EdhocSession> edhocSessions,
+												HashMap<CBORObject, OneKey> peerPublicKeys,
+												HashMap<CBORObject, CBORObject> peerCredentials,
+												Set<CBORObject> usedConnectionIds) {
 		
 		if (sequence == null || edhocSessions == null ||
 			peerPublicKeys == null || peerCredentials == null || usedConnectionIds == null)
@@ -1612,7 +1616,7 @@ public class MessageProcessor {
      *           to deliver to the application.
      */
 	public static List<CBORObject> readMessage4(byte[] sequence, boolean isReq, byte[] connectionIdInitiator,
-			                                    Map<CBORObject,EdhocSession> edhocSessions,
+												HashMap<CBORObject,EdhocSession> edhocSessions,
 			                                    Set<CBORObject> usedConnectionIds) {
 		
 		if (sequence == null || edhocSessions == null || usedConnectionIds == null)
@@ -1896,7 +1900,7 @@ public class MessageProcessor {
      * @return  The elements of the EDHOC Error Message as CBOR objects, or null in case of errors
      */
 	public static CBORObject[] readErrorMessage(byte[] sequence, byte[] connectionIdentifier,
-			                                    Map<CBORObject, EdhocSession> edhocSessions) {
+												HashMap<CBORObject, EdhocSession> edhocSessions) {
 		
 		if (edhocSessions == null || sequence == null) {
 			System.err.println("Error when processing EDHOC Error Message");
@@ -2967,9 +2971,9 @@ public class MessageProcessor {
      * @param db   The database of OSCORE Security Contexts
      * @return  The newly created EDHOC session
      */
-	public static EdhocSession createSessionAsInitiator(int method, Map<Integer, Map<Integer, OneKey>> keyPairs,
-														Map<Integer, Map<Integer, CBORObject>> idCreds,
-														Map<Integer, Map<Integer, CBORObject>> creds,
+	public static EdhocSession createSessionAsInitiator(int method, HashMap<Integer, HashMap<Integer, OneKey>> keyPairs,
+														HashMap<Integer, HashMap<Integer, CBORObject>> idCreds,
+														HashMap<Integer, HashMap<Integer, CBORObject>> creds,
 			  									        List<Integer> supportedCiphersuites,
 			  									        Set<CBORObject> usedConnectionIds,
 			  									        AppProfile appProfile, EDP edp, HashMapCtxDB db) {
@@ -3002,9 +3006,9 @@ public class MessageProcessor {
      * @return  The newly created EDHOC session
      */
 	public static EdhocSession createSessionAsResponder(byte[] message1, boolean isReq,
-														Map<Integer, Map<Integer, OneKey>> keyPairs,
-														Map<Integer, Map<Integer, CBORObject>> idCreds,
-														Map<Integer, Map<Integer, CBORObject>> creds,
+														HashMap<Integer, HashMap<Integer, OneKey>> keyPairs,
+														HashMap<Integer, HashMap<Integer, CBORObject>> idCreds,
+														HashMap<Integer, HashMap<Integer, CBORObject>> creds,
 			  									        List<Integer> supportedCiphersuites,
 			  									        Set<CBORObject> usedConnectionIds,
 			  									        AppProfile appProfile, EDP edp, HashMapCtxDB db) {

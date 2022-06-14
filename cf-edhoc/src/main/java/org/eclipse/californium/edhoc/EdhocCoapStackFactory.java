@@ -17,7 +17,7 @@
  ******************************************************************************/
 package org.eclipse.californium.edhoc;
 
-import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -42,9 +42,9 @@ public class EdhocCoapStackFactory implements ExtendedCoapStackFactory {
 
 	private static AtomicBoolean init = new AtomicBoolean();
 	private static volatile OSCoreCtxDB defaultCtxDb;
-	private static volatile Map<CBORObject, EdhocSession> edhocSessions;
-	private static volatile Map<CBORObject, OneKey> peerPublicKeys;
-	private static volatile Map<CBORObject, CBORObject> peerCredentials;
+	private static volatile HashMap<CBORObject, EdhocSession> edhocSessions;
+	private static volatile HashMap<CBORObject, OneKey> peerPublicKeys;
+	private static volatile HashMap<CBORObject, CBORObject> peerCredentials;
 	private static volatile Set<CBORObject> usedConnectionIds;
 	private static volatile int OSCORE_REPLAY_WINDOW;
 	private static volatile int MAX_UNFRAGMENTED_SIZE;
@@ -90,9 +90,9 @@ public class EdhocCoapStackFactory implements ExtendedCoapStackFactory {
 	 * @see CoapEndpoint#setDefaultCoapStackFactory(CoapStackFactory)
 	 */
 	public static void useAsDefault(OSCoreCtxDB defaultCtxDb,
-									Map<CBORObject, EdhocSession> edhocSessions,
-									Map<CBORObject, OneKey> peerPublicKeys,
-									Map<CBORObject, CBORObject> peerCredentials,
+									HashMap<CBORObject, EdhocSession> edhocSessions,
+									HashMap<CBORObject, OneKey> peerPublicKeys,
+									HashMap<CBORObject, CBORObject> peerCredentials,
 									Set<CBORObject> usedConnectionIds,
 									int OSCORE_REPLAY_WINDOW,
 									int MAX_UNFRAGMENTED_SIZE) {

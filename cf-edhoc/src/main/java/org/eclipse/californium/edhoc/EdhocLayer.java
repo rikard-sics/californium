@@ -28,7 +28,7 @@ import net.i2p.crypto.eddsa.Utils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 
 import org.eclipse.californium.core.coap.EmptyMessage;
@@ -65,17 +65,17 @@ public class EdhocLayer extends AbstractLayer {
 	/**
 	 * Map of existing EDHOC sessions
 	 */
-	Map<CBORObject, EdhocSession> edhocSessions;
+	HashMap<CBORObject, EdhocSession> edhocSessions;
 
 	/**
 	 * Map of the EDHOC peer public keys
 	 */
-	Map<CBORObject, OneKey> peerPublicKeys;
+	HashMap<CBORObject, OneKey> peerPublicKeys;
 	
 	/**
 	 * Map of the EDHOC peer credentials
 	 */
-	Map<CBORObject, CBORObject> peerCredentials;
+	HashMap<CBORObject, CBORObject> peerCredentials;
 	
 	/**
 	 * Set of used EDHOC Connection IDs
@@ -103,9 +103,9 @@ public class EdhocLayer extends AbstractLayer {
 	 * @param MAX_UNFRAGMENTED_SIZE size of MAX_UNFRAGMENTED_SIZE to use in an OSCORE Security Context
 	 */
 	public EdhocLayer(OSCoreCtxDB ctxDb,
-					  Map<CBORObject, EdhocSession> edhocSessions,
-			          Map<CBORObject, OneKey> peerPublicKeys,
-			          Map<CBORObject, CBORObject> peerCredentials,
+					  HashMap<CBORObject, EdhocSession> edhocSessions,
+					  HashMap<CBORObject, OneKey> peerPublicKeys,
+					  HashMap<CBORObject, CBORObject> peerCredentials,
 			          Set<CBORObject> usedConnectionIds,
 			          int OSCORE_REPLAY_WINDOW,
 			          int MAX_UNFRAGMENTED_SIZE) {
