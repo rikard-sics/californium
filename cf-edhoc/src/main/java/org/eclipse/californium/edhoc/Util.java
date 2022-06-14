@@ -959,21 +959,21 @@ public class Util {
     /**
      * Build SUITES_R
      *  
-     * @param ciphersuites   The list of supported ciphersuites for this peer to include in SUITES_R
+     * @param cipherSuites   The list of supported cipher suites for this peer to include in SUITES_R
      * @return SUITES_R, as a CBOR object
      */
-	public static CBORObject buildSuitesR(List<Integer> ciphersuites) {
+	public static CBORObject buildSuitesR(List<Integer> cipherSuites) {
 		
 		CBORObject suitesR;
 		
-		if (ciphersuites.size() == 1) {
-			int suite = ciphersuites.get(0).intValue();
+		if (cipherSuites.size() == 1) {
+			int suite = cipherSuites.get(0).intValue();
 			suitesR = CBORObject.FromObject(suite);
 		}
-		// This peer supports multiple ciphersuites
+		// This peer supports multiple cipher suites
 		else {
 			suitesR = CBORObject.NewArray();
-			for (Integer i : ciphersuites) {
+			for (Integer i : cipherSuites) {
 				suitesR.Add(i.intValue());
 			}
 		}
@@ -1175,7 +1175,7 @@ public class Util {
      * @param selectedCipherSuite   The selected cipher suite used in an EDHOC session
      * @return True in case the key complies with the selected cipher suite, or false otherwise
      */
-	public static boolean checkSignatureKeyAgainstCiphersuite(OneKey key, int selectedCipherSuite) {
+	public static boolean checkSignatureKeyAgainstCipherSuite(OneKey key, int selectedCipherSuite) {
 			
 		
 		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_1) {
@@ -1216,7 +1216,7 @@ public class Util {
      * @param selectedCipherSuite   The selected cipher suite used in an EDHOC session
      * @return True in case the key complies with the selected cipher suite, or false otherwise
      */
-	public static boolean checkDiffieHellmanKeyAgainstCiphersuite(OneKey key, int selectedCipherSuite) {
+	public static boolean checkDiffieHellmanKeyAgainstCipherSuite(OneKey key, int selectedCipherSuite) {
 			
 		if (selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_0 || selectedCipherSuite == Constants.EDHOC_CIPHER_SUITE_1) {
 		    

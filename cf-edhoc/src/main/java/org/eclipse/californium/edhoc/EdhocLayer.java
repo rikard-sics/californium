@@ -407,9 +407,9 @@ public class EdhocLayer extends AbstractLayer {
 				// The Recipient ID of this peer is the EDHOC connection identifier of this peer
 				byte[] recipientId = connectionIdentifierResponder;
 				
-				int selectedCiphersuite = mySession.getSelectedCiphersuite();
-				AlgorithmID alg = EdhocSession.getAppAEAD(selectedCiphersuite);
-				AlgorithmID hkdf = EdhocSession.getAppHkdf(selectedCiphersuite);
+				int selectedCipherSuite = mySession.getSelectedCipherSuite();
+				AlgorithmID alg = EdhocSession.getAppAEAD(selectedCipherSuite);
+				AlgorithmID hkdf = EdhocSession.getAppHkdf(selectedCipherSuite);
 				
 				OSCoreCtx ctx = null;
 				try {

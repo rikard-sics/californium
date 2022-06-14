@@ -161,7 +161,7 @@ class EdhocResource extends CoapResource {
 		if (messageType == Constants.EDHOC_MESSAGE_1) {
 			
 			processingResult = MessageProcessor.readMessage1(message, true,
-															 edhocEndpointInfo.getSupportedCiphersuites(),
+															 edhocEndpointInfo.getSupportedCipherSuites(),
 															 appProfile);
 
 			if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
@@ -199,7 +199,7 @@ class EdhocResource extends CoapResource {
 																	edhocEndpointInfo.getKeyPairs(),
 																    edhocEndpointInfo.getIdCreds(),
 																    edhocEndpointInfo.getCreds(),
-																    edhocEndpointInfo.getSupportedCiphersuites(),
+																    edhocEndpointInfo.getSupportedCipherSuites(),
 																    edhocEndpointInfo.getUsedConnectionIds(),
 																    appProfile, edhocEndpointInfo.getEdp(),
 																    edhocEndpointInfo.getOscoreDb());
@@ -410,9 +410,9 @@ class EdhocResource extends CoapResource {
 						return;
 			        }
 			        
-			        int selectedCiphersuite = mySession.getSelectedCiphersuite();
-			        AlgorithmID alg = EdhocSession.getAppAEAD(selectedCiphersuite);
-			        AlgorithmID hkdf = EdhocSession.getAppHkdf(selectedCiphersuite);
+			        int selectedCipherSuite = mySession.getSelectedCipherSuite();
+			        AlgorithmID alg = EdhocSession.getAppAEAD(selectedCipherSuite);
+			        AlgorithmID hkdf = EdhocSession.getAppHkdf(selectedCipherSuite);
 			        
 			        OSCoreCtx ctx = null;
 			        try {

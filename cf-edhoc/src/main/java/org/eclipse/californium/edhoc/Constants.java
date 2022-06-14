@@ -179,7 +179,7 @@ public static final int EDHOC_CIPHER_SUITE_3 = 3;
 
 
 /**
- * The EDHOC AEAD algorithms associated to each ciphersuite
+ * The EDHOC AEAD algorithms associated to each cipher suite
  */
 public static final String[] EDHOC_AEAD_ALGS = {
 		"AES_CCM_16_64_128",   // cipher suite 0
@@ -189,7 +189,7 @@ public static final String[] EDHOC_AEAD_ALGS = {
 };
 
 /**
- * The EDHOC hash algorithms associated to each ciphersuite
+ * The EDHOC hash algorithms associated to each cipher suite
  */
 public static final String[] EDHOC_HASH_ALGS = {
 		"SHA-256",  // cipher suite 0
@@ -199,7 +199,7 @@ public static final String[] EDHOC_HASH_ALGS = {
 };
 
 /**
- * The EDHOC key exchange algorithm (ECDH curve) associated to each ciphersuite
+ * The EDHOC key exchange algorithm (ECDH curve) associated to each cipher suite
  */
 public static final String[] EDHOC_ECDH_CURVES = {
 		"X25519",  // cipher suite 0
@@ -209,7 +209,7 @@ public static final String[] EDHOC_ECDH_CURVES = {
 };
 
 /**
- * The EDHOC signature algorithms associated to each ciphersuite
+ * The EDHOC signature algorithms associated to each cipher suite
  */
 public static final String[] EDHOC_SIGN_ALGS = {
 		"EdDSA",  // cipher suite 0
@@ -219,10 +219,10 @@ public static final String[] EDHOC_SIGN_ALGS = {
 };
 
 /**
- * The EDHOC signature curve associated to each ciphersuite
+ * The EDHOC signature curve associated to each cipher suite
  * 
  * This is implicitly assumed from the pair EDHOC key exchange algorithm
- * (ECDH curve) and EDHOC signature algorithm for a certain ciphersuite 
+ * (ECDH curve) and EDHOC signature algorithm for a certain cipher suite 
  */
 public static final String[] EDHOC_SIGN_ALG_CURVES = {
 		"Ed25519",  // cipher suite 0
@@ -232,7 +232,7 @@ public static final String[] EDHOC_SIGN_ALG_CURVES = {
 };
 
 /**
- * The application AEAD algorithms associated to each ciphersuite
+ * The application AEAD algorithms associated to each cipher suite
  */
 public static final String[] APP_AEAD_ALGS = {
 		"AES_CCM_16_64_128",  // cipher suite 0
@@ -242,7 +242,7 @@ public static final String[] APP_AEAD_ALGS = {
 };
 
 /**
- * The application hash algorithms associated to each ciphersuite
+ * The application hash algorithms associated to each cipher suite
  */
 public static final String[] APP_HASH_ALGS = {
 		"SHA-256",  // cipher suite 0
