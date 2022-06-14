@@ -237,7 +237,7 @@ public class MessageProcessorTest {
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
 	@Test
-	public void testWriteMessage1Ciphersuite0Method0() {
+	public void testWriteMessage1CipherSuite0Method0() {
 		
 		// Insert EdDSA security provider
 		final Provider EdDSA = new EdDSASecurityProvider();
@@ -338,7 +338,7 @@ public class MessageProcessorTest {
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
 	@Test
-	public void testWriteMessage2Ciphersuite0Method0() {
+	public void testWriteMessage2CipherSuite0Method0() {
 
 		// Insert EdDSA security provider
 		final Provider EdDSA = new EdDSASecurityProvider();
@@ -478,7 +478,7 @@ public class MessageProcessorTest {
 		session.setPeerEphemeralPublicKey(peerEphemeralPublicKey);
 
 		// Set the selected cipher suite
-		session.setSelectedCiphersuite(0);
+		session.setSelectedCipherSuite(0);
 		
 		// Set the asymmetric key pair, CRED and ID_CRED of the Initiator to use in this session
     	session.setAuthenticationCredential();
@@ -513,7 +513,7 @@ public class MessageProcessorTest {
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
 	@Test
-	public void testWriteMessage3Ciphersuite0Method0() {
+	public void testWriteMessage3CipherSuite0Method0() {
 
 		// Insert EdDSA security provider
 		final Provider EdDSA = new EdDSASecurityProvider();
@@ -616,7 +616,7 @@ public class MessageProcessorTest {
 		session.setPeerEphemeralPublicKey(peerEphemeralPublicKey);
 
 		// Set the selected cipher suite
-		session.setSelectedCiphersuite(0);
+		session.setSelectedCipherSuite(0);
 		
 		// Set the asymmetric key pair, CRED and ID_CRED of the Initiator to use in this session
 		session.setAuthenticationCredential();
@@ -702,7 +702,7 @@ public class MessageProcessorTest {
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
 	@Test
-	public void testWriteMessage4Ciphersuite0Method0() {
+	public void testWriteMessage4CipherSuite0Method0() {
 
 		// Insert EdDSA security provider
 		final Provider EdDSA = new EdDSASecurityProvider();
@@ -801,7 +801,7 @@ public class MessageProcessorTest {
 		session.setPeerEphemeralPublicKey(peerEphemeralPublicKey);
 
 		// Set the selected cipher suite
-		session.setSelectedCiphersuite(0);
+		session.setSelectedCipherSuite(0);
 		
 		// Set the asymmetric key pair, CRED and ID_CRED of the Initiator to use in this session
 		session.setAuthenticationCredential();
@@ -835,7 +835,7 @@ public class MessageProcessorTest {
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
 	@Test
-	public void testWriteMessage1Ciphersuite2Method3() {
+	public void testWriteMessage1CipherSuite2Method3() {
 		
 		boolean initiator = true;
 		int method = 3;
@@ -932,7 +932,7 @@ public class MessageProcessorTest {
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
 	@Test
-	public void testWriteMessage2Ciphersuite2Method3() {
+	public void testWriteMessage2CipherSuite2Method3() {
 
 		boolean initiator = false;
 		int method = 3;
@@ -1028,7 +1028,7 @@ public class MessageProcessorTest {
 		session.setPeerEphemeralPublicKey(peerEphemeralPublicKey);
 
 		// Set the selected cipher suite
-		session.setSelectedCiphersuite(2);
+		session.setSelectedCipherSuite(2);
 		
 		// Set the asymmetric key pair, CRED and ID_CRED of the Initiator to use in this session
 		session.setAuthenticationCredential();
@@ -1063,7 +1063,7 @@ public class MessageProcessorTest {
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
 	@Test
-	public void testWriteMessage3Ciphersuite2Method3() {
+	public void testWriteMessage3CipherSuite2Method3() {
 
 		boolean initiator = true;
 		int method = 3;
@@ -1167,7 +1167,7 @@ public class MessageProcessorTest {
 		session.setPeerEphemeralPublicKey(peerEphemeralPublicKey);
 
 		// Set the selected cipher suite
-		session.setSelectedCiphersuite(2);
+		session.setSelectedCipherSuite(2);
 		
 		// Set the asymmetric key pair, CRED and ID_CRED of the Initiator to use in this session
 		session.setAuthenticationCredential();
@@ -1254,7 +1254,7 @@ public class MessageProcessorTest {
 	 * See: upcoming draft-ietf-lake-traces-01
 	 */
 	@Test
-	public void testWriteMessage4Ciphersuite2Method3() {
+	public void testWriteMessage4CipherSuite2Method3() {
 
 		boolean initiator = false;
 		int method = 3;
@@ -1354,7 +1354,7 @@ public class MessageProcessorTest {
 		session.setPeerEphemeralPublicKey(peerEphemeralPublicKey);
 
 		// Set the selected cipher suite
-		session.setSelectedCiphersuite(2);
+		session.setSelectedCipherSuite(2);
 		
 		// Set the Connection Identifier of the peer
 		session.setPeerConnectionId(connectionIdentifierInitiator);

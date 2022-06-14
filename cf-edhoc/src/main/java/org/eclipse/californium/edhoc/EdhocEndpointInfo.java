@@ -52,8 +52,8 @@ public class EdhocEndpointInfo {
 	// Connection Identifiers are stored as CBOR integers (if numeric) or as CBOR byte strings (if binary)
 	private Set<CBORObject> usedConnectionIds;
 	
-	// List of supported ciphersuites
-	private List<Integer> supportedCiphersuites;
+	// List of supported cipher suites
+	private List<Integer> supportedCipherSuites;
 	
 	// The database of OSCORE Security Contexts
 	private HashMapCtxDB db;
@@ -80,7 +80,7 @@ public class EdhocEndpointInfo {
 							 HashMap<CBORObject, OneKey> peerPublicKeys,
 							 HashMap<CBORObject, CBORObject> peerCredentials,
 							 HashMap<CBORObject, EdhocSession> edhocSessions,
-							 Set<CBORObject> usedConnectionIds, List<Integer> supportedCiphersuites,
+							 Set<CBORObject> usedConnectionIds, List<Integer> supportedCipherSuites,
 							 HashMapCtxDB db, String uri, int OSCORE_REPLAY_WINDOW, int MAX_UNFRAGMENTED_SIZE,
 							 HashMap<String, AppProfile> appProfiles, EDP edp) {
 
@@ -93,7 +93,7 @@ public class EdhocEndpointInfo {
 		this.peerCredentials = peerCredentials;
 		this.edhocSessions = edhocSessions;
 		this .usedConnectionIds = usedConnectionIds;
-		this.supportedCiphersuites = supportedCiphersuites;
+		this.supportedCipherSuites = supportedCipherSuites;
 		this.db = db;
 		this.uri = uri;
 		this.OSCORE_REPLAY_WINDOW = OSCORE_REPLAY_WINDOW;
@@ -163,9 +163,9 @@ public class EdhocEndpointInfo {
 		return uri;
 	}
 	
-	// Return the set of supported ciphersuites
-	public List<Integer> getSupportedCiphersuites() {
-		return supportedCiphersuites;
+	// Return the set of supported cipher suites
+	public List<Integer> getSupportedCipherSuites() {
+		return supportedCipherSuites;
 	}
 	
 	// Return the set of used Connection Identifiers

@@ -71,7 +71,7 @@ public class EdhocClient {
 		
 	
 	// Set to True if this CoAP client is the EDHOC initiator (only flow available at the moment)
-	// Relevant to choose with public keys to install, when testing with selected ciphersuite 0 or 1
+	// Relevant to choose with public keys to install, when testing with selected cipher suite 0 or 1
 	private final static boolean isInitiator = true;
 	
 	// Set to true if an OSCORE-protected exchange is performed after EDHOC completion
@@ -133,7 +133,7 @@ public class EdhocClient {
 	private static Set<CBORObject> usedConnectionIds = new HashSet<>();
 	
 	// List of supported cipher suites, in decreasing order of preference.
-	private static List<Integer> supportedCiphersuites = new ArrayList<Integer>();
+	private static List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 	
 	// The collection of application profiles - The lookup key is the full URI of the EDHOC resource
 	private static HashMap<String, AppProfile> appProfiles = new HashMap<String, AppProfile>();
@@ -189,7 +189,7 @@ public class EdhocClient {
 		// Use to dynamically generate a key pair
 		// keyPair = Util.generateKeyPair(keyCurve);
 		
-		// Add the supported ciphersuites
+		// Add the supported cipher suites
 		setupSupportedCipherSuites();
 
 		// Set up the authentication credentials for this peer and the other peer
@@ -246,7 +246,7 @@ public class EdhocClient {
 		// Prepare the set of information for this EDHOC endpoint
 		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCreds, creds, keyPairs, peerPublicKeys,
 																	peerCredentials, edhocSessions, usedConnectionIds,
-																	supportedCiphersuites, db, edhocURI,
+																	supportedCipherSuites, db, edhocURI,
 																	OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE,
 																	appProfiles, edp);
 		
@@ -368,12 +368,12 @@ public class EdhocClient {
 																		 edhocEndpointInfo.getKeyPairs(),
 																		 edhocEndpointInfo.getIdCreds(),
 																		 edhocEndpointInfo.getCreds(),
-                 														 edhocEndpointInfo.getSupportedCiphersuites(),
+                 														 edhocEndpointInfo.getSupportedCipherSuites(),
                  														 edhocEndpointInfo.getUsedConnectionIds(),
                  														 appProfile, edhocEndpointInfo.getEdp(), db);
 		
-		// At this point, the initiator may overwrite the information in the EDHOC session about the supported ciphersuites
-		// and the selected ciphersuite, based on a previously received EDHOC Error Message
+		// At this point, the initiator may overwrite the information in the EDHOC session about the supported cipher suites
+		// and the selected cipher suite, based on a previously received EDHOC Error Message
 		
         byte[] nextPayload = MessageProcessor.writeMessage1(session, ead1);
         
@@ -457,7 +457,7 @@ public class EdhocClient {
         // The received message is an EDHOC Error Message
         if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
         	
-        	List<Integer> peerSupportedCiphersuites = new ArrayList<Integer>();
+        	List<Integer> peerSupportedCipherSuites = new ArrayList<Integer>();
         	
         	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload, connectionIdentifier, edhocSessions);
         	
@@ -482,19 +482,19 @@ public class EdhocClient {
         		    CBORObject suitesR = objectList[1];
         		    if (suitesR.getType() == CBORType.Integer) {
         		    	int suite = suitesR.AsInt32();
-    		    		peerSupportedCiphersuites.add(Integer.valueOf(suite));
-    		    		session.setPeerSupportedCipherSuites(peerSupportedCiphersuites);
+    		    		peerSupportedCipherSuites.add(Integer.valueOf(suite));
+    		    		session.setPeerSupportedCipherSuites(peerSupportedCipherSuites);
         		        System.out.println("SUITES_R: " + suitesR.AsInt32() + "\n");
         		    }
         		    else if (suitesR.getType() == CBORType.Array) {
         		        System.out.print("SUITES_R: [ " );
         		        for (int i = 0; i < suitesR.size(); i++) {
         		        	int suite = suitesR.get(i).AsInt32();
-    		        		peerSupportedCiphersuites.add(Integer.valueOf(suite));
+    		        		peerSupportedCipherSuites.add(Integer.valueOf(suite));
         		            System.out.print(suitesR.get(i).AsInt32() + " " );
         		        }
         		        System.out.println("]\n");
-        		        session.setPeerSupportedCipherSuites(peerSupportedCiphersuites);
+        		        session.setPeerSupportedCipherSuites(peerSupportedCipherSuites);
         		    }
         		}
 		    	
@@ -592,9 +592,9 @@ public class EdhocClient {
 				        // The Sender ID of this peer is the EDHOC connection identifier of the other peer
 				        byte[] senderId = session.getPeerConnectionId(); // v-14 identifiers
 				        
-				        int selectedCiphersuite = session.getSelectedCiphersuite();
-				        AlgorithmID alg = EdhocSession.getAppAEAD(selectedCiphersuite);
-				        AlgorithmID hkdf = EdhocSession.getAppHkdf(selectedCiphersuite);
+				        int selectedCipherSuite = session.getSelectedCipherSuite();
+				        AlgorithmID alg = EdhocSession.getAppAEAD(selectedCipherSuite);
+				        AlgorithmID hkdf = EdhocSession.getAppHkdf(selectedCipherSuite);
 				        
 				        OSCoreCtx ctx = null;
 				        byte[] recipientId = connectionIdentifier;
@@ -1015,11 +1015,11 @@ public class EdhocClient {
 	
 	private static void setupSupportedCipherSuites() {
 		
-		// Add the supported ciphersuites in decreasing order of preference
-		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_0);
-		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_1);
-		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_2);
-		supportedCiphersuites.add(Constants.EDHOC_CIPHER_SUITE_3);
+		// Add the supported cipher suites in decreasing order of preference
+		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_0);
+		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_1);
+		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_2);
+		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_3);
 	
 	}
 	
@@ -1046,8 +1046,8 @@ public class EdhocClient {
 	    
 		// Add one authentication credential for curve Ed25519 and one for curve X25519
 		
-		if (supportedCiphersuites.contains(Integer.valueOf(Constants.EDHOC_CIPHER_SUITE_0)) ||
-			supportedCiphersuites.contains(Integer.valueOf(Constants.EDHOC_CIPHER_SUITE_1))) {
+		if (supportedCipherSuites.contains(Integer.valueOf(Constants.EDHOC_CIPHER_SUITE_0)) ||
+			supportedCipherSuites.contains(Integer.valueOf(Constants.EDHOC_CIPHER_SUITE_1))) {
 
 			
 			// Curve Ed25519
@@ -1211,8 +1211,8 @@ public class EdhocClient {
 
 
 		// Add two authentication credentials for curve P-256 (one for signing only, one for ECDH only)
-		if (supportedCiphersuites.contains(Integer.valueOf(Constants.EDHOC_CIPHER_SUITE_2)) ||
-			supportedCiphersuites.contains(Integer.valueOf(Constants.EDHOC_CIPHER_SUITE_3))) {
+		if (supportedCipherSuites.contains(Integer.valueOf(Constants.EDHOC_CIPHER_SUITE_2)) ||
+			supportedCipherSuites.contains(Integer.valueOf(Constants.EDHOC_CIPHER_SUITE_3))) {
 		
 			// Signing authentication credential
 			
