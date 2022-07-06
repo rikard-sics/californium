@@ -4122,7 +4122,7 @@ public class MessageProcessor {
         System.arraycopy(cR, 0, hashInput, offset, cR.length);
         offset += cR.length;
         System.arraycopy(hashMessage1, 0, hashInput, offset, hashMessage1.length);
-        
+		Util.nicePrint("Input to calculate TH_2", hashInput);
         try {
 			th2 = Util.computeHash(hashInput, hashAlgorithm);
 		} catch (NoSuchAlgorithmException e) {
@@ -4156,6 +4156,7 @@ public class MessageProcessor {
         System.arraycopy(th2, 0, hashInput, offset, th2.length);
         offset += th2.length;
         System.arraycopy(plaintext2, 0, hashInput, offset, plaintext2.length);
+		Util.nicePrint("Input to calculate TH_3", hashInput);
         try {
 			th3 = Util.computeHash(hashInput, hashAlgorithm);
 		} catch (NoSuchAlgorithmException e) {
@@ -4187,6 +4188,7 @@ public class MessageProcessor {
         byte[] hashInput = new byte[inputLength];
         System.arraycopy(th3, 0, hashInput, 0, th3.length);
         System.arraycopy(plaintext3, 0, hashInput, th3.length, plaintext3.length);
+		Util.nicePrint("Input to calculate TH_4", hashInput);
         try {
         	th4 = Util.computeHash(hashInput, hashAlgorithm);
 		} catch (NoSuchAlgorithmException e) {
