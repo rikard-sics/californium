@@ -28,11 +28,11 @@ import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.StringUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
-import net.i2p.crypto.eddsa.Utils;
 import net.i2p.crypto.eddsa.math.Field;
 import net.i2p.crypto.eddsa.math.FieldElement;
 import net.i2p.crypto.eddsa.math.bigint.BigIntegerFieldElement;
@@ -56,7 +56,7 @@ public class KeyRemappingTest {
 
 	// Create the ed25519 field
 	private static Field ed25519Field = new Field(256, // b
-			Utils.hexToBytes("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
+			StringUtil.hex2ByteArray("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
 			new BigIntegerLittleEndianEncoding());
 
 	// Install crypto provider for EdDSA
@@ -128,8 +128,8 @@ public class KeyRemappingTest {
 		System.out.println("y from COSE key: " + y_fromKey);
 		System.out.println("COSE key X param_: " + myKey.get(KeyKeys.OKP_X));
 
-		System.out.println("y from COSE key (alt) (bytes): " + Utils.bytesToHex(y_fromKeyAlt.toByteArray()));
-		System.out.println("y from COSE key (bytes): " + Utils.bytesToHex(y_fromKey.toByteArray()));
+		System.out.println("y from COSE key (alt) (bytes): " + StringUtil.byteArray2HexString(y_fromKeyAlt.toByteArray()));
+		System.out.println("y from COSE key (bytes): " + StringUtil.byteArray2HexString(y_fromKey.toByteArray()));
 
 		// Check that calculating y in both ways give the same result
 		assertArrayEquals(y_fromKeyAlt.toByteArray(), y_fromKey.toByteArray());
@@ -177,8 +177,8 @@ public class KeyRemappingTest {
 		// Calculate the X value (output)
 		FieldElement resultX = KeyRemapping.curve25519uToWei25519X(u);
 
-		System.out.println("Correct " + Utils.bytesToHex(expectedX.toByteArray()));
-		System.out.println("Result " + Utils.bytesToHex(resultX.toByteArray()));
+		System.out.println("Correct " + StringUtil.byteArray2HexString(expectedX.toByteArray()));
+		System.out.println("Result " + StringUtil.byteArray2HexString(resultX.toByteArray()));
 
 		assertArrayEquals(expectedX.toByteArray(), resultX.toByteArray());
 	}
@@ -199,8 +199,8 @@ public class KeyRemappingTest {
 		// Calculate the Y value (output)
 		FieldElement resultY = KeyRemapping.curve25519vToWei25519Y(v);
 
-		System.out.println("Correct " + Utils.bytesToHex(expectedY.toByteArray()));
-		System.out.println("Result " + Utils.bytesToHex(resultY.toByteArray()));
+		System.out.println("Correct " + StringUtil.byteArray2HexString(expectedY.toByteArray()));
+		System.out.println("Result " + StringUtil.byteArray2HexString(resultY.toByteArray()));
 
 		assertArrayEquals(expectedY.toByteArray(), resultY.toByteArray());
 	}
@@ -220,8 +220,8 @@ public class KeyRemappingTest {
 		// Calculate the u value (output)
 		FieldElement resultU = KeyRemapping.wei25519XToCurve25519u(X);
 
-		System.out.println("Correct " + Utils.bytesToHex(expectedU.toByteArray()));
-		System.out.println("Result " + Utils.bytesToHex(resultU.toByteArray()));
+		System.out.println("Correct " + StringUtil.byteArray2HexString(expectedU.toByteArray()));
+		System.out.println("Result " + StringUtil.byteArray2HexString(resultU.toByteArray()));
 
 		assertArrayEquals(expectedU.toByteArray(), resultU.toByteArray());
 	}
@@ -242,8 +242,8 @@ public class KeyRemappingTest {
 		// Calculate the v value (output)
 		FieldElement resultV = KeyRemapping.wei25519YToCurve25519v(Y);
 
-		System.out.println("Correct " + Utils.bytesToHex(expectedV.toByteArray()));
-		System.out.println("Result " + Utils.bytesToHex(resultV.toByteArray()));
+		System.out.println("Correct " + StringUtil.byteArray2HexString(expectedV.toByteArray()));
+		System.out.println("Result " + StringUtil.byteArray2HexString(resultV.toByteArray()));
 
 		assertArrayEquals(expectedV.toByteArray(), resultV.toByteArray());
 	}
@@ -263,8 +263,8 @@ public class KeyRemappingTest {
 
 		FieldElement calculatedX = KeyRemapping.edwards25519yToWei25519X(y);
 
-		System.out.println("Correct " + Utils.bytesToHex(expectedX.toByteArray()));
-		System.out.println("Result " + Utils.bytesToHex(calculatedX.toByteArray()));
+		System.out.println("Correct " + StringUtil.byteArray2HexString(expectedX.toByteArray()));
+		System.out.println("Result " + StringUtil.byteArray2HexString(calculatedX.toByteArray()));
 
 		assertArrayEquals(expectedX.toByteArray(), calculatedX.toByteArray());
 
@@ -289,8 +289,8 @@ public class KeyRemappingTest {
 
 		FieldElement calculatedY = KeyRemapping.edwards25519xToWei25519Y(x, y);
 
-		System.out.println("Correct " + Utils.bytesToHex(expectedY.toByteArray()));
-		System.out.println("Result " + Utils.bytesToHex(calculatedY.toByteArray()));
+		System.out.println("Correct " + StringUtil.byteArray2HexString(expectedY.toByteArray()));
+		System.out.println("Result " + StringUtil.byteArray2HexString(calculatedY.toByteArray()));
 
 		assertArrayEquals(expectedY.toByteArray(), calculatedY.toByteArray());
 
@@ -311,8 +311,8 @@ public class KeyRemappingTest {
 
 		FieldElement calculatedY = KeyRemapping.wei25519XToEdwards25519y(X);
 
-		System.out.println("Correct " + Utils.bytesToHex(expectedY.toByteArray()));
-		System.out.println("Result " + Utils.bytesToHex(calculatedY.toByteArray()));
+		System.out.println("Correct " + StringUtil.byteArray2HexString(expectedY.toByteArray()));
+		System.out.println("Result " + StringUtil.byteArray2HexString(calculatedY.toByteArray()));
 
 		assertArrayEquals(expectedY.toByteArray(), calculatedY.toByteArray());
 
@@ -337,8 +337,8 @@ public class KeyRemappingTest {
 
 		FieldElement calculatedX = KeyRemapping.wei25519YToEdwards25519x(Y, X);
 
-		System.out.println("Correct " + Utils.bytesToHex(expectedX.toByteArray()));
-		System.out.println("Result " + Utils.bytesToHex(calculatedX.toByteArray()));
+		System.out.println("Correct " + StringUtil.byteArray2HexString(expectedX.toByteArray()));
+		System.out.println("Result " + StringUtil.byteArray2HexString(calculatedX.toByteArray()));
 
 		assertArrayEquals(expectedX.toByteArray(), calculatedX.toByteArray());
 

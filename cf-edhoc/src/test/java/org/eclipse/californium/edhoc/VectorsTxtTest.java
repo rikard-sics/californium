@@ -30,6 +30,7 @@ import java.util.Set;
 
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -38,8 +39,6 @@ import org.junit.Test;
 
 import com.upokecenter.cbor.CBORException;
 import com.upokecenter.cbor.CBORObject;
-
-import net.i2p.crypto.eddsa.Utils;
 
 /**
  * Class with JUnits to test the extended EDHOC test vectors from:
@@ -106,29 +105,29 @@ public class VectorsTxtTest {
 			} else if (line.startsWith(initiatorEphemeralPrivateLabel)) {
 				line = br.readLine() + br.readLine();
 
-				byte[] initiatorEphemeralPrivate = Utils.hexToBytes(line.replace(" ", ""));
+				byte[] initiatorEphemeralPrivate = StringUtil.hex2ByteArray(line.replace(" ", ""));
 				initiatorEphemeralPrivateList.add(currentVector, initiatorEphemeralPrivate);
 
 			} else if (line.startsWith(initiatorEphemeralPublicLabel)) {
 				line = br.readLine() + br.readLine();
 
-				byte[] initiatorEphemeralPublic = Utils.hexToBytes(line.replace(" ", ""));
+				byte[] initiatorEphemeralPublic = StringUtil.hex2ByteArray(line.replace(" ", ""));
 				initiatorEphemeralPublicList.add(currentVector, initiatorEphemeralPublic);
 
 			} else if (line.startsWith(connectionIdLabel)) {
 				line = br.readLine();
 
-				byte[] connectionId = Utils.hexToBytes(line.replace(" ", ""));
+				byte[] connectionId = StringUtil.hex2ByteArray(line.replace(" ", ""));
 				connectionIdList.add(currentVector, CBORObject.DecodeFromBytes(connectionId));
 			} else if (line.startsWith(message1Label)) {
 				line = br.readLine() + br.readLine() + br.readLine();
 
-				byte[] message1 = Utils.hexToBytes(line.replace(" ", ""));
+				byte[] message1 = StringUtil.hex2ByteArray(line.replace(" ", ""));
 				message1List.add(currentVector, message1);
 			} else if (line.startsWith(ad1Label)) {
 				line = br.readLine();
 
-				byte[] ad1 = Utils.hexToBytes(line.replace(" ", ""));
+				byte[] ad1 = StringUtil.hex2ByteArray(line.replace(" ", ""));
 				ad1List.add(currentVector, ad1);
 
 			} else if (line.startsWith(newVectorSectionLabel)) {
@@ -158,7 +157,7 @@ public class VectorsTxtTest {
 	 * @return a list of integers contained
 	 */
 	private static List<Integer> parseUncompressedSuitesI(byte[] uncompressedSuitesI) {
-		System.out.println("Suites: " + Utils.bytesToHex(uncompressedSuitesI));
+		System.out.println("Suites: " + StringUtil.byteArray2HexString(uncompressedSuitesI));
 		CBORObject cborArray = CBORObject.DecodeFromBytes(uncompressedSuitesI);
 		List<Integer> outputList = new ArrayList<Integer>();
 
@@ -263,18 +262,18 @@ public class VectorsTxtTest {
 
 		// Print parameters used
 		System.out.println("methodCorr " + methodCorr);
-		System.out.println("connectionId " + Utils.bytesToHex(connectionId)); // v-14 identifiers
-		System.out.println("ead1 " + Utils.bytesToHex(ead1));
-		System.out.println("privateEkeyBytes " + Utils.bytesToHex(privateEkeyBytes));
-		System.out.println("publicEkeyBytes " + Utils.bytesToHex(publicEkeyBytes));
+		System.out.println("connectionId " + StringUtil.byteArray2HexString(connectionId)); // v-14 identifiers
+		System.out.println("ead1 " + StringUtil.byteArray2HexString(ead1));
+		System.out.println("privateEkeyBytes " + StringUtil.byteArray2HexString(privateEkeyBytes));
+		System.out.println("publicEkeyBytes " + StringUtil.byteArray2HexString(publicEkeyBytes));
 		System.out.print("Cipher suites: ");
 		for (int i = 0; i < cipherSuites.size(); i++) {
 			System.out.print(cipherSuites.get(i) + " ");
 		}
 		System.out.println("");
 
-		System.out.println("Our message1      " + Utils.bytesToHex(message1));
-		System.out.println("Expected message1 " + Utils.bytesToHex(expectedMessage1));
+		System.out.println("Our message1      " + StringUtil.byteArray2HexString(message1));
+		System.out.println("Expected message1 " + StringUtil.byteArray2HexString(expectedMessage1));
 
 		Assert.assertArrayEquals("Failed on test vector " + index, expectedMessage1, message1);
 	}

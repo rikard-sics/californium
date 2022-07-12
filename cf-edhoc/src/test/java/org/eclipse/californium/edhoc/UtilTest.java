@@ -35,6 +35,7 @@ import org.eclipse.californium.cose.EncryptCommon;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.elements.util.Base64;
 import org.junit.Assert;
 import org.junit.Test;
@@ -42,7 +43,6 @@ import org.junit.Test;
 import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
-import net.i2p.crypto.eddsa.Utils;
 
 public class UtilTest {
 
@@ -57,7 +57,7 @@ public class UtilTest {
 	public void testComputerHashSha256() throws NoSuchAlgorithmException {
 		byte[] data = new byte[] { 0x61, 0x62, 0x63 };
 		byte[] hash = Util.computeHash(data, "SHA-256");
-		byte[] expected = Utils.hexToBytes("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+		byte[] expected = StringUtil.hex2ByteArray("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
 
 		Assert.assertArrayEquals(expected, hash);
 	}
@@ -73,7 +73,7 @@ public class UtilTest {
 	public void testComputerHashSha512() throws NoSuchAlgorithmException {
 		byte[] data = new byte[] { 0x61, 0x62, 0x63 };
 		byte[] hash = Util.computeHash(data, "SHA-512");
-		byte[] expected = Utils.hexToBytes(
+		byte[] expected = StringUtil.hex2ByteArray(
 				"ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
 
 		Assert.assertArrayEquals(expected, hash);
@@ -138,7 +138,7 @@ public class UtilTest {
 		// Sign
 		byte[] mySignature = Util.computeSignature(idCredX, externalData, payloadToSign, keyPair);
 
-		byte[] expectedSignature = Utils.hexToBytes(
+		byte[] expectedSignature = StringUtil.hex2ByteArray(
 				"7cee3b39da704ce5fd77052235d9f28b7e4d747abfad9e57293be923249406c0f115c1cf6aab5d893ba9b75c0c3b6274f6d8a9340a306ee2571dfe929c377e09");
 		Assert.assertArrayEquals(expectedSignature, mySignature);
 
@@ -206,7 +206,7 @@ public class UtilTest {
 		// Perform the encryption
 		byte[] myCiphertext = Util.encrypt(idCredX, externalData, payloadToEncrypt, encryptionAlg, iv, symmetricKey);
 
-		byte[] expectedCiphertext = Utils.hexToBytes("b1e139edeec6d38f707e1b35b72b");
+		byte[] expectedCiphertext = StringUtil.hex2ByteArray("b1e139edeec6d38f707e1b35b72b");
 		Assert.assertArrayEquals(expectedCiphertext, myCiphertext);
 
 		// Perform decryption
@@ -282,7 +282,7 @@ public class UtilTest {
 		valueList.add(CBORObject.FromObject(1));
 		valueList.add(CBORObject.FromObject(4));
 		valueList.add(CBORObject
-				.FromObject(Utils.hexToBytes("b1a3e89460e88d3a8d54211dc95f0b903ff205eb71912d6db8f4af980d2db83a")));
+				.FromObject(StringUtil.hex2ByteArray("b1a3e89460e88d3a8d54211dc95f0b903ff205eb71912d6db8f4af980d2db83a")));
 		valueList.add(CBORObject.FromObject("42-50-31-FF-EF-37-32-39"));
 
 		// Build equivalent CBOR map normally
@@ -290,7 +290,7 @@ public class UtilTest {
 		comparisonMap.Add(CBORObject.FromObject(1), CBORObject.FromObject(1));
 		comparisonMap.Add(CBORObject.FromObject(-1), CBORObject.FromObject(4));
 		comparisonMap.Add(CBORObject.FromObject(-2), CBORObject
-				.FromObject(Utils.hexToBytes("b1a3e89460e88d3a8d54211dc95f0b903ff205eb71912d6db8f4af980d2db83a")));
+				.FromObject(StringUtil.hex2ByteArray("b1a3e89460e88d3a8d54211dc95f0b903ff205eb71912d6db8f4af980d2db83a")));
 		comparisonMap.Add(CBORObject.FromObject("subject name"), CBORObject.FromObject("42-50-31-FF-EF-37-32-39"));
 
 		// Generate the bytes of the map
@@ -309,7 +309,7 @@ public class UtilTest {
 		}
 
 		// Finally compare with the expected bytes
-		byte[] expectedBytes = Utils.hexToBytes(
+		byte[] expectedBytes = StringUtil.hex2ByteArray(
 				"a401012004215820b1a3e89460e88d3a8d54211dc95f0b903ff205eb71912d6db8f4af980d2db83a6c7375626a656374206e616d657734322d35302d33312d46462d45462d33372d33322d3339");
 		Assert.assertArrayEquals(expectedBytes, mapBytes);
 	}
