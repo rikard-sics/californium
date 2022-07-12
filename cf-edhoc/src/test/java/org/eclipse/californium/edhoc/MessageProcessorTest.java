@@ -655,7 +655,7 @@ public class MessageProcessorTest {
 		// Compare with the expected value from the test vectors
 		
 		byte[] expectedMasterSecret = Utils.hexToBytes("d6dd09b137359f0ad215dd021962c05c");
-		byte[] expectedMasterSalt = Utils.hexToBytes("67ecd7d5bb494617");
+		byte[] expectedMasterSalt = Utils.hexToBytes("87b3ebbbe17eb4b9");
        
        	Util.nicePrint("OSCORE Master Secret", masterSecret);
         Util.nicePrint("OSCORE Master Salt", masterSalt);
@@ -688,7 +688,7 @@ public class MessageProcessorTest {
         Util.nicePrint("OSCORE Master Salt", masterSalt);
         
 		expectedMasterSecret = Utils.hexToBytes("66ecb0db0a9e496f67c0b55554796e3e");
-		expectedMasterSalt = Utils.hexToBytes("18f57dc34ed54917");
+		expectedMasterSalt = Utils.hexToBytes("18f323ad2efc6929");
         
         Assert.assertArrayEquals(expectedMasterSecret, masterSecret);
         Assert.assertArrayEquals(expectedMasterSalt, masterSalt);
@@ -1207,7 +1207,7 @@ public class MessageProcessorTest {
 		// Compare with the expected value from the test vectors
         
 		byte[] expectedMasterSecret = Utils.hexToBytes("f3fb2149fd08c18a40938ae5703bfb38");
-		byte[] expectedMasterSalt = Utils.hexToBytes("25549b7255cafa1d");
+		byte[] expectedMasterSalt = Utils.hexToBytes("20415135279a4ee4");
 
        	Util.nicePrint("OSCORE Master Secret", masterSecret);
         Util.nicePrint("OSCORE Master Salt", masterSalt);
@@ -1237,7 +1237,7 @@ public class MessageProcessorTest {
         // Compare with the expected value from the test vectors
         
 		expectedMasterSecret = Utils.hexToBytes("5d96c2fb5c1ad12e324a59f4a4cde25b");
-		expectedMasterSalt = Utils.hexToBytes("3aef12c42700cb60");
+		expectedMasterSalt = Utils.hexToBytes("94129ca9a22f1efc");
 
        	Util.nicePrint("OSCORE Master Secret", masterSecret);
         Util.nicePrint("OSCORE Master Salt", masterSalt);
