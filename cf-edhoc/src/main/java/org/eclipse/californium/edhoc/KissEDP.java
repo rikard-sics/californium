@@ -53,19 +53,19 @@ public class KissEDP implements EDP {
 		
 		for (int i = 0; i < ead.length; i++) {
 			
-			// This element must be an integer indicating the EAD Label
+			// This element must be an integer different than 0, indicating the EAD Label
 			if (i % 2 == 0) {
-				if (ead[i].getType() != CBORType.Integer) {
+				if (ead[i].getType() != CBORType.Integer || ead[i].AsInt32() == 0) {
 					System.out.println("Malformed or invalid data item #" + (i/2));
 					i += 2; // skip the companion data element
 					continue;
 				}
-				System.out.println("The data item #" + (i/2) + " has EAD Label " + ead[i].AsInt32());
+				System.out.println("The EAD item #" + (i/2) + " has EAD Label " + ead[i].AsInt32());
 			}
 			
 			// This element includes the actual EAD Value according to the specified EAD Label
 			if (i % 2 == 1) {
-				Util.nicePrint("The data item #" + (i/2) + " has Value ", ead[i].GetByteString());
+				Util.nicePrint("The EAD item #" + (i/2) + " has Value ", ead[i].GetByteString());
 			}
 			
 		}
