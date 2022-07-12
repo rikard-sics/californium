@@ -25,10 +25,10 @@ import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.StringUtil;
 
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
-import net.i2p.crypto.eddsa.Utils;
 import net.i2p.crypto.eddsa.math.Field;
 import net.i2p.crypto.eddsa.math.FieldElement;
 import net.i2p.crypto.eddsa.math.bigint.BigIntegerFieldElement;
@@ -53,7 +53,7 @@ public class KeyRemapping {
 
 	// Create the ed25519 field
 	private static Field ed25519Field = new Field(256, // b
-			Utils.hexToBytes("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
+			StringUtil.hex2ByteArray("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
 			new BigIntegerLittleEndianEncoding());
 
 	// Value of sqrt(-486664) hardcoded (note that there are 2 roots)
@@ -120,8 +120,8 @@ public class KeyRemapping {
 		System.out.println("y from COSE key: " + y_fromKey);
 		System.out.println("COSE key X param_: " + myKey.get(KeyKeys.OKP_X));
 
-		System.out.println("y from COSE key (alt) (bytes): " + Utils.bytesToHex(y_fromKeyAlt.toByteArray()));
-		System.out.println("y from COSE key (bytes): " + Utils.bytesToHex(y_fromKey.toByteArray()));
+		System.out.println("y from COSE key (alt) (bytes): " + StringUtil.byteArray2HexString(y_fromKeyAlt.toByteArray()));
+		System.out.println("y from COSE key (bytes): " + StringUtil.byteArray2HexString(y_fromKey.toByteArray()));
 
 		// Check that calculating y in both ways give the same result
 		if (Arrays.equals(y_fromKeyAlt.toByteArray(), y_fromKey.toByteArray())) {

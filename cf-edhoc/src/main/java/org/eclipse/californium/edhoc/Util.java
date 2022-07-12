@@ -34,7 +34,7 @@ import org.eclipse.californium.cose.Message;
 import org.eclipse.californium.cose.MessageTag;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.cose.Sign1Message;
-import org.eclipse.californium.elements.util.Base64;
+import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.CoapOSException;
 import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSCoreCtxDB;
@@ -44,7 +44,6 @@ import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
-import net.i2p.crypto.eddsa.Utils;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -92,8 +91,8 @@ public class Util {
         // Debug print
         /*
         System.out.println("Protected attributes: " + msg.getProtectedAttributes().toString());
-        System.out.println("aad                 : " + Utils.bytesToHex(msg.getExternal()));
-        System.out.println("plaintext           : " + Utils.bytesToHex(msg.GetContent()));
+        System.out.println("aad                 : " + StringUtil.byteArray2HexString(msg.getExternal()));
+        System.out.println("plaintext           : " + StringUtil.byteArray2HexString(msg.GetContent()));
         */
         
         // Perform the encryption
@@ -101,7 +100,7 @@ public class Util {
         
         // Debug print
         /*
-        System.out.println("Encrypted content: " + Utils.bytesToHex(msg.getEncryptedContent()));
+        System.out.println("Encrypted content: " + StringUtil.byteArray2HexString(msg.getEncryptedContent()));
         */
         
         return msg.getEncryptedContent();
@@ -147,8 +146,8 @@ public class Util {
         // Debug print
         /*
         System.out.println("Protected attributes: " + msg.getProtectedAttributes().toString());
-        System.out.println("aad                 : " + Utils.bytesToHex(msg.getExternal()));
-        System.out.println("payload             : " + Utils.bytesToHex(msg.GetContent()));
+        System.out.println("aad                 : " + StringUtil.byteArray2HexString(msg.getExternal()));
+        System.out.println("payload             : " + StringUtil.byteArray2HexString(msg.GetContent()));
         */
         
         // Perform the encryption
@@ -156,7 +155,7 @@ public class Util {
         
         // Debug print
         /*
-        System.out.println("Decrypted content: " + Utils.bytesToHex(msg.GetContent()));
+        System.out.println("Decrypted content: " + StringUtil.byteArray2HexString(msg.GetContent()));
         */
         
         return msg.GetContent();
@@ -209,8 +208,8 @@ public class Util {
         // Debug print
         /*
         System.out.println("Protected attributes: " + msg.getProtectedAttributes().toString());
-        System.out.println("aad                 : " + Utils.bytesToHex(msg.getExternal()));
-        System.out.println("payload             : " + Utils.bytesToHex(msg.GetContent()));
+        System.out.println("aad                 : " + StringUtil.byteArray2HexString(msg.getExternal()));
+        System.out.println("payload             : " + StringUtil.byteArray2HexString(msg.GetContent()));
         */
         
         // Compute the signature
@@ -306,8 +305,8 @@ public class Util {
         // Debug print
         /*
         System.out.println("Protected attributes: " + msg.getProtectedAttributes().toString());
-        System.out.println("aad                 : " + Utils.bytesToHex(msg.getExternal()));
-        System.out.println("payload             : " + Utils.bytesToHex(msg.GetContent()));
+        System.out.println("aad                 : " + StringUtil.byteArray2HexString(msg.getExternal()));
+        System.out.println("payload             : " + StringUtil.byteArray2HexString(msg.GetContent()));
         */
         
         // Verify the signature
@@ -806,7 +805,7 @@ public class Util {
 					ctx = db.getContext(connectionId, null);
 				} catch (CoapOSException e) {
 					System.err.println("Found multiple OSCORE Security Contexts with the same Recipient ID " +
-									   Utils.bytesToHex(connectionId) + "\n" + e.getMessage());
+									   StringUtil.byteArray2HexString(connectionId) + "\n" + e.getMessage());
 				}
 	    		if (ctx != null) {
 	    			db.removeContext(ctx);
@@ -900,7 +899,7 @@ public class Util {
     	
     	System.out.println(header + " (" + (content.length) + " bytes):");
     	
-    	String contentStr = Utils.bytesToHex(content);
+    	String contentStr = StringUtil.byteArray2HexString(content).toLowerCase();
     	for (int i = 0; i < (content.length * 2); i++) {
     		if ((i != 0) && (i % 20) == 0)
     	    	System.out.println();
@@ -1162,7 +1161,7 @@ public class Util {
 		claimSetMap.Add(Constants.CWT_CLAIMS_SUB, subjectName);
 		claimSetMap.Add(Constants.CWT_CLAIMS_CNF, cnfMap);
 
-		System.out.println("CCS serialization: " + Utils.bytesToHex(claimSetMap.EncodeToBytes()));
+		System.out.println("CCS serialization: " + StringUtil.byteArray2HexString(claimSetMap.EncodeToBytes()));
 		
         return claimSetMap.EncodeToBytes();
 		

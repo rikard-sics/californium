@@ -50,13 +50,13 @@ import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.StringUtil;
 
 import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
-import net.i2p.crypto.eddsa.Utils;
 import net.i2p.crypto.eddsa.math.Field;
 import net.i2p.crypto.eddsa.math.FieldElement;
 import net.i2p.crypto.eddsa.math.bigint.BigIntegerFieldElement;
@@ -101,7 +101,7 @@ public class SharedSecretCalculation {
 
 	// Create the ed25519 field
 	private static Field ed25519Field = new Field(256, // b
-			Utils.hexToBytes("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
+			StringUtil.hex2ByteArray("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
 			new BigIntegerLittleEndianEncoding());
 
 	/**
@@ -202,13 +202,13 @@ public class SharedSecretCalculation {
 		SecureRandom rand = new SecureRandom();
 
 		X9ECParameters curveParams = CustomNamedCurves.getByName("Curve25519");
-		// byte[] seed =
-		// Utils.hexToBytes("1122334455667788112233445566778811223344556677881122334455667788");
+		// byte[] seed = StringUtil.hex2ByteArray(
+		//  		"1122334455667788112233445566778811223344556677881122334455667788");
 		ECParameterSpec ecSpec = new ECParameterSpec(curveParams.getCurve(), curveParams.getG(), curveParams.getN(),
 				curveParams.getH(), curveParams.getSeed());
 
 		// System.out.println("Spec using seed: " +
-		// Utils.bytesToHex(ecSpec.getSeed()));
+		// StringUtil.byteArray2HexString(ecSpec.getSeed()));
 
 		KeyPairGenerator kpg = null;
 		try {
@@ -227,40 +227,40 @@ public class SharedSecretCalculation {
 
 		// Build the COSE OneKey
 
-		System.out.println("D " + Utils.bytesToHex(privKey.getD().toByteArray()));
-		System.out.println("Seed priv " + Utils.bytesToHex(privKey.getParameters().getSeed()));
-		System.out.println("Seed pub " + Utils.bytesToHex(pubKey.getParameters().getSeed()));
+		System.out.println("D " + StringUtil.byteArray2HexString(privKey.getD().toByteArray()));
+		System.out.println("Seed priv " + StringUtil.byteArray2HexString(privKey.getParameters().getSeed()));
+		System.out.println("Seed pub " + StringUtil.byteArray2HexString(pubKey.getParameters().getSeed()));
 		System.out.println();
 		System.out.println("Q pub " + pubKey.getQ().toString());
-		System.out.println("Q pub uncompressed " + Utils.bytesToHex(pubKey.getQ().getEncoded(false)));
-		System.out.println("Q pub 1st half " + Utils.bytesToHex(Arrays.copyOf(pubKey.getQ().getEncoded(false), 32)));
-		System.out.println("Q compressed   " + Utils.bytesToHex(pubKey.getQ().getEncoded(true)));
-		System.out.println("Sing of v?   " + Utils.bytesToHex(Arrays.copyOf(pubKey.getQ().getEncoded(true), 1)));
+		System.out.println("Q pub uncompressed " + StringUtil.byteArray2HexString(pubKey.getQ().getEncoded(false)));
+		System.out.println("Q pub 1st half " + StringUtil.byteArray2HexString(Arrays.copyOf(pubKey.getQ().getEncoded(false), 32)));
+		System.out.println("Q compressed   " + StringUtil.byteArray2HexString(pubKey.getQ().getEncoded(true)));
+		System.out.println("Sing of v?   " + StringUtil.byteArray2HexString(Arrays.copyOf(pubKey.getQ().getEncoded(true), 1)));
 		System.out
-				.println("Actual U?   " + Utils.bytesToHex(Arrays.copyOfRange(pubKey.getQ().getEncoded(true), 1, 33)));
+				.println("Actual U?   " + StringUtil.byteArray2HexString(Arrays.copyOfRange(pubKey.getQ().getEncoded(true), 1, 33)));
 		System.out.println(
-				"getAffineXCoord " + Utils.bytesToHex(pubKey.getQ().getAffineXCoord().toBigInteger().toByteArray()));
+				"getAffineXCoord " + StringUtil.byteArray2HexString(pubKey.getQ().getAffineXCoord().toBigInteger().toByteArray()));
 		System.out.println(
-				"getAffineYCoord " + Utils.bytesToHex(pubKey.getQ().getAffineYCoord().toBigInteger().toByteArray()));
+				"getAffineYCoord " + StringUtil.byteArray2HexString(pubKey.getQ().getAffineYCoord().toBigInteger().toByteArray()));
 		System.out.println();
 		System.out
-				.println("getRawXCoord " + Utils.bytesToHex(pubKey.getQ().getRawXCoord().toBigInteger().toByteArray()));
+				.println("getRawXCoord " + StringUtil.byteArray2HexString(pubKey.getQ().getRawXCoord().toBigInteger().toByteArray()));
 		System.out
-				.println("getRawYCoord " + Utils.bytesToHex(pubKey.getQ().getRawYCoord().toBigInteger().toByteArray()));
+				.println("getRawYCoord " + StringUtil.byteArray2HexString(pubKey.getQ().getRawYCoord().toBigInteger().toByteArray()));
 		System.out.println();
-		System.out.println("getXCoord " + Utils.bytesToHex(pubKey.getQ().getXCoord().toBigInteger().toByteArray()));
-		System.out.println("getYCoord " + Utils.bytesToHex(pubKey.getQ().getYCoord().toBigInteger().toByteArray()));
+		System.out.println("getXCoord " + StringUtil.byteArray2HexString(pubKey.getQ().getXCoord().toBigInteger().toByteArray()));
+		System.out.println("getYCoord " + StringUtil.byteArray2HexString(pubKey.getQ().getYCoord().toBigInteger().toByteArray()));
 		System.out.println();
-		System.out.println("Pubkey encoded: " + Utils.bytesToHex(pubKey.getEncoded()));
-		System.out.println("Privkey encoded: " + Utils.bytesToHex(privKey.getEncoded()));
+		System.out.println("Pubkey encoded: " + StringUtil.byteArray2HexString(pubKey.getEncoded()));
+		System.out.println("Privkey encoded: " + StringUtil.byteArray2HexString(privKey.getEncoded()));
 		System.out.println();
-		System.out.println("S: " + Utils.bytesToHex(privKey.getS().toByteArray()));
+		System.out.println("S: " + StringUtil.byteArray2HexString(privKey.getS().toByteArray()));
 		System.out.println();
 		privKey.getParameters().getH();
-		System.out.println("H: " + Utils.bytesToHex(privKey.getParameters().getH().toByteArray()));
+		System.out.println("H: " + StringUtil.byteArray2HexString(privKey.getParameters().getH().toByteArray()));
 		System.out.println();
-		System.out.println("Pubkey (Java) encoded: " + Utils.bytesToHex(publicKey.getEncoded()));
-		System.out.println("Privkey (Java) encoded: " + Utils.bytesToHex(privateKey.getEncoded()));
+		System.out.println("Pubkey (Java) encoded: " + StringUtil.byteArray2HexString(publicKey.getEncoded()));
+		System.out.println("Privkey (Java) encoded: " + StringUtil.byteArray2HexString(privateKey.getEncoded()));
 
 		// Get the private D
 		byte[] rgbD = invertArray(privKey.getD().toByteArray());
@@ -553,9 +553,9 @@ public class SharedSecretCalculation {
 		BigInteger root2 = root1.negate().mod(prime);
 
 		// System.out.println("Root1: " +
-		// Utils.bytesToHex(root1.toByteArray()));
+		// StringUtil.byteArray2HexString(root1.toByteArray()));
 		// System.out.println("Root2: " +
-		// Utils.bytesToHex(root2.toByteArray()));
+		// StringUtil.byteArray2HexString(root2.toByteArray()));
 
 		byte[] root1Bytes = root1.toByteArray();
 		byte[] root2Bytes = root2.toByteArray();
@@ -682,9 +682,9 @@ public class SharedSecretCalculation {
 			xBytes = Arrays.copyOfRange(xBytes, 1, 49);
 		}
 
-		// System.out.println("Root1: " + Utils.bytesToHex(root1Bytes));
-		// System.out.println("Root2: " + Utils.bytesToHex(root2Bytes));
-		// System.out.println("X: " + Utils.bytesToHex(xBytes));
+		// System.out.println("Root1: " + StringUtil.byteArray2HexString(root1Bytes));
+		// System.out.println("Root2: " + StringUtil.byteArray2HexString(root2Bytes));
+		// System.out.println("X: " + StringUtil.byteArray2HexString(xBytes));
 		
 		// Now build 2 keys from the potential Y values
 		OneKey possibleKey1 = null;
@@ -860,8 +860,8 @@ public class SharedSecretCalculation {
 			byte[] privateScalar = Arrays.copyOf(privateHash, 32);
 			byte[] rgbD = privateScalar;
 			
-			// System.out.println("D bad: " + Utils.bytesToHex(rgbD_bad));
-			// System.out.println("D good: " + Utils.bytesToHex(rgbD));
+			// System.out.println("D bad: " + StringUtil.byteArray2HexString(rgbD_bad));
+			// System.out.println("D good: " + StringUtil.byteArray2HexString(rgbD));
 			
 			key.add(KeyKeys.OKP_D, CBORObject.FromObject(rgbD));
 		}
@@ -1110,8 +1110,8 @@ public class SharedSecretCalculation {
 
 		byte[] resArray = encodeUCoordinate(inputInt);
 
-		System.out.println("Expected: " + Utils.bytesToHex(correctArray));
-		System.out.println("Actual: " + Utils.bytesToHex(resArray));
+		System.out.println("Expected: " + StringUtil.byteArray2HexString(correctArray));
+		System.out.println("Actual: " + StringUtil.byteArray2HexString(resArray));
 		System.out.println("Same: " + Arrays.equals(correctArray, resArray));
 
 		// --
@@ -1130,8 +1130,8 @@ public class SharedSecretCalculation {
 
 		resArray = encodeUCoordinate(inputInt);
 
-		System.out.println("Expected: " + Utils.bytesToHex(correctArray));
-		System.out.println("Actual: " + Utils.bytesToHex(resArray));
+		System.out.println("Expected: " + StringUtil.byteArray2HexString(correctArray));
+		System.out.println("Actual: " + StringUtil.byteArray2HexString(resArray));
 		System.out.println("Same: " + Arrays.equals(correctArray, resArray));
 
 		/* Test cswap */
@@ -1181,7 +1181,7 @@ public class SharedSecretCalculation {
 
 		byte[] xresult = X25519(k, u);
 
-		System.out.println("R: " + Utils.bytesToHex(xresult));
+		System.out.println("R: " + StringUtil.byteArray2HexString(xresult));
 		System.out.println("X25519 result is correct: " + Arrays.equals(c, xresult));
 
 		/* Test X25519 test vectors */
@@ -1191,35 +1191,35 @@ public class SharedSecretCalculation {
 
 		// First X25519 test vector
 
-		byte[] inputScalar = Utils.hexToBytes("a546e36bf0527c9d3b16154b82465edd62144c0ac1fc5a18506a2244ba449ac4");
-		byte[] inputUCoordinate = Utils.hexToBytes("e6db6867583030db3594c1a424b15f7c726624ec26b3353b10a903a6d0ab1c4c");
-		byte[] outputUCoordinate = Utils.hexToBytes("c3da55379de9c6908e94ea4df28d084f32eccf03491c71f754b4075577a28552");
+		byte[] inputScalar = StringUtil.hex2ByteArray("a546e36bf0527c9d3b16154b82465edd62144c0ac1fc5a18506a2244ba449ac4");
+		byte[] inputUCoordinate = StringUtil.hex2ByteArray("e6db6867583030db3594c1a424b15f7c726624ec26b3353b10a903a6d0ab1c4c");
+		byte[] outputUCoordinate = StringUtil.hex2ByteArray("c3da55379de9c6908e94ea4df28d084f32eccf03491c71f754b4075577a28552");
 
 		byte[] myResult = X25519(inputScalar, inputUCoordinate);
 		System.out.println("First test vector works: " + Arrays.equals(myResult, outputUCoordinate));
 
 		// Second X25519 test vector
 
-		inputScalar = Utils.hexToBytes("4b66e9d4d1b4673c5ad22691957d6af5c11b6421e0ea01d42ca4169e7918ba0d");
-		inputUCoordinate = Utils.hexToBytes("e5210f12786811d3f4b7959d0538ae2c31dbe7106fc03c3efc4cd549c715a493");
-		outputUCoordinate = Utils.hexToBytes("95cbde9476e8907d7aade45cb4b873f88b595a68799fa152e6f8f7647aac7957");
+		inputScalar = StringUtil.hex2ByteArray("4b66e9d4d1b4673c5ad22691957d6af5c11b6421e0ea01d42ca4169e7918ba0d");
+		inputUCoordinate = StringUtil.hex2ByteArray("e5210f12786811d3f4b7959d0538ae2c31dbe7106fc03c3efc4cd549c715a493");
+		outputUCoordinate = StringUtil.hex2ByteArray("95cbde9476e8907d7aade45cb4b873f88b595a68799fa152e6f8f7647aac7957");
 
 		myResult = X25519(inputScalar, inputUCoordinate);
 		System.out.println("Second test vector works: " + Arrays.equals(myResult, outputUCoordinate));
 
 		// Third X25519 test vector (iterations)
 
-		inputScalar = Utils.hexToBytes("0900000000000000000000000000000000000000000000000000000000000000");
-		inputUCoordinate = Utils.hexToBytes("0900000000000000000000000000000000000000000000000000000000000000");
-		byte[] resultIteration1 = Utils.hexToBytes("422c8e7a6227d7bca1350b3e2bb7279f7897b87bb6854b783c60e80311ae3079");
+		inputScalar = StringUtil.hex2ByteArray("0900000000000000000000000000000000000000000000000000000000000000");
+		inputUCoordinate = StringUtil.hex2ByteArray("0900000000000000000000000000000000000000000000000000000000000000");
+		byte[] resultIteration1 = StringUtil.hex2ByteArray("422c8e7a6227d7bca1350b3e2bb7279f7897b87bb6854b783c60e80311ae3079");
 
 		byte[] myResult_1 = X25519(inputScalar, inputUCoordinate);
 		System.out.println("Third test vector works (1 iteration): " + Arrays.equals(myResult_1, resultIteration1));
 
 		// 1000 iterations
 
-		byte[] tU = Utils.hexToBytes("0900000000000000000000000000000000000000000000000000000000000000");
-		byte[] tK = Utils.hexToBytes("0900000000000000000000000000000000000000000000000000000000000000");
+		byte[] tU = StringUtil.hex2ByteArray("0900000000000000000000000000000000000000000000000000000000000000");
+		byte[] tK = StringUtil.hex2ByteArray("0900000000000000000000000000000000000000000000000000000000000000");
 		byte[] tR = null;
 		for (int i = 0; i < 1000; i++) {
 
@@ -1229,8 +1229,8 @@ public class SharedSecretCalculation {
 
 		}
 
-		byte[] resultIteration1000 = Utils
-				.hexToBytes("684cf59ba83309552800ef566f2f4d3c1c3887c49360e3875f2eb94d99532c51");
+		byte[] resultIteration1000 = StringUtil.hex2ByteArray(
+				"684cf59ba83309552800ef566f2f4d3c1c3887c49360e3875f2eb94d99532c51");
 		byte[] myResult_1000 = tK;
 
 		System.out.println(
@@ -1243,8 +1243,8 @@ public class SharedSecretCalculation {
 
 		if (runMillionTest) {
 
-			tU = Utils.hexToBytes("0900000000000000000000000000000000000000000000000000000000000000");
-			tK = Utils.hexToBytes("0900000000000000000000000000000000000000000000000000000000000000");
+			tU = StringUtil.hex2ByteArray("0900000000000000000000000000000000000000000000000000000000000000");
+			tK = StringUtil.hex2ByteArray("0900000000000000000000000000000000000000000000000000000000000000");
 			tR = null;
 			long startTime = System.nanoTime();
 			for (int i = 0; i < 1000000; i++) {
@@ -1259,8 +1259,8 @@ public class SharedSecretCalculation {
 				}
 			}
 
-			byte[] resultIteration1000000 = Utils
-					.hexToBytes("7c3911e0ab2586fd864497297e575e6f3bc601c0883c30df5f4dd2d24f665424");
+			byte[] resultIteration1000000 = StringUtil.hex2ByteArray(
+					"7c3911e0ab2586fd864497297e575e6f3bc601c0883c30df5f4dd2d24f665424");
 			byte[] myResult_1000000 = tK;
 
 			System.out.println("Third test vector works (1 000 000 iterations): "
@@ -1270,13 +1270,13 @@ public class SharedSecretCalculation {
 		/* Test Diffie Hellman */
 		// See https://tools.ietf.org/html/rfc7748#section-6.1
 
-		byte[] private_key_a = Utils.hexToBytes("77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a");
-		byte[] public_key_KA = Utils.hexToBytes("8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a");
+		byte[] private_key_a = StringUtil.hex2ByteArray("77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a");
+		byte[] public_key_KA = StringUtil.hex2ByteArray("8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a");
 
-		byte[] private_key_b = Utils.hexToBytes("5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb");
-		byte[] public_key_KB = Utils.hexToBytes("de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f");
+		byte[] private_key_b = StringUtil.hex2ByteArray("5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb");
+		byte[] public_key_KB = StringUtil.hex2ByteArray("de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f");
 
-		byte[] nine = Utils.hexToBytes("0900000000000000000000000000000000000000000000000000000000000000");
+		byte[] nine = StringUtil.hex2ByteArray("0900000000000000000000000000000000000000000000000000000000000000");
 
 		// Check public keys
 		byte[] public_key_KA_calc = X25519(private_key_a, nine);
@@ -1285,7 +1285,7 @@ public class SharedSecretCalculation {
 		System.out.println("Public Key KA correct: " + Arrays.equals(public_key_KA_calc, public_key_KA));
 		System.out.println("Public Key KB correct: " + Arrays.equals(public_key_KB_calc, public_key_KB));
 
-		byte[] sharedSecret = Utils.hexToBytes("4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742");
+		byte[] sharedSecret = StringUtil.hex2ByteArray("4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742");
 
 		// Check shared secret
 		byte[] sharedSecret_calc_one = X25519(private_key_a, public_key_KB);
@@ -1327,10 +1327,10 @@ public class SharedSecretCalculation {
 		byte[] privateKey1H = ((EdDSAPrivateKey) myKey1.AsPrivateKey()).getH();
 		privateKey1H = Arrays.copyOf(privateKey1H, 32);
 
-		System.out.println("H priv1: " + Utils.bytesToHex(privateKey1H));
+		System.out.println("H priv1: " + StringUtil.byteArray2HexString(privateKey1H));
 		System.out.println("u from key one (public part): " + uuu1);
 		// System.out.println("From key one (private part): " +
-		// Utils.bytesToHex(privateKey1));
+		// StringUtil.byteArray2HexString(privateKey1H));
 
 		// Key two
 
@@ -1346,18 +1346,18 @@ public class SharedSecretCalculation {
 		byte[] privateKey2H = ((EdDSAPrivateKey) myKey2.AsPrivateKey()).getH();
 		privateKey2H = Arrays.copyOf(privateKey2H, 32);
 
-		System.out.println("H priv2: " + Utils.bytesToHex(privateKey2H));
+		System.out.println("H priv2: " + StringUtil.byteArray2HexString(privateKey2H));
 		System.out.println("u from key two (public part): " + uuu2);
 		// System.out.println("From key two (private part): " +
-		// Utils.bytesToHex(privateKey2));
+		// StringUtil.byteArray2HexString(privateKey2H));
 
 		// Calculated shared secrets
 		// X25519(my private scalar, your public key U)
 		byte[] sharedSecret1 = X25519(privateKey1H, publicKey2U);
 		byte[] sharedSecret2 = X25519(privateKey2H, publicKey1U);
 
-		System.out.println("Shared secret 1: " + Utils.bytesToHex(sharedSecret1));
-		System.out.println("Shared secret 2: " + Utils.bytesToHex(sharedSecret2));
+		System.out.println("Shared secret 1: " + StringUtil.byteArray2HexString(sharedSecret1));
+		System.out.println("Shared secret 2: " + StringUtil.byteArray2HexString(sharedSecret2));
 		System.out.println("Shared secrets match: " + Arrays.equals(sharedSecret1, sharedSecret2));
 
 		/* End testing */
@@ -1445,8 +1445,8 @@ public class SharedSecretCalculation {
 		byte[] sharedSecret1 = X25519(bob_private_scalar, alice_u_array);
 		byte[] sharedSecret2 = X25519(alice_private_scalar, bob_u_array);
 
-		System.out.println("Shared secret 1: " + Utils.bytesToHex(sharedSecret1));
-		System.out.println("Shared secret 2: " + Utils.bytesToHex(sharedSecret2));
+		System.out.println("Shared secret 1: " + StringUtil.byteArray2HexString(sharedSecret1));
+		System.out.println("Shared secret 2: " + StringUtil.byteArray2HexString(sharedSecret2));
 		System.out.println("Shared secrets match: " + Arrays.equals(sharedSecret1, sharedSecret2));
 
 	}
