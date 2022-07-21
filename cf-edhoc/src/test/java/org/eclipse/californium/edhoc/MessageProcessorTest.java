@@ -667,7 +667,7 @@ public class MessageProcessorTest {
 		byte[] message3 = MessageProcessor.writeMessage3(session, ead3);
 
 		// Compare with the expected value from the test vectors
-		// Note: the actual EDHOC message 3 starts with 0x58. The bytes 0x1718 (CBOR encoding for h'18') is prepended as C_R,
+		// Note: the actual EDHOC message 3 starts with 0x58. The bytes 0x4118 (CBOR encoding for h'18') is prepended as C_R,
 		//       in order to pass the check against what returned by the EDHOC engine, to be sent as a CoAP request payload. 
 		byte[] expectedMessage3 = StringUtil.hex2ByteArray(
 				"411858582fc19556f67c929a9734789ecec60aaf8f50324fc31bd07801d57cec00d3bf1ea4dbafac342fe1686cbcea0cec4502959805b153819e274638cc23bbc4f4e39477f8a8fff5caaf5e32d4ca4e7c748d2b519d21b8d7577248");
