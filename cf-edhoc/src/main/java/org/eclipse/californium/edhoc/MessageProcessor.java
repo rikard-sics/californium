@@ -3057,7 +3057,7 @@ public class MessageProcessor {
 		// v-14 identifiers
 		connectionIdentifierResponder = Util.getConnectionId(usedConnectionIds, oscoreDB, connectionIdentifierInitiator);
 		// Forced for testing
-		// connectionIdentifier = new byte[] {(byte) 0x1d};
+		// connectionIdentifierResponder = new byte[] {(byte) 0x01};
 		
 		// v-14 identifiers
 		EdhocSession mySession = new EdhocSession(false, isReq, method, connectionIdentifierResponder, keyPairs, idCreds, creds,
