@@ -946,7 +946,7 @@ public class EdhocServer extends CoapServer {
 		byte[] peer1KidP256DH = new byte[] {(byte) 0x03};
 		
 		// Test with Malisa
-		// byte[] peer1KidP256 = new byte[] {(byte) 0x2b};
+		// byte[] peer1KidP256DH = new byte[] {(byte) 0x2b};
 		
 		// Build the public key
 		
