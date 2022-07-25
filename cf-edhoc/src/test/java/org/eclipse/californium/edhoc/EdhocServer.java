@@ -945,18 +945,11 @@ public class EdhocServer extends CoapServer {
 		// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x03
 		byte[] peer1KidP256DH = new byte[] {(byte) 0x03};
 		
-		// Test with Malisa
-		// byte[] peer1KidP256DH = new byte[] {(byte) 0x2b};
-		
+
 		// Build the public key
 		
 		peerPublicKeyBinary = StringUtil.hex2ByteArray("ac75e9ece3e50bfc8ed60399889522405c47bf16df96660a41298cb4307f7eb6");
 		peerPublicKeyBinaryY = StringUtil.hex2ByteArray("6e5de611388a4b8a8211334ac7d37ecb52a387d257e6db3c2a93df21ff3affc8");
-		
-		// Test with Malisa
-		// peerPublicKeyBinary = StringUtil.hex2ByteArray("ac75e9ece3e50bfc8ed60399889522405c47bf16df96660a41298cb4307f7eb6");
-		// peerPublicKeyBinaryY = StringUtil.hex2ByteArray("6e5de611388a4b8a8211334ac7d37ecb52a387d257e6db3c2a93df21ff3affc8");
-		
 		peer1PublicKeyP256DH =  SharedSecretCalculation.buildEcdsa256OneKey(null, peerPublicKeyBinary, peerPublicKeyBinaryY);
 		
 		
@@ -971,9 +964,6 @@ public class EdhocServer extends CoapServer {
 		// the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
 		peerCred = StringUtil.hex2ByteArray("A2026008A101A501020241032001215820AC75E9ECE3E50BFC8ED60399889522405C47BF16DF96660A41298CB4307F7EB62258206E5DE611388A4B8A8211334AC7D37ECB52A387D257E6DB3C2A93DF21FF3AFFC8");
  		
-		// Test with Malisa
-		// peerCred = StringUtil.hex2ByteArray("A2027734322D35302D33312D46462D45462D33372D33322D333908A101A5010202412B2001215820AC75E9ECE3E50BFC8ED60399889522405C47BF16DF96660A41298CB4307F7EB62258206E5DE611388A4B8A8211334AC7D37ECB52A387D257E6DB3C2A93DF21FF3AFFC8");
-		
 		peer1IdCredP256DHkccs = Util.buildIdCredKccs(peer1CcsObjectP256DH); // ID_CRED as 'kccs'
 		peer1IdCredP256DHkid = Util.buildIdCredKid(peer1KidP256DH); // ID_CRED as 'kid'
 		
