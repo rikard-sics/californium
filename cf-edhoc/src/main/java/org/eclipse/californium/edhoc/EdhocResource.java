@@ -153,7 +153,16 @@ class EdhocResource extends CoapResource {
 				break;		
 		}
 		System.out.println("Determined EDHOC message type: " + typeName + "\n");
-		Util.nicePrint(typeName, message);
+		
+        // Since the incoming EDHOC message is transported as a CoAP request,
+		// it is prepended by C_X, which does not have to be printed
+		List<CBORObject> trimmedSequence = new ArrayList<CBORObject>();
+		CBORObject[] objectListRequest = CBORObject.DecodeSequenceFromBytes(message);
+		for (int i = 1; i < objectListRequest.length; i++) {
+			trimmedSequence.add(objectListRequest[i]);
+		}
+		byte[] messageToPrint = Util.buildCBORSequence(trimmedSequence);
+		Util.nicePrint(typeName, messageToPrint);
 
 		
 		/* Start handling EDHOC Message 1 */
