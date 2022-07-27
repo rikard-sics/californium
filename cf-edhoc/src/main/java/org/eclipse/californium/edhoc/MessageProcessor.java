@@ -2139,7 +2139,22 @@ public class MessageProcessor {
     	/* Prepare EDHOC Message 1 */
     	
     	if (debugPrint) {
-    		Util.nicePrint("EDHOC Message 1", Util.buildCBORSequence(objectList));
+    	    byte[] sequenceBytesToPrint;
+    	    byte[] sequenceBytes = Util.buildCBORSequence(objectList);
+    	    
+    	    // If EDHOC message_2 is transported in a CoAP request, do not print
+    	    // the prepended C_X equal to the CBOR simple value 'true' (i.e., 0xf5)
+    	    if (session.isClientInitiated() == true) {
+    	        List<CBORObject> trimmedSequence = new ArrayList<CBORObject>();
+    	        for (int i = 1; i < objectList.size(); i++) {
+    	            trimmedSequence.add(objectList.get(i));
+    	        }
+    	        sequenceBytesToPrint = Util.buildCBORSequence(trimmedSequence);
+    	    }
+    	    else {
+    	        sequenceBytesToPrint = sequenceBytes;
+    	    }
+    	    Util.nicePrint("EDHOC Message 1", sequenceBytesToPrint);
     	}
         
         return Util.buildCBORSequence(objectList);
@@ -2413,9 +2428,24 @@ public class MessageProcessor {
     	
     	/* Prepare EDHOC Message 2 */
     	
-    	if (debugPrint) {
-    		Util.nicePrint("EDHOC Message 2", Util.buildCBORSequence(objectList));
-    	}
+		if (debugPrint) {
+		    byte[] sequenceBytesToPrint;
+		    byte[] sequenceBytes = Util.buildCBORSequence(objectList);
+		    
+		    // If EDHOC message_2 is transported in a CoAP request, do not print the prepended C_I
+		    if (session.isClientInitiated() == false) {
+		    	List<CBORObject> trimmedSequence = new ArrayList<CBORObject>();
+		    	for (int i = 1; i < objectList.size(); i++) {
+		    		trimmedSequence.add(objectList.get(i));
+		    	}
+		        sequenceBytesToPrint = Util.buildCBORSequence(trimmedSequence);
+		    }
+		    else {
+		        sequenceBytesToPrint = sequenceBytes;
+		    }
+		    Util.nicePrint("EDHOC Message 2", sequenceBytesToPrint);
+		}
+		
         return Util.buildCBORSequence(objectList);
 		
 	}
@@ -2685,9 +2715,23 @@ public class MessageProcessor {
     	
     	/* Prepare EDHOC Message 3 */
     	
-    	if (debugPrint) {
-    		Util.nicePrint("EDHOC Message 3", Util.buildCBORSequence(objectList));
-    	}
+		if (debugPrint) {
+		    byte[] sequenceBytesToPrint;
+		    byte[] sequenceBytes = Util.buildCBORSequence(objectList);
+		    
+		    // If EDHOC message_3 is transported in a CoAP request, do not print the prepended C_R
+		    if (session.isClientInitiated() == true) {
+		    	List<CBORObject> trimmedSequence = new ArrayList<CBORObject>();
+		    	for (int i = 1; i < objectList.size(); i++) {
+		    		trimmedSequence.add(objectList.get(i));
+		    	}
+		        sequenceBytesToPrint = Util.buildCBORSequence(trimmedSequence);
+		    }
+		    else {
+		        sequenceBytesToPrint = sequenceBytes;
+		    }
+		    Util.nicePrint("EDHOC Message 3", sequenceBytesToPrint);
+		}
     	
         return Util.buildCBORSequence(objectList);
 		
@@ -2833,8 +2877,23 @@ public class MessageProcessor {
     	/* Prepare EDHOC Message 4 */
     	
     	objectList.add(CBORObject.FromObject(ciphertext4));
+    	
     	if (debugPrint) {
-    		Util.nicePrint("EDHOC Message 4", Util.buildCBORSequence(objectList));
+    	    byte[] sequenceBytesToPrint;
+    	    byte[] sequenceBytes = Util.buildCBORSequence(objectList);
+    	    
+    	    // If EDHOC message_2 is transported in a CoAP request, do not print the prepended C_I
+    	    if (session.isClientInitiated() == false) {
+    	        List<CBORObject> trimmedSequence = new ArrayList<CBORObject>();
+    	        for (int i = 1; i < objectList.size(); i++) {
+    	            trimmedSequence.add(objectList.get(i));
+    	        }
+    	        sequenceBytesToPrint = Util.buildCBORSequence(trimmedSequence);
+    	    }
+    	    else {
+    	        sequenceBytesToPrint = sequenceBytes;
+    	    }
+    	    Util.nicePrint("EDHOC Message 4", sequenceBytesToPrint);
     	}
     	
     	session.setCurrentStep(Constants.EDHOC_AFTER_M4);
