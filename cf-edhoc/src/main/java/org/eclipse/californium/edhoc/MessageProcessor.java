@@ -2142,7 +2142,7 @@ public class MessageProcessor {
     	    byte[] sequenceBytesToPrint;
     	    byte[] sequenceBytes = Util.buildCBORSequence(objectList);
     	    
-    	    // If EDHOC message_2 is transported in a CoAP request, do not print
+    	    // If EDHOC message_1 is transported in a CoAP request, do not print
     	    // the prepended C_X equal to the CBOR simple value 'true' (i.e., 0xf5)
     	    if (session.isClientInitiated() == true) {
     	        List<CBORObject> trimmedSequence = new ArrayList<CBORObject>();
