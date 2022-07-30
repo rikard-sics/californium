@@ -395,8 +395,8 @@ public class EdhocClient {
 		System.arraycopy(nextPayload, 1, hashInput, 0, hashInput.length);
 		session.setHashMessage1(hashInput);
 		
-		byte[] connectionIdentifier = session.getConnectionId(); // v-14 identifiers
-		CBORObject connectionIdentifierCbor = CBORObject.FromObject(connectionIdentifier); // v-14 identifiers
+		byte[] connectionIdentifier = session.getConnectionId();
+		CBORObject connectionIdentifierCbor = CBORObject.FromObject(connectionIdentifier);
 		edhocSessions.put(connectionIdentifierCbor, session);
 		
 		Request edhocMessageReq = new Request(Code.POST, Type.CON);
@@ -411,12 +411,12 @@ public class EdhocClient {
         	edhocMessageResp = client.advanced(edhocMessageReq);
 		} catch (ConnectorException e) {
 			System.err.println("ConnectorException when sending EDHOC Message 1");
-			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds); // v-14 identifiers
+			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			client.shutdown();
 			return;
 		} catch (IOException e) {
 			System.err.println("IOException when sending EDHOC Message 1");
-			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds); // v-14 identifiers
+			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			client.shutdown();
 			return;
 		}
@@ -430,8 +430,7 @@ public class EdhocClient {
         
         if (responsePayload == null)
         	discontinue = true;
-        else { 
-        	// v-14 identifiers
+        else {
         	responseType = MessageProcessor.messageType(responsePayload, false, edhocSessions, connectionIdentifier);
         	if (responseType != Constants.EDHOC_MESSAGE_2 && responseType != Constants.EDHOC_ERROR_MESSAGE)
         		discontinue = true;
@@ -564,7 +563,6 @@ public class EdhocClient {
 				
 			}
 
-			// v-14 identifiers
 			int requestType = MessageProcessor.messageType(nextPayload, true, edhocSessions, connectionIdentifier);
 			
 			if (requestType != Constants.EDHOC_MESSAGE_3 && requestType != Constants.EDHOC_ERROR_MESSAGE) {
@@ -591,7 +589,7 @@ public class EdhocClient {
 				        /* Setup the OSCORE Security Context */
 				        
 				        // The Sender ID of this peer is the EDHOC connection identifier of the other peer
-				        byte[] senderId = session.getPeerConnectionId(); // v-14 identifiers
+				        byte[] senderId = session.getPeerConnectionId();
 				        
 				        int selectedCipherSuite = session.getSelectedCipherSuite();
 				        AlgorithmID alg = EdhocSession.getAppAEAD(selectedCipherSuite);

@@ -66,7 +66,7 @@ public class EdhocSession {
 	private boolean clientInitiated;
 	private int method;
 	private int selectedCipherSuite;
-	private byte[] connectionId; // v-14 identifiers
+	private byte[] connectionId;
 	private OneKey keyPair;
 	private CBORObject idCred;
 	private byte[] cred; // This is the serialization of a CBOR object
@@ -75,7 +75,7 @@ public class EdhocSession {
 	private List<Integer> supportedCipherSuites;
 	private AppProfile appProfile;
 	
-	private byte[] peerConnectionId; // v-14 identifiers
+	private byte[] peerConnectionId;
 	private CBORObject peerIdCred = null;
 	private OneKey peerLongTermPublicKey = null;
 	private OneKey peerEphemeralPublicKey = null;
@@ -84,7 +84,6 @@ public class EdhocSession {
 	// Stored hash of EDHOC Message 1
 	private byte[] hashMessage1 = null;
 	
-	// v-14
 	// Stored PLAINTEXT_2, as serialized CBOR sequence
 	private byte[] plaintext2 = null;
 	
@@ -98,7 +97,6 @@ public class EdhocSession {
 	private byte[] TH3 = null;
 	private byte[] TH4 = null;
 	
-	// v-14
 	// Key to store after a successful EDHOC execution
 	private byte[] prk_out = null;
 	private byte[] prk_exporter = null;
@@ -140,8 +138,6 @@ public class EdhocSession {
 		
 	}
 	
-	
-	// v-14
 	/**
 	 * Delete all ephemeral keys and other temporary material used during the session
 	 */
@@ -154,7 +150,6 @@ public class EdhocSession {
 		this.TH2 = null;
 		this.TH3 = null;
 		
-		// v-14
 		if (this.appProfile.getUseMessage4() == false) {
 			this.prk_4e3m = null;
 			this.TH4 = null;
@@ -541,7 +536,6 @@ public class EdhocSession {
 		this.TH4 = inputTH;
 	}
 
-	// v-14
 	/**
 	 * @return  the key PRK_out
 	 */
@@ -549,7 +543,6 @@ public class EdhocSession {
 		return this.prk_out;
 	}
 	
-	// v-14
 	/**
 	 * @param prkOut   the key PRK_out
 	 */
@@ -558,7 +551,6 @@ public class EdhocSession {
 		System.arraycopy(prkOut,  0, this.prk_out, 0, prkOut.length);
 	}
 	
-	// v-14
 	/**
 	 * @return  the key PRK_exporter
 	 */
@@ -566,7 +558,6 @@ public class EdhocSession {
 		return this.prk_exporter;
 	}
 	
-	// v-14
 	/**
 	 * @param prkOut   the key PRK_exporter
 	 */
@@ -640,7 +631,6 @@ public class EdhocSession {
 		this.message3 = null;
 	}
 	
-	// v-14
 	/**
 	 * @return  the PLAINTEXT_2
 	 */
@@ -648,7 +638,6 @@ public class EdhocSession {
 		return this.plaintext2;
 	}
 
-	// v-14
 	/**
 	 * @param pt  store a PLAINTEXT_2 for the later computation of TH3
 	 */
@@ -657,7 +646,6 @@ public class EdhocSession {
 		System.arraycopy(pt, 0, this.plaintext2, 0, pt.length);
 	}
 	
-	// v-14
 	/**
 	 * EDHOC-Exporter function, to derive application keys
 	 * @param label   The label to use to derive the OKM
@@ -677,7 +665,6 @@ public class EdhocSession {
 		
 	}
 	
-	// v-14
 	/**
 	 * EDHOC-KeyUpdate function, to update the keys PRK_out and PRK_exporter
 	 * @param context   The context to use, as a CBOR byte string
@@ -718,7 +705,6 @@ public class EdhocSession {
 
 	}
 	
-	// v-14
 	/**
 	 * EDHOC-KDF
 	 * @param prk   The Pseudo Random Key
@@ -754,7 +740,6 @@ public class EdhocSession {
 		
 	}
 
-	// v-14
     /**
      *  Get an OSCORE Master Secret using the EDHOC-Exporter
      * @param session   The used EDHOC session
@@ -769,7 +754,7 @@ public class EdhocSession {
 	    int keyLength = getKeyLengthAppAEAD(selectedCipherSuite);
 	    
 	    try {
-			masterSecret = session.edhocExporter(Constants.EXPORTER_LABEL_OSCORE_MASTER_SECRET, context, keyLength); // v-14
+			masterSecret = session.edhocExporter(Constants.EXPORTER_LABEL_OSCORE_MASTER_SECRET, context, keyLength);
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when the OSCORE Master Secret" + e.getMessage());
 		} catch (NoSuchAlgorithmException e) {
@@ -780,7 +765,6 @@ public class EdhocSession {
 		
 	}
 	
-	// v-14
     /**
      *  Get an OSCORE Master Salt using the EDHOC-Exporter
      * @param session   The used EDHOC session
@@ -792,7 +776,7 @@ public class EdhocSession {
 	    CBORObject context = CBORObject.FromObject(new byte[0]);
 	    
 	    try {
-			masterSalt = session.edhocExporter(Constants.EXPORTER_LABEL_OSCORE_MASTER_SALT, context, 8); // v-14
+			masterSalt = session.edhocExporter(Constants.EXPORTER_LABEL_OSCORE_MASTER_SALT, context, 8);
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when the OSCORE Master Salt" + e.getMessage());
 		} catch (NoSuchAlgorithmException e) {
