@@ -336,8 +336,6 @@ public class MessageProcessorTest {
 		byte[] expectedMessage1 = StringUtil.hex2ByteArray(
 				"f50000582031f82c7b5b9cbbf0f194d913cc12ef1532d328ef32632a4881a1c0701e237f042d");
 
-		
-		// v-14 TO BE ENABLED
 		Assert.assertArrayEquals(expectedMessage1, message1);
 		
 	}
@@ -652,8 +650,7 @@ public class MessageProcessorTest {
 		
 		// Set TH_2 from the previous protocol step
 		session.setTH2(th2);
-		
-		// v-14
+
 		// Set PLAINTEXT_2 from the previous protocol step
 		byte[] plaintext2 = StringUtil.hex2ByteArray(
 				"a11822822e4879f2a41b510c1f9b5840f373a7203efa7df0738c360ee080171aca67fcb175f26d785d095b55eb1484655c39e03a3f5f9bdd87ef8c5f2ec3dfe6fbba49b7b4625b126f27de301767270c");
@@ -1232,8 +1229,7 @@ public class MessageProcessorTest {
 		
 		// Set TH_2 from the previous protocol step
 		session.setTH2(th2);
-		
-		// v-14
+
 		// Set PLAINTEXT_2 from the previous protocol step
 		byte[] plaintext2 = StringUtil.hex2ByteArray("3248ad01bc30c6911176");
 		session.setPlaintext2(plaintext2);

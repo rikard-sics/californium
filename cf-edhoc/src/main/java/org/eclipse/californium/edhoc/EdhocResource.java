@@ -216,7 +216,7 @@ class EdhocResource extends CoapResource {
 				// Compute the EDHOC Message 2
 				nextMessage = MessageProcessor.writeMessage2(session, ead2);
 
-				byte[] connectionIdentifier = session.getConnectionId(); // v-14 identifiers
+				byte[] connectionIdentifier = session.getConnectionId();
 				
 				// Deallocate the assigned Connection Identifier for this peer
 				if (nextMessage == null || session.getCurrentStep() != Constants.EDHOC_BEFORE_M2) {
@@ -240,12 +240,11 @@ class EdhocResource extends CoapResource {
 				
 			}
 			
-			byte[] connectionIdentifier = null; // v-14 identifiers
+			byte[] connectionIdentifier = null;
 			if (session != null) {
 				connectionIdentifier = session.getConnectionId();
 			}
 			
-			// v-14 identifiers
 			responseType = MessageProcessor.messageType(nextMessage, false,
 														edhocEndpointInfo.getEdhocSessions(), connectionIdentifier);
 			

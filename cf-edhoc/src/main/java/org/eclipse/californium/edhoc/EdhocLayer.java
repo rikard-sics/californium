@@ -131,7 +131,6 @@ public class EdhocLayer extends AbstractLayer {
 			// Retrieve the Security Context used to protect the request
 			OSCoreCtx ctx = getContextForOutgoing(exchange);
 			
-			// v-14 identifiers
 			// The connection identifier of this peer is its Recipient ID
 			byte[] recipientId = ctx.getRecipientId();
 			CBORObject connectionIdentifierInitiatorCbor = CBORObject.FromObject(recipientId);
@@ -145,7 +144,6 @@ public class EdhocLayer extends AbstractLayer {
 				return;
 			}
 			
-			// v-14 identifiers
 			byte[] connectionIdentifierInitiator = session.getConnectionId(); 
 			if (!session.isInitiator() ||
 				 session.getCurrentStep() != Constants.EDHOC_SENT_M3 ||		
@@ -262,8 +260,7 @@ public class EdhocLayer extends AbstractLayer {
 			// Rebuild the full EDHOC message_3
 
 		    List<CBORObject> edhocObjectList = new ArrayList<>();
-		    
-		    // v-14 identifiers
+
 		    // Add C_R, by encoding the 'kid' from the OSCORE option
 			byte[] kid = getKid(request.getOptions().getOscore());		    
 			CBORObject cR = MessageProcessor.encodeIdentifier(kid);
@@ -279,7 +276,6 @@ public class EdhocLayer extends AbstractLayer {
 				Util.nicePrint("EDHOC+OSCORE: rebuilt EDHOC message_3", edhocMessage3);
 			}
 			
-			// v-14 identifiers
 			CBORObject kidCbor = CBORObject.FromObject(kid);
 			EdhocSession mySession = edhocSessions.get(kidCbor);
 			
@@ -306,11 +302,10 @@ public class EdhocLayer extends AbstractLayer {
     		// This EDHOC resource does not support the use of the EDHOC+OSCORE request
     		if (mySession.getApplicationProfile().getSupportCombinedRequest() == false) {
 				System.err.println("This EDHOC resource does not support the use of the EDHOC+OSCORE request\n");
-    			Util.purgeSession(mySession, connectionIdentifierResponder, edhocSessions, usedConnectionIds); // v-14 identifiers
+    			Util.purgeSession(mySession, connectionIdentifierResponder, edhocSessions, usedConnectionIds);
     			
     			String errMsg = new String("This EDHOC resource does not support the use of the EDHOC+OSCORE request");
     			
-    			// v-14 identifiers
     			byte[] nextMessage = MessageProcessor.writeErrorMessage(Constants.ERR_CODE_UNSPECIFIED_ERROR,
     																	Constants.EDHOC_MESSAGE_3,
 												                        false, connectionIdentifierInitiator,

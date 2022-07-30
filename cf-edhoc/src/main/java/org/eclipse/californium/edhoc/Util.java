@@ -550,7 +550,6 @@ public class Util {
     	
     }
     
-    // v-14 identifiers
     /**
      * Get an available Connection Identifier to offer to the other peer
      *  
@@ -572,7 +571,6 @@ public class Util {
     	
     }
         
-    // v-14 identifiers
     /**
      * Actually allocate an available Connection Identifier to offer to the other peer
      *  
@@ -681,7 +679,6 @@ public class Util {
     	
     }
     
-    // v-14 identifiers
     /**
      * Check if a Connection Identifier is available to offer to the other peer
      *
@@ -713,7 +710,6 @@ public class Util {
     	
     }
     
-    // v-14 identifiers
     /**
      * Check for the availability of an OSCORE Recipient ID and the corresponding, identical EDHOC Connection Identifier.
      * If they are both available, mark them as used and return the Connection Identifier. Otherwise, return null.
@@ -777,7 +773,6 @@ public class Util {
     	
     }
     
-    // v-14 identifiers
     /**
      * Deallocate a Connection Identifier previously locked to offer to a peer
      * Note that, if this was an OSCORE Recipient ID, the Recipient ID itself will not be deallocated
@@ -816,7 +811,6 @@ public class Util {
     	
     }
     
-    // v-14 identifiers
 	/**
 	 * Remove an EDHOC session from the list of active sessions; release the used Connection Identifier; invalidate the session
 	 * @param session   The EDHOC session to invalidate
