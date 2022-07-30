@@ -188,7 +188,7 @@ public class VectorsTxtTest {
 		OneKey identityKey = Util.generateKeyPair(KeyKeys.OKP_Ed25519.AsInt32()); // Dummy
 		boolean initiator = true;
 		int methodCorr = methodCorrList.get(index);
-		byte[] connectionId = connectionIdList.get(index).GetByteString(); // v-14 identifiers
+		byte[] connectionId = connectionIdList.get(index).GetByteString();
 		List<Integer> cipherSuites = new ArrayList<Integer>();
 		cipherSuites.add(supportedCipherSuitesList.get(index)); // 1 suite only
 		byte[] ead1 = ad1List.get(index);
@@ -262,7 +262,7 @@ public class VectorsTxtTest {
 
 		// Print parameters used
 		System.out.println("methodCorr " + methodCorr);
-		System.out.println("connectionId " + StringUtil.byteArray2HexString(connectionId)); // v-14 identifiers
+		System.out.println("connectionId " + StringUtil.byteArray2HexString(connectionId));
 		System.out.println("ead1 " + StringUtil.byteArray2HexString(ead1));
 		System.out.println("privateEkeyBytes " + StringUtil.byteArray2HexString(privateEkeyBytes));
 		System.out.println("publicEkeyBytes " + StringUtil.byteArray2HexString(publicEkeyBytes));
