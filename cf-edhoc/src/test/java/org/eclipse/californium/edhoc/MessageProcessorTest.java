@@ -581,6 +581,13 @@ public class MessageProcessorTest {
 		// Connection Identifier of the Responder
 		byte[] connectionIdentifierResponder = new byte[] {(byte) 0x18};
 		
+		// The x509 certificate of the Responder
+		byte[] serializedCertResponder = StringUtil.hex2ByteArray(
+				"3081EE3081A1A003020102020462319EC4300506032B6570301D311B301906035504030C124544484F4320526F6F742045643235353139301E170D3232303331363038323433365A170D3239313233313233303030305A30223120301E06035504030C174544484F4320526573706F6E6465722045643235353139302A300506032B6570032100A1DB47B95184854AD12A0C1A354E418AACE33AA0F2C662C00B3AC55DE92F9359300506032B6570034100B723BC01EAB0928E8B2B6C98DE19CC3823D46E7D6987B032478FECFAF14537A1AF14CC8BE829C6B73044101837EB4ABC949565D86DCE51CFAE52AB82C152CB02");
+		
+		// CRED_R, as serialization of a CBOR byte string wrapping the serialized certificate
+		byte[] credR = CBORObject.FromObject(serializedCert).EncodeToBytes();
+		
 		// The ephemeral key of the Responder
 		byte[] peerEphemeralPublicKeyBytes = StringUtil.hex2ByteArray(
 				"dc88d2d51da5ed67fc4616356bc8ca74ef9ebe8b387e623a360ba480b9b29d1c");
@@ -660,6 +667,10 @@ public class MessageProcessorTest {
 		
 		// Set PRK_3e2m from the previous protocol step
 		session.setPRK3e2m(prk3e2m);
+		
+		// v-16
+		// Set CRED_R from the previous protocol step
+		session.setPeerCred(credR);
 		
 		
 		// Now write EDHOC message 3
@@ -1163,6 +1174,10 @@ public class MessageProcessorTest {
 		// Connection Identifier of the Responder
 		byte[] connectionIdentifierResponder = new byte[] {(byte) 0x27};
 		
+		// v-16
+		// CRED_R for the identity key of the Responder
+		byte[] credR = StringUtil.hex2ByteArray("A2026B6578616D706C652E65647508A101A501020241322001215820BBC34960526EA4D32E940CAD2A234148DDC21791A12AFBCBAC93622046DD44F02258204519E257236B2A0CE2023F0931F1F386CA7AFDA64FCDE0108C224C51EABF6072");
+		
 		// The ephemeral key of the Responder
 		byte[] peerEphemeralPublicKeyBytesX = StringUtil.hex2ByteArray(
 				"419701d7f00a26c2dc587a36dd752549f33763c893422c8ea0f955a13a4ff5d5");
@@ -1244,6 +1259,10 @@ public class MessageProcessorTest {
 		
 		// Set PRK_3e2m from the previous protocol step
 		session.setPRK3e2m(prk3e2m);
+		
+		// v-16
+		// Set CRED_R from the previous protocol step
+		session.setPeerCred(credR);
 		
 		
 		// Now write EDHOC message 3
