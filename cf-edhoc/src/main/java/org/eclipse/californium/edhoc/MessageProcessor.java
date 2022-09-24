@@ -847,7 +847,11 @@ public class MessageProcessor {
         
         // Compute PRK_2e
     	String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCipherSuite());
-    	prk2e = computePRK2e(dhSecret, hashAlgorithm);
+    	
+    	// v-16
+    	// prk2e = computePRK2e(dhSecret, hashAlgorithm);
+    	prk2e = computePRK2e(th2, dhSecret, hashAlgorithm);    	
+    	
     	dhSecret = null;
     	if (prk2e == null) {
         	errMsg = new String("Error when computing PRK_2e");
@@ -2234,8 +2238,12 @@ public class MessageProcessor {
         // Compute PRK_2e
         if (error == false) {
 	        String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCipherSuite());
-	    	prk2e = computePRK2e(dhSecret, hashAlgorithm);
-	    	dhSecret = null;
+	    	
+	        // v-16
+	        // prk2e = computePRK2e(dhSecret, hashAlgorithm);
+	    	prk2e = computePRK2e(th2, dhSecret, hashAlgorithm);
+	    	
+	        dhSecret = null;
 	    	if (prk2e == null) {
 	    		System.err.println("Error when computing PRK_2e");
 	    		errMsg = new String("Error when computing PRK_2e");
@@ -3231,16 +3239,20 @@ public class MessageProcessor {
 	
     /**
      *  Compute the key PRK_2e
+     * @param th2   The transcript hash TH_2
      * @param dhSecret   The Diffie-Hellman secret
      * @param hashAlgorithm   The EDHOC hash algorithm of the selected cipher suite
      * @return  The computed key PRK_2e
      */
-	public static byte[] computePRK2e(byte[] dhSecret, String hashAlgorithm) {
+	public static byte[] computePRK2e(byte[] th2, byte[] dhSecret, String hashAlgorithm) {
 	
 		byte[] prk2e = null;
 	    try {  	
 	    	if (hashAlgorithm.equals("SHA-256") || hashAlgorithm.equals("SHA-384") || hashAlgorithm.equals("SHA-512")) {
-	    		prk2e = Hkdf.extract(new byte[] {}, dhSecret);
+	    		
+	    		// v-16
+	    		// prk2e = Hkdf.extract(new byte[] {}, dhSecret);
+	    		prk2e = Hkdf.extract(th2, dhSecret);
 	    	}
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when generating PRK_2e\n" + e.getMessage());
