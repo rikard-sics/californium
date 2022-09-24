@@ -414,7 +414,7 @@ public class EdhocSession {
 	// v-16
 	/**
 	 * Set the CRED of the other peer
-	 * @param peerKey   the CRED of the other peer 
+	 * @param peerCred   the CRED of the other peer 
 	 */
 	public void setPeerCred(byte[] peerCred) {
 		this.peerCred = peerCred;
