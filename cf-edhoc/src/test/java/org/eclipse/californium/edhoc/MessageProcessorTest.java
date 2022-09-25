@@ -334,10 +334,9 @@ public class MessageProcessorTest {
 		// Note: the actual EDHOC message 1 starts with 0x00. The byte 0xf5 (CBOR simple value True) is prepended,
 		//       in order to pass the check against what returned by the EDHOC engine, to be sent as a CoAP request payload.
 		byte[] expectedMessage1 = StringUtil.hex2ByteArray(
-				"f50000582031f82c7b5b9cbbf0f194d913cc12ef1532d328ef32632a4881a1c0701e237f042d");
+				"f5" + "0000582031f82c7b5b9cbbf0f194d913cc12ef1532d328ef32632a4881a1c0701e237f042d");
 
-		// RE-ENABLE
-		// Assert.assertArrayEquals(expectedMessage1, message1);
+		Assert.assertArrayEquals(expectedMessage1, message1);
 		
 	}
 	
@@ -515,10 +514,9 @@ public class MessageProcessorTest {
 		// Compare with the expected value from the test vectors
 		
 		byte[] expectedMessage2 = StringUtil.hex2ByteArray(
-				"5870dc88d2d51da5ed67fc4616356bc8ca74ef9ebe8b387e623a360ba480b9b29d1c9b2f43ba6ee11c4e6c005c0a3e4cb5ddcbf41c938eaa3e0f9f4f9d76fe80c07cf8b09b2861331f7ce118404a354b89fc8651915eb227cd06c074601783f9706a1bf442fb5902c5c12f6e298631898b3d4118");
+				"5870dc88d2d51da5ed67fc4616356bc8ca74ef9ebe8b387e623a360ba480b9b29d1c67b9cf55e7b74dd29cdce68e5c7f429c5ff7ed8f1ac3fb4035bd3254b26b63a857295afb2fdd4e479134223a9cd9992f306faf5c8bd721dc4fb2db37d376bbe4324e49b01ba434c2ddcca34431a71c734118");
 
-		// RE-ENABLE
-		// Assert.assertArrayEquals(expectedMessage2, message2);
+		Assert.assertArrayEquals(expectedMessage2, message2);
 		
 	}
 	
@@ -586,7 +584,7 @@ public class MessageProcessorTest {
 				"3081EE3081A1A003020102020462319EC4300506032B6570301D311B301906035504030C124544484F4320526F6F742045643235353139301E170D3232303331363038323433365A170D3239313233313233303030305A30223120301E06035504030C174544484F4320526573706F6E6465722045643235353139302A300506032B6570032100A1DB47B95184854AD12A0C1A354E418AACE33AA0F2C662C00B3AC55DE92F9359300506032B6570034100B723BC01EAB0928E8B2B6C98DE19CC3823D46E7D6987B032478FECFAF14537A1AF14CC8BE829C6B73044101837EB4ABC949565D86DCE51CFAE52AB82C152CB02");
 		
 		// CRED_R, as serialization of a CBOR byte string wrapping the serialized certificate
-		byte[] credR = CBORObject.FromObject(serializedCert).EncodeToBytes();
+		byte[] credR = CBORObject.FromObject(serializedCertResponder).EncodeToBytes();
 		
 		// The ephemeral key of the Responder
 		byte[] peerEphemeralPublicKeyBytes = StringUtil.hex2ByteArray(
@@ -598,7 +596,7 @@ public class MessageProcessorTest {
 		byte[] th2 = StringUtil.hex2ByteArray(
 				"3ab11700841fce193c323911edb317b046dcf24b9950fd624884f7f57cd98b07");
 		byte[] prk3e2m = StringUtil.hex2ByteArray(
-				"c576105d95b4d8c18e8f655f546880a854f2da106ce5a3a02d8b3ede7baabca6");
+				"2ae2421de9a72a7ae6715fb518f3ed30058fd9ca58b62568cafe7cdaa15a41f7");
 		
 		
 		
@@ -662,7 +660,7 @@ public class MessageProcessorTest {
 
 		// Set PLAINTEXT_2 from the previous protocol step
 		byte[] plaintext2 = StringUtil.hex2ByteArray(
-				"a11822822e4879f2a41b510c1f9b5840f373a7203efa7df0738c360ee080171aca67fcb175f26d785d095b55eb1484655c39e03a3f5f9bdd87ef8c5f2ec3dfe6fbba49b7b4625b126f27de301767270c");
+				"a11822822e4879f2a41b510c1f9b5840af7381f19ae1fe0f53895b18e5818b1fe3e3463072c02ad39f202d3828aa6237c10b08668fc476964124031fed9f944e6a78797f5c084958db0f2089c21c5202");
 		session.setPlaintext2(plaintext2);
 		
 		// Set PRK_3e2m from the previous protocol step
@@ -680,10 +678,9 @@ public class MessageProcessorTest {
 		// Note: the actual EDHOC message 3 starts with 0x58. The bytes 0x4118 (CBOR encoding for h'18') is prepended as C_R,
 		//       in order to pass the check against what returned by the EDHOC engine, to be sent as a CoAP request payload. 
 		byte[] expectedMessage3 = StringUtil.hex2ByteArray(
-				"411858582fc19556f67c929a9734789ecec60aaf8f50324fc31bd07801d57cec00d3bf1ea4dbafac342fe1686cbcea0cec4502959805b153819e274638cc23bbc4f4e39477f8a8fff5caaf5e32d4ca4e7c748d2b519d21b8d7577248");
+				"4118" + "5858ba5e0e745bfa2a871d20cb02c800200771434b6e1ac98977ec733ec94c0633cb3ec0207898597f2c49d3a40f4c1451b43d0bcae4847a0d6cd32d5e8a3554f43f7a982904b077c5029b3dc7f05eedede3b02157c324c0db3e");
 
-		// RE-ENABLE
-		// Assert.assertArrayEquals(expectedMessage3, message3);
+		Assert.assertArrayEquals(expectedMessage3, message3);
 		
 		
         /* Invoke the EDHOC-Exporter to produce OSCORE input material */
@@ -693,15 +690,14 @@ public class MessageProcessorTest {
         
 		// Compare with the expected value from the test vectors
 		
-		byte[] expectedMasterSecret = StringUtil.hex2ByteArray("d6dd09b137359f0ad215dd021962c05c");
-		byte[] expectedMasterSalt = StringUtil.hex2ByteArray("87b3ebbbe17eb4b9");
+		byte[] expectedMasterSecret = StringUtil.hex2ByteArray("09c36661cf68f8c3ad216443cf6291e6");
+		byte[] expectedMasterSalt = StringUtil.hex2ByteArray("1382bf719ee65c32");
        
        	Util.nicePrint("OSCORE Master Secret", masterSecret);
         Util.nicePrint("OSCORE Master Salt", masterSalt);
 		
-		// RE-ENABLE
-        // Assert.assertArrayEquals(expectedMasterSecret, masterSecret);
-        // Assert.assertArrayEquals(expectedMasterSalt, masterSalt);
+        Assert.assertArrayEquals(expectedMasterSecret, masterSecret);
+        Assert.assertArrayEquals(expectedMasterSalt, masterSalt);
        
         
         /* Invoke EDHOC-KeyUpdate to updated the EDHOC key material */
@@ -727,12 +723,11 @@ public class MessageProcessorTest {
        	Util.nicePrint("OSCORE Master Secret", masterSecret);
         Util.nicePrint("OSCORE Master Salt", masterSalt);
         
-		expectedMasterSecret = StringUtil.hex2ByteArray("66ecb0db0a9e496f67c0b55554796e3e");
-		expectedMasterSalt = StringUtil.hex2ByteArray("18f323ad2efc6929");
+		expectedMasterSecret = StringUtil.hex2ByteArray("f005280c948a64c46e33e9ea8de93115");
+		expectedMasterSalt = StringUtil.hex2ByteArray("0b0af32aa49b3ce3");
         
-		// RE-ENABLE
-        // Assert.assertArrayEquals(expectedMasterSecret, masterSecret);
-        // Assert.assertArrayEquals(expectedMasterSalt, masterSalt);
+        Assert.assertArrayEquals(expectedMasterSecret, masterSecret);
+        Assert.assertArrayEquals(expectedMasterSalt, masterSalt);
         
 	}
 	
@@ -857,11 +852,11 @@ public class MessageProcessorTest {
 		session.setPeerConnectionId(connectionIdentifierInitiator);
 		
 		// Store PRK_4e3m computed from the previous protocol step
-		byte[] prk4e3m = StringUtil.hex2ByteArray("c576105d95b4d8c18e8f655f546880a854f2da106ce5a3a02d8b3ede7baabca6");
+		byte[] prk4e3m = StringUtil.hex2ByteArray("2ae2421de9a72a7ae6715fb518f3ed30058fd9ca58b62568cafe7cdaa15a41f7");
 		session.setPRK4e3m(prk4e3m);
 		
 		// Store TH_4 computed from the previous protocol step
-		byte[] th4 = StringUtil.hex2ByteArray("ddccc14e32330d2da93d134b0c571e2e22a28e6208135e7cda45231d850dcec3");
+		byte[] th4 = StringUtil.hex2ByteArray("38e2e6f4641e814b721814c05b51ef0aa38bdb36074f981239e6474d9cccddc8");
 		session.setTH4(th4);
 		
 		// Now write EDHOC message 4
@@ -869,10 +864,9 @@ public class MessageProcessorTest {
 
 		// Compare with the expected value from the test vectors
 
-		byte[] expectedMessage4 = StringUtil.hex2ByteArray("48523b0282a13c8923");
+		byte[] expectedMessage4 = StringUtil.hex2ByteArray("48d5417c474cb4a302");
 		
-		// RE-ENABLE
-		// Assert.assertArrayEquals(expectedMessage4, message4);
+		Assert.assertArrayEquals(expectedMessage4, message4);
 		
 	}
 	
@@ -972,10 +966,9 @@ public class MessageProcessorTest {
 		// Note: the actual EDHOC message 1 starts with 0x03. The byte 0xf5 (CBOR simple value True) is prepended,
 		//       in order to pass the check against what returned by the EDHOC engine, to be sent as a CoAP request payload. 
 		byte[] expectedMessage1 = StringUtil.hex2ByteArray(
-				"f50382060258208af6f430ebe18d34184017a9a11bf511c8dff8f834730b96c1b7c8dbca2fc3b637");
+				"f5" + "0382060258208af6f430ebe18d34184017a9a11bf511c8dff8f834730b96c1b7c8dbca2fc3b637");
 		
-		// RE-ENABLE
-		// Assert.assertArrayEquals(expectedMessage1, message1);
+		Assert.assertArrayEquals(expectedMessage1, message1);
 	}
 	
 	
@@ -1109,10 +1102,9 @@ public class MessageProcessorTest {
 		// Compare with the expected value from the test vectors
 		
 		byte[] expectedMessage2 = StringUtil.hex2ByteArray(
-				"582a419701d7f00a26c2dc587a36dd752549f33763c893422c8ea0f955a13a4ff5d58b8fec6b1f0580c5043927");
+				"582a419701d7f00a26c2dc587a36dd752549f33763c893422c8ea0f955a13a4ff5d5042459e2da6c75143f3527");
 		
-		// RE-ENABLE
-		// Assert.assertArrayEquals(expectedMessage2, message2);
+		Assert.assertArrayEquals(expectedMessage2, message2);
 		
 	}
 	
@@ -1192,7 +1184,7 @@ public class MessageProcessorTest {
 		
 		byte[] th2 = StringUtil.hex2ByteArray("9d2af3a3d3fc06aea8110f14ba12ad0b4fb7e5cdf59c7df1cf2dfe9c2024439c");
 		
-		byte[] prk3e2m = StringUtil.hex2ByteArray("7e230e62b909ca7492367aaa8a229f6306c5ac67482184b33362d28d177a56e9");
+		byte[] prk3e2m = StringUtil.hex2ByteArray("412d60cdf99dc7490754c969ad4c46b1350b908433ebf3fe063be8627fb35b3b");
 		
 		
 		/* Set up the session to use */
@@ -1254,7 +1246,7 @@ public class MessageProcessorTest {
 		session.setTH2(th2);
 
 		// Set PLAINTEXT_2 from the previous protocol step
-		byte[] plaintext2 = StringUtil.hex2ByteArray("3248ad01bc30c6911176");
+		byte[] plaintext2 = StringUtil.hex2ByteArray("3248d0d1a594797d0aaf");
 		session.setPlaintext2(plaintext2);
 		
 		// Set PRK_3e2m from the previous protocol step
@@ -1272,10 +1264,9 @@ public class MessageProcessorTest {
 		// Note: the actual EDHOC message 3 starts with 0x52. The byte 0x27 (CBOR encoding for -8) is prepended as C_R,
 		//       in order to pass the check against what returned by the EDHOC engine, to be sent as a CoAP request payload.
 		
-		byte[] expectedMessage3 = StringUtil.hex2ByteArray("2752c25c8420036764462f57357986616c8d21b0");
+		byte[] expectedMessage3 = StringUtil.hex2ByteArray("27" + "52c2b62835dc9b1f53419c1d3a2261eeed3505");
 
-		// RE-ENABLE
-		// Assert.assertArrayEquals(expectedMessage3, message3);
+		Assert.assertArrayEquals(expectedMessage3, message3);
 		
 		
         /* Invoke EDHOC-Exporter to produce OSCORE input material */
@@ -1285,15 +1276,14 @@ public class MessageProcessorTest {
         
 		// Compare with the expected value from the test vectors
         
-		byte[] expectedMasterSecret = StringUtil.hex2ByteArray("f3fb2149fd08c18a40938ae5703bfb38");
-		byte[] expectedMasterSalt = StringUtil.hex2ByteArray("20415135279a4ee4");
+		byte[] expectedMasterSecret = StringUtil.hex2ByteArray("07ce22f2638fca404dded72a25fa45f4");
+		byte[] expectedMasterSalt = StringUtil.hex2ByteArray("5be3825f5a5284b7");
 
        	Util.nicePrint("OSCORE Master Secret", masterSecret);
         Util.nicePrint("OSCORE Master Salt", masterSalt);
 		
-		// RE-ENABLE
-        // Assert.assertArrayEquals(expectedMasterSecret, masterSecret);
-        // Assert.assertArrayEquals(expectedMasterSalt, masterSalt);
+        Assert.assertArrayEquals(expectedMasterSecret, masterSecret);
+        Assert.assertArrayEquals(expectedMasterSalt, masterSalt);
 		
         
         /* Invoke EDHOC-KeyUpdate to updated the EDHOC key material */
@@ -1316,15 +1306,14 @@ public class MessageProcessorTest {
         
         // Compare with the expected value from the test vectors
         
-		expectedMasterSecret = StringUtil.hex2ByteArray("5d96c2fb5c1ad12e324a59f4a4cde25b");
-		expectedMasterSalt = StringUtil.hex2ByteArray("94129ca9a22f1efc");
+		expectedMasterSecret = StringUtil.hex2ByteArray("4c75696cba179ca9f68707eedcde76e0");
+		expectedMasterSalt = StringUtil.hex2ByteArray("9d954fc2e7abb4d0");
 
        	Util.nicePrint("OSCORE Master Secret", masterSecret);
         Util.nicePrint("OSCORE Master Salt", masterSalt);
 		
-		// RE-ENABLE
-        // Assert.assertArrayEquals(expectedMasterSecret, masterSecret);
-        // Assert.assertArrayEquals(expectedMasterSalt, masterSalt);
+        Assert.assertArrayEquals(expectedMasterSecret, masterSecret);
+        Assert.assertArrayEquals(expectedMasterSalt, masterSalt);
         
 	}
 	
@@ -1451,11 +1440,11 @@ public class MessageProcessorTest {
 		
 		
 		// Store PRK_4e3m computed from the previous protocol step
-		byte[] prk4e3m = StringUtil.hex2ByteArray("9eda8cd755ae3b80b47e8ddbb8d7c5fe2b62b462e4bcba2c6c8ea36ee5fb604d");
+		byte[] prk4e3m = StringUtil.hex2ByteArray("7d0159bbe45473c9402e0d42dbceb45dca05b744cae1e083e58315b8aa47ceec");
 		session.setPRK4e3m(prk4e3m);
 		
 		// Store TH_4 computed from the previous protocol step
-		byte[] th4 = StringUtil.hex2ByteArray("a4097a6b9e39f7d3dc4f8af2c4a8645b373d7af586f415df626e16b6ac2755d3");
+		byte[] th4 = StringUtil.hex2ByteArray("1f57dabf8f26da0657d9840c9b1077c1d4c47db243a8b41360a98ec4cb706b70");
 		session.setTH4(th4);
 		
 		// Now write EDHOC message 4
@@ -1463,10 +1452,9 @@ public class MessageProcessorTest {
 
 		// Compare with the expected value from the test vectors
 
-		byte[] expectedMessage4 = StringUtil.hex2ByteArray("48ddf977df1cac7fc3");
+		byte[] expectedMessage4 = StringUtil.hex2ByteArray("486359ad21f077a9d1");
 		
-		// RE-ENABLE
-		// Assert.assertArrayEquals(expectedMessage4, message4);
+		Assert.assertArrayEquals(expectedMessage4, message4);
 		
 	}
 		
