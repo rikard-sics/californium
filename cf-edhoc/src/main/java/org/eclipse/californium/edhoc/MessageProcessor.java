@@ -3256,23 +3256,68 @@ public class MessageProcessor {
 	public static byte[] computeKeystream2(EdhocSession session, int length) {
     	
 		byte[] keystream2 = null;
+		
+		// v-16
+		byte[] prk2e = session.getPRK2e();
+		
 		CBORObject context = CBORObject.FromObject(session.getTH2());
 		
-		try {
-			keystream2 = session.edhocKDF(session.getPRK2e(), Constants.KDF_LABEL_KEYSTREAM_2, context, length);
-		} catch (InvalidKeyException e) {
-			System.err.println("Error when generating KEYSTREAM_2\n" + e.getMessage());
-			return null;
-		} catch (NoSuchAlgorithmException e) {
-			System.err.println("Error when generating KEYSTREAM_2\n" + e.getMessage());
-			return null;
-		}
+		
+		// v-16
+    	int selectedCipherSuite = session.getSelectedCipherSuite();
+    	String hashAlg = EdhocSession.getEdhocHashAlg(selectedCipherSuite);
+    	int hashLength = EdhocSession.getEdhocHashAlgOutputSize(selectedCipherSuite);
+		
+    	
+    	// v-16
+    	if ( (!hashAlg.equals("SHA-256") && !hashAlg.equals("SHA-384") && !hashAlg.equals("SHA-512")) || (length <= 255 * hashLength) ) {
+			try {
+				keystream2 = session.edhocKDF(prk2e, Constants.KDF_LABEL_KEYSTREAM_2, context, length);
+			} catch (InvalidKeyException e) {
+				System.err.println("Error when generating KEYSTREAM_2\n" + e.getMessage());
+				return null;
+			} catch (NoSuchAlgorithmException e) {
+				System.err.println("Error when generating KEYSTREAM_2\n" + e.getMessage());
+				return null;
+			}
+    	}
+    	else {
+			byte[] part = null;
+    		int regularPartSize = 255 * hashLength;
+    		int lastPartSize = regularPartSize;
+    		
+    		int numParts = length / (regularPartSize);
+    		if ((length % (regularPartSize)) != 0) {
+    			lastPartSize = length % (regularPartSize);
+    			numParts++;
+    		}
+    		
+    		int offset = 0;
+    		keystream2 = new byte[length];
+    		for (int i = 0; i < numParts; i++) {
+    			int numBytes = (i == (numParts - 1)) ? lastPartSize : regularPartSize;
+    			
+    			try {
+    				part = session.edhocKDF(prk2e, -i, context, numBytes);
+    			} catch (InvalidKeyException e) {
+    				System.err.println("Error when generating KEYSTREAM_2\n" + e.getMessage());
+    				return null;
+    			} catch (NoSuchAlgorithmException e) {
+    				System.err.println("Error when generating KEYSTREAM_2\n" + e.getMessage());
+    				return null;
+    			}
+    			
+    			System.arraycopy(part, 0, keystream2, offset, part.length);
+    			offset += part.length;
+    		}
+    	}
 
+ 
 		return keystream2;
 		
 	}
 
-	
+
     /**
      *  Compute the key PRK_2e
      * @param th2   The transcript hash TH_2
