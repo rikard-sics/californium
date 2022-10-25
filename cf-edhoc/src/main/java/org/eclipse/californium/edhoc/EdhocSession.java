@@ -77,8 +77,6 @@ public class EdhocSession {
 	
 	private byte[] peerConnectionId;
 	private CBORObject peerIdCred = null;
-	
-	// v-16
 	private byte[] peerCred = null; // This is the serialization of a CBOR object
 	
 	private OneKey peerLongTermPublicKey = null;
@@ -402,8 +400,6 @@ public class EdhocSession {
 		this.peerSupportedCipherSuites = peerSupportedCipherSuites;
 	}
 	
-	
-	// v-16
 	/**
 	 * @return  the CRED of the other peer
 	 */
@@ -411,7 +407,6 @@ public class EdhocSession {
 		return this.peerCred;
 	}
 	
-	// v-16
 	/**
 	 * Set the CRED of the other peer
 	 * @param peerCred   the CRED of the other peer 
@@ -419,9 +414,7 @@ public class EdhocSession {
 	public void setPeerCred(byte[] peerCred) {
 		this.peerCred = peerCred;
 	}
-	
-	
-	
+
 	/**
 	 * @return  the long-term public key of the other peer
 	 */

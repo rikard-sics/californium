@@ -666,7 +666,6 @@ public class MessageProcessorTest {
 		// Set PRK_3e2m from the previous protocol step
 		session.setPRK3e2m(prk3e2m);
 		
-		// v-16
 		// Set CRED_R from the previous protocol step
 		session.setPeerCred(credR);
 		
@@ -1166,7 +1165,6 @@ public class MessageProcessorTest {
 		// Connection Identifier of the Responder
 		byte[] connectionIdentifierResponder = new byte[] {(byte) 0x27};
 		
-		// v-16
 		// CRED_R for the identity key of the Responder
 		byte[] credR = StringUtil.hex2ByteArray("A2026B6578616D706C652E65647508A101A501020241322001215820BBC34960526EA4D32E940CAD2A234148DDC21791A12AFBCBAC93622046DD44F02258204519E257236B2A0CE2023F0931F1F386CA7AFDA64FCDE0108C224C51EABF6072");
 		
@@ -1252,7 +1250,6 @@ public class MessageProcessorTest {
 		// Set PRK_3e2m from the previous protocol step
 		session.setPRK3e2m(prk3e2m);
 		
-		// v-16
 		// Set CRED_R from the previous protocol step
 		session.setPeerCred(credR);
 		
