@@ -848,7 +848,6 @@ public class MessageProcessor {
         // Compute PRK_2e
     	String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCipherSuite());
     	
-    	// v-16
     	// prk2e = computePRK2e(dhSecret, hashAlgorithm);
     	prk2e = computePRK2e(th2, dhSecret, hashAlgorithm);    	
     	
@@ -1043,7 +1042,6 @@ public class MessageProcessor {
     	}
     	byte[] peerCredential = peerCredentialCBOR.GetByteString(); // CRED_R
     	
-    	// v-16
     	session.setPeerCred(peerCredential); // Store CRED_R
     	
     	// Compute MAC_2
@@ -1255,14 +1253,8 @@ public class MessageProcessor {
 
         byte[] plaintext2 = session.getPlaintext2(); // PLAINTEXT_2 as serialized CBOR sequence
         
-        
-        // v-16
-        // byte[] th3 = computeTH3(session, th2SerializedCBOR, plaintext2);
-        
-        // v-16
         byte[] credR = session.getCred();
         byte[] th3 = computeTH3(session, th2SerializedCBOR, plaintext2, credR);
-        
         
         if (th3 == null) {
         	errMsg = new String("Error when computing TH3");
@@ -1519,14 +1511,7 @@ public class MessageProcessor {
     	
         byte[] th3SerializedCBOR = CBORObject.FromObject(th3).EncodeToBytes();
         
-        
-        // v-16
-    	// byte[] th4 = computeTH4(session, th3SerializedCBOR, plaintext3);
-        
-        // v-16
     	byte[] th4 = computeTH4(session, th3SerializedCBOR, plaintext3, peerCredential);
-    	
-    	
     	
         if (th4 == null) {
         	errMsg = new String("Error when computing TH_4");
@@ -2259,8 +2244,6 @@ public class MessageProcessor {
         if (error == false) {
 	        String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCipherSuite());
 	    	
-	        // v-16
-	        // prk2e = computePRK2e(dhSecret, hashAlgorithm);
 	    	prk2e = computePRK2e(th2, dhSecret, hashAlgorithm);
 	    	
 	        dhSecret = null;
@@ -2491,14 +2474,9 @@ public class MessageProcessor {
         byte[] th2SerializedCBOR = CBORObject.FromObject(th2).EncodeToBytes();
 
         byte[] plaintext2 = session.getPlaintext2(); // PLAINTEXT_2 as serialized CBOR Sequence
-                
-        // v-16
-        // byte[] th3 = computeTH3(session, th2SerializedCBOR, plaintext2);
-
-        // v-16
         byte[] credR = session.getPeerCred();
-        byte[] th3 = computeTH3(session, th2SerializedCBOR, plaintext2, credR);
         
+        byte[] th3 = computeTH3(session, th2SerializedCBOR, plaintext2, credR);
         
         if (th3 == null) {
         	System.err.println("Error when computing TH_3");
@@ -2645,14 +2623,8 @@ public class MessageProcessor {
 	    	
 	        byte[] th3SerializedCBOR = CBORObject.FromObject(th3).EncodeToBytes();
 	        
-	        
-	        // v-16
-	    	// byte[] th4 = computeTH4(session, th3SerializedCBOR, plaintext3);
-	        
-	        // v-16
 	        byte[] credI = session.getCred();
 	        byte[] th4 = computeTH4(session, th3SerializedCBOR, plaintext3, credI);
-	        
 	        
 	        if (th4 == null) {
 	        	System.err.println("Error when computing TH_4");
@@ -3257,19 +3229,14 @@ public class MessageProcessor {
     	
 		byte[] keystream2 = null;
 		
-		// v-16
 		byte[] prk2e = session.getPRK2e();
 		
 		CBORObject context = CBORObject.FromObject(session.getTH2());
 		
-		
-		// v-16
     	int selectedCipherSuite = session.getSelectedCipherSuite();
     	String hashAlg = EdhocSession.getEdhocHashAlg(selectedCipherSuite);
     	int hashLength = EdhocSession.getEdhocHashAlgOutputSize(selectedCipherSuite);
 		
-    	
-    	// v-16
     	if ( (!hashAlg.equals("SHA-256") && !hashAlg.equals("SHA-384") && !hashAlg.equals("SHA-512")) || (length <= 255 * hashLength) ) {
 			try {
 				keystream2 = session.edhocKDF(prk2e, Constants.KDF_LABEL_KEYSTREAM_2, context, length);
@@ -3330,9 +3297,6 @@ public class MessageProcessor {
 		byte[] prk2e = null;
 	    try {  	
 	    	if (hashAlgorithm.equals("SHA-256") || hashAlgorithm.equals("SHA-384") || hashAlgorithm.equals("SHA-512")) {
-	    		
-	    		// v-16
-	    		// prk2e = Hkdf.extract(new byte[] {}, dhSecret);
 	    		prk2e = Hkdf.extract(th2, dhSecret);
 	    	}
 		} catch (InvalidKeyException e) {
@@ -4219,13 +4183,13 @@ public class MessageProcessor {
      * @param session   The used EDHOC session
      * @param th2   The transcript hash TH2, as a serialized CBOR byte string
      * @param plaintext2   The PLAINTEXT_2 from EDHOC Message 2, as a serialized CBOR sequence
-     * @param credR   CRED_R as the serialization of a CBOR object // v-16
+     * @param credR   CRED_R as the serialization of a CBOR object
      * @return  The computed TH3
      */
-	public static byte[] computeTH3(EdhocSession session, byte[] th2, byte[] plaintext2, byte[] credR) { // v-16
+	public static byte[] computeTH3(EdhocSession session, byte[] th2, byte[] plaintext2, byte[] credR) {
 	
         byte[] th3 = null;
-        int inputLength = th2.length + plaintext2.length + credR.length; // v-16
+        int inputLength = th2.length + plaintext2.length + credR.length;
         
         int selectedCipherSuite = session.getSelectedCipherSuite();
         String hashAlgorithm = EdhocSession.getEdhocHashAlg(selectedCipherSuite);
@@ -4236,7 +4200,6 @@ public class MessageProcessor {
         offset += th2.length;
         System.arraycopy(plaintext2, 0, hashInput, offset, plaintext2.length);
         
-        // v-16
         offset += plaintext2.length;
         System.arraycopy(credR, 0, hashInput, offset, credR.length);
         
@@ -4258,13 +4221,13 @@ public class MessageProcessor {
      * @param session   The used EDHOC session
      * @param th3   The transcript hash TH3, as a serialized CBOR byte string
      * @param plaintext3   The PLAINTEXT_3 from EDHOC Message 3, as a serialized CBOR sequence
-     * @param credI   CRED_I as the serialization of a CBOR object // v-16
+     * @param credI   CRED_I as the serialization of a CBOR object
      * @return  The computed TH4
      */
-	public static byte[] computeTH4(EdhocSession session, byte[] th3, byte[] plaintext3, byte[] credI) { // v-16
+	public static byte[] computeTH4(EdhocSession session, byte[] th3, byte[] plaintext3, byte[] credI) {
 	
         byte[] th4 = null;
-        int inputLength = th3.length + plaintext3.length + credI.length; // v-16
+        int inputLength = th3.length + plaintext3.length + credI.length;
         
         int selectedCipherSuite = session.getSelectedCipherSuite();
         String hashAlgorithm = EdhocSession.getEdhocHashAlg(selectedCipherSuite);
@@ -4275,7 +4238,6 @@ public class MessageProcessor {
         offset += th3.length;
         System.arraycopy(plaintext3, 0, hashInput, offset, plaintext3.length);
         
-        // v-16
         offset += plaintext3.length;
         System.arraycopy(credI, 0, hashInput, offset, credI.length);
         
