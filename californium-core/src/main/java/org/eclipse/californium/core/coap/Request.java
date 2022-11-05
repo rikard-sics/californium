@@ -50,6 +50,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.coap.CoAP.Code;
@@ -233,6 +234,10 @@ public class Request extends Message {
 
 	/** Contextual information about this request */
 	private Map<String, String> userContext;
+
+	/** Indicate if this exchange allows multiple responses **/
+	private final AtomicBoolean multiResponseRequest = new AtomicBoolean(false);
+
 
 	/**
 	 * Indicates if handling the response caused an error.
@@ -1195,5 +1200,23 @@ public class Request extends Message {
 	 */
 	public static Request newPing() {
 		return new Request(null);
+	}
+
+	/**
+	 * Set flag to indicate this exchange allows multiple responses. TODO: Avoid
+	 * having in both Exchange and Request
+	 * 
+	 * @param b true or false
+	 */
+	public void setMultiResponse(boolean b) {
+		multiResponseRequest.set(b);
+	}
+
+	/**
+	 * Get indicating if this exchange allows responses. TODO: Avoid having in
+	 * both Exchange and Request
+	 */
+	public boolean getMultiResponse() {
+		return multiResponseRequest.get();
 	}
 }

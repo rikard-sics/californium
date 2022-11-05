@@ -19,6 +19,7 @@ package org.eclipse.californium.oscore.group;
 import java.io.File;
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Provider;

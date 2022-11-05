@@ -242,6 +242,9 @@ public class Exchange {
 	/** Indicates if the exchange is complete */
 	private final AtomicBoolean complete = new AtomicBoolean();
 
+	/** Indicate if this exchange allows multiple responses **/
+	private final AtomicBoolean multiResponseExchange = new AtomicBoolean(false);
+
 	/**
 	 * The key mid for the current request.
 	 */
@@ -1544,5 +1547,21 @@ public class Exchange {
 		private KeyMID getMID() {
 			return keyMid;
 		}
+	}
+
+	/**
+	 * Set flag to indicate this exchange allows multiple responses.
+	 * 
+	 * @param b true or false
+	 */
+	public void setMultiResponse(boolean b) {
+		multiResponseExchange.set(b);
+	}
+
+	/**
+	 * Get indicating if this exchange allows responses.
+	 */
+	public boolean getMultiResponse() {
+		return multiResponseExchange.get();
 	}
 }
