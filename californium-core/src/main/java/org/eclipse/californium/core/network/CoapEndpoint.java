@@ -696,6 +696,10 @@ public class CoapEndpoint implements Endpoint, Executor {
 			}
 		}
 		final Exchange exchange = new Exchange(request, identity, Origin.LOCAL, executor);
+		// If this request is to allow multiple responses, set so in exchange
+		if (request.getMultiResponse()) {
+			exchange.setMultiResponse(true);
+		}
 		exchange.setEndpoint(this);
 		exchange.execute(new Runnable() {
 
