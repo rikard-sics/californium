@@ -97,7 +97,7 @@ public class ExchangeCleanupLayer extends AbstractLayer {
 
 	@Override
 	public void receiveResponse(final Exchange exchange, final Response response) {
-		if (!exchange.getRequest().isMulticast()) {
+		if (!exchange.getRequest().isMulticast() && !exchange.getMultiResponse()) {
 			// multicast exchanges are completed with MulticastCleanupMessageObserver
 			exchange.setComplete();
 			exchange.getRequest().onTransferComplete();
