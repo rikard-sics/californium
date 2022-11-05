@@ -140,6 +140,10 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 				e.printStackTrace();
 			}
 			if (add.isMulticastAddress()) {
+
+				// Set exchange to not close after first response
+				exchange.setMultiResponse(true);
+
 				outgoingRequest.setType(Type.NON);
 
 				// Send using multicast handler
@@ -213,7 +217,23 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 				cache.cacheResponse(cacheKey, incomingResponse);
 			}
 			ProxyCoapClientResource.LOGGER.debug("ProxyCoapClientResource received {}", incomingResponse);
-			incomingExchange.sendResponse(translator.getResponse(incomingResponse));
+
+			// Save source address of response to add as CoAP option
+			// (Response-Forwarding)
+			String responseSourceHost = incomingResponse.getSourceContext().getPeerAddress().getHostString();
+			int responseSourcePort = incomingResponse.getSourceContext().getPeerAddress().getPort();
+
+			// Build outgoing response with option
+			Response outgoingResponse = translator.getResponse(incomingResponse);
+
+			// https://datatracker.ietf.org/doc/html/draft-tiloca-core-groupcomm-proxy-07#section-3
+			ResponseForwardingOption responseForwarding = new ResponseForwardingOption(ResponseForwardingOption.NUMBER);
+			responseForwarding.setTpId(1);
+			responseForwarding.setSrvHost(responseSourceHost);
+			responseForwarding.setSrvPort(responseSourcePort);
+			outgoingResponse.getOptions().addOption(responseForwarding);
+
+			incomingExchange.sendResponse(outgoingResponse);
 		}
 
 		@Override
@@ -255,8 +275,11 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 
 		private boolean on;
 
+		// Untested
 		public List<CoapResponse> getResponses() {
-			return responses;
+			List<CoapResponse> returnList = new ArrayList<CoapResponse>(responses);
+			responses.clear();
+			return returnList;
 		}
 
 		public void clearResponses() {

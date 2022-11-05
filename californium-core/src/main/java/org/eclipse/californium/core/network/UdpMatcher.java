@@ -187,7 +187,7 @@ public final class UdpMatcher extends BaseMatcher {
 		}
 
 		// Only CONs and Observe keep the exchange active (CoAP server side)
-		if (ready) {
+		if (ready && !exchange.getMultiResponse()) {
 			exchange.setComplete();
 		}
 	}
