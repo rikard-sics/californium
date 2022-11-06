@@ -3012,9 +3012,9 @@ public class MessageProcessor {
 		byte[] connectionId = null;
 		HashMapCtxDB oscoreDB = (appProfile.getUsedForOSCORE() == true) ? db : null;
 		
-		// connectionId = Util.getConnectionId(usedConnectionIds, oscoreDB, null);
+		connectionId = Util.getConnectionId(usedConnectionIds, oscoreDB, null);
 		// Forced for testing
-		connectionId = new byte[] {(byte) 0x1c};		
+		// connectionId = new byte[] {(byte) 0x1c};		
 
         EdhocSession mySession = new EdhocSession(true, true, method, connectionId, keyPairs, idCreds, creds,
         										  supportedCipherSuites, appProfile, edp, oscoreDB);
