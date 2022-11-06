@@ -164,6 +164,8 @@ public class EdhocClient {
 	private static String helloWorldURI = "coap://localhost/helloWorld";
 	
 	private static String edhocURI = "coap://localhost/.well-known/edhoc";
+	
+	// private static String edhocURI = "coap://31.133.130.112/.well-known/edhoc";
 	// private static String edhocURI = "coap://51.75.194.248/.well-known/edhoc"; // Timothy
 	// private static String edhocURI = "coap://54.93.59.163/.well-known/edhoc"; // Stefan
 	// private static String edhocURI = "coap://195.251.58.203:5683/.well-known/edhoc"; // Lidia
@@ -1015,6 +1017,7 @@ public class EdhocClient {
 	private static void setupSupportedCipherSuites() {
 		
 		// Add the supported cipher suites in decreasing order of preference
+		
 		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_0);
 		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_1);
 		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_2);
@@ -1599,6 +1602,7 @@ public class EdhocClient {
 		// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x0a
 		byte[] peer1KidP256DH = new byte[] {(byte) 0x0a};
 		
+		
 		// Build the public key
 		
 		peerPublicKeyBinary = StringUtil.hex2ByteArray("bbc34960526ea4d32e940cad2a234148ddc21791a12afbcbac93622046dd44f0");
@@ -1615,8 +1619,8 @@ public class EdhocClient {
 		
 		// These serializations have to be prepared manually, in order to ensure that
 		// the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
-		peerCred = StringUtil.hex2ByteArray("A2026008A101A5010202410A2001215820BBC34960526EA4D32E940CAD2A234148DDC21791A12AFBCBAC93622046DD44F02258204519E257236B2A0CE2023F0931F1F386CA7AFDA64FCDE0108C224C51EABF6072");
- 		
+		peerCred = StringUtil.hex2ByteArray("A2026008A101A5010202410A2001215820BBC34960526EA4D32E940CAD2A234148DDC21791A12AFBCBAC93622046DD44F02258204519E257236B2A0CE2023F0931F1F386CA7AFDA64FCDE0108C224C51EABF6072");		
+		
 		peer1IdCredP256DHkccs = Util.buildIdCredKccs(peer1CcsObjectP256DH); // ID_CRED as 'kccs'
 		peer1IdCredP256DHkid = Util.buildIdCredKid(peer1KidP256DH); // ID_CRED as 'kid'
 		
