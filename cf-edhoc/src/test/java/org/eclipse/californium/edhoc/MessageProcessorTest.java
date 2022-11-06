@@ -80,6 +80,8 @@ public class MessageProcessorTest {
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(0);
 		
+		Set<Integer> supportedEADs = new HashSet<>();
+		
 		/* Initiator information*/
 
 		// Connection Identifier of the Initiator
@@ -123,7 +125,7 @@ public class MessageProcessorTest {
 		HashMapCtxDB db = new HashMapCtxDB();
 		EdhocSession sessionInitiator = new EdhocSession(initiator, true, method, connectionIdentifierInitiator,
 														 keyPairsI, idCredsI, credsI, supportedCipherSuites,
-														 appProfile, edp, db);
+														 supportedEADs, appProfile, edp, db);
 		
 		edhocSessions.put(CBORObject.FromObject(connectionIdentifierInitiator), sessionInitiator);
 
@@ -171,7 +173,7 @@ public class MessageProcessorTest {
 		HashMapCtxDB db2 = new HashMapCtxDB();
 		EdhocSession sessionResponder = new EdhocSession(initiator, true, method, connectionIdentifierResponder,
 														 keyPairsR, idCredsR, credsR, supportedCipherSuites,
-														 appProfile, edp2, db2);
+														 supportedEADs, appProfile, edp2, db2);
 		
 		edhocSessions.put(CBORObject.FromObject(connectionIdentifierResponder), sessionResponder);
 		
@@ -259,6 +261,8 @@ public class MessageProcessorTest {
 		List<Integer> cipherSuites = new ArrayList<Integer>();
 		cipherSuites.add(0);
 		
+		Set<Integer> supportedEADs = new HashSet<>();
+		
 		// The identity key of the Initiator
 		byte[] privateIdentityKeyBytes = StringUtil.hex2ByteArray(
 				"4c5b25878f507c6b9dae68fbd4fd3ff997533db0af00b25d324ea28e6c213bc8");
@@ -316,7 +320,7 @@ public class MessageProcessorTest {
 				 put(Integer.valueOf(Constants.CURVE_Ed25519), idCred);
 	    
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
-				                                idCreds, creds, cipherSuites, appProfile, edp, db);
+				                                idCreds, creds, cipherSuites, supportedEADs, appProfile, edp, db);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = StringUtil.hex2ByteArray(
@@ -366,6 +370,7 @@ public class MessageProcessorTest {
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(0);
 
+		Set<Integer> supportedEADs = new HashSet<>();
 		
 		// The x509 certificate of the Responder
 		byte[] serializedCert = StringUtil.hex2ByteArray(
@@ -486,7 +491,7 @@ public class MessageProcessorTest {
 	    
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
-												idCreds, creds, supportedCipherSuites, appProfile, edp, db);
+												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, edp, db);
 
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -548,6 +553,7 @@ public class MessageProcessorTest {
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(0);
 		
+		Set<Integer> supportedEADs = new HashSet<>();
 		
 		// The x509 certificate of the Initiator
 		byte[] serializedCert = StringUtil.hex2ByteArray(
@@ -640,7 +646,7 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
-												idCreds, creds, supportedCipherSuites, appProfile, edp, db);
+												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, edp, db);
 
 		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -756,6 +762,7 @@ public class MessageProcessorTest {
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(0);
 		
+		Set<Integer> supportedEADs = new HashSet<>();
 		
 		// The x509 certificate of the Responder
 		byte[] serializedCert = StringUtil.hex2ByteArray(
@@ -833,7 +840,7 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
-												idCreds, creds, supportedCipherSuites, appProfile, edp, db);
+												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, edp, db);
 
 		session.setCurrentStep(Constants.EDHOC_AFTER_M3);
 		
@@ -891,6 +898,8 @@ public class MessageProcessorTest {
 		List<Integer> cipherSuitesPeer = new ArrayList<Integer>();
 		cipherSuitesPeer.add(2);
 		
+		Set<Integer> supportedEADs = new HashSet<>();
+		
 		OneKey identityKey = Util.generateKeyPair(KeyKeys.EC2_P256.AsInt32());
 		CBORObject[] ead1 = null;
 		
@@ -942,7 +951,7 @@ public class MessageProcessorTest {
 				 put(Integer.valueOf(Constants.CURVE_P256), idCred);
 		
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
-				                                idCreds, creds, supportedCipherSuites, appProfile, edp, db);
+				                                idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, edp, db);
 
 		// Force the early knowledge of cipher suites supported by the other peer
 		session.setPeerSupportedCipherSuites(cipherSuitesPeer);
@@ -990,6 +999,8 @@ public class MessageProcessorTest {
 		
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(2);
+		
+		Set<Integer> supportedEADs = new HashSet<>();
 		
 		// The identity key of the Responder
 		byte[] privateIdentityKeyBytes = StringUtil.hex2ByteArray(
@@ -1073,7 +1084,7 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
-												idCreds, creds, supportedCipherSuites, appProfile, edp, db);
+												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, edp, db);
 
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -1130,6 +1141,8 @@ public class MessageProcessorTest {
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(6);
 		supportedCipherSuites.add(2);
+		
+		Set<Integer> supportedEADs = new HashSet<>();
 		
 		// The identity key of the Initiator
 		byte[] privateIdentityKeyBytes = StringUtil.hex2ByteArray(
@@ -1225,7 +1238,7 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
-												idCreds, creds, supportedCipherSuites, appProfile, edp, db);
+												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, edp, db);
 
 		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -1335,6 +1348,8 @@ public class MessageProcessorTest {
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(2);
 		
+		Set<Integer> supportedEADs = new HashSet<>();
+		
 		// The identity key of the Responder
 		byte[] privateIdentityKeyBytes = StringUtil.hex2ByteArray(
 				"72cc4761dbd4c78f758931aa589d348d1ef874a7e303ede2f140dcf3e6aa4aac");
@@ -1421,7 +1436,7 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
-												idCreds, creds, supportedCipherSuites, appProfile, edp, db);
+												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, edp, db);
 
 		session.setCurrentStep(Constants.EDHOC_AFTER_M3);
 		

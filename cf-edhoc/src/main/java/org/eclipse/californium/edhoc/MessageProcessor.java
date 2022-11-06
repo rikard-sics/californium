@@ -243,7 +243,8 @@ public class MessageProcessor {
      *  Process an EDHOC Message 1
      * @param sequence   The CBOR sequence used as payload of the EDHOC Message 1
      * @param isReq   True if the CoAP message is a request, or False otherwise
-     * @param supportedCipherSuites   The list of cipher suites supported by this peer 
+     * @param supportedCipherSuites   The list of cipher suites supported by this peer
+     * @param supportedEADs   The list of EAD items supported by this peer
      * @param appProfile   The application profile to use
      * @param sessions   The EDHOC sessions of this peer
      * @return   A list of CBOR Objects including up to three elements.
@@ -262,6 +263,7 @@ public class MessageProcessor {
      */
 	public static List<CBORObject> readMessage1(byte[] sequence, boolean isReq,
 												List<Integer> supportedCipherSuites,
+												Set<Integer> supportedEADs,
 												AppProfile appProfile) {
 		
 		if (sequence == null || supportedCipherSuites == null)
@@ -508,25 +510,60 @@ public class MessageProcessor {
 		        int eadIndex = 0;
 		        
 		        for (int i = index; i < objectListRequest.length; i++) {
-		            if ((eadIndex % 2) == 0 && objectListRequest[i].getType() != CBORType.Integer) {
-		                ead1 = null;
-		                errMsg = new String("Malformed or invalid EAD_1");
-		                responseCode = ResponseCode.BAD_REQUEST;
-		                error = true;
-		                break;
+		        	
+		        	// The first element of each pair is an ead_label, and must be a CBOR integer with value different than 0
+		            if ((eadIndex % 2) == 0) {
+		            	if (objectListRequest[i].getType() != CBORType.Integer || objectListRequest[i].AsInt32() == 0) {
+			                ead1 = null;
+			                errMsg = new String("Malformed or invalid EAD_1");
+			                responseCode = ResponseCode.BAD_REQUEST;
+			                error = true;
+			                break;
+		            	}
+		            	int eadLabel = objectListRequest[i].AsInt32();
+		            	if (eadLabel < 0 && !supportedEADs.contains(Integer.valueOf(eadLabel))) {
+	            			// Since the EAD item is critical and is not supported, discontinue the protocol
+			                ead1 = null;
+			                errMsg = new String("Unsupported EAD_1 critical item with ead_label " + eadLabel);
+			                responseCode = ResponseCode.BAD_REQUEST;
+			                error = true;
+			                break;
+		            	}
+		            	
+		            	// The ead_label is fine; move on to the ead_value
+		            	eadIndex++;
+		            	continue;
 		            }
-		            if ((eadIndex % 2) == 1 && objectListRequest[i].getType() != CBORType.ByteString) {
-		                ead1 = null;
-		                errMsg = new String("Malformed or invalid EAD_1");
-		                responseCode = ResponseCode.BAD_REQUEST;
-		                error = true;
-		                break;
+		            
+		            // The second element of each pair is an ead_value, and must be a CBOR byte string
+		            if ((eadIndex % 2) == 1) {
+		            	if (objectListRequest[i].getType() != CBORType.ByteString) {
+			                ead1 = null;
+			                errMsg = new String("Malformed or invalid EAD_1");
+			                responseCode = ResponseCode.BAD_REQUEST;
+			                error = true;
+			                break;
+		            	}
+		            	// Skip this EAD item as not supported and not critical
+		            	if (!supportedEADs.contains(Integer.valueOf(eadIndex-1))) {
+		            		eadIndex++;
+		            		continue;
+		            	}
+		            	
+		            	// This EAD item is supported, so it is kept for further processing
+		            	
+			            // Make a hard copy of ead_label
+			            byte[] serializedObjectLabel = objectListRequest[i-1].EncodeToBytes();
+			            CBORObject elementLabel = CBORObject.DecodeFromBytes(serializedObjectLabel);
+			            ead1[eadIndex-1] = elementLabel;
+			            
+			            // Make a hard copy of ead_value
+			            byte[] serializedObjectValue = objectListRequest[i].EncodeToBytes();
+			            CBORObject elementValue = CBORObject.DecodeFromBytes(serializedObjectValue);
+			            ead1[eadIndex] = elementValue;
+		            	
+			            eadIndex++;
 		            }
-		            // Make a hard copy
-		            byte[] serializedObject = objectListRequest[i].EncodeToBytes();
-		            CBORObject element = CBORObject.DecodeFromBytes(serializedObject);
-		            ead1[eadIndex] = element;
-		            eadIndex++;
 		        }
 		    }
 			
@@ -943,27 +980,62 @@ public class MessageProcessor {
     	        
     	        int eadIndex = 0;
     	        
-    	        for (int i = baseIndex + 2; i < plaintextElementList.length; i++) {
-        	        if ((eadIndex % 2) == 0 && plaintextElementList[i].getType() != CBORType.Integer) {
-        	        	ead2 = null;
-        	        	errMsg = new String("Malformed or invalid EAD_2");
-        	        	responseCode = ResponseCode.BAD_REQUEST;
-        	        	error = true;
-        	        	break;
-        	        }
-        	        if ((eadIndex % 2) == 1 && plaintextElementList[i].getType() != CBORType.ByteString) {
-        	        	ead2 = null;
-        	        	errMsg = new String("Malformed or invalid EAD_2");
-        	        	responseCode = ResponseCode.BAD_REQUEST;
-        	        	error = true;
-        	        	break;
-        	        }
-    	            // Make a hard copy
-    	            byte[] serializedObject = plaintextElementList[i].EncodeToBytes();
-    	            CBORObject element = CBORObject.DecodeFromBytes(serializedObject);
-    	            ead2[eadIndex] = element;
-    	            eadIndex++;
-    	        }
+		        for (int i = index; i < objectListRequest.length; i++) {
+		        	
+		        	// The first element of each pair is an ead_label, and must be a CBOR integer with value different than 0
+		            if ((eadIndex % 2) == 0) {
+		            	if (objectListRequest[i].getType() != CBORType.Integer || objectListRequest[i].AsInt32() == 0) {
+			                ead2 = null;
+			                errMsg = new String("Malformed or invalid EAD_2");
+			                responseCode = ResponseCode.BAD_REQUEST;
+			                error = true;
+			                break;
+		            	}
+		            	int eadLabel = objectListRequest[i].AsInt32();
+		            	if (eadLabel < 0 && !session.getSupportedEADs().contains(Integer.valueOf(eadLabel))) {
+	            			// Since the EAD item is critical and is not supported, discontinue the protocol
+			                ead2 = null;
+			                errMsg = new String("Unsupported EAD_2 critical item with ead_label " + eadLabel);
+			                responseCode = ResponseCode.BAD_REQUEST;
+			                error = true;
+			                break;
+		            	}
+		            	
+		            	// The ead_label is fine; move on to the ead_value
+		            	eadIndex++;
+		            	continue;
+		            }
+		            
+		            // The second element of each pair is an ead_value, and must be a CBOR byte string
+		            if ((eadIndex % 2) == 1) {
+		            	if (objectListRequest[i].getType() != CBORType.ByteString) {
+			                ead2 = null;
+			                errMsg = new String("Malformed or invalid EAD_2");
+			                responseCode = ResponseCode.BAD_REQUEST;
+			                error = true;
+			                break;
+		            	}
+		            	// Skip this EAD item as not supported and not critical
+		            	if (!session.getSupportedEADs().contains(Integer.valueOf(eadIndex-1))) {
+		            		eadIndex++;
+		            		continue;
+		            	}
+		            	
+		            	// This EAD item is supported, so it is kept for further processing
+		            	
+			            // Make a hard copy of ead_label
+			            byte[] serializedObjectLabel = objectListRequest[i-1].EncodeToBytes();
+			            CBORObject elementLabel = CBORObject.DecodeFromBytes(serializedObjectLabel);
+			            ead2[eadIndex-1] = elementLabel;
+			            
+			            // Make a hard copy of ead_value
+			            byte[] serializedObjectValue = objectListRequest[i].EncodeToBytes();
+			            CBORObject elementValue = CBORObject.DecodeFromBytes(serializedObjectValue);
+			            ead2[eadIndex] = elementValue;
+		            	
+			            eadIndex++;
+		            }
+		        }
     		}
     	}
     	
@@ -1372,27 +1444,62 @@ public class MessageProcessor {
     	        
     	        int eadIndex = 0;
     	        
-    	        for (int i = baseIndex + 2; i < plaintextElementList.length; i++) {
-    	            if ((eadIndex % 2) == 0 && plaintextElementList[i].getType() != CBORType.Integer) {
-    	                ead3 = null;
-    	                errMsg = new String("Malformed or invalid EAD_3");
-    	                responseCode = ResponseCode.BAD_REQUEST;
-    	                error = true;
-    	                break;
-    	            }
-    	            if ((eadIndex % 2) == 1 && plaintextElementList[i].getType() != CBORType.ByteString) {
-    	                ead3 = null;
-    	                errMsg = new String("Malformed or invalid EAD_3");
-    	                responseCode = ResponseCode.BAD_REQUEST;
-    	                error = true;
-    	                break;
-    	            }
-    	            // Make a hard copy
-    	            byte[] serializedObject = plaintextElementList[i].EncodeToBytes();
-    	            CBORObject element = CBORObject.DecodeFromBytes(serializedObject);
-    	            ead3[eadIndex] = element;
-    	            eadIndex++;
-    	        }
+		        for (int i = index; i < objectListRequest.length; i++) {
+		        	
+		        	// The first element of each pair is an ead_label, and must be a CBOR integer with value different than 0
+		            if ((eadIndex % 2) == 0) {
+		            	if (objectListRequest[i].getType() != CBORType.Integer || objectListRequest[i].AsInt32() == 0) {
+			                ead3 = null;
+			                errMsg = new String("Malformed or invalid EAD_3");
+			                responseCode = ResponseCode.BAD_REQUEST;
+			                error = true;
+			                break;
+		            	}
+		            	int eadLabel = objectListRequest[i].AsInt32();
+		            	if (eadLabel < 0 && !session.getSupportedEADs().contains(Integer.valueOf(eadLabel))) {
+	            			// Since the EAD item is critical and is not supported, discontinue the protocol
+			                ead3 = null;
+			                errMsg = new String("Unsupported EAD_3 critical item with ead_label " + eadLabel);
+			                responseCode = ResponseCode.BAD_REQUEST;
+			                error = true;
+			                break;
+		            	}
+		            	
+		            	// The ead_label is fine; move on to the ead_value
+		            	eadIndex++;
+		            	continue;
+		            }
+		            
+		            // The second element of each pair is an ead_value, and must be a CBOR byte string
+		            if ((eadIndex % 2) == 1) {
+		            	if (objectListRequest[i].getType() != CBORType.ByteString) {
+			                ead3 = null;
+			                errMsg = new String("Malformed or invalid EAD_3");
+			                responseCode = ResponseCode.BAD_REQUEST;
+			                error = true;
+			                break;
+		            	}
+		            	// Skip this EAD item as not supported and not critical
+		            	if (!session.getSupportedEADs().contains(Integer.valueOf(eadIndex-1))) {
+		            		eadIndex++;
+		            		continue;
+		            	}
+		            	
+		            	// This EAD item is supported, so it is kept for further processing
+		            	
+			            // Make a hard copy of ead_label
+			            byte[] serializedObjectLabel = objectListRequest[i-1].EncodeToBytes();
+			            CBORObject elementLabel = CBORObject.DecodeFromBytes(serializedObjectLabel);
+			            ead3[eadIndex-1] = elementLabel;
+			            
+			            // Make a hard copy of ead_value
+			            byte[] serializedObjectValue = objectListRequest[i].EncodeToBytes();
+			            CBORObject elementValue = CBORObject.DecodeFromBytes(serializedObjectValue);
+			            ead3[eadIndex] = elementValue;
+		            	
+			            eadIndex++;
+		            }
+		        }
     	    }
     	}
     	
@@ -1815,27 +1922,62 @@ public class MessageProcessor {
         	        
         	        int eadIndex = 0;
         	        
-        	        for (int i = baseIndex; i < plaintextElementList.length; i++) {
-        	            if ((eadIndex % 2) == 0 && plaintextElementList[i].getType() != CBORType.Integer) {
-        	                ead4 = null;
-        	                errMsg = new String("Malformed or invalid EAD_4");
-        	                responseCode = ResponseCode.BAD_REQUEST;
-        	                error = true;
-        	                break;
-        	            }
-        	            if ((eadIndex % 2) == 1 && plaintextElementList[i].getType() != CBORType.ByteString) {
-        	                ead4 = null;
-        	                errMsg = new String("Malformed or invalid EAD_4");
-        	                responseCode = ResponseCode.BAD_REQUEST;
-        	                error = true;
-        	                break;
-        	            }
-        	            // Make a hard copy
-        	            byte[] serializedObject = plaintextElementList[i].EncodeToBytes();
-        	            CBORObject element = CBORObject.DecodeFromBytes(serializedObject);
-        	            ead4[eadIndex] = element;
-        	            eadIndex++;
-        	        }
+    		        for (int i = index; i < objectListRequest.length; i++) {
+    		        	
+    		        	// The first element of each pair is an ead_label, and must be a CBOR integer with value different than 0
+    		            if ((eadIndex % 2) == 0) {
+    		            	if (objectListRequest[i].getType() != CBORType.Integer || objectListRequest[i].AsInt32() == 0) {
+    			                ead4 = null;
+    			                errMsg = new String("Malformed or invalid EAD_4");
+    			                responseCode = ResponseCode.BAD_REQUEST;
+    			                error = true;
+    			                break;
+    		            	}
+    		            	int eadLabel = objectListRequest[i].AsInt32();
+    		            	if (eadLabel < 0 && !session.getSupportedEADs().contains(Integer.valueOf(eadLabel))) {
+    	            			// Since the EAD item is critical and is not supported, discontinue the protocol
+    			                ead4 = null;
+    			                errMsg = new String("Unsupported EAD_4 critical item with ead_label " + eadLabel);
+    			                responseCode = ResponseCode.BAD_REQUEST;
+    			                error = true;
+    			                break;
+    		            	}
+    		            	
+    		            	// The ead_label is fine; move on to the ead_value
+    		            	eadIndex++;
+    		            	continue;
+    		            }
+    		            
+    		            // The second element of each pair is an ead_value, and must be a CBOR byte string
+    		            if ((eadIndex % 2) == 1) {
+    		            	if (objectListRequest[i].getType() != CBORType.ByteString) {
+    			                ead4 = null;
+    			                errMsg = new String("Malformed or invalid EAD_4");
+    			                responseCode = ResponseCode.BAD_REQUEST;
+    			                error = true;
+    			                break;
+    		            	}
+    		            	// Skip this EAD item as not supported and not critical
+    		            	if (!session.getSupportedEADs().contains(Integer.valueOf(eadIndex-1))) {
+    		            		eadIndex++;
+    		            		continue;
+    		            	}
+    		            	
+    		            	// This EAD item is supported, so it is kept for further processing
+    		            	
+    			            // Make a hard copy of ead_label
+    			            byte[] serializedObjectLabel = objectListRequest[i-1].EncodeToBytes();
+    			            CBORObject elementLabel = CBORObject.DecodeFromBytes(serializedObjectLabel);
+    			            ead4[eadIndex-1] = elementLabel;
+    			            
+    			            // Make a hard copy of ead_value
+    			            byte[] serializedObjectValue = objectListRequest[i].EncodeToBytes();
+    			            CBORObject elementValue = CBORObject.DecodeFromBytes(serializedObjectValue);
+    			            ead4[eadIndex] = elementValue;
+    		            	
+    			            eadIndex++;
+    		            }
+    		        }
         	    }
         	}
     		
@@ -2995,6 +3137,7 @@ public class MessageProcessor {
      * @param creds    The authentication credentials of the Initiator (one per supported curve),
      *                 as the serialization of a CBOR object
      * @param supportedCipherSuites   The list of cipher suites supported by the Initiator
+     * @param supportedEADs   The set of EAD items supported by the Responder
      * @param usedConnectionIds   The set of allocated Connection Identifiers for the Initiator.
      *                            Each identifier is wrapped in a CBOR byte string.
      * @param appProfile   The application profile used for this session
@@ -3006,6 +3149,7 @@ public class MessageProcessor {
 														HashMap<Integer, HashMap<Integer, CBORObject>> idCreds,
 														HashMap<Integer, HashMap<Integer, CBORObject>> creds,
 			  									        List<Integer> supportedCipherSuites,
+			  									        Set<Integer> supportedEADs,
 			  									        Set<CBORObject> usedConnectionIds,
 			  									        AppProfile appProfile, EDP edp, HashMapCtxDB db) {
 		
@@ -3014,10 +3158,10 @@ public class MessageProcessor {
 		
 		connectionId = Util.getConnectionId(usedConnectionIds, oscoreDB, null);
 		// Forced for testing
-		// connectionId = new byte[] {(byte) 0x1c};		
-
+		// connectionId = new byte[] {(byte) 0x1c};
+		
         EdhocSession mySession = new EdhocSession(true, true, method, connectionId, keyPairs, idCreds, creds,
-        										  supportedCipherSuites, appProfile, edp, oscoreDB);
+        										  supportedCipherSuites, supportedEADs, appProfile, edp, oscoreDB);
 		
 		return mySession;
 		
@@ -3030,6 +3174,7 @@ public class MessageProcessor {
      * @param idCreds   The identifiers of the authentication credentials of the Responder
      * @param creds    The authentication credentials of the Responder (one per supported curve), as the serialization of a CBOR object
      * @param supportedCipherSuites   The list of cipher suites supported by the Responder
+     * @param supportedEADs   The set of EAD items supported by the Responder
      * @param usedConnectionIds   The set of allocated Connection Identifiers for the Responder
      * @param appProfile   The application profile used for this session
      * @param epd   The processor of External Authentication Data used for this session
@@ -3041,6 +3186,7 @@ public class MessageProcessor {
 														HashMap<Integer, HashMap<Integer, CBORObject>> idCreds,
 														HashMap<Integer, HashMap<Integer, CBORObject>> creds,
 			  									        List<Integer> supportedCipherSuites,
+			  									        Set<Integer> supportedEADs,
 			  									        Set<CBORObject> usedConnectionIds,
 			  									        AppProfile appProfile, EDP edp, HashMapCtxDB db) {
 		
@@ -3088,7 +3234,7 @@ public class MessageProcessor {
 		// connectionIdentifierResponder = new byte[] {(byte) 0x01};
 		
 		EdhocSession mySession = new EdhocSession(false, isReq, method, connectionIdentifierResponder, keyPairs, idCreds, creds,
-												  supportedCipherSuites, appProfile, edp, oscoreDB);
+												  supportedCipherSuites, supportedEADs, appProfile, edp, oscoreDB);
 		
 		// Set the selected cipher suite
 		mySession.setSelectedCipherSuite(selectedCipherSuite);

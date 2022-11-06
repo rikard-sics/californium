@@ -136,6 +136,9 @@ public class EdhocClient {
 	// List of supported cipher suites, in decreasing order of preference.
 	private static List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 	
+	// Set of supported EAD items
+	private static Set<Integer> supportedEADs = new HashSet<>();
+	
 	// The collection of application profiles - The lookup key is the full URI of the EDHOC resource
 	private static HashMap<String, AppProfile> appProfiles = new HashMap<String, AppProfile>();
 	
@@ -165,6 +168,7 @@ public class EdhocClient {
 	
 	private static String edhocURI = "coap://localhost/.well-known/edhoc";
 	
+	// private static String edhocURI = "coap://31.133.138.127/.well-known/edhoc";
 	// private static String edhocURI = "coap://31.133.130.112/.well-known/edhoc";
 	// private static String edhocURI = "coap://51.75.194.248/.well-known/edhoc"; // Timothy
 	// private static String edhocURI = "coap://54.93.59.163/.well-known/edhoc"; // Stefan
@@ -195,6 +199,9 @@ public class EdhocClient {
 		// Add the supported cipher suites
 		setupSupportedCipherSuites();
 
+		// Add the supported EAD items
+		setupSupportedEADs();
+		
 		// Set up the authentication credentials for this peer and the other peer
 		setupOwnAuthenticationCredentials();
 		
@@ -249,7 +256,7 @@ public class EdhocClient {
 		// Prepare the set of information for this EDHOC endpoint
 		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCreds, creds, keyPairs, peerPublicKeys,
 																	peerCredentials, edhocSessions, usedConnectionIds,
-																	supportedCipherSuites, db, edhocURI,
+																	supportedCipherSuites, supportedEADs, db, edhocURI,
 																	OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE,
 																	appProfiles, edp);
 		
@@ -372,6 +379,7 @@ public class EdhocClient {
 																		 edhocEndpointInfo.getIdCreds(),
 																		 edhocEndpointInfo.getCreds(),
                  														 edhocEndpointInfo.getSupportedCipherSuites(),
+                 														 edhocEndpointInfo.getSupportedEADs(),
                  														 edhocEndpointInfo.getUsedConnectionIds(),
                  														 appProfile, edhocEndpointInfo.getEdp(), db);
 		
@@ -1025,6 +1033,13 @@ public class EdhocClient {
 	
 	}
 	
+	private static void setupSupportedEADs() {
+		
+		// Add the supported EAD items, as per the example line below
+		// supportedEADs.add(Integer.valueOf(1));
+		
+	}
+	
 	private static void setupOwnAuthenticationCredentials () {
 		
 		byte[] privateKeyBinary = null;
@@ -1566,7 +1581,7 @@ public class EdhocClient {
 		
 		// Build CRED as an X.509 certificate, and the corresponding ID_CRED as 'x5chain', 'x5t' and 'x5u'
 		peerSerializedCert = StringUtil.hex2ByteArray("c788370016b8965bdb2074bff82e5a20e09bec21f8406e86442b87ec3ff245b70a47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb4");
-		
+			
 		// Test with Peter (real DER certificate for the same identity key)
 		// peerSerializedCert = StringUtil.hex2ByteArray("308202763082021ca00302010202144aebaeff99a7ec4c9b398e007e3074d6d24fd779300a06082a8648ce3d0403023073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c301e170d3231303230393039333131345a170d3232303230393039333131345a3073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c3059301306072a8648ce3d020106082a8648ce3d030107034200040d75040e117b0fed769f235a4c831ff3b6699b8e310af28094fe3baea003b5e9772a4def5d8d4ee362e9ae9ef615215d115341f531338e3fa4030b6257b25d66a3818d30818a301d0603551d0e0416041444f3cf92db3cda030a3faf611872b90c601c0f74301f0603551d2304183016801444f3cf92db3cda030a3faf611872b90c601c0f74300f0603551d130101ff040530030101ff30270603551d250420301e06082b0601050507031c06082b0601050507030106082b06010505070302300e0603551d0f0101ff0404030201f6300a06082a8648ce3d0403020348003045022100ee29fb91849d8f0c617de9f817e016b535cac732235eed8a6711e68a3a634d0802205d1750bc02f0f1dde19a7c48d82fb5442c560d13f3d1a7e99546a6c39a28f38b");
 		

@@ -171,6 +171,7 @@ class EdhocResource extends CoapResource {
 			
 			processingResult = MessageProcessor.readMessage1(message, true,
 															 edhocEndpointInfo.getSupportedCipherSuites(),
+															 edhocEndpointInfo.getSupportedEADs(),
 															 appProfile);
 
 			if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
@@ -209,6 +210,7 @@ class EdhocResource extends CoapResource {
 																    edhocEndpointInfo.getIdCreds(),
 																    edhocEndpointInfo.getCreds(),
 																    edhocEndpointInfo.getSupportedCipherSuites(),
+																    edhocEndpointInfo.getSupportedEADs(),
 																    edhocEndpointInfo.getUsedConnectionIds(),
 																    appProfile, edhocEndpointInfo.getEdp(),
 																    edhocEndpointInfo.getOscoreDb());
