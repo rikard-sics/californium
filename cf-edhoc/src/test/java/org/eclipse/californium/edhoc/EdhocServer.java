@@ -115,6 +115,9 @@ public class EdhocServer extends CoapServer {
 	
 	// List of supported cipher suites, in decreasing order of preference.
 	private static List<Integer> supportedCipherSuites = new ArrayList<Integer>();
+
+	// Set of supported EAD items
+	private static Set<Integer> supportedEADs = new HashSet<>();
 	
 	// The collection of application profiles - The lookup key is the full URI of the EDHOC resource
 	private static HashMap<String, AppProfile> appProfiles = new HashMap<String, AppProfile>();
@@ -145,6 +148,12 @@ public class EdhocServer extends CoapServer {
 
 		// Add the supported cipher suites
 		setupSupportedCipherSuites();
+
+		// Add the supported cipher suites
+		setupSupportedEADs();
+		
+		// Set up the authentication credentials for this peer and the other peer
+		setupOwnAuthenticationCredentials();
 		
 		// Set up the authentication credentials for this peer and the other peer
 		setupOwnAuthenticationCredentials();
@@ -225,7 +234,7 @@ public class EdhocServer extends CoapServer {
 		// prepare the set of information for this EDHOC endpoint
 		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCreds, creds, keyPairs, peerPublicKeys,
 																	peerCredentials, edhocSessions, usedConnectionIds,
-																	supportedCipherSuites, db, uriLocal,
+																	supportedCipherSuites, supportedEADs, db, uriLocal,
 																	OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE,
 																	appProfiles, edp);
 		
@@ -368,6 +377,13 @@ public class EdhocServer extends CoapServer {
 		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_2);
 		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_3);
 				
+	}
+	
+	private static void setupSupportedEADs() {
+	    
+	    // Add the supported EAD items, as per the example line below
+	    // supportedEADs.add(Integer.valueOf(1));
+	    
 	}
 
 	private static void setupOwnAuthenticationCredentials () {
