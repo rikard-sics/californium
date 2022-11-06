@@ -23,6 +23,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.KeyKeys;
@@ -73,6 +74,7 @@ public class EdhocSession {
 	private OneKey ephemeralKey;
 	
 	private List<Integer> supportedCipherSuites;
+	private Set<Integer> supportedEADs;
 	private AppProfile appProfile;
 	
 	private byte[] peerConnectionId;
@@ -110,7 +112,7 @@ public class EdhocSession {
 						HashMap<Integer, HashMap<Integer, OneKey>> keyPairs,
 						HashMap<Integer, HashMap<Integer, CBORObject>> idCreds,
 						HashMap<Integer, HashMap<Integer, CBORObject>> creds,
-						List<Integer> cipherSuites, AppProfile appProfile,
+						List<Integer> cipherSuites, Set<Integer> eads, AppProfile appProfile,
 						EDP edp, HashMapCtxDB db) {
 		
 		this.initiator = initiator;
@@ -128,6 +130,7 @@ public class EdhocSession {
 		this.ephemeralKey = null;
 		
 		this.supportedCipherSuites = cipherSuites;
+		this.supportedEADs = eads;
 		this.appProfile = appProfile;
 		this.edp = edp;
 		this.db = db;
@@ -312,6 +315,15 @@ public class EdhocSession {
 	public List<Integer> getSupportedCipherSuites() {
 
 		return this.supportedCipherSuites;
+		
+	}
+	
+	/**
+	 * @return  the supported EAD items
+	 */
+	public Set<Integer> getSupportedEADs() {
+
+		return this.supportedEADs;
 		
 	}
 	

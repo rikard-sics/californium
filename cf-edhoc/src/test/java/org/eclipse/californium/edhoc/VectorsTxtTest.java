@@ -191,6 +191,7 @@ public class VectorsTxtTest {
 		byte[] connectionId = connectionIdList.get(index).GetByteString();
 		List<Integer> cipherSuites = new ArrayList<Integer>();
 		cipherSuites.add(supportedCipherSuitesList.get(index)); // 1 suite only
+		Set<Integer> supportedEADs = new HashSet<>();
 		byte[] ead1 = ad1List.get(index);
 		if (ead1.length == 0) { // Consider len 0 ad as null
 			ead1 = null;
@@ -234,7 +235,7 @@ public class VectorsTxtTest {
 				 put(Integer.valueOf(Constants.CURVE_Ed25519), idCred);
 		
 		EdhocSession session = new EdhocSession(initiator, true, methodCorr, connectionId, keyPairs,
-				                                idCreds, creds, cipherSuites, appProfile, edp, db);
+				                                idCreds, creds, cipherSuites, supportedEADs, appProfile, edp, db);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = initiatorEphemeralPrivateList.get(index);
