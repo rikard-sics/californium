@@ -16,10 +16,12 @@
 package org.eclipse.californium.examples;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 
 import org.eclipse.californium.elements.exception.ConnectorException;
+import org.eclipse.californium.oscore.OSException;
 
 /**
  * Main starter class for jar execution.
@@ -36,7 +38,8 @@ public class Proxy2 {
 	private static final String SECURE_COAP_CLIENT = ExampleSecureProxy2CoapClient.class.getSimpleName();
 
 	public static void main(String[] args)
-			throws IOException, ConnectorException, InterruptedException, GeneralSecurityException {
+			throws IOException, ConnectorException, InterruptedException, GeneralSecurityException, OSException,
+			URISyntaxException {
 		String start = args.length > 0 ? args[0] : null;
 		if (start != null) {
 			String[] args2 = Arrays.copyOfRange(args, 1, args.length);
