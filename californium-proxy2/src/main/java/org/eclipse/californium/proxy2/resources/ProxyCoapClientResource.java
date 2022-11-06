@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.CoapClient;
@@ -219,7 +220,7 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 
 			// Save source address of response to add as CoAP option
 			// (Response-Forwarding)
-			String responseSourceHost = incomingResponse.getSourceContext().getPeerAddress().getHostString();
+			InetAddress responseSourceHost = incomingResponse.getSourceContext().getPeerAddress().getAddress();
 			int responseSourcePort = incomingResponse.getSourceContext().getPeerAddress().getPort();
 
 			// Build outgoing response with option
@@ -229,7 +230,9 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 			ResponseForwardingOption responseForwarding = new ResponseForwardingOption(ResponseForwardingOption.NUMBER);
 			responseForwarding.setTpId(1);
 			responseForwarding.setSrvHost(responseSourceHost);
-			responseForwarding.setSrvPort(responseSourcePort);
+			if (responseSourcePort != CoAP.DEFAULT_COAP_PORT) {
+				responseForwarding.setSrvPort(responseSourcePort);
+			}
 			outgoingResponse.getOptions().addOption(responseForwarding);
 
 			incomingExchange.sendResponse(outgoingResponse);
