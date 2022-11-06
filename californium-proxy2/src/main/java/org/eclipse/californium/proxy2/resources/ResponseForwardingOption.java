@@ -1,5 +1,10 @@
 package org.eclipse.californium.proxy2.resources;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+
+import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Option;
 
 import com.upokecenter.cbor.CBORObject;
@@ -7,7 +12,7 @@ import com.upokecenter.cbor.CBORObject;
 public class ResponseForwardingOption extends Option {
 
 	private int tpId;
-	private String srvHost;
+	private InetAddress srvHost;
 	private int srvPort = -1;
 
 	public static int NUMBER = 96;
@@ -24,11 +29,11 @@ public class ResponseForwardingOption extends Option {
 		this.tpId = tpId;
 	}
 
-	public String getSrvHost() {
+	public InetAddress getSrvHost() {
 		return srvHost;
 	}
 
-	public void setSrvHost(String srvHost) {
+	public void setSrvHost(InetAddress srvHost) {
 		this.srvHost = srvHost;
 	}
 
@@ -44,7 +49,10 @@ public class ResponseForwardingOption extends Option {
 	public byte[] getValue() {
 		CBORObject arrayOut = CBORObject.NewArray();
 		arrayOut.Add(tpId);
-		arrayOut.Add(CBORObject.FromObject(srvHost).WithTag(260));
+
+		byte[] hostBytes = srvHost.getAddress();
+		arrayOut.Add(CBORObject.FromObject(hostBytes).WithTag(260));
+
 		arrayOut.Add(srvPort);
 
 		return arrayOut.EncodeToBytes();
@@ -55,12 +63,20 @@ public class ResponseForwardingOption extends Option {
 		CBORObject arrayIn = CBORObject.DecodeFromBytes(value);
 		
 		setTpId(arrayIn.get(0).AsInt32Value());
-		setSrvHost(arrayIn.get(1).AsString());
 		
+		InetAddress hostAddr;
+		try {
+			hostAddr = InetAddress.getByAddress(arrayIn.get(1).GetByteString());
+			setSrvHost(hostAddr);
+		} catch (UnknownHostException e) {
+			System.err.println("Failed to parse srv_host in Response-Forwarding option!");
+			e.printStackTrace();
+		}
+
 		if(arrayIn.size() > 2) {
 			setSrvPort(arrayIn.get(2).AsInt32Value());
 		} else {
-			setSrvPort(-1);
+			setSrvPort(CoAP.DEFAULT_COAP_PORT);
 		}
 	}
 
