@@ -59,6 +59,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
+import net.i2p.crypto.eddsa.Utils;
 
 /**
  * Example CoAP server for proxy demonstration.
@@ -208,7 +209,10 @@ public class ExampleCoapServer {
 				System.out.println("=== End Receiving incoming request ===");
 
 				String payload = "Hi! I am the " + scheme + " server on port " + port + ". Request "
-						+ counter.incrementAndGet() + " with ID: " + serverId + ".";
+						+ counter.incrementAndGet() + " with ID: " + serverId;
+				if (USE_GROUP_OSCORE) {
+					payload += " and Group OSCORE SID: " + Utils.bytesToHex(sid) + ".";
+				}
 				exchange.setMaxAge(15);
 				int hash = payload.hashCode();
 				DatagramWriter etag = new DatagramWriter(4);
@@ -300,11 +304,11 @@ public class ExampleCoapServer {
 
 		Configuration config = init();
 		int port;
-		if (arg.length > 0) {
-			port = Integer.parseInt(arg[0]);
-		} else {
+		// if (arg.length > 0) {
+		// port = Integer.parseInt(arg[0]);
+		// } else {
 			port = config.get(CoapConfig.COAP_PORT);
-		}
+		// }
 		new ExampleCoapServer(config, port);
 	}
 
