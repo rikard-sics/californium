@@ -493,8 +493,15 @@ public class MessageProcessor {
 			}
 		}
 		
-		// EAD_1
+		// PAD_1
 		index++;
+		if (error == false) {
+		   // Skip possible padding
+		   while (objectListRequest.length > index && objectListRequest[index] == CBORObject.True)
+		         index++;
+		}
+		
+		// EAD_1
 		if (error == false && objectListRequest.length > index) {
 		    // EAD_1 is present
 			int length = objectListRequest.length - index;
@@ -3196,7 +3203,7 @@ public class MessageProcessor {
 		// Retrieve elements from EDHOC Message 1
 		
 	    // If the received message is a request (i.e. the CoAP client is the initiator), the first element
-	    // before the actual message_1 is the CBOR simple value 'true', i.e. the byte 0xf5, and it can be skipped
+	    // before the actual message_1 is the CBOR simple value 'true', i.e. the byte 0xf5, and it must be skipped
 	    if (isReq == true) {
 	        index++;
 	    }
