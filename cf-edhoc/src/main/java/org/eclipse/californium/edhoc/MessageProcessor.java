@@ -943,11 +943,6 @@ public class MessageProcessor {
         	responseCode = ResponseCode.BAD_REQUEST;
     		error = true;
     	}
-    	else if (error == false) {
-        	// Discard possible padding prepended to the plaintext
-	    	while (plaintextElementList[baseIndex] == CBORObject.True)
-	    		baseIndex++;
-    	}
     	else if (error == false && plaintextElementList.length - baseIndex < 2) {
         	errMsg = new String("Invalid format of the content encrypted as CIPHERTEXT_2");
         	responseCode = ResponseCode.BAD_REQUEST;
@@ -1406,11 +1401,6 @@ public class MessageProcessor {
     	    errMsg = new String("Malformed or invalid plaintext from CIPHERTEXT_3");
     	    responseCode = ResponseCode.BAD_REQUEST;
     	    error = true;
-    	}
-    	else if (error == false) {
-    	    // Discard possible padding prepended to the plaintext
-    	    while (plaintextElementList[baseIndex] == CBORObject.True)
-    	        baseIndex++;
     	}
     	else if (error == false && plaintextElementList.length - baseIndex < 2) {
     	    errMsg = new String("Invalid format of the content encrypted as CIPHERTEXT_3");
@@ -1887,8 +1877,8 @@ public class MessageProcessor {
         /* End computing the plaintext */
     	
     	
-    	// Parse the outer plaintext as a CBOR sequence. To be valid, this is either the empty plaintext,
-    	// or padding, or padding followed by the External Authorization Data EAD_4 possibly 
+    	// Parse the outer plaintext as a CBOR sequence. To be valid, this is
+    	// either the empty plaintext or the External Authorization Data EAD_4 
     	error = false;
     	int baseIndex = 0;
     	CBORObject[] plaintextElementList = null;
@@ -1902,13 +1892,7 @@ public class MessageProcessor {
         		responseCode = ResponseCode.BAD_REQUEST;
     			error = true;
     		}
-    		
-        	if (error == false) {
-        	    // Discard possible padding prepended to the plaintext
-        	    while (plaintextElementList[baseIndex] == CBORObject.True)
-        	        baseIndex++;
-        	}
-        	if (error == false && plaintextElementList.length - baseIndex > 0) {
+    		if (error == false && plaintextElementList.length - baseIndex > 0) {
         	    // EAD_4 is present
         	    int length = plaintextElementList.length - baseIndex;
         	    
