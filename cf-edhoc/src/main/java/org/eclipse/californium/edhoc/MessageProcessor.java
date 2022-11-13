@@ -493,14 +493,7 @@ public class MessageProcessor {
 			}
 		}
 		
-		// PAD_1
 		index++;
-		if (error == false) {
-		   // Skip possible padding
-		   while (objectListRequest.length > index && objectListRequest[index] == CBORObject.True)
-		         index++;
-		}
-		
 		// EAD_1
 		if (error == false && objectListRequest.length > index) {
 		    // EAD_1 is present
