@@ -316,6 +316,13 @@ public static final int EDHOC_SENT_M3   = 8; // After sending EDHOC Message 3
 // Responder steps
 public static final int EDHOC_SENT_M4   = 9; // After sending EDHOC Message 4
 
+
+/**
+ * EAD labels
+ * 
+ */
+public static final int EAD_LABEL_PADDING = 0;
+
 }
 
 
