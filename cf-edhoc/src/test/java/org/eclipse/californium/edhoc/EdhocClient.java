@@ -136,7 +136,7 @@ public class EdhocClient {
 	// List of supported cipher suites, in decreasing order of preference.
 	private static List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 	
-	// Set of supported EAD items
+	// Set of supported EAD items, identified by their EAD label
 	private static Set<Integer> supportedEADs = new HashSet<>();
 	
 	// The collection of application profiles - The lookup key is the full URI of the EDHOC resource
