@@ -95,6 +95,8 @@ public class EdhocClient {
     //                  ID_CRED_TYPE_X5T ; ID_CRED_TYPE_X5U ; ID_CRED_TYPE_X5CHAIN
     private static int idCredType = Constants.ID_CRED_TYPE_X5T;
 
+    // The trust model used to validate authentication credentials of other peers
+    private static int trustModel = Constants.TRUST_MODEL_STRICT;
     
     // Authentication credentials of this peer
     //
@@ -256,8 +258,8 @@ public class EdhocClient {
 		// Prepare the set of information for this EDHOC endpoint
 		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCreds, creds, keyPairs, peerPublicKeys,
 																	peerCredentials, edhocSessions, usedConnectionIds,
-																	supportedCipherSuites, supportedEADs, db, edhocURI,
-																	OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE,
+																	supportedCipherSuites, supportedEADs, trustModel, db,
+																	edhocURI, OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE,
 																	appProfiles, edp);
 		
 		// Possibly specify external authorization data for EAD_1, or null if none has to be provided

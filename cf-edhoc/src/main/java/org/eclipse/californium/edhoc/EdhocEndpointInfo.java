@@ -58,6 +58,9 @@ public class EdhocEndpointInfo {
 	// Set of supported EAD items
 	private Set<Integer> supportedEADs;
 	
+	// The trust model for validating authentication credentials of other peers
+	private int trustModel;
+	
 	// The database of OSCORE Security Contexts
 	private HashMapCtxDB db;
 	
@@ -84,7 +87,7 @@ public class EdhocEndpointInfo {
 							 HashMap<CBORObject, CBORObject> peerCredentials,
 							 HashMap<CBORObject, EdhocSession> edhocSessions,
 							 Set<CBORObject> usedConnectionIds, List<Integer> supportedCipherSuites, Set<Integer> supportedEADs,
-							 HashMapCtxDB db, String uri, int OSCORE_REPLAY_WINDOW, int MAX_UNFRAGMENTED_SIZE,
+							 int trustModel, HashMapCtxDB db, String uri, int OSCORE_REPLAY_WINDOW, int MAX_UNFRAGMENTED_SIZE,
 							 HashMap<String, AppProfile> appProfiles, EDP edp) {
 
 		
@@ -98,6 +101,7 @@ public class EdhocEndpointInfo {
 		this .usedConnectionIds = usedConnectionIds;
 		this.supportedCipherSuites = supportedCipherSuites;
 		this.supportedEADs = supportedEADs;
+		this.trustModel = trustModel;
 		this.db = db;
 		this.uri = uri;
 		this.OSCORE_REPLAY_WINDOW = OSCORE_REPLAY_WINDOW;
@@ -171,15 +175,20 @@ public class EdhocEndpointInfo {
 	public List<Integer> getSupportedCipherSuites() {
 		return supportedCipherSuites;
 	}
+		
+	// Return the set of used Connection Identifiers
+	public Set<CBORObject> getUsedConnectionIds() {
+		return usedConnectionIds;
+	}
 	
 	// Return the set of supported EAD items
 	public Set<Integer> getSupportedEADs() {
 		return supportedEADs;
 	}
 	
-	// Return the set of used Connection Identifiers
-	public Set<CBORObject> getUsedConnectionIds() {
-		return usedConnectionIds;
+	// Return the trust model used for validating authentication credentials of other peers
+	public int getTrustModel() {
+		return trustModel;
 	}
 	
 }
