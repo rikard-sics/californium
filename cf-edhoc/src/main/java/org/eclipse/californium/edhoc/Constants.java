@@ -336,4 +336,15 @@ public static final int TRUST_MODEL_TOFU   = 2; // Trust and use any (new) authe
  */
 public static final int EAD_LABEL_PADDING = 0;
 
+
+/**
+ * Side processor objects
+ * 
+ */
+
+// Diagnostic error information
+public static final int SIDE_PROCESSOR_OUTER_ERROR = 0;
+public static final int SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION = 0;
+
+
 }
