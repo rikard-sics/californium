@@ -383,7 +383,8 @@ public class EdhocClient {
                  														 edhocEndpointInfo.getSupportedCipherSuites(),
                  														 edhocEndpointInfo.getSupportedEADs(),
                  														 edhocEndpointInfo.getUsedConnectionIds(),
-                 														 appProfile, edhocEndpointInfo.getEdp(), db);
+                 														 appProfile, edhocEndpointInfo.getTrustModel(),
+                 														 edhocEndpointInfo.getEdp(), db);
 		
 		// At this point, the initiator may overwrite the information in the EDHOC session about the supported cipher suites
 		// and the selected cipher suite, based on a previously received EDHOC Error Message

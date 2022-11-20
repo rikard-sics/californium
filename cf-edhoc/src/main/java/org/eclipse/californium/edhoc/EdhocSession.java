@@ -76,6 +76,7 @@ public class EdhocSession {
 	private List<Integer> supportedCipherSuites;
 	private Set<Integer> supportedEADs;
 	private AppProfile appProfile;
+	private int trustModel;
 	
 	private byte[] peerConnectionId;
 	private CBORObject peerIdCred = null;
@@ -113,7 +114,7 @@ public class EdhocSession {
 						HashMap<Integer, HashMap<Integer, CBORObject>> idCreds,
 						HashMap<Integer, HashMap<Integer, CBORObject>> creds,
 						List<Integer> cipherSuites, Set<Integer> eads, AppProfile appProfile,
-						EDP edp, HashMapCtxDB db) {
+						int trustModel, EDP edp, HashMapCtxDB db) {
 		
 		this.initiator = initiator;
 		this.clientInitiated = clientInitiated;
@@ -132,6 +133,7 @@ public class EdhocSession {
 		this.supportedCipherSuites = cipherSuites;
 		this.supportedEADs = eads;
 		this.appProfile = appProfile;
+		this.trustModel = trustModel;
 		this.edp = edp;
 		this.db = db;
 		
@@ -335,6 +337,15 @@ public class EdhocSession {
 		return this.appProfile;
 		
 	}
+	
+	/**
+	 * @return  the used trust model for validating authentication credentials of the other peer
+	 */
+	public int getTrustModel() {
+
+		return this.trustModel;
+		
+	}	
 	
 	/**
 	 * @return  the processor of External Authorization Data used for this session
