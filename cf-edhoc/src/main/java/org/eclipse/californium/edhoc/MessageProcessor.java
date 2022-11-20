@@ -4245,7 +4245,16 @@ public class MessageProcessor {
             
             if (eadLabel == Constants.EAD_LABEL_PADDING) {
             	// This is the padding EAD item and it is not passed to the application for further processing
+            	
+            	if (debugPrint) {
+            		System.out.println("ead_label: " + eadLabel);
+            	}
+            	
             	if (i+1 < objectList.length && objectList[i+1].getType() == CBORType.ByteString) {
+            		if (debugPrint) {
+            			Util.nicePrint("ead_value", objectList[i+1].GetByteString());
+            		}
+            		
 	            	// Skip the corresponding ead_value, if present
             		i++;
             	}
@@ -4279,12 +4288,21 @@ public class MessageProcessor {
             aux[count] = elementLabel;
             count++;
             
+            if (debugPrint) {
+            	System.out.println("ead_label: " + eadLabel);
+            }
+            
             // Make a hard copy of the ead_value, if present
         	if (i+1 < objectList.length && objectList[i+1].getType() == CBORType.ByteString) {
                 byte[] serializedObjectValue = objectList[i+1].EncodeToBytes();
                 CBORObject elementValue = CBORObject.DecodeFromBytes(serializedObjectValue);
                 aux[count] = elementValue;
                 count++;
+                
+                if (debugPrint) {
+                	Util.nicePrint("ead_value", objectList[i+1].GetByteString());
+                }
+                
                 i++; // This will result in moving to the next EAD item, if any
         	}
 
