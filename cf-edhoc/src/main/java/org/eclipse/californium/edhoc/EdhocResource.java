@@ -212,8 +212,8 @@ class EdhocResource extends CoapResource {
 																    edhocEndpointInfo.getSupportedCipherSuites(),
 																    edhocEndpointInfo.getSupportedEADs(),
 																    edhocEndpointInfo.getUsedConnectionIds(),
-																    appProfile, edhocEndpointInfo.getEdp(),
-																    edhocEndpointInfo.getOscoreDb());
+																    appProfile, edhocEndpointInfo.getTrustModel(),
+																    edhocEndpointInfo.getEdp(), edhocEndpointInfo.getOscoreDb());
 				
 				// Compute the EDHOC Message 2
 				nextMessage = MessageProcessor.writeMessage2(session, ead2);
