@@ -318,11 +318,22 @@ public static final int EDHOC_SENT_M4   = 9; // After sending EDHOC Message 4
 
 
 /**
+ * Trust models for verifying authentication credentials of other peers 
+ * 
+ */
+public static final int TRUST_MODEL_STRICT = 0; // Trust and use an authentication credential only if already stored and still valid.
+
+public static final int TRUST_MODEL_LOFU   = 1; // Trust and use an authentication credential, only if:
+												//  i) it is already stored and still valid; or
+												// ii) it is valid, and a corresponding credential identifier is stored.
+
+public static final int TRUST_MODEL_TOFU   = 2; // Trust and use any (new) authentication credential, as long as it is valid.
+
+
+/**
  * EAD labels
  * 
  */
 public static final int EAD_LABEL_PADDING = 0;
 
 }
-
-
