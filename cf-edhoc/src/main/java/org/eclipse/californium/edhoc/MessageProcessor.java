@@ -2866,6 +2866,7 @@ public class MessageProcessor {
      * @param usedConnectionIds   The set of allocated Connection Identifiers for the Initiator.
      *                            Each identifier is wrapped in a CBOR byte string.
      * @param appProfile   The application profile used for this session
+     * @param trustModel   The trust model used for validating authentication credentials of other peers
      * @param epd   The processor of External Authentication Data used for this session
      * @param db   The database of OSCORE Security Contexts
      * @return  The newly created EDHOC session
@@ -2876,7 +2877,7 @@ public class MessageProcessor {
 			  									        List<Integer> supportedCipherSuites,
 			  									        Set<Integer> supportedEADs,
 			  									        Set<CBORObject> usedConnectionIds,
-			  									        AppProfile appProfile, EDP edp, HashMapCtxDB db) {
+			  									        AppProfile appProfile, int trustModel, EDP edp, HashMapCtxDB db) {
 		
 		byte[] connectionId = null;
 		HashMapCtxDB oscoreDB = (appProfile.getUsedForOSCORE() == true) ? db : null;
@@ -2886,7 +2887,7 @@ public class MessageProcessor {
 		// connectionId = new byte[] {(byte) 0x1c};
 		
         EdhocSession mySession = new EdhocSession(true, true, method, connectionId, keyPairs, idCreds, creds,
-        										  supportedCipherSuites, supportedEADs, appProfile, edp, oscoreDB);
+        										  supportedCipherSuites, supportedEADs, appProfile, trustModel, edp, oscoreDB);
 		
 		return mySession;
 		
@@ -2902,6 +2903,7 @@ public class MessageProcessor {
      * @param supportedEADs   The set of EAD items supported by the Responder
      * @param usedConnectionIds   The set of allocated Connection Identifiers for the Responder
      * @param appProfile   The application profile used for this session
+     * @param trustModel   The trust model used for validating authentication credentials of other peers
      * @param epd   The processor of External Authentication Data used for this session
      * @param db   The database of OSCORE Security Contexts
      * @return  The newly created EDHOC session
@@ -2913,7 +2915,7 @@ public class MessageProcessor {
 			  									        List<Integer> supportedCipherSuites,
 			  									        Set<Integer> supportedEADs,
 			  									        Set<CBORObject> usedConnectionIds,
-			  									        AppProfile appProfile, EDP edp, HashMapCtxDB db) {
+			  									        AppProfile appProfile, int trustModel, EDP edp, HashMapCtxDB db) {
 		
 		CBORObject[] objectListMessage1 = CBORObject.DecodeSequenceFromBytes(message1);
 		int index = -1;
@@ -2959,7 +2961,7 @@ public class MessageProcessor {
 		// connectionIdentifierResponder = new byte[] {(byte) 0x01};
 		
 		EdhocSession mySession = new EdhocSession(false, isReq, method, connectionIdentifierResponder, keyPairs, idCreds, creds,
-												  supportedCipherSuites, supportedEADs, appProfile, edp, oscoreDB);
+												  supportedCipherSuites, supportedEADs, appProfile, trustModel, edp, oscoreDB);
 		
 		// Set the selected cipher suite
 		mySession.setSelectedCipherSuite(selectedCipherSuite);
