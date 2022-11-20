@@ -98,7 +98,7 @@ public class EdhocEndpointInfo {
 		this.peerPublicKeys = peerPublicKeys;
 		this.peerCredentials = peerCredentials;
 		this.edhocSessions = edhocSessions;
-		this .usedConnectionIds = usedConnectionIds;
+		this.usedConnectionIds = usedConnectionIds;
 		this.supportedCipherSuites = supportedCipherSuites;
 		this.supportedEADs = supportedEADs;
 		this.trustModel = trustModel;
