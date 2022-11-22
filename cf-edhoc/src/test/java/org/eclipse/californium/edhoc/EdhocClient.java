@@ -128,7 +128,7 @@ public class EdhocClient {
 	private static HashMap<CBORObject, CBORObject> peerCredentials = new HashMap<CBORObject, CBORObject>();
 		
 	// Existing EDHOC Sessions, including completed ones
-	// The map label is C_X, i.e. the connection identifier offered to the other peer, as a CBOR integer or byte string
+	// The map label is C_X, i.e. the connection identifier offered to the other peer
 	private static HashMap<CBORObject, EdhocSession> edhocSessions = new HashMap<CBORObject, EdhocSession>();
 	
 	// Each element is a used Connection Identifier offered to the other peers.
@@ -385,7 +385,7 @@ public class EdhocClient {
                  														 edhocEndpointInfo.getUsedConnectionIds(),
                  														 appProfile, edhocEndpointInfo.getTrustModel(),
                  														 edhocEndpointInfo.getEdp(), db);
-		
+
 		// At this point, the initiator may overwrite the information in the EDHOC session about the supported cipher suites
 		// and the selected cipher suite, based on a previously received EDHOC Error Message
 		
@@ -536,6 +536,8 @@ public class EdhocClient {
 			
 			/* Start handling EDHOC Message 2 */
 			
+			SideProcessor sideProcessor = new SideProcessor(trustModel, peerCredentials, session);
+			
 			processingResult = MessageProcessor.readMessage2(responsePayload, false, connectionIdentifier, edhocSessions,
 															 peerPublicKeys, peerCredentials, usedConnectionIds, ownIdCreds);
 			
@@ -660,11 +662,36 @@ public class EdhocClient {
 				    Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			        System.out.println("Sent EDHOC Error Message\n");
 			        if (debugPrint) {
-			        	Util.nicePrint("EDHOC Error Message", nextPayload);
+			        	
+					    // Since the EDHOC error message is transported in a CoAP request, do not print the prepended C_R
+			        	
+			        	boolean error = false;
+					    byte[] sequenceBytesToPrint;
+					    CBORObject[] objectList = null;
+					    
+						try {
+							objectList = CBORObject.DecodeSequenceFromBytes(nextPayload);
+						}
+						catch (Exception e) {
+							System.err.println("Error while preparing an EDHOC error message");
+						    error = true;
+						}
+						
+						
+						if (error == false) {
+					    	List<CBORObject> trimmedSequence = new ArrayList<CBORObject>();
+
+					    	for (int i = 1; i < objectList.length; i++) {
+					    		trimmedSequence.add(objectList[i]);
+					    	}
+					        sequenceBytesToPrint = Util.buildCBORSequence(trimmedSequence);
+						    Util.nicePrint("EDHOC Error Message", sequenceBytesToPrint);
+						}
+
 			        }
 			        
 				}
-				
+
 		        CoapResponse edhocMessageResp2 = null;
 		        
 		        try {
@@ -754,7 +781,6 @@ public class EdhocClient {
 		        			client.shutdown();
 							return;
 		        		}
-		        		
 		        		session.setCurrentStep(Constants.EDHOC_SENT_M3);
 		        		edhocMessageReq2.getOptions().setContentFormat(Constants.APPLICATION_CID_EDHOC_CBOR_SEQ);
 		        		edhocMessageResp2 = client.advanced(edhocMessageReq2);

@@ -48,13 +48,13 @@ public class EdhocSession {
     
     // The authentication credentials of this peer (one per supported curve)
 	private HashMap<Integer, HashMap<Integer, CBORObject>> creds = new HashMap<Integer, HashMap<Integer, CBORObject>>();
-	
-	// The processor to use for External Authorization Data.
+
+	// The side processor to use with this session
 	//
 	// It is required to be also in the EDHOC session, to be accessible
 	// also by the EDHOC layer, when receiving an EDHOC+OSCORE request
 	// targeting a different resource than an EDHOC resource. 
-	private EDP edp;
+	private SideProcessor sideProcessor;
 	
 	// The database of OSCORE Security Contexts.
 	// It can be null, if the EDHOC session has occurred
@@ -134,7 +134,6 @@ public class EdhocSession {
 		this.supportedEADs = eads;
 		this.appProfile = appProfile;
 		this.trustModel = trustModel;
-		this.edp = edp;
 		this.db = db;
 		
 		this.selectedCipherSuite = -1;
@@ -348,11 +347,21 @@ public class EdhocSession {
 	}	
 	
 	/**
-	 * @return  the processor of External Authorization Data used for this session
+	 * @return  the side processor object for this session
 	 */
-	public EDP getEdp() {
+	public SideProcessor getSideProcessor() {
 		
-		return this.edp;
+		return this.sideProcessor;
+		
+	}
+	
+	/**
+	 * Set the side processor object for this session
+	 * @param  the side processor object for this session
+	 */
+	public void setSideProcessor(SideProcessor sideProcessor) {
+		
+		this.sideProcessor = sideProcessor;
 		
 	}
 	

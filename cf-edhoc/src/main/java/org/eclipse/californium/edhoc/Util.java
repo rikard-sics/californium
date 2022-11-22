@@ -824,7 +824,11 @@ public class Util {
 			CBORObject connectionIdentifierCbor = CBORObject.FromObject(connectionIdentifier);
 		    edhocSessions.remove(connectionIdentifierCbor);
 		    releaseConnectionId(connectionIdentifier, usedConnectionIds, session.getOscoreDb());
+		    
 		    session.deleteTemporaryMaterial();
+		    if(session.getSideProcessor() != null)
+		    	session.getSideProcessor().setEdhocSession(null);
+		    
 		    session = null;
 		}
 	}
