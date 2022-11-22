@@ -352,23 +352,7 @@ public class EdhocLayer extends AbstractLayer {
 			
 			// The protocol has successfully completed
 			if (nextMessage.length == 0) {
-			
-				// Deliver AD_3 to the application, if present
-				if (processingResult.size() == 3 && processingResult.get(2).getType() == CBORType.Array) {
-					// Elements of 'processingResult' are:
-					//   i) A zero-length CBOR byte string, indicating successful processing;
-					//  ii) The Connection Identifier of the Responder, i.e. C_R
-					// iii) Optionally, the External Authorization Data EAD_3, as elements of a CBOR array
-					
-					// This inspected element of 'processingResult' should really be a CBOR Array at this point
-					int length = processingResult.get(2).size();
-					CBORObject[] ead3 = new CBORObject[length];
-					for (int i = 0; i < length; i++) {
-						ead3[i] = processingResult.get(2).get(i);
-					}
-					mySession.getEdp().processEAD3(ead3);
-				}
-				
+
 				cR = processingResult.get(1);
 				mySession = edhocSessions.get(cR);
 				
@@ -379,12 +363,15 @@ public class EdhocLayer extends AbstractLayer {
 					return;
 				}
 				if (mySession.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
-					System.err.println("Inconsistent state before sending EDHOC Message 3");							
+					System.err.println("Inconsistent state after sending EDHOC Message 3");							
 					Util.purgeSession(mySession, connectionIdentifierResponder, edhocSessions, usedConnectionIds);
 					String responseString = new String("Inconsistent state before sending EDHOC Message 3");
 					sendErrorResponse(exchange, responseString, ResponseCode.BAD_REQUEST);
 					return;
 				}
+				
+				// If EAD_3 was present, print any available results from processing its EAD items.
+				mySession.getSideProcessor().showResultsFromProcessingEAD(Constants.EDHOC_MESSAGE_3);
 				
 				/* Invoke the EDHOC-Exporter to produce OSCORE input material */
 				byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(mySession);
@@ -409,8 +396,7 @@ public class EdhocLayer extends AbstractLayer {
 				OSCoreCtx ctx = null;
 				try {
 					ctx = new OSCoreCtx(masterSecret, false, alg, senderId, 
-					recipientId, hkdf, OSCORE_REPLAY_WINDOW, masterSalt, null, MAX_UNFRAGMENTED_SIZE);
-					
+					recipientId, hkdf, OSCORE_REPLAY_WINDOW, masterSalt, null, MAX_UNFRAGMENTED_SIZE);					
 				} catch (OSException e) {							
 					Util.purgeSession(mySession, connectionIdentifierResponder, edhocSessions, usedConnectionIds);
 					String responseString = new String("Error when deriving the OSCORE Security Context");
@@ -435,7 +421,8 @@ public class EdhocLayer extends AbstractLayer {
 				// The next step is to pass the OSCORE request to the next layer for processing
 			
 			}
-			// An EDHOC error message has to be returned
+			// An EDHOC error message has to be returned in response to EDHOC message_3
+			// The session has been possibly purged while attempting to process message_3
 			else {
 				int responseCodeValue = processingResult.get(1).AsInt32();
 				ResponseCode responseCode = ResponseCode.valueOf(responseCodeValue);

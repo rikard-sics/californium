@@ -109,7 +109,7 @@ public class EdhocServer extends CoapServer {
 	private static HashMap<CBORObject, CBORObject> peerCredentials = new HashMap<CBORObject, CBORObject>();
 
 	// Existing EDHOC Sessions, including completed ones
-	// The map label is C_X, i.e. the connection identifier offered to the other peer, as a CBOR integer or byte string
+	// The map label is C_X, i.e. the connection identifier offered to the other peer
 	private static HashMap<CBORObject, EdhocSession> edhocSessions = new HashMap<CBORObject, EdhocSession>();
 	
 	// Each element is a used Connection Identifier offered to the other peers.
