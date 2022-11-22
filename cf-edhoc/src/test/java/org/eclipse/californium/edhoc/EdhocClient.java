@@ -263,7 +263,7 @@ public class EdhocClient {
 																	appProfiles, edp);
 		
 		// Possibly specify external authorization data for EAD_1, or null if none has to be provided
-		// The EAD is structured in pairs of CBOR items (int, any), i.e. the EAD Label first and then the EAD Value 
+		// The EAD is structured in pairs of CBOR items (int, ?bstr), i.e. the EAD Label first and then optionally the EAD Value
 		CBORObject[] ead1 = null;
 		
 		edhocExchangeAsInitiator(args, uri, ownIdCreds, edhocEndpointInfo, ead1);
@@ -531,7 +531,7 @@ public class EdhocClient {
         	List<CBORObject> processingResult = new ArrayList<CBORObject>();
 			
         	// Possibly specify external authorization data for EAD_3, or null if none has to be provided
-        	// The EAD is structured in pairs of CBOR items (int, any), i.e. the EAD Label first and then the EAD Value
+        	// The EAD is structured in pairs of CBOR items (int, ?bstr), i.e. the EAD Label first and then optionally the EAD Value
 			CBORObject[] ead3 = null;
 			
 			/* Start handling EDHOC Message 2 */

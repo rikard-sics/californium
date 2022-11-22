@@ -1976,7 +1976,7 @@ public class MessageProcessor {
         }
         
         // EAD_1, if provided
-        if (ead1 != null) {
+        if (ead1 != null && ead1.length != 0) {
         	for (int i = 0; i < ead1.length; i++)
         		objectList.add(ead1[i]);
         }
@@ -3570,12 +3570,12 @@ public class MessageProcessor {
         externalDataList.add(CBORObject.FromObject(credSerializedCBOR));
         
         // EAD_2 / EAD_3 is the third element of the CBOR Sequence (if provided)
-        if (ead != null) {
+        if (ead != null && ead.length != 0) {
         	byte[] eadSequence = null;
         	List<CBORObject> objectList = new ArrayList<CBORObject>();
         	
 	    	for (int i = 0; i < ead.length; i++) {
-		    		objectList.add(ead[i]);
+		    	objectList.add(ead[i]);
 		    }
 	    	// Rebuild how EAD was in the EDHOC message
 		    eadSequence = Util.buildCBORSequence(objectList);
@@ -3585,22 +3585,6 @@ public class MessageProcessor {
 		
 		return Util.concatenateByteArrays(externalDataList);
 		
-	}
-	
-	
-    /**
-     *  Compute External_Data_4 for computing/verifying MAC_4
-     * @param th   The transcript hash TH4
-     * @return  The external data for computing/verifying MAC_4, or null in case of error
-     */
-	public static byte[] computeExternalData(byte[] th) {
-		
-		if (th == null)
-			return null;
-		
-		// TH4 is the only element to consider 
-        return CBORObject.FromObject(th).EncodeToBytes();
-        
 	}
 
     /**
@@ -3623,7 +3607,7 @@ public class MessageProcessor {
     	objectList.add(CBORObject.FromObject(th2));
     	objectList.add(CBORObject.DecodeFromBytes(credR));
     	
-    	if (ead2 != null) {
+    	if (ead2 != null && ead2.length != 0) {
 	    	for (int i = 0; i < ead2.length; i++)
 	    		objectList.add(ead2[i]);
     	}
@@ -3676,7 +3660,7 @@ public class MessageProcessor {
     	objectList.add(CBORObject.FromObject(th3));
     	objectList.add(CBORObject.DecodeFromBytes(credI));
     	
-    	if (ead3 != null) {
+    	if (ead3 != null && ead3.length != 0) {
 	    	for (int i = 0; i < ead3.length; i++)
 	    		objectList.add(ead3[i]);
     	}
