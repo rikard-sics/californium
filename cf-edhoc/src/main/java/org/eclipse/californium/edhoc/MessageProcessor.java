@@ -4204,9 +4204,10 @@ public class MessageProcessor {
      * @param baseIndex   With reference to 'objectList', the index of its CBOR item encoding the ead_label of the first EAD item.
      * @param msnNum      The integer X = (1, 2, 3, 4), consistent with the specifically received EDHOC message_X.
      * @param supportedEADs   The list of EAD items supported by this peer.
-     * @return  In case of success, it returns the subset of the EAD field to be passed to the application
-     *          for further processing. In case of error, it returns an array including only a CBOR text string,
-     *          whose value provides a description of the error.
+     * @return  In case of success, it returns the subset of the EAD field to be passed to the application for further processing.
+     *          In case of error, it returns an array including two elements: i) a CBOR text string, whose value provides a description
+     *          of the error to be used in the EDHOC error message to return; ii) a CBOR integer, with value the response code to use
+     *          if the EDHOC error message is a response.
      */
 	private static CBORObject[] preParseEAD(CBORObject[] objectList, int baseIndex, int msgNum, Set<Integer> supportedEADs) {
 		
@@ -4217,6 +4218,7 @@ public class MessageProcessor {
 		
 		boolean error = false;
 		String errMsg = new String("");
+		ResponseCode responseCode = ResponseCode.BAD_REQUEST;
 		
 		// The actual goal of each step is to go through one *EAD item*.
 		// At each step, the element with index 'i' must be an ead_label.
@@ -4311,7 +4313,8 @@ public class MessageProcessor {
 		if (error == true) {
 			// Prepare the diagnostic error text to be returned
 			ret = new CBORObject[1];
-			ret [0] = CBORObject.FromObject(errMsg);
+			ret[0] = CBORObject.FromObject(errMsg);
+			ret[1] = CBORObject.FromObject(responseCode);
 		}
 		else {
 			// Prepare the subset of the EAD items to provide to the application for further processing

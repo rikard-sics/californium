@@ -344,7 +344,7 @@ public static final int EAD_LABEL_PADDING = 0;
 
 // Diagnostic error information
 public static final int SIDE_PROCESSOR_OUTER_ERROR = 0;
-public static final int SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION = 0;
-
+public static final int SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION = 0; // Value: the text string to use in the EDHOC error message
+public static final int SIDE_PROCESSOR_INNER_ERROR_RESP_CODE =   1; // Value: the response code to use if EDHOC error message is a response
 
 }
