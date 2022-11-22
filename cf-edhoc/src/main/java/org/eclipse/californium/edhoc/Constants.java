@@ -343,8 +343,12 @@ public static final int EAD_LABEL_PADDING = 0;
  */
 
 // Diagnostic error information
-public static final int SIDE_PROCESSOR_OUTER_ERROR = 0;
+public static final int SIDE_PROCESSOR_OUTER_ERROR = -1;
 public static final int SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION = 0; // Value: the text string to use in the EDHOC error message
 public static final int SIDE_PROCESSOR_INNER_ERROR_RESP_CODE =   1; // Value: the response code to use if EDHOC error message is a response
+
+// The authentication credential of the other peer, following its retrieval and validation 
+public static final int SIDE_PROCESSOR_OUTER_CRED       = 0;
+public static final int SIDE_PROCESSOR_INNER_CRED_VALUE = 0;        // Value: the authentication credential of the other peer
 
 }
