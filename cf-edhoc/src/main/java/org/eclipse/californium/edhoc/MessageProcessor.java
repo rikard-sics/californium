@@ -321,6 +321,7 @@ public class MessageProcessor {
     	
 		// METHOD
     	index++;
+    	int method = -1;
     	if (error == false) {
 			if (objectList[index].getType() != CBORType.Integer) {
 				errMsg = new String("METHOD must be an integer");
@@ -329,7 +330,7 @@ public class MessageProcessor {
 			}
 			else {
 				// Check that the indicated authentication method is supported
-		    	int method = objectList[index].AsInt32();
+		    	method = objectList[index].AsInt32();
 		    	if (!appProfile.isAuthMethodSupported(method)) {
 					errMsg = new String("Authentication method " + method + " is not supported");
 					responseCode = ResponseCode.BAD_REQUEST;
@@ -340,6 +341,7 @@ public class MessageProcessor {
 		
 		// SUITES_I
 		index++;
+		int indexCredI = index;
 		if (error == false &&
 			objectList[index].getType() != CBORType.Integer &&
 			objectList[index].getType() != CBORType.Array) {
@@ -457,6 +459,7 @@ public class MessageProcessor {
 		
 		// G_X
 		index++;
+		int indexGx = index;
 		if (error == false &&
 			objectList[index].getType() != CBORType.ByteString) {
 				errMsg = new String("G_X must be a byte string");
@@ -479,11 +482,12 @@ public class MessageProcessor {
 			responseCode = ResponseCode.BAD_REQUEST;
 			error = true;
 		}
-		
+
+		byte[] connectionIdentifierInitiator = null;
 		if (error == false) {
 			cI = objectList[index];
 			
-			byte[] connectionIdentifierInitiator = decodeIdentifier(cI);
+			connectionIdentifierInitiator = decodeIdentifier(cI);
 			if (debugPrint) {
 			    Util.nicePrint("Connection Identifier of the Initiator", connectionIdentifierInitiator);
 			    Util.nicePrint("C_I", cI.EncodeToBytes());
@@ -506,9 +510,29 @@ public class MessageProcessor {
 		
 		// Invoke the processing of EAD items in EAD_1 (if any)
 		if (error == false && ead1!= null && ead1.length != 0) {
-			sideProcessor.sideProcessingMessage1(null, ead1);
 			
-			// An error occurred
+	 	    CBORObject[] sideProcessorInfo = new CBORObject[4];
+
+	 	   sideProcessorInfo[0] = CBORObject.FromObject(method);
+		    
+		    if (objectList[indexCredI].getType() == CBORType.Integer) {
+		    	// CRED_I was a single CBOR integer, so a CBOR array including only that integer is built.
+		    	// Such an integer also indicates the selected cipher suite.
+		    	sideProcessorInfo[1] = CBORObject.NewArray();
+		    	sideProcessorInfo[1].Add(objectList[indexCredI]);
+		    }
+		    else {
+		    	// CRED_I was a CBOR array of integers and can be taken as is.
+		    	// The last integer in the array indicates the selected cipher suite.
+		    	sideProcessorInfo[1] = objectList[indexCredI];
+		    }
+		    
+		    sideProcessorInfo[2] = objectList[indexGx];
+		    sideProcessorInfo[3] = CBORObject.FromObject(connectionIdentifierInitiator);
+
+			sideProcessor.sideProcessingMessage1(sideProcessorInfo, ead1);
+			
+			// A fatal error occurred
 			if (sideProcessor.getResults(Constants.EDHOC_MESSAGE_1).containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR))) {
 				errMsg = new String(sideProcessor.getResults(Constants.EDHOC_MESSAGE_1).
 						get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
@@ -830,7 +854,6 @@ public class MessageProcessor {
         // Compute PRK_2e
     	String hashAlgorithm = EdhocSession.getEdhocHashAlg(session.getSelectedCipherSuite());
     	
-    	// prk2e = computePRK2e(dhSecret, hashAlgorithm);
     	prk2e = computePRK2e(th2, dhSecret, hashAlgorithm);    	
     	
     	dhSecret = null;
@@ -945,17 +968,18 @@ public class MessageProcessor {
     	
     	
     	
+    	CBORObject peerCredentialCBOR = null;
     	
     	// Invoke the retrieval and/or validation of CRED_R, and the processing of EAD items in EAD_2 (if any)
     	SideProcessor sideProcessor = session.getSideProcessor();
- 	    CBORObject[] inputInfo = new CBORObject[3];
-	    inputInfo[0] = CBORObject.FromObject(gY);
-	    inputInfo[1] = CBORObject.FromObject(connectionIdentifierResponder);
-	    inputInfo[2] = CBORObject.FromObject(idCredR);
+ 	    CBORObject[] sideProcessorInfo = new CBORObject[3];
+ 	    sideProcessorInfo[0] = CBORObject.FromObject(gY);
+ 	    sideProcessorInfo[1] = CBORObject.FromObject(connectionIdentifierResponder);
+ 	    sideProcessorInfo[2] = CBORObject.FromObject(idCredR);
 	   
-	    sideProcessor.sideProcessingMessage2PreVerification(inputInfo, ead2);
+	    sideProcessor.sideProcessingMessage2PreVerification(sideProcessorInfo, ead2);
 	   
-	    // An error occurred
+	    // A fatal error occurred
 	    if (sideProcessor.getResults(Constants.EDHOC_MESSAGE_2).containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR))) {
 	    	errMsg = new String(sideProcessor.getResults(Constants.EDHOC_MESSAGE_2).
 	        	get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
@@ -968,11 +992,8 @@ public class MessageProcessor {
 	         
 	        // No need to keep this information any longer in the side processor object
 	        sideProcessor.removeEntryFromResultMap(Constants.EDHOC_MESSAGE_2, Constants.SIDE_PROCESSOR_OUTER_ERROR);
-	        sideProcessor.removeEntryFromResultMap(Constants.EDHOC_MESSAGE_2, Constants.SIDE_PROCESSOR_OUTER_CRED);
 	   }
-    	
-    	
-    	
+
     	// This should now be covered by the code above
     	/*
     	if (error == false && !peerCredentials.containsKey(idCredR)) {
@@ -982,12 +1003,41 @@ public class MessageProcessor {
     	}
     	*/
 		
+
+    	// If no fatal error occurred, the side processor object includes the authentication credential
+    	// of the other peer, if a valid one was found during the side processing above.
+ 	   	if (error == false && sideProcessor.getResults(Constants.EDHOC_MESSAGE_2).
+ 	   						  containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_CRED))) {
+ 	   		peerCredentialCBOR = sideProcessor.getResults(Constants.EDHOC_MESSAGE_2).
+ 	   							 get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_CRED)).
+ 	   							 get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_CRED_VALUE));
+
+ 	    	if (peerCredentialCBOR == null) {
+ 	        	errMsg = new String("Unable to retrieve the peer credential");
+ 	        	responseCode = ResponseCode.BAD_REQUEST;
+ 	        	error = true;
+ 	    	}
+	    }
+	    
+    	// This should now be covered by the code above
+    	// CBORObject peerCredentialCBOR = peerCredentials.get(idCredR);
+    	
+ 	   	
+ 	   	
+
+ 	   	
+        // No need to keep this information any longer in the side processor object
+        sideProcessor.removeEntryFromResultMap(Constants.EDHOC_MESSAGE_2, Constants.SIDE_PROCESSOR_OUTER_CRED);
+        
+        // If EAD_2 was present, print any available results from processing its EAD items.
+        sideProcessor.showResultsFromProcessingEAD(Constants.EDHOC_MESSAGE_2);
     	
     	if (error == true) {
     		Util.purgeSession(session, connectionIdentifierInitiator, edhocSessions, usedConnectionIds);
 			return processError(errorCode, Constants.EDHOC_MESSAGE_2, !isReq, connectionIdentifierResponder,
 								errMsg, null, responseCode);
     	}
+    
     	
     	
     	// Compute PRK_3e2m
@@ -1007,36 +1057,14 @@ public class MessageProcessor {
     	
     	/* Start verifying Signature_or_MAC_2 */
     	
-    	
-    	CBORObject peerCredentialCBOR = null;
-	   	System.err.println(sideProcessor.getResults(Constants.EDHOC_MESSAGE_2).size());
- 	   	if (sideProcessor.getResults(Constants.EDHOC_MESSAGE_2).containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_CRED))) {
- 	   		peerCredentialCBOR = sideProcessor.getResults(Constants.EDHOC_MESSAGE_2).
- 	   							 get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_CRED)).
- 	   							 get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_CRED_VALUE));
- 	    	System.err.println(peerCredentialCBOR.toString());
-	    }
-	    
-    	
-    	
-    	// This should now be covered by the code above
-    	// CBORObject peerCredentialCBOR = peerCredentials.get(idCredR);
-    	
-    	
-    	if (peerCredentialCBOR == null) {
-        	errMsg = new String("Unable to retrieve the peer credential");
-        	responseCode = ResponseCode.BAD_REQUEST;
-        	Util.purgeSession(session, connectionIdentifierInitiator, edhocSessions, usedConnectionIds);
-			return processError(errorCode, Constants.EDHOC_MESSAGE_2, !isReq, connectionIdentifierResponder,
-								errMsg, null, responseCode);
-    	}
     	byte[] peerCredential = peerCredentialCBOR.GetByteString(); // CRED_R
+    	
+    	OneKey peerKey = peerPublicKeys.get(idCredR);
+    	
+    	session.setPeerLongTermPublicKey(peerKey);
     	
     	session.setPeerIdCred(idCredR);      // Store ID_CRED_R
     	session.setPeerCred(peerCredential); // Store CRED_R
-    	
-    	OneKey peerKey = peerPublicKeys.get(idCredR);
-    	session.setPeerLongTermPublicKey(peerKey);
     	
     	// Compute MAC_2
     	byte[] mac2 = computeMAC2(session, prk3e2m, th2, idCredR, peerCredential, ead2);
@@ -1080,6 +1108,39 @@ public class MessageProcessor {
     	
     	/* End verifying Signature_or_MAC_2 */
 
+    	// Invoke the processing of EAD items in EAD_2 (if any)
+    	// that had to wait for a successful verification of Signature_or_MAC_2
+    	if (ead2!= null && ead2.length != 0) {
+    		sideProcessor.sideProcessingMessage2PostVerification(sideProcessorInfo, ead2);
+    	}
+
+    	// A fatal error occurred
+    	if (sideProcessor.getResults(Constants.EDHOC_MESSAGE_2).containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR))) {
+    	   errMsg = new String(sideProcessor.getResults(Constants.EDHOC_MESSAGE_2).
+    	         get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
+    	         get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION)).AsString());
+    	   int responseCodeValue = sideProcessor.getResults(Constants.EDHOC_MESSAGE_2).
+    	         get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
+    	         get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_RESP_CODE)).AsInt32();
+    	   responseCode = ResponseCode.valueOf(responseCodeValue);
+    	   error = true;
+    	      
+    	   // No need to keep this information any longer in the side processor object
+    	   sideProcessor.removeEntryFromResultMap(Constants.EDHOC_MESSAGE_2, Constants.SIDE_PROCESSOR_OUTER_ERROR);
+    	}
+    	
+        // If EAD_2 was present, print any available results from processing its EAD items.
+        sideProcessor.showResultsFromProcessingEAD(Constants.EDHOC_MESSAGE_2);
+    	
+    	if (error == true) {
+    		Util.purgeSession(session, connectionIdentifierInitiator, edhocSessions, usedConnectionIds);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_2, !isReq, connectionIdentifierResponder,
+								errMsg, null, responseCode);
+    	}
+    	
+    	
+    	
+    	
     	// Store PLAINTEXT_2 for the later computation of TH_3
 		session.setPlaintext2(plaintext2);
     	
@@ -1088,15 +1149,6 @@ public class MessageProcessor {
 		// A CBOR byte string with zero length, indicating that the EDHOC Message 3 can be prepared
 		byte[] reply = new byte[] {};
 		processingResult.add(CBORObject.FromObject(reply));
-		
-		// External Authorization from EAD_2 (if present)
-		if (ead2 != null) {
-		    CBORObject eadArray = CBORObject.NewArray();
-		    for (int i = 0; i< ead2.length; i++) {
-		        eadArray.Add(ead2[i]);
-		    }
-		    processingResult.add(eadArray);
-		}
 		
 		System.out.println("\nCompleted processing of EDHOC Message 2");
 		return processingResult;
@@ -1831,7 +1883,7 @@ public class MessageProcessor {
 			if (objectList[index].getType() == CBORType.ByteString || objectList[index].getType() == CBORType.Integer) {
 				byte[] retrievedConnectionIdentifier = decodeIdentifier(objectList[index]);
 				if (retrievedConnectionIdentifier != null) {
-					CBORObject connectionIdentifierCbor = CBORObject.FromObject(connectionIdentifier);
+					CBORObject connectionIdentifierCbor = CBORObject.FromObject(retrievedConnectionIdentifier);
 					mySession = edhocSessions.get(connectionIdentifierCbor);
 					index++;		
 				}
