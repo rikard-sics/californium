@@ -554,17 +554,6 @@ public class EdhocClient {
 			// Prepare EDHOC Message 3
 			if (nextPayload.length == 0) {
 				
-				// Deliver EAD_2 to the application, if present
-				if (processingResult.size() == 2 && processingResult.get(1).getType() == CBORType.Array) {
-				    // This inspected element of 'processing_result' should really be a CBOR Array at this point
-				    int length = processingResult.get(1).size();
-				    CBORObject[] ead2 = new CBORObject[length];
-				    for (int i = 0; i < length; i++) {
-				        ead2[i] = processingResult.get(1).get(i);
-				    }
-				    edhocEndpointInfo.getEdp().processEAD2(ead2);
-				}
-				
 				session.setCurrentStep(Constants.EDHOC_AFTER_M2);
 				
 				nextPayload = MessageProcessor.writeMessage3(session, ead3);
@@ -647,20 +636,11 @@ public class EdhocClient {
 				}
 				else if (requestType == Constants.EDHOC_ERROR_MESSAGE) {
 					
-					// If the Error Message was generated while reading EDHOC Message 2,
-					// deliver EAD_2 to the application, if any was present in EDHOC Message 2
-					if (processingResult.size() == 3 && processingResult.get(2).getType() == CBORType.Array) {
-					    // This inspected element of 'processing_result' should really be a CBOR Array at this point
-					    int length = processingResult.get(2).size();
-					    CBORObject[] ead2 = new CBORObject[length];
-					    for (int i = 0; i < length; i++) {
-					        ead2[i] = processingResult.get(2).get(i);
-					    }
-					    edhocEndpointInfo.getEdp().processEAD2(ead2);
-					}
+					// The Error Message was generated while reading EDHOC Message 2,
 					
 				    Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 			        System.out.println("Sent EDHOC Error Message\n");
+			        
 			        if (debugPrint) {
 			        	
 					    // Since the EDHOC error message is transported in a CoAP request, do not print the prepended C_R
@@ -676,7 +656,6 @@ public class EdhocClient {
 							System.err.println("Error while preparing an EDHOC error message");
 						    error = true;
 						}
-						
 						
 						if (error == false) {
 					    	List<CBORObject> trimmedSequence = new ArrayList<CBORObject>();
@@ -777,7 +756,7 @@ public class EdhocClient {
 			        		// The request to send is an EDHOC Error Message
 		        			edhocMessageReq2.setConfirmable(true);
 		        			edhocMessageReq2.setURI(targetUri);
-		        			edhocMessageReq2.send();
+		        			edhocMessageResp2 = client.advanced(edhocMessageReq2);
 		        			client.shutdown();
 							return;
 		        		}
@@ -912,18 +891,6 @@ public class EdhocClient {
 						}
 						// An EDHOC error message has to be returned in response to EDHOC message_4
 						else {
-							
-							// Deliver EAD_4 to the application, if any was present in EDHOC Message 4
-							if (processingResult.size() == 3 && processingResult.get(2).getType() == CBORType.Array) {
-							    // This inspected element of 'processing_result' should really be a CBOR Array at this point
-							    int length = processingResult.get(2).size();
-							    CBORObject[] ead4 = new CBORObject[length];
-							    for (int i = 0; i < length; i++) {
-							        ead4[i] = processingResult.get(2).get(i);
-							    }
-							    edhocEndpointInfo.getEdp().processEAD4(ead4);
-							}
-							
 							Request edhocMessageReq3 = new Request(Code.POST, Type.CON);
 							edhocMessageReq3.setPayload(nextMessage);
 							
