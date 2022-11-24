@@ -252,15 +252,12 @@ public class EdhocClient {
 			System.exit(-1);
 		}
 		
-		// Specify the processor of External Authorization Data
-		KissEDP edp = new KissEDP();
-		
 		// Prepare the set of information for this EDHOC endpoint
 		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCreds, creds, keyPairs, peerPublicKeys,
 																	peerCredentials, edhocSessions, usedConnectionIds,
 																	supportedCipherSuites, supportedEADs, trustModel, db,
 																	edhocURI, OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE,
-																	appProfiles, edp);
+																	appProfiles);
 		
 		// Possibly specify external authorization data for EAD_1, or null if none has to be provided
 		// The EAD is structured in pairs of CBOR items (int, ?bstr), i.e. the EAD Label first and then optionally the EAD Value
@@ -383,8 +380,7 @@ public class EdhocClient {
                  														 edhocEndpointInfo.getSupportedCipherSuites(),
                  														 edhocEndpointInfo.getSupportedEADs(),
                  														 edhocEndpointInfo.getUsedConnectionIds(),
-                 														 appProfile, edhocEndpointInfo.getTrustModel(),
-                 														 edhocEndpointInfo.getEdp(), db);
+                 														 appProfile, edhocEndpointInfo.getTrustModel(), db);
 
 		// At this point, the initiator may overwrite the information in the EDHOC session about the supported cipher suites
 		// and the selected cipher suite, based on a previously received EDHOC Error Message
@@ -530,10 +526,6 @@ public class EdhocClient {
         	
         	List<CBORObject> processingResult = new ArrayList<CBORObject>();
 			
-        	// Possibly specify external authorization data for EAD_3, or null if none has to be provided
-        	// The EAD is structured in pairs of CBOR items (int, ?bstr), i.e. the EAD Label first and then optionally the EAD Value
-			CBORObject[] ead3 = null;
-			
 			/* Start handling EDHOC Message 2 */
 			
 			SideProcessor sideProcessor = new SideProcessor(trustModel, peerCredentials, session);
@@ -556,6 +548,10 @@ public class EdhocClient {
 				
 				session.setCurrentStep(Constants.EDHOC_AFTER_M2);
 				
+	        	// Possibly specify external authorization data for EAD_3, or null if none has to be provided
+	        	// The EAD is structured in pairs of CBOR items (int, ?bstr), i.e. the EAD Label first and then optionally the EAD Value
+				CBORObject[] ead3 = null;
+
 				nextPayload = MessageProcessor.writeMessage3(session, ead3);
 		        
 				if (nextPayload == null || session.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
@@ -820,6 +816,7 @@ public class EdhocClient {
 		            	// It is an EDHOC Error Message
 		            	else {
 		            		System.err.println("Received an EDHOC Error Message");
+		            		Util.nicePrint("EDHOC Error Message", responsePayload);
 				        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload,
 				        																connectionIdentifier,
 				        																edhocSessions);
@@ -870,17 +867,6 @@ public class EdhocClient {
 						
 						// The EDHOC message_4 was successfully processed
 						if (nextMessage.length == 0) {
-							
-							// Deliver EAD_4 to the application, if present
-							if (processingResult.size() == 2 && processingResult.get(1).getType() == CBORType.Array) {
-							    // This inspected element of 'processing_result' should really be a CBOR Array at this point
-							    int length = processingResult.get(1).size();
-							    CBORObject[] ead4 = new CBORObject[length];
-							    for (int i = 0; i < length; i++) {
-							        ead4[i] = processingResult.get(1).get(i);
-							    }
-							    edhocEndpointInfo.getEdp().processEAD4(ead4);
-							}
 							
 							// If message_4 was a Confirmable response, send an empty ACK
 							

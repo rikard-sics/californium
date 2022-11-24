@@ -133,10 +133,7 @@ class EdhocResource extends CoapResource {
 		}
 		
 		List<CBORObject> processingResult = new ArrayList<CBORObject>();
-		
-		// Possibly specify external authorization data for EAD_2, or null if none has to be provided
-		// The EAD is structured in pairs of CBOR items (int, ?bstr), i.e. the EAD Label first and then optionally the EAD Value
-		CBORObject[] ead2 = null;		
+
 		
 		// The received message is an actual EDHOC message
 		
@@ -206,11 +203,15 @@ class EdhocResource extends CoapResource {
 																    edhocEndpointInfo.getSupportedEADs(),
 																    edhocEndpointInfo.getUsedConnectionIds(),
 																    appProfile, edhocEndpointInfo.getTrustModel(),
-																    edhocEndpointInfo.getEdp(), edhocEndpointInfo.getOscoreDb());
+																    edhocEndpointInfo.getOscoreDb());
 				
 				// Provide the side processor object with the just created EDHOC session.
 				// A reference to the sideProcessor is also going to be stored in the EDHOC session.
 				sideProcessor.setEdhocSession(session);
+				
+				// Possibly specify external authorization data for EAD_2, or null if none has to be provided
+				// The EAD is structured in pairs of CBOR items (int, ?bstr), i.e. the EAD Label first and then optionally the EAD Value
+				CBORObject[] ead2 = null;
 				
 				// Compute the EDHOC Message 2
 				nextMessage = MessageProcessor.writeMessage2(session, ead2);
@@ -608,6 +609,8 @@ class EdhocResource extends CoapResource {
 		Response myResponse = new Response(responseCode);
 		myResponse.getOptions().setContentFormat(Constants.APPLICATION_EDHOC_CBOR_SEQ);
 		myResponse.setPayload(nextMessage);
+		
+		Util.nicePrint("EDHOC Error Message", nextMessage);
 		
 		exchange.respond(myResponse);
 		

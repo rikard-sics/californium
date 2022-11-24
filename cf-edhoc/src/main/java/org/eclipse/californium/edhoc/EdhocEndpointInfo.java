@@ -75,11 +75,7 @@ public class EdhocEndpointInfo {
 	
 	// The collection of application profiles - The lookup key is the full URI of the EDHOC resource
 	private HashMap<String, AppProfile> appProfiles;
-	
-	// The processor of External Authorization Data
-	private EDP edp;
-	
-	
+		
 	public EdhocEndpointInfo(HashMap<Integer, HashMap<Integer, CBORObject>> idCreds,
 							 HashMap<Integer, HashMap<Integer, CBORObject>> creds,
 							 HashMap<Integer, HashMap<Integer, OneKey>> keyPairs,
@@ -88,7 +84,7 @@ public class EdhocEndpointInfo {
 							 HashMap<CBORObject, EdhocSession> edhocSessions,
 							 Set<CBORObject> usedConnectionIds, List<Integer> supportedCipherSuites, Set<Integer> supportedEADs,
 							 int trustModel, HashMapCtxDB db, String uri, int OSCORE_REPLAY_WINDOW, int MAX_UNFRAGMENTED_SIZE,
-							 HashMap<String, AppProfile> appProfiles, EDP edp) {
+							 HashMap<String, AppProfile> appProfiles) {
 
 		
 		this.keyPairs = keyPairs;
@@ -107,7 +103,6 @@ public class EdhocEndpointInfo {
 		this.OSCORE_REPLAY_WINDOW = OSCORE_REPLAY_WINDOW;
 		this.MAX_UNFRAGMENTED_SIZE = MAX_UNFRAGMENTED_SIZE;
 		this.appProfiles = appProfiles;
-		this.edp = edp;
 		
 	}
 	
@@ -119,11 +114,6 @@ public class EdhocEndpointInfo {
 	// Return a reference to the set of Application Profiles
 	public HashMap<String, AppProfile> getAppProfiles() {
 		return appProfiles;
-	}
-	
-	// Return a reference to the processor of External Authorization Data
-	public EDP getEdp() {
-		return edp;
 	}
 	
 	// Return the identity key pair

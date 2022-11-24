@@ -218,9 +218,6 @@ public class VectorsTxtTest {
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		int trustModel = Constants.TRUST_MODEL_STRICT;
 		
-		// Specify the processor of External Authorization Data
-		KissEDP edp = new KissEDP();
-		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
@@ -236,7 +233,7 @@ public class VectorsTxtTest {
 				 put(Integer.valueOf(Constants.CURVE_Ed25519), idCred);
 		
 		EdhocSession session = new EdhocSession(initiator, true, methodCorr, connectionId, keyPairs,
-				                                idCreds, creds, cipherSuites, supportedEADs, appProfile, trustModel, edp, db);
+				                                idCreds, creds, cipherSuites, supportedEADs, appProfile, trustModel, db);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = initiatorEphemeralPrivateList.get(index);
