@@ -184,10 +184,27 @@ public class SideProcessor {
 		
 	}
 
-	// sideProcessorInfo includes useful pieces information for processing EAD_3
+	// sideProcessorInfo includes useful pieces information for processing EAD_3, in this order:
+	// 0) A CBOR map, as ID_CRED_I
 	//
 	// ead3 includes the actual EAD items from EAD_3
 	public void sideProcessingMessage3PreVerification(CBORObject[] sideProcessorInfo, CBORObject[] ead3) {
+		
+		CBORObject idCredI = sideProcessorInfo[0];
+		
+		CBORObject peerCredentialCBOR = findValidPeerCredential(idCredI, ead3);
+		
+		if (peerCredentialCBOR == null) {
+			addErrorEntry(Constants.EDHOC_MESSAGE_3, false,
+						  "Unable to retrieve a valid peer credential from ID_CRED_I",
+						  ResponseCode.BAD_REQUEST.value);
+			return;
+    	}
+		else {
+			HashMap<Integer, CBORObject> myMap = new HashMap<Integer, CBORObject>();
+			myMap.put(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_CRED_VALUE), peerCredentialCBOR);
+			resMessage3Pre.put(Constants.SIDE_PROCESSOR_OUTER_CRED, myMap);
+		}
 		
 		// Go through the EAD_3 items, if any
 		//
@@ -196,7 +213,8 @@ public class SideProcessor {
 		
 	}
 
-	// sideProcessorInfo includes useful pieces information for processing EAD_3
+	// sideProcessorInfo includes useful pieces information for processing EAD_3, in this order:
+	// 0) A CBOR map, as ID_CRED_I
 	//
 	// ead3 includes the actual EAD items from EAD_3
 	public void sideProcessingMessage3PostVerification(CBORObject[] sideProcessorInfo, CBORObject[] ead3) {
@@ -208,10 +226,9 @@ public class SideProcessor {
 		
 	}
 	
-	// sideProcessorInfo includes useful pieces information for processing EAD_4
-	//
 	// ead4 includes the actual EAD items from EAD_4
-	public void sideProcessingMessage4(CBORObject[] sideProcessorInfo, CBORObject[] ead4) {
+	public void sideProcessingMessage4(CBORObject[] ead4) {
+
 		// Go through the EAD_4 items, if any
 		//
 		// ...

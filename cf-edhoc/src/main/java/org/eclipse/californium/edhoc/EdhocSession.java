@@ -114,7 +114,7 @@ public class EdhocSession {
 						HashMap<Integer, HashMap<Integer, CBORObject>> idCreds,
 						HashMap<Integer, HashMap<Integer, CBORObject>> creds,
 						List<Integer> cipherSuites, Set<Integer> eads, AppProfile appProfile,
-						int trustModel, EDP edp, HashMapCtxDB db) {
+						int trustModel, HashMapCtxDB db) {
 		
 		this.initiator = initiator;
 		this.clientInitiated = clientInitiated;

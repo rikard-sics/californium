@@ -230,16 +230,13 @@ public class EdhocServer extends CoapServer {
 		// provide an instance of a .well-known resource
 		CoapResource wellKnownResource = new WellKnown();
 		add(wellKnownResource);
-		
-		// Specify the processor of External Authorization Data
-		KissEDP edp = new KissEDP();
-		
+				
 		// prepare the set of information for this EDHOC endpoint
 		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCreds, creds, keyPairs, peerPublicKeys,
 																	peerCredentials, edhocSessions, usedConnectionIds,
 																	supportedCipherSuites, supportedEADs, trustModel, db,
 																	uriLocal, OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE,
-																	appProfiles, edp);
+																	appProfiles);
 		
 		// provide an instance of a .well-known/edhoc resource
 		CoapResource edhocResource = new EdhocResource("edhoc", edhocEndpointInfo, ownIdCreds);
@@ -375,6 +372,7 @@ public class EdhocServer extends CoapServer {
 	private static void setupSupportedCipherSuites() {
 		
 		// Add the supported cipher suites in decreasing order of preference
+		
 		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_0);
 		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_1);
 		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_2);
