@@ -658,7 +658,6 @@ public class MessageProcessor {
 					index++;
 					if (debugPrint) {
 					    Util.nicePrint("Connection Identifier of the Initiator", connectionIdentifierInitiator);
-					    Util.nicePrint("C_I", cI.EncodeToBytes());
 					}
 				}
 			}
@@ -667,6 +666,9 @@ public class MessageProcessor {
 		
 		if (error == false && isReq == false) {
 			connectionIdentifierInitiator = connectionIdInitiator;
+			if (debugPrint) {
+			    Util.nicePrint("Connection Identifier of the Initiator", connectionIdentifierInitiator);
+			}
 		}
 		
 		if (error == false) {
@@ -996,16 +998,6 @@ public class MessageProcessor {
 	        sideProcessor.removeEntryFromResultMap(Constants.EDHOC_MESSAGE_2, Constants.SIDE_PROCESSOR_OUTER_ERROR, false);
 	   }
 
-    	// This should now be covered by the code above
-    	/*
-    	if (error == false && !peerCredentials.containsKey(idCredR)) {
-        	errMsg = new String("The identity expressed by ID_CRED_R is not recognized as valid");
-        	responseCode = ResponseCode.BAD_REQUEST;
-			error = true;
-    	}
-    	*/
-		
-
     	// If no fatal error occurred, the side processor object includes the authentication credential
     	// of the other peer, if a valid one was found during the side processing above.
  	   	if (error == false && sideProcessor.getResults(Constants.EDHOC_MESSAGE_2, false).
@@ -1020,14 +1012,7 @@ public class MessageProcessor {
  	        	error = true;
  	    	}
 	    }
-	    
-    	// This should now be covered by the code above
-    	// CBORObject peerCredentialCBOR = peerCredentials.get(idCredR);
-    	
- 	   	
- 	   	
-
- 	   	
+	     	   	
         // No need to keep this information any longer in the side processor object
         sideProcessor.removeEntryFromResultMap(Constants.EDHOC_MESSAGE_2, Constants.SIDE_PROCESSOR_OUTER_CRED, false);
         
@@ -1040,6 +1025,9 @@ public class MessageProcessor {
 								errMsg, null, responseCode);
     	}
     
+    	
+    	OneKey peerKey = peerPublicKeys.get(idCredR);
+    	session.setPeerLongTermPublicKey(peerKey);
     	
     	
     	// Compute PRK_3e2m
@@ -1060,11 +1048,7 @@ public class MessageProcessor {
     	/* Start verifying Signature_or_MAC_2 */
     	
     	byte[] peerCredential = peerCredentialCBOR.GetByteString(); // CRED_R
-    	
-    	OneKey peerKey = peerPublicKeys.get(idCredR);
-    	
-    	session.setPeerLongTermPublicKey(peerKey);
-    	
+    	    	
     	session.setPeerIdCred(idCredR);      // Store ID_CRED_R
     	session.setPeerCred(peerCredential); // Store CRED_R
     	
@@ -1233,14 +1217,21 @@ public class MessageProcessor {
 		            responseCode = ResponseCode.BAD_REQUEST;
 		            error = true;
 		        }
-		        else
+		        else {
 		            index++;
+					if (debugPrint) {
+					    Util.nicePrint("Connection Identifier of the Responder", connectionIdentifierResponder);
+					}
+		        }
 		    }
 
 		}
 		
 		if (error == false && isReq == false) {
 			connectionIdentifierResponder = connectionIdResponder;
+			if (debugPrint) {
+			    Util.nicePrint("Connection Identifier of the Responder", connectionIdentifierResponder);
+			}
 		}
 			
 		if (error == false) {
@@ -1366,6 +1357,7 @@ public class MessageProcessor {
     	
     	// Parse the outer plaintext as a CBOR sequence
     	CBORObject[] plaintextElementList = null;
+    	CBORObject idCredI = CBORObject.NewMap();
     	try {
     		plaintextElementList = CBORObject.DecodeSequenceFromBytes(plaintext3);
     	}
@@ -1387,6 +1379,23 @@ public class MessageProcessor {
         responseCode = ResponseCode.BAD_REQUEST;
         error = true;
     	}
+    	else if (error == false) {
+        	CBORObject rawIdCredI = plaintextElementList[0];
+        	
+        	// ID_CRED_I is a CBOR map with 'kid', and only 'kid' was transported
+        	if (rawIdCredI.getType() == CBORType.ByteString || rawIdCredI.getType() == CBORType.Integer) {
+        	    byte[] kidValue = MessageProcessor.decodeIdentifier(rawIdCredI);
+        	    idCredI.Add(HeaderKeys.KID.AsCBOR(), kidValue);
+        	}
+        	else if (rawIdCredI.getType() == CBORType.Map) {
+        	    idCredI = rawIdCredI;
+        	}
+        	else {
+        	    errMsg = new String("Invalid format for ID_CRED_I");
+        	    responseCode = ResponseCode.BAD_REQUEST;
+        	    error = true;
+        	}
+    	}    	
     	else if (error == false && plaintextElementList[1].getType() != CBORType.ByteString) {
     	    errMsg = new String("Signature_or_MAC_3 must be a byte string");
     	    responseCode = ResponseCode.BAD_REQUEST;
@@ -1410,50 +1419,65 @@ public class MessageProcessor {
 								errMsg, null, responseCode);
     	}
     	
-    	// Verify that the identity of the Initiator is an allowed identity
-    	CBORObject idCredI = CBORObject.NewMap();
-    	CBORObject rawIdCredI = plaintextElementList[0];
     	error = false;
     	
-    	// ID_CRED_I is a CBOR map with 'kid', and only 'kid' was transported
-    	if (rawIdCredI.getType() == CBORType.ByteString || rawIdCredI.getType() == CBORType.Integer) {
-    	    byte[] kidValue = MessageProcessor.decodeIdentifier(rawIdCredI);
-    	    idCredI.Add(HeaderKeys.KID.AsCBOR(), kidValue);
-    	}
-    	else if (rawIdCredI.getType() == CBORType.Map) {
-    	    idCredI = rawIdCredI;
-    	}
-    	else {
-    	    errMsg = new String("Invalid format for ID_CRED_I");
-    	    responseCode = ResponseCode.BAD_REQUEST;
-    	    error = true;
-    	}
-    	if (error == false && !peerCredentials.containsKey(idCredI)) {
-    	    errMsg = new String("The identity expressed by ID_CRED_I is not recognized as valid");
-    	    responseCode = ResponseCode.BAD_REQUEST;
-    	    error = true;
-    	}
+    	CBORObject peerCredentialCBOR = null;
+
+    	// Invoke the retrieval and/or validation of CRED_I, and the processing of EAD items in EAD_3 (if any)
+    	SideProcessor sideProcessor = session.getSideProcessor();
+ 	    CBORObject[] sideProcessorInfo = new CBORObject[1];
+ 	    sideProcessorInfo[0] = CBORObject.FromObject(idCredI);
+    	
+ 	    sideProcessor.sideProcessingMessage3PreVerification(sideProcessorInfo, ead3);
+
+	    // A fatal error occurred
+	    if (sideProcessor.getResults(Constants.EDHOC_MESSAGE_3, false).
+	    		containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR))) {
+	    	errMsg = new String(sideProcessor.getResults(Constants.EDHOC_MESSAGE_3, false).
+	        	get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
+	            get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION)).AsString());
+	        int responseCodeValue = sideProcessor.getResults(Constants.EDHOC_MESSAGE_3, false).
+	        	get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
+	            get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_RESP_CODE)).AsInt32();
+	        responseCode = ResponseCode.valueOf(responseCodeValue);
+	        error = true;
+
+	        // No need to keep this information any longer in the side processor object
+	        sideProcessor.removeEntryFromResultMap(Constants.EDHOC_MESSAGE_3, Constants.SIDE_PROCESSOR_OUTER_ERROR, false);
+	    }
+	        	
+    	// If no fatal error occurred, the side processor object includes the authentication credential
+    	// of the other peer, if a valid one was found during the side processing above.
+ 	   	if (error == false && sideProcessor.getResults(Constants.EDHOC_MESSAGE_3, false).
+ 	   						  containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_CRED))) {
+ 	   		peerCredentialCBOR = sideProcessor.getResults(Constants.EDHOC_MESSAGE_3, false).
+ 	   							 get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_CRED)).
+ 	   							 get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_CRED_VALUE));
+
+ 	    	if (peerCredentialCBOR == null) {
+ 	        	errMsg = new String("Unable to retrieve the peer credential");
+ 	        	responseCode = ResponseCode.BAD_REQUEST;
+ 	        	error = true;
+ 	    	}
+	    }
+    	
+        // No need to keep this information any longer in the side processor object
+        sideProcessor.removeEntryFromResultMap(Constants.EDHOC_MESSAGE_3, Constants.SIDE_PROCESSOR_OUTER_CRED, false);
+        
+        // If EAD_3 was present, print any available results from processing its EAD items.
+        sideProcessor.showResultsFromSideProcessing(Constants.EDHOC_MESSAGE_3, false);
     	
     	if (error == true) {
     		Util.purgeSession(session, connectionIdentifierResponder, edhocSessions, usedConnectionIds);
 			return processError(errorCode, Constants.EDHOC_MESSAGE_3, !isReq, connectionIdentifierInitiator, errMsg, null, responseCode);
     	}
     	
-    	session.setPeerIdCred(idCredI);
+    	
     	OneKey peerKey = peerPublicKeys.get(idCredI);
     	session.setPeerLongTermPublicKey(peerKey);
-
-    	CBORObject peerCredentialCBOR = peerCredentials.get(idCredI);
-    	if (peerCredentialCBOR == null) {
-        	errMsg = new String("Unable to retrieve the peer credential");
-        	responseCode = ResponseCode.BAD_REQUEST;
-    		Util.purgeSession(session, connectionIdentifierResponder, edhocSessions, usedConnectionIds);
-    		return processError(errorCode, Constants.EDHOC_MESSAGE_3, !isReq, connectionIdentifierInitiator,
-    							errMsg, null, responseCode);
-    	}
-    	byte[] peerCredential = peerCredentialCBOR.GetByteString(); // CRED_I
     	
-        // Compute the key material
+    	
+        // Compute PRK_4e3m
         byte[] prk4e3m = computePRK4e3m(session);
     	if (prk4e3m == null) {
     		errMsg = new String("Error when computing PRK_4e3m");
@@ -1470,6 +1494,10 @@ public class MessageProcessor {
     	
     	/* Start verifying Signature_or_MAC_3 */
 
+    	byte[] peerCredential = peerCredentialCBOR.GetByteString(); // CRED_I
+    	    	
+    	session.setPeerIdCred(idCredI); // Store ID_CRED_I
+    	
     	// Compute MAC_3
     	byte[] mac3 = computeMAC3(session, prk4e3m, th3, idCredI, peerCredential, ead3);
     	if (mac3 == null) {
@@ -1491,7 +1519,7 @@ public class MessageProcessor {
     		Util.nicePrint("Signature_or_MAC_3", signatureOrMac3);
     	}
     	
-        // Compute the external data, as a CBOR sequence
+        // Prepare the external data, as a CBOR sequence
     	externalData = computeExternalData(th3, peerCredential, ead3);
     	if (externalData == null) {
     		errMsg = new String("Error when computing the external data for MAC_3");
@@ -1513,6 +1541,39 @@ public class MessageProcessor {
     	}
     	
     	/* End verifying Signature_or_MAC_3 */
+    	
+    	// Invoke the processing of EAD items in EAD_3 (if any)
+    	// that had to wait for a successful verification of Signature_or_MAC_3
+    	if (ead3!= null && ead3.length != 0) {
+    		sideProcessor.sideProcessingMessage3PostVerification(sideProcessorInfo, ead3);
+    	}
+
+    	// A fatal error occurred
+    	if (sideProcessor.getResults(Constants.EDHOC_MESSAGE_3, true).
+    			containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR))) {
+    	   errMsg = new String(sideProcessor.getResults(Constants.EDHOC_MESSAGE_3, true).
+    	         get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
+    	         get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION)).AsString());
+    	   int responseCodeValue = sideProcessor.getResults(Constants.EDHOC_MESSAGE_3, true).
+    	         get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
+    	         get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_RESP_CODE)).AsInt32();
+    	   responseCode = ResponseCode.valueOf(responseCodeValue);
+    	   error = true;
+    	      
+    	   // No need to keep this information any longer in the side processor object
+    	   sideProcessor.removeEntryFromResultMap(Constants.EDHOC_MESSAGE_3, Constants.SIDE_PROCESSOR_OUTER_ERROR, true);
+    	}
+    	
+        // If EAD_3 was present, print any available results from processing its EAD items.
+        sideProcessor.showResultsFromSideProcessing(Constants.EDHOC_MESSAGE_3, true);
+    	
+    	if (error == true) {
+    		Util.purgeSession(session, connectionIdentifierInitiator, edhocSessions, usedConnectionIds);
+			return processError(errorCode, Constants.EDHOC_MESSAGE_3, !isReq, connectionIdentifierResponder,
+								errMsg, null, responseCode);
+    	}
+    	
+    	
     	
     	
     	/* Compute TH4 */
@@ -1657,14 +1718,21 @@ public class MessageProcessor {
 				    responseCode = ResponseCode.BAD_REQUEST;
 				    error = true;
 				}
-				else
+				else {
 					index++;
+					if (debugPrint) {
+					    Util.nicePrint("Connection Identifier of the Initiator", connectionIdentifierInitiator);
+					}
+				}
 			}
 			
 		}
 		
 		if (error == false && isReq == false) {
 			connectionIdentifierInitiator = connectionIdInitiator;
+			if (debugPrint) {
+			    Util.nicePrint("Connection Identifier of the Initiator", connectionIdentifierInitiator);
+			}
 		}
 		
 		if (error == false) {
@@ -1728,8 +1796,6 @@ public class MessageProcessor {
 		if (debugPrint && ciphertext4 != null) {
 		    Util.nicePrint("CIPHERTEXT_4", ciphertext4);
 		}
-		
-        // Compute the external data for the external_aad
 		
 		// Prepare the External Data as including only TH4
     	byte[] externalData = session.getTH4();
@@ -1810,6 +1876,35 @@ public class MessageProcessor {
 			   }
     		}
     	}
+    	    	
+
+		SideProcessor sideProcessor = session.getSideProcessor();
+		
+		// Invoke the processing of EAD items in EAD_4 (if any)
+		if (error == false && ead4!= null && ead4.length != 0) {
+
+			sideProcessor.sideProcessingMessage4(ead4);
+			
+			// A fatal error occurred
+			if (sideProcessor.getResults(Constants.EDHOC_MESSAGE_4, false).
+					containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR))) {
+				errMsg = new String(sideProcessor.getResults(Constants.EDHOC_MESSAGE_4, false).
+						get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
+						get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION)).AsString());
+				int responseCodeValue = sideProcessor.getResults(Constants.EDHOC_MESSAGE_4, false).
+			            get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
+			            get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_RESP_CODE)).AsInt32();
+				responseCode = ResponseCode.valueOf(responseCodeValue);
+				error = true;
+				
+				// No need to keep this information any longer in the side processor object
+				sideProcessor.removeEntryFromResultMap(Constants.EDHOC_MESSAGE_4, Constants.SIDE_PROCESSOR_OUTER_ERROR, false);
+			}
+		}
+		
+		// If EAD_4 was present, print any available results from processing its EAD items.
+		sideProcessor.showResultsFromSideProcessing(Constants.EDHOC_MESSAGE_4, false);
+    	    	
     	
     	// Return an EDHOC Error Message
     	if (error == true) {
@@ -2958,7 +3053,6 @@ public class MessageProcessor {
      *                            Each identifier is wrapped in a CBOR byte string.
      * @param appProfile   The application profile used for this session
      * @param trustModel   The trust model used for validating authentication credentials of other peers
-     * @param epd   The processor of External Authentication Data used for this session
      * @param db   The database of OSCORE Security Contexts
      * @return  The newly created EDHOC session
      */
@@ -2968,7 +3062,7 @@ public class MessageProcessor {
 			  									        List<Integer> supportedCipherSuites,
 			  									        Set<Integer> supportedEADs,
 			  									        Set<CBORObject> usedConnectionIds,
-			  									        AppProfile appProfile, int trustModel, EDP edp, HashMapCtxDB db) {
+			  									        AppProfile appProfile, int trustModel, HashMapCtxDB db) {
 		
 		byte[] connectionId = null;
 		HashMapCtxDB oscoreDB = (appProfile.getUsedForOSCORE() == true) ? db : null;
@@ -2978,7 +3072,7 @@ public class MessageProcessor {
 		// connectionId = new byte[] {(byte) 0x1c};
 		
         EdhocSession mySession = new EdhocSession(true, true, method, connectionId, keyPairs, idCreds, creds,
-        										  supportedCipherSuites, supportedEADs, appProfile, trustModel, edp, oscoreDB);
+        										  supportedCipherSuites, supportedEADs, appProfile, trustModel, oscoreDB);
 		
 		return mySession;
 		
@@ -2995,7 +3089,6 @@ public class MessageProcessor {
      * @param usedConnectionIds   The set of allocated Connection Identifiers for the Responder
      * @param appProfile   The application profile used for this session
      * @param trustModel   The trust model used for validating authentication credentials of other peers
-     * @param epd   The processor of External Authentication Data used for this session
      * @param db   The database of OSCORE Security Contexts
      * @return  The newly created EDHOC session
      */
@@ -3006,7 +3099,7 @@ public class MessageProcessor {
 			  									        List<Integer> supportedCipherSuites,
 			  									        Set<Integer> supportedEADs,
 			  									        Set<CBORObject> usedConnectionIds,
-			  									        AppProfile appProfile, int trustModel, EDP edp, HashMapCtxDB db) {
+			  									        AppProfile appProfile, int trustModel, HashMapCtxDB db) {
 		
 		CBORObject[] objectListMessage1 = CBORObject.DecodeSequenceFromBytes(message1);
 		int index = -1;
@@ -3052,7 +3145,7 @@ public class MessageProcessor {
 		// connectionIdentifierResponder = new byte[] {(byte) 0x01};
 		
 		EdhocSession mySession = new EdhocSession(false, isReq, method, connectionIdentifierResponder, keyPairs, idCreds, creds,
-												  supportedCipherSuites, supportedEADs, appProfile, trustModel, edp, oscoreDB);
+												  supportedCipherSuites, supportedEADs, appProfile, trustModel, oscoreDB);
 		
 		// Set the selected cipher suite
 		mySession.setSelectedCipherSuite(selectedCipherSuite);

@@ -122,11 +122,10 @@ public class MessageProcessorTest {
 		// Create the session for the Initiator (with only the minimal set of information required for this test)
 		boolean initiator = true;
 		int trustModel = Constants.TRUST_MODEL_STRICT;
-		KissEDP edp = new KissEDP();
 		HashMapCtxDB db = new HashMapCtxDB();
 		EdhocSession sessionInitiator = new EdhocSession(initiator, true, method, connectionIdentifierInitiator,
 														 keyPairsI, idCredsI, credsI, supportedCipherSuites,
-														 supportedEADs, appProfile, trustModel, edp, db);
+														 supportedEADs, appProfile, trustModel, db);
 		
 		edhocSessions.put(CBORObject.FromObject(connectionIdentifierInitiator), sessionInitiator);
 
@@ -170,11 +169,10 @@ public class MessageProcessorTest {
 		
 		// Create the session for the Responder (with only the minimal set of information required for this test)
 		initiator = false;
-		KissEDP edp2 = new KissEDP();
 		HashMapCtxDB db2 = new HashMapCtxDB();
 		EdhocSession sessionResponder = new EdhocSession(initiator, true, method, connectionIdentifierResponder,
 														 keyPairsR, idCredsR, credsR, supportedCipherSuites,
-														 supportedEADs, appProfile, trustModel, edp2, db2);
+														 supportedEADs, appProfile, trustModel, db2);
 		
 		edhocSessions.put(CBORObject.FromObject(connectionIdentifierResponder), sessionResponder);
 		
@@ -300,9 +298,6 @@ public class MessageProcessorTest {
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		int trustModel = Constants.TRUST_MODEL_STRICT;
 		
-		// Specify the processor of External Authorization Data
-		KissEDP edp = new KissEDP();
-		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
@@ -322,7 +317,7 @@ public class MessageProcessorTest {
 				 put(Integer.valueOf(Constants.CURVE_Ed25519), idCred);
 	    
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
-				                                idCreds, creds, cipherSuites, supportedEADs, appProfile, trustModel, edp, db);
+				                                idCreds, creds, cipherSuites, supportedEADs, appProfile, trustModel, db);
 
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = StringUtil.hex2ByteArray(
@@ -471,9 +466,6 @@ public class MessageProcessorTest {
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		int trustModel = Constants.TRUST_MODEL_STRICT;
 		
-		// Specify the processor of External Authorization Data
-		KissEDP edp = new KissEDP();
-		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
@@ -494,7 +486,7 @@ public class MessageProcessorTest {
 	    
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
-												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, edp, db);
+												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
 
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -627,9 +619,6 @@ public class MessageProcessorTest {
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		int trustModel = Constants.TRUST_MODEL_STRICT;
 		
-		// Specify the processor of External Authorization Data
-		KissEDP edp = new KissEDP();
-		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
@@ -650,7 +639,7 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
-												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, edp, db);
+												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
 
 		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -822,9 +811,6 @@ public class MessageProcessorTest {
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		int trustModel = Constants.TRUST_MODEL_STRICT;
 		
-		// Specify the processor of External Authorization Data
-		KissEDP edp = new KissEDP();
-		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
@@ -845,7 +831,7 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
-												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, edp, db);
+												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
 
 		session.setCurrentStep(Constants.EDHOC_AFTER_M3);
 		
@@ -935,9 +921,6 @@ public class MessageProcessorTest {
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		int trustModel = Constants.TRUST_MODEL_STRICT;
 		
-		// Specify the processor of External Authorization Data
-		KissEDP edp = new KissEDP();
-		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
@@ -957,7 +940,7 @@ public class MessageProcessorTest {
 				 put(Integer.valueOf(Constants.CURVE_P256), idCred);
 		
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
-				                                idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, edp, db);
+				                                idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
 
 		// Force the early knowledge of cipher suites supported by the other peer
 		session.setPeerSupportedCipherSuites(cipherSuitesPeer);
@@ -1067,10 +1050,7 @@ public class MessageProcessorTest {
 		boolean supportCombinedRequest = false;
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		int trustModel = Constants.TRUST_MODEL_STRICT;
-		
-		// Specify the processor of External Authorization Data
-		KissEDP edp = new KissEDP();
-		
+				
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
@@ -1091,7 +1071,7 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
-												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, edp, db);
+												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
 
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -1222,10 +1202,7 @@ public class MessageProcessorTest {
 		boolean supportCombinedRequest = false;
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		int trustModel = Constants.TRUST_MODEL_STRICT;
-		
-		// Specify the processor of External Authorization Data
-		KissEDP edp = new KissEDP();
-		
+				
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
@@ -1246,7 +1223,7 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
-												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, edp, db);
+												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
 
 		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
@@ -1422,9 +1399,6 @@ public class MessageProcessorTest {
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		int trustModel = Constants.TRUST_MODEL_STRICT;
 		
-		// Specify the processor of External Authorization Data
-		KissEDP edp = new KissEDP();
-		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
 		
@@ -1445,7 +1419,7 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
-												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, edp, db);
+												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
 
 		session.setCurrentStep(Constants.EDHOC_AFTER_M3);
 		
