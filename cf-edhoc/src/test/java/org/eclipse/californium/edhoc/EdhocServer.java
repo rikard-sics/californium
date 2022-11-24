@@ -921,8 +921,8 @@ public class EdhocServer extends CoapServer {
 		
 		// These serializations have to be prepared manually, in order to ensure that
 		// the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
-		peerCred = StringUtil.hex2ByteArray("A2026008A101A501020241022001215820CD4177BA62433375EDE279B5E18E8B91BC3ED8F1E174474A26FC0EDB44EA5373225820A0391DE29C5C5BADDA610D4E301EAAA18422367722289CD18CBE6624E89B9CFD");
- 		
+		peerCred = StringUtil.hex2ByteArray("A2026008A101A501020241022001215820CD4177BA62433375EDE279B5E18E8B91BC3ED8F1E174474A26FC0EDB44EA5373225820A0391DE29C5C5BADDA610D4E301EAAA18422367722289CD18CBE6624E89B9CFD");	
+		
 		peer1IdCredP256kccs = Util.buildIdCredKccs(peer1CcsObjectP256); // ID_CRED as 'kccs'
 		peer1IdCredP256kid = Util.buildIdCredKid(peer1KidP256); // ID_CRED as 'kid'
 		
