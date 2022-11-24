@@ -370,9 +370,6 @@ public class EdhocLayer extends AbstractLayer {
 					return;
 				}
 				
-				// If EAD_3 was present, print any available results from processing its EAD items.
-				mySession.getSideProcessor().showResultsFromProcessingEAD(Constants.EDHOC_MESSAGE_3);
-				
 				/* Invoke the EDHOC-Exporter to produce OSCORE input material */
 				byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(mySession);
 				byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(mySession);
