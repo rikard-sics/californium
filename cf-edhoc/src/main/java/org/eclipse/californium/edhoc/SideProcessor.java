@@ -33,13 +33,9 @@ public class SideProcessor {
 	// The EDHOC session this side process object is tied to
 	private EdhocSession session;
 	
-	// If set to true, the processing of EDHOC message_2 after its verification has been completed
-	boolean afterPostValidationProcessingMessage2;
-	
-	// If set to true, the processing of EDHOC message_3 after its verification has been completed
-	boolean afterPostValidationProcessingMessage3;
-	
-	// The following maps are used to collect the results from the side processing of each incoming EDHOC message
+	// The following maps are used to collect the results from the side processing of each incoming EDHOC message.
+	// For message_2 and message_3, each of those refer to two different maps, in order to separately collect the
+	// results of the processing occurred before and after message verification.
 	//
 	// The label of the outer map uniquely determines the namespace of labels and corresponding values for the inner map.
 	//
@@ -49,10 +45,12 @@ public class SideProcessor {
 	// - The outer map includes an entry with label  0, with information about the authentication credential of the other peer to use.
 	// - The outer map includes an entry with label -1, in case the overall side processing fails.
 	//
-	private HashMap<Integer, HashMap<Integer, CBORObject>> resultsFromMessage1 = new HashMap<Integer, HashMap<Integer, CBORObject>>();
-	private HashMap<Integer, HashMap<Integer, CBORObject>> resultsFromMessage2 = new HashMap<Integer, HashMap<Integer, CBORObject>>();
-	private HashMap<Integer, HashMap<Integer, CBORObject>> resultsFromMessage3 = new HashMap<Integer, HashMap<Integer, CBORObject>>();
-	private HashMap<Integer, HashMap<Integer, CBORObject>> resultsFromMessage4 = new HashMap<Integer, HashMap<Integer, CBORObject>>();
+	private HashMap<Integer, HashMap<Integer, CBORObject>> resMessage1     = new HashMap<Integer, HashMap<Integer, CBORObject>>();
+	private HashMap<Integer, HashMap<Integer, CBORObject>> resMessage2Pre  = new HashMap<Integer, HashMap<Integer, CBORObject>>();
+	private HashMap<Integer, HashMap<Integer, CBORObject>> resMessage2Post = new HashMap<Integer, HashMap<Integer, CBORObject>>();
+	private HashMap<Integer, HashMap<Integer, CBORObject>> resMessage3Pre  = new HashMap<Integer, HashMap<Integer, CBORObject>>();
+	private HashMap<Integer, HashMap<Integer, CBORObject>> resMessage3Post = new HashMap<Integer, HashMap<Integer, CBORObject>>();
+	private HashMap<Integer, HashMap<Integer, CBORObject>> resMessage4     = new HashMap<Integer, HashMap<Integer, CBORObject>>();
 		
 	public SideProcessor(int trustModel, HashMap<CBORObject, CBORObject> peerCredentials, EdhocSession session) {
 
@@ -62,45 +60,42 @@ public class SideProcessor {
 		this.session = session; // On the Responder, this starts as null and is set later on before starting to prepare message_2
 		if (session != null)
 			session.setSideProcessor(this);
-		
-		afterPostValidationProcessingMessage2 = false;
-		afterPostValidationProcessingMessage3 = false;
 
 	}
 			
-	public HashMap<Integer, HashMap<Integer, CBORObject>> getResults(int messageNumber) {
+	public HashMap<Integer, HashMap<Integer, CBORObject>> getResults(int messageNumber, boolean postValidation) {
 		HashMap<Integer, HashMap<Integer, CBORObject>> myMap = new HashMap<Integer, HashMap<Integer, CBORObject>>();
 		switch(messageNumber) {
 			case Constants.EDHOC_MESSAGE_1:
-				myMap = resultsFromMessage1;
+				myMap = resMessage1;
 				break;
 			case Constants.EDHOC_MESSAGE_2:
-				myMap = resultsFromMessage2;
+				myMap = (postValidation == false) ? resMessage2Pre : resMessage2Post;
 				break;
 			case Constants.EDHOC_MESSAGE_3:
-				myMap = resultsFromMessage3;
+				myMap = (postValidation == false) ? resMessage3Pre : resMessage3Post;
 				break;
 			case Constants.EDHOC_MESSAGE_4:
-				myMap = resultsFromMessage4;
+				myMap = resMessage4;
 				break;
 		}
 		return myMap;
 	}
 	
-	public void removeEntryFromResultMap(int messageNumber, int keyValue) {
+	public void removeEntryFromResultMap(int messageNumber, int keyValue, boolean postValidation) {
 		HashMap<Integer, HashMap<Integer, CBORObject>> myMap = new HashMap<Integer, HashMap<Integer, CBORObject>>();
 		switch(messageNumber) {
 			case Constants.EDHOC_MESSAGE_1:
-				myMap = resultsFromMessage1;
+				myMap = resMessage1;
 				break;
 			case Constants.EDHOC_MESSAGE_2:
-				myMap = resultsFromMessage2;
+				myMap = (postValidation == false) ? resMessage2Pre : resMessage2Post;
 				break;
 			case Constants.EDHOC_MESSAGE_3:
-				myMap = resultsFromMessage3;
+				myMap = (postValidation == false) ? resMessage3Pre : resMessage3Post;
 				break;
 			case Constants.EDHOC_MESSAGE_4:
-				myMap = resultsFromMessage4;
+				myMap = resMessage4;
 				break;
 		}
 		if (myMap.size() == 0)
@@ -153,13 +148,15 @@ public class SideProcessor {
 		CBORObject peerCredentialCBOR = findValidPeerCredential(idCredR, ead2);
 		
 		if (peerCredentialCBOR == null) {
-			addErrorEntry("Unable to retrieve a valid peer credential from ID_CRED_R", ResponseCode.BAD_REQUEST.value);
+			addErrorEntry(Constants.EDHOC_MESSAGE_2, false,
+						  "Unable to retrieve a valid peer credential from ID_CRED_R",
+						  ResponseCode.BAD_REQUEST.value);
 			return;
     	}
 		else {
 			HashMap<Integer, CBORObject> myMap = new HashMap<Integer, CBORObject>();
 			myMap.put(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_CRED_VALUE), peerCredentialCBOR);
-			resultsFromMessage2.put(Constants.SIDE_PROCESSOR_OUTER_CRED, myMap);
+			resMessage2Pre.put(Constants.SIDE_PROCESSOR_OUTER_CRED, myMap);
 		}
 		
 		// Go through the EAD_2 items, if any
@@ -185,8 +182,6 @@ public class SideProcessor {
 		// ...
 		//
 		
-				
-		afterPostValidationProcessingMessage2 = true;
 	}
 
 	// sideProcessorInfo includes useful pieces information for processing EAD_3
@@ -211,8 +206,6 @@ public class SideProcessor {
 		// ...
 		//
 		
-		
-		afterPostValidationProcessingMessage3 = true;
 	}
 	
 	// sideProcessorInfo includes useful pieces information for processing EAD_4
@@ -225,42 +218,32 @@ public class SideProcessor {
 		//
 	}
 	
-	public void showResultsFromProcessingEAD(int messageNumber) {
+	public void showResultsFromSideProcessing(int messageNumber, boolean postValidation) {
 		HashMap<Integer, HashMap<Integer, CBORObject>> myMap = new HashMap<Integer, HashMap<Integer, CBORObject>>();
 		switch(messageNumber) {
 			case Constants.EDHOC_MESSAGE_1:
-				myMap = resultsFromMessage1;
+				myMap = resMessage1;
 				break;
 			case Constants.EDHOC_MESSAGE_2:
-				myMap = resultsFromMessage2;
+				myMap = (postValidation == false) ? resMessage2Pre : resMessage2Post;
 				break;
 			case Constants.EDHOC_MESSAGE_3:
-				myMap = resultsFromMessage3;
+				myMap = (postValidation == false) ? resMessage3Pre : resMessage3Post;
 				break;
 			case Constants.EDHOC_MESSAGE_4:
-				myMap = resultsFromMessage4;
+				myMap = resMessage4;
 				break;
 		}
 		if (myMap.size() == 0)
 			return;
 
-		if (messageNumber == Constants.EDHOC_MESSAGE_2) {
-			if (afterPostValidationProcessingMessage2 == false) {
-				System.out.println("Processing results before message verification\n");
-			}
-			else {
-				System.out.println("Processing results after message verification\n");
-			}
+		String myStr = new String("Results of side processing of message_" + messageNumber);
+		if (messageNumber == Constants.EDHOC_MESSAGE_2 || messageNumber == Constants.EDHOC_MESSAGE_3) {
+			myStr = (postValidation == false) ? (myStr + " before") : (myStr + " after");
+			myStr = myStr + " message verification";
 		}
-		if (messageNumber == Constants.EDHOC_MESSAGE_3) {
-			if (afterPostValidationProcessingMessage3 == false) {
-				System.out.println("Processing results before message verification\n");
-			}
-			else {
-				System.out.println("Processing results after message verification\n");
-			}
-		}
-		
+		System.out.println(myStr);
+
 		for (Integer i : myMap.keySet()) {
 			
 			System.out.println("Processing result for the EAD item with ead_label: " + i.intValue());
@@ -288,14 +271,31 @@ public class SideProcessor {
 		return peerCredentialCBOR;
 	}
 	
-	private void addErrorEntry(String errorMessage, int responseCode) {
+	private void addErrorEntry(int messageNumber, boolean postValidation, String errorMessage, int responseCode) {
+		HashMap<Integer, HashMap<Integer, CBORObject>> myMap = new HashMap<Integer, HashMap<Integer, CBORObject>>();
 		HashMap<Integer, CBORObject> errorMap = new HashMap<Integer, CBORObject>();
 		
 		errorMap.put(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION),
 				 CBORObject.FromObject(errorMessage));
 		errorMap.put(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_RESP_CODE),
 			 CBORObject.FromObject(responseCode));
-		resultsFromMessage2.put(Constants.SIDE_PROCESSOR_OUTER_ERROR, errorMap);
+		
+		switch(messageNumber) {
+		case Constants.EDHOC_MESSAGE_1:
+			myMap = resMessage1;
+			break;
+		case Constants.EDHOC_MESSAGE_2:
+			myMap = (postValidation == false) ? resMessage2Pre : resMessage2Post;
+			break;
+		case Constants.EDHOC_MESSAGE_3:
+			myMap = (postValidation == false) ? resMessage3Pre : resMessage3Post;
+			break;
+		case Constants.EDHOC_MESSAGE_4:
+			myMap = resMessage4;
+			break;
+	}
+		
+		myMap.put(Constants.SIDE_PROCESSOR_OUTER_ERROR, errorMap);
 	}
 
 }
