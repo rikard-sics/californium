@@ -58,10 +58,15 @@ public class GroupTestVectorBuilder {
 	private static byte[] sid_private_key_bytes;
 	private static MultiKey sid_full_key;
 
-	private final static byte[] rid = new byte[] { 0x52 };
-	private static byte[] rid_public_key_bytes;
-	private static byte[] rid_private_key_bytes;
-	private static MultiKey rid_full_key;
+	private final static byte[] rid1 = new byte[] { 0x52 };
+	private static byte[] rid1_public_key_bytes;
+	private static byte[] rid1_private_key_bytes;
+	private static MultiKey rid1_full_key;
+
+	private final static byte[] rid2 = new byte[] { 0x77 };
+	private static byte[] rid2_public_key_bytes;
+	private static byte[] rid2_private_key_bytes;
+	private static MultiKey rid2_full_key;
 
 	private static byte[] gm_public_key_bytes;
 
@@ -69,6 +74,14 @@ public class GroupTestVectorBuilder {
 
 	static int initial_seq = 0;
 
+	/**
+	 * Main method for test vector generator. Generates test vectors according
+	 * to configuration in to a text file.
+	 * 
+	 * @param args input arguments
+	 * @throws OSException on failure
+	 * @throws FileNotFoundException on failure to write output file
+	 */
 	public static void main(String[] args) throws OSException, FileNotFoundException {
 
 		// Redirect println
@@ -92,10 +105,15 @@ public class GroupTestVectorBuilder {
 			sid_private_key_bytes = net.i2p.crypto.eddsa.Utils
 					.hexToBytes("64714d41a240b61d8d823502717ab088c9f4af6fc9844553e4ad4c42cc735239");
 
-			rid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+			rid1_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
 					"a501781a636f6170733a2f2f7365727665722e6578616d706c652e636f6d026673656e64657203781a636f6170733a2f2f636c69656e742e6578616d706c652e6f7267041a70004b4f08a101a401010327200621582077ec358c1d344e41ee0e87b8383d23a2099acd39bdf989ce45b52e887463389b");
-			rid_private_key_bytes = net.i2p.crypto.eddsa.Utils
+			rid1_private_key_bytes = net.i2p.crypto.eddsa.Utils
 					.hexToBytes("857eb61d3f6d70a278a36740d132c099f62880ed497e27bdfd4685fa1a304f26");
+
+			rid2_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+					"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026773656E6465723203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A40101032720062158202430471D8D1D60F739DBD6F9B080E08A67CACBF811FE42537E03A8C9ABBDFD06");
+			rid2_private_key_bytes = net.i2p.crypto.eddsa.Utils
+					.hexToBytes("CAA31F0CF65A10208C79EB4E9D82A43D9352C0B9D67DFDE0D18561F7CAC1D726");
 
 			gm_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
 					"a501781a636f6170733a2f2f6d79736974652e6578616d706c652e636f6d026c67726f75706d616e6167657203781a636f6170733a2f2f646f6d61696e2e6578616d706c652e6f7267041aab9b154f08a101a4010103272006215820cde3efd3bc3f99c9c9ee210415c6cba55061b5046e963b8a58c9143a61166472");
@@ -106,10 +124,15 @@ public class GroupTestVectorBuilder {
 			sid_private_key_bytes = net.i2p.crypto.eddsa.Utils
 					.hexToBytes("FEA2190084748436543C5EC8E329D2AFBD7068054F595CA1F987B9E43E2205E6");
 
-			rid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+			rid1_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
 					"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A501020241522258201897A28666FE1CC4FACEF79CC7BDECDC271F2A619A00844FCD553A12DD679A4F2158200EB313B4D314A1001244776D321F2DD88A5A31DF06A6EEAE0A79832D39408BC12001");
-			rid_private_key_bytes = net.i2p.crypto.eddsa.Utils
+			rid1_private_key_bytes = net.i2p.crypto.eddsa.Utils
 					.hexToBytes("DA2593A6E0BCC81A5941069CB76303487816A2F4E6C0F21737B56A7C90381597");
+
+			rid2_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+					"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026773656E6465723203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A501020241522258202B123F25C5AF78614BDCC39AF89DC61D3177E063E7BB0FEC3475CC18CFE6BF1F215820E24E9B1564CF6FB5D35C8146531241733684810B5CC4FEE36C66B4B96F0DA33F2001");
+			rid2_private_key_bytes = net.i2p.crypto.eddsa.Utils
+					.hexToBytes("B811BDBD3E8F03BF03C5F2763FC5BE560109E45B7392740C76E90210CB324B96");
 
 			gm_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
 					"A501781A636F6170733A2F2F6D79736974652E6578616D706C652E636F6D026C67726F75706D616E6167657203781A636F6170733A2F2F646F6D61696E2E6578616D706C652E6F7267041AAB9B154F08A101A5010202402258205694315AD17A4DA5E3F69CA02F83E9C3D594712137ED8AFB748A70491598F9CD215820FAD4312A45F45A3212810905B223800F6CED4BC8D5BACBC8D33BB60C45FC98DD2001");
@@ -125,7 +148,7 @@ public class GroupTestVectorBuilder {
 		sid_full_key = new MultiKey(sid_public_key_bytes, sid_private_key_bytes);
 
 		System.out.println();
-		System.out.println("The CoAP client C and the CoAP server S are member of an OSCORE group." + "\n");
+		System.out.println("The CoAP client C and the CoAP server S1 and S2 are member of an OSCORE group." + "\n");
 
 		System.out.println();
 		System.out.println("[Setup]" + "\n");
@@ -136,7 +159,11 @@ public class GroupTestVectorBuilder {
 
 		System.out.println("Signature Encryption Algorithm: " + algSignEnc.AsCBOR() + " (" + algSignEnc + ")" + "\n");
 
-		System.out.println("Signature Algorithm: " + algCountersign + "\n");
+		System.out.println("Signature Algorithm: " + algCountersign);
+		if (algCountersign == AlgorithmID.ECDSA_256) {
+			System.out.println("Note that since ECDSA is used, signatures are NOT deterministic");
+		}
+		System.out.println();
 
 		System.out.println("Pairwise Key Agreement Algorithm: " + algKeyAgreement + "\n");
 
@@ -151,9 +178,11 @@ public class GroupTestVectorBuilder {
 
 		System.out.println("\n");
 
+		// Client #1
+
 		System.out.println("Client's Sender ID: " + Utils.bytesToHex(sid) + "\n");
 
-		System.out.println("Client's authentication credential as CCS (diagnostic notation): "
+		System.out.println("Client's authentication credential as CCS (diagnostic notation): " + "\n"
 				+ printDiagnostic(sid_public_key_bytes) + "\n");
 
 		System.out.println("Client's authentication credential as CCS (serialization): "
@@ -161,18 +190,37 @@ public class GroupTestVectorBuilder {
 
 		System.out.println("Client's private key: " + Utils.bytesToHex(sid_private_key_bytes) + "\n");
 
+		// Server #1
+
 		System.out.println();
-		System.out.println("Server's Sender ID: " + Utils.bytesToHex(rid) + "\n");
+		System.out.println("Server #1's Sender ID: " + Utils.bytesToHex(rid1) + "\n");
 
-		System.out.println("Server's authentication credential as CCS (diagnostic notation): "
-				+ printDiagnostic(rid_public_key_bytes) + "\n");
+		System.out.println("Server #1's authentication credential as CCS (diagnostic notation): " + "\n"
+				+ printDiagnostic(rid1_public_key_bytes) + "\n");
 
-		System.out.println("Server's authentication credential as CCS (serialization): "
-				+ Utils.bytesToHex(rid_public_key_bytes) + "\n");
+		System.out.println("Server #1's authentication credential as CCS (serialization): "
+				+ Utils.bytesToHex(rid1_public_key_bytes) + "\n");
 
-		System.out.println("Server's private key (serialization): " + Utils.bytesToHex(rid_private_key_bytes) + "\n");
+		System.out
+				.println("Server #1's private key (serialization): " + Utils.bytesToHex(rid1_private_key_bytes) + "\n");
 
-		System.out.println("Group Manager's authentication credential as CCS (diagnostic notation): "
+		// Server #2
+
+		System.out.println();
+		System.out.println("Server #2's Sender ID: " + Utils.bytesToHex(rid2) + "\n");
+
+		System.out.println("Server #2's authentication credential as CCS (diagnostic notation): " + "\n"
+				+ printDiagnostic(rid2_public_key_bytes) + "\n");
+
+		System.out.println("Server #2's authentication credential as CCS (serialization): "
+				+ Utils.bytesToHex(rid2_public_key_bytes) + "\n");
+
+		System.out
+				.println("Server #2's private key (serialization): " + Utils.bytesToHex(rid2_private_key_bytes) + "\n");
+
+		// GM
+
+		System.out.println("Group Manager's authentication credential as CCS (diagnostic notation): " + "\n"
 				+ printDiagnostic(gm_public_key_bytes) + "\n");
 
 		System.out.println("Group Manager's authentication credential as CCS (serialization): "
@@ -224,20 +272,20 @@ public class GroupTestVectorBuilder {
 
 		System.out.println("Full content: " + Utils.bytesToHex(encryptedReqBytes));
 
-		// Receive request and produce response
+		// Receive request and produce response (Server #1)
 
 		db.purge();
 
-		rid_full_key = new MultiKey(sid_public_key_bytes, sid_private_key_bytes);
-		GroupCtx commonCtxSrv = new GroupCtx(master_secret, master_salt, alg, kdf, id_context, algCountersign,
+		rid1_full_key = new MultiKey(rid1_public_key_bytes, rid1_private_key_bytes);
+		GroupCtx commonCtxSrv1 = new GroupCtx(master_secret, master_salt, alg, kdf, id_context, algCountersign,
 				gm_public_key_bytes);
-		commonCtxSrv.addSenderCtxCcs(rid, rid_full_key);
-		commonCtxSrv.addRecipientCtxCcs(sid, REPLAY_WINDOW, sid_full_key);
+		commonCtxSrv1.addSenderCtxCcs(rid1, rid1_full_key);
+		commonCtxSrv1.addRecipientCtxCcs(sid, REPLAY_WINDOW, sid_full_key);
 
-		db.addContext("", commonCtxSrv);
+		db.addContext("", commonCtxSrv1);
 
 		encrypted.setSourceContext(new UdpEndpointContext(new InetSocketAddress(0)));
-		GroupRecipientCtx recipientCtx = commonCtxSrv.recipientCtxMap.get(new ByteId(sid));
+		GroupRecipientCtx recipientCtx = commonCtxSrv1.recipientCtxMap.get(new ByteId(sid));
 		db.addContext(recipientCtx);
 
 		// Decrypt the request message
@@ -249,11 +297,11 @@ public class GroupTestVectorBuilder {
 
 		System.out.println("Decrypted request: " + Utils.bytesToHex(decryptedBytes));
 
-		// === Prepare and send response
+		// === Prepare and send response (Server #1)
 
 		System.out.println("");
-		System.out.println("[Response to Deterministic Request]" + "\n");
-		System.out.println("Response using pairwise mode: " + pairwiseResponse);
+		System.out.println("[Server #1] [Response to Request]" + "\n");
+		System.out.println("[Server #1] Response using pairwise mode: " + pairwiseResponse);
 
 		byte[] responseBytes = new byte[] { 0x64, 0x45, 0x5d, 0x1f, 0x00, 0x00, 0x39, 0x74, (byte) 0xff, 0x48, 0x65,
 				0x6c, 0x6c, 0x6f, 0x20, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x21 };
@@ -266,12 +314,12 @@ public class GroupTestVectorBuilder {
 			resp = (Response) respMess;
 		}
 
-		// Encrypt the response message
+		// Encrypt the response message (Server #1)
 
-		GroupSenderCtx senderCtx = commonCtxSrv.senderCtx;
+		GroupSenderCtx senderCtx = commonCtxSrv1.senderCtx;
 		senderCtx.setSenderSeq(initial_seq);
 		senderCtx.setResponsesIncludePartialIV(false);
-		commonCtxSrv.setPairwiseModeResponses(pairwiseResponse);
+		commonCtxSrv1.setPairwiseModeResponses(pairwiseResponse);
 
 		boolean newPartialIV = false;
 		boolean outerBlockwise = false;
@@ -281,7 +329,69 @@ public class GroupTestVectorBuilder {
 		serializer = new UdpDataSerializer();
 		byte[] encryptedRespBytes = serializer.getByteArray(encryptedResp);
 
-		System.out.println("Bytes of encrypted response: " + Utils.bytesToHex(encryptedRespBytes));
+		System.out.println("[Server #1] Bytes of encrypted response: " + Utils.bytesToHex(encryptedRespBytes));
+
+		// Receive request and produce response (Server #2)
+
+		parser = new UdpDataParser();
+		encrypted = (Request) parser.parseMessage(encryptedReqBytes);
+
+		db.purge();
+
+		rid2_full_key = new MultiKey(rid2_public_key_bytes, rid2_private_key_bytes);
+		GroupCtx commonCtxSrv2 = new GroupCtx(master_secret, master_salt, alg, kdf, id_context, algCountersign,
+				gm_public_key_bytes);
+		commonCtxSrv2.addSenderCtxCcs(rid2, rid2_full_key);
+		commonCtxSrv2.addRecipientCtxCcs(sid, REPLAY_WINDOW, sid_full_key);
+
+		db.addContext("", commonCtxSrv2);
+
+		encrypted.setSourceContext(new UdpEndpointContext(new InetSocketAddress(0)));
+		recipientCtx = commonCtxSrv2.recipientCtxMap.get(new ByteId(sid));
+		db.addContext(recipientCtx);
+
+		// Decrypt the request message
+		decrypted = RequestDecryptor.decrypt(db, encrypted, recipientCtx);
+		decrypted.getOptions().removeOscore();
+
+		serializer = new UdpDataSerializer();
+		decryptedBytes = serializer.getByteArray(decrypted);
+
+		System.out.println("Decrypted request: " + Utils.bytesToHex(decryptedBytes));
+
+		// === Prepare and send response (Server #2)
+
+		System.out.println("");
+		System.out.println("[Server #2] [Response to Request]" + "\n");
+		System.out.println("[Server #2] Response using pairwise mode: " + pairwiseResponse);
+
+		responseBytes = new byte[] { 0x64, 0x45, 0x5d, 0x1f, 0x00, 0x00, 0x39, 0x74, (byte) 0xff, 0x48, 0x65,
+				0x6c, 0x6c, 0x6f, 0x20, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x21 };
+
+		parser = new UdpDataParser();
+		respMess = parser.parseMessage(responseBytes);
+
+		resp = null;
+		if (respMess instanceof Response) {
+			resp = (Response) respMess;
+		}
+
+		// Encrypt the response message (Server #2)
+
+		senderCtx = commonCtxSrv2.senderCtx;
+		senderCtx.setSenderSeq(initial_seq);
+		senderCtx.setResponsesIncludePartialIV(false);
+		commonCtxSrv2.setPairwiseModeResponses(pairwiseResponse);
+
+		newPartialIV = false;
+		outerBlockwise = false;
+		encryptedResp = ResponseEncryptor.encrypt(db, resp, senderCtx, newPartialIV, outerBlockwise,
+				initial_seq, requestOscoreOption);
+
+		serializer = new UdpDataSerializer();
+		encryptedRespBytes = serializer.getByteArray(encryptedResp);
+
+		System.out.println("[Server #2] Bytes of encrypted response: " + Utils.bytesToHex(encryptedRespBytes));
 
 		stream.close();
 	}
