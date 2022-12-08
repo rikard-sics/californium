@@ -1,7 +1,9 @@
 package org.eclipse.californium.edhoc;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
@@ -33,24 +35,24 @@ public class SideProcessor {
 	// The EDHOC session this side process object is tied to
 	private EdhocSession session;
 	
-	// The following maps are used to collect the results from the side processing of each incoming EDHOC message.
-	// For message_2 and message_3, each of those refer to two different maps, in order to separately collect the
+	// The following data structures are used to collect the results from the side processing of each incoming EDHOC message.
+	// For message_2 and message_3, each of those refer to two different data structures, in order to separately collect the
 	// results of the processing occurred before and after message verification.
 	//
-	// The label of the outer map uniquely determines the namespace of labels and corresponding values for the inner map.
+	// The value of the outer map is a list of maps. Each element of the list includes the results from one processing process. 
+	// The key of the outer map uniquely determines the namespace of keys and corresponding values for the inner maps organized into a list.
 	//
-	// The label of the outer map is equal to the ead_label of the EAD item the results refer to,
-	// with the following exceptions:
+	// The key of the outer map is equal to the ead_label of the EAD item the results refer to, with the following exceptions:
 	//
 	// - The outer map includes an entry with label  0, with information about the authentication credential of the other peer to use.
 	// - The outer map includes an entry with label -1, in case the overall side processing fails.
 	//
-	private HashMap<Integer, HashMap<Integer, CBORObject>> resMessage1     = new HashMap<Integer, HashMap<Integer, CBORObject>>();
-	private HashMap<Integer, HashMap<Integer, CBORObject>> resMessage2Pre  = new HashMap<Integer, HashMap<Integer, CBORObject>>();
-	private HashMap<Integer, HashMap<Integer, CBORObject>> resMessage2Post = new HashMap<Integer, HashMap<Integer, CBORObject>>();
-	private HashMap<Integer, HashMap<Integer, CBORObject>> resMessage3Pre  = new HashMap<Integer, HashMap<Integer, CBORObject>>();
-	private HashMap<Integer, HashMap<Integer, CBORObject>> resMessage3Post = new HashMap<Integer, HashMap<Integer, CBORObject>>();
-	private HashMap<Integer, HashMap<Integer, CBORObject>> resMessage4     = new HashMap<Integer, HashMap<Integer, CBORObject>>();
+	private HashMap<Integer, List<HashMap<Integer, CBORObject>>> resMessage1     = new HashMap<Integer, List<HashMap<Integer, CBORObject>>>();
+	private HashMap<Integer, List<HashMap<Integer, CBORObject>>> resMessage2Pre  = new HashMap<Integer, List<HashMap<Integer, CBORObject>>>();
+	private HashMap<Integer, List<HashMap<Integer, CBORObject>>> resMessage2Post = new HashMap<Integer, List<HashMap<Integer, CBORObject>>>();
+	private HashMap<Integer, List<HashMap<Integer, CBORObject>>> resMessage3Pre  = new HashMap<Integer, List<HashMap<Integer, CBORObject>>>();
+	private HashMap<Integer, List<HashMap<Integer, CBORObject>>> resMessage3Post = new HashMap<Integer, List<HashMap<Integer, CBORObject>>>();
+	private HashMap<Integer, List<HashMap<Integer, CBORObject>>> resMessage4     = new HashMap<Integer, List<HashMap<Integer, CBORObject>>>();
 		
 	public SideProcessor(int trustModel, HashMap<CBORObject, CBORObject> peerCredentials, EdhocSession session) {
 
@@ -63,44 +65,64 @@ public class SideProcessor {
 
 	}
 			
-	public HashMap<Integer, HashMap<Integer, CBORObject>> getResults(int messageNumber, boolean postValidation) {
-		HashMap<Integer, HashMap<Integer, CBORObject>> myMap = new HashMap<Integer, HashMap<Integer, CBORObject>>();
-		switch(messageNumber) {
-			case Constants.EDHOC_MESSAGE_1:
-				myMap = resMessage1;
-				break;
-			case Constants.EDHOC_MESSAGE_2:
-				myMap = (postValidation == false) ? resMessage2Pre : resMessage2Post;
-				break;
-			case Constants.EDHOC_MESSAGE_3:
-				myMap = (postValidation == false) ? resMessage3Pre : resMessage3Post;
-				break;
-			case Constants.EDHOC_MESSAGE_4:
-				myMap = resMessage4;
-				break;
-		}
-		return myMap;
+	public HashMap<Integer, List<HashMap<Integer, CBORObject>>> getResults(int messageNumber, boolean postValidation) {
+		return whichResults(messageNumber, postValidation);
 	}
 	
-	public void removeEntryFromResultMap(int messageNumber, int keyValue, boolean postValidation) {
-		HashMap<Integer, HashMap<Integer, CBORObject>> myMap = new HashMap<Integer, HashMap<Integer, CBORObject>>();
+	private void addResult(int messageNumber, boolean postValidation, int resultLabel, HashMap<Integer, CBORObject> resultContent) {
+		HashMap<Integer, List<HashMap<Integer, CBORObject>>> myResults = whichResults(messageNumber, postValidation);
+		
+		if (!myResults.containsKey(Integer.valueOf(resultLabel))) {
+			List<HashMap<Integer, CBORObject>> myList = new ArrayList<HashMap<Integer, CBORObject>>();
+			myResults.put(Integer.valueOf(resultLabel), myList);
+		}
+		myResults.get(Integer.valueOf(resultLabel)).add(resultContent);
+	}
+	
+	public void removeResults() {
+		resMessage1.clear();
+		resMessage2Pre.clear();
+		resMessage2Post.clear();
+		resMessage3Pre.clear();
+		resMessage3Post.clear();
+		resMessage4.clear();
+	}
+	
+	public void removeResults(int messageNumber, boolean postValidation) {
+		HashMap<Integer, List<HashMap<Integer, CBORObject>>> myResults = whichResults(messageNumber, postValidation);
+		myResults.clear();
+	}
+	
+	public void removeResultSet(int messageNumber, int keyValue, boolean postValidation) {
+		HashMap<Integer, List<HashMap<Integer, CBORObject>>> myResults = whichResults(messageNumber, postValidation);
+		if (myResults.size() == 0)
+			return;
+		myResults.remove(Integer.valueOf(keyValue));
+	}
+	
+	private void addErrorResult(int messageNumber, boolean postValidation, String errorMessage, int responseCode) {
+		HashMap<Integer, CBORObject> errorMap = new HashMap<Integer, CBORObject>();
+		
+		errorMap.put(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION),
+				 CBORObject.FromObject(errorMessage));
+		errorMap.put(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_RESP_CODE),
+			 CBORObject.FromObject(responseCode));
+
+		addResult(messageNumber, postValidation, Constants.SIDE_PROCESSOR_OUTER_ERROR, errorMap);
+	}
+	
+	private HashMap<Integer, List<HashMap<Integer, CBORObject>>> whichResults(int messageNumber, boolean postValidation) {
 		switch(messageNumber) {
 			case Constants.EDHOC_MESSAGE_1:
-				myMap = resMessage1;
-				break;
+				return resMessage1;
 			case Constants.EDHOC_MESSAGE_2:
-				myMap = (postValidation == false) ? resMessage2Pre : resMessage2Post;
-				break;
+				return (postValidation == false) ? resMessage2Pre : resMessage2Post;
 			case Constants.EDHOC_MESSAGE_3:
-				myMap = (postValidation == false) ? resMessage3Pre : resMessage3Post;
-				break;
+				return (postValidation == false) ? resMessage3Pre : resMessage3Post;
 			case Constants.EDHOC_MESSAGE_4:
-				myMap = resMessage4;
-				break;
+				return resMessage4;
 		}
-		if (myMap.size() == 0)
-			return;
-		myMap.remove(Integer.valueOf(keyValue));
+		return null;
 	}
 	
 	public void setEdhocSession(EdhocSession session) {
@@ -148,7 +170,7 @@ public class SideProcessor {
 		CBORObject peerCredentialCBOR = findValidPeerCredential(idCredR, ead2);
 		
 		if (peerCredentialCBOR == null) {
-			addErrorEntry(Constants.EDHOC_MESSAGE_2, false,
+			addErrorResult(Constants.EDHOC_MESSAGE_2, false,
 						  "Unable to retrieve a valid peer credential from ID_CRED_R",
 						  ResponseCode.BAD_REQUEST.value);
 			return;
@@ -156,7 +178,9 @@ public class SideProcessor {
 		else {
 			HashMap<Integer, CBORObject> myMap = new HashMap<Integer, CBORObject>();
 			myMap.put(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_CRED_VALUE), peerCredentialCBOR);
-			resMessage2Pre.put(Constants.SIDE_PROCESSOR_OUTER_CRED, myMap);
+			List<HashMap<Integer, CBORObject>> myResult = new ArrayList<HashMap<Integer, CBORObject>>();
+			myResult.add(myMap);
+			resMessage2Pre.put(Constants.SIDE_PROCESSOR_OUTER_CRED, myResult);
 		}
 		
 		// Go through the EAD_2 items, if any
@@ -195,7 +219,7 @@ public class SideProcessor {
 		CBORObject peerCredentialCBOR = findValidPeerCredential(idCredI, ead3);
 		
 		if (peerCredentialCBOR == null) {
-			addErrorEntry(Constants.EDHOC_MESSAGE_3, false,
+			addErrorResult(Constants.EDHOC_MESSAGE_3, false,
 						  "Unable to retrieve a valid peer credential from ID_CRED_I",
 						  ResponseCode.BAD_REQUEST.value);
 			return;
@@ -203,7 +227,9 @@ public class SideProcessor {
 		else {
 			HashMap<Integer, CBORObject> myMap = new HashMap<Integer, CBORObject>();
 			myMap.put(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_CRED_VALUE), peerCredentialCBOR);
-			resMessage3Pre.put(Constants.SIDE_PROCESSOR_OUTER_CRED, myMap);
+			List<HashMap<Integer, CBORObject>> myResult = new ArrayList<HashMap<Integer, CBORObject>>();
+			myResult.add(myMap);
+			resMessage3Pre.put(Constants.SIDE_PROCESSOR_OUTER_CRED, myResult);
 		}
 		
 		// Go through the EAD_3 items, if any
@@ -236,22 +262,8 @@ public class SideProcessor {
 	}
 	
 	public void showResultsFromSideProcessing(int messageNumber, boolean postValidation) {
-		HashMap<Integer, HashMap<Integer, CBORObject>> myMap = new HashMap<Integer, HashMap<Integer, CBORObject>>();
-		switch(messageNumber) {
-			case Constants.EDHOC_MESSAGE_1:
-				myMap = resMessage1;
-				break;
-			case Constants.EDHOC_MESSAGE_2:
-				myMap = (postValidation == false) ? resMessage2Pre : resMessage2Post;
-				break;
-			case Constants.EDHOC_MESSAGE_3:
-				myMap = (postValidation == false) ? resMessage3Pre : resMessage3Post;
-				break;
-			case Constants.EDHOC_MESSAGE_4:
-				myMap = resMessage4;
-				break;
-		}
-		if (myMap.size() == 0)
+		HashMap<Integer, List<HashMap<Integer, CBORObject>>> myResults = whichResults(messageNumber, postValidation);
+		if (myResults.size() == 0)
 			return;
 
 		String myStr = new String("Results of side processing of message_" + messageNumber);
@@ -260,59 +272,41 @@ public class SideProcessor {
 			myStr = myStr + " message verification";
 		}
 		System.out.println(myStr);
-
-		for (Integer i : myMap.keySet()) {
-			
+		
+		for (Integer i : myResults.keySet()) {
 			System.out.println("Processing result for the EAD item with ead_label: " + i.intValue());
 			
-			for (Integer j : myMap.get(i).keySet()) {
-				CBORObject obj = myMap.get(i).get(j);
-				System.out.print("Result element #" + j.intValue() + ": " + obj.toString());				
-			}
+			List<HashMap<Integer, CBORObject>> myList = myResults.get(i);
+			
+			// Print the processing results for each instance of this EAD item 
+			for(HashMap<Integer, CBORObject> myMap : myList) {
+				for (Integer j : myMap.keySet()) {
+					CBORObject obj = myMap.get(j);
+					System.out.print("Result element #" + j.intValue() + ": " + obj.toString());				
+				}	
+			}			
 			System.out.println("\n");
-		}
+		}		
 		
 	}
 	
 	private CBORObject findValidPeerCredential(CBORObject idCredX, CBORObject[] ead) {
 		CBORObject peerCredentialCBOR = null;
 		
-		if (trustModel == Constants.TRUST_MODEL_STRICT) {
-			if (!peerCredentials.containsKey(idCredX)) {
-				return null;
-			}
+		if (peerCredentials.containsKey(idCredX)) {
+	    	peerCredentialCBOR = peerCredentials.get(idCredX);
+	    	
+	    	// TODO: Check whether the authentication credential is still valid (for applicable credential types)
+	    	
+	    	// TODO: Check whether the authentication credential is good to use in the context of this EDHOC session
+		}		
+		else if (trustModel == Constants.TRUST_MODEL_STRICT) {
+				return peerCredentialCBOR;
 		}
-		
-    	peerCredentialCBOR = peerCredentials.get(idCredX);    	
+
+		// TODO: Add support for the alternative trust models
     			
 		return peerCredentialCBOR;
-	}
-	
-	private void addErrorEntry(int messageNumber, boolean postValidation, String errorMessage, int responseCode) {
-		HashMap<Integer, HashMap<Integer, CBORObject>> myMap = new HashMap<Integer, HashMap<Integer, CBORObject>>();
-		HashMap<Integer, CBORObject> errorMap = new HashMap<Integer, CBORObject>();
-		
-		errorMap.put(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION),
-				 CBORObject.FromObject(errorMessage));
-		errorMap.put(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_RESP_CODE),
-			 CBORObject.FromObject(responseCode));
-		
-		switch(messageNumber) {
-		case Constants.EDHOC_MESSAGE_1:
-			myMap = resMessage1;
-			break;
-		case Constants.EDHOC_MESSAGE_2:
-			myMap = (postValidation == false) ? resMessage2Pre : resMessage2Post;
-			break;
-		case Constants.EDHOC_MESSAGE_3:
-			myMap = (postValidation == false) ? resMessage3Pre : resMessage3Post;
-			break;
-		case Constants.EDHOC_MESSAGE_4:
-			myMap = resMessage4;
-			break;
-	}
-		
-		myMap.put(Constants.SIDE_PROCESSOR_OUTER_ERROR, errorMap);
 	}
 
 }

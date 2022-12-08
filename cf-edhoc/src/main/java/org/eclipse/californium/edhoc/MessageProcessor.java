@@ -536,16 +536,16 @@ public class MessageProcessor {
 			if (sideProcessor.getResults(Constants.EDHOC_MESSAGE_1, false).
 					containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR))) {
 				errMsg = new String(sideProcessor.getResults(Constants.EDHOC_MESSAGE_1, false).
-						get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
+						get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).get(0).
 						get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION)).AsString());
 				int responseCodeValue = sideProcessor.getResults(Constants.EDHOC_MESSAGE_1, false).
-			            get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
+			            get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).get(0).
 			            get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_RESP_CODE)).AsInt32();
 				responseCode = ResponseCode.valueOf(responseCodeValue);
 				error = true;
 				
 				// No need to keep this information any longer in the side processor object
-				sideProcessor.removeEntryFromResultMap(Constants.EDHOC_MESSAGE_1, Constants.SIDE_PROCESSOR_OUTER_ERROR, false);
+				sideProcessor.removeResultSet(Constants.EDHOC_MESSAGE_1, Constants.SIDE_PROCESSOR_OUTER_ERROR, false);
 			}
 		}
 		
@@ -986,16 +986,16 @@ public class MessageProcessor {
 	    if (sideProcessor.getResults(Constants.EDHOC_MESSAGE_2, false).
 	    		containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR))) {
 	    	errMsg = new String(sideProcessor.getResults(Constants.EDHOC_MESSAGE_2, false).
-	        	get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
+	        	get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).get(0).
 	            get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION)).AsString());
 	        int responseCodeValue = sideProcessor.getResults(Constants.EDHOC_MESSAGE_2, false).
-	        	get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
+	        	get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).get(0).
 	            get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_RESP_CODE)).AsInt32();
 	        responseCode = ResponseCode.valueOf(responseCodeValue);
 	        error = true;
 	         
 	        // No need to keep this information any longer in the side processor object
-	        sideProcessor.removeEntryFromResultMap(Constants.EDHOC_MESSAGE_2, Constants.SIDE_PROCESSOR_OUTER_ERROR, false);
+	        sideProcessor.removeResultSet(Constants.EDHOC_MESSAGE_2, Constants.SIDE_PROCESSOR_OUTER_ERROR, false);
 	   }
 
     	// If no fatal error occurred, the side processor object includes the authentication credential
@@ -1003,7 +1003,7 @@ public class MessageProcessor {
  	   	if (error == false && sideProcessor.getResults(Constants.EDHOC_MESSAGE_2, false).
  	   						  containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_CRED))) {
  	   		peerCredentialCBOR = sideProcessor.getResults(Constants.EDHOC_MESSAGE_2, false).
- 	   							 get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_CRED)).
+ 	   							 get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_CRED)).get(0).
  	   							 get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_CRED_VALUE));
 
  	    	if (peerCredentialCBOR == null) {
@@ -1014,7 +1014,7 @@ public class MessageProcessor {
 	    }
 	     	   	
         // No need to keep this information any longer in the side processor object
-        sideProcessor.removeEntryFromResultMap(Constants.EDHOC_MESSAGE_2, Constants.SIDE_PROCESSOR_OUTER_CRED, false);
+        sideProcessor.removeResultSet(Constants.EDHOC_MESSAGE_2, Constants.SIDE_PROCESSOR_OUTER_CRED, false);
         
         // If EAD_2 was present, print any available results from processing its EAD items.
         sideProcessor.showResultsFromSideProcessing(Constants.EDHOC_MESSAGE_2, false);
@@ -1104,16 +1104,16 @@ public class MessageProcessor {
     	if (sideProcessor.getResults(Constants.EDHOC_MESSAGE_2, true).
     			containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR))) {
     	   errMsg = new String(sideProcessor.getResults(Constants.EDHOC_MESSAGE_2, true).
-    	         get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
+    	         get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).get(0).
     	         get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION)).AsString());
     	   int responseCodeValue = sideProcessor.getResults(Constants.EDHOC_MESSAGE_2, true).
-    	         get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
+    	         get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).get(0).
     	         get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_RESP_CODE)).AsInt32();
     	   responseCode = ResponseCode.valueOf(responseCodeValue);
     	   error = true;
     	      
     	   // No need to keep this information any longer in the side processor object
-    	   sideProcessor.removeEntryFromResultMap(Constants.EDHOC_MESSAGE_2, Constants.SIDE_PROCESSOR_OUTER_ERROR, true);
+    	   sideProcessor.removeResultSet(Constants.EDHOC_MESSAGE_2, Constants.SIDE_PROCESSOR_OUTER_ERROR, true);
     	}
     	
         // If EAD_2 was present, print any available results from processing its EAD items.
@@ -1434,16 +1434,16 @@ public class MessageProcessor {
 	    if (sideProcessor.getResults(Constants.EDHOC_MESSAGE_3, false).
 	    		containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR))) {
 	    	errMsg = new String(sideProcessor.getResults(Constants.EDHOC_MESSAGE_3, false).
-	        	get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
+	        	get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).get(0).
 	            get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION)).AsString());
 	        int responseCodeValue = sideProcessor.getResults(Constants.EDHOC_MESSAGE_3, false).
-	        	get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
+	        	get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).get(0).
 	            get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_RESP_CODE)).AsInt32();
 	        responseCode = ResponseCode.valueOf(responseCodeValue);
 	        error = true;
 
 	        // No need to keep this information any longer in the side processor object
-	        sideProcessor.removeEntryFromResultMap(Constants.EDHOC_MESSAGE_3, Constants.SIDE_PROCESSOR_OUTER_ERROR, false);
+	        sideProcessor.removeResultSet(Constants.EDHOC_MESSAGE_3, Constants.SIDE_PROCESSOR_OUTER_ERROR, false);
 	    }
 	        	
     	// If no fatal error occurred, the side processor object includes the authentication credential
@@ -1451,7 +1451,7 @@ public class MessageProcessor {
  	   	if (error == false && sideProcessor.getResults(Constants.EDHOC_MESSAGE_3, false).
  	   						  containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_CRED))) {
  	   		peerCredentialCBOR = sideProcessor.getResults(Constants.EDHOC_MESSAGE_3, false).
- 	   							 get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_CRED)).
+ 	   							 get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_CRED)).get(0).
  	   							 get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_CRED_VALUE));
 
  	    	if (peerCredentialCBOR == null) {
@@ -1462,7 +1462,7 @@ public class MessageProcessor {
 	    }
     	
         // No need to keep this information any longer in the side processor object
-        sideProcessor.removeEntryFromResultMap(Constants.EDHOC_MESSAGE_3, Constants.SIDE_PROCESSOR_OUTER_CRED, false);
+        sideProcessor.removeResultSet(Constants.EDHOC_MESSAGE_3, Constants.SIDE_PROCESSOR_OUTER_CRED, false);
         
         // If EAD_3 was present, print any available results from processing its EAD items.
         sideProcessor.showResultsFromSideProcessing(Constants.EDHOC_MESSAGE_3, false);
@@ -1552,16 +1552,16 @@ public class MessageProcessor {
     	if (sideProcessor.getResults(Constants.EDHOC_MESSAGE_3, true).
     			containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR))) {
     	   errMsg = new String(sideProcessor.getResults(Constants.EDHOC_MESSAGE_3, true).
-    	         get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
+    	         get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).get(0).
     	         get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION)).AsString());
     	   int responseCodeValue = sideProcessor.getResults(Constants.EDHOC_MESSAGE_3, true).
-    	         get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
+    	         get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).get(0).
     	         get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_RESP_CODE)).AsInt32();
     	   responseCode = ResponseCode.valueOf(responseCodeValue);
     	   error = true;
     	      
     	   // No need to keep this information any longer in the side processor object
-    	   sideProcessor.removeEntryFromResultMap(Constants.EDHOC_MESSAGE_3, Constants.SIDE_PROCESSOR_OUTER_ERROR, true);
+    	   sideProcessor.removeResultSet(Constants.EDHOC_MESSAGE_3, Constants.SIDE_PROCESSOR_OUTER_ERROR, true);
     	}
     	
         // If EAD_3 was present, print any available results from processing its EAD items.
@@ -1889,16 +1889,16 @@ public class MessageProcessor {
 			if (sideProcessor.getResults(Constants.EDHOC_MESSAGE_4, false).
 					containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR))) {
 				errMsg = new String(sideProcessor.getResults(Constants.EDHOC_MESSAGE_4, false).
-						get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
+						get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).get(0).
 						get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION)).AsString());
 				int responseCodeValue = sideProcessor.getResults(Constants.EDHOC_MESSAGE_4, false).
-			            get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).
+			            get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).get(0).
 			            get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_RESP_CODE)).AsInt32();
 				responseCode = ResponseCode.valueOf(responseCodeValue);
 				error = true;
 				
 				// No need to keep this information any longer in the side processor object
-				sideProcessor.removeEntryFromResultMap(Constants.EDHOC_MESSAGE_4, Constants.SIDE_PROCESSOR_OUTER_ERROR, false);
+				sideProcessor.removeResultSet(Constants.EDHOC_MESSAGE_4, Constants.SIDE_PROCESSOR_OUTER_ERROR, false);
 			}
 		}
 		
