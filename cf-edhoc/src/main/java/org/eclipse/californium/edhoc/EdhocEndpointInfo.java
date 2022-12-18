@@ -58,6 +58,21 @@ public class EdhocEndpointInfo {
 	// Set of supported EAD items
 	private Set<Integer> supportedEADs;
 	
+	// This data structure collects instructions provided by the application for producing EAD items
+	// to include in outgoing EDHOC messages. The production of these EAD items is not related to or
+	// triggered by the consumption of other EAD items included in incoming EDHOC messages.
+	// 
+	// This data structure can be null if the application does not specify the production of any of such EAD items. 
+	//
+	// The outer map key indicates the outgoing EDHOC message in question.
+	//
+	// Each inner list specifies a sequence of element pairs (CBOR integer, CBOR map).
+	// The CBOR integer specifies the ead_label in case of non-critical EAD item,
+	// or the corresponding negative value in case of critical EAD item.
+	// The CBOR map provides input on how to produce the EAD item,
+	// with the map keys from a namespace specific of the ead_label.
+	private HashMap<Integer, List<CBORObject>> eadProductionInput;
+	
 	// The trust model for validating authentication credentials of other peers
 	private int trustModel;
 	
@@ -82,9 +97,10 @@ public class EdhocEndpointInfo {
 							 HashMap<CBORObject, OneKey> peerPublicKeys,
 							 HashMap<CBORObject, CBORObject> peerCredentials,
 							 HashMap<CBORObject, EdhocSession> edhocSessions,
-							 Set<CBORObject> usedConnectionIds, List<Integer> supportedCipherSuites, Set<Integer> supportedEADs,
-							 int trustModel, HashMapCtxDB db, String uri, int OSCORE_REPLAY_WINDOW, int MAX_UNFRAGMENTED_SIZE,
-							 HashMap<String, AppProfile> appProfiles) {
+							 Set<CBORObject> usedConnectionIds, List<Integer> supportedCipherSuites,
+							 Set<Integer> supportedEADs, HashMap<Integer, List<CBORObject>> eadProductionInput,
+							 int trustModel, HashMapCtxDB db, String uri, int OSCORE_REPLAY_WINDOW,
+							 int MAX_UNFRAGMENTED_SIZE, HashMap<String, AppProfile> appProfiles) {
 
 		
 		this.keyPairs = keyPairs;
@@ -97,6 +113,7 @@ public class EdhocEndpointInfo {
 		this.usedConnectionIds = usedConnectionIds;
 		this.supportedCipherSuites = supportedCipherSuites;
 		this.supportedEADs = supportedEADs;
+		this.eadProductionInput = eadProductionInput;
 		this.trustModel = trustModel;
 		this.db = db;
 		this.uri = uri;
@@ -174,6 +191,11 @@ public class EdhocEndpointInfo {
 	// Return the set of supported EAD items
 	public Set<Integer> getSupportedEADs() {
 		return supportedEADs;
+	}
+	
+	// Return the information to produce EAD items for outgoing messages
+	public HashMap<Integer, List<CBORObject>> getEadProductionInput() {
+		return eadProductionInput;
 	}
 	
 	// Return the trust model used for validating authentication credentials of other peers

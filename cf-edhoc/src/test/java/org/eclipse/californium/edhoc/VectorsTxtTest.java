@@ -254,7 +254,7 @@ public class VectorsTxtTest {
 				System.out.println("Malformed or invalid CBOR sequence as EAD_1");
 			}
 		}
-		byte[] message1 = MessageProcessor.writeMessage1(session, ead1Array);
+		byte[] message1 = MessageProcessor.writeMessage1(session);
 
 		// Compare with the expected value from the test vectors
 		byte[] expectedMessage1 = message1List.get(index);

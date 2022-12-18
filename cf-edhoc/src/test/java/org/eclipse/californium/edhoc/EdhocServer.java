@@ -230,13 +230,25 @@ public class EdhocServer extends CoapServer {
 		// provide an instance of a .well-known resource
 		CoapResource wellKnownResource = new WellKnown();
 		add(wellKnownResource);
-				
+		
+		// If EAD items have to be produced for outgoing EDHOC messages (irrespective of the consumption of EAD items
+		// in incoming EDHOC message, this data structure specifies instructions on how to produce those.
+		//
+		// The outer map key indicates the outgoing EDHOC message in question.
+		//
+		// Each inner list specifies a sequence of element pairs (CBOR integer, CBOR map).
+		// The CBOR integer specifies the ead_label in case of non-critical EAD item,
+		// or the corresponding negative value in case of critical EAD item.
+		// The CBOR map provides input on how to produce the EAD item,
+		// with the map keys from a namespace specific of the ead_label.
+		HashMap<Integer, List<CBORObject>> eadProductionInput = null;
+		
 		// prepare the set of information for this EDHOC endpoint
 		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCreds, creds, keyPairs, peerPublicKeys,
 																	peerCredentials, edhocSessions, usedConnectionIds,
-																	supportedCipherSuites, supportedEADs, trustModel, db,
-																	uriLocal, OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE,
-																	appProfiles);
+																	supportedCipherSuites, supportedEADs, eadProductionInput,
+																	trustModel, db, uriLocal, OSCORE_REPLAY_WINDOW,
+																	MAX_UNFRAGMENTED_SIZE, appProfiles);
 		
 		// provide an instance of a .well-known/edhoc resource
 		CoapResource edhocResource = new EdhocResource("edhoc", edhocEndpointInfo, ownIdCreds);
