@@ -168,7 +168,7 @@ class EdhocResource extends CoapResource {
 			
 			SideProcessor sideProcessor = new SideProcessor(edhocEndpointInfo.getTrustModel(),
 															edhocEndpointInfo.getPeerCredentials(),
-															null);
+															edhocEndpointInfo.getEadProductionInput());
 			
 			processingResult = MessageProcessor.readMessage1(message, true,
 															 edhocEndpointInfo.getSupportedCipherSuites(),
@@ -209,12 +209,8 @@ class EdhocResource extends CoapResource {
 				// A reference to the sideProcessor is also going to be stored in the EDHOC session.
 				sideProcessor.setEdhocSession(session);
 				
-				// Possibly specify external authorization data for EAD_2, or null if none has to be provided
-				// The EAD is structured in pairs of CBOR items (int, ?bstr), i.e. the EAD Label first and then optionally the EAD Value
-				CBORObject[] ead2 = null;
-				
 				// Compute the EDHOC Message 2
-				nextMessage = MessageProcessor.writeMessage2(session, ead2);
+				nextMessage = MessageProcessor.writeMessage2(session);
 
 				byte[] connectionIdentifier = session.getConnectionId();
 				
@@ -441,13 +437,9 @@ class EdhocResource extends CoapResource {
 		        else {
 		        	// message_4 has to be sent to the Initiator
 		        	
-		        	// Possibly specify external authorization data for EAD_4, or null if none has to be provided
-		        	// The EAD is structured in pairs of CBOR items (int, ?bstr), i.e. the EAD Label first and then optionally the EAD Value
-					CBORObject[] ead4 = null;
-		        	
 					// Compute the EDHOC Message 4
 					byte[] connectionIdentifierResponder = mySession.getConnectionId();
-					nextMessage = MessageProcessor.writeMessage4(mySession, ead4);
+					nextMessage = MessageProcessor.writeMessage4(mySession);
 					
 					// Deallocate the assigned Connection Identifier for this peer
 					if (nextMessage == null || mySession.getCurrentStep() != Constants.EDHOC_AFTER_M4) {

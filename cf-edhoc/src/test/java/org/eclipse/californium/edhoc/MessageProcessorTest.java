@@ -269,8 +269,6 @@ public class MessageProcessorTest {
 				"ed06a8ae61a829ba5fa54525c9d07f48dd44a302f43e0f23d8cc20b73085141e");
 		OneKey identityKey = SharedSecretCalculation.buildEd25519OneKey(privateIdentityKeyBytes, publicIdentityKeyBytes);
 		
-		CBORObject[] ead1 = null;
-		
 		// Just for method compatibility; it is not used for EDHOC Message 1
 		// The x509 certificate of the Initiator
 		byte[] serializedCert = StringUtil.hex2ByteArray(
@@ -319,6 +317,10 @@ public class MessageProcessorTest {
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
 				                                idCreds, creds, cipherSuites, supportedEADs, appProfile, trustModel, db);
 
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
+		sideProcessor.setEdhocSession(session);
+		
+		
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = StringUtil.hex2ByteArray(
 				"892ec28e5cb6669108470539500b705e60d008d347c5817ee9f3327c8a87bb03");
@@ -328,7 +330,7 @@ public class MessageProcessorTest {
 		session.setEphemeralKey(ek);
 
 		// Now write EDHOC message 1
-		byte[] message1 = MessageProcessor.writeMessage1(session, ead1);
+		byte[] message1 = MessageProcessor.writeMessage1(session);
 
 		// Compare with the expected value from the test vectors
 		
@@ -356,7 +358,6 @@ public class MessageProcessorTest {
 		
 		boolean initiator = false;
 		int method = 0;
-		CBORObject[] ead2 = null;
 		
 		
 		/* Responder information*/
@@ -488,6 +489,9 @@ public class MessageProcessorTest {
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
 												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
 
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
+		sideProcessor.setEdhocSession(session);
+		
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
 		session.setPeerEphemeralPublicKey(peerEphemeralPublicKey);
@@ -509,7 +513,7 @@ public class MessageProcessorTest {
 		
 		
 		// Now write EDHOC message 2
-		byte[] message2 = MessageProcessor.writeMessage2(session, ead2);
+		byte[] message2 = MessageProcessor.writeMessage2(session);
 
 		// Compare with the expected value from the test vectors
 		
@@ -537,8 +541,7 @@ public class MessageProcessorTest {
 		
 		boolean initiator = true;
 		int method = 0;
-		CBORObject[] ead3 = null;
-		
+
 		
 		/* Initiator information*/
 
@@ -641,6 +644,9 @@ public class MessageProcessorTest {
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
 												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
 
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
+		sideProcessor.setEdhocSession(session);
+		
 		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
 		session.setPeerEphemeralPublicKey(peerEphemeralPublicKey);
@@ -670,7 +676,7 @@ public class MessageProcessorTest {
 		
 		
 		// Now write EDHOC message 3
-		byte[] message3 = MessageProcessor.writeMessage3(session, ead3);
+		byte[] message3 = MessageProcessor.writeMessage3(session);
 
 		// Compare with the expected value from the test vectors
 		// Note: the actual EDHOC message 3 starts with 0x58. The bytes 0x4118 (CBOR encoding for h'18') is prepended as C_R,
@@ -744,7 +750,6 @@ public class MessageProcessorTest {
 		
 		boolean initiator = false;
 		int method = 0;
-		CBORObject[] ead4 = null;
 		
 		
 		/* Responder information*/
@@ -833,6 +838,9 @@ public class MessageProcessorTest {
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
 												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
 
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
+		sideProcessor.setEdhocSession(session);
+		
 		session.setCurrentStep(Constants.EDHOC_AFTER_M3);
 		
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
@@ -857,7 +865,7 @@ public class MessageProcessorTest {
 		session.setTH4(th4);
 		
 		// Now write EDHOC message 4
-		byte[] message4 = MessageProcessor.writeMessage4(session, ead4);
+		byte[] message4 = MessageProcessor.writeMessage4(session);
 
 		// Compare with the expected value from the test vectors
 
@@ -892,7 +900,6 @@ public class MessageProcessorTest {
 		Set<Integer> supportedEADs = new HashSet<>();
 		
 		OneKey identityKey = Util.generateKeyPair(KeyKeys.EC2_P256.AsInt32());
-		CBORObject[] ead1 = null;
 		
 		// Just for method compatibility; it is not used for EDHOC Message 1
 		
@@ -942,6 +949,9 @@ public class MessageProcessorTest {
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
 				                                idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
 
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
+		sideProcessor.setEdhocSession(session);
+		
 		// Force the early knowledge of cipher suites supported by the other peer
 		session.setPeerSupportedCipherSuites(cipherSuitesPeer);
 		
@@ -956,7 +966,7 @@ public class MessageProcessorTest {
 		session.setEphemeralKey(ek);
 
 		// Now write EDHOC message 1
-		byte[] message1 = MessageProcessor.writeMessage1(session, ead1);
+		byte[] message1 = MessageProcessor.writeMessage1(session);
 
 		// Compare with the expected value from the test vectors
 
@@ -979,7 +989,7 @@ public class MessageProcessorTest {
 
 		boolean initiator = false;
 		int method = 3;
-		CBORObject[] ead2 = null;
+
 		
 		/* Responder information*/
 
@@ -1073,6 +1083,9 @@ public class MessageProcessorTest {
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
 												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
 
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
+		sideProcessor.setEdhocSession(session);
+		
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
 		session.setPeerEphemeralPublicKey(peerEphemeralPublicKey);
@@ -1094,7 +1107,7 @@ public class MessageProcessorTest {
 		
 		
 		// Now write EDHOC message 2
-		byte[] message2 = MessageProcessor.writeMessage2(session, ead2);
+		byte[] message2 = MessageProcessor.writeMessage2(session);
 
 		// Compare with the expected value from the test vectors
 		
@@ -1118,7 +1131,7 @@ public class MessageProcessorTest {
 
 		boolean initiator = true;
 		int method = 3;
-		CBORObject[] ead3 = null;
+
 		
 		/* Initiator information*/
 
@@ -1225,6 +1238,9 @@ public class MessageProcessorTest {
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
 												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
 
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
+		sideProcessor.setEdhocSession(session);
+		
 		// Set the ephemeral keys, i.e. X and G_X for the initiator, as well as G_Y for the Responder
 		session.setEphemeralKey(ephemeralKey);
 		session.setPeerEphemeralPublicKey(peerEphemeralPublicKey);
@@ -1253,7 +1269,7 @@ public class MessageProcessorTest {
 		
 		
 		// Now write EDHOC message 3
-		byte[] message3 = MessageProcessor.writeMessage3(session, ead3);
+		byte[] message3 = MessageProcessor.writeMessage3(session);
 
 		// Compare with the expected value from the test vectors
 		// Note: the actual EDHOC message 3 starts with 0x52. The byte 0x27 (CBOR encoding for -8) is prepended as C_R,
@@ -1323,7 +1339,7 @@ public class MessageProcessorTest {
 
 		boolean initiator = false;
 		int method = 3;
-		CBORObject[] ead4 = null;
+
 		
 		/* Responder information*/
 
@@ -1420,7 +1436,10 @@ public class MessageProcessorTest {
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
 												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
-
+		
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
+		sideProcessor.setEdhocSession(session);
+		
 		session.setCurrentStep(Constants.EDHOC_AFTER_M3);
 		
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
@@ -1443,7 +1462,7 @@ public class MessageProcessorTest {
 		session.setTH4(th4);
 		
 		// Now write EDHOC message 4
-		byte[] message4 = MessageProcessor.writeMessage4(session, ead4);
+		byte[] message4 = MessageProcessor.writeMessage4(session);
 
 		// Compare with the expected value from the test vectors
 

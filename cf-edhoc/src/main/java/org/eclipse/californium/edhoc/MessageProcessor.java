@@ -2065,10 +2065,9 @@ public class MessageProcessor {
     /**
      *  Write an EDHOC Message 1
      * @param session   The EDHOC session associated to this EDHOC message
-     * @param ead1   A CBOR array including the elements of the External Authorization Data, it can be null
      * @return  The raw payload to transmit as EDHOC Message 1, or null in case of errors
      */
-	public static byte[] writeMessage1(EdhocSession session, CBORObject[] ead1) {
+	public static byte[] writeMessage1(EdhocSession session) {
 		
         // Prepare the list of CBOR objects to build the CBOR sequence
         List<CBORObject> objectList = new ArrayList<>();
@@ -2171,11 +2170,35 @@ public class MessageProcessor {
            	Util.nicePrint("Connection Identifier of the Initiator", connectionIdentifierInitiator);
         	Util.nicePrint("C_I", cI.EncodeToBytes());
         }
+
+        SideProcessor sideProcessor = session.getSideProcessor();
         
-        // EAD_1, if provided
-        if (ead1 != null && ead1.length != 0) {
-        	for (int i = 0; i < ead1.length; i++)
-        		objectList.add(ead1[i]);
+        // Produce possible EAD items following early instructions from the application
+        sideProcessor.produceIndependentEADs(Constants.EDHOC_MESSAGE_1);
+        
+        // A fatal error occurred
+        if (sideProcessor.getResults(Constants.EDHOC_MESSAGE_1, false).
+                containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR))) {
+            
+        	String errMsg = new String(sideProcessor.getResults(Constants.EDHOC_MESSAGE_1, false).
+                    get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).get(0).
+                    get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION)).AsString());
+        	
+    		System.err.println(errMsg);
+    		
+            // No need to keep this information any longer in the side processor object
+            sideProcessor.removeResultSet(Constants.EDHOC_MESSAGE_1, Constants.SIDE_PROCESSOR_OUTER_ERROR, false);
+            
+    		return null;
+        }
+        
+        List<CBORObject> ead1 = session.getSideProcessor().getProducedEADs(Constants.EDHOC_MESSAGE_1);
+        
+        // There are EAD items to include in EAD_1
+        if (ead1 != null && ead1.size() != 0) {
+        	for (int i = 0; i < ead1.size(); i++) {
+        		objectList.add(ead1.get(i));
+        	}
         }
         if (debugPrint) {
         	System.out.println("===================================");
@@ -2211,10 +2234,9 @@ public class MessageProcessor {
     /**
      *  Write an EDHOC Message 2
      * @param session   The EDHOC session associated to this EDHOC message
-     * @param ead2   A CBOR array including the elements of the External Authorization Data, it can be null
      * @return  The raw payload to transmit as EDHOC Message 2 or EDHOC Error Message; or null in case of errors
      */
-	public static byte[] writeMessage2(EdhocSession session, CBORObject[] ead2) {
+	public static byte[] writeMessage2(EdhocSession session) {
 		
 		List<CBORObject> objectList = new ArrayList<>();
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
@@ -2336,14 +2358,48 @@ public class MessageProcessor {
 	    	session.setPRK3e2m(prk3e2m);
         }
     	
+        // Produce possible EAD items following early instructions from the application
+        if (error == false) {
+            SideProcessor sideProcessor = session.getSideProcessor();
+            
+            sideProcessor.produceIndependentEADs(Constants.EDHOC_MESSAGE_2);
+            
+    	    // A fatal error occurred
+    	    if (sideProcessor.getResults(Constants.EDHOC_MESSAGE_2, false).
+    	    		containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR))) {
+    	    	errMsg = new String(sideProcessor.getResults(Constants.EDHOC_MESSAGE_2, false).
+    	        	get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).get(0).
+    	            get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION)).AsString());
+    	        int responseCodeValue = sideProcessor.getResults(Constants.EDHOC_MESSAGE_2, false).
+    	        	get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).get(0).
+    	            get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_RESP_CODE)).AsInt32();
+    	        responseCode = ResponseCode.valueOf(responseCodeValue);
+    	        error = true;
+    	         
+    	        // No need to keep this information any longer in the side processor object
+    	        sideProcessor.removeResultSet(Constants.EDHOC_MESSAGE_2, Constants.SIDE_PROCESSOR_OUTER_ERROR, false);
+    	    }
+        }
+        CBORObject ead2[] = null;
+        if (error == false) {
+    	    List<CBORObject> myList = session.getSideProcessor().getProducedEADs(Constants.EDHOC_MESSAGE_2);
+
+    		// There are EAD items to include in EAD_2
+    		if (myList != null && myList.size() != 0) {
+    			ead2 = new CBORObject[myList.size()];
+    		    for (int i = 0; i < myList.size(); i++) {
+    		   	 ead2[i] = myList.get(i);
+    		    }
+    		}
+        }
+        
         
     	/* Start computing Signature_or_MAC_2 */    	
     	
         byte[] mac2 = null;
-        byte[] externalData = null;
-        
+
     	// Compute MAC_2
-        if (error == false) {
+        if (error == false) {       	
 	    	mac2 = computeMAC2(session, prk3e2m, th2, session.getIdCred(), session.getCred(), ead2);
 	    	if (mac2 == null) {
 	    		System.err.println("Error when computing MAC_2");
@@ -2358,6 +2414,7 @@ public class MessageProcessor {
     	// Compute Signature_or_MAC_2
     	
         // Compute the external data for the external_aad, as a CBOR sequence
+        byte[] externalData = null;
         if (error == false) {
 			externalData = computeExternalData(th2, session.getCred(), ead2);
 			if (externalData == null) {
@@ -2497,10 +2554,9 @@ public class MessageProcessor {
     /**
      *  Write an EDHOC Message 3
      * @param session   The EDHOC session associated to this EDHOC message
-     * @param ead3   A CBOR array including the elements of the External Authorization Data, it can be null
      * @return  The raw payload to transmit as EDHOC Message 3 or EDHOC Error Message; or null in case of errors
      */
-	public static byte[] writeMessage3(EdhocSession session, CBORObject[] ead3) {
+	public static byte[] writeMessage3(EdhocSession session) {
 		
 		List<CBORObject> objectList = new ArrayList<>();
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
@@ -2567,11 +2623,47 @@ public class MessageProcessor {
 	    	session.setPRK4e3m(prk4e3m);
         }
         
+        // Produce possible EAD items following early instructions from the application
+        if (error == false) {
+            SideProcessor sideProcessor = session.getSideProcessor();
+            
+            sideProcessor.produceIndependentEADs(Constants.EDHOC_MESSAGE_3);
+            
+            // A fatal error occurred
+            if (sideProcessor.getResults(Constants.EDHOC_MESSAGE_3, false).
+                    containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR))) {
+                errMsg = new String(sideProcessor.getResults(Constants.EDHOC_MESSAGE_3, false).
+                    get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).get(0).
+                    get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION)).AsString());
+                int responseCodeValue = sideProcessor.getResults(Constants.EDHOC_MESSAGE_3, false).
+                    get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).get(0).
+                    get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_RESP_CODE)).AsInt32();
+                responseCode = ResponseCode.valueOf(responseCodeValue);
+                error = true;
+                    
+                // No need to keep this information any longer in the side processor object
+                sideProcessor.removeResultSet(Constants.EDHOC_MESSAGE_3, Constants.SIDE_PROCESSOR_OUTER_ERROR, false);
+            }
+        }
+        CBORObject ead3[] = null;
+        if (error == false) {
+            List<CBORObject> myList = session.getSideProcessor().getProducedEADs(Constants.EDHOC_MESSAGE_3);
+
+            // There are EAD items to include in EAD_3
+            if (myList != null && myList.size() != 0) {
+                ead3 = new CBORObject[myList.size()];
+                for (int i = 0; i < myList.size(); i++) {
+                    ead3[i] = myList.get(i);
+                }
+            }
+        }
+        
 		
     	/* Start computing Signature_or_MAC_3 */
     	
     	// Compute MAC_3
         byte[] mac3 = null;
+        
         if (error == false) {
 	    	mac3 = computeMAC3(session, prk4e3m, th3, session.getIdCred(), session.getCred(), ead3);
 	    	if (mac3 == null) {
@@ -2781,10 +2873,9 @@ public class MessageProcessor {
     /**
      *  Write an EDHOC Message 4
      * @param session   The EDHOC session associated to this EDHOC message
-     * @param ead4   A CBOR array including the elements of the External Authorization Data, it can be null
      * @return  The raw payload to transmit as EDHOC Message 4 or EDHOC Error Message; or null in case of errors
      */
-	public static byte[] writeMessage4(EdhocSession session, CBORObject[] ead4) {
+	public static byte[] writeMessage4(EdhocSession session) {
 		
 		List<CBORObject> objectList = new ArrayList<>();
 		boolean error = false; // Will be set to True if an EDHOC Error Message has to be returned
@@ -2829,7 +2920,43 @@ public class MessageProcessor {
     	else if (debugPrint) {
     		Util.nicePrint("External Data to compute CIPHERTEXT_4", externalData);
     	}
-    	    	
+    	
+    	
+    	// Produce possible EAD items following early instructions from the application
+    	if (error == false) {
+    	    SideProcessor sideProcessor = session.getSideProcessor();
+    	    
+    	    sideProcessor.produceIndependentEADs(Constants.EDHOC_MESSAGE_4);
+    	    
+    	    // A fatal error occurred
+    	    if (sideProcessor.getResults(Constants.EDHOC_MESSAGE_4, false).
+    	            containsKey(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR))) {
+    	        errMsg = new String(sideProcessor.getResults(Constants.EDHOC_MESSAGE_4, false).
+    	            get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).get(0).
+    	            get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION)).AsString());
+    	        int responseCodeValue = sideProcessor.getResults(Constants.EDHOC_MESSAGE_4, false).
+    	            get(Integer.valueOf(Constants.SIDE_PROCESSOR_OUTER_ERROR)).get(0).
+    	            get(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_ERROR_RESP_CODE)).AsInt32();
+    	        responseCode = ResponseCode.valueOf(responseCodeValue);
+    	        error = true;
+    	            
+    	        // No need to keep this information any longer in the side processor object
+    	        sideProcessor.removeResultSet(Constants.EDHOC_MESSAGE_4, Constants.SIDE_PROCESSOR_OUTER_ERROR, false);
+    	    }
+    	}
+    	CBORObject ead4[] = null;
+    	if (error == false) {
+    	    List<CBORObject> myList = session.getSideProcessor().getProducedEADs(Constants.EDHOC_MESSAGE_4);
+
+    	    // There are EAD items to include in EAD_4
+    	    if (myList != null && myList.size() != 0) {
+    	        ead4 = new CBORObject[myList.size()];
+    	        for (int i = 0; i < myList.size(); i++) {
+    	            ead4[i] = myList.get(i);
+    	        }
+    	    }
+    	}
+    	
     	
         // Prepare the plaintext
     	byte[] plaintext4 = new byte[] {};
@@ -3061,6 +3188,7 @@ public class MessageProcessor {
 														HashMap<Integer, HashMap<Integer, CBORObject>> creds,
 			  									        List<Integer> supportedCipherSuites,
 			  									        Set<Integer> supportedEADs,
+			  									        HashMap<Integer, List<CBORObject>> eadProductionInput,
 			  									        Set<CBORObject> usedConnectionIds,
 			  									        AppProfile appProfile, int trustModel, HashMapCtxDB db) {
 		
@@ -3073,7 +3201,7 @@ public class MessageProcessor {
 		
         EdhocSession mySession = new EdhocSession(true, true, method, connectionId, keyPairs, idCreds, creds,
         										  supportedCipherSuites, supportedEADs, appProfile, trustModel, oscoreDB);
-		
+    
 		return mySession;
 		
 	}

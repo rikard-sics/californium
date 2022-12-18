@@ -21,7 +21,7 @@ public interface EAD {
 	 *          iii) A CBOR text string with the description of an occurred fatal error,
 	 *               followed by a CBOR integer specifying the CoAP error response code.
 	 */
-	public abstract CBORObject[] produce(boolean critical, int messageNumber, CBORObject input);
+	public abstract CBORObject[] produce(boolean critical, int messageNumber, CBORObject productionInput);
 	
 	/**
 	 * @param critical  True if the EAD item has to be processed as critical, or false otherwise

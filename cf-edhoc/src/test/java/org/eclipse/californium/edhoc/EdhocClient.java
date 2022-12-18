@@ -252,18 +252,26 @@ public class EdhocClient {
 			System.exit(-1);
 		}
 		
+		// If EAD items have to be produced for outgoing EDHOC messages (irrespective of the consumption of EAD items
+		// in incoming EDHOC message, this data structure specifies instructions on how to produce those.
+		//
+		// The outer map key indicates the outgoing EDHOC message in question.
+		//
+		// Each inner list specifies a sequence of element pairs (CBOR integer, CBOR map).
+		// The CBOR integer specifies the ead_label in case of non-critical EAD item,
+		// or the corresponding negative value in case of critical EAD item.
+		// The CBOR map provides input on how to produce the EAD item,
+		// with the map keys from a namespace specific of the ead_label.
+		HashMap<Integer, List<CBORObject>> eadProductionInput = null;
+		
 		// Prepare the set of information for this EDHOC endpoint
 		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCreds, creds, keyPairs, peerPublicKeys,
 																	peerCredentials, edhocSessions, usedConnectionIds,
-																	supportedCipherSuites, supportedEADs, trustModel, db,
-																	edhocURI, OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE,
-																	appProfiles);
+																	supportedCipherSuites, supportedEADs, eadProductionInput,
+																	trustModel, db, edhocURI, OSCORE_REPLAY_WINDOW,
+																	MAX_UNFRAGMENTED_SIZE, appProfiles);
 		
-		// Possibly specify external authorization data for EAD_1, or null if none has to be provided
-		// The EAD is structured in pairs of CBOR items (int, ?bstr), i.e. the EAD Label first and then optionally the EAD Value
-		CBORObject[] ead1 = null;
-		
-		edhocExchangeAsInitiator(args, uri, ownIdCreds, edhocEndpointInfo, ead1);
+		edhocExchangeAsInitiator(args, uri, ownIdCreds, edhocEndpointInfo);
 
 	}
 
@@ -304,8 +312,8 @@ public class EdhocClient {
 		
 	}
 	
-	private static void edhocExchangeAsInitiator(final String args[], final URI targetUri, Set<CBORObject> ownIdCreds,
-												 EdhocEndpointInfo edhocEndpointInfo, CBORObject[] ead1) {
+	private static void edhocExchangeAsInitiator(final String args[], final URI targetUri,
+												 Set<CBORObject> ownIdCreds, EdhocEndpointInfo edhocEndpointInfo) {
 		
 		CoapClient client = new CoapClient(targetUri);
 		
@@ -379,13 +387,22 @@ public class EdhocClient {
 																		 edhocEndpointInfo.getCreds(),
                  														 edhocEndpointInfo.getSupportedCipherSuites(),
                  														 edhocEndpointInfo.getSupportedEADs(),
+                 														 edhocEndpointInfo.getEadProductionInput(),
                  														 edhocEndpointInfo.getUsedConnectionIds(),
                  														 appProfile, edhocEndpointInfo.getTrustModel(), db);
-
+		
+		SideProcessor sideProcessor = new SideProcessor(edhocEndpointInfo.getTrustModel(),
+														edhocEndpointInfo.getPeerCredentials(),
+														edhocEndpointInfo.getEadProductionInput());
+		
+		// Provide the side processor object with the just created EDHOC session.
+		// A reference to the sideProcessor is also going to be stored in the EDHOC session.
+		sideProcessor.setEdhocSession(session);
+		
 		// At this point, the initiator may overwrite the information in the EDHOC session about the supported cipher suites
 		// and the selected cipher suite, based on a previously received EDHOC Error Message
 		
-        byte[] nextPayload = MessageProcessor.writeMessage1(session, ead1);
+        byte[] nextPayload = MessageProcessor.writeMessage1(session);
         
 		if (nextPayload == null || session.getCurrentStep() != Constants.EDHOC_BEFORE_M1) {
 			System.err.println("Inconsistent state before sending EDHOC Message 1");
@@ -527,9 +544,7 @@ public class EdhocClient {
         	List<CBORObject> processingResult = new ArrayList<CBORObject>();
 			
 			/* Start handling EDHOC Message 2 */
-			
-			SideProcessor sideProcessor = new SideProcessor(trustModel, peerCredentials, session);
-			
+	
 			processingResult = MessageProcessor.readMessage2(responsePayload, false, connectionIdentifier, edhocSessions,
 															 peerPublicKeys, peerCredentials, usedConnectionIds, ownIdCreds);
 			
@@ -548,11 +563,7 @@ public class EdhocClient {
 				
 				session.setCurrentStep(Constants.EDHOC_AFTER_M2);
 				
-	        	// Possibly specify external authorization data for EAD_3, or null if none has to be provided
-	        	// The EAD is structured in pairs of CBOR items (int, ?bstr), i.e. the EAD Label first and then optionally the EAD Value
-				CBORObject[] ead3 = null;
-
-				nextPayload = MessageProcessor.writeMessage3(session, ead3);
+				nextPayload = MessageProcessor.writeMessage3(session);
 		        
 				if (nextPayload == null || session.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
 					System.err.println("Inconsistent state before sending EDHOC Message 3");
