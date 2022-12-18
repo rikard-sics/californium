@@ -342,6 +342,10 @@ public static final int EAD_LABEL_PADDING = 0;
  * 
  */
 
+// Outer map keys used for the results of an EAD item consumption
+public static final int SIDE_PROCESSOR_CONSUMPTION_ERROR    = -1;
+public static final int SIDE_PROCESSOR_CONSUMPTION_SUCCESS  =  0;
+
 // Result labels not associated with EAD labels
 public static final int SIDE_PROCESSOR_OUTER_ERROR = -1;
 public static final int SIDE_PROCESSOR_OUTER_CRED  =  0;
