@@ -150,6 +150,9 @@ public class SideProcessor {
 		
 		// Go through the EAD_1 items, if any
 		//
+		// For each EAD item, invoke the corresponding consume() method, and then addResult(). 
+		// Stop in case the consumption of an EAD item returns a fatal error.
+		//
 		// ...
 		//
 		
@@ -176,14 +179,15 @@ public class SideProcessor {
 			return;
     	}
 		else {
-			HashMap<Integer, CBORObject> myMap = new HashMap<Integer, CBORObject>();
-			myMap.put(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_CRED_VALUE), peerCredentialCBOR);
-			List<HashMap<Integer, CBORObject>> myResult = new ArrayList<HashMap<Integer, CBORObject>>();
-			myResult.add(myMap);
-			resMessage2Pre.put(Constants.SIDE_PROCESSOR_OUTER_CRED, myResult);
+			HashMap<Integer, CBORObject> resultContent = new HashMap<Integer, CBORObject>();
+			resultContent.put(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_CRED_VALUE), peerCredentialCBOR);
+			addResult(Constants.EDHOC_MESSAGE_2, false, Constants.SIDE_PROCESSOR_OUTER_CRED, resultContent);
 		}
 		
 		// Go through the EAD_2 items, if any
+		//
+		// For each EAD item, invoke the corresponding consume() method, and then addResult(). 
+		// Stop in case the consumption of an EAD item returns a fatal error.
 		//
 		// ...
 		//
@@ -202,6 +206,9 @@ public class SideProcessor {
 		CBORObject idCredR = sideProcessorInfo[2];
 		
 		// Go through the EAD_2 items, if any
+		//
+		// For each EAD item, invoke the corresponding consume() method, and then addResult(). 
+		// Stop in case the consumption of an EAD item returns a fatal error.
 		//
 		// ...
 		//
@@ -225,14 +232,15 @@ public class SideProcessor {
 			return;
     	}
 		else {
-			HashMap<Integer, CBORObject> myMap = new HashMap<Integer, CBORObject>();
-			myMap.put(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_CRED_VALUE), peerCredentialCBOR);
-			List<HashMap<Integer, CBORObject>> myResult = new ArrayList<HashMap<Integer, CBORObject>>();
-			myResult.add(myMap);
-			resMessage3Pre.put(Constants.SIDE_PROCESSOR_OUTER_CRED, myResult);
+			HashMap<Integer, CBORObject> resultContent = new HashMap<Integer, CBORObject>();
+			resultContent.put(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_CRED_VALUE), peerCredentialCBOR);
+			addResult(Constants.EDHOC_MESSAGE_3, false, Constants.SIDE_PROCESSOR_OUTER_CRED, resultContent);
 		}
 		
 		// Go through the EAD_3 items, if any
+		//
+		// For each EAD item, invoke the corresponding consume() method, and then addResult(). 
+		// Stop in case the consumption of an EAD item returns a fatal error.
 		//
 		// ...
 		//
@@ -247,6 +255,9 @@ public class SideProcessor {
 		
 		// Go through the EAD_3 items, if any
 		//
+		// For each EAD item, invoke the corresponding consume() method, and then addResult(). 
+		// Stop in case the consumption of an EAD item returns a fatal error.
+		//
 		// ...
 		//
 		
@@ -257,8 +268,12 @@ public class SideProcessor {
 
 		// Go through the EAD_4 items, if any
 		//
+		// For each EAD item, invoke the corresponding consume() method, and then addResult(). 
+		// Stop in case the consumption of an EAD item returns a fatal error.
+		//
 		// ...
 		//
+
 	}
 	
 	public void showResultsFromSideProcessing(int messageNumber, boolean postValidation) {
