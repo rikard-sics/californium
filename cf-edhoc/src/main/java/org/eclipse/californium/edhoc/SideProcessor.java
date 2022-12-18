@@ -63,14 +63,30 @@ public class SideProcessor {
 	// of non-critical EAD item, or the corresponding negative value in case of critical EAD item.
 	private HashMap<Integer, List<CBORObject>> producedEADs = new HashMap<Integer, List<CBORObject>>();
 	
-	public SideProcessor(int trustModel, HashMap<CBORObject, CBORObject> peerCredentials, EdhocSession session) {
+	// This data structure collects instructions provided by the application for producing EAD items
+	// to include in outgoing EDHOC messages. The production of these EAD items is not related to or
+	// triggered by the consumption of other EAD items included in incoming EDHOC messages.
+	// 
+	// This data structure can be null if the application does not specify the production of any of such EAD items. 
+	//
+	// The outer map key indicates the outgoing EDHOC message in question.
+	//
+	// Each inner list specifies a sequence of element pairs (CBOR integer, CBOR map).
+	// The CBOR integer specifies the ead_label in case of non-critical EAD item,
+	// or the corresponding negative value in case of critical EAD item.
+	// The CBOR map provides input on how to produce the EAD item,
+	// with the map keys from a namespace specific of the ead_label.
+	private HashMap<Integer, List<CBORObject>> eadProductionInput = new HashMap<Integer, List<CBORObject>>();
+
+
+	public SideProcessor(int trustModel, HashMap<CBORObject, CBORObject> peerCredentials,
+						 HashMap<Integer, List<CBORObject>> eadProductionInput) {
 
 		this.trustModel = trustModel;
 		this.peerCredentials = peerCredentials;
+		this.session = null;
 		
-		this.session = session; // On the Responder, this starts as null and is set later on before starting to prepare message_2
-		if (session != null)
-			session.setSideProcessor(this);
+		this.eadProductionInput = eadProductionInput;
 
 	}
 			
@@ -118,6 +134,10 @@ public class SideProcessor {
 			 CBORObject.FromObject(responseCode));
 
 		addResult(messageNumber, postValidation, Constants.SIDE_PROCESSOR_OUTER_ERROR, errorMap);
+	}
+	
+	public List<CBORObject> getProducedEADs(int messageNumber) {
+		return producedEADs.get(Integer.valueOf(messageNumber));
 	}
 	
 	/**
@@ -180,6 +200,9 @@ public class SideProcessor {
 		// For each EAD item, invoke the corresponding consume() method, and then addResult(). 
 		// Stop in case the consumption of an EAD item returns a fatal error.
 		//
+		// This may further trigger the production of new EAD items to include in the next, outgoing EDHOC message.
+		// In such a case, invoke eadProductionDispatcher() for each of those EAD items to produce.
+		//
 		// ...
 		//
 		
@@ -216,6 +239,9 @@ public class SideProcessor {
 		// For each EAD item, invoke the corresponding consume() method, and then addResult(). 
 		// Stop in case the consumption of an EAD item returns a fatal error.
 		//
+		// This may further trigger the production of new EAD items to include in the next, outgoing EDHOC message.
+		// In such a case, invoke eadProductionDispatcher() for each of those EAD items to produce.
+		//
 		// ...
 		//
 		
@@ -236,6 +262,9 @@ public class SideProcessor {
 		//
 		// For each EAD item, invoke the corresponding consume() method, and then addResult(). 
 		// Stop in case the consumption of an EAD item returns a fatal error.
+		//
+		// This may further trigger the production of new EAD items to include in the next, outgoing EDHOC message.
+		// In such a case, invoke eadProductionDispatcher() for each of those EAD items to produce.
 		//
 		// ...
 		//
@@ -269,6 +298,9 @@ public class SideProcessor {
 		// For each EAD item, invoke the corresponding consume() method, and then addResult(). 
 		// Stop in case the consumption of an EAD item returns a fatal error.
 		//
+		// This may further trigger the production of new EAD items to include in the next, outgoing EDHOC message.
+		// In such a case, invoke eadProductionDispatcher() for each of those EAD items to produce.
+		//
 		// ...
 		//
 		
@@ -285,6 +317,9 @@ public class SideProcessor {
 		// For each EAD item, invoke the corresponding consume() method, and then addResult(). 
 		// Stop in case the consumption of an EAD item returns a fatal error.
 		//
+		// This may further trigger the production of new EAD items to include in the next, outgoing EDHOC message.
+		// In such a case, invoke eadProductionDispatcher() for each of those EAD items to produce.
+		//
 		// ...
 		//
 		
@@ -298,9 +333,90 @@ public class SideProcessor {
 		// For each EAD item, invoke the corresponding consume() method, and then addResult(). 
 		// Stop in case the consumption of an EAD item returns a fatal error.
 		//
+		// This may further trigger the production of new EAD items to include in the next, outgoing EDHOC message.
+		// In such a case, invoke eadProductionDispatcher() for each of those EAD items to produce.
+		//
 		// ...
 		//
 
+	}
+	
+	/**
+ 	 * @param messageNumber  The number of the outgoing EDHOC message that will include the EAD item
+ 	 * @return  False in case of malformed input, or true otherwise.
+ 	 *          This is not related to the correct/failed production of EAD items. 
+	 */
+	public boolean produceIndependentEADs(int messageNumber) {
+		
+		if (eadProductionInput == null || !eadProductionInput.containsKey(Integer.valueOf(messageNumber)))
+			return true;
+		
+		List<CBORObject> myList = eadProductionInput.get(Integer.valueOf(messageNumber));
+		
+		if ((myList.size() % 2) == 1)
+			return false;
+		
+		int index = 0;
+		int size = myList.size();
+		
+		while (index < size) {
+			
+			if (myList.get(Integer.valueOf(index)).getType() != CBORType.Integer)
+				return false;
+			if (myList.get(Integer.valueOf(index + 1)).getType() != CBORType.Map)
+				return false;
+			
+			boolean critical = false;
+			int eadLabel = myList.get(Integer.valueOf(index)).AsInt32();
+			if (eadLabel < 0) {
+				critical = true;
+				eadLabel = -eadLabel;
+			}
+			index++;
+			CBORObject productionInput = myList.get(Integer.valueOf(index));
+			CBORObject[] eadItem = eadProductionDispatcher(eadLabel, critical, messageNumber, productionInput);
+			
+			if (eadItem[0].getType() != CBORType.Integer && eadItem[0].getType() != CBORType.TextString)
+				return false;
+			
+			// A fatal error occurred while producing this EAD item
+			if (eadItem[0].getType() == CBORType.TextString) {
+				if (eadItem[1].getType() != CBORType.ByteString)
+					return false;
+				
+				addErrorResult(messageNumber, true, eadItem[0].AsString(), eadItem[1].AsInt32());
+				break;
+			}
+			
+			addProducedEAD(messageNumber, eadItem[0], eadItem[1]);
+			
+			index++;
+			
+		}
+		
+		return true;
+		
+	}
+	
+	/**
+	 * Invoke the produce() method of the right EAD item to produce
+	 * 
+ 	 * @param eadLabel  The ead_label of the EAD item to produce
+	 * @param critical  True if the EAD item has to be produced as critical, or false otherwise
+ 	 * @param messageNumber  The number of the next, outgoing EDHOC message that will include the produced EAD item
+ 	 * @param input  A CBOR map providing input on how to produce the EAD item. The map keys belong to a namespace specific of the ead_label. 
+ 	 * @return  The same result returned by the produce() method of the specific EAD item to produce.
+	 */
+	public CBORObject[] eadProductionDispatcher(int eadLabel, boolean critical, int messageNumber, CBORObject input) {
+		
+		// This has to be populated with the invocation of the produce() method for the EAD item to produce
+		switch(eadLabel) {
+			// CASE NNN:
+			// return EAD_NNN.produce(critical, messageNumber, productionInput);
+		}
+		
+		return null; // placeholder, until the invocation to an actual produce() method is included above
+		
 	}
 	
 	public void showResultsFromSideProcessing(int messageNumber, boolean postValidation) {
