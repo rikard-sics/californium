@@ -53,7 +53,16 @@ public class SideProcessor {
 	private HashMap<Integer, List<HashMap<Integer, CBORObject>>> resMessage3Pre  = new HashMap<Integer, List<HashMap<Integer, CBORObject>>>();
 	private HashMap<Integer, List<HashMap<Integer, CBORObject>>> resMessage3Post = new HashMap<Integer, List<HashMap<Integer, CBORObject>>>();
 	private HashMap<Integer, List<HashMap<Integer, CBORObject>>> resMessage4     = new HashMap<Integer, List<HashMap<Integer, CBORObject>>>();
-		
+	
+	// This data structure collects the produced EAD items to include in an outgoing EDHOC message.
+	//
+	// The outer map key indicates the outgoing EDHOC message in question.
+	//
+	// Each inner list specifies a sequence of element pairs (CBOR integer, CBOR byte string) or of elements (CBOR integer),
+	// for EAD items that specify or do not specify an ead_value, respectively. The CBOR integer specifies the ead_label in case
+	// of non-critical EAD item, or the corresponding negative value in case of critical EAD item.
+	private HashMap<Integer, List<CBORObject>> producedEADs = new HashMap<Integer, List<CBORObject>>();
+	
 	public SideProcessor(int trustModel, HashMap<CBORObject, CBORObject> peerCredentials, EdhocSession session) {
 
 		this.trustModel = trustModel;
@@ -109,6 +118,24 @@ public class SideProcessor {
 			 CBORObject.FromObject(responseCode));
 
 		addResult(messageNumber, postValidation, Constants.SIDE_PROCESSOR_OUTER_ERROR, errorMap);
+	}
+	
+	/**
+ 	 * @param messageNumber  The number of the outgoing EDHOC message that will include the EAD item
+ 	 * @param eadLabel  The ead_label of the EAD item to include, or its corresponding negative value if the EAD item is critical
+ 	 * @param eadValue  The ead_value of the EAD item to include, or null if the ead_value is not present 
+	 */
+	private void addProducedEAD(int messageNumber, CBORObject eadLabel, CBORObject eadValue) {
+
+		if (!producedEADs.containsKey(Integer.valueOf(messageNumber))) {
+			producedEADs.put(Integer.valueOf(messageNumber), new ArrayList<CBORObject>());
+		}
+		List<CBORObject> myList = producedEADs.get(Integer.valueOf(messageNumber));
+		myList.add(eadLabel);
+		if (eadValue != null) {
+			myList.add(eadValue);
+		}
+		
 	}
 	
 	private HashMap<Integer, List<HashMap<Integer, CBORObject>>> whichResults(int messageNumber, boolean postValidation) {
