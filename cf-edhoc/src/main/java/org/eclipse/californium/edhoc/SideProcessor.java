@@ -89,11 +89,26 @@ public class SideProcessor {
 		this.eadProductionInput = eadProductionInput;
 
 	}
-			
+	
+	/**
+    * Return the results obtained from the side processing
+    * 
+    * @param messageNumber  The number of EDHOC message that the EAD items refer to
+    * @param postValidation  True to select the results of EAD processing after EDHOC message validation, or false otherwise
+    * @return  The results obtained from consuming/producing EAD items for the EDHOC message.
+    */
 	public HashMap<Integer, List<HashMap<Integer, CBORObject>>> getResults(int messageNumber, boolean postValidation) {
 		return whichResults(messageNumber, postValidation);
 	}
 	
+	/**
+    * Store a result obtained from the side processing
+    * 
+    * @param messageNumber  The number of EDHOC message that the EAD items refer to
+    * @param postValidation  True to select the results of EAD processing after EDHOC message validation, or false otherwise
+    * @param resultLabel   Identifier of the specific map where to store this result
+    * @param resultContent   The result to store
+    */
 	private void addResult(int messageNumber, boolean postValidation, int resultLabel, HashMap<Integer, CBORObject> resultContent) {
 		HashMap<Integer, List<HashMap<Integer, CBORObject>>> myResults = whichResults(messageNumber, postValidation);
 		
@@ -104,6 +119,9 @@ public class SideProcessor {
 		myResults.get(Integer.valueOf(resultLabel)).add(resultContent);
 	}
 	
+	/**
+    * Delete all the results obtained from the side processing
+	*/
 	public void removeResults() {
 		resMessage1.clear();
 		resMessage2Pre.clear();
@@ -113,11 +131,24 @@ public class SideProcessor {
 		resMessage4.clear();
 	}
 	
+	/**
+    * Delete all the results from the side processing related to an EDHOC message
+    *  
+    * @param messageNumber  The number of EDHOC message that the EAD items refer to
+    * @param postValidation  True to select the results of EAD processing after EDHOC message validation, or false otherwise
+    */
 	public void removeResults(int messageNumber, boolean postValidation) {
 		HashMap<Integer, List<HashMap<Integer, CBORObject>>> myResults = whichResults(messageNumber, postValidation);
 		myResults.clear();
 	}
-	
+
+	/**
+    * Delete a specific result set obtained from the side processing related to an EDHOC message
+    *  
+    * @param messageNumber  The number of EDHOC message that the EAD items refer to
+    * @param keyValue   The identifier of the result set to delete
+    * @param postValidation  True to select the results of EAD processing after EDHOC message validation, or false otherwise
+    */
 	public void removeResultSet(int messageNumber, int keyValue, boolean postValidation) {
 		HashMap<Integer, List<HashMap<Integer, CBORObject>>> myResults = whichResults(messageNumber, postValidation);
 		if (myResults.size() == 0)
@@ -125,6 +156,14 @@ public class SideProcessor {
 		myResults.remove(Integer.valueOf(keyValue));
 	}
 	
+	/**
+    * Store an error result obtained from the side processing
+    * 
+    * @param messageNumber  The number of EDHOC message that the EAD items refer to
+    * @param postValidation  True to select the results of EAD processing after EDHOC message validation, or false otherwise
+    * @param errorMessage   The error message
+    * @param responseCode   The CoAP response error code to use, if following up with an EDHOC error message as a CoAP response
+    */
 	private void addErrorResult(int messageNumber, boolean postValidation, String errorMessage, int responseCode) {
 		HashMap<Integer, CBORObject> errorMap = new HashMap<Integer, CBORObject>();
 		
@@ -158,6 +197,14 @@ public class SideProcessor {
 		
 	}
 	
+	/**
+	 * Return the correct map to look at, as including the desired results obtained from the side processing
+	 * 
+ 	 * @param messageNumber  The number of the outgoing EDHOC message that will include the EAD item
+     * @param postValidation  True to select the results of EAD processing after EDHOC message validation, or false otherwise
+     * @return  The map including the desired results obtained from the side processing
+	 */
+	
 	private HashMap<Integer, List<HashMap<Integer, CBORObject>>> whichResults(int messageNumber, boolean postValidation) {
 		switch(messageNumber) {
 			case Constants.EDHOC_MESSAGE_1:
@@ -172,6 +219,11 @@ public class SideProcessor {
 		return null;
 	}
 	
+	/**
+	 * Associates this SideProcessor object with the EDHOC session to consider
+	 * 
+ 	 * @param session  The EDHOC session
+	 */
 	public void setEdhocSession(EdhocSession session) {
 		if (session != null) {
 			this.session = session;
@@ -186,13 +238,17 @@ public class SideProcessor {
 		}
 	}
 	
+	/**
+	 * Entry point for processing EAD items from EAD_1
+	 * 
+ 	 * @param sideProcessorInfo  Information generally required for processing EAD_1
+  	 * @param ead1  The EAD items from EAD_1, including only items that the endpoint understands and excluding padding
+	 */
 	// sideProcessorInfo includes useful pieces information for processing EAD_1
 	// 0) A CBOR integer, with value MEHOD
 	// 1) A CBOR array of integers, including all the integers specified in SUITES_I, in the same order
 	// 2) A CBOR byte string, with value G_X
 	// 3) A CBOR byte string, with value C_I (in its original, binary format)
-	//
-	// ead1 includes the actual EAD items from EAD_1
 	public void sideProcessingMessage1(CBORObject[] sideProcessorInfo, CBORObject[] ead1) {
 		
 		// Go through the EAD_1 items, if any
@@ -208,12 +264,16 @@ public class SideProcessor {
 		
 	}
 
+	/**
+	 * Entry point for processing EAD items from EAD_2 before message verification
+	 * 
+ 	 * @param sideProcessorInfo  Information generally required for processing EAD_2
+  	 * @param ead2  The EAD items from EAD_2, including only items that the endpoint understands and excluding padding
+	 */
 	// sideProcessorInfo includes useful pieces information for processing EAD_2, in this order:
 	// 0) A CBOR byte string, with value G_Y
 	// 1) A CBOR byte string, with value C_R (in its original, binary format)
-	// 2) A CBOR map, as ID_CRED_R 
-	//
-	// ead2 includes the actual EAD items from EAD_2
+	// 2) A CBOR map, as ID_CRED_R
 	public void sideProcessingMessage2PreVerification(CBORObject[] sideProcessorInfo, CBORObject[] ead2) {
 				
 		CBORObject gY = sideProcessorInfo[0];
@@ -247,12 +307,16 @@ public class SideProcessor {
 		
 	}
 
+	/**
+	 * Entry point for processing EAD items from EAD_2 after message verification
+	 * 
+ 	 * @param sideProcessorInfo  Information generally required for processing EAD_2
+  	 * @param ead2  The EAD items from EAD_2, including only items that the endpoint understands and excluding padding
+	 */
 	// sideProcessorInfo includes useful pieces information for processing EAD_2, in this order:
 	// 0) A CBOR byte string, with value G_Y
 	// 1) A CBOR byte string, with value C_R (in its original, binary format)
-	// 2) A CBOR map, as ID_CRED_R 
-	//
-	// ead2 includes the actual EAD items from EAD_2
+	// 2) A CBOR map, as ID_CRED_R
 	public void sideProcessingMessage2PostVerification(CBORObject[] sideProcessorInfo, CBORObject[] ead2) {
 		CBORObject gY = sideProcessorInfo[0];
 		CBORObject connectionIdentifierResponder = sideProcessorInfo[1];
@@ -271,10 +335,15 @@ public class SideProcessor {
 		
 	}
 
+	/**
+	 * Entry point for processing EAD items from EAD_3 before message verification
+	 * 
+ 	 * @param sideProcessorInfo  Information generally required for processing EAD_3
+  	 * @param ead3  The EAD items from EAD_3, including only items that the endpoint understands and excluding padding
+	 */
 	// sideProcessorInfo includes useful pieces information for processing EAD_3, in this order:
 	// 0) A CBOR map, as ID_CRED_I
 	//
-	// ead3 includes the actual EAD items from EAD_3
 	public void sideProcessingMessage3PreVerification(CBORObject[] sideProcessorInfo, CBORObject[] ead3) {
 		
 		CBORObject idCredI = sideProcessorInfo[0];
@@ -306,10 +375,15 @@ public class SideProcessor {
 		
 	}
 
+	/**
+	 * Entry point for processing EAD items from EAD_3 before message verification
+	 * 
+ 	 * @param sideProcessorInfo  Information generally required for processing EAD_3
+  	 * @param ead3  The EAD items from EAD_3, including only items that the endpoint understands and excluding padding
+	 */
 	// sideProcessorInfo includes useful pieces information for processing EAD_3, in this order:
 	// 0) A CBOR map, as ID_CRED_I
 	//
-	// ead3 includes the actual EAD items from EAD_3
 	public void sideProcessingMessage3PostVerification(CBORObject[] sideProcessorInfo, CBORObject[] ead3) {
 		
 		// Go through the EAD_3 items, if any
@@ -325,7 +399,11 @@ public class SideProcessor {
 		
 	}
 	
-	// ead4 includes the actual EAD items from EAD_4
+	/**
+	 * Entry point for processing EAD items from EAD_4
+	 * 
+  	 * @param ead4  The EAD items from EAD_4, including only items that the endpoint understands and excluding padding
+	 */
 	public void sideProcessingMessage4(CBORObject[] ead4) {
 
 		// Go through the EAD_4 items, if any
@@ -448,6 +526,17 @@ public class SideProcessor {
 		
 	}
 	
+	/**
+	 * Look for an authentication credential of the other peer to use, by relying on
+	 * the associated ID_CRED_X specified in the incoming EDHOC message_2 or message_3.
+	 * This considers the trust model used by the endpoint for trusting new authentication credentials.
+	 * 
+ 	 * @param idCredX  The identifier of the peer's authentication credential specified in the incoming EDHOC message
+	 * @param ead  The EAD items specified in the incoming EDHOC message,
+	 *             including only items that the endpoint understands and excluding padding
+ 	 * @return  The peer's authentication credential wrapped into a CBOR byte string,
+ 	 *          or null in case a peer's authentication credential to use is not found. 
+	 */
 	private CBORObject findValidPeerCredential(CBORObject idCredX, CBORObject[] ead) {
 		CBORObject peerCredentialCBOR = null;
 		
