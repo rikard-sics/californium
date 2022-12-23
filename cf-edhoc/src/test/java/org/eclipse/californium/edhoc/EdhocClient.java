@@ -166,16 +166,35 @@ public class EdhocClient {
 
 	};
 	
-	private static String helloWorldURI = "coap://localhost/helloWorld";
-	
+	// URI of the EDHOC resource
 	private static String edhocURI = "coap://localhost/.well-known/edhoc";
 	
-	// private static String edhocURI = "coap://31.133.138.127/.well-known/edhoc";
-	// private static String edhocURI = "coap://31.133.130.112/.well-known/edhoc";
-	// private static String edhocURI = "coap://51.75.194.248/.well-known/edhoc"; // Timothy
-	// private static String edhocURI = "coap://54.93.59.163/.well-known/edhoc"; // Stefan
-	// private static String edhocURI = "coap://195.251.58.203:5683/.well-known/edhoc"; // Lidia
-	// private static String edhocURI = "coap://hephaistos.proxy.rd.coap.amsuess.com:1234/.well-known/edhoc"; // Christian
+	
+	// URI of the application resource to target, following an EDHOC execution
+	private static String appRequestURI = "coap://localhost/helloWorld";
+		
+	// CoAP method to use for the application request sent after the EDHOC execution
+	private static Code appRequestCode = Code.GET;
+	
+	// CoAP message type to use (CON or NON) for the application request sent after the EDHOC execution
+	private static Type appRequestType = Type.CON;
+	
+	// Payload of the application request sent after the EDHOC execution
+	private static byte[] appRequestPayload = null;
+	
+	
+	// URI of the application resource to target with the EDHOC + OSCORE combined request,
+	// conveying both EDHOC message_3 and the first OSCORE-protected application request
+	private static String edhocCombinedRequestURI = "coap://localhost/helloWorld";
+	
+	// CoAP method to use for the application request sent within an EDHOC + OSCORE combined request
+	private static Code combinedRequestAppCode = Code.GET;
+	
+	// CoAP message type to use (CON or NON) for the application request sent within an EDHOC + OSCORE combined request
+	private static Type combinedRequestAppType = Type.CON;
+	
+	// Payload of the application request sent within an EDHOC + OSCORE combined request. It can be null
+	private static byte[] combinedRequestAppPayload = null;
 	
 	
 	/*
@@ -698,10 +717,14 @@ public class EdhocClient {
 			            	return;
 		        		}
 		        		
-						client = new CoapClient(helloWorldURI);
+						client = new CoapClient(edhocCombinedRequestURI);
 						CoapResponse protectedResponse = null;
-						edhocMessageReq2 = Request.newGet();
-						edhocMessageReq2.setType(Type.CON);
+						edhocMessageReq2 = new Request(combinedRequestAppCode, combinedRequestAppType);
+						if ((combinedRequestAppCode == Code.POST || combinedRequestAppCode == Code.PUT ||
+							 combinedRequestAppCode == Code.FETCH || combinedRequestAppCode == Code.PATCH ||
+							 combinedRequestAppCode == Code.IPATCH) && combinedRequestAppPayload != null) {
+							edhocMessageReq2.setPayload(combinedRequestAppPayload);
+						}
 						edhocMessageReq2.getOptions().setOscore(Bytes.EMPTY);
 						
 		        		edhocMessageReq2.getOptions().setEdhoc(true);
@@ -926,11 +949,16 @@ public class EdhocClient {
 				// Send a request protected with the just established Security Context
 		        boolean usedForOSCORE = session.getApplicationProfile().getUsedForOSCORE();
 		        if (POST_EDHOC_EXCHANGE && usedForOSCORE == true) {
-					client = new CoapClient(helloWorldURI);
-					Request protectedRequest = Request.newGet();
-					CoapResponse protectedResponse = null;
-					protectedRequest.setType(Type.CON);
+					client = new CoapClient(appRequestURI);
+					
+					Request protectedRequest = new Request(appRequestCode, appRequestType);
+					if ((appRequestCode == Code.POST || appRequestCode == Code.PUT || appRequestCode == Code.FETCH ||
+						 appRequestCode == Code.PATCH || appRequestCode == Code.IPATCH) && appRequestPayload != null) {
+						protectedRequest.setPayload(appRequestPayload);
+					}
 					protectedRequest.getOptions().setOscore(Bytes.EMPTY);
+					
+					CoapResponse protectedResponse = null;
 					try {
 						protectedResponse = client.advanced(protectedRequest);
 					} catch (ConnectorException e) {
