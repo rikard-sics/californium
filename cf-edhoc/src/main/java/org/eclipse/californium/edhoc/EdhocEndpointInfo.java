@@ -2,7 +2,6 @@ package org.eclipse.californium.edhoc;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.HashMap;
 import java.util.Set;
 
 import org.eclipse.californium.cose.OneKey;
@@ -79,7 +78,7 @@ public class EdhocEndpointInfo {
 	// The database of OSCORE Security Contexts
 	private HashMapCtxDB db;
 	
-	// Lookup identifier to be associated with the OSCORE Security Context
+	// URI of the EDHOC resource, also used as lookup identifier associated with the created OSCORE Security Context
 	private String uri;
 	
 	// The size of the Replay Window to use in an OSCORE Recipient Context

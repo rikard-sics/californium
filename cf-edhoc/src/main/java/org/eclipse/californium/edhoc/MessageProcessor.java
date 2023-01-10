@@ -38,8 +38,6 @@ import com.upokecenter.cbor.CBORException;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
-import net.i2p.crypto.eddsa.Utils;
-
 public class MessageProcessor {
 	
 	private static final boolean debugPrint = true;
@@ -1942,7 +1940,7 @@ public class MessageProcessor {
 	
     /**
      *  Parse an EDHOC Error Message
-     * @param sequence   The CBOR sequence used as paylod of the EDHOC Error Message
+     * @param sequence   The CBOR sequence used as payload of the EDHOC Error Message
      * @param cX   The connection identifier of the recipient; set to null if expected in the EDHOC Error Message
      * @param edhocSessions   The list of active EDHOC sessions of the recipient
      * @return  The elements of the EDHOC Error Message as CBOR objects, or null in case of errors
@@ -2020,7 +2018,9 @@ public class MessageProcessor {
 			return null;
 		}
 		if (errorCode == Constants.ERR_CODE_SUCCESS) {
-			// Do nothing
+			// This is not admitted
+			System.out.println("Received EDHOC error message with ERR_CODE 0");
+			return null;
 		}
 		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED_ERROR) {
 			if (objectList[index].getType() != CBORType.TextString) {
@@ -2037,8 +2037,8 @@ public class MessageProcessor {
 				if (objectList[index].getType() == CBORType.Array) {
 					for (int i = 0; i < objectList[index].size(); i++) {
 						if (objectList[index].get(i).getType() != CBORType.Integer) {
-							System.err.println("Error when processing EDHOC Error Message - "
-									         + "Invalid format for elements of SUITES_R");
+							System.err.println("Error when processing EDHOC Error Message - " +
+											   "Invalid format for elements of SUITES_R");
 							return null;
 						}
 					}
@@ -2096,7 +2096,7 @@ public class MessageProcessor {
     	int preferredSuite = supportedCipherSuites.get(0).intValue();
     	
     	// No SUITES_R has been received, so it is not known what cipher suites the responder supports
-    	if (peerSupportedCipherSuites == null) {
+    	if (peerSupportedCipherSuites.size() == 0) {
     		// The selected cipher suite is the most preferred by the initiator
     		selectedSuite = preferredSuite;
     	}
@@ -3175,6 +3175,7 @@ public class MessageProcessor {
      * @param creds    The authentication credentials of the Initiator (one per supported curve),
      *                 as the serialization of a CBOR object
      * @param supportedCipherSuites   The list of cipher suites supported by the Initiator
+     * @param peerSupportedCipherSuites   The list of cipher suites supported by the Responder, as far as the Initiator knows
      * @param supportedEADs   The set of EAD items supported by the Responder
      * @param usedConnectionIds   The set of allocated Connection Identifiers for the Initiator.
      *                            Each identifier is wrapped in a CBOR byte string.
@@ -3187,6 +3188,7 @@ public class MessageProcessor {
 														HashMap<Integer, HashMap<Integer, CBORObject>> idCreds,
 														HashMap<Integer, HashMap<Integer, CBORObject>> creds,
 			  									        List<Integer> supportedCipherSuites,
+			  									        List<Integer> peerSupportedCipherSuites,
 			  									        Set<Integer> supportedEADs,
 			  									        HashMap<Integer, List<CBORObject>> eadProductionInput,
 			  									        Set<CBORObject> usedConnectionIds,
@@ -3200,7 +3202,8 @@ public class MessageProcessor {
 		// connectionId = new byte[] {(byte) 0x1c};
 		
         EdhocSession mySession = new EdhocSession(true, true, method, connectionId, keyPairs, idCreds, creds,
-        										  supportedCipherSuites, supportedEADs, appProfile, trustModel, oscoreDB);
+        										  supportedCipherSuites, peerSupportedCipherSuites, supportedEADs,
+        										  appProfile, trustModel, oscoreDB);
     
 		return mySession;
 		
@@ -3272,8 +3275,10 @@ public class MessageProcessor {
 		// Forced for testing
 		// connectionIdentifierResponder = new byte[] {(byte) 0x01};
 		
-		EdhocSession mySession = new EdhocSession(false, isReq, method, connectionIdentifierResponder, keyPairs, idCreds, creds,
-												  supportedCipherSuites, supportedEADs, appProfile, trustModel, oscoreDB);
+		List<Integer> peerSupportedCipherSuites = new ArrayList<Integer>();
+		EdhocSession mySession = new EdhocSession(false, isReq, method, connectionIdentifierResponder, keyPairs,
+												  idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
+												  supportedEADs, appProfile, trustModel, oscoreDB);
 		
 		// Set the selected cipher suite
 		mySession.setSelectedCipherSuite(selectedCipherSuite);
