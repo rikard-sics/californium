@@ -54,14 +54,8 @@ public class EdhocServer extends CoapServer {
 
 	private static final int COAP_PORT = Configuration.getStandard().get(CoapConfig.COAP_PORT);
 
-	// private static final int COAP_PORT = 5690;
-	
 	private final static Provider EdDSA = new EdDSASecurityProvider();
 	
-	
-	// Set to True if this CoAP server is the EDHOC responder (only flow available at the moment)
-	private final static boolean isResponder = true;
-
 	// The authentication method to include in EDHOC message_1 (relevant only when Initiator)
 	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
 	
@@ -107,7 +101,7 @@ public class EdhocServer extends CoapServer {
 	// The map label is a CBOR Map used as ID_CRED_X
 	// The map value is a CBOR Byte String, with value the serialization of CRED_X
 	private static HashMap<CBORObject, CBORObject> peerCredentials = new HashMap<CBORObject, CBORObject>();
-
+	
 	// Existing EDHOC Sessions, including completed ones
 	// The map label is C_X, i.e. the connection identifier offered to the other peer
 	private static HashMap<CBORObject, EdhocSession> edhocSessions = new HashMap<CBORObject, EdhocSession>();

@@ -27,7 +27,6 @@ import java.net.URISyntaxException;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -37,7 +36,6 @@ import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP.Code;
-import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.config.CoapConfig;
@@ -47,21 +45,15 @@ import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
-import org.eclipse.californium.oscore.OSCoreCtx;
-import org.eclipse.californium.oscore.OSException;
 
 import com.upokecenter.cbor.CBORObject;
-import com.upokecenter.cbor.CBORType;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
-import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.OneKey;
 
 public class EdhocClient {
-	
-	private static final boolean debugPrint = true;
-	
+
 	private static final File CONFIG_FILE = new File("Californium.properties");
 	private static final String CONFIG_HEADER = "Californium CoAP Properties file for Fileclient";
 	private static final int DEFAULT_MAX_RESOURCE_SIZE = 2 * 1024 * 1024; // 2 MB
@@ -69,12 +61,7 @@ public class EdhocClient {
 	private static final int DEFAULT_BLOCK_SIZE = 512;
 	
 	private final static Provider EdDSA = new EdDSASecurityProvider();
-		
-	
-	// Set to True if this CoAP client is the EDHOC initiator (only flow available at the moment)
-	// Relevant to choose with public keys to install, when testing with selected cipher suite 0 or 1
-	private final static boolean isInitiator = true;
-	
+
 	// Set to true if an OSCORE-protected exchange is performed after EDHOC completion
 	private static final boolean POST_EDHOC_EXCHANGE = false;
 
@@ -84,7 +71,7 @@ public class EdhocClient {
 	
 	// The authentication method to include in EDHOC message_1 (relevant only when Initiator)
 	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
-	
+
     // The type of the authentication credential of this peer (same type for all its credentials)
     // Possible values: CRED_TYPE_CWT ; CRED_TYPE_CCS ; CRED_TYPE_X509
     private static int credType = Constants.CRED_TYPE_X509;
@@ -126,7 +113,7 @@ public class EdhocClient {
 	// The map label is a CBOR Map used as ID_CRED_X
 	// The map value is a CBOR Byte String, with value the serialization of CRED_X
 	private static HashMap<CBORObject, CBORObject> peerCredentials = new HashMap<CBORObject, CBORObject>();
-		
+			
 	// Existing EDHOC Sessions, including completed ones
 	// The map label is C_X, i.e. the connection identifier offered to the other peer
 	private static HashMap<CBORObject, EdhocSession> edhocSessions = new HashMap<CBORObject, EdhocSession>();
@@ -290,10 +277,77 @@ public class EdhocClient {
 																	trustModel, db, edhocURI, OSCORE_REPLAY_WINDOW,
 																	MAX_UNFRAGMENTED_SIZE, appProfiles);
 		
-		edhocExchangeAsInitiator(args, uri, ownIdCreds, edhocEndpointInfo);
-
+		// List of EDHOC cipher suites supported by the other peer, as learned from an
+		// EDHOC error message with ERR_CODE = 1 received as a reply to EDHOC message_1 
+		List<Integer> peerSupportedCipherSuites = new ArrayList<Integer>();
+		
+		// Prepare the EDHOC executor and start EDHOC as Initiator
+		ClientEdhocExecutor edhocExecutor = new ClientEdhocExecutor();
+		boolean ret = edhocExecutor.startEdhocExchangeAsInitiator(authenticationMethod, peerSupportedCipherSuites,
+																  ownIdCreds, edhocEndpointInfo, OSCORE_EDHOC_COMBINED,
+																  edhocCombinedRequestURI, combinedRequestAppCode,
+																  combinedRequestAppType, combinedRequestAppPayload);
+		
+		if (ret == false) {
+			System.err.println("Key establishment through EDHOC has failed");
+			
+			// If the client has received an EDHOC error message with ERR_CODE = 1 as a reply to EDHOC message_1,
+			// then the client can learn the EDHOC cipher suites supported by the server, and start EDHOC again.
+			peerSupportedCipherSuites = edhocExecutor.getLearnedPeerSupportedCipherSuites();
+			
+			System.exit(-1);
+		}
+		
+		System.out.println("\nEDHOC successfully completed\n");
+		
+		if (OSCORE_EDHOC_COMBINED) {
+			CoapResponse appResponseToCombinedRequest = edhocExecutor.getAppResponseToCombinedRequest();
+			System.out.println("Application response to the EDHOC+OSCORE combined request:\n" +
+							   Utils.prettyPrint(appResponseToCombinedRequest) + "\n");
+		}
+		
+		// Send a request protected with the just established Security Context
+        if (POST_EDHOC_EXCHANGE && usedForOSCORE == true) {
+    		CoapClient client = new CoapClient(appRequestURI);
+			
+			Request protectedRequest = new Request(appRequestCode, appRequestType);
+			if ((appRequestCode == Code.POST || appRequestCode == Code.PUT || appRequestCode == Code.FETCH ||
+				 appRequestCode == Code.PATCH || appRequestCode == Code.IPATCH) && appRequestPayload != null) {
+				protectedRequest.setPayload(appRequestPayload);
+			}
+			protectedRequest.getOptions().setOscore(Bytes.EMPTY);
+			
+			CoapResponse protectedResponse = null;
+			try {
+				protectedResponse = client.advanced(protectedRequest);
+			} catch (ConnectorException e) {
+				System.err.println("ConnectorException when sending a protected request\n");
+				client.shutdown();
+				return;
+			} catch (IOException e) {
+				System.err.println("IOException when sending a protected request\n");
+				client.shutdown();
+				return;
+			}
+			byte[] myPayload = null;
+			
+			if (protectedResponse == null) {
+				System.out.println("No response received.");
+				client.shutdown();
+				return;
+			}
+			
+			else {
+				myPayload = protectedResponse.getPayload();
+				if (myPayload != null) {
+					System.out.println("\n" + Utils.prettyPrint(protectedResponse));
+				}
+			}
+			client.shutdown();
+			return;
+        }
+        
 	}
-
 	
 	private static void helloWorldExchange(final String args[], final URI targetUri) {
 		
@@ -330,719 +384,7 @@ public class EdhocClient {
 		client.shutdown();
 		
 	}
-	
-	private static void edhocExchangeAsInitiator(final String args[], final URI targetUri,
-												 Set<CBORObject> ownIdCreds, EdhocEndpointInfo edhocEndpointInfo) {
-		
-		CoapClient client = new CoapClient(targetUri);
-		
-		/*
-		// Simple sending of a GET request
-		 
-		CoapResponse response = null;
-		
-		try {
-			response = client.get();
-		} catch (ConnectorException | IOException e) {
-			System.err.println("Got an error: " + e);
-		}
 
-		if (response != null) {
-
-			System.out.println(response.getCode());
-			System.out.println(response.getOptions());
-			if (args.length > 1) {
-				try (FileOutputStream out = new FileOutputStream(args[1])) {
-					out.write(response.getPayload());
-				} catch (IOException e) {
-					System.err.println("Error while writing the response payload to file: " +  e.getMessage());
-				}
-			} else {
-				System.out.println(response.getResponseText());
-
-				System.out.println(System.lineSeparator() + "ADVANCED" + System.lineSeparator());
-				// access advanced API with access to more details through
-				// .advanced()
-				System.out.println(Utils.prettyPrint(response));
-			}
-		} else {
-			System.out.println("No response received.");
-		}
-		*/
-		
-		// Simple test with a dummy payload
-		/*
-		byte[] requestPayload = { (byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03 };
-		
-		Request edhocMessage1 = new Request(Code.POST, Type.CON);
-		edhocMessage1.setPayload(requestPayload);
-		
-        // Submit the request
-        System.out.println("\nSent EDHOC Message1\n");
-        CoapResponse edhocMessage2;
-        try {
-			edhocMessage2 = client.advanced(edhocMessage1);
-		} catch (ConnectorException e) {
-			System.err.println("ConnectorException when sending EDHOC Message1");
-			return;
-		} catch (IOException e) {
-			System.err.println("IOException when sending EDHOC Message1");
-			return;
-		}
-		
-        byte[] responsePayload = edhocMessage2.getPayload();
-        System.out.println("\nResponse: " + new String(responsePayload) + "\n");
-        */		
-        
-		
-		/* Prepare and send EDHOC Message 1 */
-
-		String uriAsString = targetUri.toString();
-		AppProfile appProfile = edhocEndpointInfo.getAppProfiles().get(uriAsString);
-		
-		EdhocSession session = MessageProcessor.createSessionAsInitiator(authenticationMethod,
-																		 edhocEndpointInfo.getKeyPairs(),
-																		 edhocEndpointInfo.getIdCreds(),
-																		 edhocEndpointInfo.getCreds(),
-                 														 edhocEndpointInfo.getSupportedCipherSuites(),
-                 														 edhocEndpointInfo.getSupportedEADs(),
-                 														 edhocEndpointInfo.getEadProductionInput(),
-                 														 edhocEndpointInfo.getUsedConnectionIds(),
-                 														 appProfile, edhocEndpointInfo.getTrustModel(), db);
-		
-		SideProcessor sideProcessor = new SideProcessor(edhocEndpointInfo.getTrustModel(),
-														edhocEndpointInfo.getPeerCredentials(),
-														edhocEndpointInfo.getEadProductionInput());
-		
-		// Provide the side processor object with the just created EDHOC session.
-		// A reference to the sideProcessor is also going to be stored in the EDHOC session.
-		sideProcessor.setEdhocSession(session);
-		
-		// At this point, the initiator may overwrite the information in the EDHOC session about the supported cipher suites
-		// and the selected cipher suite, based on a previously received EDHOC Error Message
-		
-        byte[] nextPayload = MessageProcessor.writeMessage1(session);
-        
-		if (nextPayload == null || session.getCurrentStep() != Constants.EDHOC_BEFORE_M1) {
-			System.err.println("Inconsistent state before sending EDHOC Message 1");
-			session.deleteTemporaryMaterial();
-			session = null;
-			client.shutdown();
-			return;
-		}
-		
-		// Add the new session to the list of existing EDHOC sessions
-		session.setCurrentStep(Constants.EDHOC_AFTER_M1);
-		
-		// Compute and store the hash of EDHOC Message 1
-		// The first byte 0xf5 sent in the CoAP request must be skipped
-		byte[] hashInput = new byte[nextPayload.length - 1];
-		System.arraycopy(nextPayload, 1, hashInput, 0, hashInput.length);
-		session.setHashMessage1(hashInput);
-		
-		byte[] connectionIdentifier = session.getConnectionId();
-		CBORObject connectionIdentifierCbor = CBORObject.FromObject(connectionIdentifier);
-		edhocSessions.put(connectionIdentifierCbor, session);
-		
-		Request edhocMessageReq = new Request(Code.POST, Type.CON);
-		edhocMessageReq.getOptions().setContentFormat(Constants.APPLICATION_CID_EDHOC_CBOR_SEQ);
-		edhocMessageReq.setPayload(nextPayload);
-		
-        System.out.println("Sent EDHOC Message 1\n");
-        
-        CoapResponse edhocMessageResp;
-        try {
-        	session.setCurrentStep(Constants.EDHOC_SENT_M1);
-        	edhocMessageResp = client.advanced(edhocMessageReq);
-		} catch (ConnectorException e) {
-			System.err.println("ConnectorException when sending EDHOC Message 1");
-			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			client.shutdown();
-			return;
-		} catch (IOException e) {
-			System.err.println("IOException when sending EDHOC Message 1");
-			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			client.shutdown();
-			return;
-		}
-        
-        boolean discontinue = false;
-        int responseType = -1;
-        byte[] responsePayload = null; 
-        		
-        if (edhocMessageResp != null)
-        	responsePayload = edhocMessageResp.getPayload();
-        
-        if (responsePayload == null)
-        	discontinue = true;
-        else {
-        	responseType = MessageProcessor.messageType(responsePayload, false, edhocSessions, connectionIdentifier);
-        	if (responseType != Constants.EDHOC_MESSAGE_2 && responseType != Constants.EDHOC_ERROR_MESSAGE)
-        		discontinue = true;
-        }
-        if (discontinue == true) {
-        	System.err.println("Received invalid reply to EDHOC Message 1");
-        	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-        	client.shutdown();
-        	return;
-        }
-		
-        String myString = (responseType == Constants.EDHOC_MESSAGE_2) ? "EDHOC Message 2" : "EDHOC Error Message";
-		System.out.println("Determined EDHOC message type: " + myString + "\n");
-        Util.nicePrint("EDHOC message " + responseType, responsePayload);
-        
-        
-		/* Process the received response */
-        
-        // This response relates to the previous request through the CoAP Token.
-        // Hence, the Initiator knows what session to refer to, from which the correct C_I can be retrieved
- 
-    	nextPayload = new byte[] {};
-    	
-        // The received message is an EDHOC Error Message
-        if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
-        	
-        	List<Integer> peerSupportedCipherSuites = new ArrayList<Integer>();
-        	
-        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload, connectionIdentifier, edhocSessions);
-        	
-        	if (objectList != null) {
-        	
-		    	// This execution flow has the client as Initiator.
-		    	// Hence, there is no C_I included, and the first element of the EDHOC Error Message is ERR_CODE.
-        		
-        		// Retrieve ERR_CODE
-        		int errorCode = objectList[0].AsInt32();
-        		System.out.println("ERR_CODE: " + errorCode + "\n");
-
-        		// Retrieve ERR_INFO
-        		if (errorCode == Constants.ERR_CODE_SUCCESS) {
-        		    System.out.println("Success\n");
-        		}
-        		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED_ERROR) {
-        		    String errMsg = objectList[1].toString();
-        		    System.out.println("ERR_INFO: " + errMsg + "\n");
-        		}
-        		else if (errorCode == Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE) {
-        		    CBORObject suitesR = objectList[1];
-        		    if (suitesR.getType() == CBORType.Integer) {
-        		    	int suite = suitesR.AsInt32();
-    		    		peerSupportedCipherSuites.add(Integer.valueOf(suite));
-    		    		session.setPeerSupportedCipherSuites(peerSupportedCipherSuites);
-        		        System.out.println("SUITES_R: " + suitesR.AsInt32() + "\n");
-        		    }
-        		    else if (suitesR.getType() == CBORType.Array) {
-        		        System.out.print("SUITES_R: [ " );
-        		        for (int i = 0; i < suitesR.size(); i++) {
-        		        	int suite = suitesR.get(i).AsInt32();
-    		        		peerSupportedCipherSuites.add(Integer.valueOf(suite));
-        		            System.out.print(suitesR.get(i).AsInt32() + " " );
-        		        }
-        		        System.out.println("]\n");
-        		        session.setPeerSupportedCipherSuites(peerSupportedCipherSuites);
-        		    }
-        		}
-		    	
-		    	// The following simply deletes the EDHOC session. However, it would be fine to prepare a new
-		    	// EDHOC Message 1 right away, keeping the same Connection Identifier C_I and this same session.
-		    	// In fact, the session is marked as "used", hence new ephemeral keys would be generated when
-		    	// preparing a new EDHOC Message 1.        	
-		    	
-		    	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-		    	
-        	}
-        	
-			client.shutdown();
-    		return;
-    		
-        }
-        
-        // The received message is an EDHOC Message 2
-        if (responseType == Constants.EDHOC_MESSAGE_2) {
-        	
-        	List<CBORObject> processingResult = new ArrayList<CBORObject>();
-			
-			/* Start handling EDHOC Message 2 */
-	
-			processingResult = MessageProcessor.readMessage2(responsePayload, false, connectionIdentifier, edhocSessions,
-															 peerPublicKeys, peerCredentials, usedConnectionIds, ownIdCreds);
-			
-			if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
-				System.err.println("Internal error when processing EDHOC Message 2");
-				Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-				client.shutdown();
-				return;
-			}
-			
-			// A non-zero length response payload would be an EDHOC Error Message
-			nextPayload = processingResult.get(0).GetByteString();
-
-			// Prepare EDHOC Message 3
-			if (nextPayload.length == 0) {
-				
-				session.setCurrentStep(Constants.EDHOC_AFTER_M2);
-				
-				nextPayload = MessageProcessor.writeMessage3(session);
-		        
-				if (nextPayload == null || session.getCurrentStep() != Constants.EDHOC_AFTER_M3) {
-					System.err.println("Inconsistent state before sending EDHOC Message 3");
-					Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-					client.shutdown();
-					return;
-				}
-				
-			}
-
-			int requestType = MessageProcessor.messageType(nextPayload, true, edhocSessions, connectionIdentifier);
-			
-			if (requestType != Constants.EDHOC_MESSAGE_3 && requestType != Constants.EDHOC_ERROR_MESSAGE) {
-				nextPayload = null;
-			}
-			
-			if (nextPayload != null) {
-				myString = (requestType == Constants.EDHOC_MESSAGE_3) ? "EDHOC Message 3" : "EDHOC Error Message";
-				
-				if (requestType == Constants.EDHOC_MESSAGE_3) {
-			        
-			        System.out.println("Sent EDHOC Message 3\n");
-					
-			        if (session.getApplicationProfile().getUsedForOSCORE() == true) {
-			        
-				        /* Invoke the EDHOC-Exporter to produce OSCORE input material */
-				        byte[] masterSecret = EdhocSession.getMasterSecretOSCORE(session);
-				        byte[] masterSalt = EdhocSession.getMasterSaltOSCORE(session);
-				        if (debugPrint) {
-				        	Util.nicePrint("OSCORE Master Secret", masterSecret);
-				        	Util.nicePrint("OSCORE Master Salt", masterSalt);
-				        }
-				        
-				        /* Setup the OSCORE Security Context */
-				        
-				        // The Sender ID of this peer is the EDHOC connection identifier of the other peer
-				        byte[] senderId = session.getPeerConnectionId();
-				        
-				        int selectedCipherSuite = session.getSelectedCipherSuite();
-				        AlgorithmID alg = EdhocSession.getAppAEAD(selectedCipherSuite);
-				        AlgorithmID hkdf = EdhocSession.getAppHkdf(selectedCipherSuite);
-				        
-				        OSCoreCtx ctx = null;
-				        byte[] recipientId = connectionIdentifier;
-				        if (Arrays.equals(senderId, recipientId)) {
-							System.err.println("Error: the Sender ID coincides with the Recipient ID " +
-												Utils.toHexString(senderId));
-							Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-							client.shutdown();
-							return;
-				        }
-				        try {
-							
-							ctx = new OSCoreCtx(masterSecret, true, alg, senderId, recipientId, hkdf,
-									            OSCORE_REPLAY_WINDOW, masterSalt, null, MAX_UNFRAGMENTED_SIZE);
-							
-						} catch (OSException e) {
-							System.err.println("Error when deriving the OSCORE Security Context "
-						                        + e.getMessage());
-							Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-							client.shutdown();
-							return;
-						}
-				        
-				        try {
-							db.addContext(edhocURI, ctx);
-						} catch (OSException e) {
-							System.err.println("Error when adding the OSCORE Security Context to the context database "
-						                        + e.getMessage());
-							Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-							client.shutdown();
-							return;
-						}
-			        
-			        }
-			        
-				}
-				else if (requestType == Constants.EDHOC_ERROR_MESSAGE) {
-					
-					// The Error Message was generated while reading EDHOC Message 2,
-					
-				    Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			        System.out.println("Sent EDHOC Error Message\n");
-			        
-			        if (debugPrint) {
-			        	
-					    // Since the EDHOC error message is transported in a CoAP request, do not print the prepended C_R
-			        	
-			        	boolean error = false;
-					    byte[] sequenceBytesToPrint;
-					    CBORObject[] objectList = null;
-					    
-						try {
-							objectList = CBORObject.DecodeSequenceFromBytes(nextPayload);
-						}
-						catch (Exception e) {
-							System.err.println("Error while preparing an EDHOC error message");
-						    error = true;
-						}
-						
-						if (error == false) {
-					    	List<CBORObject> trimmedSequence = new ArrayList<CBORObject>();
-
-					    	for (int i = 1; i < objectList.length; i++) {
-					    		trimmedSequence.add(objectList[i]);
-					    	}
-					        sequenceBytesToPrint = Util.buildCBORSequence(trimmedSequence);
-						    Util.nicePrint("EDHOC Error Message", sequenceBytesToPrint);
-						}
-
-			        }
-			        
-				}
-
-		        CoapResponse edhocMessageResp2 = null;
-		        
-		        try {
-					Request edhocMessageReq2 = new Request(Code.POST, Type.CON);
-					edhocMessageReq2.setPayload(nextPayload);
-					
-		        	// If EDHOC message_3 has to be combined with the first
-		        	// OSCORE-protected request include the EDHOC option in the request
-		        	if (OSCORE_EDHOC_COMBINED == true && requestType == Constants.EDHOC_MESSAGE_3 &&
-		        		session.getApplicationProfile().getUsedForOSCORE() == true &&
-		        		session.getApplicationProfile().getSupportCombinedRequest() == true) {
-		        		
-		        		// The combined request cannot be used if the Responder has to send message_4
-		        		if (session.getApplicationProfile().getUseMessage4() == true) {
-							System.err.println("Cannot send the combined EDHOC+OSCORE request if message_4 is expected\n");
-			    			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			            	client.shutdown();
-			            	return;
-		        		}
-		        		
-						client = new CoapClient(edhocCombinedRequestURI);
-						CoapResponse protectedResponse = null;
-						edhocMessageReq2 = new Request(combinedRequestAppCode, combinedRequestAppType);
-						if ((combinedRequestAppCode == Code.POST || combinedRequestAppCode == Code.PUT ||
-							 combinedRequestAppCode == Code.FETCH || combinedRequestAppCode == Code.PATCH ||
-							 combinedRequestAppCode == Code.IPATCH) && combinedRequestAppPayload != null) {
-							edhocMessageReq2.setPayload(combinedRequestAppPayload);
-						}
-						edhocMessageReq2.getOptions().setOscore(Bytes.EMPTY);
-						
-		        		edhocMessageReq2.getOptions().setEdhoc(true);
-						session.setMessage3(nextPayload);
-						
-						try {
-							session.setCurrentStep(Constants.EDHOC_SENT_M3);
-							protectedResponse = client.advanced(edhocMessageReq2);
-						} catch (ConnectorException e) {
-							System.err.println("ConnectorException when sending a protected request\n");
-			    			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			            	client.shutdown();
-			            	return;
-						} catch (IOException e) {
-							System.err.println("IOException when sending a protected request\n");
-			    			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			            	client.shutdown();
-			            	return;
-						}
-					
-						byte[] myPayload = null;
-						if (protectedResponse != null)
-							myPayload = protectedResponse.getPayload();
-						if (myPayload != null) {
-							System.out.println(Utils.prettyPrint(protectedResponse));
-							
-							int contentFormat = protectedResponse.getOptions().getContentFormat();
-							int restCode = protectedResponse.getCode().value;
-							
-							// Check if it is an EDHOC Error Message returned by the server
-							// when processing the combined EDHOC + OSCORE request
-			            	if (contentFormat == Constants.APPLICATION_EDHOC_CBOR_SEQ &&
-			            	      ((restCode == ResponseCode.BAD_REQUEST.value) ||
-			            	       (restCode == ResponseCode.INTERNAL_SERVER_ERROR.value)) ) {
-			            	
-				            	responseType = MessageProcessor.messageType(myPayload, false,
-		                                                                    edhocSessions, connectionIdentifier);
-			            		
-				            	if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
-				            		
-				            		System.err.println("Received an EDHOC Error Message");
-						        	CBORObject[] objectList = MessageProcessor.readErrorMessage(myPayload,
-						        																connectionIdentifier,
-						        																edhocSessions);
-						        	processErrorMessageAsResponse(objectList, connectionIdentifier);
-				            		
-				            	}
-			            	
-							}
-			            	
-						}
-						
-						session.cleanMessage3();
-						
-		        	}
-		        	else {
-		        		
-		        		if (requestType == Constants.EDHOC_ERROR_MESSAGE) {
-			        		// The request to send is an EDHOC Error Message
-		        			edhocMessageReq2.setConfirmable(true);
-		        			edhocMessageReq2.setURI(targetUri);
-		        			edhocMessageResp2 = client.advanced(edhocMessageReq2);
-		        			client.shutdown();
-							return;
-		        		}
-		        		session.setCurrentStep(Constants.EDHOC_SENT_M3);
-		        		edhocMessageReq2.getOptions().setContentFormat(Constants.APPLICATION_CID_EDHOC_CBOR_SEQ);
-		        		edhocMessageResp2 = client.advanced(edhocMessageReq2);
-		        		
-		        	}
-		        	
-				} catch (ConnectorException e) {
-					System.err.println("ConnectorException when sending " + myString + "\n");
-					Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-					client.shutdown();
-					return;
-				} catch (IOException e) {
-					System.err.println("IOException when sending "  + myString + "\n");
-					Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-					client.shutdown();
-					return;
-				}
-				
-				// Wait for a possible response. For how long?
-		        
-		        // Only an EDHOC message_4 or an EDHOC Error Message is a legitimate EDHOC message at this point
-		        if (edhocMessageResp2 != null) {
-
-		        	responseType = -1;
-		        	responsePayload = null;
-		        	boolean expectMessage4 = session.getApplicationProfile().getUseMessage4();
-		        	
-		        	if (edhocMessageResp2 != null)
-		        		responsePayload = edhocMessageResp2.getPayload();
-		            
-		            if (responsePayload == null)
-		            	discontinue = true;
-		            else {
-		            	responseType = MessageProcessor.messageType(responsePayload, false, edhocSessions, connectionIdentifier);
-		            	
-		            	// It is always consistent to receive an Error Message
-		            	if (responseType != Constants.EDHOC_ERROR_MESSAGE) {
-		            		
-		            		if (responseType == Constants.EDHOC_MESSAGE_4) {
-		            			if (expectMessage4 == false)
-		            				discontinue = true;
-		            			// Else it is fine, i.e., it is message_4 and it is expected
-		            		}
-		            		else {
-		            			// Any other message than message_4 and Error Message
-		            			if (expectMessage4 == true) {
-					            	System.err.println("Received invalid reply to EDHOC Message 3 while expecting Message 4");
-					            	System.err.println("responseType: " + responseType);
-			            			discontinue = true;
-		            			}
-		            			else {
-		            				// This is a generic response received as reply to EDHOC Message 3
-		        		        	processResponseAfterEdhoc(edhocMessageResp2);
-		            			}
-		            		}
-		            		
-		            	}
-		            	// It is an EDHOC Error Message
-		            	else {
-		            		System.err.println("Received an EDHOC Error Message");
-		            		Util.nicePrint("EDHOC Error Message", responsePayload);
-				        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload,
-				        																connectionIdentifier,
-				        																edhocSessions);
-				        	processErrorMessageAsResponse(objectList, connectionIdentifier);
-				        	discontinue = true;
-		            	}
-
-		            }
-		            if (discontinue == true) {
-		    			Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-		            	client.shutdown();
-		            	return;
-		            }
-		    		
-					myString = (responseType == Constants.EDHOC_MESSAGE_4) ? "EDHOC Message 4" : "EDHOC Error Message";
-		            
-					String typeName = "";
-					switch (responseType) {
-						case Constants.EDHOC_ERROR_MESSAGE:
-							typeName = new String("EDHOC Error Message");
-							break;
-						case Constants.EDHOC_MESSAGE_1:
-						case Constants.EDHOC_MESSAGE_2:
-						case Constants.EDHOC_MESSAGE_3:
-						case Constants.EDHOC_MESSAGE_4:
-							typeName = new String("EDHOC Message " + responseType);
-							break;		
-					}
-					if (responseType != -1) {
-			    		System.out.println("Determined EDHOC message type: " + typeName + "\n");
-			            Util.nicePrint(typeName, responsePayload);
-					}
-		            
-		            
-		            if (responseType == Constants.EDHOC_MESSAGE_4) {
-		            	processingResult = MessageProcessor.readMessage4(responsePayload, false, connectionIdentifier,
-		            			                                         edhocSessions, usedConnectionIds);
-		            	
-						if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
-							System.err.println("Internal error when processing EDHOC Message 4");
-							Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			            	client.shutdown();
-			            	return;
-						}
-						
-						// A non-zero length response payload would be an EDHOC Error Message
-						byte[] nextMessage = processingResult.get(0).GetByteString();
-						
-						// The EDHOC message_4 was successfully processed
-						if (nextMessage.length == 0) {
-							
-							// If message_4 was a Confirmable response, send an empty ACK
-							
-					        if (edhocMessageResp2.advanced().isConfirmable()) {
-					        	edhocMessageResp2.advanced().acknowledge();
-					        }
-							
-						}
-						// An EDHOC error message has to be returned in response to EDHOC message_4
-						else {
-							Request edhocMessageReq3 = new Request(Code.POST, Type.CON);
-							edhocMessageReq3.setPayload(nextMessage);
-							
-					        try {
-					        	edhocMessageResp = client.advanced(edhocMessageReq3);
-							} catch (ConnectorException e) {
-								System.err.println("ConnectorException when sending EDHOC Error Message");
-								Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-								client.shutdown();
-								return;
-							} catch (IOException e) {
-								System.err.println("IOException when sending EDHOC Error Message");
-								Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-								client.shutdown();
-								return;
-							}
-						}
-		            	
-		            }
-		            else if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
-		            	System.err.println("Received an EDHOC Error Message");
-			        	CBORObject[] objectList = MessageProcessor.readErrorMessage(responsePayload,
-			        																connectionIdentifier,
-			        																edhocSessions);
-			        	
-			        	processErrorMessageAsResponse(objectList, connectionIdentifier);
-			        	Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-			        	
-						client.shutdown();
-			    		return;
-		    		
-		            }
-		    		
-		        }
-
-				// Send a request protected with the just established Security Context
-		        boolean usedForOSCORE = session.getApplicationProfile().getUsedForOSCORE();
-		        if (POST_EDHOC_EXCHANGE && usedForOSCORE == true) {
-					client = new CoapClient(appRequestURI);
-					
-					Request protectedRequest = new Request(appRequestCode, appRequestType);
-					if ((appRequestCode == Code.POST || appRequestCode == Code.PUT || appRequestCode == Code.FETCH ||
-						 appRequestCode == Code.PATCH || appRequestCode == Code.IPATCH) && appRequestPayload != null) {
-						protectedRequest.setPayload(appRequestPayload);
-					}
-					protectedRequest.getOptions().setOscore(Bytes.EMPTY);
-					
-					CoapResponse protectedResponse = null;
-					try {
-						protectedResponse = client.advanced(protectedRequest);
-					} catch (ConnectorException e) {
-						System.err.println("ConnectorException when sending a protected request\n");
-					} catch (IOException e) {
-						System.err.println("IOException when sending a protected request\n");
-					}
-					byte[] myPayload = null;
-					if (protectedResponse != null)
-						myPayload = protectedResponse.getPayload();
-					if (myPayload != null) {
-						System.out.println(Utils.prettyPrint(protectedResponse));
-					}
-		        }
-				
-			}
-
-        }
-        
-		client.shutdown();
-		
-	}
-	
-	/*
-	 * Process a generic response received as reply to EDHOC Message 3
-	 */
-	private static void processResponseAfterEdhoc(CoapResponse msg) {
-		// Do nothing
-		System.out.println("ResponseAfterEdhoc()");
-	}
-	
-	/*
-	 * Process an EDHOC Error Message as a CoAP response
-	 */
-	private static void processErrorMessageAsResponse(CBORObject[] objectList, byte[] connectionIdentifier) {
-		
-    	if (objectList != null) {
-    		
-    		int index = 0;
-    		
-        	// Retrieve ERR_CODE
-        	int errorCode = objectList[index].AsInt32();
-        	index++;
-        	System.out.println("ERR_CODE: " + errorCode + "\n");
-        	
-        	// Retrieve ERR_INFO
-    		if (errorCode == Constants.ERR_CODE_SUCCESS) {
-    			System.out.println("Success\n");
-    		}
-    		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED_ERROR) {
-	        	String errMsg = objectList[index].toString();
-	        	System.out.println("DIAG_MSG: " + errMsg + "\n");
-    		}
-    		else if (errorCode == Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE) {
-    			CBORObject suitesR = objectList[index];
-				if (suitesR.getType() == CBORType.Integer) {
-		        	System.out.println("SUITES_R: " + suitesR.AsInt32() + "\n");
-				}
-				else if (suitesR.getType() == CBORType.Array) {
-					System.out.print("SUITES_R: [ " );
-					for (int i = 0; i < suitesR.size(); i++) {
-						System.out.print(suitesR.get(i).AsInt32() + " " );
-					}
-					System.out.println("]\n");
-				}
-    		}
-    		
-    		if (connectionIdentifier == null) {
-    			System.err.println("Unavailable connection identifier to delete EDHOC session");
-    			return;
-    		}
-    	
-    		CBORObject connectionIdentifierCbor = CBORObject.FromObject(connectionIdentifier);
-    		EdhocSession session = edhocSessions.get(connectionIdentifierCbor);
-    		if (session == null) {
-    			System.err.println("EDHOC session to delete not found");
-    			return;
-    		}
-    	
-    		Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-    	}
-		
-	}
-	
 	private static void setupSupportedCipherSuites() {
 		
 		// Add the supported cipher suites in decreasing order of preference

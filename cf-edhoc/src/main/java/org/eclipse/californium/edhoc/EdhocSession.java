@@ -113,8 +113,8 @@ public class EdhocSession {
 						HashMap<Integer, HashMap<Integer, OneKey>> keyPairs,
 						HashMap<Integer, HashMap<Integer, CBORObject>> idCreds,
 						HashMap<Integer, HashMap<Integer, CBORObject>> creds,
-						List<Integer> cipherSuites, Set<Integer> eads, AppProfile appProfile,
-						int trustModel, HashMapCtxDB db) {
+						List<Integer> cipherSuites, List<Integer> peerCipherSuites,
+						Set<Integer> eads, AppProfile appProfile, int trustModel, HashMapCtxDB db) {
 		
 		this.initiator = initiator;
 		this.clientInitiated = clientInitiated;
@@ -139,6 +139,7 @@ public class EdhocSession {
 		this.selectedCipherSuite = -1;
 		
 		this.peerConnectionId = null;
+		this.peerSupportedCipherSuites = peerCipherSuites;
 		
 		currentStep = initiator ? Constants.EDHOC_BEFORE_M1 : Constants.EDHOC_BEFORE_M2;
 		
@@ -422,14 +423,6 @@ public class EdhocSession {
 	 */
 	public List<Integer> getPeerSupportedCipherSuites() {
 		return this.peerSupportedCipherSuites;
-	}
-	
-	/**
-	 * Set the list of the cipher suites supported by the peer
-	 * @param peerSupportedCipherSuites   the list of the cipher suites supported by the peer
-	 */
-	public void setPeerSupportedCipherSuites(List<Integer> peerSupportedCipherSuites) {
-		this.peerSupportedCipherSuites = peerSupportedCipherSuites;
 	}
 	
 	/**
