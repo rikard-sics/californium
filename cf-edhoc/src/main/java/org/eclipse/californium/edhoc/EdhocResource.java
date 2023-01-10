@@ -518,8 +518,7 @@ class EdhocResource extends CoapResource {
 		/* Start handling EDHOC Error Message */
 		if (messageType == Constants.EDHOC_ERROR_MESSAGE) {
             
-        	CBORObject[] objectList = MessageProcessor.readErrorMessage(message, null,
-        			                                                    edhocEndpointInfo.getEdhocSessions());
+        	CBORObject[] objectList = MessageProcessor.readErrorMessage(message, null, edhocEndpointInfo.getEdhocSessions());
         	
         	if (objectList != null) {
         	
@@ -576,8 +575,9 @@ class EdhocResource extends CoapResource {
 	        					  edhocEndpointInfo.getUsedConnectionIds());
 	        	
 	        	// If the request is confirmable, send an empty ack
-		        if (exchange.advanced().getRequest().isConfirmable())
+		        if (exchange.advanced().getRequest().isConfirmable()) {
 		        	exchange.accept();
+		        }
         	
 			}
         	

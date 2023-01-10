@@ -23,8 +23,6 @@ import org.slf4j.LoggerFactory;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
-import net.i2p.crypto.eddsa.Utils;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -288,7 +286,6 @@ public class EdhocLayer extends AbstractLayer {
             	return;
     		}
 
-    		// v.14 identifiers
 			byte[] connectionIdentifierInitiator = mySession.getPeerConnectionId();
 			byte[] connectionIdentifierResponder = mySession.getConnectionId();
 			if (mySession.isInitiator() ||

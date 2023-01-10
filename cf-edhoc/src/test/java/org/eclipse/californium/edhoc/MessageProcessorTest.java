@@ -82,6 +82,8 @@ public class MessageProcessorTest {
 		
 		Set<Integer> supportedEADs = new HashSet<>();
 		
+		List<Integer> peerSupportedCipherSuites = new ArrayList<Integer>();
+		
 		/* Initiator information*/
 
 		// Connection Identifier of the Initiator
@@ -125,7 +127,7 @@ public class MessageProcessorTest {
 		HashMapCtxDB db = new HashMapCtxDB();
 		EdhocSession sessionInitiator = new EdhocSession(initiator, true, method, connectionIdentifierInitiator,
 														 keyPairsI, idCredsI, credsI, supportedCipherSuites,
-														 supportedEADs, appProfile, trustModel, db);
+														 peerSupportedCipherSuites, supportedEADs, appProfile, trustModel, db);
 		
 		edhocSessions.put(CBORObject.FromObject(connectionIdentifierInitiator), sessionInitiator);
 
@@ -172,7 +174,7 @@ public class MessageProcessorTest {
 		HashMapCtxDB db2 = new HashMapCtxDB();
 		EdhocSession sessionResponder = new EdhocSession(initiator, true, method, connectionIdentifierResponder,
 														 keyPairsR, idCredsR, credsR, supportedCipherSuites,
-														 supportedEADs, appProfile, trustModel, db2);
+														 peerSupportedCipherSuites, supportedEADs, appProfile, trustModel, db2);
 		
 		edhocSessions.put(CBORObject.FromObject(connectionIdentifierResponder), sessionResponder);
 		
@@ -262,6 +264,8 @@ public class MessageProcessorTest {
 		
 		Set<Integer> supportedEADs = new HashSet<>();
 		
+		List<Integer> peerSupportedCipherSuites = new ArrayList<Integer>();
+		
 		// The identity key of the Initiator
 		byte[] privateIdentityKeyBytes = StringUtil.hex2ByteArray(
 				"4c5b25878f507c6b9dae68fbd4fd3ff997533db0af00b25d324ea28e6c213bc8");
@@ -314,8 +318,9 @@ public class MessageProcessorTest {
 		idCreds.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
 				 put(Integer.valueOf(Constants.CURVE_Ed25519), idCred);
 	    
-		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
-				                                idCreds, creds, cipherSuites, supportedEADs, appProfile, trustModel, db);
+		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator,
+												keyPairs, idCreds, creds, cipherSuites, peerSupportedCipherSuites,
+												supportedEADs, appProfile, trustModel, db);
 
 		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
 		sideProcessor.setEdhocSession(session);
@@ -369,6 +374,8 @@ public class MessageProcessorTest {
 		supportedCipherSuites.add(0);
 
 		Set<Integer> supportedEADs = new HashSet<>();
+		
+		List<Integer> peerSupportedCipherSuites = new ArrayList<Integer>();
 		
 		// The x509 certificate of the Responder
 		byte[] serializedCert = StringUtil.hex2ByteArray(
@@ -487,7 +494,8 @@ public class MessageProcessorTest {
 	    
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
-												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
+												idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
+												supportedEADs, appProfile, trustModel, db);
 
 		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
 		sideProcessor.setEdhocSession(session);
@@ -552,6 +560,8 @@ public class MessageProcessorTest {
 		supportedCipherSuites.add(0);
 		
 		Set<Integer> supportedEADs = new HashSet<>();
+		
+		List<Integer> peerSupportedCipherSuites = new ArrayList<Integer>();
 		
 		// The x509 certificate of the Initiator
 		byte[] serializedCert = StringUtil.hex2ByteArray(
@@ -642,7 +652,8 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
-												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
+												idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
+												supportedEADs, appProfile, trustModel, db);
 
 		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
 		sideProcessor.setEdhocSession(session);
@@ -762,6 +773,8 @@ public class MessageProcessorTest {
 		
 		Set<Integer> supportedEADs = new HashSet<>();
 		
+		List<Integer> peerSupportedCipherSuites = new ArrayList<Integer>();
+		
 		// The x509 certificate of the Responder
 		byte[] serializedCert = StringUtil.hex2ByteArray(
 				"3081EE3081A1A003020102020462319EC4300506032B6570301D311B301906035504030C124544484F4320526F6F742045643235353139301E170D3232303331363038323433365A170D3239313233313233303030305A30223120301E06035504030C174544484F4320526573706F6E6465722045643235353139302A300506032B6570032100A1DB47B95184854AD12A0C1A354E418AACE33AA0F2C662C00B3AC55DE92F9359300506032B6570034100B723BC01EAB0928E8B2B6C98DE19CC3823D46E7D6987B032478FECFAF14537A1AF14CC8BE829C6B73044101837EB4ABC949565D86DCE51CFAE52AB82C152CB02");
@@ -836,7 +849,8 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
-												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
+												idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
+												supportedEADs, appProfile, trustModel, db);
 
 		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
 		sideProcessor.setEdhocSession(session);
@@ -893,11 +907,12 @@ public class MessageProcessorTest {
 		List<Integer> supportedCipherSuites = new ArrayList<Integer>();
 		supportedCipherSuites.add(6);
 		supportedCipherSuites.add(2);
-
-		List<Integer> cipherSuitesPeer = new ArrayList<Integer>();
-		cipherSuitesPeer.add(2);
 		
 		Set<Integer> supportedEADs = new HashSet<>();
+
+		List<Integer> peerSupportedCipherSuites = new ArrayList<Integer>();
+		// Force the early knowledge of cipher suites supported by the other peer
+		peerSupportedCipherSuites.add(2);
 		
 		OneKey identityKey = Util.generateKeyPair(KeyKeys.EC2_P256.AsInt32());
 		
@@ -947,13 +962,11 @@ public class MessageProcessorTest {
 				 put(Integer.valueOf(Constants.CURVE_P256), idCred);
 		
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
-				                                idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
+				                                idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
+				                                supportedEADs, appProfile, trustModel, db);
 
 		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
 		sideProcessor.setEdhocSession(session);
-		
-		// Force the early knowledge of cipher suites supported by the other peer
-		session.setPeerSupportedCipherSuites(cipherSuitesPeer);
 		
 		// Force a specific ephemeral key
 		byte[] privateEkeyBytes = StringUtil.hex2ByteArray(
@@ -1001,6 +1014,8 @@ public class MessageProcessorTest {
 		
 		Set<Integer> supportedEADs = new HashSet<>();
 		
+		List<Integer> peerSupportedCipherSuites = new ArrayList<Integer>();
+		
 		// The identity key of the Responder
 		byte[] privateIdentityKeyBytes = StringUtil.hex2ByteArray(
 				"72cc4761dbd4c78f758931aa589d348d1ef874a7e303ede2f140dcf3e6aa4aac");
@@ -1008,7 +1023,9 @@ public class MessageProcessorTest {
 				"bbc34960526ea4d32e940cad2a234148ddc21791a12afbcbac93622046dd44f0");
 		byte[] publicIdentityKeyBytesY = StringUtil.hex2ByteArray("4519e257236b2a0ce2023f0931f1f386ca7afda64fcde0108c224c51eabf6072");
 		
-		OneKey identityKey = SharedSecretCalculation.buildEcdsa256OneKey(privateIdentityKeyBytes, publicIdentityKeyBytesX, publicIdentityKeyBytesY);
+		OneKey identityKey = SharedSecretCalculation.buildEcdsa256OneKey(privateIdentityKeyBytes,
+																		 publicIdentityKeyBytesX,
+																		 publicIdentityKeyBytesY);
 		
 		// ID_CRED_R for the identity key of the Responder
 		byte[] idCredKid = {(byte) 0x32};
@@ -1081,7 +1098,8 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
-												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
+												idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
+												supportedEADs, appProfile, trustModel, db);
 
 		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
 		sideProcessor.setEdhocSession(session);
@@ -1143,6 +1161,8 @@ public class MessageProcessorTest {
 		supportedCipherSuites.add(2);
 		
 		Set<Integer> supportedEADs = new HashSet<>();
+		
+		List<Integer> peerSupportedCipherSuites = new ArrayList<Integer>();
 		
 		// The identity key of the Initiator
 		byte[] privateIdentityKeyBytes = StringUtil.hex2ByteArray(
@@ -1236,7 +1256,8 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierInitiator, keyPairs,
-												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
+												idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
+												supportedEADs, appProfile, trustModel, db);
 
 		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
 		sideProcessor.setEdhocSession(session);
@@ -1351,6 +1372,8 @@ public class MessageProcessorTest {
 		
 		Set<Integer> supportedEADs = new HashSet<>();
 		
+		List<Integer> peerSupportedCipherSuites = new ArrayList<Integer>();
+		
 		// The identity key of the Responder
 		byte[] privateIdentityKeyBytes = StringUtil.hex2ByteArray(
 				"72cc4761dbd4c78f758931aa589d348d1ef874a7e303ede2f140dcf3e6aa4aac");
@@ -1435,7 +1458,8 @@ public class MessageProcessorTest {
 		
 		// Create the session
 		EdhocSession session = new EdhocSession(initiator, true, method, connectionIdentifierResponder, keyPairs,
-												idCreds, creds, supportedCipherSuites, supportedEADs, appProfile, trustModel, db);
+												idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
+												supportedEADs, appProfile, trustModel, db);
 		
 		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
 		sideProcessor.setEdhocSession(session);
