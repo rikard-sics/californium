@@ -658,17 +658,13 @@ class ClientEdhocExecutor {
 							edhocMessageResp = client.advanced(edhocMessageReq3);
 						} catch (ConnectorException e) {
 							System.err.println("ConnectorException when sending EDHOC Error Message");
-							Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-							edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
-							client.shutdown();
-							return false;
 						} catch (IOException e) {
 							System.err.println("IOException when sending EDHOC Error Message");
-							Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-							edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
-							client.shutdown();
-							return false;
 						}
+						Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
+						edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
+						client.shutdown();
+						return false;
 					}
 				
 				}

@@ -423,6 +423,9 @@ class EdhocResource extends CoapResource {
 		        if (mySession.getApplicationProfile().getUseMessage4() == false) {
 			        // Just send an empty response back
 		        	
+		        	// Uncomment to have the response as a confirmable Separate Response
+		        	// myResponse.setConfirmable(true);
+		        	
 					myResponse.setPayload(nextMessage);
 					exchange.respond(myResponse);
 					return;
@@ -574,10 +577,22 @@ class EdhocResource extends CoapResource {
 	        					  edhocEndpointInfo.getEdhocSessions(),
 	        					  edhocEndpointInfo.getUsedConnectionIds());
 	        	
-	        	// If the request is confirmable, send an empty ack
+	        	// Just send an empty response back
+	        	Response myResponse = new Response(ResponseCode.CHANGED);
+	        	nextMessage = new byte[] {};
+	        	
+	        	// Uncomment to have the response as a confirmable Separate Response
+	        	// myResponse.setConfirmable(true);
+	        	
+	        	myResponse.setPayload(nextMessage);
+	        	exchange.respond(myResponse);
+	        	
+	        	/*
+	        	// Alternative sending an empty ACK instead
 		        if (exchange.advanced().getRequest().isConfirmable()) {
 		        	exchange.accept();
 		        }
+		        */
         	
 			}
         	
