@@ -19,6 +19,8 @@
  ******************************************************************************/
 package org.eclipse.californium.edhoc;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -74,8 +76,23 @@ class EdhocResource extends CoapResource {
 		
 		byte[] nextMessage = new byte[] {};
 				
+		URI edhocResourceUri = null;
+		try {
+			edhocResourceUri = new URI(exchange.advanced().getRequest().getURI());
+		} catch (URISyntaxException e1) {
+			String responseString = new String("Error when parsing the request target URI");
+			System.err.println(responseString);
+			
+			nextMessage = responseString.getBytes(Constants.charset);
+			Response genericErrorResponse = new Response(ResponseCode.INTERNAL_SERVER_ERROR);
+			genericErrorResponse.setPayload(nextMessage);
+			exchange.respond(genericErrorResponse);
+			return;
+		}
+		
 		// Retrieve the application profile to use
-		AppProfile appProfile = edhocEndpointInfo.getAppProfiles().get(exchange.advanced().getRequest().getURI());
+		String path = edhocResourceUri.getPath();
+		AppProfile appProfile = edhocEndpointInfo.getAppProfiles().get(path);
 		
 		// Error when retrieving the application profile for this EDHOC resource
 		if (appProfile == null) {
