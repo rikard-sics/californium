@@ -494,10 +494,22 @@ class ClientEdhocExecutor {
 						return false;
 					}
 	
+					boolean error = false;
 					byte[] myPayload = null;
-					if (protectedResponse != null) {
+					
+					if (protectedResponse != null) {						
+						if (protectedResponse.advanced().isError() && !protectedResponse.getOptions().hasOscore()) {
+							// This error response was produced by the server before a possible successful decryption with OSCORE.
+							// Hence, this is a CoAP error response not protected with OSCORE. Later checks assess whether this is
+							// specifically an EDHOC error message. Regardless, the ongoing EDHOC session is going to be purged.
+							
+							System.out.println(Utils.prettyPrint(protectedResponse) + "\n");
+							error = true;
+						}
+						
 						myPayload = protectedResponse.getPayload();
 					}
+
 					if (myPayload != null) {
 					
 						int contentFormat = protectedResponse.getOptions().getContentFormat();
@@ -507,9 +519,7 @@ class ClientEdhocExecutor {
 						// when processing the EDHOC+OSCORE combined request
 						if (contentFormat == Constants.APPLICATION_EDHOC_CBOR_SEQ &&
 						    ((restCode == ResponseCode.BAD_REQUEST.value) || (restCode == ResponseCode.INTERNAL_SERVER_ERROR.value)) ) {
-						
-							System.out.println(Utils.prettyPrint(protectedResponse));
-							
+
 							responseType = MessageProcessor.messageType(myPayload, false, edhocSessions, connectionIdentifier);
 							
 							if (responseType == Constants.EDHOC_ERROR_MESSAGE) {
@@ -522,12 +532,15 @@ class ClientEdhocExecutor {
 								System.err.println("Received invalid reply to the EDHOC+OSCORE combined request");
 							}
 						
-							Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-							edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
-							client.shutdown();
-							return false;
 						}
 					
+					}
+					
+					if (error == true) {
+						Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
+						edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
+						client.shutdown();
+						return false;
 					}
 					
 					this.appResponseToCombinedRequest = protectedResponse;
@@ -569,7 +582,6 @@ class ClientEdhocExecutor {
 			
 			// Only an EDHOC message_4 or an EDHOC Error Message is a legitimate EDHOC message at this point
 			if (edhocMessageResp2 != null) {
-			
 				responseType = -1;
 				responsePayload = null;
 				boolean expectMessage4 = session.getApplicationProfile().getUseMessage4();
@@ -602,6 +614,7 @@ class ClientEdhocExecutor {
 							}
 							else {
 								// This is a generic response received as reply to EDHOC Message 3
+								System.out.println("here");
 								processResponseAfterEdhoc(edhocMessageResp2);
 							}
 						}

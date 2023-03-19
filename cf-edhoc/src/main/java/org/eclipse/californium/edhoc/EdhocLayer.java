@@ -20,9 +20,11 @@ package org.eclipse.californium.edhoc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.upokecenter.cbor.CBORException;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
+import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -151,27 +153,24 @@ public class EdhocLayer extends AbstractLayer {
 				return;
 			}
 			
-			// Extract CIPHERTEXT_3 as the second element of EDHOC message_3
-			byte[] message3 = session.getMessage3();
-			CBORObject[] message3Elements = CBORObject.DecodeSequenceFromBytes(message3);
-			byte[] ciphertext3 = message3Elements[1].GetByteString();
+			// Extract EDHOC message_3, from the stored CBOR sequence (C_R, EDHOC message_3)
+			byte[] storedSequence = session.getMessage3();
+			CBORObject[] sequenceElements = CBORObject.DecodeSequenceFromBytes(storedSequence);
+			byte[] edhocMessage3 = sequenceElements[1].EncodeToBytes();
 			
 			// Original OSCORE payload from the request
 			byte[] oldOscorePayload = request.getPayload();
 			
 			if (debugPrint) {
-				Util.nicePrint("EDHOC+OSCORE: Message 3", message3);
-				Util.nicePrint("EDHOC+OSCORE: CIPHERTEXT_3", ciphertext3);
+				Util.nicePrint("EDHOC+OSCORE: EDHOC message_3", edhocMessage3);
 				Util.nicePrint("EDHOC+OSCORE: Old OSCORE payload", oldOscorePayload);
 			}
 			
-			// Build the new OSCORE payload, as a CBOR sequence of two elements
-			// 1. A CBOR byte string, i.e. EDHOC CIPHERTEXT_3 as is
-			// 2. A CBOR byte string, with value the original OSCORE payload
-			byte[] ciphertext3Cbor = CBORObject.FromObject(ciphertext3).EncodeToBytes();
-			byte[] oldOscorePayloadCbor = CBORObject.FromObject(oldOscorePayload).EncodeToBytes();
+			// Build the new OSCORE payload, as composed of two concatenated elements
+			// 1. A CBOR data item, i.e., EDHOC message_3 (of type Byte String)
+			// 2. The original OSCORE payload
 			
-			int newOscorePayloadLength = ciphertext3Cbor.length + oldOscorePayloadCbor.length;
+			int newOscorePayloadLength = edhocMessage3.length + oldOscorePayload.length;
 			
 			// Abort if the payload of the EDHOC+OSCORE request exceeds MAX_UNFRAGMENTED_SIZE
 			int maxUnfragmentedSize = ctx.getMaxUnfragmentedSize();
@@ -180,8 +179,9 @@ public class EdhocLayer extends AbstractLayer {
 		    }
 			
 			byte[] newOscorePayload = new byte[newOscorePayloadLength];
-			System.arraycopy(ciphertext3Cbor, 0, newOscorePayload, 0, ciphertext3Cbor.length);
-			System.arraycopy(oldOscorePayloadCbor, 0, newOscorePayload, ciphertext3Cbor.length, oldOscorePayloadCbor.length);
+			System.arraycopy(edhocMessage3, 0, newOscorePayload, 0, edhocMessage3.length);
+			System.arraycopy(oldOscorePayload, 0, newOscorePayload, edhocMessage3.length, oldOscorePayload.length);
+			
 			
 			if (debugPrint) {
 				Util.nicePrint("EDHOC+OSCORE: New OSCORE payload", newOscorePayload);
@@ -211,29 +211,69 @@ public class EdhocLayer extends AbstractLayer {
 		if (request.getOptions().hasEdhoc()) {
 			
 			if (!request.getOptions().hasOscore()) {
-    			String responseString = new String("Received a request including the EDHOC option but"
-                        + " not including the OSCORE option\n");
+    			String responseString = new String("Received a request including the EDHOC option but" +
+    											   " not including the OSCORE option\n");
+    			System.err.println(responseString);
+    			sendErrorResponse(exchange, responseString, ResponseCode.BAD_REQUEST);
+    			return;
+			}
+			
+			if (request.getPayload() == null) {
+    			String responseString = new String("Received a request including the EDHOC option but" +
+    										       " not including a payload\n");
     			System.err.println(responseString);
     			sendErrorResponse(exchange, responseString, ResponseCode.BAD_REQUEST);
     			return;
 			}
 			
 			LOGGER.warn("Combined EDHOC+OSCORE request");
-			
-			
+
 			boolean error = false;
 			
-			// Retrieve the received payload combining EDHOC CIPHERTEXT_3 and the real OSCORE payload
+			// Retrieve the received payload combining EDHOC message_3 and the real OSCORE payload
 			byte[] oldPayload = request.getPayload();
 			
-			// CBOR objects included in the received CBOR sequence
-			CBORObject[] receivedOjectList = CBORObject.DecodeSequenceFromBytes(oldPayload);
-						
-			if (receivedOjectList == null || receivedOjectList.length != 2) {
+			if (debugPrint) {
+				Util.nicePrint("EDHOC+OSCORE: received payload", oldPayload);
+			}
+			
+			CBORObject edhocMessage3 = null;
+			ByteArrayInputStream myStream = null;
+			
+			myStream = new ByteArrayInputStream(oldPayload);
+			try {
+				edhocMessage3 = CBORObject.Read(myStream);
+			}
+			catch (CBORException e) {
+				System.err.println("CBORException: " + e.getMessage());
 				error = true;
 			}
-			else if (receivedOjectList[0].getType() != CBORType.ByteString ||
-					 receivedOjectList[1].getType() != CBORType.ByteString) {
+			catch (NullPointerException e) {
+				System.err.println("NullPointerException: " + e.getMessage());
+				error = true;
+			}
+			
+			if (edhocMessage3 == null || edhocMessage3.getType() != CBORType.ByteString) {
+				error = true;
+			}
+			
+			int oscoreCiphertextLen = oldPayload.length - edhocMessage3.EncodeToBytes().length;
+			byte[] newPayload = new byte[oscoreCiphertextLen];
+			
+			int readBytes = -1;
+			try {
+				readBytes = myStream.read(newPayload, 0, oscoreCiphertextLen);
+			}
+			catch (NullPointerException e) {
+				System.err.println("NullPointerException: " + e.getMessage());
+				error = true;
+			}
+			catch (IndexOutOfBoundsException e) {
+				System.err.println("IndexOutOfBoundsException: " + e.getMessage());
+				error = true;
+			}
+			
+			if (readBytes != oscoreCiphertextLen) {
 				error = true;
 			}
 			
@@ -246,16 +286,14 @@ public class EdhocLayer extends AbstractLayer {
 			}
 			
 			// Prepare the actual OSCORE request, by replacing the payload
-			byte[] newPayload = receivedOjectList[1].GetByteString();
 			request.setPayload(newPayload);
 			
 			if (debugPrint) {
-				Util.nicePrint("EDHOC+OSCORE: received payload", oldPayload);
 				Util.nicePrint("EDHOC+OSCORE: OSCORE request payload", newPayload);
 			}
 			
 			
-			// Rebuild the full EDHOC message_3
+			// Rebuild the CBOR sequence (C_R, EDHOC message_3)
 
 		    List<CBORObject> edhocObjectList = new ArrayList<>();
 
@@ -264,14 +302,13 @@ public class EdhocLayer extends AbstractLayer {
 			CBORObject cR = MessageProcessor.encodeIdentifier(kid);
 		    edhocObjectList.add(cR);
 		    
-		    // Add CIPHERTEXT_3, i.e. the CBOR string as is from the received CBOR sequence
-		    edhocObjectList.add(receivedOjectList[0]); // CIPHERTEXT_3
+		    // Add EDHOC message_3, i.e., the CBOR data item retrieved from the received message
+		    edhocObjectList.add(edhocMessage3);
 		    
-		    // Assemble the full EDHOC message_3
-		    byte[] edhocMessage3 = Util.buildCBORSequence(edhocObjectList);
+		    byte[] mySequence = Util.buildCBORSequence(edhocObjectList);
 		    
 			if (debugPrint) {
-				Util.nicePrint("EDHOC+OSCORE: rebuilt EDHOC message_3", edhocMessage3);
+				Util.nicePrint("EDHOC+OSCORE: rebuilt CBOR sequence (C_R, EDHOC message_3)", mySequence);
 			}
 			
 			CBORObject kidCbor = CBORObject.FromObject(kid);
@@ -333,8 +370,8 @@ public class EdhocLayer extends AbstractLayer {
 		    List<CBORObject> processingResult = new ArrayList<CBORObject>();
 			byte[] nextMessage = new byte[] {};
 		    
-			processingResult = MessageProcessor.readMessage3(edhocMessage3, true, null, edhocSessions, peerPublicKeys,
-                    peerCredentials, usedConnectionIds);
+			processingResult = MessageProcessor.readMessage3(mySequence, true, null, edhocSessions, peerPublicKeys,
+                    										 peerCredentials, usedConnectionIds);
 
 			if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
 				String responseString = new String("Internal error when processing EDHOC Message 3");
