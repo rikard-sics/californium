@@ -131,28 +131,25 @@ public class GroupOSCORESender {
 
 	private static final int REPLAY_WINDOW = 32;
 
-	private final static byte[] gm_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
-			"A501781A636F6170733A2F2F6D79736974652E6578616D706C652E636F6D026C67726F75706D616E6167657203781A636F6170733A2F2F646F6D61696E2E6578616D706C652E6F7267041AAB9B154F08A101A4010103272006215820CDE3EFD3BC3F99C9C9EE210415C6CBA55061B5046E963B8A58C9143A61166472");
+	private final static byte[] gm_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes("F6");
 
-	private final static byte[] sid = new byte[] { 0x25 };
-	private final static byte[] sid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+	private final static byte[] rid1 = new byte[] { 0x52 };
+	private final static byte[] rid1_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
 			"A501781B636F6170733A2F2F746573746572312E6578616D706C652E636F6D02666D796E616D6503781A636F6170733A2F2F68656C6C6F312E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820069E912B83963ACC5941B63546867DEC106E5B9051F2EE14F3BC5CC961ACD43A");
 	private static MultiKey sid_private_key;
-	private static byte[] sid_private_key_bytes = new byte[] { (byte) 0x64, (byte) 0x71, (byte) 0x4D, (byte) 0x41,
-			(byte) 0xA2, (byte) 0x40, (byte) 0xB6, (byte) 0x1D, (byte) 0x8D, (byte) 0x82, (byte) 0x35, (byte) 0x02,
-			(byte) 0x71, (byte) 0x7A, (byte) 0xB0, (byte) 0x88, (byte) 0xC9, (byte) 0xF4, (byte) 0xAF, (byte) 0x6F,
-			(byte) 0xC9, (byte) 0x84, (byte) 0x45, (byte) 0x53, (byte) 0xE4, (byte) 0xAD, (byte) 0x4C, (byte) 0x42,
-			(byte) 0xCC, (byte) 0x73, (byte) 0x52, (byte) 0x39 };
+	private static byte[] sid_private_key_bytes = net.i2p.crypto.eddsa.Utils
+			.hexToBytes("857EB61D3F6D70A278A36740D132C099F62880ED497E27BDFD4685FA1A304F26");
 
-	private final static byte[] rid1 = new byte[] { 0x52 }; // Recipient 1
-	private static byte[] rid1_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+	private final static byte[] sid = new byte[] { 0x25 }; // Recipient 1
+	private static byte[] sid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
 			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A401010327200621582077EC358C1D344E41EE0E87B8383D23A2099ACD39BDF989CE45B52E887463389B");
 	private static MultiKey rid1_public_key;
 
-	private final static byte[] rid2 = new byte[] { 0x77 }; // Recipient 2
-	private final static byte[] rid2_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
-			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820105B8C6A8C88019BF0C354592934130BAA8007399CC2AC3BE845884613D5BA2E");
-	private static MultiKey rid2_public_key;
+	// private final static byte[] rid2 = new byte[] { 0x77 }; // Recipient 2
+	// private final static byte[] rid2_public_key_bytes =
+	// net.i2p.crypto.eddsa.Utils.hexToBytes(
+	// "A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820105B8C6A8C88019BF0C354592934130BAA8007399CC2AC3BE845884613D5BA2E");
+	// private static MultiKey rid2_public_key;
 
 	private final static byte[] rid0 = new byte[] { (byte) 0xCC }; // Dummy
 
@@ -180,7 +177,7 @@ public class GroupOSCORESender {
 		// Add private & public keys for sender & receiver(s)
 		sid_private_key = new MultiKey(sid_public_key_bytes, sid_private_key_bytes);
 		rid1_public_key = new MultiKey(rid1_public_key_bytes);
-		rid2_public_key = new MultiKey(rid2_public_key_bytes);
+		// rid2_public_key = new MultiKey(rid2_public_key_bytes);
 
 		// If OSCORE is being used set the context information
 		if (useOSCORE) {
@@ -193,7 +190,8 @@ public class GroupOSCORESender {
 
 			commonCtx.addRecipientCtxCcs(rid0, REPLAY_WINDOW, null);
 			commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
-			commonCtx.addRecipientCtxCcs(rid2, REPLAY_WINDOW, rid2_public_key);
+			// commonCtx.addRecipientCtxCcs(rid2, REPLAY_WINDOW,
+			// rid2_public_key);
 
 			commonCtx.setResponsesIncludePartialIV(true);
 			commonCtx.setResponsesIncludePartialIV(true);
