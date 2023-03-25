@@ -45,6 +45,7 @@ import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.GroupDeterministicRecipientCtx;
+import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
 
 /**
@@ -597,6 +598,8 @@ public abstract class Decryptor {
 		info.Add(isRequest);
 		info.Add(keyLength);
 
+		System.out.println("INFO ARRAY: " + StringUtil.byteArray2Hex(info.EncodeToBytes()));
+
 		byte[] groupEncryptionKey = ctx.getCommonCtx().getGroupEncryptionKey();
 		byte[] keystream = null;
 		try {
@@ -631,6 +634,8 @@ public abstract class Decryptor {
 		for (int i = 0; i < keystream.length; i++) {
 			decryptedCountersign[i] = (byte) (countersignBytes[i] ^ keystream[i]);
 		}
+
+		System.out.println("D Signature bytes: " + Utils.toHexString(decryptedCountersign));
 
 		// Replace the signature in the Encrypt0 object
 		enc.setEncryptedContent(Bytes.concatenate(ciphertext, decryptedCountersign));
