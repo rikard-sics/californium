@@ -49,6 +49,7 @@ import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
+import org.eclipse.californium.oscore.OSCoreCtx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -128,12 +129,11 @@ public class GroupOSCOREReceiver {
 
 	private static final int REPLAY_WINDOW = 32;
 
-	private final static byte[] gm_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+	private final static byte[] gm_public_key_bytes = StringUtil.hex2ByteArray(
 			"A501781A636F6170733A2F2F6D79736974652E6578616D706C652E636F6D026C67726F75706D616E6167657203781A636F6170733A2F2F646F6D61696E2E6578616D706C652E6F7267041AAB9B154F08A101A4010103272006215820CDE3EFD3BC3F99C9C9EE210415C6CBA55061B5046E963B8A58C9143A61166472");
 
 	private static byte[] sid = new byte[] { 0x52 };
-
-	private static byte[] sid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+	private static byte[] sid_public_key_bytes = StringUtil.hex2ByteArray(
 			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A401010327200621582077EC358C1D344E41EE0E87B8383D23A2099ACD39BDF989CE45B52E887463389B");
 	private static byte[] sid_private_key_bytes = new byte[] { (byte) 0x85, 0x7E, (byte) 0xB6, 0x1D, 0x3F, 0x6D, 0x70,
 			(byte) 0xA2, 0x78, (byte) 0xA3, 0x67, 0x40, (byte) 0xD1, 0x32, (byte) 0xC0, (byte) 0x99, (byte) 0xF6, 0x28,
@@ -142,9 +142,8 @@ public class GroupOSCOREReceiver {
 	private static MultiKey sid_private_key;
 
 	private final static byte[] rid1 = new byte[] { 0x25 };
-	private final static byte[] rid1_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
+	private final static byte[] rid1_public_key_bytes = StringUtil.hex2ByteArray(
 			"A501781B636F6170733A2F2F746573746572312E6578616D706C652E636F6D02666D796E616D6503781A636F6170733A2F2F68656C6C6F312E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820069E912B83963ACC5941B63546867DEC106E5B9051F2EE14F3BC5CC961ACD43A");
-
 	private static MultiKey rid1_public_key;
 
 	private final static byte[] group_identifier = new byte[] { 0x44, 0x61, 0x6c }; // GID
@@ -185,12 +184,16 @@ public class GroupOSCOREReceiver {
 					algSignEnc, algKeyAgreement, gmPublicKey);
 
 			commonCtx.addSenderCtxCcs(sid, sid_private_key);
+			commonCtx.setPairwiseModeResponses(false);
+
 
 			commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
 
 			commonCtx.setResponsesIncludePartialIV(true);
 
 			db.addContext(uriLocal, commonCtx);
+
+			OSCoreCtx.DISABLE_REPLAY_CHECKS = true;
 
 			OSCoreCoapStackFactory.useAsDefault(db);
 		}
