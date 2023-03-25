@@ -47,6 +47,7 @@ import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
+import org.eclipse.californium.oscore.OSCoreCtx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,21 +127,21 @@ public class GroupOSCOREReceiver {
 
 	private static final int REPLAY_WINDOW = 32;
 
-	private final static byte[] gm_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
-			"A501781A636F6170733A2F2F6D79736974652E6578616D706C652E636F6D026C67726F75706D616E6167657203781A636F6170733A2F2F646F6D61696E2E6578616D706C652E6F7267041AAB9B154F08A101A4010103272006215820CDE3EFD3BC3F99C9C9EE210415C6CBA55061B5046E963B8A58C9143A61166472");
+	private final static byte[] gm_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes("F6");
 
 	private static byte[] sid = new byte[] { 0x52 };
 	private static byte[] sid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
-			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A401010327200621582077EC358C1D344E41EE0E87B8383D23A2099ACD39BDF989CE45B52E887463389B");
-	private static byte[] sid_private_key_bytes = new byte[] { (byte) 0x85, 0x7E, (byte) 0xB6, 0x1D, 0x3F, 0x6D, 0x70,
-			(byte) 0xA2, 0x78, (byte) 0xA3, 0x67, 0x40, (byte) 0xD1, 0x32, (byte) 0xC0, (byte) 0x99, (byte) 0xF6, 0x28,
-			(byte) 0x80, (byte) 0xED, 0x49, 0x7E, 0x27, (byte) 0xBD, (byte) 0xFD, 0x46, (byte) 0x85, (byte) 0xFA, 0x1A,
-			0x30, 0x4F, 0x26 };
+			"A501781B636F6170733A2F2F746573746572312E6578616D706C652E636F6D02666D796E616D6503781A636F6170733A2F2F68656C6C6F312E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820069E912B83963ACC5941B63546867DEC106E5B9051F2EE14F3BC5CC961ACD43A");
+	private static byte[] sid_private_key_bytes = new byte[] { (byte) 0x64, (byte) 0x71, (byte) 0x4D, (byte) 0x41,
+			(byte) 0xA2, (byte) 0x40, (byte) 0xB6, (byte) 0x1D, (byte) 0x8D, (byte) 0x82, (byte) 0x35, (byte) 0x02,
+			(byte) 0x71, (byte) 0x7A, (byte) 0xB0, (byte) 0x88, (byte) 0xC9, (byte) 0xF4, (byte) 0xAF, (byte) 0x6F,
+			(byte) 0xC9, (byte) 0x84, (byte) 0x45, (byte) 0x53, (byte) 0xE4, (byte) 0xAD, (byte) 0x4C, (byte) 0x42,
+			(byte) 0xCC, (byte) 0x73, (byte) 0x52, (byte) 0x39 };
 	private static MultiKey sid_private_key;
 
 	private final static byte[] rid1 = new byte[] { 0x25 };
 	private final static byte[] rid1_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
-			"A501781B636F6170733A2F2F746573746572312E6578616D706C652E636F6D02666D796E616D6503781A636F6170733A2F2F68656C6C6F312E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820069E912B83963ACC5941B63546867DEC106E5B9051F2EE14F3BC5CC961ACD43A");
+			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A401010327200621582077EC358C1D344E41EE0E87B8383D23A2099ACD39BDF989CE45B52E887463389B");
 	private static MultiKey rid1_public_key;
 
 	private final static byte[] group_identifier = new byte[] { 0x44, 0x61, 0x6c }; // GID
@@ -181,12 +182,16 @@ public class GroupOSCOREReceiver {
 					algSignEnc, algKeyAgreement, gmPublicKey);
 
 			commonCtx.addSenderCtxCcs(sid, sid_private_key);
+			commonCtx.setPairwiseModeResponses(false);
+
 
 			commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
 
 			commonCtx.setResponsesIncludePartialIV(true);
 
 			db.addContext(uriLocal, commonCtx);
+
+			OSCoreCtx.DISABLE_REPLAY_CHECKS = true;
 
 			OSCoreCoapStackFactory.useAsDefault(db);
 		}
