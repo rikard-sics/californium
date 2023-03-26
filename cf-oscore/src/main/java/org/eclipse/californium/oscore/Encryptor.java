@@ -34,6 +34,7 @@ import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
 import org.eclipse.californium.oscore.group.OptionEncoder;
 import org.slf4j.Logger;
@@ -357,9 +358,9 @@ public abstract class Encryptor {
 
 		// Derive the keystream
 		String digest = "";
-		if (ctx.getAlgKeyAgreement().toString().contains("HKDF_256")) {
+		if (ctx.getKdf().toString().contains("SHA_256")) {
 			digest = "SHA256";
-		} else if (ctx.getAlgKeyAgreement().toString().contains("HKDF_512")) {
+		} else if (ctx.getKdf().toString().contains("SHA_512")) {
 			digest = "SHA512";
 		}
 
@@ -372,6 +373,8 @@ public abstract class Encryptor {
 		info.Add(isRequest);
 		info.Add(keyLength);
 
+		System.out.println("Info: " + StringUtil.byteArray2Hex(info.EncodeToBytes()));
+		
 		byte[] groupEncryptionKey = ctx.getCommonCtx().getGroupEncryptionKey();
 		byte[] keystream = null;
 		try {
@@ -380,6 +383,9 @@ public abstract class Encryptor {
 		} catch (CoseException e) {
 			System.err.println(e.getMessage());
 		}
+		
+		System.out.println("Partial IV for keystream: " + StringUtil.byteArray2Hex(partialIV));
+		
 
 		System.out.println("===");
 		System.out.println("E Signature keystream: " + Utils.toHexString(keystream));
