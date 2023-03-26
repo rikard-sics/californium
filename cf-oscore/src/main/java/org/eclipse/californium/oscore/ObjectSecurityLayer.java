@@ -225,6 +225,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				});
 
 				req = preparedRequest;
+				req.getOptions().setUriHost("test.com");
 				exchange.setCryptographicContextID(req.getOptions().getOscore());
 
 			} catch (OSException e) {
