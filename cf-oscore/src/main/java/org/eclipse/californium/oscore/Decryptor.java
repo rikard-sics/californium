@@ -412,9 +412,9 @@ public abstract class Decryptor {
 
 		// Derive the keystream
 		String digest = "";
-		if (ctx.getAlgKeyAgreement().toString().contains("HKDF_256")) {
+		if (ctx.getKdf().toString().contains("SHA_256")) {
 			digest = "SHA256";
-		} else if (ctx.getAlgKeyAgreement().toString().contains("HKDF_512")) {
+		} else if (ctx.getKdf().toString().contains("SHA_512")) {
 			digest = "SHA512";
 		}
 

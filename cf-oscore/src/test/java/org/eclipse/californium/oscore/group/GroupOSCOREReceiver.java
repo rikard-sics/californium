@@ -48,6 +48,7 @@ import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 import org.eclipse.californium.oscore.OSCoreCtx;
+import org.eclipse.californium.oscore.OSCoreResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,7 +109,7 @@ public class GroupOSCOREReceiver {
 	private final static HashMapCtxDB db = new HashMapCtxDB();
 	private final static String uriLocal = "coap://localhost";
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
-	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
+	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_512;
 
 	// Group OSCORE specific values for the countersignature (EdDSA)
 	private final static AlgorithmID algCountersign = AlgorithmID.EDDSA;
@@ -127,7 +128,7 @@ public class GroupOSCOREReceiver {
 
 	private static final int REPLAY_WINDOW = 32;
 
-	private final static byte[] gm_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes("F6");
+	private final static byte[] gm_public_key_bytes = null;
 
 	private static byte[] sid = new byte[] { 0x52 };
 	private static byte[] sid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
@@ -182,15 +183,14 @@ public class GroupOSCOREReceiver {
 					algSignEnc, algKeyAgreement, gmPublicKey);
 
 			commonCtx.addSenderCtxCcs(sid, sid_private_key);
-			commonCtx.setPairwiseModeResponses(false);
-
-
 			commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
 
-			commonCtx.setResponsesIncludePartialIV(true);
+			commonCtx.setPairwiseModeResponses(false);
+			commonCtx.setResponsesIncludePartialIV(false);
 
 			db.addContext(uriLocal, commonCtx);
 
+			// FIXME
 			OSCoreCtx.DISABLE_REPLAY_CHECKS = true;
 
 			OSCoreCoapStackFactory.useAsDefault(db);
@@ -204,6 +204,7 @@ public class GroupOSCOREReceiver {
 		createEndpoints(server, listenPort, listenPort, config);
 		Endpoint endpoint = server.getEndpoint(listenPort);
 		server.add(new HelloWorldResource());
+		server.add(new HelloWorldResourceCoap());
 
 		// Information about the receiver
 		System.out.println("==================");
@@ -223,17 +224,78 @@ public class GroupOSCOREReceiver {
 		server.start();
 	}
 
-	private static class HelloWorldResource extends CoapResource {
+	private static class HelloWorldResourceCoap extends CoapResource {
+
+		private int count = 0;
+
+		private HelloWorldResourceCoap() {
+			// set resource identifier
+			super("helloWorldCoap"); // Changed
+
+			// set display name
+			getAttributes().setTitle("Hello-World Resource CoAP only");
+
+			// id = random.nextInt(1000);
+
+			// System.out.println("coap receiver: " + id);
+		}
+
+		// Added for handling GET
+		@Override
+		public void handleGET(CoapExchange exchange) {
+			handlePOST(exchange);
+		}
+
+		@Override
+		public void handlePOST(CoapExchange exchange) {
+
+			System.out.println("Receiving request #" + count);
+			count++;
+
+			System.out.println("Receiving to: " + exchange.advanced().getEndpoint().getAddress());
+			System.out.println("Receiving from: " + exchange.getSourceAddress() + ":" + exchange.getSourcePort());
+
+			System.out.println(Utils.prettyPrint(exchange.advanced().getRequest()));
+
+			boolean isConfirmable = exchange.advanced().getRequest().isConfirmable();
+
+			// respond to the request if confirmable or replies are set to be
+			// sent for non-confirmable
+			// payload is set to request payload changed to uppercase plus the
+			// receiver ID
+			if (isConfirmable || replyToNonConfirmable) {
+				Response r = Response.createResponse(exchange.advanced().getRequest(), ResponseCode.CONTENT);
+				r.setPayload("Hello World!");
+				r.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
+				if (isConfirmable) {
+					r.setType(Type.ACK);
+				} else {
+					r.setType(Type.NON);
+				}
+
+				System.out.println();
+				System.out.println("Sending to: " + r.getDestinationContext().getPeerAddress());
+				System.out.println("Sending from: " + exchange.advanced().getEndpoint().getAddress());
+				System.out.println(Utils.prettyPrint(r));
+
+				exchange.respond(r);
+			}
+
+		}
+
+	}
+
+	private static class HelloWorldResource extends OSCoreResource {
 
 		private int id;
 		private int count = 0;
 
 		private HelloWorldResource() {
 			// set resource identifier
-			super("helloWorld"); // Changed
+			super("helloWorld", true); // Changed
 
 			// set display name
-			getAttributes().setTitle("Hello-World Resource");
+			getAttributes().setTitle("Hello-World Resource (Group) OSCORE only");
 
 			id = random.nextInt(1000);
 
@@ -245,6 +307,7 @@ public class GroupOSCOREReceiver {
 		public void handleGET(CoapExchange exchange) {
 			handlePOST(exchange);
 		}
+
 
 		@Override
 		public void handlePOST(CoapExchange exchange) {
