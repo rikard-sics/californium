@@ -29,6 +29,7 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.ByteId;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCtx;
@@ -355,9 +356,9 @@ public class GroupCtx {
 	byte[] deriveGroupEncryptionKey() {
 
 		String digest = "";
-		if (algKeyAgreement.toString().contains("HKDF_256")) {
+		if (senderCtx.getKdf().toString().contains("SHA_256")) {
 			digest = "SHA256";
-		} else if (algKeyAgreement.toString().contains("HKDF_512")) {
+		} else if (senderCtx.getKdf().toString().contains("SHA_512")) {
 			digest = "SHA512";
 		}
 
@@ -368,6 +369,9 @@ public class GroupCtx {
 		info = CBORObject.NewArray();
 		info.Add(Bytes.EMPTY);
 		info.Add(this.idContext);
+		// FIXME: Change?
+		// https://datatracker.ietf.org/doc/html/draft-ietf-core-oscore-groupcomm-17#section-2.1.6
+		// Should be Signature Encryption Algorithm
 		info.Add(this.aeadAlg.AsCBOR());
 		info.Add(CBORObject.FromObject("Group Encryption Key"));
 		info.Add(keyLength);
@@ -422,6 +426,11 @@ public class GroupCtx {
 		info.Add(CBORObject.FromObject("Key"));
 		info.Add(this.aeadAlg.getKeySize() / 8);
 
+		System.out.println("derivePairwiseSenderKey");
+		System.out.println("sharedSecret: " + StringUtil.byteArray2HexString(sharedSecret));
+		System.out.println("keysConcatenated: " + StringUtil.byteArray2HexString(sharedSecret));
+		System.out.println("ikmSender: " + StringUtil.byteArray2HexString(sharedSecret));
+
 		byte[] keysConcatenated = Bytes.concatenate(senderCtx.getPublicKeyRaw(), recipientPublicKeyRaw);
 		byte[] ikmSender = Bytes.concatenate(keysConcatenated, sharedSecret);
 
@@ -433,6 +442,8 @@ public class GroupCtx {
 		} catch (CoseException e) {
 			System.err.println(e.getMessage());
 		}
+
+		System.out.println("pairwiseSenderKey: " + StringUtil.byteArray2HexString(pairwiseSenderKey));
 
 		return pairwiseSenderKey;
 	}
@@ -475,6 +486,11 @@ public class GroupCtx {
 			System.err.println("Error: Unknown countersignature!");
 		}
 
+		System.out.println("derivePairwiseRecipientKey");
+		System.out.println("sharedSecret: " + StringUtil.byteArray2HexString(sharedSecret));
+		System.out.println("keysConcatenated: " + StringUtil.byteArray2HexString(sharedSecret));
+		System.out.println("ikmRecipient: " + StringUtil.byteArray2HexString(sharedSecret));
+
 		byte[] keysConcatenated = Bytes.concatenate(recipientPublicKeyRaw, senderCtx.getPublicKeyRaw());
 		byte[] ikmRecipient = Bytes.concatenate(keysConcatenated, sharedSecret);
 
@@ -485,6 +501,8 @@ public class GroupCtx {
 		} catch (CoseException e) {
 			System.err.println(e.getMessage());
 		}
+
+		System.out.println("pairwiseRecipientKey: " + StringUtil.byteArray2HexString(pairwiseRecipientKey));
 
 		return pairwiseRecipientKey;
 	}

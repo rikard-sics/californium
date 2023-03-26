@@ -84,8 +84,10 @@ public class GroupOSCORESender {
 	 * Multicast address to send to (use the first line to set a custom one).
 	 */
 	// static final InetAddress multicastIP = new
-	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
+	// InetSocketAddress("test.com", 0)
+	// .getAddress();
+	static final InetAddress multicastIP = new InetSocketAddress("127.0.0.1", 0).getAddress();
+	// static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
 
 	/**
 	 * Port to send to.
@@ -115,7 +117,7 @@ public class GroupOSCORESender {
 	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
 
 	// Group OSCORE specific values for the countersignature (EdDSA)
-	private final static AlgorithmID algCountersign = AlgorithmID.EDDSA;
+	private final static AlgorithmID algCountersign = AlgorithmID.ECDSA_256;
 
 	// Encryption algorithm for when using signatures
 	private final static AlgorithmID algSignEnc = AlgorithmID.AES_CCM_16_64_128;
@@ -131,18 +133,18 @@ public class GroupOSCORESender {
 
 	private static final int REPLAY_WINDOW = 32;
 
-	private final static byte[] gm_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes("F6");
+	private final static byte[] gm_public_key_bytes = null;
 
 	private final static byte[] rid1 = new byte[] { 0x52 };
 	private final static byte[] rid1_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
-			"A501781B636F6170733A2F2F746573746572312E6578616D706C652E636F6D02666D796E616D6503781A636F6170733A2F2F68656C6C6F312E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820069E912B83963ACC5941B63546867DEC106E5B9051F2EE14F3BC5CC961ACD43A");
+			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A6010202402258201897A28666FE1CC4FACEF79CC7BDECDC271F2A619A00844FCD553A12DD679A4F2158200EB313B4D314A1001244776D321F2DD88A5A31DF06A6EEAE0A79832D39408BC120010326");
 	private static MultiKey sid_private_key;
 	private static byte[] sid_private_key_bytes = net.i2p.crypto.eddsa.Utils
-			.hexToBytes("857EB61D3F6D70A278A36740D132C099F62880ED497E27BDFD4685FA1A304F26");
+			.hexToBytes("FEA2190084748436543C5EC8E329D2AFBD7068054F595CA1F987B9E43E2205E6");
 
 	private final static byte[] sid = new byte[] { 0x25 }; // Recipient 1
 	private static byte[] sid_public_key_bytes = net.i2p.crypto.eddsa.Utils.hexToBytes(
-			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A401010327200621582077EC358C1D344E41EE0E87B8383D23A2099ACD39BDF989CE45B52E887463389B");
+			"A501781B636F6170733A2F2F746573746572312E6578616D706C652E636F6D02666D796E616D6503781A636F6170733A2F2F68656C6C6F312E6578616D706C652E6F7267041A70004B4F08A101A6010202410122582064CE3DD128CC4EFA6DE209BE8ABD111C7272F612C2DB654057B6EC00FBFB06842158201ADB2AB6AF48F17C9877CF77DB4FA39DC0923FBE215E576FE6F790B1FF2CBC9620010326");
 	private static MultiKey rid1_public_key;
 
 	// private final static byte[] rid2 = new byte[] { 0x77 }; // Recipient 2
@@ -193,8 +195,7 @@ public class GroupOSCORESender {
 			// commonCtx.addRecipientCtxCcs(rid2, REPLAY_WINDOW,
 			// rid2_public_key);
 
-			commonCtx.setResponsesIncludePartialIV(true);
-			commonCtx.setResponsesIncludePartialIV(true);
+			// commonCtx.setResponsesIncludePartialIV(true);
 
 			db.addContext(requestURI, commonCtx);
 
@@ -209,10 +210,12 @@ public class GroupOSCORESender {
 		client.setEndpoint(endpoint);
 
 		client.setURI(requestURI);
-		Request multicastRequest = Request.newPost();
-		multicastRequest.setPayload(requestPayload);
+		Request multicastRequest = Request.newGet();
+		// multicastRequest.setPayload(requestPayload);
 		multicastRequest.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 		multicastRequest.setType(Type.NON);
+		multicastRequest.getOptions().setUriHost("test");
+
 		if (useOSCORE) {
 			// For group mode request
 			multicastRequest.getOptions().setOscore(Bytes.EMPTY);
