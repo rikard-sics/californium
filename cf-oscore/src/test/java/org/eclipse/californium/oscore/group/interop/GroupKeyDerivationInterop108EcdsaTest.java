@@ -83,37 +83,37 @@ public class GroupKeyDerivationInterop108EcdsaTest {
 	/* --- Context parameters for ECDSA 256 --- */
 
 	// My entity #1
-	static byte[] sid = InteropParametersOld.RIKARD_ENTITY_1_KID;
+	static byte[] sid = InteropParametersOld2.RIKARD_ENTITY_1_KID;
 	// Jim entity #2
-	static byte[] rid1 = InteropParametersOld.JIM_ENTITY_2_KID;
+	static byte[] rid1 = InteropParametersOld2.JIM_ENTITY_2_KID;
 	// Jim entity #3
-	static byte[] rid2 = InteropParametersOld.JIM_ENTITY_3_KID;
+	static byte[] rid2 = InteropParametersOld2.JIM_ENTITY_3_KID;
 
-	private final static byte[] master_secret = InteropParametersOld.MASTER_SECRET_ECDSA;
-	private final static byte[] master_salt = InteropParametersOld.MASTER_SALT_ECDSA;
-	private final static byte[] context_id = InteropParametersOld.GROUP_ID_ECDSA;
+	private final static byte[] master_secret = InteropParametersOld2.MASTER_SECRET_ECDSA;
+	private final static byte[] master_salt = InteropParametersOld2.MASTER_SALT_ECDSA;
+	private final static byte[] context_id = InteropParametersOld2.GROUP_ID_ECDSA;
 
 	// My entity #1
-	private static String senderFullKeyEcdsa256 = InteropParametersOld.RIKARD_ENTITY_1_KEY_ECDSA;
+	private static String senderFullKeyEcdsa256 = InteropParametersOld2.RIKARD_ENTITY_1_KEY_ECDSA;
 
 	// Jim entity #2 (only public part is added to context)
-	private static String recipient1PublicKeyEcdsa256 = InteropParametersOld.JIM_ENTITY_2_KEY_ECDSA;
+	private static String recipient1PublicKeyEcdsa256 = InteropParametersOld2.JIM_ENTITY_2_KEY_ECDSA;
 
 	// Jim entity #3 (only public part is added to context)
-	private static String recipient2PublicKeyEcdsa256 = InteropParametersOld.JIM_ENTITY_3_KEY_ECDSA;
+	private static String recipient2PublicKeyEcdsa256 = InteropParametersOld2.JIM_ENTITY_3_KEY_ECDSA;
 
 	/* --- End Context parameters for ECDSA 256 --- */
 
 	/* --- Context parameters for EdDSA TODO --- */
 
 	// My entity #1
-	private static String senderFullKeyEddsa = InteropParametersOld.RIKARD_ENTITY_1_KEY_EDDSA;
+	private static String senderFullKeyEddsa = InteropParametersOld2.RIKARD_ENTITY_1_KEY_EDDSA;
 
 	// Jim entity #3
-	private static String recipient1PublicKeyEddsa = InteropParametersOld.JIM_ENTITY_2_KEY_EDDSA;
+	private static String recipient1PublicKeyEddsa = InteropParametersOld2.JIM_ENTITY_2_KEY_EDDSA;
 
 	// Jim entity #3
-	private static String recipient2PublicKeyEddsa = InteropParametersOld.JIM_ENTITY_3_KEY_EDDSA;
+	private static String recipient2PublicKeyEddsa = InteropParametersOld2.JIM_ENTITY_3_KEY_EDDSA;
 
 	/* --- End Context parameters for EdDSA --- */
 

@@ -254,7 +254,7 @@ public class GroupInteropRikardEcdsaTests {
 
 		GroupCtx groupCtxRikard = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256, null);
 		// Dummy values for pretend sender
-		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParametersOld.JIM_ENTITY_1_KEY_ECDSA);
+		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParametersOld2.JIM_ENTITY_1_KEY_ECDSA);
 		groupCtxRikard.addSenderCtx(new byte[] { 0x11, 0x22 }, senderFullKey);
 
 		groupCtxRikard.addRecipientCtx(sid, REPLAY_WINDOW, OneKeyDecoder.parseDiagnostic(senderFullKeyEcdsa256));
