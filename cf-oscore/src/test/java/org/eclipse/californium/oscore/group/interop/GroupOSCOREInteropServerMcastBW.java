@@ -126,20 +126,20 @@ public class GroupOSCOREInteropServerMcastBW {
 	private final static AlgorithmID algCountersign = AlgorithmID.ECDSA_256;
 
 	// test vector OSCORE draft Appendix C.1.2
-	private final static byte[] master_secret = InteropParametersNew.RIKARD_MASTER_SECRET_ECDSA;
-	private final static byte[] master_salt = InteropParametersNew.RIKARD_MASTER_SALT_ECDSA;
+	private final static byte[] master_secret = InteropParametersOld.RIKARD_MASTER_SECRET_ECDSA;
+	private final static byte[] master_salt = InteropParametersOld.RIKARD_MASTER_SALT_ECDSA;
 
 	private static final int REPLAY_WINDOW = 32;
 
 	// Public and private keys for group members
 
-	private static byte[] sid = InteropParametersNew.RIKARD_ENTITY_1_KID_ECDSA;
+	private static byte[] sid = InteropParametersOld.RIKARD_ENTITY_1_KID_ECDSA;
 	private static OneKey sid_private_key;
 
-	private final static byte[] rid1 = InteropParametersNew.RIKARD_ENTITY_3_KID_ECDSA;
+	private final static byte[] rid1 = InteropParametersOld.RIKARD_ENTITY_3_KID_ECDSA;
 	private static OneKey rid1_public_key;
 
-	private final static byte[] group_identifier = InteropParametersNew.RIKARD_GROUP_ID_ECDSA;
+	private final static byte[] group_identifier = InteropParametersOld.RIKARD_GROUP_ID_ECDSA;
 
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 
@@ -164,17 +164,17 @@ public class GroupOSCOREInteropServerMcastBW {
 		Security.insertProviderAt(EdDSA, 1);
 
 		// Set sender & receiver keys for countersignatures
-		sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_1_KEY_ECDSA);
-		rid1_public_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_3_KEY_ECDSA);
+		sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersOld.RIKARD_ENTITY_1_KEY_ECDSA);
+		rid1_public_key = OneKeyDecoder.parseDiagnostic(InteropParametersOld.RIKARD_ENTITY_3_KEY_ECDSA);
 
 		// Check command line arguments (flag to use different sid and sid key)
 		if (args.length != 0) {
-			sid = InteropParametersNew.RIKARD_ENTITY_2_KID_ECDSA;
+			sid = InteropParametersOld.RIKARD_ENTITY_2_KID_ECDSA;
 			int unicastPort2 = 3683;
 			System.out.println("Starting with alternative port for unicast: " + unicastPort2);
 			unicastPort = unicastPort2;
 			System.out.println("Starting with alternative sid " + Utils.toHexString(sid));
-			sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_2_KEY_ECDSA);
+			sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersOld.RIKARD_ENTITY_2_KEY_ECDSA);
 		} else {
 			System.out.println("Starting with sid " + Utils.toHexString(sid));
 		}
