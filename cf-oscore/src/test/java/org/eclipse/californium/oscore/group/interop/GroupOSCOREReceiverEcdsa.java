@@ -14,7 +14,7 @@
  *    Bosch Software Innovations - initial creation
  *    Rikard Höglund (RISE SICS) - Group OSCORE receiver functionality
  ******************************************************************************/
-package org.eclipse.californium.oscore.group;
+package org.eclipse.californium.oscore.group.interop;
 
 import java.io.IOException;
 import java.net.BindException;
@@ -47,6 +47,10 @@ import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
+import org.eclipse.californium.oscore.OSCoreCtx;
+import org.eclipse.californium.oscore.OSCoreResource;
+import org.eclipse.californium.oscore.group.GroupCtx;
+import org.eclipse.californium.oscore.group.MultiKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,9 +59,9 @@ import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 /**
  * Test receiver using {@link UdpMulticastConnector}.
  */
-public class GroupOSCOREReceiver {
+public class GroupOSCOREReceiverEcdsa {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(GroupOSCOREReceiver.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(GroupOSCOREReceiverEcdsa.class);
 
 	/**
 	 * Controls whether or not the receiver will reply to incoming multicast
@@ -109,8 +113,8 @@ public class GroupOSCOREReceiver {
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
 	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
 
-	// Group OSCORE specific values for the countersignature (EdDSA)
-	private final static AlgorithmID algCountersign = AlgorithmID.EDDSA;
+	// Group OSCORE specific values for the countersignature (ECDSA P-256)
+	private final static AlgorithmID algCountersign = AlgorithmID.ECDSA_256;
 
 	// Encryption algorithm for when using signatures
 	private final static AlgorithmID algSignEnc = AlgorithmID.AES_CCM_16_64_128;
@@ -118,7 +122,6 @@ public class GroupOSCOREReceiver {
 	// Algorithm for key agreement
 	private final static AlgorithmID algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
 
-	// test vector OSCORE draft Appendix C.1.2
 	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
 			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
 	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
@@ -126,21 +129,18 @@ public class GroupOSCOREReceiver {
 
 	private static final int REPLAY_WINDOW = 32;
 
-	private final static byte[] gm_public_key_bytes = StringUtil.hex2ByteArray(
-			"A501781A636F6170733A2F2F6D79736974652E6578616D706C652E636F6D026C67726F75706D616E6167657203781A636F6170733A2F2F646F6D61696E2E6578616D706C652E6F7267041AAB9B154F08A101A4010103272006215820CDE3EFD3BC3F99C9C9EE210415C6CBA55061B5046E963B8A58C9143A61166472");
+	private final static byte[] gm_public_key_bytes = null;
 
 	private static byte[] sid = new byte[] { 0x52 };
 	private static byte[] sid_public_key_bytes = StringUtil.hex2ByteArray(
-			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A401010327200621582077EC358C1D344E41EE0E87B8383D23A2099ACD39BDF989CE45B52E887463389B");
-	private static byte[] sid_private_key_bytes = new byte[] { (byte) 0x85, 0x7E, (byte) 0xB6, 0x1D, 0x3F, 0x6D, 0x70,
-			(byte) 0xA2, 0x78, (byte) 0xA3, 0x67, 0x40, (byte) 0xD1, 0x32, (byte) 0xC0, (byte) 0x99, (byte) 0xF6, 0x28,
-			(byte) 0x80, (byte) 0xED, 0x49, 0x7E, 0x27, (byte) 0xBD, (byte) 0xFD, 0x46, (byte) 0x85, (byte) 0xFA, 0x1A,
-			0x30, 0x4F, 0x26 };
+			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A6010202402258201897A28666FE1CC4FACEF79CC7BDECDC271F2A619A00844FCD553A12DD679A4F2158200EB313B4D314A1001244776D321F2DD88A5A31DF06A6EEAE0A79832D39408BC120010326");
+	private static byte[] sid_private_key_bytes = net.i2p.crypto.eddsa.Utils
+			.hexToBytes("DA2593A6E0BCC81A5941069CB76303487816A2F4E6C0F21737B56A7C90381597");
 	private static MultiKey sid_private_key;
 
 	private final static byte[] rid1 = new byte[] { 0x25 };
 	private final static byte[] rid1_public_key_bytes = StringUtil.hex2ByteArray(
-			"A501781B636F6170733A2F2F746573746572312E6578616D706C652E636F6D02666D796E616D6503781A636F6170733A2F2F68656C6C6F312E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820069E912B83963ACC5941B63546867DEC106E5B9051F2EE14F3BC5CC961ACD43A");
+			"A501781B636F6170733A2F2F746573746572312E6578616D706C652E636F6D02666D796E616D6503781A636F6170733A2F2F68656C6C6F312E6578616D706C652E6F7267041A70004B4F08A101A6010202410122582064CE3DD128CC4EFA6DE209BE8ABD111C7272F612C2DB654057B6EC00FBFB06842158201ADB2AB6AF48F17C9877CF77DB4FA39DC0923FBE215E576FE6F790B1FF2CBC9620010326");
 	private static MultiKey rid1_public_key;
 
 	private final static byte[] group_identifier = new byte[] { 0x44, 0x61, 0x6c }; // GID
@@ -181,12 +181,15 @@ public class GroupOSCOREReceiver {
 					algSignEnc, algKeyAgreement, gmPublicKey);
 
 			commonCtx.addSenderCtxCcs(sid, sid_private_key);
-
 			commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
 
-			commonCtx.setResponsesIncludePartialIV(true);
+			commonCtx.setPairwiseModeResponses(false);
+			commonCtx.setResponsesIncludePartialIV(false);
 
 			db.addContext(uriLocal, commonCtx);
+
+			// FIXME
+			OSCoreCtx.DISABLE_REPLAY_CHECKS = true;
 
 			OSCoreCoapStackFactory.useAsDefault(db);
 		}
@@ -199,6 +202,7 @@ public class GroupOSCOREReceiver {
 		createEndpoints(server, listenPort, listenPort, config);
 		Endpoint endpoint = server.getEndpoint(listenPort);
 		server.add(new HelloWorldResource());
+		server.add(new HelloWorldResourceCoap());
 
 		// Information about the receiver
 		System.out.println("==================");
@@ -218,17 +222,78 @@ public class GroupOSCOREReceiver {
 		server.start();
 	}
 
-	private static class HelloWorldResource extends CoapResource {
+	private static class HelloWorldResourceCoap extends CoapResource {
+
+		private int count = 0;
+
+		private HelloWorldResourceCoap() {
+			// set resource identifier
+			super("helloWorldCoap"); // Changed
+
+			// set display name
+			getAttributes().setTitle("Hello-World Resource CoAP only");
+
+			// id = random.nextInt(1000);
+
+			// System.out.println("coap receiver: " + id);
+		}
+
+		// Added for handling GET
+		@Override
+		public void handleGET(CoapExchange exchange) {
+			handlePOST(exchange);
+		}
+
+		@Override
+		public void handlePOST(CoapExchange exchange) {
+
+			System.out.println("Receiving request #" + count);
+			count++;
+
+			System.out.println("Receiving to: " + exchange.advanced().getEndpoint().getAddress());
+			System.out.println("Receiving from: " + exchange.getSourceAddress() + ":" + exchange.getSourcePort());
+
+			System.out.println(Utils.prettyPrint(exchange.advanced().getRequest()));
+
+			boolean isConfirmable = exchange.advanced().getRequest().isConfirmable();
+
+			// respond to the request if confirmable or replies are set to be
+			// sent for non-confirmable
+			// payload is set to request payload changed to uppercase plus the
+			// receiver ID
+			if (isConfirmable || replyToNonConfirmable) {
+				Response r = Response.createResponse(exchange.advanced().getRequest(), ResponseCode.CONTENT);
+				r.setPayload("Hello World!");
+				r.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
+				if (isConfirmable) {
+					r.setType(Type.ACK);
+				} else {
+					r.setType(Type.NON);
+				}
+
+				System.out.println();
+				System.out.println("Sending to: " + r.getDestinationContext().getPeerAddress());
+				System.out.println("Sending from: " + exchange.advanced().getEndpoint().getAddress());
+				System.out.println(Utils.prettyPrint(r));
+
+				exchange.respond(r);
+			}
+
+		}
+
+	}
+
+	private static class HelloWorldResource extends OSCoreResource {
 
 		private int id;
 		private int count = 0;
 
 		private HelloWorldResource() {
 			// set resource identifier
-			super("helloWorld"); // Changed
+			super("helloWorld", true); // Changed
 
 			// set display name
-			getAttributes().setTitle("Hello-World Resource");
+			getAttributes().setTitle("Hello-World Resource (Group) OSCORE only");
 
 			id = random.nextInt(1000);
 
@@ -240,6 +305,7 @@ public class GroupOSCOREReceiver {
 		public void handleGET(CoapExchange exchange) {
 			handlePOST(exchange);
 		}
+
 
 		@Override
 		public void handlePOST(CoapExchange exchange) {

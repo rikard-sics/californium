@@ -133,24 +133,24 @@ public class GroupOSCOREInteropClientNonTransparentBWAllMcast {
 	private final static AlgorithmID algCountersign = AlgorithmID.ECDSA_256;
 
 	// test vector OSCORE draft Appendix C.1.1
-	private final static byte[] master_secret = InteropParametersNew.RIKARD_MASTER_SECRET_ECDSA;
-	private final static byte[] master_salt = InteropParametersNew.RIKARD_MASTER_SALT_ECDSA;
+	private final static byte[] master_secret = InteropParametersOld.RIKARD_MASTER_SECRET_ECDSA;
+	private final static byte[] master_salt = InteropParametersOld.RIKARD_MASTER_SALT_ECDSA;
 
 	private static final int REPLAY_WINDOW = 32;
 
 	// Public and private keys for group members
-	private final static byte[] sid = InteropParametersNew.RIKARD_ENTITY_3_KID_ECDSA;
+	private final static byte[] sid = InteropParametersOld.RIKARD_ENTITY_3_KID_ECDSA;
 	private static OneKey sid_private_key;
 
-	private final static byte[] rid1 = InteropParametersNew.RIKARD_ENTITY_1_KID_ECDSA;
+	private final static byte[] rid1 = InteropParametersOld.RIKARD_ENTITY_1_KID_ECDSA;
 	private static OneKey rid1_public_key;
 
-	private final static byte[] rid2 = InteropParametersNew.RIKARD_ENTITY_2_KID_ECDSA;
+	private final static byte[] rid2 = InteropParametersOld.RIKARD_ENTITY_2_KID_ECDSA;
 	private static OneKey rid2_public_key;
 
 	private final static byte[] rid0 = new byte[] { (byte) 0xCC }; // Dummy
 
-	private final static byte[] group_identifier = InteropParametersNew.RIKARD_GROUP_ID_ECDSA;
+	private final static byte[] group_identifier = InteropParametersOld.RIKARD_GROUP_ID_ECDSA;
 
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 
@@ -183,9 +183,9 @@ public class GroupOSCOREInteropClientNonTransparentBWAllMcast {
 		// InstallCryptoProviders.generateCounterSignKey();
 
 		// Add private & public keys for sender & receiver(s)
-		sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_3_KEY_ECDSA);
-		rid1_public_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_1_KEY_ECDSA);
-		rid2_public_key = OneKeyDecoder.parseDiagnostic(InteropParametersNew.RIKARD_ENTITY_2_KEY_ECDSA);
+		sid_private_key = OneKeyDecoder.parseDiagnostic(InteropParametersOld.RIKARD_ENTITY_3_KEY_ECDSA);
+		rid1_public_key = OneKeyDecoder.parseDiagnostic(InteropParametersOld.RIKARD_ENTITY_1_KEY_ECDSA);
+		rid2_public_key = OneKeyDecoder.parseDiagnostic(InteropParametersOld.RIKARD_ENTITY_2_KEY_ECDSA);
 
 		// Check that KIDs in public/private keys match corresponding
 		// recipient/sender ID (just to double check configuration)
