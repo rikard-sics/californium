@@ -188,8 +188,8 @@ public class GroupOSCOREReceiverEcdsa {
 
 			db.addContext(uriLocal, commonCtx);
 
-			// FIXME
-			OSCoreCtx.DISABLE_REPLAY_CHECKS = true;
+			// For interop testing
+			OSCoreCtx.DISABLE_REPLAY_CHECKS = false;
 
 			OSCoreCoapStackFactory.useAsDefault(db);
 		}
