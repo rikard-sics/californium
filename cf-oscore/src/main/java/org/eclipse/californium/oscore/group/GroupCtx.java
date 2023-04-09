@@ -450,10 +450,8 @@ public class GroupCtx {
 		info = CBORObject.NewArray();
 		info.Add(Bytes.EMPTY);
 		info.Add(this.idContext);
-		// FIXME: Change?
 		// https://datatracker.ietf.org/doc/html/draft-ietf-core-oscore-groupcomm-17#section-2.1.6
-		// Should be Signature Encryption Algorithm
-		info.Add(this.aeadAlg.AsCBOR());
+		info.Add(this.algSignEnc.AsCBOR());
 		info.Add(CBORObject.FromObject("Group Encryption Key"));
 		info.Add(keyLength);
 
