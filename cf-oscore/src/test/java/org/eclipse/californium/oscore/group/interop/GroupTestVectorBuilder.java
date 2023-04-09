@@ -156,17 +156,18 @@ public class GroupTestVectorBuilder {
 
 		System.out.println("AEAD Algorithm: " + alg.AsCBOR() + " (" + alg + ")" + "\n");
 
-		System.out.println("HKDF Algorithm: " + kdf + "\n");
+		System.out.println("HKDF Algorithm: " + kdf.AsCBOR() + " (" + kdf + ")" + "\n");
 
 		System.out.println("Signature Encryption Algorithm: " + algSignEnc.AsCBOR() + " (" + algSignEnc + ")" + "\n");
 
-		System.out.println("Signature Algorithm: " + algCountersign);
+		System.out.println("Signature Algorithm: " + algCountersign.AsCBOR() + " (" + algCountersign + ")" + "\n");
 		if (algCountersign == AlgorithmID.ECDSA_256) {
 			System.out.println("Note that since ECDSA is used, signatures are NOT deterministic");
 		}
 		System.out.println();
 
-		System.out.println("Pairwise Key Agreement Algorithm: " + algKeyAgreement + "\n");
+		System.out.println(
+				"Pairwise Key Agreement Algorithm: " + algKeyAgreement.AsCBOR() + " (" + algKeyAgreement + ")" + "\n");
 
 		System.out.println("\n");
 
