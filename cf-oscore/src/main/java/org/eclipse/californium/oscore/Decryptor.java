@@ -33,6 +33,7 @@ import org.eclipse.californium.cose.Encrypt0Message;
 
 import com.upokecenter.cbor.CBORObject;
 
+import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.Attribute;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.CounterSign1;
@@ -85,6 +86,7 @@ public abstract class Decryptor {
 		byte[] partialIV = null;
 		byte[] aad = null;
 
+		AlgorithmID decryptionAlg = ctx.getAlg();
 		CBORObject piv = enc.findAttribute(HeaderKeys.PARTIAL_IV);
 
 		if (isRequest) {
@@ -172,6 +174,7 @@ public abstract class Decryptor {
 
 			// If group mode is used prepare the signature checking
 			if (groupModeMessage) {
+				decryptionAlg = ((GroupRecipientCtx) ctx).getAlgSignEnc();
 				// Decrypt the signature.
 				if (isRequest || piv != null) {
 					byte[] pivFromMessage = enc.findAttribute(HeaderKeys.PARTIAL_IV).GetByteString();
@@ -200,7 +203,7 @@ public abstract class Decryptor {
 
 		try {
 			// TODO: Get and set Recipient ID (KID) here too?
-			enc.addAttribute(HeaderKeys.Algorithm, ctx.getAlg().AsCBOR(), Attribute.DO_NOT_SEND);
+			enc.addAttribute(HeaderKeys.Algorithm, decryptionAlg.AsCBOR(), Attribute.DO_NOT_SEND);
 			enc.addAttribute(HeaderKeys.IV, CBORObject.FromObject(nonce), Attribute.DO_NOT_SEND);
 			plaintext = enc.decrypt(key);
 
