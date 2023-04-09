@@ -348,10 +348,10 @@ public class OSSerializer {
 
 		// Add the Group Manager's public key
 		System.out.println("gmPublicKey: " + Utils.bytesToHex(gmPublicKey));
-		if (gmPublicKey == null || gmPublicKey.length == 0 || gmPublicKey[0] == (byte) 0xF6) {
+		if (gmPublicKey == null || gmPublicKey.length == 0) {
 			groupAadEnc.Add(CBORObject.Null);
 		} else {
-			groupAadEnc.Add(gmPublicKey); // TODO: FIXME: Apply online PROPERLY
+			groupAadEnc.Add(gmPublicKey);
 		}
 
 		return groupAadEnc.EncodeToBytes();
