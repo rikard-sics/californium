@@ -90,7 +90,6 @@ public class OptionJuggle {
 
 		if (hasUriHost) {
 			ret.setUriHost(options.getUriHost());
-			System.out.println("Uri_Host pre: " + options.getUriHost());
 		}
 
 		if (hasUriPort) {

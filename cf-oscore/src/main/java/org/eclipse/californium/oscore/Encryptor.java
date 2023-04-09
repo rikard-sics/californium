@@ -34,7 +34,6 @@ import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.oscore.ContextRederivation.PHASE;
 import org.eclipse.californium.cose.OneKey;
-import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.group.GroupSenderCtx;
 import org.eclipse.californium.oscore.group.OptionEncoder;
@@ -79,6 +78,8 @@ public abstract class Encryptor {
 			Integer requestSequenceNr, byte[] correspondingReqOption)
 			throws OSException {
 		boolean isRequest = message instanceof Request;
+
+		AlgorithmID encryptionAlg = ctx.getAlg();
 
 		try {
 			byte[] key = ctx.getSenderKey();
@@ -165,6 +166,7 @@ public abstract class Encryptor {
 					key = ((GroupSenderCtx) ctx).getPairwiseSenderKey(recipientRID);
 				} else {
 					// If group mode is used prepare adding the signature
+					encryptionAlg = ((GroupSenderCtx) ctx).getAlgSignEnc();
 					prepareSignature(enc, ctx, aad, message);
 				}
 
@@ -180,7 +182,7 @@ public abstract class Encryptor {
 			enc.setExternal(aad);
 			
 			enc.addAttribute(HeaderKeys.IV, CBORObject.FromObject(nonce), Attribute.DO_NOT_SEND);
-			enc.addAttribute(HeaderKeys.Algorithm, ctx.getAlg().AsCBOR(), Attribute.DO_NOT_SEND);
+			enc.addAttribute(HeaderKeys.Algorithm, encryptionAlg.AsCBOR(), Attribute.DO_NOT_SEND);
 
 			enc.encrypt(key);
 
