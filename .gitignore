@@ -89,3 +89,9 @@ Icon?
 ehthumbs.db
 Thumbs.db
 Desktop.ini
+*~
+
+# Group OSCORE test vectors #
+######################
+cf-oscore/*.txt
+
