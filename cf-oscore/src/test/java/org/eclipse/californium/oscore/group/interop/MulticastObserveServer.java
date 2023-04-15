@@ -56,6 +56,10 @@ import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
+/**
+ * Server supporting registration of observations using multicast
+ *
+ */
 public class MulticastObserveServer {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MulticastObserveServer.class);
@@ -116,8 +120,15 @@ public class MulticastObserveServer {
 
 	private static CoapServer server;
 
-	public static void main(String[] args)
-			throws InterruptedException, CoseException, OSException, IOException {
+	/**
+	 * Main method
+	 * 
+	 * @param args command line arguments
+	 * @throws IOException on failure
+	 * @throws CoseException on failure
+	 * @throws OSException on failure
+	 */
+	public static void main(String[] args) throws CoseException, OSException, IOException {
 
 		// If OSCORE is being used
 		if (useOSCORE) {
@@ -127,10 +138,8 @@ public class MulticastObserveServer {
 			Security.insertProviderAt(EdDSA, 1);
 
 			// Set sender & receiver keys for countersignatures
-			sid_private_key = new OneKey(
-					CBORObject.DecodeFromBytes(Base64.decode(sid_private_key_string)));
-			rid1_public_key = new OneKey(
-					CBORObject.DecodeFromBytes(Base64.decode(rid1_public_key_string)));
+			sid_private_key = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(sid_private_key_string)));
+			rid1_public_key = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(rid1_public_key_string)));
 
 			// Check command line arguments (flag to use different sid and sid
 			// key)
@@ -138,13 +147,13 @@ public class MulticastObserveServer {
 				System.out.println("Starting with alternative sid 0x77.");
 				sid = new byte[] { 0x77 };
 				sid_private_key_string = "pQMnAQEgBiFYIBBbjGqMiAGb8MNUWSk0EwuqgAc5nMKsO+hFiEYT1bouI1gge/Yvdn7Rz0xgkR/En9/Mub1HzH6fr0HLZjadXIUIsjk=";
-				sid_private_key = new OneKey(
-						CBORObject.DecodeFromBytes(Base64.decode(sid_private_key_string)));
+				sid_private_key = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(sid_private_key_string)));
 			} else {
 				System.out.println("Starting with sid 0x52.");
 			}
 
-			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign, null);
+			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign,
+					null);
 
 			commonCtx.addSenderCtx(sid, sid_private_key);
 

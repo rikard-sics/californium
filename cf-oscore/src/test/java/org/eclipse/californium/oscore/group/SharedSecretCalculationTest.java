@@ -64,10 +64,12 @@ public class SharedSecretCalculationTest {
 
 	// Create the ed25519 field
 	private static Field ed25519Field = new Field(256, // b
-			Utils.hexToBytes("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
+			StringUtil.hex2ByteArray("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
 			new BigIntegerLittleEndianEncoding());
 
-	// Use the OSCORE stack factory with the client context DB
+	/**
+	 * Use the OSCORE stack factory
+	 */
 	@BeforeClass
 	public static void setStackFactory() {
 		Provider EdDSA = new EdDSASecurityProvider();
@@ -376,7 +378,7 @@ public class SharedSecretCalculationTest {
 
 		// 1000 iterations
 
-		byte[] tU =StringUtil.hex2ByteArray("0900000000000000000000000000000000000000000000000000000000000000");
+		byte[] tU = StringUtil.hex2ByteArray("0900000000000000000000000000000000000000000000000000000000000000");
 		byte[] tK = StringUtil.hex2ByteArray("0900000000000000000000000000000000000000000000000000000000000000");
 		byte[] tR = null;
 		for (int i = 0; i < 1000; i++) {

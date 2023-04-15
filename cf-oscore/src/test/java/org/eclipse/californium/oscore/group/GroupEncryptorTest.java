@@ -54,15 +54,28 @@ import com.upokecenter.cbor.CBORObject;
 
 import org.junit.Assert;
 
+/**
+ * Test message encryption for Group OSCORE
+ *
+ */
 public class GroupEncryptorTest {
 
+	/**
+	 * Define CoAP network rule for JUnit tests
+	 */
 	@ClassRule
 	public static CoapNetworkRule network = new CoapNetworkRule(CoapNetworkRule.Mode.DIRECT,
 			CoapNetworkRule.Mode.NATIVE);
 
+	/**
+	 * Thread cleanup rule
+	 */
 	@Rule
 	public CoapThreadsRule cleanup = new CoapThreadsRule();
 
+	/**
+	 * Test name logging rule
+	 */
 	@Rule
 	public TestNameLoggerRule name = new TestNameLoggerRule();
 
@@ -90,13 +103,20 @@ public class GroupEncryptorTest {
 	static Random rand;
 	private String uri;
 
+	/**
+	 * Set GM public key and clear endpoints before tests
+	 * 
+	 * @throws IOException on setup failure
+	 */
 	@Before
 	public void init() throws IOException {
 		gmPublicKey = Base64.decode(gmPublicKeyString);
 		EndpointManager.clear();
 	}
 
-	// Use the OSCORE stack factory
+	/**
+	 * Use the OSCORE stack factory
+	 */
 	@BeforeClass
 	public static void setStackFactory() {
 		OSCoreCoapStackFactory.useAsDefault(null); // TODO: Better way?
@@ -118,8 +138,7 @@ public class GroupEncryptorTest {
 		// Create client context
 		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
 				gmPublicKey);
-		OneKey clientFullKey = new OneKey(
-				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
+		OneKey clientFullKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
 		commonCtx.addSenderCtx(sid, clientFullKey);
 
 		commonCtx.senderCtx.setSenderSeq(seq);
@@ -200,15 +219,13 @@ public class GroupEncryptorTest {
 		// Create client context
 		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
 				gmPublicKey);
-		OneKey clientFullKey = new OneKey(
-				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
+		OneKey clientFullKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
 		commonCtx.addSenderCtx(sid, clientFullKey);
 
 		commonCtx.senderCtx.setSenderSeq(seq);
 
 		// Create server context
-		OneKey serverPublicKey = new OneKey(
-				CBORObject.DecodeFromBytes(Base64.decode(serverKeyString))).PublicKey();
+		OneKey serverPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(serverKeyString))).PublicKey();
 		commonCtx.addRecipientCtx(rid, REPLAY_WINDOW, serverPublicKey);
 
 		// Create request message from raw byte array
@@ -275,11 +292,8 @@ public class GroupEncryptorTest {
 		int seq = 20;
 
 		// Create server context
-		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
-				gmPublicKey);
-
-		OneKey serverFullKey = new OneKey(
-				CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign, gmPublicKey);
+		OneKey serverFullKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
 		commonCtx.addSenderCtx(sid, serverFullKey);
 
 		GroupSenderCtx senderCtx = commonCtx.senderCtx;
@@ -356,8 +370,7 @@ public class GroupEncryptorTest {
 		// Create server context
 		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
 				gmPublicKey);
-		OneKey serverFullKey = new OneKey(
-				CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
+		OneKey serverFullKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
 		commonCtx.addSenderCtx(sid, serverFullKey);
 
 		GroupSenderCtx senderCtx = commonCtx.senderCtx;
@@ -366,8 +379,7 @@ public class GroupEncryptorTest {
 		commonCtx.setPairwiseModeResponses(true);
 
 		// Create client context
-		OneKey clientPublicKey = new OneKey(
-				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString))).PublicKey();
+		OneKey clientPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(clientKeyString))).PublicKey();
 		commonCtx.addRecipientCtx(rid, REPLAY_WINDOW, clientPublicKey);
 
 		// Create response message from raw byte array
