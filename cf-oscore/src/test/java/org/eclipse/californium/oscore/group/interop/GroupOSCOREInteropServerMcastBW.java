@@ -154,6 +154,12 @@ public class GroupOSCOREInteropServerMcastBW {
 	// Use IPv4 or IPv6 (IPv6 doesn't work currently)
 	static boolean ipv4 = true;
 
+	/**
+	 * Main method
+	 * 
+	 * @param args command line arguments
+	 * @throws Exception on failure
+	 */
 	public static void main(String[] args) throws Exception {
 
 		// Disable replay detection
@@ -191,7 +197,8 @@ public class GroupOSCOREInteropServerMcastBW {
 		GroupRecipientCtx recipientCtx;
 		if (useOSCORE) {
 
-			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign, null);
+			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign,
+					null);
 
 			commonCtx.addSenderCtx(sid, sid_private_key);
 
@@ -234,8 +241,7 @@ public class GroupOSCOREInteropServerMcastBW {
 				// set response timeout (indirect) to 10s
 				.set(CoapConfig.EXCHANGE_LIFETIME, 10 * 1000L, TimeUnit.MILLISECONDS)
 				.set(CoapConfig.MAX_MESSAGE_SIZE, DEFAULT_BLOCK_SIZE)
-				.set(CoapConfig.PREFERRED_BLOCK_SIZE, DEFAULT_BLOCK_SIZE)
-				.set(CoapConfig.RESPONSE_MATCHING, mode);
+				.set(CoapConfig.PREFERRED_BLOCK_SIZE, DEFAULT_BLOCK_SIZE).set(CoapConfig.RESPONSE_MATCHING, mode);
 
 		CoapServer server = new CoapServer(config);
 
@@ -430,6 +436,7 @@ public class GroupOSCOREInteropServerMcastBW {
 	 * Add an OSCORE Context to the DB (OSCORE RFC C.2.2.)
 	 */
 	static OSCoreCtx oscoreCtx;
+
 	private static void addOSCOREContext() {
 		byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e,
 				0x0f, 0x10 };

@@ -17,7 +17,6 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore.group.interop;
 
-
 import java.io.File;
 import java.io.IOException;
 import java.net.Inet6Address;
@@ -53,6 +52,10 @@ import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.OneKey;
 
+/**
+ * Client for observation with multicast for the first request
+ *
+ */
 public class MulticastObserveClient {
 
 	static boolean useOSCORE = true;
@@ -141,8 +144,15 @@ public class MulticastObserveClient {
 
 	// private static int cancelAfterMessages = 20;
 
-	public static void main(String[] args)
-			throws IOException, CoseException, OSException {
+	/**
+	 * Main method
+	 * 
+	 * @param args command line arguments
+	 * @throws IOException on failure
+	 * @throws CoseException on failure
+	 * @throws OSException on failure
+	 */
+	public static void main(String[] args) throws IOException, CoseException, OSException {
 
 		String resourceUri = "/base/observe2";
 
@@ -165,14 +175,12 @@ public class MulticastObserveClient {
 			Security.insertProviderAt(EdDSA, 1);
 
 			// Add private & public keys for sender & receiver(s)
-			sid_private_key = new OneKey(
-					CBORObject.DecodeFromBytes(Base64.decode((sid_private_key_string))));
-			rid1_public_key = new OneKey(
-					CBORObject.DecodeFromBytes(Base64.decode((rid1_public_key_string))));
-			rid2_public_key = new OneKey(
-					CBORObject.DecodeFromBytes(Base64.decode((rid2_public_key_string))));
+			sid_private_key = new OneKey(CBORObject.DecodeFromBytes(Base64.decode((sid_private_key_string))));
+			rid1_public_key = new OneKey(CBORObject.DecodeFromBytes(Base64.decode((rid1_public_key_string))));
+			rid2_public_key = new OneKey(CBORObject.DecodeFromBytes(Base64.decode((rid2_public_key_string))));
 
-			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign, null);
+			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign,
+					null);
 
 			commonCtx.addSenderCtx(sid, sid_private_key);
 
@@ -258,6 +266,7 @@ public class MulticastObserveClient {
 			try {
 				wait(timeout);
 			} catch (InterruptedException e) {
+				//
 			}
 			return on;
 		}

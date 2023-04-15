@@ -48,10 +48,10 @@ public class GroupDynamicContextDerivation {
 	 */
 	public static OSCoreCtx derive(OSCoreCtxDB db, byte[] rid, byte[] contextID) {
 		// Check if we have a public key for this RID
-	
+
 		// First get the Sender Context for this request
 		OSCoreCtx ctx = db.getContextByIDContext(contextID);
-	
+
 		// Abort the procedure for non Group OSCORE sender contexts
 		if (ctx == null || ctx instanceof GroupSenderCtx == false) {
 			LOGGER.error("Dynamic context derivation failed: No context found for ID Context"
@@ -69,7 +69,7 @@ public class GroupDynamicContextDerivation {
 			LOGGER.error("Dynamic context derivation failed: No public key found for RID " + Utils.toHexString(rid));
 			return null;
 		}
-	
+
 		// Now add the new recipient context
 		try {
 			senderCtx.commonCtx.addRecipientCtx(rid, 32, publicKey);
@@ -78,11 +78,11 @@ public class GroupDynamicContextDerivation {
 		}
 		GroupRecipientCtx recipientCtx = senderCtx.commonCtx.recipientCtxMap.get(new ByteId(rid));
 		db.addContext(recipientCtx);
-		
-		//Derive pairwise keys
+
+		// Derive pairwise keys
 		senderCtx.derivePairwiseKeys();
 		recipientCtx.derivePairwiseKey();
-		
+
 		LOGGER.debug("Dynamic context derivation finished successfully");
 
 		return recipientCtx;
