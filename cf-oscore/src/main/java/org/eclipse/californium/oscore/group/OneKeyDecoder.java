@@ -21,6 +21,7 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Base64;
+import org.eclipse.californium.elements.util.StringUtil;
 
 import com.upokecenter.cbor.CBORObject;
 
@@ -76,7 +77,7 @@ public class OneKeyDecoder {
 				String arrayString = segments[i].replace("h’", "").replace("’", "");
 
 				// Convert to base64
-				byte[] array = Utils.hexToBytes(arrayString);
+				byte[] array = StringUtil.hex2ByteArray(arrayString);
 				String arrayBase64 = Base64.encodeBytes(array);
 
 				// Change it to base64url encoding
@@ -144,8 +145,8 @@ public class OneKeyDecoder {
 	}
 
 	/**
-	 * Create OneKey from raw bytes representing a public key. This is what
-	 * Peter had during the last interop test.
+	 * Create OneKey from raw bytes representing a public key. This is what one
+	 * party had during the last interop test.
 	 * 
 	 * @param alg the algorithm used
 	 * @param publicKey the bytes of the public key
@@ -230,7 +231,7 @@ public class OneKeyDecoder {
 			// Handle byte array values
 			if (value.length() >= 2 && value.substring(0, 2).equals("h'")) {
 				String arrayString = value.replace("h'", "").replace("'", "");
-				byte[] array = Utils.hexToBytes(arrayString);
+				byte[] array = StringUtil.hex2ByteArray(arrayString);
 				keyCbor.Add(key, array);
 			} else {
 				// Handle integer values

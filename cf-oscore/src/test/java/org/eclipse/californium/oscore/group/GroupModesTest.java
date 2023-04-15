@@ -64,13 +64,11 @@ import org.junit.Test;
 import com.upokecenter.cbor.CBORObject;
 
 /**
- * Performs tests of the following cases that an application may send a
- * Group OSCORE request:
+ * Performs tests of the following cases that an application may send a Group
+ * OSCORE request:
  * 
- * - Unicast Group mode request
- * - Unicast Pairwise mode request
- * - Multicast Group mode request
- * - Multicast Pairwise mode request
+ * - Unicast Group mode request - Unicast Pairwise mode request - Multicast
+ * Group mode request - Multicast Pairwise mode request
  * 
  * 
  */
@@ -96,13 +94,22 @@ public class GroupModesTest {
 
 	};
 
+	/**
+	 * Define CoAP network rule for JUnit tests
+	 */
 	@ClassRule
 	public static CoapNetworkRule network = new CoapNetworkRule(CoapNetworkRule.Mode.DIRECT,
 			CoapNetworkRule.Mode.NATIVE);
 
+	/**
+	 * Define thread cleanup rule for JUnit tests
+	 */
 	@ClassRule
 	public static CoapThreadsRule cleanup = new CoapThreadsRule();
 
+	/**
+	 * Test name logging rule
+	 */
 	@Rule
 	public TestNameLoggerRule name = new TestNameLoggerRule();
 
@@ -150,6 +157,11 @@ public class GroupModesTest {
 	private static String unicastUri;
 	private static CoapServer server;
 
+	/**
+	 * Set up before each test
+	 * 
+	 * @throws IOException on setup failure
+	 */
 	@Before
 	public void init() throws IOException {
 		EndpointManager.clear();
@@ -163,6 +175,9 @@ public class GroupModesTest {
 		createServer();
 	}
 
+	/**
+	 * Shut down the server after a test is finished
+	 */
 	@After
 	public void shutdownServer() {
 		server.destroy();
@@ -195,7 +210,6 @@ public class GroupModesTest {
 
 		// sends a multicast request
 		CoapResponse response = client.advanced(request);
-
 
 		assertNotNull("Client received no response", response);
 		System.out.println("client received response");
@@ -345,12 +359,10 @@ public class GroupModesTest {
 		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
 				gmPublicKey);
 
-		OneKey clientFullKey = new OneKey(
-				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
+		OneKey clientFullKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
 		commonCtx.addSenderCtx(sid, clientFullKey);
 
-		OneKey serverPublicKey = new OneKey(
-				CBORObject.DecodeFromBytes(Base64.decode(serverKeyString))).PublicKey();
+		OneKey serverPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(serverKeyString))).PublicKey();
 		commonCtx.addRecipientCtx(rid1, REPLAY_WINDOW, serverPublicKey);
 		commonCtx.addRecipientCtx(rid2, REPLAY_WINDOW, null);
 
@@ -379,12 +391,10 @@ public class GroupModesTest {
 		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
 				gmPublicKey);
 
-		OneKey serverFullKey = new OneKey(
-				CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
+		OneKey serverFullKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
 		commonCtx.addSenderCtx(sid, serverFullKey);
 
-		OneKey clientPublicKey = new OneKey(
-				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString))).PublicKey();
+		OneKey clientPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(clientKeyString))).PublicKey();
 		commonCtx.addRecipientCtx(rid, REPLAY_WINDOW, clientPublicKey);
 
 		commonCtx.setResponsesIncludePartialIV(responsePartialIV);

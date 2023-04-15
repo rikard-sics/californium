@@ -25,6 +25,7 @@ import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.StringUtil;
 
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
@@ -53,7 +54,7 @@ public class KeyRemapping {
 
 	// Create the ed25519 field
 	private static Field ed25519Field = new Field(256, // b
-			Utils.hexToBytes("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
+			StringUtil.hex2ByteArray("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
 			new BigIntegerLittleEndianEncoding());
 
 	// Value of sqrt(-486664) hardcoded (note that there are 2 roots)

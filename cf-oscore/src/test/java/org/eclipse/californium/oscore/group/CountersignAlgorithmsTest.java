@@ -95,13 +95,22 @@ public class CountersignAlgorithmsTest {
 
 	};
 
+	/**
+	 * Define CoAP network rule for JUnit tests
+	 */
 	@ClassRule
 	public static CoapNetworkRule network = new CoapNetworkRule(CoapNetworkRule.Mode.DIRECT,
 			CoapNetworkRule.Mode.NATIVE);
 
+	/**
+	 * Thread cleanup rule
+	 */
 	@Rule
 	public CoapThreadsRule cleanup = new CoapThreadsRule();
 
+	/**
+	 * Test name logging rule
+	 */
 	@Rule
 	public TestNameLoggerRule name = new TestNameLoggerRule();
 
@@ -147,13 +156,20 @@ public class CountersignAlgorithmsTest {
 	static Random rand;
 	private String uri;
 
+	/**
+	 * Initialize GM public key before tests
+	 * 
+	 * @throws IOException on setup failure
+	 */
 	@Before
 	public void init() throws IOException {
 		gmPublicKey = Base64.decode(gmPublicKeyString);
 		EndpointManager.clear();
 	}
 
-	// Use the OSCORE stack factory
+	/**
+	 * Use the OSCORE stack factory
+	 */
 	@BeforeClass
 	public static void setStackFactory() {
 		OSCoreCoapStackFactory.useAsDefault(null); // TODO: Better way?
@@ -162,6 +178,11 @@ public class CountersignAlgorithmsTest {
 
 	/* --- Client tests follow --- */
 
+	/**
+	 * Test countersignature using ECDSA P-256
+	 * 
+	 * @throws Exception on test failure
+	 */
 	@Test
 	public void testECDSA256() throws Exception {
 
@@ -187,6 +208,12 @@ public class CountersignAlgorithmsTest {
 
 		sendRequest(AlgorithmID.ECDSA_256, clientKey, serverKey);
 	}
+
+	/**
+	 * Test countersignature using ECDSA P-384
+	 * 
+	 * @throws Exception on test failure
+	 */
 
 	@Test
 	public void testECDSA384() throws Exception {
@@ -214,6 +241,12 @@ public class CountersignAlgorithmsTest {
 		sendRequest(AlgorithmID.ECDSA_384, clientKey, serverKey);
 	}
 
+	/**
+	 * Test countersignature using ECDSA P-512
+	 * 
+	 * @throws Exception on test failure
+	 */
+
 	@Test
 	public void testECDSA512() throws Exception {
 
@@ -240,6 +273,11 @@ public class CountersignAlgorithmsTest {
 		sendRequest(AlgorithmID.ECDSA_512, clientKey, serverKey);
 	}
 
+	/**
+	 * Test countersignature using EdDSA Ed25519
+	 * 
+	 * @throws Exception on test failure
+	 */
 	@Test
 	public void testEDDSA() throws Exception {
 		// Install EdDSA cryptographic provider
@@ -269,7 +307,7 @@ public class CountersignAlgorithmsTest {
 		sendRequest(AlgorithmID.EDDSA, clientKey, serverKey);
 	}
 
-	public void sendRequest(AlgorithmID algCountersign, OneKey clientKey, OneKey serverKey) throws Exception {
+	private void sendRequest(AlgorithmID algCountersign, OneKey clientKey, OneKey serverKey) throws Exception {
 
 		createServer(algCountersign, clientKey, serverKey);
 
@@ -324,8 +362,7 @@ public class CountersignAlgorithmsTest {
 	 * 
 	 * @throws OSException on failure to create the contexts
 	 */
-	public void setClientContext(AlgorithmID algCountersign, OneKey clientKey, OneKey serverKey)
-			throws OSException {
+	public void setClientContext(AlgorithmID algCountersign, OneKey clientKey, OneKey serverKey) throws OSException {
 		// Set up OSCORE context information for request (client)
 		byte[] sid = new byte[] { 0x25 };
 		byte[] rid1 = new byte[] { 0x77 };
@@ -353,8 +390,7 @@ public class CountersignAlgorithmsTest {
 	 * 
 	 * @throws OSException on failure to create the contexts
 	 */
-	public void setServerContext(AlgorithmID algCountersign, OneKey clientKey, OneKey serverKey)
-			throws OSException {
+	public void setServerContext(AlgorithmID algCountersign, OneKey clientKey, OneKey serverKey) throws OSException {
 		// Set up OSCORE context information for response (server)
 
 		byte[] sid = new byte[] { 0x77 };
@@ -384,8 +420,7 @@ public class CountersignAlgorithmsTest {
 	 * 
 	 * @throws OSException on test failure
 	 */
-	public void createServer(AlgorithmID algCountersign, OneKey clientKey, OneKey serverKey)
-			throws OSException {
+	public void createServer(AlgorithmID algCountersign, OneKey clientKey, OneKey serverKey) throws OSException {
 		// Do not create server if it is already running
 		if (serverEndpoint != null) {
 			// TODO: Check if this ever happens
@@ -434,7 +469,7 @@ public class CountersignAlgorithmsTest {
 		uri = TestTools.getUri(serverEndpoint, TARGET);
 	}
 
-	private boolean serverChecksCorrect(Request request) {
+	private static boolean serverChecksCorrect(Request request) {
 
 		// Check that request is non-confirmable
 		if (request.isConfirmable() == true) {
