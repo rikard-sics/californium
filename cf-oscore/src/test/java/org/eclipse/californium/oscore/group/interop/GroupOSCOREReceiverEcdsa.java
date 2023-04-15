@@ -149,6 +149,12 @@ public class GroupOSCOREReceiverEcdsa {
 
 	private static Random random;
 
+	/**
+	 * Main method
+	 * 
+	 * @param args command line arguments
+	 * @throws Exception on failure
+	 */
 	public static void main(String[] args) throws Exception {
 		// Install cryptographic providers
 		Provider EdDSA = new EdDSASecurityProvider();
@@ -305,7 +311,6 @@ public class GroupOSCOREReceiverEcdsa {
 		public void handleGET(CoapExchange exchange) {
 			handlePOST(exchange);
 		}
-
 
 		@Override
 		public void handlePOST(CoapExchange exchange) {

@@ -68,7 +68,7 @@ public class GroupSenderCtx extends OSCoreCtx {
 			GroupRecipientCtx recipientCtx = entry.getValue();
 
 			ByteId rid = new ByteId(recipientCtx.getRecipientId());
-			
+
 			// If the key has already been generated skip it
 			if (pairwiseSenderKeys.get(rid) != null) {
 				continue;

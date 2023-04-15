@@ -1,3 +1,20 @@
+/*******************************************************************************
+ * Copyright (c) 2023 RISE SICS and others.
+ * 
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v2.0
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
+ * 
+ * The Eclipse Public License is available at
+ *    http://www.eclipse.org/legal/epl-v20.html
+ * and the Eclipse Distribution License is available at
+ *    http://www.eclipse.org/org/documents/edl-v10.html.
+ *
+ * This test class is based on org.eclipse.californium.core.test.SmallServerClientTest
+ * 
+ * Contributors: 
+ *    Rikard Höglund (RISE SICS)
+ ******************************************************************************/
 package org.eclipse.californium.oscore.group.interop;
 
 import java.io.File;
@@ -243,9 +260,9 @@ public class GroupTestVectorBuilder {
 		System.out.println("[Request]: " + "\n");
 
 		// Create request message from raw byte array
-		// byte[] requestBytes = Utils.hexToBytes(
+		// byte[] requestBytes = StringUtil.hex2ByteArray(
 		// "48019483f0aeef1c796812a0ba68656c6c6f576f726c64ed010c13404b3a7c9f8c878a0b5246cca71e3926f0a8cebefdcabbc80e79579d5a1ee17d");
-		byte[] requestBytes = Utils.hexToBytes("48019483f0aeef1c796812a0ba68656c6c6f576f726c64");
+		byte[] requestBytes = StringUtil.hex2ByteArray("48019483f0aeef1c796812a0ba68656c6c6f576f726c64");
 
 		UdpDataParser parser = new UdpDataParser();
 		Message mess = parser.parseMessage(requestBytes);
@@ -367,8 +384,8 @@ public class GroupTestVectorBuilder {
 		System.out.println("[Server #2] [Response to Request]" + "\n");
 		System.out.println("[Server #2] Response using pairwise mode: " + pairwiseResponse);
 
-		responseBytes = new byte[] { 0x64, 0x45, 0x5d, 0x1f, 0x00, 0x00, 0x39, 0x74, (byte) 0xff, 0x48, 0x65,
-				0x6c, 0x6c, 0x6f, 0x20, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x21 };
+		responseBytes = new byte[] { 0x64, 0x45, 0x5d, 0x1f, 0x00, 0x00, 0x39, 0x74, (byte) 0xff, 0x48, 0x65, 0x6c,
+				0x6c, 0x6f, 0x20, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x21 };
 
 		parser = new UdpDataParser();
 		respMess = parser.parseMessage(responseBytes);
@@ -387,8 +404,8 @@ public class GroupTestVectorBuilder {
 
 		newPartialIV = false;
 		outerBlockwise = false;
-		encryptedResp = ResponseEncryptor.encrypt(db, resp, senderCtx, newPartialIV, outerBlockwise,
-				initial_seq, requestOscoreOption);
+		encryptedResp = ResponseEncryptor.encrypt(db, resp, senderCtx, newPartialIV, outerBlockwise, initial_seq,
+				requestOscoreOption);
 
 		serializer = new UdpDataSerializer();
 		encryptedRespBytes = serializer.getByteArray(encryptedResp);

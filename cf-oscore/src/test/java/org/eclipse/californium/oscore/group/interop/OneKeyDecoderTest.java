@@ -1,3 +1,20 @@
+/*******************************************************************************
+ * Copyright (c) 2023 RISE SICS and others.
+ * 
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v2.0
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
+ * 
+ * The Eclipse Public License is available at
+ *    http://www.eclipse.org/legal/epl-v20.html
+ * and the Eclipse Distribution License is available at
+ *    http://www.eclipse.org/org/documents/edl-v10.html.
+ *
+ * This test class is based on org.eclipse.californium.core.test.SmallServerClientTest
+ * 
+ * Contributors: 
+ *    Rikard Höglund (RISE SICS)
+ ******************************************************************************/
 package org.eclipse.californium.oscore.group.interop;
 
 import static org.junit.Assert.assertEquals;
@@ -17,6 +34,7 @@ import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.group.OneKeyDecoder;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -24,7 +42,6 @@ import org.junit.Test;
 import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
-import net.i2p.crypto.eddsa.Utils;
 
 /**
  * Test decoding functions for COSE OneKey.
@@ -147,7 +164,7 @@ public class OneKeyDecoderTest {
 	 */
 	@Test
 	public void testRawBytesEddsaPublic() throws CoseException {
-		byte[] keyBytes = Utils.hexToBytes("508AFC1C29037EF3614D63AF87E1EA31D891D76B1F906098AF8FA39BBE874019");
+		byte[] keyBytes = StringUtil.hex2ByteArray("508AFC1C29037EF3614D63AF87E1EA31D891D76B1F906098AF8FA39BBE874019");
 
 		OneKey eddsaPublicKey = OneKeyDecoder.fromRawPublicBytes(AlgorithmID.EDDSA, keyBytes);
 
@@ -202,6 +219,5 @@ public class OneKeyDecoderTest {
 
 		return countersignBytes;
 	}
-
 
 }

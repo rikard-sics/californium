@@ -149,6 +149,12 @@ public class GroupOSCOREReceiver {
 
 	private static Random random;
 
+	/**
+	 * Main method
+	 * 
+	 * @param args command line arguments
+	 * @throws Exception on setup or message processing failure
+	 */
 	public static void main(String[] args) throws Exception {
 		// Install cryptographic providers
 		Provider EdDSA = new EdDSASecurityProvider();

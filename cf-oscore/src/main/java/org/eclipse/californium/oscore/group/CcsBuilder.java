@@ -43,13 +43,13 @@ public class CcsBuilder {
 	/**
 	 * Build a CCS with specific parameters containing a random key.
 	 * 
-	 * @param issuer
-	 * @param subject
-	 * @param audience
-	 * @param expirationTime
-	 * @param notBefore
-	 * @param issuedAt
-	 * @param cwtId
+	 * @param issuer the issuer
+	 * @param subject the subject
+	 * @param audience the audience
+	 * @param expirationTime the expiration time
+	 * @param notBefore the notBefore parameter
+	 * @param issuedAt the issuedAt parameter
+	 * @param cwtId the CWT ID
 	 * @param alg algorithm to use for generating the key
 	 * 
 	 * @return the CCS
@@ -87,7 +87,9 @@ public class CcsBuilder {
 			System.err.println("Failed to build COSE OneKey!");
 			e.printStackTrace();
 		}
-		ccs.Add(CBORObject.FromObject(8), CBORObject.FromObject(key.AsCBOR()));
+		if (key != null) {
+			ccs.Add(CBORObject.FromObject(8), CBORObject.FromObject(key.AsCBOR()));
+		}
 
 		return ccs;
 	}
