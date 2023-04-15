@@ -21,8 +21,6 @@ import java.security.Provider;
 import java.security.Security;
 import java.util.Arrays;
 
-
-
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.OneKey;
@@ -61,7 +59,7 @@ public class SharedSecretCalculation {
 
 	// Create the ed25519 field
 	private static Field ed25519Field = new Field(256, // b
-			Utils.hexToBytes("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
+			StringUtil.hex2ByteArray("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), // q(2^255-19)
 			new BigIntegerLittleEndianEncoding());
 
 	/**
@@ -110,8 +108,7 @@ public class SharedSecretCalculation {
 
 		// Output value (from Python code)
 		// 66779901969842027605876251890954603246052331132842480964984187926304357556709
-		correct = new BigInteger(
-				"66779901969842027605876251890954603246052331132842480964984187926304357556709");
+		correct = new BigInteger("66779901969842027605876251890954603246052331132842480964984187926304357556709");
 
 		res = decodeLittleEndian(input, 255);
 
@@ -278,7 +275,7 @@ public class SharedSecretCalculation {
 		System.out.println("Swap correct: " + result.a.equals(b) + " and " + result.b.equals(a));
 
 		/* Test X25519 */
-		
+
 		System.out.println("Test X25519");
 
 		byte[] k = new byte[] { (byte) 0xa5, (byte) 0x46, (byte) 0xe3, (byte) 0x6b, (byte) 0xf0, (byte) 0x52,
@@ -298,7 +295,7 @@ public class SharedSecretCalculation {
 				(byte) 0x85, (byte) 0x52 };
 
 		byte[] xresult = X25519(k, u);
-		
+
 		System.out.println("R: " + Utils.bytesToHex(xresult));
 		System.out.println("X25519 result is correct: " + Arrays.equals(c, xresult));
 
@@ -438,9 +435,9 @@ public class SharedSecretCalculation {
 		 * 
 		 * https://blog.mozilla.org/warner/2011/11/29/ed25519-keys/
 		 */
-		
+
 		System.out.println("Test starting from COSE Keys");
-		
+
 		// Key one
 
 		OneKey myKey1 = OneKey.generateKey(AlgorithmID.EDDSA);
@@ -487,7 +484,7 @@ public class SharedSecretCalculation {
 		System.out.println("Shared secret 1: " + Utils.bytesToHex(sharedSecret1));
 		System.out.println("Shared secret 2: " + Utils.bytesToHex(sharedSecret2));
 		System.out.println("Shared secrets match: " + Arrays.equals(sharedSecret1, sharedSecret2));
-		
+
 		/* End testing */
 
 		sharedSecretTest();
@@ -511,7 +508,7 @@ public class SharedSecretCalculation {
 	public static byte[] calculateSharedSecret(OneKey publicKey, OneKey privateKey) throws CoseException {
 
 		/* Calculate u coordinate from public key */
-		
+
 		FieldElement public_y = KeyRemapping.extractCOSE_y(publicKey);
 		FieldElement public_u = KeyRemapping.calcCurve25519_u(public_y);
 		byte[] public_u_array = public_u.toByteArray();
@@ -525,7 +522,7 @@ public class SharedSecretCalculation {
 		// secret = X25519(my private scalar, your public key U)
 
 		byte[] sharedSecret = X25519(private_scalar, public_u_array);
-		
+
 		return sharedSecret;
 	}
 
@@ -625,14 +622,14 @@ public class SharedSecretCalculation {
 		// Initialize starting values
 		FieldElement x_1 = u;
 		FieldElement x_2 = new BigIntegerFieldElement(ed25519Field, new BigInteger("1"));
-		
+
 		FieldElement z_2 = new BigIntegerFieldElement(ed25519Field, new BigInteger("0"));
-		
+
 		FieldElement x_3 = u;
 		FieldElement z_3 = new BigIntegerFieldElement(ed25519Field, new BigInteger("1"));
-		
+
 		BigInteger swap = new BigInteger("0");
-		
+
 		// https://tools.ietf.org/html/rfc7748#page-8
 		FieldElement a24 = new BigIntegerFieldElement(ed25519Field, new BigInteger("121665"));
 
@@ -708,7 +705,7 @@ public class SharedSecretCalculation {
 		}
 
 		// Final swap step
-		
+
 		// Swapping
 		Tuple result = cswap(swap, x_2, x_3);
 		x_2 = result.a;
@@ -750,7 +747,7 @@ public class SharedSecretCalculation {
 		BigInteger res = new BigInteger(1, invertArray(cutArray));
 
 		return res;
-		
+
 	}
 
 	static BigInteger decodeScalar(byte[] b) {
@@ -785,7 +782,7 @@ public class SharedSecretCalculation {
 		BigInteger p_bi = pow.subtract(new BigInteger("19"));
 
 		u = u.mod(p_bi); // u = u % p
-		
+
 		byte[] res = new byte[(bits + 7) / 8];
 
 		for (int i = 0; i < ((bits + 7) / 8); i++) {
@@ -820,10 +817,9 @@ public class SharedSecretCalculation {
 
 		if (swap.equals(BigInteger.ONE)) {
 			return new Tuple(b, a);
-		} else {
-			return new Tuple(a, b);
 		}
 
+		return new Tuple(a, b);
 	}
 
 	/**

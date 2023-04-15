@@ -143,8 +143,7 @@ public class GroupCtx {
 	 */
 	public void addRecipientCtx(byte[] recipientId, int replayWindow, OneKey otherEndpointPubKey) throws OSException {
 		GroupRecipientCtx recipientCtx = new GroupRecipientCtx(masterSecret, false, aeadAlg, null, recipientId, hkdfAlg,
-				replayWindow, masterSalt, idContext, otherEndpointPubKey,
-				null, this);
+				replayWindow, masterSalt, idContext, otherEndpointPubKey, null, this);
 
 		recipientCtxMap.put(new ByteId(recipientId), recipientCtx);
 

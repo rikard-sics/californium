@@ -161,6 +161,12 @@ public class GroupOSCOREInteropClientNonTransparentBW {
 	 */
 	static final String requestPayload = "Post from " + Utils.toHexString(sid);
 
+	/**
+	 * Main method
+	 * 
+	 * @param args command line arguments
+	 * @throws Exception on failure
+	 */
 	public static void main(String args[]) throws Exception {
 
 		// Disable replay detection
@@ -172,7 +178,8 @@ public class GroupOSCOREInteropClientNonTransparentBW {
 		 */
 		String requestURI;
 		if (destinationIP instanceof Inet6Address) {
-			requestURI = "coap://" + "[" + destinationIP.getHostAddress() + "]" + ":" + destinationPort + requestResource;
+			requestURI = "coap://" + "[" + destinationIP.getHostAddress() + "]" + ":" + destinationPort
+					+ requestResource;
 		} else {
 			requestURI = "coap://" + destinationIP.getHostAddress() + ":" + destinationPort + requestResource;
 		}
@@ -202,7 +209,8 @@ public class GroupOSCOREInteropClientNonTransparentBW {
 		GroupRecipientCtx recipient2Ctx;
 		if (useOSCORE) {
 
-			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign, null);
+			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign,
+					null);
 
 			commonCtx.addSenderCtx(sid, sid_private_key);
 
@@ -242,7 +250,6 @@ public class GroupOSCOREInteropClientNonTransparentBW {
 			// Case 8: Server request signature failure
 			// senderCtx.setAsymmetricSenderKey(OneKey.generateKey(algCountersign));
 
-
 		}
 
 		Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
@@ -276,12 +283,11 @@ public class GroupOSCOREInteropClientNonTransparentBW {
 		}
 		System.out.println("Sending from: " + client.getEndpoint().getAddress());
 
-		
 		// //If observe is to be used
 		// if (requestURI.endsWith("observe")) {
 		// multicastRequest.setObserve();
 		// }
-		
+
 		/* === Sends the initial multicast request */
 		int blockSize = 0;
 		HashMap<String, String> returnedPayloads = new HashMap<String, String>();
@@ -460,6 +466,7 @@ public class GroupOSCOREInteropClientNonTransparentBW {
 			try {
 				wait(timeout);
 			} catch (InterruptedException e) {
+				//
 			}
 			return on;
 		}
@@ -493,6 +500,7 @@ public class GroupOSCOREInteropClientNonTransparentBW {
 	 * Add an OSCORE Context to the DB (OSCORE RFC C.2.2.)
 	 */
 	static OSCoreCtx oscoreCtx;
+
 	private static void addOSCOREContext(String requestURI) {
 		byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e,
 				0x0f, 0x10 };
