@@ -39,6 +39,7 @@ import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.UdpEndpointContext;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCtxDB;
 import org.eclipse.californium.oscore.OSException;
@@ -67,6 +68,9 @@ import net.i2p.crypto.eddsa.Utils;
  */
 public class GroupInteropRikardEddsaOldTests {
 
+	/**
+	 * Test name logging rule
+	 */
 	@Rule
 	public TestNameLoggerRule name = new TestNameLoggerRule();
 
@@ -86,9 +90,9 @@ public class GroupInteropRikardEddsaOldTests {
 	static byte[] rid1 = Bytes.EMPTY;
 	static byte[] rid2 = new byte[] { (byte) 0xAA };
 
-	private final static byte[] master_secret = Utils.hexToBytes("0102030405060708090a0b0c0d0e0f10");
-	private final static byte[] master_salt = Utils.hexToBytes("9e7ca92223786340");
-	private final static byte[] context_id = Utils.hexToBytes("37cbf3210017a2d3");
+	private final static byte[] master_secret = StringUtil.hex2ByteArray("0102030405060708090a0b0c0d0e0f10");
+	private final static byte[] master_salt = StringUtil.hex2ByteArray("9e7ca92223786340");
+	private final static byte[] context_id = StringUtil.hex2ByteArray("37cbf3210017a2d3");
 
 	// Keys for sender and recipients
 	// For the public keys only the public part will be added to the context
@@ -159,14 +163,14 @@ public class GroupInteropRikardEddsaOldTests {
 	@Test
 	public void testSenderKeys() {
 		// Check that they match expected value
-		byte[] expectedSenderKey = Utils.hexToBytes("e39a0c7c77b43f03b4b39ab9a268699f");
+		byte[] expectedSenderKey = StringUtil.hex2ByteArray("e39a0c7c77b43f03b4b39ab9a268699f");
 		assertArrayEquals(expectedSenderKey, senderCtxEddsa.getSenderKey());
 	}
 
 	@Test
 	public void testRecipientKeys() {
 		// Check that they match expected value
-		byte[] expectedRecipient1Key = Utils.hexToBytes("af2a1300a5e95788b356336eeecd2b92");
+		byte[] expectedRecipient1Key = StringUtil.hex2ByteArray("af2a1300a5e95788b356336eeecd2b92");
 		assertArrayEquals(expectedRecipient1Key, recipient1CtxEddsa.getRecipientKey());
 
 	}
@@ -186,8 +190,8 @@ public class GroupInteropRikardEddsaOldTests {
 
 		// Check that they match expected value
 
-		assertArrayEquals(Utils.hexToBytes("049154ec9927087377b8e3be7ebf710e"), recipient1EddsaPairwiseKey);
-		assertArrayEquals(Utils.hexToBytes("5bbe1ed6e9d35d92b29dc0d4d1fe7b0b"), recipient2EddsaPairwiseKey);
+		assertArrayEquals(StringUtil.hex2ByteArray("049154ec9927087377b8e3be7ebf710e"), recipient1EddsaPairwiseKey);
+		assertArrayEquals(StringUtil.hex2ByteArray("5bbe1ed6e9d35d92b29dc0d4d1fe7b0b"), recipient2EddsaPairwiseKey);
 
 	}
 
@@ -205,8 +209,8 @@ public class GroupInteropRikardEddsaOldTests {
 
 		// Check that they match expected value
 
-		assertArrayEquals(Utils.hexToBytes("c0132010f7b66d7fce3a61f3927b269f"), senderEddsaPairwiseKey1);
-		assertArrayEquals(Utils.hexToBytes("400b2d95a2d3ac49dd618b291d15b6ea"), senderEddsaPairwiseKey2);
+		assertArrayEquals(StringUtil.hex2ByteArray("c0132010f7b66d7fce3a61f3927b269f"), senderEddsaPairwiseKey1);
+		assertArrayEquals(StringUtil.hex2ByteArray("400b2d95a2d3ac49dd618b291d15b6ea"), senderEddsaPairwiseKey2);
 
 	}
 
@@ -225,9 +229,9 @@ public class GroupInteropRikardEddsaOldTests {
 		System.out.println("EdDSA: Shared secret 2 " + Utils.bytesToHex(sharedSecret2));
 
 		// Check that they match expected value
-		assertArrayEquals(Utils.hexToBytes("4546babdb9482396c167af11d21953bfa49eb9f630c45de93ee4d3b9ef059576"),
+		assertArrayEquals(StringUtil.hex2ByteArray("4546babdb9482396c167af11d21953bfa49eb9f630c45de93ee4d3b9ef059576"),
 				sharedSecret1);
-		assertArrayEquals(Utils.hexToBytes("bb11648af3dfebb35e612914a7a21fc751b001aceb0267c5536528e2b9261450"),
+		assertArrayEquals(StringUtil.hex2ByteArray("bb11648af3dfebb35e612914a7a21fc751b001aceb0267c5536528e2b9261450"),
 				sharedSecret2);
 	}
 
@@ -240,18 +244,18 @@ public class GroupInteropRikardEddsaOldTests {
 		// --- Try decryption ---
 		String destinationUri = "coap://127.0.0.1/test";
 
-		GroupCtx groupCtxRikard = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256, null);
+		GroupCtx groupCtxRikard = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256,
+				null);
 		// Dummy values for pretend sender
-		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParametersOld2.JIM_ENTITY_1_KEY_ECDSA);
+		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParametersOld2.JS_ENTITY_1_KEY_ECDSA);
 		groupCtxRikard.addSenderCtx(new byte[] { 0x11, 0x22 }, senderFullKey);
 
 		groupCtxRikard.addRecipientCtx(sid, REPLAY_WINDOW, OneKeyDecoder.parseDiagnostic(senderFullKeyEddsa));
 		db.addContext(destinationUri, groupCtxRikard);
-		GroupRecipientCtx recipientCtx = (GroupRecipientCtx) db.getContext(sid,
-				context_id);
+		GroupRecipientCtx recipientCtx = (GroupRecipientCtx) db.getContext(sid, context_id);
 
 		// Create request message from raw byte array
-		byte[] requestBytes = Utils.hexToBytes(
+		byte[] requestBytes = StringUtil.hex2ByteArray(
 				"5402FFFF347312119C39000837CBF3210017A2D301FF963FFA3CDF9ED8FAC09E33E6FF8291CD3CCA52383B7E24B1474EAC7C63D32C8C30EADB5D9870A91D679E9F148297F70B62D94B3B192C4C067187208646D27D26099482C043D4F9AD00");
 
 		UdpDataParser parser = new UdpDataParser();
@@ -292,8 +296,7 @@ public class GroupInteropRikardEddsaOldTests {
 		request.getOptions().setOscore(Bytes.EMPTY);
 		request.setURI(groupEcdsa);
 		request.setToken(new byte[] { 0x34, 0x73, 0x12, 0x11 });
-		
-		
+
 		// encrypt
 		Request encrypted = RequestEncryptor.encrypt(db, request);
 
@@ -336,7 +339,8 @@ public class GroupInteropRikardEddsaOldTests {
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 1);
 
-		GroupCtx groupCtxEddsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.EDDSA, null);
+		GroupCtx groupCtxEddsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.EDDSA,
+				null);
 
 		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(senderFullKeyEddsa);
 		groupCtxEddsa.addSenderCtx(sid, senderFullKey);

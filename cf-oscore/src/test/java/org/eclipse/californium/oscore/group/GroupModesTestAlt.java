@@ -65,13 +65,11 @@ import org.junit.Test;
 import com.upokecenter.cbor.CBORObject;
 
 /**
- * Performs tests of the following cases that an application may send a
- * Group OSCORE request:
+ * Performs tests of the following cases that an application may send a Group
+ * OSCORE request:
  * 
- * - Unicast Group mode request
- * - Unicast Pairwise mode request
- * - Multicast Group mode request
- * - Multicast Pairwise mode request
+ * - Unicast Group mode request - Unicast Pairwise mode request - Multicast
+ * Group mode request - Multicast Pairwise mode request
  * 
  * 
  */
@@ -97,13 +95,22 @@ public class GroupModesTestAlt {
 
 	};
 
+	/**
+	 * Define CoAP network rule for JUnit tests
+	 */
 	@ClassRule
 	public static CoapNetworkRule network = new CoapNetworkRule(CoapNetworkRule.Mode.DIRECT,
 			CoapNetworkRule.Mode.NATIVE);
 
+	/**
+	 * Thread cleanup rule
+	 */
 	@Rule
 	public CoapThreadsRule cleanup = new CoapThreadsRule();
 
+	/**
+	 * Test name logging rule
+	 */
 	@Rule
 	public TestNameLoggerRule name = new TestNameLoggerRule();
 
@@ -151,6 +158,11 @@ public class GroupModesTestAlt {
 	private String unicastUri;
 	private static CoapServer server;
 
+	/**
+	 * Initialize parameters before test
+	 * 
+	 * @throws IOException on initialization failure
+	 */
 	@Before
 	public void init() throws IOException {
 		EndpointManager.clear();
@@ -160,12 +172,17 @@ public class GroupModesTestAlt {
 		gmPublicKey = Base64.decode(gmPublicKeyString);
 	}
 
-	// Use the OSCORE stack factory
+	/**
+	 * Use the OSCORE stack factory
+	 */
 	@BeforeClass
 	public static void setStackFactory() {
 		OSCoreCoapStackFactory.useAsDefault(null); // TODO: Better way?
 	}
 
+	/**
+	 * Shut down the server after a test is finished
+	 */
 	@After
 	public void shutdownServer() {
 		server.destroy();
@@ -370,12 +387,10 @@ public class GroupModesTestAlt {
 		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
 				gmPublicKey);
 
-		OneKey clientFullKey = new OneKey(
-				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
+		OneKey clientFullKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
 		commonCtx.addSenderCtx(sid, clientFullKey);
 
-		OneKey serverPublicKey = new OneKey(
-				CBORObject.DecodeFromBytes(Base64.decode(serverKeyString))).PublicKey();
+		OneKey serverPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(serverKeyString))).PublicKey();
 		commonCtx.addRecipientCtx(rid1, REPLAY_WINDOW, serverPublicKey);
 		commonCtx.addRecipientCtx(rid2, REPLAY_WINDOW, null);
 
@@ -404,12 +419,10 @@ public class GroupModesTestAlt {
 		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
 				gmPublicKey);
 
-		OneKey serverFullKey = new OneKey(
-				CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
+		OneKey serverFullKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
 		commonCtx.addSenderCtx(sid, serverFullKey);
 
-		OneKey clientPublicKey = new OneKey(
-				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString))).PublicKey();
+		OneKey clientPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(clientKeyString))).PublicKey();
 		commonCtx.addRecipientCtx(rid, REPLAY_WINDOW, clientPublicKey);
 
 		commonCtx.setResponsesIncludePartialIV(responsePartialIV);
@@ -485,7 +498,7 @@ public class GroupModesTestAlt {
 				new InetSocketAddress(InetAddress.getLoopbackAddress(), serverEndpoint.getAddress().getPort()), TARGET);
 	}
 
-	private boolean serverChecksCorrect(Request request) {
+	private static boolean serverChecksCorrect(Request request) {
 
 		// Check that request is non-confirmable
 		if (request.isConfirmable() == true) {

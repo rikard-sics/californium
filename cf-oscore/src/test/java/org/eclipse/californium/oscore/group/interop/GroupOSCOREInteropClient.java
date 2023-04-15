@@ -156,6 +156,12 @@ public class GroupOSCOREInteropClient {
 	 */
 	static final String requestPayload = "Post from " + Utils.toHexString(sid);
 
+	/**
+	 * Main method
+	 * 
+	 * @param args command line arguments
+	 * @throws Exception on failure
+	 */
 	public static void main(String args[]) throws Exception {
 
 		// Disable replay detection
@@ -167,7 +173,8 @@ public class GroupOSCOREInteropClient {
 		 */
 		String requestURI;
 		if (destinationIP instanceof Inet6Address) {
-			requestURI = "coap://" + "[" + destinationIP.getHostAddress() + "]" + ":" + destinationPort + requestResource;
+			requestURI = "coap://" + "[" + destinationIP.getHostAddress() + "]" + ":" + destinationPort
+					+ requestResource;
 		} else {
 			requestURI = "coap://" + destinationIP.getHostAddress() + ":" + destinationPort + requestResource;
 		}
@@ -197,7 +204,8 @@ public class GroupOSCOREInteropClient {
 		GroupRecipientCtx recipient2Ctx;
 		if (useOSCORE) {
 
-			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign, null);
+			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign,
+					null);
 
 			commonCtx.addSenderCtx(sid, sid_private_key);
 
@@ -236,7 +244,6 @@ public class GroupOSCOREInteropClient {
 
 			// Case 8: Server request signature failure
 			// senderCtx.setAsymmetricSenderKey(OneKey.generateKey(algCountersign));
-
 
 		}
 
@@ -294,12 +301,12 @@ public class GroupOSCOREInteropClient {
 		}
 		System.out.println("Sending from: " + client.getEndpoint().getAddress());
 		System.out.println(Utils.prettyPrint(multicastRequest));
-		
-		//If observe is to be used
+
+		// If observe is to be used
 		if (requestURI.endsWith("observe")) {
 			multicastRequest.setObserve();
 		}
-		
+
 		// sends a multicast request
 		client.advanced(handler, multicastRequest);
 		while (handler.waitOn(HANDLER_TIMEOUT)) {
@@ -370,6 +377,7 @@ public class GroupOSCOREInteropClient {
 			try {
 				wait(timeout);
 			} catch (InterruptedException e) {
+				//
 			}
 			return on;
 		}
@@ -402,6 +410,7 @@ public class GroupOSCOREInteropClient {
 	 * Add an OSCORE Context to the DB (OSCORE RFC C.2.2.)
 	 */
 	static OSCoreCtx oscoreCtx;
+
 	private static void addOSCOREContext(String requestURI) {
 		byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e,
 				0x0f, 0x10 };

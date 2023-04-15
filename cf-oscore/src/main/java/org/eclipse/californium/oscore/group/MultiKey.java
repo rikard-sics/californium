@@ -24,7 +24,13 @@ import org.eclipse.californium.elements.util.Bytes;
 
 import com.upokecenter.cbor.CBORObject;
 
-//TODO: Need clone?
+/**
+ * Handle CCS type keys where Group OSCORE needs both the verbatim bytes and the
+ * COSE key part
+ * 
+ * TODO: Need clone?
+ *
+ */
 public class MultiKey {
 
 	private byte[] rawKeyBytes;

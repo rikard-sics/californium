@@ -160,6 +160,12 @@ public class GroupOSCORESender {
 
 	/* --- OSCORE Security Context information --- */
 
+	/**
+	 * Main method
+	 * 
+	 * @param args command line arguments
+	 * @throws Exception on setup or message processing failure
+	 */
 	public static void main(String args[]) throws Exception {
 		/**
 		 * URI to perform request against. Need to check for IPv6 to surround it
@@ -265,6 +271,7 @@ public class GroupOSCORESender {
 			try {
 				wait(timeout);
 			} catch (InterruptedException e) {
+				//
 			}
 			return on;
 		}
