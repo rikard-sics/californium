@@ -158,6 +158,12 @@ public class GroupOSCORESenderEcdsa {
 
 	/* --- OSCORE Security Context information --- */
 
+	/**
+	 * Main method
+	 * 
+	 * @param args command line arguments
+	 * @throws Exception on failure
+	 */
 	public static void main(String args[]) throws Exception {
 		/**
 		 * URI to perform request against. Need to check for IPv6 to surround it
@@ -263,6 +269,7 @@ public class GroupOSCORESenderEcdsa {
 			try {
 				wait(timeout);
 			} catch (InterruptedException e) {
+				//
 			}
 			return on;
 		}

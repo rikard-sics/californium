@@ -42,6 +42,7 @@ import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.UdpEndpointContext;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCtxDB;
 import org.eclipse.californium.oscore.OSException;
@@ -68,6 +69,9 @@ import net.i2p.crypto.eddsa.Utils;
  */
 public class GroupInteropRikardEcdsaTests {
 
+	/**
+	 * Test name logging rule
+	 */
 	@Rule
 	public TestNameLoggerRule name = new TestNameLoggerRule();
 
@@ -86,9 +90,9 @@ public class GroupInteropRikardEcdsaTests {
 	static byte[] rid1 = Bytes.EMPTY;
 	static byte[] rid2 = new byte[] { (byte) 0xAA };
 
-	private final static byte[] master_secret = Utils.hexToBytes("0102030405060708090a0b0c0d0e0f10");
-	private final static byte[] master_salt = Utils.hexToBytes("9e7ca92223786340");
-	private final static byte[] context_id = Utils.hexToBytes("37cbf3210017a2d3");
+	private final static byte[] master_secret = StringUtil.hex2ByteArray("0102030405060708090a0b0c0d0e0f10");
+	private final static byte[] master_salt = StringUtil.hex2ByteArray("9e7ca92223786340");
+	private final static byte[] context_id = StringUtil.hex2ByteArray("37cbf3210017a2d3");
 
 	// Keys for sender and recipients
 	// For the public keys only the public part will be added to the context
@@ -104,9 +108,7 @@ public class GroupInteropRikardEcdsaTests {
 	private static GroupRecipientCtx recipient1CtxEcdsa;
 	private static GroupRecipientCtx recipient2CtxEcdsa;
 
-
 	/* --- Tests follow --- */
-
 
 	@Test
 	public void testECDSA256Keys() throws Exception {
@@ -160,7 +162,7 @@ public class GroupInteropRikardEcdsaTests {
 	public void testSenderKeys() {
 
 		// Check that they match expected value
-		byte[] expectedSenderKey = Utils.hexToBytes("e39a0c7c77b43f03b4b39ab9a268699f");
+		byte[] expectedSenderKey = StringUtil.hex2ByteArray("e39a0c7c77b43f03b4b39ab9a268699f");
 		assertArrayEquals(expectedSenderKey, senderCtxEcdsa.getSenderKey());
 	}
 
@@ -168,10 +170,10 @@ public class GroupInteropRikardEcdsaTests {
 	public void testRecipientKeys() {
 
 		// Check that they match expected value
-		byte[] expectedRecipient1Key = Utils.hexToBytes("af2a1300a5e95788b356336eeecd2b92");
+		byte[] expectedRecipient1Key = StringUtil.hex2ByteArray("af2a1300a5e95788b356336eeecd2b92");
 		assertArrayEquals(expectedRecipient1Key, recipient1CtxEcdsa.getRecipientKey());
 
-		byte[] expectedRecipient2Key = Utils.hexToBytes("4d9eabdba0f97f044fc0ee5313b1ebc6");
+		byte[] expectedRecipient2Key = StringUtil.hex2ByteArray("4d9eabdba0f97f044fc0ee5313b1ebc6");
 		assertArrayEquals(expectedRecipient2Key, recipient2CtxEcdsa.getRecipientKey());
 	}
 
@@ -187,10 +189,9 @@ public class GroupInteropRikardEcdsaTests {
 		System.out.println("ECDSA: Recipient 1 Pairwise Key: " + Utils.bytesToHex(recipient1EcdsaPairwiseKey));
 		System.out.println("ECDSA: Recipient 2 Pairwise Key: " + Utils.bytesToHex(recipient2EcdsaPairwiseKey));
 
-
 		// Check that they match expected value
-		assertArrayEquals(Utils.hexToBytes("a5d7fc4a84675d4a1ef9bf6ed6ce0cae"), recipient1EcdsaPairwiseKey);
-		assertArrayEquals(Utils.hexToBytes("874fc9f08cd0ccc2930b856e4e8a8dc1"), recipient2EcdsaPairwiseKey);
+		assertArrayEquals(StringUtil.hex2ByteArray("a5d7fc4a84675d4a1ef9bf6ed6ce0cae"), recipient1EcdsaPairwiseKey);
+		assertArrayEquals(StringUtil.hex2ByteArray("874fc9f08cd0ccc2930b856e4e8a8dc1"), recipient2EcdsaPairwiseKey);
 
 	}
 
@@ -207,8 +208,8 @@ public class GroupInteropRikardEcdsaTests {
 		System.out.println("ECDSA: Sender Pairwise Key 2: " + Utils.bytesToHex(senderEcdsaPairwiseKey2));
 
 		// Check that they match expected value
-		assertArrayEquals(Utils.hexToBytes("286fb4560cc4219594a1d341e2620265"), senderEcdsaPairwiseKey1);
-		assertArrayEquals(Utils.hexToBytes("b8cf3bd127678a63d0bd1abfe80e6362"), senderEcdsaPairwiseKey2);
+		assertArrayEquals(StringUtil.hex2ByteArray("286fb4560cc4219594a1d341e2620265"), senderEcdsaPairwiseKey1);
+		assertArrayEquals(StringUtil.hex2ByteArray("b8cf3bd127678a63d0bd1abfe80e6362"), senderEcdsaPairwiseKey2);
 
 	}
 
@@ -237,9 +238,9 @@ public class GroupInteropRikardEcdsaTests {
 		System.out.println("ECDSA: Shared secret 2 " + Utils.bytesToHex(sharedSecret2));
 
 		// Check that they match expected value
-		assertArrayEquals(Utils.hexToBytes("56ede6c59e919031cfc8afa3e74a7b7615c2e7a08494cf3638c78757293adc80"),
+		assertArrayEquals(StringUtil.hex2ByteArray("56ede6c59e919031cfc8afa3e74a7b7615c2e7a08494cf3638c78757293adc80"),
 				sharedSecret1);
-		assertArrayEquals(Utils.hexToBytes("f568ec5f7df45db137fc79a27595eba737b62e8ee385c7309e316dd409de6953"),
+		assertArrayEquals(StringUtil.hex2ByteArray("f568ec5f7df45db137fc79a27595eba737b62e8ee385c7309e316dd409de6953"),
 				sharedSecret2);
 	}
 
@@ -252,18 +253,18 @@ public class GroupInteropRikardEcdsaTests {
 		// --- Try decryption ---
 		String destinationUri = "coap://127.0.0.1/test";
 
-		GroupCtx groupCtxRikard = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256, null);
+		GroupCtx groupCtxRikard = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256,
+				null);
 		// Dummy values for pretend sender
-		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParametersOld2.JIM_ENTITY_1_KEY_ECDSA);
+		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(InteropParametersOld2.JS_ENTITY_1_KEY_ECDSA);
 		groupCtxRikard.addSenderCtx(new byte[] { 0x11, 0x22 }, senderFullKey);
 
 		groupCtxRikard.addRecipientCtx(sid, REPLAY_WINDOW, OneKeyDecoder.parseDiagnostic(senderFullKeyEcdsa256));
 		db.addContext(destinationUri, groupCtxRikard);
-		GroupRecipientCtx recipientCtx = (GroupRecipientCtx) db.getContext(sid,
-				context_id);
+		GroupRecipientCtx recipientCtx = (GroupRecipientCtx) db.getContext(sid, context_id);
 
 		// Create request message from raw byte array
-		byte[] requestBytes = Utils.hexToBytes(
+		byte[] requestBytes = StringUtil.hex2ByteArray(
 				"5402FFFF347312119C39000837CBF3210017A2D301FF963FFA3CDF9ED8FAC09E33E6FF8291CD3CCA52383B7E24B1474EAC7C63D32C8C30EADB5D9870A91D679E9F148297F70B62D94B3B192C4C067187208646D27D26099482C043D4F9AD00");
 
 		UdpDataParser parser = new UdpDataParser();
@@ -304,8 +305,7 @@ public class GroupInteropRikardEcdsaTests {
 		request.getOptions().setOscore(Bytes.EMPTY);
 		request.setURI(groupEcdsa);
 		request.setToken(new byte[] { 0x34, 0x73, 0x12, 0x11 });
-		
-		
+
 		// encrypt
 		Request encrypted = RequestEncryptor.encrypt(db, request);
 
@@ -344,7 +344,8 @@ public class GroupInteropRikardEcdsaTests {
 
 		// Create context using ECDSA_256
 
-		GroupCtx groupCtxEcdsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256, null);
+		GroupCtx groupCtxEcdsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256,
+				null);
 
 		OneKey senderFullKey = OneKeyDecoder.parseDiagnostic(senderFullKeyEcdsa256);
 		groupCtxEcdsa.addSenderCtx(sid, senderFullKey);
@@ -361,7 +362,6 @@ public class GroupInteropRikardEcdsaTests {
 		senderCtxEcdsa = (GroupSenderCtx) db.getContext(groupEcdsa);
 		recipient1CtxEcdsa = (GroupRecipientCtx) db.getContext(rid1, context_id);
 		recipient2CtxEcdsa = (GroupRecipientCtx) db.getContext(rid2, context_id);
-
 
 	}
 

@@ -21,7 +21,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -97,13 +96,22 @@ public class GroupOSCoreServerClientTest {
 
 	};
 
+	/**
+	 * Define CoAP network rule for JUnit tests
+	 */
 	@ClassRule
 	public static CoapNetworkRule network = new CoapNetworkRule(CoapNetworkRule.Mode.DIRECT,
 			CoapNetworkRule.Mode.NATIVE);
 
+	/**
+	 * Thread cleanup rule
+	 */
 	@Rule
 	public CoapThreadsRule cleanup = new CoapThreadsRule();
 
+	/**
+	 * Test name logging rule
+	 */
 	@Rule
 	public TestNameLoggerRule name = new TestNameLoggerRule();
 
@@ -145,19 +153,29 @@ public class GroupOSCoreServerClientTest {
 
 	CoapServer server;
 
+	/**
+	 * Set GM public key and clear endpoints before tests
+	 * 
+	 * @throws IOException on setup failure
+	 */
 	@Before
 	public void init() throws IOException {
 		gmPublicKey = Base64.decode(gmPublicKeyString);
 		EndpointManager.clear();
 	}
 
-	// Use the OSCORE stack factory
+	/**
+	 * Use the OSCORE stack factory
+	 */
 	@BeforeClass
 	public static void setStackFactory() {
 		OSCoreCoapStackFactory.useAsDefault(null); // TODO: Better way?
 		rand = new Random();
 	}
 
+	/**
+	 * Shut down the server after a test is finished
+	 */
 	@After
 	public void after() {
 		if (null != server) {
@@ -371,8 +389,7 @@ public class GroupOSCoreServerClientTest {
 		request2.setToken(secondToken);
 		request2.getOptions().setOscore(Bytes.EMPTY);
 
-		OneKey clientPublicKey = new OneKey(
-				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString))).PublicKey();
+		OneKey clientPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(clientKeyString))).PublicKey();
 		commonCtx.addPublicKeyForRID(new byte[] { 0x25 }, clientPublicKey);
 
 		response = client.advanced(request2);
@@ -429,8 +446,7 @@ public class GroupOSCoreServerClientTest {
 		// Send a request first adding the public key of the server to
 		// the client group context.
 
-		OneKey serverPublicKey = new OneKey(
-				CBORObject.DecodeFromBytes(Base64.decode(serverKeyString))).PublicKey();
+		OneKey serverPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(serverKeyString))).PublicKey();
 		commonCtx.addPublicKeyForRID(new byte[] { 0x77 }, serverPublicKey);
 
 		// create request
@@ -753,8 +769,7 @@ public class GroupOSCoreServerClientTest {
 		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
 				gmPublicKey);
 
-		OneKey clientFullKey = new OneKey(
-				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
+		OneKey clientFullKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
 		commonCtx.addSenderCtx(sid, clientFullKey);
 
 		commonCtx.addRecipientCtx(rid2, REPLAY_WINDOW, null);
@@ -784,12 +799,10 @@ public class GroupOSCoreServerClientTest {
 		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
 				gmPublicKey);
 
-		OneKey serverFullKey = new OneKey(
-				CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
+		OneKey serverFullKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
 		commonCtx.addSenderCtx(sid, serverFullKey);
 
-		OneKey clientPublicKey = new OneKey(
-				CBORObject.DecodeFromBytes(Base64.decode(clientKeyString))).PublicKey();
+		OneKey clientPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(clientKeyString))).PublicKey();
 		commonCtx.addRecipientCtx(rid, REPLAY_WINDOW, clientPublicKey);
 
 		commonCtx.setResponsesIncludePartialIV(responsePartialIV);
@@ -798,7 +811,7 @@ public class GroupOSCoreServerClientTest {
 		dbServer.addContext(clientHostAdd, commonCtx);
 	}
 
-	public void createServer(boolean responsePartialIV) throws OSException, CoseException, IOException {
+	private void createServer(boolean responsePartialIV) throws OSException, CoseException, IOException {
 		createServer(responsePartialIV, false);
 	}
 
