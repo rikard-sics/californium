@@ -23,6 +23,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Map.Entry;
 
 import javax.crypto.KeyAgreement;
@@ -299,6 +300,26 @@ public class GroupCtx {
 	 */
 	public byte[] getGmPublicKey() {
 		return gmPublicKey;
+	}
+
+
+	/**
+	 * Retrieve the recipient contexts
+	 * 
+	 * @return the recipient contexts
+	 */
+	public HashMap<ByteId, GroupRecipientCtx> getRecipientContexts() {
+		return recipientCtxMap;
+	}
+
+	/**
+	 * Retrieve the sender context
+	 * 
+	 * @return the sender context
+	 */
+
+	public GroupSenderCtx getSenderCtx() {
+		return senderCtx;
 	}
 
 	public int getCountersignatureLen() {
