@@ -115,6 +115,21 @@ public class OSCoreAlgorithmsTest {
 		sendRequest(AlgorithmID.AES_CCM_64_128_128);
 	}
 
+	@Test
+	public void test_AES_GCM_128() throws Exception {
+		sendRequest(AlgorithmID.AES_GCM_128);
+	}
+
+	@Test
+	public void test_AES_GCM_192() throws Exception {
+		sendRequest(AlgorithmID.AES_GCM_192);
+	}
+
+	@Test
+	public void test_AES_GCM_256() throws Exception {
+		sendRequest(AlgorithmID.AES_GCM_256);
+	}
+
 	@Rule
 	public ExpectedException exceptionRule = ExpectedExceptionWrapper.none();
 
