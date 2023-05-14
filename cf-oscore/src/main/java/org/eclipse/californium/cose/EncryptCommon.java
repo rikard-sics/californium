@@ -37,10 +37,13 @@ package org.eclipse.californium.cose;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
+import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.eclipse.californium.elements.util.Bytes;
@@ -57,8 +60,14 @@ public abstract class EncryptCommon extends Message {
 
 	private final static int AES_CCM_16_IV_LENGTH = 13;
 	private final static int AES_CCM_64_IV_LENGTH = 7;
+
+	private final String AES_SPEC = "AES";
+	private final String AES_GCM_SPEC = AES_SPEC + "/GCM/NoPadding";
+	private final static int AES_GCM_IV_LENGTH = 12;
+
 	protected String context;
 	protected byte[] rgbEncrypt;
+	SecureRandom random = new SecureRandom();
 
 	protected byte[] decryptWithKey(byte[] rgbKey) throws CoseException {
 		CBORObject algX = findAttribute(HeaderKeys.Algorithm);
@@ -67,11 +76,13 @@ public abstract class EncryptCommon extends Message {
 		if (rgbEncrypt == null)
 			throw new CoseException("No Encrypted Content Specified");
 
-		if (!isSupportedAesCcm(alg)) {
+		if (isSupportedAesCcm(alg)) {
+			AES_CCM_Decrypt(alg, rgbKey);
+		} else if (isSupportedAesGcm(alg)) {
+			AES_GCM_Decrypt(alg, rgbKey);
+		} else {
 			throw new CoseException("Unsupported Algorithm Specified");
 		}
-
-		AES_CCM_Decrypt(alg, rgbKey);
 
 		return rgbContent;
 	}
@@ -83,32 +94,33 @@ public abstract class EncryptCommon extends Message {
 		if (rgbContent == null)
 			throw new CoseException("No Content Specified");
 
-		if (!isSupportedAesCcm(alg)) {
+		if (isSupportedAesCcm(alg)) {
+			AES_CCM_Encrypt(alg, rgbKey);
+		} else if (isSupportedAesGcm(alg)) {
+			AES_GCM_Encrypt(alg, rgbKey);
+		} else {
 			throw new CoseException("Unsupported Algorithm Specified");
 		}
 
-		AES_CCM_Encrypt(alg, rgbKey);
-		
 		ProcessCounterSignatures();
 	}
 
 	// FIXME: Remove
 	private byte[] getAADBytesBAD() {
-        CBORObject obj = CBORObject.NewArray();
-        
-        obj.Add(context);
-        
-        if (objProtected.size() == 0) {
-        	obj.Add(CBORObject.FromObject(Bytes.EMPTY));
-        } else {
-        	obj.Add(objProtected.EncodeToBytes());
-        }
-        
+		CBORObject obj = CBORObject.NewArray();
 
-        obj.Add(CBORObject.FromObject(externalData));
-        
-        return obj.EncodeToBytes();
-    }
+		obj.Add(context);
+
+		if (objProtected.size() == 0) {
+			obj.Add(CBORObject.FromObject(Bytes.EMPTY));
+		} else {
+			obj.Add(objProtected.EncodeToBytes());
+		}
+
+		obj.Add(CBORObject.FromObject(externalData));
+
+		return obj.EncodeToBytes();
+	}
 
 	// Method taken from EncryptCommon in COSE. This will provide the full AAD /
 	// Encrypt0-structure.
@@ -134,7 +146,7 @@ public abstract class EncryptCommon extends Message {
 		}
 
 		// obtain and validate IV
-		final int ivLen = ivLength(alg);
+		final int ivLen = ivLengthCcm(alg);
 		CBORObject iv = findAttribute(HeaderKeys.IV);
 		if (iv == null) {
 			throw new CoseException("Missing IV during decryption");
@@ -146,10 +158,10 @@ public abstract class EncryptCommon extends Message {
 			throw new CoseException("IV size is incorrect");
 		}
 
-		//Modified to use the full AAD here rather than just the external AAD
+		// Modified to use the full AAD here rather than just the external AAD
 		// Tag length (last parameter) was also included
 		byte[] aad = getAADBytes();
-		
+
 		try {
 			rgbContent = CCMBlockCipher.decrypt(new SecretKeySpec(rgbKey, "AES"), iv.GetByteString(), aad,
 					getEncryptedContent(), alg.getTagSize() / Byte.SIZE);
@@ -176,7 +188,7 @@ public abstract class EncryptCommon extends Message {
 
 		// obtain and validate iv
 		CBORObject iv = findAttribute(HeaderKeys.IV);
-		int ivLen = ivLength(alg);
+		int ivLen = ivLengthCcm(alg);
 		if (iv == null) {
 			byte[] tmp = new byte[ivLen];
 			random.nextBytes(tmp);
@@ -190,14 +202,102 @@ public abstract class EncryptCommon extends Message {
 				throw new CoseException("IV is too long.");
 			}
 		}
-		
-		//Modified to use the full AAD here rather than just the external AAD
+
+		// Modified to use the full AAD here rather than just the external AAD
 		// Tag length (last parameter) was also included
 		byte[] aad = getAADBytes();
-		
+
 		try {
 			rgbEncrypt = CCMBlockCipher.encrypt(new SecretKeySpec(rgbKey, "AES"), iv.GetByteString(), aad, GetContent(),
 					alg.getTagSize() / Byte.SIZE);
+		} catch (NoSuchAlgorithmException ex) {
+			throw new CoseException("Algorithm not supported", ex);
+		} catch (Exception ex) {
+			throw new CoseException("Encryption failure", ex);
+		}
+	}
+
+	private void AES_GCM_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException {
+		CBORObject iv = findAttribute(HeaderKeys.IV);
+
+		// validate key
+		if (rgbKey.length != alg.getKeySize() / 8) {
+			throw new CoseException("Key Size is incorrect");
+		}
+
+		// get and validate iv
+		final int ivLen = ivLengthGcm(alg);
+		if (iv == null) {
+			throw new CoseException("Missing IV during decryption");
+		}
+		if (iv.getType() != CBORType.ByteString) {
+			throw new CoseException("IV is incorrectly formed");
+		}
+		if (iv.GetByteString().length != ivLen) {
+			throw new CoseException("IV size is incorrect");
+		}
+
+		try {
+			// create and prepare cipher
+			Cipher cipher;
+			cipher = Cipher.getInstance(AES_GCM_SPEC);
+			cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(rgbKey, "AES"),
+					new GCMParameterSpec(alg.getTagSize(), iv.GetByteString()));
+			cipher.updateAAD(getAADBytes());
+
+			// setup plaintext output
+			rgbContent = new byte[cipher.getOutputSize(rgbEncrypt.length)];
+
+			// decryptit!
+			ByteBuffer input = ByteBuffer.wrap(rgbEncrypt);
+			ByteBuffer output = ByteBuffer.wrap(rgbContent);
+			cipher.doFinal(input, output);
+		} catch (NoSuchAlgorithmException ex) {
+			throw new CoseException("Algorithm not supported", ex);
+		} catch (InvalidKeyException ex) {
+			if (ex.getMessage() == "Illegal key size") {
+				throw new CoseException("Unsupported key size", ex);
+			}
+			throw new CoseException("Decryption failure", ex);
+		} catch (Exception ex) {
+			throw new CoseException("Decryption failure", ex);
+		}
+	}
+
+	private void AES_GCM_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException {
+		// validate key
+		if (rgbKey.length != alg.getKeySize() / 8) {
+			throw new CoseException("Key Size is incorrect");
+		}
+
+		// obtain and validate iv
+		final int ivLen = ivLengthGcm(alg);
+		CBORObject iv = findAttribute(HeaderKeys.IV);
+		if (iv == null) {
+			// generate IV
+			byte[] tmp = new byte[ivLen];
+			random.nextBytes(tmp);
+			iv = CBORObject.FromObject(tmp);
+			addAttribute(HeaderKeys.IV, iv, PROTECTED);
+		} else {
+			if (iv.getType() != CBORType.ByteString) {
+				throw new CoseException("IV is incorrectly formed");
+			}
+			if (iv.GetByteString().length != ivLen) {
+				throw new CoseException("IV size is incorrect");
+			}
+		}
+
+		try {
+			Cipher cipher = Cipher.getInstance(AES_GCM_SPEC);
+			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(rgbKey, AES_SPEC),
+					new GCMParameterSpec(alg.getTagSize(), iv.GetByteString()));
+			cipher.updateAAD(getAADBytes());
+
+			rgbEncrypt = new byte[cipher.getOutputSize(rgbContent.length)];
+			ByteBuffer input = ByteBuffer.wrap(rgbContent);
+			ByteBuffer output = ByteBuffer.wrap(rgbEncrypt);
+			cipher.doFinal(input, output);
 		} catch (NoSuchAlgorithmException ex) {
 			throw new CoseException("Algorithm not supported", ex);
 		} catch (Exception ex) {
@@ -267,12 +367,12 @@ public abstract class EncryptCommon extends Message {
 	}
 
 	/**
-	 * Get IV length in bytes.
+	 * Get IV length for AES CCM in bytes.
 	 * 
 	 * @param alg algorithm ID:
 	 * @return iv length
 	 */
-	public static int ivLength(AlgorithmID alg) {
+	private static int ivLengthCcm(AlgorithmID alg) {
 		switch (alg) {
 		case AES_CCM_16_64_128:
 		case AES_CCM_16_128_128:
@@ -286,16 +386,68 @@ public abstract class EncryptCommon extends Message {
 	}
 
 	/**
-	 * Check if an algorithm is supported.
+	 * Get IV length for AES GCM in bytes.
+	 * 
+	 * @param alg algorithm ID:
+	 * @return iv length
+	 */
+	private static int ivLengthGcm(AlgorithmID alg) {
+		switch (alg) {
+		case AES_GCM_128:
+		case AES_GCM_192:
+		case AES_GCM_256:
+			return AES_GCM_IV_LENGTH;
+		default:
+			return -1;
+		}
+	}
+
+	/**
+	 * Get IV length for AES CCM/GCM in bytes.
+	 * 
+	 * @param alg algorithm ID:
+	 * @return iv length
+	 */
+	public static int ivLength(AlgorithmID alg) {
+		int ccmIvLength = ivLengthCcm(alg);
+
+		if (ccmIvLength != -1) {
+			return ccmIvLength;
+		}
+
+		int gcmIvLength = ivLengthGcm(alg);
+		if (gcmIvLength != -1) {
+			return gcmIvLength;
+		}
+
+		return -1;
+	}
+
+	/**
+	 * Check if an AES CCM algorithm is supported.
 	 * 
 	 * @param alg the algorithm
 	 * @return if it is supported
 	 */
-	public static boolean isSupportedAesCcm(AlgorithmID alg) {
-		if (ivLength(alg) == -1) {
+	private static boolean isSupportedAesCcm(AlgorithmID alg) {
+		if (ivLengthCcm(alg) == -1) {
 			return false;
-		} else {
-			return true;
 		}
+
+		return true;
+	}
+
+	/**
+	 * Check if an AES GCM algorithm is supported.
+	 * 
+	 * @param alg the algorithm
+	 * @return if it is supported
+	 */
+	private static boolean isSupportedAesGcm(AlgorithmID alg) {
+		if (ivLengthGcm(alg) == -1) {
+			return false;
+		}
+
+		return true;
 	}
 }
