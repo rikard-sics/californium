@@ -277,7 +277,7 @@ public class SharedSecretCalculationTest {
 	}
 
 	@Test
-	public void testCswap() {
+	public void testCswapOne() {
 		/* Test cswap */
 
 		System.out.println("Test cswap");
@@ -288,6 +288,37 @@ public class SharedSecretCalculationTest {
 				"8883857351183929894090759386610649319417338800022198945255395922347792736741");
 		BigInteger b_bi = new BigInteger(
 				"5834050823475987305959238492374969056969794868074987349740858586932482375934");
+
+		BigIntegerFieldElement a = new BigIntegerFieldElement(ed25519Field, a_bi);
+		BigIntegerFieldElement b = new BigIntegerFieldElement(ed25519Field, b_bi);
+
+		BigInteger swap = BigInteger.ZERO;
+
+		Tuple result = SharedSecretCalculation.cswap(swap, a, b);
+		System.out.println("Swap correct: " + result.a.equals(a) + " and " + result.b.equals(b));
+		assertEquals(a, result.a);
+		assertEquals(b, result.b);
+
+		// Now do swap
+
+		swap = BigInteger.ONE;
+		result = SharedSecretCalculation.cswap(swap, a, b);
+		System.out.println("Swap correct: " + result.a.equals(b) + " and " + result.b.equals(a));
+		assertEquals(b, result.a);
+		assertEquals(a, result.b);
+	}
+
+	@Test
+	public void testCswapTwo() {
+		/* Test cswap */
+
+		System.out.println("Test cswap");
+
+		// First no swap
+
+		BigInteger a_bi = new BigInteger("733880002219894525539592234779273674188838573511839298940907591064931941");
+		BigInteger b_bi = new BigInteger(
+				"3749690569697948680749873497408585869324823759345834050823475987305959238492");
 
 		BigIntegerFieldElement a = new BigIntegerFieldElement(ed25519Field, a_bi);
 		BigIntegerFieldElement b = new BigIntegerFieldElement(ed25519Field, b_bi);
