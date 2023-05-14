@@ -19,11 +19,20 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
+import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.Mac;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.ShortBufferException;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.eclipse.californium.core.coap.CoAP.Code;
@@ -900,18 +909,70 @@ public class OSCoreCtx {
 	}
 
 	/**
+
 	 * Initializes the cipher object by calling encrypt on an Encrypt0Message
 	 * object created with dummy data. Doing this at creation of the OSCORE
 	 * context reduces the latency for the first request since it would
 	 * otherwise happen then.
+
+	 * Initializes the cipher object by calling appropriate encrypt method with
+	 * dummy data. Doing this at creation of the OSCORE context reduces the
+	 * latency for the first request since it would otherwise happen then.
+
 	 * 
 	 * @param alg the encryption algorithm used
 	 */
 	private void initializeCipher(AlgorithmID alg) {
+
 		
 		byte[] key = Arrays.copyOf(sender_id, key_length);
 		byte[] iv = Arrays.copyOf(recipient_id, iv_length);
 		byte[] aad = new byte[10];
+
+		byte[] key = { (byte) 0xEB, (byte) 0xDE, (byte) 0xBC, (byte) 0x51, (byte) 0xF1, (byte) 0x03, (byte) 0x79,
+				(byte) 0x14, (byte) 0x14, (byte) 0x4F, (byte) 0xC3, (byte) 0xAC, (byte) 0x40, (byte) 0x14, (byte) 0xD2,
+				(byte) 0x4C };
+		byte[] nonce = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+		switch (alg) {
+		case AES_CCM_16_64_128:
+		case AES_CCM_16_128_128:
+		case AES_CCM_64_64_128:
+		case AES_CCM_64_128_128:
+
+			try {
+				CCMBlockCipher.encrypt(new SecretKeySpec(key, "AES"), nonce, Bytes.EMPTY, Bytes.EMPTY, 0);
+			} catch (GeneralSecurityException e) {
+				LOGGER.error("Failed to initialize AES CCM cipher.");
+				throw new RuntimeException("Failed to initialize AES CCM cipher.");
+			}
+
+			break;
+
+		case AES_GCM_128:
+		case AES_GCM_192:
+		case AES_GCM_256:
+
+			Cipher cipher;
+			try {
+				cipher = Cipher.getInstance("AES/GCM/NoPadding");
+				cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"),
+						new GCMParameterSpec(alg.getTagSize(), nonce));
+				cipher.updateAAD(Bytes.EMPTY);
+
+				byte[] rgbContent = Bytes.EMPTY;
+				byte[] rgbEncrypt = new byte[cipher.getOutputSize(rgbContent.length)];
+				ByteBuffer input = ByteBuffer.wrap(rgbContent);
+				ByteBuffer output = ByteBuffer.wrap(rgbEncrypt);
+				cipher.doFinal(input, output);
+
+			} catch (NoSuchAlgorithmException | InvalidKeyException | InvalidAlgorithmParameterException
+					| ShortBufferException | IllegalBlockSizeException | BadPaddingException
+					| NoSuchPaddingException e) {
+				LOGGER.error("Failed to initialize AES GCM cipher.");
+				throw new RuntimeException("Failed to initialize AES GCM cipher.");
+			}
+>>>>>>> Add support for AES_GCM_128, AES_GCM_192 & AES_GCM_256 as AEAD Algorithm
 
 		Encrypt0Message enc = new Encrypt0Message(false, true);
 		enc.SetContent("init");

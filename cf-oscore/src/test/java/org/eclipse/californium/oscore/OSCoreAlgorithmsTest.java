@@ -147,6 +147,7 @@ public class OSCoreAlgorithmsTest {
 	}
 
 	@Test
+<<<<<<< HEAD
 	public void test_AES_CCM_64_64_256() throws Exception {
 		assumeTrue("Requires strong encryption", supportStrongCrypto);
 		sendRequest(AlgorithmID.AES_CCM_64_64_256);
@@ -173,11 +174,7 @@ public class OSCoreAlgorithmsTest {
 	@Test
 	public void test_AES_GCM_128() throws Exception {
 		assumeTrue("Requires GCM support by JCE", supportGcm);
-		sendRequest(AlgorithmID.AES_GCM_128);
-	}
 
-	@Test
-	public void test_AES_GCM_192() throws Exception {
 		assumeTrue("Requires GCM support by JCE", supportGcm);
 		assumeTrue("Requires strong encryption", supportStrongCrypto);
 		sendRequest(AlgorithmID.AES_GCM_192);
@@ -195,6 +192,8 @@ public class OSCoreAlgorithmsTest {
 		assumeTrue("Requires ChaCha-Poly support by JCE", supportChaChaPoly);
 		assumeTrue("Requires strong encryption", supportStrongCrypto);
 		sendRequest(AlgorithmID.CHACHA20_POLY1305);
+	}
+		sendRequest(AlgorithmID.AES_GCM_256);
 	}
 
 	@Rule
