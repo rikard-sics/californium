@@ -812,14 +812,35 @@ public class SharedSecretCalculation {
 
 	}
 
-	// TODO: Make constant time
+	/**
+	 * Potentially swaps values of two FieldElements. Will swap values if the
+	 * BigInteger swap equals 1.
+	 * 
+	 * @return the original or swapped Tuple depending on the input value of
+	 *         swap
+	 */
 	static Tuple cswap(BigInteger swap, FieldElement a, FieldElement b) {
 
-		if (swap.equals(BigInteger.ONE)) {
-			return new Tuple(b, a);
+		byte[] aBytes = a.toByteArray();
+		byte[] bBytes = b.toByteArray();
+
+		byte[] mask = new byte[aBytes.length];
+		byte[] dummy = new byte[aBytes.length];
+
+		byte[] swapBytes = swap.toByteArray();
+		byte swapValue = (byte) (-swapBytes[0]);
+		Arrays.fill(mask, swapValue);
+		
+		for (int i = 0; i < aBytes.length; i++) {
+			dummy[i] = (byte) (mask[i] & (aBytes[i] ^ bBytes[i]));
+			aBytes[i] ^= dummy[i];
+			bBytes[i] ^= dummy[i];
 		}
 
-		return new Tuple(a, b);
+		FieldElement newA = new BigIntegerFieldElement(ed25519Field, new BigInteger(invertArray(aBytes)));
+		FieldElement newB = new BigIntegerFieldElement(ed25519Field, new BigInteger(invertArray(bBytes)));
+
+		return new Tuple(newA, newB);
 	}
 
 	/**
