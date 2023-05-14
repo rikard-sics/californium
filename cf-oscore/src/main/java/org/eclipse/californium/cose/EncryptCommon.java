@@ -37,6 +37,7 @@ package org.eclipse.californium.cose;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
+import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.AlgorithmParameterSpec;
@@ -72,8 +73,12 @@ public abstract class EncryptCommon extends Message {
 	private static final ThreadLocalCipher AES_GCM_CIPHER = new ThreadLocalCipher(AES_GCM_SPEC);
 	private static final ThreadLocalCipher CHACHA_POLY_CIPHER = new ThreadLocalCipher(CHACHA_POLY_SPEC);
 
+	private final String AES_SPEC = "AES";
+	private final String AES_GCM_SPEC = AES_SPEC + "/GCM/NoPadding";
+
 	protected String context;
 	protected byte[] rgbEncrypt;
+	SecureRandom random = new SecureRandom();
 
 	protected byte[] decryptWithKey(byte[] rgbKey) throws CoseException {
 		CBORObject algX = findAttribute(HeaderKeys.Algorithm);
@@ -105,6 +110,14 @@ public abstract class EncryptCommon extends Message {
 			break;
 		default:
 			break;
+		}
+
+		if (isSupportedAesCcm(alg)) {
+			AES_CCM_Decrypt(alg, rgbKey);
+		} else if (isSupportedAesGcm(alg)) {
+			AES_GCM_Decrypt(alg, rgbKey);
+		} else {
+			throw new CoseException("Unsupported Algorithm Specified");
 		}
 
 		return rgbContent;
@@ -161,21 +174,20 @@ public abstract class EncryptCommon extends Message {
 
 	// FIXME: Remove
 	private byte[] getAADBytesBAD() {
-        CBORObject obj = CBORObject.NewArray();
-        
-        obj.Add(context);
-        
-        if (objProtected.size() == 0) {
-        	obj.Add(CBORObject.FromObject(Bytes.EMPTY));
-        } else {
-        	obj.Add(objProtected.EncodeToBytes());
-        }
-        
+		CBORObject obj = CBORObject.NewArray();
 
-        obj.Add(CBORObject.FromObject(externalData));
-        
-        return obj.EncodeToBytes();
-    }
+		obj.Add(context);
+
+		if (objProtected.size() == 0) {
+			obj.Add(CBORObject.FromObject(Bytes.EMPTY));
+		} else {
+			obj.Add(objProtected.EncodeToBytes());
+		}
+
+		obj.Add(CBORObject.FromObject(externalData));
+
+		return obj.EncodeToBytes();
+	}
 
 	// Method taken from EncryptCommon in COSE. This will provide the full AAD /
 	// Encrypt0-structure.
@@ -425,6 +437,44 @@ public abstract class EncryptCommon extends Message {
 	 * Get IV length in bytes.
 	 * 
 	 * @param alg algorithm ID:
+	 * @return iv length
+	 */
+	private static int ivLengthGcm(AlgorithmID alg) {
+		switch (alg) {
+		case AES_GCM_128:
+		case AES_GCM_192:
+		case AES_GCM_256:
+			return AES_GCM_IV_LENGTH;
+		default:
+			return -1;
+		}
+	}
+
+	/**
+	 * Get IV length for AES CCM/GCM in bytes.
+	 * 
+	 * @param alg algorithm ID:
+	 * @return iv length
+	 */
+	public static int ivLength(AlgorithmID alg) {
+		int ccmIvLength = ivLengthCcm(alg);
+
+		if (ccmIvLength != -1) {
+			return ccmIvLength;
+		}
+
+		int gcmIvLength = ivLengthGcm(alg);
+		if (gcmIvLength != -1) {
+			return gcmIvLength;
+		}
+
+		return -1;
+	}
+
+	/**
+	 * Check if an AES CCM algorithm is supported.
+	 * 
+	 * @param alg algorithm ID:
 	 * @return iv length, or -1 if the algorithm is unsupported
 	 */
 	public static int getIvLength(AlgorithmID alg) {
@@ -448,5 +498,19 @@ public abstract class EncryptCommon extends Message {
 		default:
 			return -1;
 		}
+	}
+
+	/**
+	 * Check if an AES GCM algorithm is supported.
+	 * 
+	 * @param alg the algorithm
+	 * @return if it is supported
+	 */
+	private static boolean isSupportedAesGcm(AlgorithmID alg) {
+		if (ivLengthGcm(alg) == -1) {
+			return false;
+		}
+
+		return true;
 	}
 }
