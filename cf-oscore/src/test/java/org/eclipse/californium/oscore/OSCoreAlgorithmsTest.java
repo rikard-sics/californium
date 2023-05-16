@@ -196,6 +196,11 @@ public class OSCoreAlgorithmsTest {
 		sendRequest(AlgorithmID.AES_GCM_256);
 	}
 
+	@Test
+	public void test_CHACHA20_POLY1305() throws Exception {
+		sendRequest(AlgorithmID.CHACHA20_POLY1305);
+	}
+
 	@Rule
 	public ExpectedException exceptionRule = ExpectedExceptionWrapper.none();
 
