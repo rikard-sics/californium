@@ -41,13 +41,17 @@ import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.AlgorithmParameterSpec;
+import java.security.SecureRandom;
+import java.util.Arrays;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.eclipse.californium.elements.util.Bytes;
+import org.bouncycastle.crypto.modes.ChaCha20Poly1305;
+import org.bouncycastle.crypto.params.AEADParameters;
+import org.bouncycastle.crypto.params.KeyParameter;
 import org.eclipse.californium.scandium.dtls.cipher.CCMBlockCipher;
 import org.eclipse.californium.scandium.dtls.cipher.ThreadLocalCipher;
 
@@ -60,6 +64,11 @@ import org.eclipse.californium.scandium.dtls.cipher.ThreadLocalCipher;
  */
 public abstract class EncryptCommon extends Message {
 
+	/**
+	 * ChaCha20-Poly1305: Size of the IV/nonce in bytes
+	 */
+	private static final int CHACHA_POLY_IV_LENGTH = 96 / 8;
+	
 	private final static int AES_CCM_16_IV_LENGTH = 13;
 	private final static int AES_CCM_64_IV_LENGTH = 7;
 	private final static int AES_GCM_IV_LENGTH = 12;
@@ -116,6 +125,8 @@ public abstract class EncryptCommon extends Message {
 			AES_CCM_Decrypt(alg, rgbKey);
 		} else if (isSupportedAesGcm(alg)) {
 			AES_GCM_Decrypt(alg, rgbKey);
+		} else if(isSupportedChaChaPoly(alg)) {
+			ChaCha20_Poly1305_Decrypt(alg, rgbKey);
 		} else {
 			throw new CoseException("Unsupported Algorithm Specified");
 		}
@@ -166,27 +177,9 @@ public abstract class EncryptCommon extends Message {
 			break;
 		default:
 			break;
-		}
 
 		ProcessCounterSignatures();
 
-	}
-
-	// FIXME: Remove
-	private byte[] getAADBytesBAD() {
-		CBORObject obj = CBORObject.NewArray();
-
-		obj.Add(context);
-
-		if (objProtected.size() == 0) {
-			obj.Add(CBORObject.FromObject(Bytes.EMPTY));
-		} else {
-			obj.Add(objProtected.EncodeToBytes());
-		}
-
-		obj.Add(CBORObject.FromObject(externalData));
-
-		return obj.EncodeToBytes();
 	}
 
 	// Method taken from EncryptCommon in COSE. This will provide the full AAD /
@@ -340,6 +333,128 @@ public abstract class EncryptCommon extends Message {
 	}
 
 	/**
+	 * Encrypts the plaintext using ChaCha20-Poly1305 algorithm with additional
+	 * authenticated data (AAD)
+	 * 
+	 * @param alg the algorithm to use
+	 * @param rgbKey the key
+	 * @throws CoseException on encryption failure
+	 *
+	 */
+	private void ChaCha20_Poly1305_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException {
+		byte[] ciphertext = null;
+		byte[] aad = getAADBytes();
+		byte[] plaintext = rgbContent;
+		int tagSize = alg.getTagSize();
+
+		// validate key
+		if (rgbKey.length != alg.getKeySize() / 8) {
+			throw new CoseException("Key Size is incorrect");
+		}
+
+		// obtain and validate iv
+		final int ivLen = ivLengthChaChaPoly(alg);
+		CBORObject iv = findAttribute(HeaderKeys.IV);
+		if (iv.getType() != CBORType.ByteString) {
+			throw new CoseException("IV is incorrectly formed.");
+		}
+		if (iv.GetByteString().length != ivLen) {
+			throw new CoseException("IV length is incorrect.");
+		}
+		byte[] nonce = iv.GetByteString();
+
+		try {
+			byte[] aadCopy = Arrays.copyOf(aad, aad.length);
+
+			// Create a ChaCha20Poly1305 cipher instance
+			ChaCha20Poly1305 cipher = new ChaCha20Poly1305();
+
+			// Set the encryption key
+			KeyParameter keyParam = new KeyParameter(rgbKey);
+
+			// Initialize the cipher for encryption with the provided AAD
+			cipher.init(true, new AEADParameters(keyParam, tagSize, nonce, aadCopy));
+
+			// Create an output buffer for the ciphertext
+			ciphertext = new byte[cipher.getOutputSize(plaintext.length)];
+
+			// Process the plaintext and generate the ciphertext
+			int len = cipher.processBytes(plaintext, 0, plaintext.length, ciphertext, 0);
+
+			// Finalize the encryption and generate the authentication tag
+			cipher.doFinal(ciphertext, len);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		rgbEncrypt = ciphertext;
+	}
+
+	/**
+	 * Decrypts the ciphertext using ChaCha20-Poly1305 algorithm with additional
+	 * authenticated data (AAD)
+	 * 
+	 * @param alg the algorithm to use
+	 * @param rgbKey the key
+	 * @throws CoseException on encryption failure
+	 *
+	 */
+	private void ChaCha20_Poly1305_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException {
+		byte[] plaintext = null;
+		byte[] aad = getAADBytes();
+		byte[] ciphertext = rgbEncrypt;
+		int tagSize = alg.getTagSize();
+
+		// validate key
+		if (rgbKey.length != alg.getKeySize() / 8) {
+			throw new CoseException("Key Size is incorrect");
+		}
+
+		// obtain and validate iv
+		final int ivLen = ivLengthChaChaPoly(alg);
+		CBORObject iv = findAttribute(HeaderKeys.IV);
+		if (iv.getType() != CBORType.ByteString) {
+			throw new CoseException("IV is incorrectly formed.");
+		}
+		if (iv.GetByteString().length != ivLen) {
+			throw new CoseException("IV length is incorrect.");
+		}
+		byte[] nonce = iv.GetByteString();
+
+		try {
+			// Create a copy of the AAD
+			byte[] aadCopy = Arrays.copyOf(aad, aad.length);
+
+			// Create a ChaCha20Poly1305 cipher instance
+			ChaCha20Poly1305 cipher = new ChaCha20Poly1305();
+
+			// Set the decryption key
+			KeyParameter keyParam = new KeyParameter(rgbKey);
+
+			// Initialize the cipher for encryption with the provided AAD
+			cipher.init(true, new AEADParameters(keyParam, tagSize, nonce, aadCopy));
+
+			// Create a buffer for the decrypted plaintext
+			plaintext = new byte[cipher.getOutputSize(ciphertext.length)];
+
+			// Process the ciphertext and generate the decrypted plaintext
+			int len = cipher.processBytes(ciphertext, 0, ciphertext.length, plaintext, 0);
+
+			// Finalize the decryption and verify the authentication tag
+			cipher.doFinal(plaintext, len);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		// TODO: Check why I need to cut the last bytes away
+		if(plaintext != null) {
+			rgbContent = Arrays.copyOfRange(plaintext, 0, plaintext.length - 2 * (tagSize / 8));
+		}
+		
+	}
+
+	/**
 	 * Used to obtain the encrypted content for the cases where detached content
 	 * is requested.
 	 * 
@@ -362,6 +477,7 @@ public abstract class EncryptCommon extends Message {
 		rgbEncrypt = rgb;
 	}
 
+	@Override
 	protected void ProcessCounterSignatures() throws CoseException {
 		if (!counterSignList.isEmpty()) {
 			if (counterSignList.size() == 1) {
@@ -384,6 +500,7 @@ public abstract class EncryptCommon extends Message {
 		}
 	}
 
+	@Override
 	public boolean validate(CounterSign1 countersignature) throws CoseException {
 
 		// Fix issue with rgbProtected being NULL instead of empty CBOR bstr
@@ -396,6 +513,7 @@ public abstract class EncryptCommon extends Message {
 		return countersignature.validate(rgbProtected, rgbEncrypt);
 	}
 
+	@Override
 	public boolean validate(CounterSign countersignature) throws CoseException {
 		return countersignature.validate(rgbProtected, rgbEncrypt);
 	}
@@ -449,6 +567,21 @@ public abstract class EncryptCommon extends Message {
 			return -1;
 		}
 	}
+	
+	/**
+	 * Get IV length for ChaCha20-Poly1305 in bytes.
+	 * 
+	 * @param alg algorithm ID:
+	 * @return iv length
+	 */
+	private static int ivLengthChaChaPoly(AlgorithmID alg) {
+		switch (alg) {
+		case CHACHA20_POLY1305:
+			return CHACHA_POLY_IV_LENGTH;
+		default:
+			return -1;
+		}
+	}
 
 	/**
 	 * Get IV length for AES CCM/GCM in bytes.
@@ -466,6 +599,11 @@ public abstract class EncryptCommon extends Message {
 		int gcmIvLength = ivLengthGcm(alg);
 		if (gcmIvLength != -1) {
 			return gcmIvLength;
+		}
+
+		int chaChaPolyIvLength = ivLengthChaChaPoly(alg);
+		if (chaChaPolyIvLength != -1) {
+			return chaChaPolyIvLength;
 		}
 
 		return -1;
@@ -508,6 +646,21 @@ public abstract class EncryptCommon extends Message {
 	 */
 	private static boolean isSupportedAesGcm(AlgorithmID alg) {
 		if (ivLengthGcm(alg) == -1) {
+			return false;
+		}
+
+		return true;
+	}
+	
+
+	/**
+	 * Check if a ChaCha20-Poly1305 algorithm is supported.
+	 * 
+	 * @param alg the algorithm
+	 * @return if it is supported
+	 */
+	private static boolean isSupportedChaChaPoly(AlgorithmID alg) {
+		if (ivLengthChaChaPoly(alg) == -1) {
 			return false;
 		}
 
