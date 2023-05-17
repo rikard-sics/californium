@@ -75,6 +75,7 @@ public abstract class EncryptCommon extends Message {
 	private final static int AES_CCM_16_IV_LENGTH = 13;
 	private final static int AES_CCM_64_IV_LENGTH = 7;
 
+<<<<<<< HEAD
 	private final static int AES_GCM_IV_LENGTH = 12;
 	private static final int CHACHA_POLY_IV_LENGTH = 12;
 
@@ -86,6 +87,9 @@ public abstract class EncryptCommon extends Message {
 	private static final ThreadLocalCipher AES_GCM_CIPHER = new ThreadLocalCipher(AES_GCM_SPEC);
 	private static final ThreadLocalCipher CHACHA_POLY_CIPHER = new ThreadLocalCipher(CHACHA_POLY_SPEC);
 
+
+
+	private static final String AES_256_SPEC = "AES/CCM/NoPadding";
 
 	private final String AES_SPEC = "AES";
 	private final String AES_GCM_SPEC = AES_SPEC + "/GCM/NoPadding";
@@ -103,7 +107,7 @@ public abstract class EncryptCommon extends Message {
 		if (rgbEncrypt == null)
 			throw new CoseException("No Encrypted Content Specified");
 
-<<<<<<< HEAD
+
 		validateObjectState(rgbKey);
 
 		switch (alg) {
@@ -129,9 +133,14 @@ public abstract class EncryptCommon extends Message {
 			break;
 		}
 
-=======
+
 		if (isSupportedAesCcm(alg)) {
+
+		if (isSupportedAesCcm128(alg)) {
+
 			AES_CCM_Decrypt(alg, rgbKey);
+		} else if (isSupportedAesCcm256(alg)) {
+			AES_CCM256_Decrypt(alg, rgbKey);
 		} else if (isSupportedAesGcm(alg)) {
 			AES_GCM_Decrypt(alg, rgbKey);
 		} else if(isSupportedChaChaPoly(alg)) {
@@ -150,6 +159,7 @@ public abstract class EncryptCommon extends Message {
 
 		if (rgbContent == null)
 			throw new CoseException("No Content Specified");
+
 
 
 		validateObjectState(rgbKey);
@@ -179,7 +189,12 @@ public abstract class EncryptCommon extends Message {
 		
 
 		if (isSupportedAesCcm(alg)) {
+
+		if (isSupportedAesCcm128(alg)) {
+
 			AES_CCM_Encrypt(alg, rgbKey);
+		} else if (isSupportedAesCcm256(alg)) {
+			AES_CCM256_Encrypt(alg, rgbKey);
 		} else if (isSupportedAesGcm(alg)) {
 			AES_GCM_Encrypt(alg, rgbKey);
 		} else if (isSupportedChaChaPoly(alg)) {
@@ -219,7 +234,7 @@ public abstract class EncryptCommon extends Message {
 		}
 
 		// obtain and validate IV
-		final int ivLen = ivLengthCcm(alg);
+		final int ivLen = ivLengthCcm128(alg);
 		CBORObject iv = findAttribute(HeaderKeys.IV);
 		if (iv == null) {
 			throw new CoseException("Missing IV during decryption");
@@ -268,6 +283,7 @@ public abstract class EncryptCommon extends Message {
 
 	private void AES_GCM_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException {
 		CBORObject iv = findAttribute(HeaderKeys.IV);
+<<<<<<< HEAD
 
 		byte[] aad = getAADBytes();
 
@@ -291,6 +307,9 @@ public abstract class EncryptCommon extends Message {
 		CBORObject iv = findAttribute(HeaderKeys.IV);
 
 		int ivLen = ivLengthCcm(alg);
+
+		int ivLen = ivLengthCcm128(alg);
+
 		if (iv == null) {
 			byte[] tmp = new byte[ivLen];
 			random.nextBytes(tmp);
@@ -474,65 +493,6 @@ public abstract class EncryptCommon extends Message {
 	}
 
 	/**
-	 * Encrypts the plaintext using ChaCha20-Poly1305 algorithm with additional
-	 * authenticated data (AAD)
-	 * 
-	 * @param alg the algorithm to use
-	 * @param rgbKey the key
-	 * @throws CoseException on encryption failure
-	 *
-	 */
-	private void ChaCha20_Poly1305_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException {
-		byte[] ciphertext = null;
-		byte[] aad = getAADBytes();
-		byte[] plaintext = rgbContent;
-		int tagSize = alg.getTagSize();
-
-		// validate key
-		if (rgbKey.length != alg.getKeySize() / 8) {
-			throw new CoseException("Key Size is incorrect");
-		}
-
-		// obtain and validate iv
-		final int ivLen = ivLengthChaChaPoly(alg);
-		CBORObject iv = findAttribute(HeaderKeys.IV);
-		if (iv.getType() != CBORType.ByteString) {
-			throw new CoseException("IV is incorrectly formed.");
-		}
-		if (iv.GetByteString().length != ivLen) {
-			throw new CoseException("IV length is incorrect.");
-		}
-		byte[] nonce = iv.GetByteString();
-
-		try {
-			byte[] aadCopy = Arrays.copyOf(aad, aad.length);
-
-			// Create a ChaCha20Poly1305 cipher instance
-			ChaCha20Poly1305 cipher = new ChaCha20Poly1305();
-
-			// Set the encryption key
-			KeyParameter keyParam = new KeyParameter(rgbKey);
-
-			// Initialize the cipher for encryption with the provided AAD
-			cipher.init(true, new AEADParameters(keyParam, tagSize, nonce, aadCopy));
-
-			// Create an output buffer for the ciphertext
-			ciphertext = new byte[cipher.getOutputSize(plaintext.length)];
-
-			// Process the plaintext and generate the ciphertext
-			int len = cipher.processBytes(plaintext, 0, plaintext.length, ciphertext, 0);
-
-			// Finalize the encryption and generate the authentication tag
-			cipher.doFinal(ciphertext, len);
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		
-		rgbEncrypt = ciphertext;
-	}
-
-	/**
 	 * Decrypts the ciphertext using ChaCha20-Poly1305 algorithm with additional
 	 * authenticated data (AAD)
 	 * 
@@ -584,15 +544,185 @@ public abstract class EncryptCommon extends Message {
 
 			// Finalize the decryption and verify the authentication tag
 			cipher.doFinal(plaintext, len);
-		} catch (Exception e) {
-			e.printStackTrace();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw new CoseException("Decryption failure", ex);
 		}
-		
+
 		// TODO: Check why I need to cut the last bytes away
-		if(plaintext != null) {
+		if (plaintext != null) {
 			rgbContent = Arrays.copyOfRange(plaintext, 0, plaintext.length - 2 * (tagSize / 8));
 		}
-		
+	}
+
+	/**
+	 * Encrypts the plaintext using ChaCha20-Poly1305 algorithm with additional
+	 * authenticated data (AAD)
+	 * 
+	 * @param alg the algorithm to use
+	 * @param rgbKey the key
+	 * @throws CoseException on encryption failure
+	 *
+	 */
+	private void ChaCha20_Poly1305_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException {
+		byte[] ciphertext = null;
+		byte[] aad = getAADBytes();
+		byte[] plaintext = rgbContent;
+		int tagSize = alg.getTagSize();
+
+		// validate key
+		if (rgbKey.length != alg.getKeySize() / 8) {
+			throw new CoseException("Key Size is incorrect");
+		}
+
+		// obtain and validate iv
+		final int ivLen = ivLengthChaChaPoly(alg);
+		CBORObject iv = findAttribute(HeaderKeys.IV);
+		if (iv.getType() != CBORType.ByteString) {
+			throw new CoseException("IV is incorrectly formed.");
+		}
+		if (iv.GetByteString().length != ivLen) {
+			throw new CoseException("IV length is incorrect.");
+		}
+		byte[] nonce = iv.GetByteString();
+
+		try {
+			byte[] aadCopy = Arrays.copyOf(aad, aad.length);
+
+			// Create a ChaCha20Poly1305 cipher instance
+			ChaCha20Poly1305 cipher = new ChaCha20Poly1305();
+
+			// Set the encryption key
+			KeyParameter keyParam = new KeyParameter(rgbKey);
+
+			// Initialize the cipher for encryption with the provided AAD
+			cipher.init(true, new AEADParameters(keyParam, tagSize, nonce, aadCopy));
+
+			// Create an output buffer for the ciphertext
+			ciphertext = new byte[cipher.getOutputSize(plaintext.length)];
+
+			// Process the plaintext and generate the ciphertext
+			int len = cipher.processBytes(plaintext, 0, plaintext.length, ciphertext, 0);
+
+			// Finalize the encryption and generate the authentication tag
+			cipher.doFinal(ciphertext, len);
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw new CoseException("Decryption failure", ex);
+		}
+
+		rgbEncrypt = ciphertext;
+	}
+
+	/**
+	 * Decrypts the provided ciphertext using AES in CCM mode with 256 bit key.
+	 *
+	 * @param alg the algorithm to use
+	 * @param rgbKey the key
+	 * @throws CoseException on encryption failure
+	 */
+	public void AES_CCM256_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException {
+		// validate key
+		if (rgbKey.length != alg.getKeySize() / 8) {
+			throw new CoseException("Key Size is incorrect");
+		}
+
+		// obtain and validate iv
+		final int ivLen = ivLengthCcm256(alg);
+		CBORObject iv = findAttribute(HeaderKeys.IV);
+		if (iv.getType() != CBORType.ByteString) {
+			throw new CoseException("IV is incorrectly formed.");
+		}
+		if (iv.GetByteString().length != ivLen) {
+			throw new CoseException("IV length is incorrect.");
+		}
+		byte[] nonce = iv.GetByteString();
+
+		try {
+			// Initialize cipher and key specification.
+			Cipher cipher = Cipher.getInstance(AES_256_SPEC);
+			GCMParameterSpec spec = new GCMParameterSpec(alg.getTagSize(), nonce);
+			SecretKeySpec keySpec = new SecretKeySpec(rgbKey, "AES");
+
+			// Initialize cipher in decryption mode.
+			cipher.init(Cipher.DECRYPT_MODE, keySpec, spec);
+
+			// If Additional Authenticated Data (AAD) is provided, update cipher
+			// with it.
+			byte[] aad = getAADBytes();
+			if (aad != null) {
+				cipher.updateAAD(aad);
+			}
+
+			// Decrypt the ciphertext and return the plaintext.
+			rgbContent = cipher.doFinal(rgbEncrypt);
+		} catch (NoSuchAlgorithmException ex) {
+			throw new CoseException("Algorithm not supported", ex);
+		} catch (InvalidKeyException ex) {
+			if (ex.getMessage().equals("Illegal key size")) {
+				throw new CoseException("Unsupported key size", ex);
+			}
+			throw new CoseException("Decryption failure", ex);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw new CoseException("Decryption failure", ex);
+		}
+	}
+
+	/**
+	 * Encrypts the provided plaintext using AES in CCM mode with 256 bit key.
+	 *
+	 * @param alg the algorithm to use
+	 * @param rgbKey the key
+	 * @throws CoseException on encryption failure
+	 */
+	public void AES_CCM256_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException {
+		// validate key
+		if (rgbKey.length != alg.getKeySize() / 8) {
+			throw new CoseException("Key Size is incorrect");
+		}
+
+		// obtain and validate iv
+		final int ivLen = ivLengthCcm256(alg);
+		CBORObject iv = findAttribute(HeaderKeys.IV);
+		if (iv.getType() != CBORType.ByteString) {
+			throw new CoseException("IV is incorrectly formed.");
+		}
+		if (iv.GetByteString().length != ivLen) {
+			throw new CoseException("IV length is incorrect.");
+		}
+		byte[] nonce = iv.GetByteString();
+
+		try {
+			// Initialize cipher and key specification.
+			Cipher cipher = Cipher.getInstance(AES_256_SPEC);
+			GCMParameterSpec spec = new GCMParameterSpec(alg.getTagSize(), nonce);
+			SecretKeySpec keySpec = new SecretKeySpec(rgbKey, "AES");
+
+			// Initialize cipher in encryption mode.
+			cipher.init(Cipher.ENCRYPT_MODE, keySpec, spec);
+
+			// If Additional Authenticated Data (AAD) is provided, update cipher
+			// with it.
+			byte[] aad = getAADBytes();
+			if (aad != null) {
+				cipher.updateAAD(aad);
+			}
+
+			// Encrypt the plaintext and return the ciphertext.
+			rgbEncrypt = cipher.doFinal(rgbContent);
+		} catch (NoSuchAlgorithmException ex) {
+			throw new CoseException("Algorithm not supported", ex);
+		} catch (InvalidKeyException ex) {
+			if (ex.getMessage().equals("Illegal key size")) {
+				throw new CoseException("Unsupported key size", ex);
+			}
+			throw new CoseException("Decryption failure", ex);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw new CoseException("Decryption failure", ex);
+		}
 	}
 
 	/**
@@ -660,6 +790,7 @@ public abstract class EncryptCommon extends Message {
 	}
 
 	/**
+<<<<<<< HEAD
 
 	 * Validate the state of the object before performing encryption or
 	 * decryption
@@ -698,14 +829,21 @@ public abstract class EncryptCommon extends Message {
 
 	 * Get IV length for AES CCM in bytes.
 
+
+	 * Get IV length for AES CCM 128 bit key in bytes.
+
 	 * 
 	 * @param alg algorithm ID:
 	 * @return iv length, or -1 if the algorithm is unsupported
 	 */
 
+
 	public static int getIvLength(AlgorithmID alg) {
 
 	private static int ivLengthCcm(AlgorithmID alg) {
+
+
+	private static int ivLengthCcm128(AlgorithmID alg) {
 
 		switch (alg) {
 		case AES_CCM_16_64_128:
@@ -729,6 +867,25 @@ public abstract class EncryptCommon extends Message {
 		}
 	}
 
+
+	/**
+	 * Get IV length for AES CCM 256 bit key in bytes.
+	 * 
+	 * @param alg algorithm ID:
+	 * @return iv length
+	 */
+	private static int ivLengthCcm256(AlgorithmID alg) {
+		switch (alg) {
+		case AES_CCM_16_64_256:
+		case AES_CCM_16_128_256:
+			return AES_CCM_16_IV_LENGTH;
+		case AES_CCM_64_64_256:
+		case AES_CCM_64_128_256:
+			return AES_CCM_64_IV_LENGTH;
+		default:
+			return -1;
+		}
+	}
 
 	/**
 	 * Get IV length for AES GCM in bytes.
@@ -769,8 +926,12 @@ public abstract class EncryptCommon extends Message {
 	 * @return iv length
 	 */
 	public static int ivLength(AlgorithmID alg) {
-		int ccmIvLength = ivLengthCcm(alg);
+		int ccmIvLength = ivLengthCcm128(alg);
+		if (ccmIvLength != -1) {
+			return ccmIvLength;
+		}
 
+		ccmIvLength = ivLengthCcm256(alg);
 		if (ccmIvLength != -1) {
 			return ccmIvLength;
 		}
@@ -789,13 +950,27 @@ public abstract class EncryptCommon extends Message {
 	}
 
 	/**
-	 * Check if an AES CCM algorithm is supported.
+	 * Check if an AES CCM 128 bit key algorithm is supported.
 	 * 
 	 * @param alg the algorithm
 	 * @return if it is supported
 	 */
-	private static boolean isSupportedAesCcm(AlgorithmID alg) {
-		if (ivLengthCcm(alg) == -1) {
+	private static boolean isSupportedAesCcm128(AlgorithmID alg) {
+		if (ivLengthCcm128(alg) == -1) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Check if an AES CCM 256 bit key algorithm is supported.
+	 * 
+	 * @param alg the algorithm
+	 * @return if it is supported
+	 */
+	private static boolean isSupportedAesCcm256(AlgorithmID alg) {
+		if (ivLengthCcm256(alg) == -1) {
 			return false;
 		}
 
