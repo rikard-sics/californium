@@ -24,6 +24,7 @@ import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.Security;
 import java.util.Arrays;
 
 import javax.crypto.BadPaddingException;
@@ -35,6 +36,7 @@ import javax.crypto.ShortBufferException;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.cose.AlgorithmID;
@@ -904,6 +906,20 @@ public class OSCoreCtx {
 	 * @param alg the encryption algorithm used
 	 */
 	private void initializeCipher(AlgorithmID alg) {
+
+		// Install BouncyCastle crypto provider if needed
+		switch (alg) {
+		case AES_CCM_16_64_256:
+		case AES_CCM_16_128_256:
+		case AES_CCM_64_64_256:
+		case AES_CCM_64_128_256:
+			if (Security.getProvider("BC") == null) {
+				Security.addProvider(new BouncyCastleProvider());
+			}
+			break;
+		default:
+			break;
+		}
 
 		byte[] key = { (byte) 0xEB, (byte) 0xDE, (byte) 0xBC, (byte) 0x51, (byte) 0xF1, (byte) 0x03, (byte) 0x79,
 				(byte) 0x14, (byte) 0x14, (byte) 0x4F, (byte) 0xC3, (byte) 0xAC, (byte) 0x40, (byte) 0x14, (byte) 0xD2,

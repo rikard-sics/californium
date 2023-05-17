@@ -20,6 +20,9 @@ package org.eclipse.californium.oscore;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.security.Security;
+
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.californium.TestTools;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.coap.CoAP;
@@ -44,6 +47,8 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import com.upokecenter.cbor.CBORObject;
 
 /**
  * Test usage of the supported encryption algorithms with OSCORE.
@@ -81,9 +86,10 @@ public class OSCoreAlgorithmsTest {
 		EndpointManager.clear();
 	}
 
-	// Use the OSCORE stack factory
+	// Install crypto provider and use the OSCORE stack factory
 	@BeforeClass
-	public static void setStackFactory() {
+	public static void setup() {
+		Security.addProvider(new BouncyCastleProvider());
 		OSCoreCoapStackFactory.useAsDefault(dbClient);
 	}
 
@@ -135,6 +141,28 @@ public class OSCoreAlgorithmsTest {
 		sendRequest(AlgorithmID.CHACHA20_POLY1305);
 	}
 
+	@Test
+	public void test_AES_CCM_64_64_256() throws Exception {
+		sendRequest(AlgorithmID.AES_CCM_64_64_256);
+	}
+
+
+	@Test
+	public void test_AES_CCM_16_64_256() throws Exception {
+		sendRequest(AlgorithmID.AES_CCM_16_64_256);
+	}
+
+
+	@Test
+	public void test_AES_CCM_16_128_256() throws Exception {
+		sendRequest(AlgorithmID.AES_CCM_16_128_256);
+	}
+
+	@Test
+	public void test_AES_CCM_64_128_256() throws Exception {
+		sendRequest(AlgorithmID.AES_CCM_64_128_256);
+	}
+
 	@Rule
 	public ExpectedException exceptionRule = ExpectedExceptionWrapper.none();
 
@@ -143,7 +171,7 @@ public class OSCoreAlgorithmsTest {
 		exceptionRule.expect(RuntimeException.class);
 		exceptionRule.expectMessage("Unable to set lengths, since algorithm");
 
-		sendRequest(AlgorithmID.AES_CCM_16_64_256);
+		sendRequest(AlgorithmID.AES_CBC_MAC_256_128);
 
 	}
 
