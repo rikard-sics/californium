@@ -28,6 +28,8 @@ import org.eclipse.californium.oscore.ByteId;
 import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSException;
 
+import com.upokecenter.cbor.CBORObject;
+
 /**
  * Class implementing a Group OSCORE sender context.
  *
@@ -56,6 +58,52 @@ public class GroupSenderCtx extends OSCoreCtx {
 		}
 
 		pairwiseSenderKeys = new HashMap<ByteId, byte[]>();
+
+		// Set sender key based on used algSignEnc
+		this.sender_key = deriveSenderKey();
+
+	}
+
+	/**
+	 * Derive sender key based on used algSignEnc
+	 * 
+	 * @return the sender key
+	 * @throws OSException on key derivation failure
+	 */
+	byte[] deriveSenderKey() throws OSException {
+
+		// Set digest value depending on HKDF
+		String digest = null;
+		switch (this.getKdf()) {
+		case HKDF_HMAC_SHA_256:
+			digest = "SHA256";
+			break;
+		case HKDF_HMAC_SHA_512:
+			digest = "SHA512";
+			break;
+		case HKDF_HMAC_AES_128:
+		case HKDF_HMAC_AES_256:
+		default:
+			throw new OSException("HKDF algorithm not supported");
+		}
+
+		int keyLength = commonCtx.algSignEnc.getKeySize() / 8;
+
+		// Derive sender_key
+		CBORObject info = CBORObject.NewArray();
+		info.Add(sender_id);
+		info.Add(getIdContext());
+		info.Add(getCommonCtx().algSignEnc.AsCBOR());
+		info.Add(CBORObject.FromObject("Key"));
+		info.Add(keyLength);
+
+		byte[] derivedSenderKey = null;
+		try {
+			derivedSenderKey = deriveKey(getMasterSecret(), getSalt(), keyLength, digest, info.EncodeToBytes());
+		} catch (CoseException e) {
+			throw new OSException("Failed to derive Sender Key");
+		}
+		return derivedSenderKey;
 	}
 
 	/**
