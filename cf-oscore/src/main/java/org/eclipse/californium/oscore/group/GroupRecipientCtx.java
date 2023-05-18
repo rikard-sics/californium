@@ -17,10 +17,13 @@
 package org.eclipse.californium.oscore.group;
 
 import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSException;
+
+import com.upokecenter.cbor.CBORObject;
 
 /**
  * Class implementing a Group OSCORE Recipient context.
@@ -48,6 +51,53 @@ public class GroupRecipientCtx extends OSCoreCtx {
 		if (otherEndpointPubKeyRaw != null) {
 			this.otherEndpointPubKeyRaw = otherEndpointPubKeyRaw;
 		}
+		
+		// Set sender key based on used algSignEnc
+		byte[] derivedRecipientKey = deriveRecipientKey();
+		this.setRecipientKey(derivedRecipientKey);
+
+	}
+	
+	/**
+	 * Derive Recipient Key based on used algSignEnc
+	 * 
+	 * @return the Recipient Key
+	 * @throws OSException on key derivation failure
+	 */
+	byte[] deriveRecipientKey() throws OSException {
+
+		// Set digest value depending on HKDF
+		String digest = null;
+		switch (this.getKdf()) {
+		case HKDF_HMAC_SHA_256:
+			digest = "SHA256";
+			break;
+		case HKDF_HMAC_SHA_512:
+			digest = "SHA512";
+			break;
+		case HKDF_HMAC_AES_128:
+		case HKDF_HMAC_AES_256:
+		default:
+			throw new OSException("HKDF algorithm not supported");
+		}
+
+		int keyLength = commonCtx.algSignEnc.getKeySize() / 8;
+
+		// Derive recipient_key
+		CBORObject info = CBORObject.NewArray();
+		info.Add(this.getRecipientId());
+		info.Add(getIdContext());
+		info.Add(getCommonCtx().algSignEnc.AsCBOR());
+		info.Add(CBORObject.FromObject("Key"));
+		info.Add(keyLength);
+
+		byte[] derivedRecipientKey = null;
+		try {
+			derivedRecipientKey = deriveKey(getMasterSecret(), getSalt(), keyLength, digest, info.EncodeToBytes());
+		} catch (CoseException e) {
+			throw new OSException("Failed to derive Recipient Key");
+		}
+		return derivedRecipientKey;
 	}
 
 	/**
