@@ -42,6 +42,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.AlgorithmParameterSpec;
 import java.security.SecureRandom;
+import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
 
 import javax.crypto.Cipher;
@@ -49,9 +50,6 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.bouncycastle.crypto.modes.ChaCha20Poly1305;
-import org.bouncycastle.crypto.params.AEADParameters;
-import org.bouncycastle.crypto.params.KeyParameter;
 import org.eclipse.californium.scandium.dtls.cipher.CCMBlockCipher;
 import org.eclipse.californium.scandium.dtls.cipher.ThreadLocalCipher;
 
@@ -346,10 +344,8 @@ public abstract class EncryptCommon extends Message {
 	 *
 	 */
 	private void ChaCha20_Poly1305_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException {
-		byte[] plaintext = null;
 		byte[] aad = getAADBytes();
 		byte[] ciphertext = rgbEncrypt;
-		int tagSize = alg.getTagSize();
 
 		// validate key
 		if (rgbKey.length != alg.getKeySize() / 8) {
@@ -372,31 +368,30 @@ public abstract class EncryptCommon extends Message {
 			byte[] aadCopy = Arrays.copyOf(aad, aad.length);
 
 			// Create a ChaCha20Poly1305 cipher instance
-			ChaCha20Poly1305 cipher = new ChaCha20Poly1305();
+			Cipher cipher = Cipher.getInstance("ChaCha20-Poly1305");
+
+			// Create ivParameterSpec with nonce
+			AlgorithmParameterSpec ivParameterSpec = new IvParameterSpec(nonce);
 
 			// Set the decryption key
-			KeyParameter keyParam = new KeyParameter(rgbKey);
+			SecretKeySpec keySpec = new SecretKeySpec(rgbKey, "ChaCha20");
 
-			// Initialize the cipher for encryption with the provided AAD
-			cipher.init(true, new AEADParameters(keyParam, tagSize, nonce, aadCopy));
+			// Initialize the cipher for decryption
+			cipher.init(Cipher.DECRYPT_MODE, keySpec, ivParameterSpec);
 
-			// Create a buffer for the decrypted plaintext
-			plaintext = new byte[cipher.getOutputSize(ciphertext.length)];
+			// Add AAD (if any)
+			if (aadCopy != null) {
+				cipher.updateAAD(aadCopy);
+			}
 
-			// Process the ciphertext and generate the decrypted plaintext
-			int len = cipher.processBytes(ciphertext, 0, ciphertext.length, plaintext, 0);
-
-			// Finalize the decryption and verify the authentication tag
-			cipher.doFinal(plaintext, len);
+			// Process the ciphertext and generate the plaintext
+			rgbContent = cipher.doFinal(ciphertext);
+		} catch (NoSuchAlgorithmException ex) {
+			throw new CoseException("Algorithm not supported", ex);
 		} catch (Exception ex) {
-			ex.printStackTrace();
-			throw new CoseException("Decryption failure", ex);
+			throw new CoseException("Encryption failure", ex);
 		}
 
-		// TODO: Check why I need to cut the last bytes away
-		if (plaintext != null) {
-			rgbContent = Arrays.copyOfRange(plaintext, 0, plaintext.length - 2 * (tagSize / 8));
-		}
 	}
 
 	/**
@@ -409,10 +404,8 @@ public abstract class EncryptCommon extends Message {
 	 *
 	 */
 	private void ChaCha20_Poly1305_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException {
-		byte[] ciphertext = null;
 		byte[] aad = getAADBytes();
 		byte[] plaintext = rgbContent;
-		int tagSize = alg.getTagSize();
 
 		// validate key
 		if (rgbKey.length != alg.getKeySize() / 8) {
@@ -434,29 +427,30 @@ public abstract class EncryptCommon extends Message {
 			byte[] aadCopy = Arrays.copyOf(aad, aad.length);
 
 			// Create a ChaCha20Poly1305 cipher instance
-			ChaCha20Poly1305 cipher = new ChaCha20Poly1305();
+			Cipher cipher = Cipher.getInstance("ChaCha20-Poly1305");
+
+			// Create ivParameterSpec with nonce
+			AlgorithmParameterSpec ivParameterSpec = new IvParameterSpec(nonce);
 
 			// Set the encryption key
-			KeyParameter keyParam = new KeyParameter(rgbKey);
+			SecretKeySpec keySpec = new SecretKeySpec(rgbKey, "ChaCha20");
 
-			// Initialize the cipher for encryption with the provided AAD
-			cipher.init(true, new AEADParameters(keyParam, tagSize, nonce, aadCopy));
+			// Initialize the cipher for encryption
+			cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivParameterSpec);
 
-			// Create an output buffer for the ciphertext
-			ciphertext = new byte[cipher.getOutputSize(plaintext.length)];
+			// Add AAD (if any)
+			if (aadCopy != null) {
+				cipher.updateAAD(aadCopy);
+			}
 
 			// Process the plaintext and generate the ciphertext
-			int len = cipher.processBytes(plaintext, 0, plaintext.length, ciphertext, 0);
+			rgbEncrypt = cipher.doFinal(plaintext);
 
-			// Finalize the encryption and generate the authentication tag
-			cipher.doFinal(ciphertext, len);
-
+		} catch (NoSuchAlgorithmException ex) {
+			throw new CoseException("Algorithm not supported", ex);
 		} catch (Exception ex) {
-			ex.printStackTrace();
-			throw new CoseException("Decryption failure", ex);
+			throw new CoseException("Encryption failure", ex);
 		}
-
-		rgbEncrypt = ciphertext;
 	}
 
 	/**
