@@ -17,14 +17,18 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore.group;
 
-import org.bouncycastle.crypto.modes.ChaCha20Poly1305;
-import org.bouncycastle.crypto.params.AEADParameters;
-import org.bouncycastle.crypto.params.KeyParameter;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.security.Security;
+import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Class for testing encryption/decryption with ChaCha20-Poly1305
@@ -73,22 +77,24 @@ public class ChaChaPolyTester {
 			byte[] aadCopy = Arrays.copyOf(aad, aad.length);
 
 			// Create a ChaCha20Poly1305 cipher instance
-			ChaCha20Poly1305 cipher = new ChaCha20Poly1305();
+			Cipher cipher = Cipher.getInstance("ChaCha20-Poly1305");
+
+			// Create ivParameterSpec with nonce
+			AlgorithmParameterSpec ivParameterSpec = new IvParameterSpec(nonce);
 
 			// Set the encryption key
-			KeyParameter keyParam = new KeyParameter(key);
+			SecretKeySpec keySpec = new SecretKeySpec(key, "ChaCha20");
 
-			// Initialize the cipher for encryption with the provided AAD
-			cipher.init(true, new AEADParameters(keyParam, TAG_SIZE_BITS, nonce, aadCopy));
+			// Initialize the cipher for encryption
+			cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivParameterSpec);
 
-			// Create an output buffer for the ciphertext
-			ciphertext = new byte[cipher.getOutputSize(plaintext.length)];
+			// Add AAD (if any)
+			if (aadCopy != null) {
+				cipher.updateAAD(aadCopy);
+			}
 
 			// Process the plaintext and generate the ciphertext
-			int len = cipher.processBytes(plaintext, 0, plaintext.length, ciphertext, 0);
-
-			// Finalize the encryption and generate the authentication tag
-			cipher.doFinal(ciphertext, len);
+			ciphertext = cipher.doFinal(plaintext);
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -123,22 +129,25 @@ public class ChaChaPolyTester {
 			byte[] aadCopy = Arrays.copyOf(aad, aad.length);
 
 			// Create a ChaCha20Poly1305 cipher instance
-			ChaCha20Poly1305 cipher = new ChaCha20Poly1305();
+			Cipher cipher = Cipher.getInstance("ChaCha20-Poly1305");
+
+			// Create ivParameterSpec with nonce
+			AlgorithmParameterSpec ivParameterSpec = new IvParameterSpec(nonce);
 
 			// Set the decryption key
-			KeyParameter keyParam = new KeyParameter(key);
+			SecretKeySpec keySpec = new SecretKeySpec(key, "ChaCha20");
 
-			// Initialize the cipher for encryption with the provided AAD
-			cipher.init(true, new AEADParameters(keyParam, TAG_SIZE_BITS, nonce, aadCopy));
+			// Initialize the cipher for decryption
+			cipher.init(Cipher.DECRYPT_MODE, keySpec, ivParameterSpec);
 
-			// Create a buffer for the decrypted plaintext
-			plaintext = new byte[cipher.getOutputSize(ciphertext.length)];
+			// Add AAD (if any)
+			if (aadCopy != null) {
+				cipher.updateAAD(aadCopy);
+			}
 
-			// Process the ciphertext and generate the decrypted plaintext
-			int len = cipher.processBytes(ciphertext, 0, ciphertext.length, plaintext, 0);
+			// Process the ciphertext and generate the plaintext
+			plaintext = cipher.doFinal(ciphertext);
 
-			// Finalize the decryption and verify the authentication tag
-			cipher.doFinal(plaintext, len);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -154,6 +163,9 @@ public class ChaChaPolyTester {
 	 */
 	@Test
 	public void testChaCha20Poly1305() {
+
+		Security.addProvider(new BouncyCastleProvider());
+
 		// Test vector input values
 		byte[] key = StringUtil.hex2ByteArray("808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f");
 		byte[] plaintext = StringUtil.hex2ByteArray(
@@ -165,7 +177,8 @@ public class ChaChaPolyTester {
 		byte[] ciphertext = encryptWithChaChaPoly(plaintext, nonce, key, aad);
 		byte[] ciphertextOnly = Arrays.copyOfRange(ciphertext, 0, ciphertext.length - TAG_SIZE_BITS / 8);
 		byte[] tag = Arrays.copyOfRange(ciphertext, ciphertext.length - TAG_SIZE_BITS / 8, ciphertext.length);
-
+		Assert.assertEquals("Invalid ciphertext length", plaintext.length + TAG_SIZE_BITS / 8, ciphertext.length);
+		
 		// Compare the ciphertext with the expected value
 		byte[] expectedCiphertext = StringUtil.hex2ByteArray(
 				"d31a8d34648e60db7b86afbc53ef7ec2a4aded51296e08fea9e2b5a736ee62d63dbea45e8ca9671282fafb69da92728b1a71de0a9e060b2905d6a5b67ecd3b3692ddbd7f2d778b8c9803aee328091b58fab324e4fad675945585808b4831d7bc3ff4def08e4b7a9de576d26586cec64b6116");
@@ -178,20 +191,19 @@ public class ChaChaPolyTester {
 		System.out.println("Expected Tag: " + StringUtil.byteArray2Hex(expectedTag));
 
 		System.out.println("Ciphertext matches: " + Arrays.equals(expectedCiphertext, ciphertextOnly));
-		Assert.assertArrayEquals(expectedCiphertext, ciphertextOnly);
+		Assert.assertArrayEquals("Invalid ciphertext", expectedCiphertext, ciphertextOnly);
 		System.out.println("Tag matches: " + Arrays.equals(expectedTag, tag));
-		Assert.assertArrayEquals(expectedTag, tag);
+		Assert.assertArrayEquals("Invalid tag", expectedTag, tag);
 
 		// Invoke the decryption function
 		byte[] plaintextOut = decryptWithChaChaPoly(ciphertext, nonce, key, aad);
 		System.out.println("Decrypted ciphertext: " + StringUtil.byteArray2Hex(plaintextOut));
 
 		// Check that decrypted plaintext is correct
-		byte[] plaintextOutOnly = Arrays.copyOfRange(plaintextOut, 0, plaintextOut.length - 2 * (TAG_SIZE_BITS / 8));
-		System.out.println("Decrypted Plaintext: " + StringUtil.byteArray2Hex(plaintextOutOnly));
+		System.out.println("Decrypted Plaintext: " + StringUtil.byteArray2Hex(plaintextOut));
 		System.out.println("Expected Plaintext: " + StringUtil.byteArray2Hex(plaintext));
-		System.out.println("Plaintext matches: " + Arrays.equals(plaintext, plaintextOutOnly));
-		Assert.assertArrayEquals(plaintext, plaintextOutOnly);
+		System.out.println("Plaintext matches: " + Arrays.equals(plaintext, plaintextOut));
+		Assert.assertArrayEquals("Invalid decrypted plaintext", plaintext, plaintextOut);
 
 	}
 
