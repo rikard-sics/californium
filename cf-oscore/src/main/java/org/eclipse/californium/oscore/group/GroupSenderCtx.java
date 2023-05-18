@@ -59,13 +59,13 @@ public class GroupSenderCtx extends OSCoreCtx {
 
 		pairwiseSenderKeys = new HashMap<ByteId, byte[]>();
 
-		// Set sender key based on used algSignEnc
+		// Set sender key based on used algGroupEnc
 		this.sender_key = deriveSenderKey();
 
 	}
 
 	/**
-	 * Derive sender key based on used algSignEnc
+	 * Derive sender key based on used algGroupEnc
 	 * 
 	 * @return the sender key
 	 * @throws OSException on key derivation failure
@@ -87,13 +87,13 @@ public class GroupSenderCtx extends OSCoreCtx {
 			throw new OSException("HKDF algorithm not supported");
 		}
 
-		int keyLength = commonCtx.algSignEnc.getKeySize() / 8;
+		int keyLength = commonCtx.algGroupEnc.getKeySize() / 8;
 
 		// Derive sender_key
 		CBORObject info = CBORObject.NewArray();
 		info.Add(sender_id);
 		info.Add(getIdContext());
-		info.Add(getCommonCtx().algSignEnc.AsCBOR());
+		info.Add(getCommonCtx().algGroupEnc.AsCBOR());
 		info.Add(CBORObject.FromObject("Key"));
 		info.Add(keyLength);
 
@@ -175,8 +175,8 @@ public class GroupSenderCtx extends OSCoreCtx {
 	 * 
 	 * @return the alg sign enc value
 	 */
-	public AlgorithmID getAlgSignEnc() {
-		return commonCtx.algSignEnc;
+	public AlgorithmID getAlgGroupEnc() {
+		return commonCtx.algGroupEnc;
 	}
 
 	/**
