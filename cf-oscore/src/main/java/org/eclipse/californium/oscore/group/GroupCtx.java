@@ -20,7 +20,6 @@ import java.security.GeneralSecurityException;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.Map.Entry;
 
 import javax.crypto.KeyAgreement;
@@ -52,11 +51,11 @@ public class GroupCtx {
 	AlgorithmID hkdfAlg;
 	byte[] idContext;
 	AlgorithmID algSign;
-	AlgorithmID algSignEnc;
+	AlgorithmID algGroupEnc;
 	int[][] parCountersign;
 	AlgorithmID algKeyAgreement;
 	int[][] parSecret;
-	byte[] groupEncryptionKey;
+	byte[] signatureEncryptionKey;
 	byte[] gmPublicKey;
 
 	// Reference to the associated sender context
@@ -94,7 +93,7 @@ public class GroupCtx {
 		this.idContext = idContext;
 		this.algSign = algSign;
 		this.gmPublicKey = gmPublicKey;
-		this.algSignEnc = aeadAlg; // Same if not indicated
+		this.algGroupEnc = aeadAlg; // Same if not indicated
 
 		recipientCtxMap = new HashMap<ByteId, GroupRecipientCtx>();
 		publicKeysMap = new HashMap<ByteId, OneKey>();
@@ -113,11 +112,11 @@ public class GroupCtx {
 	 * @param idContext
 	 * @param algSign
 	 * @param gmPublicKey
-	 * @param algSignEnc
+	 * @param algGroupEnc
 	 * @param algKeyAgreement
 	 */
 	public GroupCtx(byte[] masterSecret, byte[] masterSalt, AlgorithmID aeadAlg, AlgorithmID hkdfAlg, byte[] idContext,
-			AlgorithmID algSign, AlgorithmID algSignEnc, AlgorithmID algKeyAgreement, byte[] gmPublicKey) {
+			AlgorithmID algSign, AlgorithmID algGroupEnc, AlgorithmID algKeyAgreement, byte[] gmPublicKey) {
 
 		this.masterSecret = masterSecret;
 		this.masterSalt = masterSalt;
@@ -126,7 +125,7 @@ public class GroupCtx {
 		this.idContext = idContext;
 		this.algSign = algSign;
 		this.gmPublicKey = gmPublicKey;
-		this.algSignEnc = algSignEnc;
+		this.algGroupEnc = algGroupEnc;
 		this.algKeyAgreement = algKeyAgreement;
 
 		recipientCtxMap = new HashMap<ByteId, GroupRecipientCtx>();
@@ -167,7 +166,7 @@ public class GroupCtx {
 				masterSalt, idContext, ownPrivateKey, null, this);
 		this.senderCtx = senderCtx;
 
-		this.groupEncryptionKey = deriveGroupEncryptionKey();
+		this.signatureEncryptionKey = deriveSignatureEncryptionKey();
 	}
 
 	//
@@ -211,7 +210,7 @@ public class GroupCtx {
 				masterSalt, idContext, ownPrivateKey.getCoseKey(), ownPrivateKey.getRawKey(), this);
 		this.senderCtx = senderCtx;
 
-		this.groupEncryptionKey = deriveGroupEncryptionKey();
+		this.signatureEncryptionKey = deriveSignatureEncryptionKey();
 	}
 	//
 
@@ -373,7 +372,7 @@ public class GroupCtx {
 	}
 
 	// TODO: Merge with below?
-	byte[] deriveGroupEncryptionKey() {
+	byte[] deriveSignatureEncryptionKey() {
 
 		String digest = "";
 		if (senderCtx.getKdf().toString().contains("SHA_256")) {
@@ -383,27 +382,27 @@ public class GroupCtx {
 		}
 
 		CBORObject info = CBORObject.NewArray();
-		int keyLength = this.algSignEnc.getKeySize() / 8;
+		int keyLength = this.algGroupEnc.getKeySize() / 8;
 
-		// Then derive the group encryption key
+		// Then derive the signature encryption key
 		info = CBORObject.NewArray();
 		info.Add(Bytes.EMPTY);
 		info.Add(this.idContext);
 		// https://datatracker.ietf.org/doc/html/draft-ietf-core-oscore-groupcomm-17#section-2.1.6
-		info.Add(this.algSignEnc.AsCBOR());
-		info.Add(CBORObject.FromObject("Group Encryption Key"));
+		info.Add(this.algGroupEnc.AsCBOR());
+		info.Add(CBORObject.FromObject("SEKey"));
 		info.Add(keyLength);
 
-		byte[] groupEncryptionKey = null;
+		byte[] signatureEncryptionKey = null;
 		try {
-			groupEncryptionKey = OSCoreCtx.deriveKey(senderCtx.getMasterSecret(), senderCtx.getSalt(), keyLength,
+			signatureEncryptionKey = OSCoreCtx.deriveKey(senderCtx.getMasterSecret(), senderCtx.getSalt(), keyLength,
 					digest, info.EncodeToBytes());
 
 		} catch (CoseException e) {
 			System.err.println(e.getMessage());
 		}
 
-		return groupEncryptionKey;
+		return signatureEncryptionKey;
 	}
 
 	// TODO: Merge with below?
@@ -572,13 +571,13 @@ public class GroupCtx {
 	}
 
 	/**
-	 * Get the group encryption key from the common context (used for making a
+	 * Get the signature encryption key from the common context (used for making a
 	 * keystream to encrypt the signature).
 	 * 
-	 * @return the group encryption key
+	 * @return the signature encryption key
 	 */
-	public byte[] getGroupEncryptionKey() {
-		return groupEncryptionKey;
+	public byte[] getSignatureEncryptionKey() {
+		return signatureEncryptionKey;
 	}
 
 }

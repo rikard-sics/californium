@@ -279,7 +279,7 @@ public class OSSerializer {
 	public static byte[] updateAADForGroup(OSCoreCtx ctx, byte[] aadBytes, Message message) {
 
 		CBORObject algSign;
-		CBORObject algSignEnc;
+		CBORObject algGroupEnc;
 		CBORObject algKeyAgreement;
 
 		byte[] senderPublicKey;
@@ -288,14 +288,14 @@ public class OSSerializer {
 		if (ctx instanceof GroupRecipientCtx) {
 			GroupRecipientCtx recipientCtx = (GroupRecipientCtx) ctx;
 			algSign = recipientCtx.getAlgSign().AsCBOR();
-			algSignEnc = recipientCtx.getAlgSignEnc().AsCBOR();
+			algGroupEnc = recipientCtx.getAlgGroupEnc().AsCBOR();
 			algKeyAgreement = recipientCtx.getAlgKeyAgreement().AsCBOR();
 			senderPublicKey = recipientCtx.getPublicKeyRaw();
 			gmPublicKey = recipientCtx.getCommonCtx().getGmPublicKey();
 		} else {
 			GroupSenderCtx senderCtx = (GroupSenderCtx) ctx;
 			algSign = senderCtx.getAlgSign().AsCBOR();
-			algSignEnc = senderCtx.getAlgSignEnc().AsCBOR();
+			algGroupEnc = senderCtx.getAlgGroupEnc().AsCBOR();
 			algKeyAgreement = senderCtx.getAlgKeyAgreement().AsCBOR();
 			senderPublicKey = senderCtx.getPublicKeyRaw();
 			gmPublicKey = senderCtx.getCommonCtx().getGmPublicKey();
@@ -305,7 +305,7 @@ public class OSSerializer {
 
 		// Build index 1 which holds the algorithms array
 		CBORObject algorithms = groupAadEnc.get(1);
-		algorithms.Add(algSignEnc);
+		algorithms.Add(algGroupEnc);
 		algorithms.Add(algSign);
 		algorithms.Add(algKeyAgreement);
 

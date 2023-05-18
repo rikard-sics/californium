@@ -62,7 +62,7 @@ public class GroupTestVectorBuilder {
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
 	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
 
-	private final static AlgorithmID algSignEnc = AlgorithmID.AES_CCM_16_64_128;
+	private final static AlgorithmID algGroupEnc = AlgorithmID.AES_CCM_16_64_128;
 	private final static AlgorithmID algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
 
 	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
@@ -175,7 +175,7 @@ public class GroupTestVectorBuilder {
 
 		System.out.println("HKDF Algorithm: " + kdf.AsCBOR() + " (" + kdf + ")" + "\n");
 
-		System.out.println("Signature Encryption Algorithm: " + algSignEnc.AsCBOR() + " (" + algSignEnc + ")" + "\n");
+		System.out.println("Group Encryption Algorithm: " + algGroupEnc.AsCBOR() + " (" + algGroupEnc + ")" + "\n");
 
 		System.out.println("Signature Algorithm: " + algCountersign.AsCBOR() + " (" + algCountersign + ")" + "\n");
 		if (algCountersign == AlgorithmID.ECDSA_256) {
