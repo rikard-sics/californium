@@ -53,7 +53,7 @@ public class GroupOscoreCtxTest {
 	AlgorithmID algCountersign = AlgorithmID.EDDSA;
 
 	// Encryption algorithm for when using signatures
-	AlgorithmID algSignEnc = AlgorithmID.AES_CCM_16_64_128;
+	AlgorithmID algGroupEnc = AlgorithmID.AES_CCM_16_64_128;
 
 	// Algorithm for key agreement
 	AlgorithmID algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
@@ -105,7 +105,7 @@ public class GroupOscoreCtxTest {
 
 		// Test context generation
 		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign,
-				algSignEnc, algKeyAgreement, gmPublicKey);
+				algGroupEnc, algKeyAgreement, gmPublicKey);
 		commonCtx.addSenderCtxCcs(sid, sid_private_key);
 		commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
 
@@ -118,9 +118,9 @@ public class GroupOscoreCtxTest {
 		assertArrayEquals("Incorrect GM public key", gm_public_key_bytes, commonCtx.getGmPublicKey());
 		assertArrayEquals("Incorrect master secret", master_secret, commonCtx.getSenderCtx().getMasterSecret());
 
-		byte[] correctGroupEncryptionKey = StringUtil.hex2ByteArray("b2a2df8dca9627613f8a2a9ec7a256c6");
-		assertArrayEquals("Incorrect group encryption key", correctGroupEncryptionKey,
-				commonCtx.getGroupEncryptionKey());
+		byte[] correctSignatureEncryptionKey = StringUtil.hex2ByteArray("CD32CAEEABF3324D4BB84793A551E234");
+		assertArrayEquals("Incorrect signature encryption key", correctSignatureEncryptionKey,
+				commonCtx.getSignatureEncryptionKey());
 
 		// Check sender and recipient contents
 		byte[] correctSenderKey = StringUtil.hex2ByteArray("6511e11b210c2f0a89d06c667123fe7f");
@@ -166,7 +166,7 @@ public class GroupOscoreCtxTest {
 
 		// Test context generation
 		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign,
-				algSignEnc, algKeyAgreement, gmPublicKey);
+				algGroupEnc, algKeyAgreement, gmPublicKey);
 		commonCtx.addSenderCtxCcs(sid, sid_private_key);
 		commonCtx.addRecipientCtxCcs(rid0, REPLAY_WINDOW, null);
 		commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
@@ -180,10 +180,9 @@ public class GroupOscoreCtxTest {
 		assertArrayEquals("Incorrect GM public key", gmPublicKey, commonCtx.getGmPublicKey());
 		assertArrayEquals("Incorrect master secret", master_secret, commonCtx.getSenderCtx().getMasterSecret());
 
-		byte[] correctGroupEncryptionKey = StringUtil.hex2ByteArray("eaedbbcd9dd887cbe2294fd05b08b43c");
-
-		assertArrayEquals("Incorrect group encryption key", correctGroupEncryptionKey,
-				commonCtx.getGroupEncryptionKey());
+		byte[] correctSignatureEncryptionKey = StringUtil.hex2ByteArray("50803F3D9421C862A0049997131544B5");
+		assertArrayEquals("Incorrect signature encryption key", correctSignatureEncryptionKey,
+				commonCtx.getSignatureEncryptionKey());
 
 		// Check sender and recipient contents
 		byte[] correctSenderKey = StringUtil.hex2ByteArray("07328e19f9245c1d758e81c4bbe7b32d");

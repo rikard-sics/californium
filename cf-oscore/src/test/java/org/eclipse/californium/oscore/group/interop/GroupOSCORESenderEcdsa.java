@@ -120,7 +120,7 @@ public class GroupOSCORESenderEcdsa {
 	private final static AlgorithmID algCountersign = AlgorithmID.ECDSA_256;
 
 	// Encryption algorithm for when using signatures
-	private final static AlgorithmID algSignEnc = AlgorithmID.AES_CCM_16_64_128;
+	private final static AlgorithmID algGroupEnc = AlgorithmID.AES_CCM_16_64_128;
 
 	// Algorithm for key agreement
 	private final static AlgorithmID algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
@@ -191,7 +191,7 @@ public class GroupOSCORESenderEcdsa {
 
 			byte[] gmPublicKey = gm_public_key_bytes;
 			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign,
-					algSignEnc, algKeyAgreement, gmPublicKey);
+					algGroupEnc, algKeyAgreement, gmPublicKey);
 
 			commonCtx.addSenderCtxCcs(sid, sid_private_key);
 
