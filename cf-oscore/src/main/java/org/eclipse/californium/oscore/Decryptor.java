@@ -250,9 +250,8 @@ public abstract class Decryptor {
 					aad = OSSerializer.updateAADForDeterministicRequest(hash, aad);
 					message.getOptions().removeRequestHash();
 				}
-				
-				decryptionAlg = ((GroupRecipientCtx) ctx).getAlgSignEnc();
 
+				decryptionAlg = ((GroupRecipientCtx) ctx).getAlgGroupEnc();
 				// Decrypt the signature.
 				if (isRequest || piv != null) {
 					byte[] pivFromMessage = enc.findAttribute(HeaderKeys.PARTIAL_IV).GetByteString();
@@ -591,10 +590,10 @@ public abstract class Decryptor {
 
 		System.out.println("INFO ARRAY: " + StringUtil.byteArray2Hex(info.EncodeToBytes()));
 
-		byte[] groupEncryptionKey = ctx.getCommonCtx().getGroupEncryptionKey();
+		byte[] signatureEncryptionKey = ctx.getCommonCtx().getSignatureEncryptionKey();
 		byte[] keystream = null;
 		try {
-			keystream = OSCoreCtx.deriveKey(groupEncryptionKey, partialIV, keyLength, digest, info.EncodeToBytes());
+			keystream = OSCoreCtx.deriveKey(signatureEncryptionKey, partialIV, keyLength, digest, info.EncodeToBytes());
 
 		} catch (CoseException e) {
 			System.err.println(e.getMessage());
@@ -602,7 +601,7 @@ public abstract class Decryptor {
 
 		System.out.println("===");
 		System.out.println("D Signature keystream: " + Utils.toHexString(keystream));
-		System.out.println("D groupEncryptionKey: " + Utils.toHexString(groupEncryptionKey));
+		System.out.println("D signatureEncryptionKey: " + Utils.toHexString(signatureEncryptionKey));
 		System.out.println("D partialIV: " + Utils.toHexString(partialIV));
 		System.out.println("D kid: " + Utils.toHexString(kid));
 		System.out.println("D IdContext: " + Utils.toHexString(ctx.getIdContext()));

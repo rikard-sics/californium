@@ -51,14 +51,14 @@ public class GroupRecipientCtx extends OSCoreCtx {
 			this.otherEndpointPubKeyRaw = otherEndpointPubKeyRaw;
 		}
 		
-		// Set sender key based on used algSignEnc
+		// Set sender key based on used algGroupEnc
 		byte[] derivedRecipientKey = deriveRecipientKey();
 		this.setRecipientKey(derivedRecipientKey);
 
 	}
 	
 	/**
-	 * Derive Recipient Key based on used algSignEnc
+	 * Derive Recipient Key based on used algGroupEnc
 	 * 
 	 * @return the Recipient Key
 	 * @throws OSException on key derivation failure
@@ -80,13 +80,13 @@ public class GroupRecipientCtx extends OSCoreCtx {
 			throw new OSException("HKDF algorithm not supported");
 		}
 
-		int keyLength = commonCtx.algSignEnc.getKeySize() / 8;
+		int keyLength = commonCtx.algGroupEnc.getKeySize() / 8;
 
 		// Derive recipient_key
 		CBORObject info = CBORObject.NewArray();
 		info.Add(this.getRecipientId());
 		info.Add(getIdContext());
-		info.Add(getCommonCtx().algSignEnc.AsCBOR());
+		info.Add(getCommonCtx().algGroupEnc.AsCBOR());
 		info.Add(CBORObject.FromObject("Key"));
 		info.Add(keyLength);
 
@@ -152,8 +152,8 @@ public class GroupRecipientCtx extends OSCoreCtx {
 	 * 
 	 * @return the alg sign enc value
 	 */
-	public AlgorithmID getAlgSignEnc() {
-		return commonCtx.algSignEnc;
+	public AlgorithmID getAlgGroupEnc() {
+		return commonCtx.algGroupEnc;
 	}
 
 	/**

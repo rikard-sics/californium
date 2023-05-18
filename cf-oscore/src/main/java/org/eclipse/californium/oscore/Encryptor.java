@@ -292,7 +292,7 @@ public abstract class Encryptor {
 					}
 				} else {
 					// If group mode is used prepare adding the signature
-					encryptionAlg = ((GroupSenderCtx) ctx).getAlgSignEnc();
+					encryptionAlg = ((GroupSenderCtx) ctx).getAlgGroupEnc();
 					prepareSignature(enc, ctx, aad, message);
 				}
 
@@ -517,10 +517,10 @@ public abstract class Encryptor {
 
 		System.out.println("Info: " + StringUtil.byteArray2Hex(info.EncodeToBytes()));
 		
-		byte[] groupEncryptionKey = ctx.getCommonCtx().getGroupEncryptionKey();
+		byte[] signatureEncryptionKey = ctx.getCommonCtx().getSignatureEncryptionKey();
 		byte[] keystream = null;
 		try {
-			keystream = OSCoreCtx.deriveKey(groupEncryptionKey, partialIV, keyLength, digest, info.EncodeToBytes());
+			keystream = OSCoreCtx.deriveKey(signatureEncryptionKey, partialIV, keyLength, digest, info.EncodeToBytes());
 
 		} catch (CoseException e) {
 			System.err.println(e.getMessage());
@@ -531,7 +531,7 @@ public abstract class Encryptor {
 
 		System.out.println("===");
 		System.out.println("E Signature keystream: " + Utils.toHexString(keystream));
-		System.out.println("E groupEncryptionKey: " + Utils.toHexString(groupEncryptionKey));
+		System.out.println("E signatureEncryptionKey: " + Utils.toHexString(signatureEncryptionKey));
 		System.out.println("E partialIV: " + Utils.toHexString(partialIV));
 		System.out.println("E kid: " + Utils.toHexString(kid));
 		System.out.println("E IdContext: " + Utils.toHexString(ctx.getIdContext()));
