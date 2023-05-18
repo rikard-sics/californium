@@ -155,12 +155,12 @@ public class AesCcmTester {
 				ciphertextAndTag.length);
 
 		// Check against expected values
-		Assert.assertArrayEquals(ciphertext, expectedCiphertext);
-		Assert.assertArrayEquals(tag, expectedTag);
+		Assert.assertArrayEquals("Incorrect ciphertext", ciphertext, expectedCiphertext);
+		Assert.assertArrayEquals("Incorrect tag", tag, expectedTag);
 
 		// Decrypt and check
 		byte[] decryptedPlaintext = decryptAesCcm(ciphertextAndTag, key, aad, tag.length * 8, nonce);
-		Assert.assertArrayEquals(plaintext, decryptedPlaintext);
+		Assert.assertArrayEquals("Incorrect decrypted plaintext", plaintext, decryptedPlaintext);
 	}
 
 	private static final String ALGORITHM = "AES/CCM/NoPadding";

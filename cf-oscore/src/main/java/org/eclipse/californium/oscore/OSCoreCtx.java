@@ -938,6 +938,7 @@ public class OSCoreCtx {
 		case AES_CCM_16_128_256:
 		case AES_CCM_64_64_256:
 		case AES_CCM_64_128_256:
+		case CHACHA20_POLY1305:
 			if (Security.getProvider("BC") == null) {
 				Security.addProvider(new BouncyCastleProvider());
 			}
