@@ -36,6 +36,7 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
 import org.eclipse.californium.elements.util.Base64;
+import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 import org.eclipse.californium.oscore.OSException;
@@ -129,7 +130,6 @@ public class GroupEncryptorTest {
 	 * @throws IOException on test failure
 	 */
 	@Test
-	@Ignore // TODO: Recalculate
 	public void testRequestEncryptorGroupMode() throws OSException, CoseException, IOException {
 		// Set up OSCORE context
 		byte[] sid = new byte[] { 0x00 };
@@ -174,8 +174,7 @@ public class GroupEncryptorTest {
 		assertTrue(groupModeBit != 0);
 
 		// Check the OSCORE request payload (ciphertext excluding signature)
-		byte[] predictedOSCorePayload = { 0x1F, (byte) 0x88, (byte) 0xD2, (byte) 0x99, 0x6D, (byte) 0xE8, (byte) 0xF5,
-				0x03, (byte) 0xCB, 0x49, 0x2A, 0x38, (byte) 0xED };
+		byte[] predictedOSCorePayload = StringUtil.hex2ByteArray("1F88D2996DDE09451F4716D5E8");
 		byte[] requestPayload = Arrays.copyOfRange(encrypted.getPayload(), 0,
 				encrypted.getPayload().length - commonCtx.getCountersignatureLen());
 		assertArrayEquals(predictedOSCorePayload, requestPayload);
@@ -191,15 +190,9 @@ public class GroupEncryptorTest {
 				encryptedBytes.length - commonCtx.getCountersignatureLen());
 
 		// Check the whole OSCORE request excluding signature
-		byte[] predictedOSCoreBytes = { (byte) 0x44, (byte) 0x02, (byte) 0x71, (byte) 0xC3, (byte) 0x00, (byte) 0x00,
-				(byte) 0xB9, (byte) 0x32, (byte) 0x39, (byte) 0x6C, (byte) 0x6F, (byte) 0x63, (byte) 0x61, (byte) 0x6C,
-				(byte) 0x68, (byte) 0x6F, (byte) 0x73, (byte) 0x74, (byte) 0x6C, (byte) 0x39, (byte) 0x14, (byte) 0x08,
-				(byte) 0x74, (byte) 0x65, (byte) 0x73, (byte) 0x74, (byte) 0x74, (byte) 0x65, (byte) 0x73, (byte) 0x74,
-				(byte) 0x00, (byte) 0xFF, (byte) 0x1F, (byte) 0x88, (byte) 0xD2, (byte) 0x99, (byte) 0x6D, (byte) 0xE8,
-				(byte) 0xF5, (byte) 0x03, (byte) 0xCB, (byte) 0x49, (byte) 0x2A, (byte) 0x38, (byte) 0xED };
+		byte[] predictedOSCoreBytes = StringUtil.hex2ByteArray("440271C30000B932396C6F63616C686F73746C391408746573747465737400FF1F88D2996DDE09451F4716D5E8");
 
 		assertArrayEquals(predictedOSCoreBytes, encryptedBytes);
-
 	}
 
 	/**
