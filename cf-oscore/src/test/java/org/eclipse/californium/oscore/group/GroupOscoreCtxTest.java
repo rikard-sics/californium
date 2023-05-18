@@ -52,7 +52,7 @@ public class GroupOscoreCtxTest {
 	// Group OSCORE specific values for the countersignature (EdDSA)
 	AlgorithmID algCountersign = AlgorithmID.EDDSA;
 
-	// Encryption algorithm for when using signatures
+	// Encryption algorithm for when using Group mode
 	AlgorithmID algGroupEnc = AlgorithmID.AES_CCM_16_64_128;
 
 	// Algorithm for key agreement
