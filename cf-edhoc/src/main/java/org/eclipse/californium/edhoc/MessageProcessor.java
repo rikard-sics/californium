@@ -303,7 +303,7 @@ public class MessageProcessor {
 			responseCode = ResponseCode.BAD_REQUEST;
 			error = true;
     	}
-    	else {
+    	if (error == false) {
     	    // If the received message is a request (i.e. the CoAP client is the initiator), the first element
     	    // before the actual message_1 is the CBOR simple value 'true', i.e. the byte 0xf5, and it can be skipped
 	    	if (isReq) {
@@ -753,47 +753,8 @@ public class MessageProcessor {
 			// CIPHERTEXT_2
 			ciphertext2 = new byte[ciphetertext2Length];
 			System.arraycopy(gY_Ciphertext2, gYLength, ciphertext2, 0, ciphetertext2Length);
-			
-			// Move to the next element of the CBOR sequence, i.e., C_R 
-			index++;
-			
-		}
-		
 
-		// C_R
-		if (error == false) {
-			cR = objectList[index];
-			
-			if (cR.getType() != CBORType.ByteString && cR.getType() != CBORType.Integer) {
-					errMsg = new String("C_R must be a byte string or an integer");
-					responseCode = ResponseCode.BAD_REQUEST;
-					error = true;
-			}
-			if (error == false) {
-				connectionIdentifierResponder = decodeIdentifier(cR);
-				if (connectionIdentifierResponder == null) {
-				    errMsg = new String("Invalid encoding of C_R");
-				    responseCode = ResponseCode.BAD_REQUEST;
-				    error = true;
-				}
-				else {
-					session.setPeerConnectionId(connectionIdentifierResponder);
-					if (debugPrint) {
-					    Util.nicePrint("Connection Identifier of the Responder", connectionIdentifierResponder);
-					    Util.nicePrint("C_R", cR.EncodeToBytes());
-					}
-				}
-			}
-			if (error == false) {
-				if (session.getApplicationProfile().getUsedForOSCORE() == true && 
-					Arrays.equals(connectionIdentifierInitiator, connectionIdentifierResponder) == true) {
-				    errMsg = new String("C_R must be different from C_I");
-				    responseCode = ResponseCode.BAD_REQUEST;
-				    error = true;
-				}		
-			}			
 		}
-		
 		
 		/* Return an EDHOC Error Message */
 		
@@ -815,9 +776,8 @@ public class MessageProcessor {
         	objectListData2.add(objectList[i]);
         byte[] hashMessage1SerializedCBOR = CBORObject.FromObject(hashMessage1).EncodeToBytes();
         byte[] gYSerializedCBOR = CBORObject.FromObject(gY).EncodeToBytes();
-        byte[] cRSerializedCBOR = cR.EncodeToBytes();
         
-        th2 = computeTH2(session, gYSerializedCBOR, cRSerializedCBOR, hashMessage1SerializedCBOR);
+        th2 = computeTH2(session, gYSerializedCBOR, hashMessage1SerializedCBOR);
         if (th2 == null) {
         	errMsg = new String("Error when computing TH2");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
@@ -906,21 +866,54 @@ public class MessageProcessor {
     	    responseCode = ResponseCode.BAD_REQUEST;
     	    error = true;
     	}
-    	if (error == false && plaintextElementList.length < 2) {
+    	if (error == false && plaintextElementList.length < 3) {
         	errMsg = new String("Invalid format of the content encrypted as CIPHERTEXT_2");
         	responseCode = ResponseCode.BAD_REQUEST;
         	error = true;
     	}
-    	else if (error == false &&
-    			 plaintextElementList[0].getType() != CBORType.ByteString &&
-    			 plaintextElementList[0].getType() != CBORType.Integer &&
-    			 plaintextElementList[0].getType() != CBORType.Map) {
+    	if (error == false) {
+    	    cR = plaintextElementList[0];
+
+    	    if (cR.getType() != CBORType.ByteString && cR.getType() != CBORType.Integer) {
+    	            errMsg = new String("C_R must be a byte string or an integer");
+    	            responseCode = ResponseCode.BAD_REQUEST;
+    	            error = true;
+    	    }
+    	    if (error == false) {
+    	        connectionIdentifierResponder = decodeIdentifier(cR);
+    	        if (connectionIdentifierResponder == null) {
+    	            errMsg = new String("Invalid encoding of C_R");
+    	            responseCode = ResponseCode.BAD_REQUEST;
+    	            error = true;
+    	        }
+    	        else {
+    	            session.setPeerConnectionId(connectionIdentifierResponder);
+    	            if (debugPrint) {
+    	                Util.nicePrint("Connection Identifier of the Responder", connectionIdentifierResponder);
+    	                Util.nicePrint("C_R", cR.EncodeToBytes());
+    	            }
+    	        }
+    	    }
+    	    if (error == false) {
+    	        if (session.getApplicationProfile().getUsedForOSCORE() == true &&
+    	            Arrays.equals(connectionIdentifierInitiator, connectionIdentifierResponder) == true) {
+    	            errMsg = new String("C_R must be different from C_I");
+    	            responseCode = ResponseCode.BAD_REQUEST;
+    	            error = true;
+    	        }
+    	    }
+
+    	}
+    	if (error == false &&
+    			 plaintextElementList[1].getType() != CBORType.ByteString &&
+    			 plaintextElementList[1].getType() != CBORType.Integer &&
+    			 plaintextElementList[1].getType() != CBORType.Map) {
         	errMsg = new String("Invalid format of ID_CRED_R");
         	responseCode = ResponseCode.BAD_REQUEST;
         	error = true;
     	}
-    	else if (error == false) {
-        	CBORObject rawIdCredR = plaintextElementList[0];
+    	if (error == false) {
+        	CBORObject rawIdCredR = plaintextElementList[1];
         	
         	// ID_CRED_R is a CBOR map with 'kid', and only 'kid' was transported
         	if (rawIdCredR.getType() == CBORType.ByteString || rawIdCredR.getType() == CBORType.Integer) {
@@ -941,14 +934,14 @@ public class MessageProcessor {
         	responseCode = ResponseCode.BAD_REQUEST;
 			error = true;
     	}
-    	else if (error == false && plaintextElementList[1].getType() != CBORType.ByteString) {
+    	if (error == false && plaintextElementList[2].getType() != CBORType.ByteString) {
         	errMsg = new String("Signature_or_MAC_2 must be a byte string");
         	responseCode = ResponseCode.BAD_REQUEST;
         	error = true;
     	}
-    	else if (error == false && plaintextElementList.length > 2) {
+    	if (error == false && plaintextElementList.length > 3) {
     		// EAD_2 is present
-		    ead2 = preParseEAD(plaintextElementList, 2, 2, session.getSupportedEADs());
+		    ead2 = preParseEAD(plaintextElementList, 3, 2, session.getSupportedEADs());
 		   
 		    if (ead2.length == 1 && ead2[0].getType() == CBORType.TextString) {
 		    	errMsg = new String(ead2[0].toString());
@@ -965,8 +958,6 @@ public class MessageProcessor {
     	}
     	
     	error = false;
-
-    	
     	
     	
     	CBORObject peerCredentialCBOR = null;
@@ -1064,7 +1055,7 @@ public class MessageProcessor {
     	}
             	
     	// Verify Signature_or_MAC_2
-    	byte[] signatureOrMac2 = plaintextElementList[1].GetByteString();
+    	byte[] signatureOrMac2 = plaintextElementList[2].GetByteString();
     	if (debugPrint && signatureOrMac2 != null) {
     		Util.nicePrint("Signature_or_MAC_2", signatureOrMac2);
     	}
@@ -1123,9 +1114,7 @@ public class MessageProcessor {
 								errMsg, null, responseCode);
     	}
     	
-    	
-    	
-    	
+
     	// Store PLAINTEXT_2 for the later computation of TH_3
 		session.setPlaintext2(plaintext2);
     	
@@ -1369,15 +1358,15 @@ public class MessageProcessor {
     	    responseCode = ResponseCode.BAD_REQUEST;
     	    error = true;
     	}
-    	else if (error == false &&
+    	if (error == false &&
                 plaintextElementList[0].getType() != CBORType.ByteString &&
                 plaintextElementList[0].getType() != CBORType.Integer &&
                 plaintextElementList[0].getType() != CBORType.Map) {
-        errMsg = new String("Invalid format of ID_CRED_I");
-        responseCode = ResponseCode.BAD_REQUEST;
-        error = true;
+	        errMsg = new String("Invalid format of ID_CRED_I");
+	        responseCode = ResponseCode.BAD_REQUEST;
+	        error = true;
     	}
-    	else if (error == false) {
+    	if (error == false) {
         	CBORObject rawIdCredI = plaintextElementList[0];
         	
         	// ID_CRED_I is a CBOR map with 'kid', and only 'kid' was transported
@@ -1394,12 +1383,12 @@ public class MessageProcessor {
         	    error = true;
         	}
     	}    	
-    	else if (error == false && plaintextElementList[1].getType() != CBORType.ByteString) {
+    	if (error == false && plaintextElementList[1].getType() != CBORType.ByteString) {
     	    errMsg = new String("Signature_or_MAC_3 must be a byte string");
     	    responseCode = ResponseCode.BAD_REQUEST;
     	    error = true;
     	}
-    	else if (error == false && plaintextElementList.length > 2) {
+    	if (error == false && plaintextElementList.length > 2) {
 		   // EAD_3 is present
 		   ead3 = preParseEAD(plaintextElementList, 2, 3, session.getSupportedEADs());
 		   
@@ -2292,9 +2281,8 @@ public class MessageProcessor {
         byte[] hashMessage1 = session.getHashMessage1(); // the hash of message_1, as plain bytes
         byte[] hashMessage1SerializedCBOR = CBORObject.FromObject(hashMessage1).EncodeToBytes();
         byte[] gYSerializedCBOR = gY.EncodeToBytes();
-        byte[] cRSerializedCBOR = cR.EncodeToBytes();
         
-        byte[] th2 = computeTH2(session, gYSerializedCBOR, cRSerializedCBOR, hashMessage1SerializedCBOR);
+        byte[] th2 = computeTH2(session, gYSerializedCBOR, hashMessage1SerializedCBOR);
         if (th2 == null) {
     		System.err.println("Error when computing TH_2");
     		errMsg = new String("Error when computing TH_2");
@@ -2446,6 +2434,7 @@ public class MessageProcessor {
         if (error == false) {
 	    	// Prepare the plaintext
 	    	List<CBORObject> plaintextElementList = new ArrayList<>();
+	    	plaintextElementList.add(cR);
 	    	CBORObject plaintextElement = null;
 	    	if (session.getIdCred().ContainsKey(HeaderKeys.KID.AsCBOR())) {
 	    		// ID_CRED_R uses 'kid', whose value is the only thing to include in the plaintext
@@ -2482,7 +2471,7 @@ public class MessageProcessor {
         
     	
     	// Compute CIPHERTEXT_2
-	        if (error == false) {
+	    if (error == false) {
 	        
 	    	byte[] ciphertext2 = Util.arrayXor(plaintext2, keystream2);
 
@@ -2508,9 +2497,7 @@ public class MessageProcessor {
 	    	if (debugPrint) {
 	    	    Util.nicePrint("G_Y | CIPHERTEXT_2", gY_Ciphertext2);
 	    	}
-	    	
-	    	// The outer CBOR sequence finishes with the connection identifier C_R
-	    	objectList.add(cR);
+
         }
 
     	
@@ -4321,24 +4308,19 @@ public class MessageProcessor {
      *  Compute the transcript hash TH2
      * @param session   The used EDHOC session
      * @param gY   The G_Y ephemeral key from the EDHOC Message 2, as a serialized CBOR byte string
-     * @param cR   The C_R connection identifier from the EDHOC Message 2, as a serialized CBOR Object
      * @param hashMessage1   The hash of EDHOC Message 1, as a serialized CBOR byte string
      * @return  The computed TH2
      */
-	public static byte[] computeTH2(EdhocSession session, byte[] gY, byte[] cR, byte[] hashMessage1) {
+	public static byte[] computeTH2(EdhocSession session, byte[] gY, byte[] hashMessage1) {
 	
         byte[] th2 = null;
         
         int selectedCipherSuite = session.getSelectedCipherSuite();
         String hashAlgorithm = EdhocSession.getEdhocHashAlg(selectedCipherSuite);
 
-        int offset = 0;
-        byte[] hashInput = new byte[gY.length + cR.length + hashMessage1.length];
-        System.arraycopy(gY, 0, hashInput, offset, gY.length);
-        offset += gY.length;
-        System.arraycopy(cR, 0, hashInput, offset, cR.length);
-        offset += cR.length;
-        System.arraycopy(hashMessage1, 0, hashInput, offset, hashMessage1.length);
+        byte[] hashInput = new byte[gY.length + hashMessage1.length];
+        System.arraycopy(gY, 0, hashInput, 0, gY.length);
+        System.arraycopy(hashMessage1, 0, hashInput, gY.length, hashMessage1.length);
 		Util.nicePrint("Input to calculate TH_2", hashInput);
         try {
 			th2 = Util.computeHash(hashInput, hashAlgorithm);
