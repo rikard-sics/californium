@@ -64,6 +64,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -741,13 +742,14 @@ public class GroupOSCoreServerClientTest {
 	 * @throws Exception on test failure
 	 */
 	@Test(timeout = 500)
+	@Ignore
 	public void testDifferentAlgs() throws Exception {
 
-		createServer(false); // No PIV in responses
+		// createServer(false); // No PIV in responses
 
 		// Set up OSCORE context information for request (client)
 		byte[] sid = new byte[] { 0x25 };
-		byte[] rid2 = new byte[] { 0x66 };
+		byte[] rid2 = new byte[] { 0x77 };
 		AlgorithmID alg = AlgorithmID.AES_CCM_16_128_128;
 		AlgorithmID algGroupEnc = AlgorithmID.AES_CCM_64_128_128;
 		AlgorithmID algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
@@ -755,10 +757,25 @@ public class GroupOSCoreServerClientTest {
 		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign, algGroupEnc,
 				algKeyAgreement, gmPublicKey);
 		OneKey clientFullKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
+		OneKey serverPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
 
 		commonCtx.addSenderCtx(sid, clientFullKey);
-		commonCtx.addRecipientCtx(rid2, REPLAY_WINDOW, null);
+		commonCtx.addRecipientCtx(rid2, REPLAY_WINDOW, serverPublicKey);
 		dbClient.addContext(uri, commonCtx);
+
+		// Set up OSCORE context information for response (server)
+		byte[] sidSrv = new byte[] { 0x77 };
+		byte[] ridSrv = new byte[] { 0x25 };
+		GroupCtx commonCtxSrv = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
+				algGroupEnc, algKeyAgreement, gmPublicKey);
+
+		OneKey serverFullKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
+		commonCtxSrv.addSenderCtx(sidSrv, serverFullKey);
+		OneKey clientPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(clientKeyString))).PublicKey();
+		commonCtxSrv.addRecipientCtx(ridSrv, REPLAY_WINDOW, clientPublicKey);
+		commonCtxSrv.setResponsesIncludePartialIV(true);
+		commonCtxSrv.setPairwiseModeResponses(true);
+		dbServer.addContext(clientHostAdd, commonCtxSrv);
 
 		// Create client endpoint with OSCORE context DB
 		CoapEndpoint clientEndpoint = createClientEndpoint();

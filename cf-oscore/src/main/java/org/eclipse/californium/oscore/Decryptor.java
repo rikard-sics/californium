@@ -33,6 +33,7 @@ import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.cose.Encrypt0Message;
+import org.eclipse.californium.cose.EncryptCommon;
 
 import com.upokecenter.cbor.CBORObject;
 
@@ -96,6 +97,23 @@ public abstract class Decryptor {
 
 		AlgorithmID decryptionAlg = ctx.getAlg();
 		CBORObject piv = enc.findAttribute(HeaderKeys.PARTIAL_IV);
+
+		// Adjust nonce/IV and Common IV lengths depending on algorithm used
+		boolean groupModeMessage = OptionJuggle.getGroupModeBit(message.getOptions().getOscore());
+		int nonceLength = ctx.getIVLength();
+		byte[] commonIV = ctx.getCommonIV();
+		if (ctx.isGroupContext() && groupModeMessage) {
+			int algGroupEncIvLen = EncryptCommon.ivLength(((GroupRecipientCtx) ctx).getAlgGroupEnc());
+			nonceLength = algGroupEncIvLen;
+			commonIV = Arrays.copyOfRange(ctx.getCommonIV(), 0, nonceLength);
+			System.out.println("AAA " + nonceLength + " " + ((GroupRecipientCtx) ctx).getAlgGroupEnc());
+		} else if (ctx.isGroupContext() && !groupModeMessage) {
+			int algIvLen = EncryptCommon.ivLength(((GroupRecipientCtx) ctx).getAlg());
+			nonceLength = algIvLen;
+			commonIV = Arrays.copyOfRange(ctx.getCommonIV(), 0, nonceLength);
+			System.out.println("BBB " + nonceLength);
+		}
+		System.out.println("Decryption once length: " + nonceLength);
 
 		if (isRequest) {
 
@@ -163,9 +181,8 @@ public abstract class Decryptor {
 					assert ctx instanceof GroupRecipientCtx;
 				}
 
-				nonce = OSSerializer.nonceGeneration(partialIV, ctx.getRecipientId(), ctx.getCommonIV(),
-						ctx.getIVLength());
-				aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), seq, ctx.getRecipientId(), message.getOptions());				
+				nonce = OSSerializer.nonceGeneration(partialIV, ctx.getRecipientId(), commonIV, nonceLength);
+				aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), seq, ctx.getRecipientId(), message.getOptions());
 			}
 		} else {
 			if (seqByToken == null) {
@@ -180,15 +197,15 @@ public abstract class Decryptor {
 				//Use the partialIV that arrived in the original request (response has no partial IV)
 
 				partialIV = ByteBuffer.allocate(INTEGER_BYTES).putInt(seq).array();
-				nonce = OSSerializer.nonceGeneration(partialIV,	ctx.getSenderId(), ctx.getCommonIV(), 
-						ctx.getIVLength());
+				nonce = OSSerializer.nonceGeneration(partialIV, ctx.getSenderId(), commonIV,
+						nonceLength);
 			} else {
 				//Since the response contains a partial IV use it for nonce calculation
 
 				partialIV = piv.GetByteString();
 				partialIV = expandToIntSize(partialIV);
-				nonce = OSSerializer.nonceGeneration(partialIV, ctx.getRecipientId(), ctx.getCommonIV(),
-						ctx.getIVLength());
+				nonce = OSSerializer.nonceGeneration(partialIV, ctx.getRecipientId(), commonIV,
+						nonceLength);
 			}
 
 			// DET_REQ
@@ -222,7 +239,6 @@ public abstract class Decryptor {
 		
 		// Handle Group OSCORE messages
 		CounterSign1 sign = null;
-		boolean groupModeMessage = OptionJuggle.getGroupModeBit(message.getOptions().getOscore());
 		if (ctx.isGroupContext() || isDetReq) {
 			LOGGER.debug("Decrypting incoming " + message.getClass().getSimpleName()
 					+ " using Group OSCORE. Pairwise mode: " + !groupModeMessage);
