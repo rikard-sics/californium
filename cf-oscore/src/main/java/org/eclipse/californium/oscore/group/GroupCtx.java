@@ -57,6 +57,17 @@ public class GroupCtx {
 	int[][] parSecret;
 	byte[] signatureEncryptionKey;
 	byte[] gmPublicKey;
+	CRED_FORMAT authCredFmt;
+
+	public enum CRED_FORMAT {
+		CCS(0), X509(1), C509(2), CWT(3);
+
+		public final int value;
+
+		private CRED_FORMAT(int value) {
+			this.value = value;
+		}
+	}
 
 	// Reference to the associated sender context
 	public GroupSenderCtx senderCtx;
@@ -73,7 +84,8 @@ public class GroupCtx {
 	boolean pairwiseModeRequests = false;
 
 	/**
-	 * Construct a Group OSCORE context.
+	 * Construct a Group OSCORE context. Uses default value for authCredFmt and
+	 * uses same algGroupEnc as aeadAlg.
 	 * 
 	 * @param masterSecret
 	 * @param masterSalt
@@ -86,24 +98,13 @@ public class GroupCtx {
 	public GroupCtx(byte[] masterSecret, byte[] masterSalt, AlgorithmID aeadAlg, AlgorithmID hkdfAlg, byte[] idContext,
 			AlgorithmID algSign, byte[] gmPublicKey) {
 
-		this.masterSecret = masterSecret;
-		this.masterSalt = masterSalt;
-		this.aeadAlg = aeadAlg;
-		this.hkdfAlg = hkdfAlg;
-		this.idContext = idContext;
-		this.algSign = algSign;
-		this.gmPublicKey = gmPublicKey;
-		this.algGroupEnc = aeadAlg; // Same if not indicated
+		this(masterSecret, masterSalt, aeadAlg, hkdfAlg, idContext, algSign, aeadAlg, AlgorithmID.ECDH_SS_HKDF_256,
+				gmPublicKey, CRED_FORMAT.CCS);
 
-		recipientCtxMap = new HashMap<ByteId, GroupRecipientCtx>();
-		publicKeysMap = new HashMap<ByteId, OneKey>();
-
-		// Default since not indicated
-		this.algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
 	}
 
 	/**
-	 * Construct a Group OSCORE context. New one to be used.
+	 * Construct a Group OSCORE context. Uses default value for authCredFmt.
 	 * 
 	 * @param masterSecret
 	 * @param masterSalt
@@ -118,6 +119,28 @@ public class GroupCtx {
 	public GroupCtx(byte[] masterSecret, byte[] masterSalt, AlgorithmID aeadAlg, AlgorithmID hkdfAlg, byte[] idContext,
 			AlgorithmID algSign, AlgorithmID algGroupEnc, AlgorithmID algKeyAgreement, byte[] gmPublicKey) {
 
+		this(masterSecret, masterSalt, aeadAlg, hkdfAlg, idContext, algSign, algGroupEnc, algKeyAgreement, gmPublicKey,
+				CRED_FORMAT.CCS);
+	}
+
+	/**
+	 * Construct a Group OSCORE context.
+	 * 
+	 * @param masterSecret
+	 * @param masterSalt
+	 * @param aeadAlg
+	 * @param hkdfAlg
+	 * @param idContext
+	 * @param algSign
+	 * @param gmPublicKey
+	 * @param algGroupEnc
+	 * @param algKeyAgreement
+	 * @param authCredFmt
+	 */
+	public GroupCtx(byte[] masterSecret, byte[] masterSalt, AlgorithmID aeadAlg, AlgorithmID hkdfAlg, byte[] idContext,
+			AlgorithmID algSign, AlgorithmID algGroupEnc, AlgorithmID algKeyAgreement, byte[] gmPublicKey,
+			CRED_FORMAT authCredFmt) {
+
 		this.masterSecret = masterSecret;
 		this.masterSalt = masterSalt;
 		this.aeadAlg = aeadAlg;
@@ -127,11 +150,12 @@ public class GroupCtx {
 		this.gmPublicKey = gmPublicKey;
 		this.algGroupEnc = algGroupEnc;
 		this.algKeyAgreement = algKeyAgreement;
+		this.authCredFmt = authCredFmt;
 
 		recipientCtxMap = new HashMap<ByteId, GroupRecipientCtx>();
 		publicKeysMap = new HashMap<ByteId, OneKey>();
-
 	}
+
 
 	/**
 	 * Add a recipient context.
