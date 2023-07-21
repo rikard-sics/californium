@@ -459,6 +459,13 @@ public class OSCoreCtx {
 	}
 
 	/**
+	 * @param common_iv the Common IV to set
+	 */
+	public void setCommonIV(byte[] common_iv) {
+		this.common_iv = common_iv;
+	}
+
+	/**
 	 * @return the set length of IV:s
 	 */
 	public int getIVLength() {
