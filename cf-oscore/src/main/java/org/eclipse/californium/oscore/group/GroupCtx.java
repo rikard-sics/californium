@@ -26,6 +26,7 @@ import javax.crypto.KeyAgreement;
 
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.EncryptCommon;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.util.Bytes;
@@ -169,6 +170,8 @@ public class GroupCtx {
 		GroupRecipientCtx recipientCtx = new GroupRecipientCtx(masterSecret, false, aeadAlg, null, recipientId, hkdfAlg,
 				replayWindow, masterSalt, idContext, otherEndpointPubKey, null, this);
 
+		recipientCtx.setCommonIV(deriveCommonIv());
+
 		recipientCtxMap.put(new ByteId(recipientId), recipientCtx);
 
 	}
@@ -188,6 +191,7 @@ public class GroupCtx {
 
 		GroupSenderCtx senderCtx = new GroupSenderCtx(masterSecret, false, aeadAlg, senderId, null, hkdfAlg, 0,
 				masterSalt, idContext, ownPrivateKey, null, this);
+		senderCtx.setCommonIV(deriveCommonIv());
 		this.senderCtx = senderCtx;
 
 		this.signatureEncryptionKey = deriveSignatureEncryptionKey();
@@ -212,6 +216,7 @@ public class GroupCtx {
 			recipientCtx = new GroupRecipientCtx(masterSecret, false, aeadAlg, null, recipientId, hkdfAlg, replayWindow,
 					masterSalt, idContext, null, null, this);
 		}
+		recipientCtx.setCommonIV(deriveCommonIv());
 
 		recipientCtxMap.put(new ByteId(recipientId), recipientCtx);
 
@@ -232,6 +237,7 @@ public class GroupCtx {
 
 		GroupSenderCtx senderCtx = new GroupSenderCtx(masterSecret, false, aeadAlg, senderId, null, hkdfAlg, 0,
 				masterSalt, idContext, ownPrivateKey.getCoseKey(), ownPrivateKey.getRawKey(), this);
+		senderCtx.setCommonIV(deriveCommonIv());
 		this.senderCtx = senderCtx;
 
 		this.signatureEncryptionKey = deriveSignatureEncryptionKey();
@@ -604,4 +610,63 @@ public class GroupCtx {
 		return signatureEncryptionKey;
 	}
 
+	/**
+	 * Derive Common IV with its length being equal to the longest nonce length
+	 * of: 1. AEAD Algorithm 2. Group Encryption Algorithm
+	 * 
+	 * @return the derived Common IV value
+	 */
+	byte[] deriveCommonIv() throws OSException {
+
+		// Set digest value depending on HKDF
+		String digest = null;
+		switch (hkdfAlg) {
+		case HKDF_HMAC_SHA_256:
+			digest = "SHA256";
+			break;
+		case HKDF_HMAC_SHA_512:
+			digest = "SHA512";
+			break;
+		case HKDF_HMAC_AES_128:
+		case HKDF_HMAC_AES_256:
+		default:
+			throw new OSException("HKDF algorithm not supported");
+		}
+
+		// Find length of Common IV to use
+		int iv_length;
+		if (aeadAlg == null) {
+			iv_length = EncryptCommon.ivLength(algGroupEnc);
+		} else if (algGroupEnc == null) {
+			iv_length = EncryptCommon.ivLength(aeadAlg);
+		} else {
+			iv_length = (EncryptCommon.ivLength(algGroupEnc) > EncryptCommon.ivLength(aeadAlg))
+					? EncryptCommon.ivLength(algGroupEnc)
+					: EncryptCommon.ivLength(aeadAlg);
+		}
+
+		AlgorithmID ivAlg = null;
+		if (algGroupEnc != null) {
+			ivAlg = algGroupEnc;
+		} else {
+			ivAlg = aeadAlg;
+		}
+		// Derive common_iv
+		CBORObject info = CBORObject.NewArray();
+		info = CBORObject.NewArray();
+		info.Add(Bytes.EMPTY);
+		info.Add(idContext);
+		info.Add(ivAlg.AsCBOR());
+		info.Add(CBORObject.FromObject("IV"));
+		info.Add(iv_length);
+
+		byte[] derivedCommonIv = null;
+		try {
+			derivedCommonIv = OSCoreCtx.deriveKey(masterSecret, masterSalt, iv_length, digest, info.EncodeToBytes());
+		} catch (CoseException e) {
+			throw new OSException("Failed to derive Common IV");
+		}
+
+		return derivedCommonIv;
+	}
 }
