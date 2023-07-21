@@ -61,7 +61,7 @@ public class GroupCtx {
 	CRED_FORMAT authCredFmt;
 
 	public enum CRED_FORMAT {
-		CCS(0), X509(1), C509(2), CWT(3);
+		CWT(0), CCS(1), X509(2), C509(3);
 
 		public final int value;
 
