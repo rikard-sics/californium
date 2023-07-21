@@ -21,6 +21,8 @@ package org.eclipse.californium.oscore;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
+
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
@@ -31,6 +33,7 @@ import org.eclipse.californium.cose.Attribute;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.CounterSign1;
 import org.eclipse.californium.cose.Encrypt0Message;
+import org.eclipse.californium.cose.EncryptCommon;
 import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.oscore.ContextRederivation.PHASE;
 import org.eclipse.californium.cose.OneKey;
@@ -81,6 +84,26 @@ public abstract class Encryptor {
 
 		AlgorithmID encryptionAlg = ctx.getAlg();
 
+		// Adjust nonce/IV and Common IV lengths depending on algorithm used
+		boolean groupModeMessage = false;
+		boolean pairwiseResponse = ctx.isGroupContext() && ((GroupSenderCtx) ctx).getPairwiseModeResponses()
+				&& !isRequest;
+		boolean pairwiseRequest = ctx.isGroupContext()
+				&& OptionEncoder.getPairwiseMode(message.getOptions().getOscore()) && isRequest;
+		groupModeMessage = ctx.isGroupContext() && !pairwiseResponse && !pairwiseRequest;
+		int nonceLength = ctx.getIVLength();
+		byte[] commonIV = ctx.getCommonIV();
+		if (ctx.isGroupContext() && groupModeMessage) {
+			int algGroupEncIvLen = EncryptCommon.ivLength(((GroupSenderCtx) ctx).getAlgGroupEnc());
+			nonceLength = algGroupEncIvLen;
+			commonIV = Arrays.copyOfRange(ctx.getCommonIV(), 0, nonceLength);
+		} else if (ctx.isGroupContext() && !groupModeMessage) {
+			int algIvLen = EncryptCommon.ivLength(((GroupSenderCtx) ctx).getAlg());
+			nonceLength = algIvLen;
+			commonIV = Arrays.copyOfRange(ctx.getCommonIV(), 0, nonceLength);
+		}
+		System.out.println("Encryption once length: " + nonceLength);
+
 		try {
 			byte[] key = ctx.getSenderKey();
 			byte[] partialIV = null;
@@ -90,8 +113,8 @@ public abstract class Encryptor {
 
 			if (isRequest) {
 				partialIV = OSSerializer.processPartialIV(ctx.getSenderSeq());
-				nonce = OSSerializer.nonceGeneration(partialIV, ctx.getSenderId(), ctx.getCommonIV(),
-						ctx.getIVLength());
+				nonce = OSSerializer.nonceGeneration(partialIV, ctx.getSenderId(), commonIV,
+						nonceLength);
 				aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), ctx.getSenderSeq(), ctx.getSenderId(), message.getOptions());
 				enc.addAttribute(HeaderKeys.PARTIAL_IV, CBORObject.FromObject(partialIV), Attribute.UNPROTECTED);
 				enc.addAttribute(HeaderKeys.KID, CBORObject.FromObject(ctx.getSenderId()), Attribute.UNPROTECTED);
@@ -117,13 +140,13 @@ public abstract class Encryptor {
 				if (!newPartialIV) {
 					// use nonce from request
 					partialIV = OSSerializer.processPartialIV(requestSeq);
-					nonce = OSSerializer.nonceGeneration(partialIV, recipientId, ctx.getCommonIV(),
-							ctx.getIVLength());
+					nonce = OSSerializer.nonceGeneration(partialIV, recipientId, commonIV,
+							nonceLength);
 				} else {
 					// response creates its own partialIV
 					partialIV = OSSerializer.processPartialIV(ctx.getSenderSeq());
-					nonce = OSSerializer.nonceGeneration(partialIV, ctx.getSenderId(), ctx.getCommonIV(),
-							ctx.getIVLength());
+					nonce = OSSerializer.nonceGeneration(partialIV, ctx.getSenderId(), commonIV,
+							nonceLength);
 				}
 				aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), requestSeq, recipientId,
 						message.getOptions());
@@ -138,13 +161,7 @@ public abstract class Encryptor {
 			System.out.println("AAD " + Utils.toHexString(aad));
 
 			// Handle Group OSCORE messages
-			boolean groupModeMessage = false;
 			if (ctx.isGroupContext()) {
-
-				boolean pairwiseResponse = ((GroupSenderCtx) ctx).getPairwiseModeResponses() && !isRequest;
-				boolean pairwiseRequest = OptionEncoder.getPairwiseMode(message.getOptions().getOscore()) && isRequest;
-				groupModeMessage = !pairwiseResponse && !pairwiseRequest;
-
 				LOGGER.debug("Encrypting outgoing " + message.getClass().getSimpleName()
 						+ " using Group OSCORE. Pairwise mode: " + !groupModeMessage);
 
