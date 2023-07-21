@@ -96,7 +96,10 @@ public class GroupCtx {
 	boolean pairwiseModeRequests = false;
 
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
-	
+
+	// Map holding replay information for long exchanges
+	public HashMap<ByteId, Integer> longExchanges = new HashMap<ByteId, Integer>();
+
 	/**
 	 * Construct a Group OSCORE context. Uses default value for authCredFmt and
 	 * uses same algGroupEnc as aeadAlg.
