@@ -251,4 +251,58 @@ public class GroupOscoreCtxTest {
 		assertArrayEquals(confidential, decrypted);
 
 	}
+
+	/**
+	 * Test to ensure that the length of the generated Common IV is equal to the
+	 * largest nonce size between: 1. AEAD Algorithm 2. Group Encryption
+	 * Algorithm
+	 * 
+	 * @throws OSException on test failure
+	 */
+	@Test
+	public void testCommonIvLen() throws OSException {
+
+		// Install cryptographic providers
+		Provider EdDSA = new EdDSASecurityProvider();
+		Security.insertProviderAt(EdDSA, 1);
+
+		HashMapCtxDB db = new HashMapCtxDB();
+
+		// Set sender & receiver keys for countersignatures
+		MultiKey sid_private_key = new MultiKey(sid_public_key_bytes, sid_private_key_bytes);
+		MultiKey rid1_public_key = new MultiKey(rid1_public_key_bytes);
+
+		byte[] gmPublicKey = gm_public_key_bytes;
+
+		alg = AlgorithmID.AES_CCM_16_128_128; // 13 byte nonce
+		algGroupEnc = AlgorithmID.AES_CCM_64_128_128; // 7 byte nonce
+
+		// Test context generation
+		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign,
+				algGroupEnc, algKeyAgreement, gmPublicKey);
+		commonCtx.addSenderCtxCcs(sid, sid_private_key);
+		commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
+
+		db.addContext(uriLocal, commonCtx);
+
+		// Verify that the Common IV length is 13
+		assertEquals("Incorrect size of Common IV", 13, commonCtx.getSenderCtx().getCommonIV().length);
+
+		// Now switch the algorithms and test the opposite case
+		db.purge();
+
+		alg = AlgorithmID.AES_CCM_64_128_128; // 7 byte nonce
+		algGroupEnc = AlgorithmID.AES_GCM_128; // 12 byte nonce
+
+		// Verify that the Common IV length is 12
+		commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign, algGroupEnc,
+				algKeyAgreement, gmPublicKey);
+		commonCtx.addSenderCtxCcs(sid, sid_private_key);
+		commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
+
+		db.addContext(uriLocal, commonCtx);
+
+		// Verify that the Common IV length is 12
+		assertEquals("Incorrect size of Common IV", 12, commonCtx.getSenderCtx().getCommonIV().length);
+	}
 }
