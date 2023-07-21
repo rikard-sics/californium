@@ -106,6 +106,18 @@ public class ResponseDecryptor extends Decryptor {
 				if (ctx != null) {
 					assert (ctx instanceof GroupRecipientCtx);
 				}
+
+				// Check and update status for possible long exchanges
+				int piv = OptionJuggle.getPartialIV(uOptions.getOscore());
+				ByteId byteToken = new ByteId(response.getTokenBytes());
+				
+				Integer latestPiv = ((GroupRecipientCtx) ctx).getCommonCtx().longExchanges.get(byteToken);
+				if (latestPiv != null && piv <= latestPiv) {
+					LOGGER.error(ErrorDescriptions.REPLAY_DETECT);
+					throw new OSException(ErrorDescriptions.REPLAY_DETECT);
+				}
+				
+				((GroupRecipientCtx) ctx).getCommonCtx().longExchanges.put(byteToken, piv);
 			}
 
 			if (ctx == null) {

@@ -84,6 +84,9 @@ public class GroupCtx {
 	boolean pairwiseModeResponses = false;
 	boolean pairwiseModeRequests = false;
 
+	// Map holding replay information for long exchanges
+	public HashMap<ByteId, Integer> longExchanges = new HashMap<ByteId, Integer>();
+
 	/**
 	 * Construct a Group OSCORE context. Uses default value for authCredFmt and
 	 * uses same algGroupEnc as aeadAlg.
