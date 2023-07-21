@@ -39,6 +39,7 @@ import org.eclipse.californium.core.network.stack.AbstractLayer;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ContextRederivation.PHASE;
 import org.eclipse.californium.oscore.group.GroupDeterministicRecipientCtx;
+import org.eclipse.californium.oscore.group.GroupSenderCtx;
 import org.eclipse.californium.oscore.group.OptionEncoder;
 
 /**
@@ -216,6 +217,12 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 						if (!request.hasMID() && preparedRequest.hasMID()) {
 							request.setMID(preparedRequest.getMID());
+						}
+
+						// Clear long exchanges for this Token
+						if (finalCtx.isGroupContext()) {
+							((GroupSenderCtx) finalCtx).getCommonCtx().longExchanges
+									.remove(new ByteId(token.getBytes()));
 						}
 
 						ctxDb.addContext(token, finalCtx);
