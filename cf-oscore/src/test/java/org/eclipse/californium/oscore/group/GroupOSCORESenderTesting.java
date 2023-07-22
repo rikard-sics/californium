@@ -17,6 +17,7 @@
 package org.eclipse.californium.oscore.group;
 
 import java.io.File;
+import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.URI;
@@ -48,7 +49,7 @@ import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider
 /**
  * Test sender configured to support multicast requests. Rebased.
  */
-public class GroupOSCORESender {
+public class GroupOSCORESenderTesting {
 
 	/**
 	 * File name for network configuration.
@@ -73,7 +74,7 @@ public class GroupOSCORESender {
 	/**
 	 * Time to wait for replies to the multicast request
 	 */
-	private static final int HANDLER_TIMEOUT = 60000;
+	private static final int HANDLER_TIMEOUT = 6000;
 
 	/**
 	 * Whether to use OSCORE or not.
@@ -85,7 +86,8 @@ public class GroupOSCORESender {
 	 */
 	// static final InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
+	//static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
+	static InetAddress multicastIP = null;
 
 	/**
 	 * Port to send to.
@@ -135,7 +137,6 @@ public class GroupOSCORESender {
 			"A501781A636F6170733A2F2F6D79736974652E6578616D706C652E636F6D026C67726F75706D616E6167657203781A636F6170733A2F2F646F6D61696E2E6578616D706C652E6F7267041AAB9B154F08A101A4010103272006215820CDE3EFD3BC3F99C9C9EE210415C6CBA55061B5046E963B8A58C9143A61166472");
 
 	private final static byte[] sid = new byte[] { 0x25 };
-
 	private final static byte[] sid_public_key_bytes = StringUtil.hex2ByteArray(
 			"A501781B636F6170733A2F2F746573746572312E6578616D706C652E636F6D02666D796E616D6503781A636F6170733A2F2F68656C6C6F312E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820069E912B83963ACC5941B63546867DEC106E5B9051F2EE14F3BC5CC961ACD43A");
 	private static MultiKey sid_private_key;
@@ -168,6 +169,9 @@ public class GroupOSCORESender {
 	 * @throws Exception on setup or message processing failure
 	 */
 	public static void main(String args[]) throws Exception {
+		multicastIP = Inet4Address.getByName("127.0.0.1");
+		multicastIP = CoAP.MULTICAST_IPV4;
+
 		/**
 		 * URI to perform request against. Need to check for IPv6 to surround it
 		 * with []
@@ -209,10 +213,10 @@ public class GroupOSCORESender {
 
 			OSCoreCoapStackFactory.useAsDefault(db);
 		}
-		
+
 		Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 
-		CoapEndpoint endpoint = new CoapEndpoint.Builder().setConfiguration(config).build();
+		CoapEndpoint endpoint = new CoapEndpoint.Builder().setConfiguration(config).setPort(5555).build();
 		CoapClient client = new CoapClient();
 
 		client.setEndpoint(endpoint);
@@ -220,6 +224,8 @@ public class GroupOSCORESender {
 		client.setURI(requestURI);
 		Request multicastRequest = Request.newPost();
 		multicastRequest.setPayload(requestPayload);
+		multicastRequest.setToken(new byte[] { 0x11, 0x22, (byte) 0x33 });
+		multicastRequest.setMID(65004);
 		multicastRequest.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 		multicastRequest.setType(Type.NON);
 		if (useOSCORE) {
