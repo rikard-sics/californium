@@ -25,17 +25,17 @@ import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
-import org.eclipse.californium.core.Utils;
+import org.bouncycastle.util.Arrays;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.core.network.serialization.UdpDataParser;
-import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.elements.util.DatagramReader;
 import org.eclipse.californium.oscore.group.GroupDynamicContextDerivation;
 import org.eclipse.californium.oscore.group.GroupRecipientCtx;
+import org.eclipse.californium.oscore.group.ResponseReplayWindow;
 
 /**
  * 
@@ -107,17 +107,19 @@ public class ResponseDecryptor extends Decryptor {
 					assert (ctx instanceof GroupRecipientCtx);
 				}
 
-				// Check and update status for possible long exchanges
-				int piv = OptionJuggle.getPartialIV(uOptions.getOscore());
-				ByteId byteToken = new ByteId(response.getTokenBytes());
+				// Check replay window and update status for long exchanges
+				ByteId identifier = new ByteId(Arrays.concatenate(rid, response.getTokenBytes()));
 				
-				Integer latestPiv = ((GroupRecipientCtx) ctx).getCommonCtx().longExchanges.get(byteToken);
-				if (latestPiv != null && piv <= latestPiv) {
-					LOGGER.error(ErrorDescriptions.REPLAY_DETECT);
-					throw new OSException(ErrorDescriptions.REPLAY_DETECT);
+				ResponseReplayWindow replayWindow = ((GroupRecipientCtx) ctx).getCommonCtx().longExchanges
+						.get(identifier);
+				if (replayWindow == null) {
+					replayWindow = new ResponseReplayWindow();
+					((GroupRecipientCtx) ctx).getCommonCtx().longExchanges.put(identifier, replayWindow);
 				}
-				
-				((GroupRecipientCtx) ctx).getCommonCtx().longExchanges.put(byteToken, piv);
+
+				int piv = OptionJuggle.getPartialIV(uOptions.getOscore());
+				replayWindow.checkIncoming(piv);
+
 			}
 
 			if (ctx == null) {
