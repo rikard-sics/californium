@@ -17,6 +17,7 @@
 package org.eclipse.californium.oscore.group;
 
 import java.io.File;
+import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.URI;
@@ -48,7 +49,7 @@ import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider
 /**
  * Test sender configured to support multicast requests. Rebased.
  */
-public class GroupOSCORESender {
+public class GroupOSCORESenderTesting {
 
 	/**
 	 * File name for network configuration.
@@ -73,7 +74,7 @@ public class GroupOSCORESender {
 	/**
 	 * Time to wait for replies to the multicast request
 	 */
-	private static final int HANDLER_TIMEOUT = 60000;
+	private static final int HANDLER_TIMEOUT = 6000;
 
 	/**
 	 * Whether to use OSCORE or not.
@@ -85,7 +86,8 @@ public class GroupOSCORESender {
 	 */
 	// static final InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
+	//static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
+	static InetAddress multicastIP = null;
 
 	/**
 	 * Port to send to.
@@ -167,6 +169,9 @@ public class GroupOSCORESender {
 	 * @throws Exception on setup or message processing failure
 	 */
 	public static void main(String args[]) throws Exception {
+		multicastIP = Inet4Address.getByName("127.0.0.1");
+		multicastIP = CoAP.MULTICAST_IPV4;
+
 		/**
 		 * URI to perform request against. Need to check for IPv6 to surround it
 		 * with []
@@ -211,7 +216,7 @@ public class GroupOSCORESender {
 
 		Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 
-		CoapEndpoint endpoint = new CoapEndpoint.Builder().setConfiguration(config).build();
+		CoapEndpoint endpoint = new CoapEndpoint.Builder().setConfiguration(config).setPort(5555).build();
 		CoapClient client = new CoapClient();
 
 		client.setEndpoint(endpoint);
@@ -219,6 +224,8 @@ public class GroupOSCORESender {
 		client.setURI(requestURI);
 		Request multicastRequest = Request.newPost();
 		multicastRequest.setPayload(requestPayload);
+		multicastRequest.setToken(new byte[] { 0x11, 0x22, (byte) 0x33 });
+		multicastRequest.setMID(65004);
 		multicastRequest.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 		multicastRequest.setType(Type.NON);
 		if (useOSCORE) {

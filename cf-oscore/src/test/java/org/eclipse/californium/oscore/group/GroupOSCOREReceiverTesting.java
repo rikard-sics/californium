@@ -23,7 +23,6 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
-import java.net.SocketException;
 import java.security.Provider;
 import java.security.Security;
 import java.util.Random;
@@ -56,7 +55,7 @@ import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 /**
  * Test receiver using {@link UdpMulticastConnector}.
  */
-public class GroupOSCOREReceiver {
+public class GroupOSCOREReceiverTesting {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GroupOSCOREReceiverTesting.class);
 
@@ -279,8 +278,16 @@ public class GroupOSCOREReceiver {
 				System.out.println("Sending to: " + r.getDestinationContext().getPeerAddress());
 				System.out.println("Sending from: " + exchange.advanced().getEndpoint().getAddress());
 				System.out.println(Utils.prettyPrint(r));
+				r.setMID(4632);
 
 				exchange.respond(r);
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				System.exit(0);
 			}
 
 		}
@@ -299,17 +306,14 @@ public class GroupOSCOREReceiver {
 	 * @param multicastPort
 	 * @param config
 	 */
-	private static void createEndpoints(CoapServer server, int unicastPort, int multicastPort, Configuration config)
-			throws SocketException {
+	private static void createEndpoints(CoapServer server, int unicastPort, int multicastPort, Configuration config) {
 		// UDPConnector udpConnector = new UDPConnector(new
 		// InetSocketAddress(unicastPort));
 		// udpConnector.setReuseAddress(true);
 		// CoapEndpoint coapEndpoint = new
 		// CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector).build();
 
-		// NetworkInterface networkInterface =
-		// NetworkInterfacesUtil.getMulticastInterface();
-		NetworkInterface networkInterface = NetworkInterfacesUtil.getMulticastInterface().getByName("wlp3s0");
+		NetworkInterface networkInterface = NetworkInterfacesUtil.getMulticastInterface();
 		if (networkInterface == null) {
 			LOGGER.warn("No multicast network-interface found!");
 			throw new Error("No multicast network-interface found!");
