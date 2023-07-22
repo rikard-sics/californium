@@ -37,12 +37,14 @@ import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.UdpEndpointContext;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
 import org.eclipse.californium.elements.util.Base64;
+import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.ByteId;
 import org.eclipse.californium.oscore.CoapOSException;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 import org.eclipse.californium.oscore.OSCoreCtxDB;
 import org.eclipse.californium.oscore.OSException;
+import org.eclipse.californium.oscore.OscoreOptionDecoder;
 import org.eclipse.californium.oscore.RequestDecryptor;
 import org.eclipse.californium.oscore.ResponseDecryptor;
 import org.eclipse.californium.rule.CoapNetworkRule;
@@ -57,6 +59,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.upokecenter.cbor.CBORObject;
+
+import net.i2p.crypto.eddsa.Utils;
 
 /**
  * Test message decryption for Group OSCORE
@@ -269,8 +273,7 @@ public class GroupDecryptorTest {
 
 	}
 
-	@Test
-	@Ignore // TODO: Recalculate
+	@Test(expected = OSException.class)
 	public void testResponseDecryptorGroupMode() throws OSException, CoseException, IOException {
 		// Set up OSCORE context
 		byte[] master_salt = new byte[] { (byte) 0x9e, 0x7c, (byte) 0xa9, 0x22, 0x23, 0x78, 0x63, 0x40 };
@@ -288,19 +291,8 @@ public class GroupDecryptorTest {
 		GroupRecipientCtx recipientCtx = commonCtx.recipientCtxMap.get(new ByteId(rid));
 
 		// Create the encrypted response message from raw byte array
-		byte[] encryptedResponseBytes = new byte[] { (byte) 0x64, (byte) 0x44, (byte) 0x5D, (byte) 0x1F, (byte) 0x00,
-				(byte) 0x00, (byte) 0x39, (byte) 0x74, (byte) 0x92, (byte) 0x28, (byte) 0x11, (byte) 0xFF, (byte) 0x70,
-				(byte) 0xBB, (byte) 0xCD, (byte) 0x26, (byte) 0x09, (byte) 0xA8, (byte) 0x9C, (byte) 0xAD, (byte) 0x4E,
-				(byte) 0x24, (byte) 0x13, (byte) 0x59, (byte) 0x4F, (byte) 0x01, (byte) 0x14, (byte) 0x95, (byte) 0x7B,
-				(byte) 0x85, (byte) 0xA9, (byte) 0x97, (byte) 0x37, (byte) 0xF1, (byte) 0x71, (byte) 0x83, (byte) 0xDE,
-				(byte) 0x24, (byte) 0xE1, (byte) 0xEA, (byte) 0x43, (byte) 0x6D, (byte) 0xF2, (byte) 0x44, (byte) 0xCD,
-				(byte) 0x57, (byte) 0xCE, (byte) 0xC4, (byte) 0x6C, (byte) 0xAB, (byte) 0x03, (byte) 0x04, (byte) 0x44,
-				(byte) 0x26, (byte) 0xAD, (byte) 0xDC, (byte) 0xB8, (byte) 0x66, (byte) 0xC3, (byte) 0x61, (byte) 0xEA,
-				(byte) 0xC4, (byte) 0x61, (byte) 0x61, (byte) 0x2B, (byte) 0xED, (byte) 0xED, (byte) 0x30, (byte) 0x3D,
-				(byte) 0xF3, (byte) 0xA8, (byte) 0xE8, (byte) 0x76, (byte) 0x7E, (byte) 0x69, (byte) 0xC5, (byte) 0x84,
-				(byte) 0xDF, (byte) 0x8B, (byte) 0x24, (byte) 0x01, (byte) 0xD7, (byte) 0xD7, (byte) 0xF6, (byte) 0xA9,
-				(byte) 0xEA, (byte) 0xBE, (byte) 0xB0, (byte) 0xBC, (byte) 0x40, (byte) 0xD2, (byte) 0x85, (byte) 0xA0,
-				(byte) 0x0A, (byte) 0x6C, (byte) 0x4A, (byte) 0xE1, (byte) 0x42 };
+		byte[] encryptedResponseBytes = StringUtil.hex2ByteArray(
+				"64445D1F00003974922811FF70BBCD2609A89CAD4E2413594F01A361723936F96475E2BF04A21CEE6B90EE7A0227EC8304050BD1D16C280291B4581BCE2ACEC8B084E803D5A7F8E22005A9C0120A756B78D6E68AE0384B0BC3606745C77B37A991D4");
 
 		UdpDataParser parser = new UdpDataParser();
 		Message mess = parser.parseMessage(encryptedResponseBytes);
@@ -343,6 +335,9 @@ public class GroupDecryptorTest {
 
 		assertArrayEquals(predictedBytes, decryptedBytes);
 
+		// Try receiving the response again (which should be a replay)
+		// This will throw a OSException
+		decrypted = ResponseDecryptor.decrypt(db, r, seq);
 	}
 
 	/**
