@@ -10,7 +10,7 @@ import java.util.Scanner;
 
 import org.eclipse.californium.elements.util.StringUtil;
 
-public class Injecter {
+public class PacketInjector {
 
 	public static void main(String[] args) throws UnknownHostException, SocketException, IOException {
 		String message = "5844e2790a5198cd2edc495e93290052ffee4c3580c6f7b062d05ebfe529c8cfa2d73e471762ea385f06009690bcb1c2b459ddc454095a0c2f77105e6630b4a3e91126eecf20067e8549b6aa51fd143165c234adf637a96b44454750a7b0d70900c40f2137287fa1";
