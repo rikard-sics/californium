@@ -73,7 +73,7 @@ public class GroupOSCORESender {
 	/**
 	 * Time to wait for replies to the multicast request
 	 */
-	private static final int HANDLER_TIMEOUT = 60000;
+	private static final int HANDLER_TIMEOUT = 2000;
 
 	/**
 	 * Whether to use OSCORE or not.
