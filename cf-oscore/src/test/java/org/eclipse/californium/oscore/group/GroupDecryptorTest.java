@@ -200,11 +200,10 @@ public class GroupDecryptorTest {
 				0x61, 0x6c, 0x68, 0x6f, 0x73, 0x74, (byte) 0x83, 0x74, 0x76, 0x31 };
 
 		assertArrayEquals(predictedBytes, decryptedBytes);
-
 	}
 
 	@Test
-	@Ignore // TODO: Recalculate
+	@Ignore
 	public void testResponseDecryptorPairwiseMode() throws OSException, CoseException, IOException {
 		// Set up OSCORE context
 		// test vector OSCORE draft Appendix C.1.2
@@ -225,11 +224,8 @@ public class GroupDecryptorTest {
 		GroupRecipientCtx recipientCtx = commonCtx.recipientCtxMap.get(new ByteId(rid));
 
 		// Create the encrypted response message from raw byte array
-		byte[] encryptedResponseBytes = new byte[] { (byte) 0x64, (byte) 0x44, (byte) 0x5D, (byte) 0x1F, (byte) 0x00,
-				(byte) 0x00, (byte) 0x39, (byte) 0x74, (byte) 0x92, (byte) 0x08, (byte) 0x11, (byte) 0xFF, (byte) 0x90,
-				(byte) 0x51, (byte) 0xE4, (byte) 0x9A, (byte) 0xE0, (byte) 0x12, (byte) 0x7B, (byte) 0x61, (byte) 0xE9,
-				(byte) 0x85, (byte) 0x91, (byte) 0x4A, (byte) 0x1D, (byte) 0x54, (byte) 0xAC, (byte) 0x9D, (byte) 0x53,
-				(byte) 0x19, (byte) 0x53, (byte) 0xB8, (byte) 0xC5, (byte) 0x29 };
+		byte[] encryptedResponseBytes = StringUtil
+				.hex2ByteArray("64445d1f00003974920811ff944b5dcf45cc39da6bab5967ee21056d19755228351c");
 
 		UdpDataParser parser = new UdpDataParser();
 		Message mess = parser.parseMessage(encryptedResponseBytes);
@@ -273,7 +269,7 @@ public class GroupDecryptorTest {
 
 	}
 
-	@Test(expected = OSException.class)
+	@Test
 	public void testResponseDecryptorGroupMode() throws OSException, CoseException, IOException {
 		// Set up OSCORE context
 		byte[] master_salt = new byte[] { (byte) 0x9e, 0x7c, (byte) 0xa9, 0x22, 0x23, 0x78, 0x63, 0x40 };
@@ -336,8 +332,13 @@ public class GroupDecryptorTest {
 		assertArrayEquals(predictedBytes, decryptedBytes);
 
 		// Try receiving the response again (which should be a replay)
-		// This will throw a OSException
-		decrypted = ResponseDecryptor.decrypt(db, r, seq);
+		// This will throw an OSException
+		try {
+			decrypted = ResponseDecryptor.decrypt(db, r, seq);
+			Assert.fail("OSException not thrown");
+		} catch (OSException expected) {
+			//
+		}
 	}
 
 	/**
