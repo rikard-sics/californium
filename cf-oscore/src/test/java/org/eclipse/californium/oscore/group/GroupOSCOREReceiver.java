@@ -58,7 +58,7 @@ import net.i2p.crypto.eddsa.EdDSASecurityProvider;
  */
 public class GroupOSCOREReceiver {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(GroupOSCOREReceiverTesting.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(GroupOSCOREReceiver.class);
 
 	/**
 	 * Controls whether or not the receiver will reply to incoming multicast
@@ -307,9 +307,12 @@ public class GroupOSCOREReceiver {
 		// CoapEndpoint coapEndpoint = new
 		// CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector).build();
 
+
+		// FIXME: Make it more easy to work when on WiFi only
+		NetworkInterface networkInterface = NetworkInterfacesUtil.getMulticastInterface().getByName("wlp3s0");
 		// NetworkInterface networkInterface =
 		// NetworkInterfacesUtil.getMulticastInterface();
-		NetworkInterface networkInterface = NetworkInterfacesUtil.getMulticastInterface().getByName("wlp3s0");
+
 		if (networkInterface == null) {
 			LOGGER.warn("No multicast network-interface found!");
 			throw new Error("No multicast network-interface found!");

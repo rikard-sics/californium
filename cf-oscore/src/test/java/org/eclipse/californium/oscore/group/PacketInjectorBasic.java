@@ -10,19 +10,20 @@ import java.util.Scanner;
 
 import org.eclipse.californium.elements.util.StringUtil;
 
-public class PacketInjector {
+public class PacketInjectorBasic {
 
 	public static void main(String[] args) throws UnknownHostException, SocketException, IOException {
-		String message = "5844e2790a5198cd2edc495e93290052ffee4c3580c6f7b062d05ebfe529c8cfa2d73e471762ea385f06009690bcb1c2b459ddc454095a0c2f77105e6630b4a3e91126eecf20067e8549b6aa51fd143165c234adf637a96b44454750a7b0d70900c40f2137287fa1";
+		String message = "5844e3fd5e45afe9174cf6f293290052ffee4c3580c6f7b062d05ebfe529c5c7c7049d4d367658f006a66bb4165e2099ba07be25cc793ade69e9dc97a13a01b336942eba56b75dd4e3eeeb233a534af60b1cabde3c960b6a4b5c7865d45845962ff7e83a968c9277a2";
 
 		Scanner sc = new Scanner(System.in);
 		System.out.println("Enter Token: ");
 		String newToken = sc.nextLine();
-		message.replace("0a5198cd2edc495e", newToken);
+		message = message.replace("5e45afe9174cf6f2", newToken);
 
 		System.out.println("Enter Dstport: ");
 		String dstPortStr = sc.nextLine();
 		int dstPort = Integer.parseInt(dstPortStr);
+		sc.close();
 
 		byte[] buffer = StringUtil.hex2ByteArray(message);
 
