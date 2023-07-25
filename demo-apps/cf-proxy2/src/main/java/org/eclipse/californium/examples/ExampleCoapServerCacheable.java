@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * 
  * {@code coap://localhost:5683/coap-target}
  */
-public class ExampleCoapServer {
+public class ExampleCoapServerCacheable {
 
 	/**
 	 * File name for configuration.
@@ -82,11 +82,11 @@ public class ExampleCoapServer {
 
 	private CoapServer coapServer;
 
-	public ExampleCoapServer(Configuration config, final int port) throws IOException {
+	public ExampleCoapServerCacheable(Configuration config, final int port) throws IOException {
 		this(CoapEndpoint.builder().setConfiguration(config).setPort(port).build());
 	}
 
-	public ExampleCoapServer(CoapEndpoint endpoint) throws IOException {
+	public ExampleCoapServerCacheable(CoapEndpoint endpoint) throws IOException {
 		String path = RESOURCE;
 		if (path.startsWith("/")) {
 			path = path.substring(1);

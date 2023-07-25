@@ -187,24 +187,6 @@ public class GroupSenderCtx extends OSCoreCtx {
 	public AlgorithmID getAlgKeyAgreement() {
 		return commonCtx.algKeyAgreement;
 	}
-
-	/**
-	 * Get the alg sign enc value.
-	 * 
-	 * @return the alg sign enc value
-	 */
-	public AlgorithmID getAlgSignEnc() {
-		return commonCtx.algSignEnc;
-	}
-
-	/**
-	 * Get the alg pairwise key agreement value.
-	 * 
-	 * @return the alg pairwise key agreement value.
-	 */
-	public AlgorithmID getAlgKeyAgreement() {
-		return commonCtx.algKeyAgreement;
-	}
 	
 	/**
 	 * Get the length of the countersignature depending on the countersignature
@@ -269,15 +251,6 @@ public class GroupSenderCtx extends OSCoreCtx {
 		
 		return commonCtx.getDeterministicSenderCtx();
 		
-	}
-
-	/**
-	 * Get the common context associated to this GroupSenderCtx.
-	 * 
-	 * @return the common context associated to this GroupSenderCtx
-	 */
-	public GroupCtx getCommonCtx() {
-		return commonCtx;
 	}
 
 	/**

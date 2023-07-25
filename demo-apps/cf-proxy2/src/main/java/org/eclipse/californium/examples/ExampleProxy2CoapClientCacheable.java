@@ -78,7 +78,7 @@ import org.eclipse.californium.proxy2.resources.ProxyHttpClientResource;
  * Proxy Uri: {@code coap://localhost:5685/coap-target}
  * </pre>
  */
-public class ExampleProxy2CoapClient {
+public class ExampleProxy2CoapClientCacheable {
 
 	private final static HashMapCtxDB db = new HashMapCtxDB();
 	private final static String uriLocal = "coap://localhost";

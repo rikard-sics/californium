@@ -320,15 +320,6 @@ public class GroupCtx {
 		return this.deterministicSenderCtx;
 		
 	}
-	
-	/**
-	 * Retrieve the public key for the Group Manager associated to this context.
-	 * 
-	 * @return the public key for the GM for this context
-	 */
-	public byte[] getGmPublicKey() {
-		return gmPublicKey;
-	}
 
 	/**
 	 * Retrieve the public key for the Group Manager associated to this context.
