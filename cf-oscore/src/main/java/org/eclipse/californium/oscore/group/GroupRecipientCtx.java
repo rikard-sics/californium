@@ -108,16 +108,6 @@ public class GroupRecipientCtx extends OSCoreCtx {
 	public OneKey getPublicKey() {
 		return otherEndpointPubKey;
 	}
-	
-	/**
-	 * Get the raw bytes of the public key associated to this recipient context,
-	 * meaning the public key of the other endpoint.
-	 * 
-	 * @return the bytes of the public key of the other endpoint
-	 */
-	public byte[] getPublicKeyRaw() {
-		return otherEndpointPubKeyRaw;
-	}
 
 	/**
 	 * Get the raw bytes of the public key associated to this recipient context,
@@ -227,15 +217,6 @@ public class GroupRecipientCtx extends OSCoreCtx {
 		// return sender_id;
 	}
 	
-	/**
-	 * Get the common context associated to this GroupSenderCtx.
-	 * 
-	 * @return the common context associated to this GroupSenderCtx
-	 */
-	public GroupCtx getCommonCtx() {
-		return commonCtx;
-	}
-
 	/**
 	 * Get the common context associated to this GroupSenderCtx.
 	 * 

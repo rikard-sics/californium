@@ -311,7 +311,7 @@ public class OSSerializer {
 			GroupDeterministicRecipientCtx detRecipientCtx = (GroupDeterministicRecipientCtx) ctx;
 			GroupSenderCtx senderCtx = detRecipientCtx.getSenderCtx();
 			algSign = senderCtx.getAlgSign().AsCBOR();
-			algGroupEnc = senderCtx.getAlgSignEnc().AsCBOR();
+			algGroupEnc = senderCtx.getAlgGroupEnc().AsCBOR();
 			algKeyAgreement = senderCtx.getAlgKeyAgreement().AsCBOR();
 			senderPublicKey = Bytes.EMPTY;
 			gmPublicKey = senderCtx.getCommonCtx().getGmPublicKey();
@@ -320,7 +320,7 @@ public class OSSerializer {
 			GroupDeterministicSenderCtx detSenderCtx = (GroupDeterministicSenderCtx) ctx;
 			GroupSenderCtx senderCtx = detSenderCtx.getSenderCtx();
 			algSign = senderCtx.getAlgSign().AsCBOR();
-			algGroupEnc = senderCtx.getAlgSignEnc().AsCBOR();
+			algGroupEnc = senderCtx.getAlgGroupEnc().AsCBOR();
 			algKeyAgreement = senderCtx.getAlgKeyAgreement().AsCBOR();
 			senderPublicKey = Bytes.EMPTY;
 			gmPublicKey = senderCtx.getCommonCtx().getGmPublicKey();

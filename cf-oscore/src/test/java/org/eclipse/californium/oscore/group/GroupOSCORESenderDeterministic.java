@@ -41,7 +41,6 @@ import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
-import org.eclipse.californium.oscore.group.interop.InteropParametersNew;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
