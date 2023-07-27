@@ -682,7 +682,7 @@ public class Util {
     /**
      * Check if a Connection Identifier is available to offer to the other peer
      *
-     * @param recipientID   The candidate connection identifier to use as OSCORE Recipient ID
+     * @param identifier   The candidate connection identifier to use as OSCORE Recipient ID
      * @param usedConnectionIds   The set of already allocated Connection Identifiers
      * @param db   The database of OSCORE security contexts when using EDHOC to key OSCORE, it can be null
      * @param forbiddenIdentifier   The connection identifier C_I, it is null when the caller is the Initiator
