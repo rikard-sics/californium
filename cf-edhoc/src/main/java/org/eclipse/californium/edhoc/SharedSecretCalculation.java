@@ -780,7 +780,7 @@ public class SharedSecretCalculation {
 	static byte[] generateSharedSecret(OneKey privateKey, OneKey publicKey) {
 
 		if (privateKey == null || publicKey == null) {
-			System.err.println("Public key and/or privat key not found.");
+			System.err.println("Public key and/or private key not found.");
 			return null;
 		}
 		

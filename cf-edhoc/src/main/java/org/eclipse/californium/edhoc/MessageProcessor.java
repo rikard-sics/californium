@@ -440,7 +440,7 @@ public class MessageProcessor {
 					// The Responder supports the selected cipher suite, but it has to reply with an EDHOC Error Message
 					// if it supports a cipher suite more preferred by the Initiator than the selected cipher suite
 					
-					errMsg = new String("The selected cipher suite is not supported");
+					errMsg = new String("A cipher suite more preferred than the selected cipher suite is also supported");
 					errorCode = Constants.ERR_CODE_WRONG_SELECTED_CIPHER_SUITE;
 					responseCode = ResponseCode.BAD_REQUEST;
 					error = true;
@@ -1296,7 +1296,7 @@ public class MessageProcessor {
     	// Compute K_3 and IV_3 to protect the outer COSE object
     	byte[] k3 = computeKey(Constants.EDHOC_K_3, session);
     	if (k3 == null) {
-        	errMsg = new String("Error when computing TH3");
+        	errMsg = new String("Error when computing K_3");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifierResponder, edhocSessions, usedConnectionIds);
 			return processError(errorCode, Constants.EDHOC_MESSAGE_3, !isReq, connectionIdentifierInitiator,
@@ -1308,7 +1308,7 @@ public class MessageProcessor {
     	
     	byte[] iv3 = computeIV(Constants.EDHOC_IV_3, session);
     	if (iv3 == null) {
-        	errMsg = new String("Error when computing IV_3ae");
+        	errMsg = new String("Error when computing IV_3");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         	Util.purgeSession(session, connectionIdentifierResponder, edhocSessions, usedConnectionIds);
 			return processError(errorCode, Constants.EDHOC_MESSAGE_3, !isReq, connectionIdentifierInitiator,
@@ -3699,7 +3699,6 @@ public class MessageProcessor {
 	            	*/
 	            	
             	}
-            	
             	dhSecret = SharedSecretCalculation.generateSharedSecret(privateKey, publicKey);
             	
                 if (dhSecret == null) {
