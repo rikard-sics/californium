@@ -119,7 +119,7 @@ public class EdhocClient {
 	private static HashMap<CBORObject, EdhocSession> edhocSessions = new HashMap<CBORObject, EdhocSession>();
 	
 	// Each element is a used Connection Identifier offered to the other peers.
-	// Connection Identifiers are stored as CBOR integers (if numeric) or as CBOR byte strings (if binary)
+	// Connection Identifiers are stored as CBOR byte strings
 	private static Set<CBORObject> usedConnectionIds = new HashSet<>();
 	
 	// List of supported cipher suites, in decreasing order of preference.
