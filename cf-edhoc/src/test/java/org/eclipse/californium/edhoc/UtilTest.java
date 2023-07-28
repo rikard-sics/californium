@@ -17,6 +17,8 @@
  ******************************************************************************/
 package org.eclipse.californium.edhoc;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -325,7 +327,7 @@ public class UtilTest {
 	 * 
 	 */
 	@Test
-	public void testVariuousUtil() {
+	public void testVariuousUtil() throws CoseException {
 
 		byte[] myArray = new byte[5];
 		for (int i = 0; i < 5; i++) {
@@ -407,7 +409,13 @@ public class UtilTest {
 		retByteArray = Util.allocateConnectionId(usedConnectionIds, db, forbiddenIdentifier);
 		Assert.assertArrayEquals(expectedByteArray, retByteArray);
 		
+		/* Test Util.releaseConnectionId */ 
 		
+		byte[] connectionId = new byte[] { 0x00 };
+        Util.releaseConnectionId(connectionId, usedConnectionIds, db);
+        OSCoreCtx ctx = db.getContext(connectionId);
+        Assert.assertNull(ctx);
+        
 		/* Test Util.generateKeyPair */
 		
 		OneKey retOneKey = null;
@@ -526,5 +534,84 @@ public class UtilTest {
 		credRawPublicKeyCcs = Util.buildCredRawPublicKeyCcs(keyPairECDSA, mySubject, CBORObject.FromObject(0));
 		Assert.assertNotNull(credRawPublicKeyCcs);
 		
+		
+		/* Test Util.determineKeyAlgorithm */
+		OneKey key = OneKey.generateKey(AlgorithmID.EDDSA);
+		AlgorithmID alg = Util.determineKeyAlgorithm(key);
+		Assert.assertEquals(AlgorithmID.EDDSA, alg);
+		
+		key = OneKey.generateKey(AlgorithmID.ECDSA_256);
+		alg = Util.determineKeyAlgorithm(key);
+		Assert.assertEquals(AlgorithmID.ECDSA_256, alg);
+		
+		key = OneKey.generateKey(AlgorithmID.ECDSA_384);
+		alg = Util.determineKeyAlgorithm(key);
+		Assert.assertEquals(AlgorithmID.ECDSA_384, alg);
+		
+		key = OneKey.generateKey(AlgorithmID.ECDSA_512);
+		alg = Util.determineKeyAlgorithm(key);
+		Assert.assertEquals(AlgorithmID.ECDSA_512, alg);
+		
+		
+		/* Test Util.checkSignatureKeyAgainstCipherSuite */
+		key = OneKey.generateKey(AlgorithmID.EDDSA);
+		boolean check = Util.checkSignatureKeyAgainstCipherSuite(key, Constants.EDHOC_CIPHER_SUITE_0);
+		Assert.assertTrue(check);
+		
+		key = OneKey.generateKey(AlgorithmID.ECDSA_256);
+		check = Util.checkSignatureKeyAgainstCipherSuite(key, Constants.EDHOC_CIPHER_SUITE_1);
+		Assert.assertFalse(check);
+		
+		key = OneKey.generateKey(AlgorithmID.ECDSA_256);
+		check = Util.checkSignatureKeyAgainstCipherSuite(key, Constants.EDHOC_CIPHER_SUITE_2);
+		Assert.assertTrue(check);
+		
+		
+		/* Test Util.checkDiffieHellmanKeyAgainstCipherSuite */
+		key = OneKey.generateKey(AlgorithmID.EDDSA);
+		check = Util.checkDiffieHellmanKeyAgainstCipherSuite(key, Constants.EDHOC_CIPHER_SUITE_0);
+		Assert.assertFalse(check);
+		
+		key = OneKey.generateKey(AlgorithmID.ECDSA_256);
+		check = Util.checkDiffieHellmanKeyAgainstCipherSuite(key, Constants.EDHOC_CIPHER_SUITE_1);
+		Assert.assertFalse(check);
+		
+		key = OneKey.generateKey(AlgorithmID.ECDSA_256);
+		check = Util.checkDiffieHellmanKeyAgainstCipherSuite(key, Constants.EDHOC_CIPHER_SUITE_2);
+		Assert.assertTrue(check);
+	}
+	
+	/**
+	 * Test the isDeterministicCborInteger method
+	 */
+	@Test
+	public void testIsDeterministicCborInteger() {
+		for (int i = 1 ; i < 1000000000L ; i *= 10) {
+			CBORObject num = CBORObject.FromObject(i);
+			boolean result = Util.isDeterministicCborInteger(num);
+			assertTrue(result);
+		}
+	}
+	
+	/**
+	 * Test the intToBytes metod
+	 */
+	@Test
+	public void testIntToBytes() {
+		int number = -1;
+		byte[] numBytes = Util.intToBytes(number);
+		Assert.assertNull(numBytes);
+		
+		number = 1;
+		numBytes = Util.intToBytes(number);
+		Assert.assertArrayEquals(new byte[] { 0x01 }, numBytes);
+		
+		number = 1000;
+		numBytes = Util.intToBytes(number);
+		Assert.assertArrayEquals(new byte[] { 0x03, (byte)0xE8 }, numBytes);
+
+		number = 100000;
+		numBytes = Util.intToBytes(number);
+		Assert.assertArrayEquals(new byte[] { 0x01, (byte)0x86, (byte)0xA0 }, numBytes);
 	}
 }
