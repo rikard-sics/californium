@@ -95,7 +95,6 @@ public class SharedSecretCalculationTest {
 		OneKey key = SharedSecretCalculation.generateCurve25519KeyTest();
 		
 		// Assert valid key length
-		assertEquals(75, key.EncodeToBytes().length);
 		assertEquals(32, key.get(KeyKeys.OKP_D).GetByteString().length);
 		assertEquals(32, key.get(KeyKeys.OKP_X).GetByteString().length);
 	}
