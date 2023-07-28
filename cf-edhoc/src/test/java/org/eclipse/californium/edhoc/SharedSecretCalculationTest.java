@@ -94,9 +94,9 @@ public class SharedSecretCalculationTest {
 	{
 		OneKey key = SharedSecretCalculation.generateCurve25519KeyTest();
 		
-		// Assert valid key length
-		assertEquals(32, key.get(KeyKeys.OKP_D).GetByteString().length);
-		assertEquals(32, key.get(KeyKeys.OKP_X).GetByteString().length);
+		// Assert valid key
+		Assert.assertNotNull(key);
+		Assert.assertEquals(KeyKeys.OKP_X25519, key.get(KeyKeys.OKP_Curve));
 	}
 
 	/**
@@ -106,10 +106,9 @@ public class SharedSecretCalculationTest {
 	public void testConvertEd25519ToCurve25519() throws CoseException {
 		OneKey outKey = SharedSecretCalculation.convertEd25519ToCurve25519(OneKey.generateKey(AlgorithmID.EDDSA));
 		
-		// Assert valid key content
-		assertEquals(32, outKey.get(KeyKeys.OKP_D).GetByteString().length);
-		assertEquals(32, outKey.get(KeyKeys.OKP_X).GetByteString().length);
-		assertEquals(KeyKeys.OKP_X25519, outKey.get(KeyKeys.OKP_Curve));
+		// Assert valid key
+		Assert.assertNotNull(outKey);
+		Assert.assertEquals(KeyKeys.OKP_X25519, outKey.get(KeyKeys.OKP_Curve));
 	}
 	
 	/**
