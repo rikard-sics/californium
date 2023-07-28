@@ -579,7 +579,7 @@ public class Util {
      * @param forbiddenIdentifier   The connection identifier C_I, it is null when the caller is the Initiator
      * @return   the newly allocated connection identifier, or null in case of errors or if no connection identifiers are available
      */
-    private static byte[] allocateConnectionId(Set<CBORObject> usedConnectionIds,
+     static byte[] allocateConnectionId(Set<CBORObject> usedConnectionIds,
     										   OSCoreCtxDB db, byte[] forbiddenIdentifier) {
 
         byte[] identifier = null;
@@ -642,11 +642,11 @@ public class Util {
         	identifier[0] = (byte) (i & 0xff);
         	
         	for (int j = 0; j <= 255; j++) {
-        		
         		identifier[1] = (byte) (j & 0xff);
-        	    identifier = checkAndCommitConnectionId(identifier, usedConnectionIds, db, forbiddenIdentifier);
-                if (identifier != null)
-                	return identifier;
+        	    byte[] retIdentifier = checkAndCommitConnectionId(identifier, usedConnectionIds, db, forbiddenIdentifier);
+                if (retIdentifier != null) {
+                	return retIdentifier;
+                }
 		    	
         	}
         	
@@ -655,7 +655,7 @@ public class Util {
     	/* Check if a 3-byte connection identifier is available */
         
         for (int i = 0; i <= 255; i++) {
-        	
+
         	identifier = new byte[3];
         	identifier[0] = (byte) (i & 0xff);
         	
@@ -666,9 +666,9 @@ public class Util {
             	for (int k = 0; k <= 255; k++) {
             		
             		identifier[2] = (byte) (k & 0xff);
-            	    identifier = checkAndCommitConnectionId(identifier, usedConnectionIds, db, forbiddenIdentifier);
-                    if (identifier != null)
-                    	return identifier;
+            	    byte[] retIdentifier = checkAndCommitConnectionId(identifier, usedConnectionIds, db, forbiddenIdentifier);
+                    if (retIdentifier != null)
+                    	return retIdentifier;
         		}
 		    	
         	}
@@ -727,7 +727,6 @@ public class Util {
     	
     	if (recipientId == null || db == null)
     		return null;
-    	
         try {
             ctx = db.getContext(recipientId, null);
         } catch (CoapOSException e) {
@@ -741,7 +740,6 @@ public class Util {
         	// The EDHOC Connection Identifier coincides with the one to avoid (i.e., C_I offered by the Initiator) 
         	if (forbiddenIdentifier != null && Arrays.equals(recipientId, forbiddenIdentifier) == true)
         		return null;
-
         	CBORObject identifierCbor = CBORObject.FromObject(recipientId);
         	if (usedConnectionIds.contains(identifierCbor) == false) {
 	        	// The corresponding EDHOC Connection Identifier is also available
@@ -932,7 +930,6 @@ public class Util {
 	    }
 	    else {
 	    	if(keyPair.get(KeyKeys.KeyType) == KeyKeys.KeyType_EC2) {
-		        key.Add(KeyKeys.KeyType.AsCBOR(), KeyKeys.KeyType_EC2);
 		        key.Add(KeyKeys.EC2_Curve.AsCBOR(), KeyKeys.EC2_P256);
 		        key.Add(KeyKeys.EC2_X.AsCBOR(), keyPair.get(KeyKeys.EC2_X));
 		        key.Add(KeyKeys.EC2_Y.AsCBOR(), keyPair.get(KeyKeys.EC2_Y));
