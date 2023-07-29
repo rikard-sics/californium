@@ -2008,7 +2008,7 @@ public class MessageProcessor {
 		}
 		if (errorCode == Constants.ERR_CODE_SUCCESS) {
 			// This is not admitted
-			System.out.println("Received EDHOC error message with ERR_CODE 0");
+			System.err.println("Received EDHOC error message with ERR_CODE 0");
 			return null;
 		}
 		else if (errorCode == Constants.ERR_CODE_UNSPECIFIED_ERROR) {
@@ -4487,11 +4487,10 @@ public class MessageProcessor {
      * @param msnNum      The integer X = (1, 2, 3, 4), consistent with the specifically received EDHOC message_X.
      * @param supportedEADs   The list of EAD items supported by this peer.
      * @return  In case of success, it returns the subset of the EAD field to be passed to the application for further processing.
-     *          In case of error, it returns an array including two elements: i) a CBOR text string, whose value provides a description
-     *          of the error to be used in the EDHOC error message to return; ii) a CBOR integer, with value the response code to use
-     *          if the EDHOC error message is a response.
+     *          In case of error, it returns an array including one element as a CBOR text string, whose value provides a description
+     *          of the error to be used in the EDHOC error message to return.
      */
-	private static CBORObject[] preParseEAD(CBORObject[] objectList, int baseIndex, int msgNum, Set<Integer> supportedEADs) {
+	static CBORObject[] preParseEAD(CBORObject[] objectList, int baseIndex, int msgNum, Set<Integer> supportedEADs) {
 		
 		int length = objectList.length - baseIndex;
 		CBORObject[] aux = new CBORObject[length];
@@ -4544,12 +4543,13 @@ public class MessageProcessor {
             	continue;
             }
             
-            boolean supported = supportedEADs.contains(Integer.valueOf(eadLabel));
+            int eadLabelUnsigned = (eadLabel < 0) ? (-eadLabel) : eadLabel;
+            boolean supported = supportedEADs.contains(Integer.valueOf(eadLabelUnsigned));
 
             if (!supported) {
 	            if (eadLabel < 0) {
 	            	// Since the EAD item is critical and is not supported, the protocol must be discontinued
-	                errMsg = new String("Unsupported EAD_" + msgNum + " critical item with ead_label " + eadLabel);
+	                errMsg = new String("Unsupported EAD_" + msgNum + " critical item with ead_label " + eadLabelUnsigned);
 	                error = true;
 	                break;
 	            }
