@@ -423,6 +423,60 @@ public class MessageProcessorTest {
 		returnedObjects = MessageProcessor.readErrorMessage(errorMessage, connectionIdentifierInitiator, edhocSessions);
 		Assert.assertNull(returnedObjects);
 		
+		
+		// Invalid input
+		returnedObjects = MessageProcessor.readErrorMessage(null, connectionIdentifierInitiator, null);
+		Assert.assertNull(returnedObjects);
+		
+		errorMessage = StringUtil.hex2ByteArray("01020304");
+		returnedObjects = MessageProcessor.readErrorMessage(errorMessage, connectionIdentifierInitiator, edhocSessions);
+		Assert.assertNull(returnedObjects);
+		
+		errorMessage = StringUtil.hex2ByteArray("f40178264572726f72207768696c652070726f63657373696e67204544484f43206d6573736167655f31");
+		returnedObjects = MessageProcessor.readErrorMessage(errorMessage, null, edhocSessions);
+		Assert.assertNull(returnedObjects);
+		
+		errorMessage = StringUtil.hex2ByteArray("400178264572726f72207768696c652070726f63657373696e67204544484f43206d6573736167655f31");
+		returnedObjects = MessageProcessor.readErrorMessage(errorMessage, null, edhocSessions);
+		Assert.assertNull(returnedObjects);
+		
+		errorMessage = StringUtil.hex2ByteArray("64626c61680178264572726f72207768696c652070726f63657373696e67204544484f43206d6573736167655f31");
+		returnedObjects = MessageProcessor.readErrorMessage(errorMessage, connectionIdentifierInitiator, edhocSessions);
+		Assert.assertNull(returnedObjects);
+		
+		errorMessage = StringUtil.hex2ByteArray("01");
+		returnedObjects = MessageProcessor.readErrorMessage(errorMessage, connectionIdentifierInitiator, edhocSessions);
+		Assert.assertNull(returnedObjects);
+		
+		errorMessage = StringUtil.hex2ByteArray("050178264572726f72207768696c652070726f63657373696e67204544484f43206d6573736167655f31");
+		returnedObjects = MessageProcessor.readErrorMessage(errorMessage, connectionIdentifierInitiator, edhocSessions);
+		Assert.assertNull(returnedObjects);
+		
+		errorMessage = StringUtil.hex2ByteArray("0078264572726f72207768696c652070726f63657373696e67204544484f43206d6573736167655f31");
+		returnedObjects = MessageProcessor.readErrorMessage(errorMessage, connectionIdentifierInitiator, edhocSessions);
+		Assert.assertNull(returnedObjects);
+		
+		errorMessage = StringUtil.hex2ByteArray("01f4");
+		returnedObjects = MessageProcessor.readErrorMessage(errorMessage, connectionIdentifierInitiator, edhocSessions);
+		Assert.assertNull(returnedObjects);
+		
+		errorMessage = StringUtil.hex2ByteArray("02f4");
+		returnedObjects = MessageProcessor.readErrorMessage(errorMessage, connectionIdentifierInitiator, edhocSessions);
+		Assert.assertNull(returnedObjects);
+	
+		errorMessage = StringUtil.hex2ByteArray("028261616162");
+		returnedObjects = MessageProcessor.readErrorMessage(errorMessage, connectionIdentifierInitiator, edhocSessions);
+		Assert.assertNull(returnedObjects);
+		
+		session.setCurrentStep(Constants.EDHOC_AFTER_M3);
+		errorMessage = StringUtil.hex2ByteArray("0201");
+		returnedObjects = MessageProcessor.readErrorMessage(errorMessage, connectionIdentifierInitiator, edhocSessions);
+		Assert.assertNull(returnedObjects);
+		
+		errorMessage = StringUtil.hex2ByteArray("06f4");
+		returnedObjects = MessageProcessor.readErrorMessage(errorMessage, connectionIdentifierInitiator, edhocSessions);
+		Assert.assertNull(returnedObjects);
+		
 	}
 	
 	/**
@@ -2815,6 +2869,58 @@ public class MessageProcessorTest {
 		
 		Assert.assertEquals(1, output.size());
 		Assert.assertEquals(expectedOutput, output.get(0));
+		
+	}
+	
+	/**
+	 * Test the method for pre-parsing the EAD field
+	 * 
+	 */
+	@Test
+	public void testPreParseEAD() {
+		
+		// Consider an instance of EDHOC message_1
+		CBORObject[] objectList = new CBORObject[12];
+		
+		objectList[0] = CBORObject.FromObject(0); // METHOD
+		objectList[1] = CBORObject.FromObject(0); // SUITES_I
+		objectList[2] = CBORObject.FromObject(StringUtil.hex2ByteArray(
+											  "31f82c7b5b9cbbf0f194d913cc12ef1532d328ef32632a4881a1c0701e237f04")); // G_X
+		objectList[3] = CBORObject.FromObject(0); // C_I
+		objectList[4] = CBORObject.FromObject(Constants.EAD_LABEL_PADDING); // EAD_1 item PADDING (label; no value follows)
+		objectList[5] = CBORObject.FromObject(Constants.EAD_LABEL_PADDING); // EAD_1 item PADDING (label)
+		objectList[6] = CBORObject.FromObject(1); 							// EAD_1 item with label 1 (label), not supported
+		objectList[7] = CBORObject.FromObject(new byte[] {0x00}); 			// EAD_1 item with label 1 (value), not supported
+		objectList[8] = CBORObject.FromObject(-2); 							// EAD_1 item with label 1 (label), supported and critical
+		objectList[9] = CBORObject.FromObject(new byte[] {0x01}); 			// EAD_1 item with label 1 (value), supported and critical
+		objectList[10] = CBORObject.FromObject(3); 						    // EAD_1 item with label 1 (label), supported and non critical
+		objectList[11] = CBORObject.FromObject(new byte[] {0x02}); 			// EAD_1 item with label 1 (value), supported and non critical
+		
+		Set<Integer> supportedEADs = new HashSet<>();
+		supportedEADs.add(2);
+		supportedEADs.add(3);
+		
+		CBORObject[] expectedObjectList = new CBORObject[4];
+		expectedObjectList[0] = CBORObject.FromObject(-2);
+		expectedObjectList[1] = CBORObject.FromObject(new byte[] {0x01});
+		expectedObjectList[2] = CBORObject.FromObject(3);
+		expectedObjectList[3] = CBORObject.FromObject(new byte[] {0x02});
+				
+		CBORObject[] returnedObjectList = MessageProcessor.preParseEAD(objectList, 4, 1, supportedEADs);
+		Assert.assertEquals(expectedObjectList.length, returnedObjectList.length);
+		Assert.assertEquals(expectedObjectList[0], returnedObjectList[0]);
+		Assert.assertEquals(expectedObjectList[1], returnedObjectList[1]);
+		Assert.assertEquals(expectedObjectList[2], returnedObjectList[2]);
+		Assert.assertEquals(expectedObjectList[3], returnedObjectList[3]);
+		
+		objectList[6] = CBORObject.FromObject(-1); 							// EAD_1 item with label 1 (label), not supported and critical
+		objectList[7] = CBORObject.FromObject(new byte[] {0x00}); 			// EAD_1 item with label 1 (value), not supported and critical
+		
+		expectedObjectList = new CBORObject[1];
+		expectedObjectList[0] = CBORObject.FromObject(new String("Unsupported EAD_1" + " critical item with ead_label 1"));
+		returnedObjectList = MessageProcessor.preParseEAD(objectList, 4, 1, supportedEADs);
+		Assert.assertEquals(expectedObjectList.length, returnedObjectList.length);
+		Assert.assertEquals(expectedObjectList[0], returnedObjectList[0]);
 		
 	}
 	
