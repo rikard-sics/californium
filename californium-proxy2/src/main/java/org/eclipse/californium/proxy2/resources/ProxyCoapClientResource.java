@@ -225,9 +225,6 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 			InetAddress responseSourceHost = incomingResponse.getSourceContext().getPeerAddress().getAddress();
 			int responseSourcePort = incomingResponse.getSourceContext().getPeerAddress().getPort();
 
-			// Build outgoing response with option
-			Response outgoingResponse = translator.getResponse(incomingResponse);
-
 			// https://datatracker.ietf.org/doc/html/draft-tiloca-core-groupcomm-proxy-07#section-3
 			ResponseForwardingOption responseForwarding = new ResponseForwardingOption(ResponseForwardingOption.NUMBER);
 			responseForwarding.setTpId(1);
@@ -235,7 +232,10 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 			if (responseSourcePort != CoAP.DEFAULT_COAP_PORT) {
 				responseForwarding.setSrvPort(responseSourcePort);
 			}
-			outgoingResponse.getOptions().addOption(responseForwarding);
+			incomingResponse.getOptions().addOption(responseForwarding);
+
+			// Build outgoing response with option
+			Response outgoingResponse = translator.getResponse(incomingResponse);
 
 			incomingExchange.sendResponse(outgoingResponse);
 		}
