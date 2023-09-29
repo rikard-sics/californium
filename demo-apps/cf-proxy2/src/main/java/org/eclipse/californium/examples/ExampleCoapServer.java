@@ -65,6 +65,9 @@ import net.i2p.crypto.eddsa.Utils;
  * Example CoAP server for proxy demonstration.
  * 
  * {@code coap://localhost:5683/coap-target}
+ * 
+ * Start with "alt" config to test Group OSCORE proxy forwarding, together with
+ * the ExampleCrossProxy2 and the ExampleProxy2CoapClient
  */
 public class ExampleCoapServer {
 
