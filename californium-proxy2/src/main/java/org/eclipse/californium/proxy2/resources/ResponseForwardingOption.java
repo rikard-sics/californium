@@ -53,7 +53,11 @@ public class ResponseForwardingOption extends Option {
 		byte[] hostBytes = srvHost.getAddress();
 		arrayOut.Add(CBORObject.FromObject(hostBytes).WithTag(260));
 
-		arrayOut.Add(srvPort);
+		if (srvPort == CoAP.DEFAULT_COAP_PORT || srvPort == -1) {
+			; // Do not add the port
+		} else {
+			arrayOut.Add(srvPort);
+		}
 
 		return arrayOut.EncodeToBytes();
 	}
