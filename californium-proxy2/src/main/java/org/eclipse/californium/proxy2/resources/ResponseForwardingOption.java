@@ -13,7 +13,7 @@ public class ResponseForwardingOption extends Option {
 
 	private int tpId;
 	private InetAddress srvHost;
-	private int srvPort = -1;
+	private CBORObject srvPort = null;
 
 	public static int NUMBER = 96;
 
@@ -38,11 +38,15 @@ public class ResponseForwardingOption extends Option {
 	}
 
 	public int getSrvPort() {
-		return srvPort;
+		return srvPort.AsInt32();
 	}
 
 	public void setSrvPort(int srvPort) {
-		this.srvPort = srvPort;
+		this.srvPort = CBORObject.FromObject(srvPort);
+	}
+
+	public void setSrvPortNull() {
+		this.srvPort = CBORObject.Null;
 	}
 
 	@Override
@@ -52,10 +56,7 @@ public class ResponseForwardingOption extends Option {
 
 		byte[] hostBytes = srvHost.getAddress();
 		arrayOut.Add(CBORObject.FromObject(hostBytes).WithTag(260));
-
-		if (srvPort == CoAP.DEFAULT_COAP_PORT || srvPort == -1) {
-			; // Do not add the port
-		} else {
+		if (srvPort != null) {
 			arrayOut.Add(srvPort);
 		}
 
