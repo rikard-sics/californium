@@ -225,10 +225,22 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 			int responseSourcePort = incomingResponse.getSourceContext().getPeerAddress().getPort();
 
 			// Retrieve information about original request
+			// Meaning the Proxy-Uri, or Uri-Host (when Proxy-Scheme is used)
 			Integer originalReqDstPort = null;
+			boolean originalReqEndDstMcast = false;
 			if (cacheKey != null) {
 				originalReqDstPort = cacheKey.getUri().getPort();
 				String originalReqDstHost = cacheKey.getUri().getHost();
+
+				try {
+					InetAddress originalReqDstIp = InetAddress.getByName(originalReqDstHost);
+					if (originalReqDstIp.isMulticastAddress()) {
+						originalReqEndDstMcast = true;
+					}
+				} catch (UnknownHostException e) {
+					System.err.println("Failed to convert original request end destination to IP");
+					e.printStackTrace();
+				}
 			}
 
 			// https://datatracker.ietf.org/doc/html/draft-tiloca-core-groupcomm-proxy-07#section-3
@@ -242,20 +254,12 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 				responseForwarding.setSrvPortNull();
 			}
 
-			incomingResponse.getOptions().addOption(responseForwarding);
+			if (originalReqEndDstMcast) {
+				incomingResponse.getOptions().addOption(responseForwarding);
+			}
 
 			// Build outgoing response with option
 			Response outgoingResponse = translator.getResponse(incomingResponse);
-
-			System.out.println("AAA " + cacheKey);
-			System.out.println("BBB " + cacheKey.getUri());
-			// System.out.println("CCC " + cacheKey.getResponse().toString());
-
-			// Iterating HashMap through for loop
-			for (String q : baseResource.getDestinationSchemes()) {
-
-				System.out.println("Q: " + q);
-			}
 
 			incomingExchange.sendResponse(outgoingResponse);
 		}
