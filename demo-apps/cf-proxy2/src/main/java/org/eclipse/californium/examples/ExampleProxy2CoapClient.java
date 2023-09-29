@@ -483,6 +483,11 @@ public class ExampleProxy2CoapClient {
 					+ responseForwarding.getSrvHost() + ", srv_port: " + responseForwarding.getSrvPort());
 
 			System.out.println(Utils.prettyPrint(response));
+
+			assert (responseForwarding != null);
+			assert (responseForwarding.getSrvPort() == 5773);
+			assert (response.getResponseText().contains("Hi! I am the coap server on port"));
+			assert (response.getResponseText().contains("Group OSCORE SID"));
 		}
 
 		@Override
