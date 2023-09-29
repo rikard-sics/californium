@@ -224,17 +224,38 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 			InetAddress responseSourceHost = incomingResponse.getSourceContext().getPeerAddress().getAddress();
 			int responseSourcePort = incomingResponse.getSourceContext().getPeerAddress().getPort();
 
+			// Retrieve information about original request
+			Integer originalReqDstPort = null;
+			if (cacheKey != null) {
+				originalReqDstPort = cacheKey.getUri().getPort();
+				String originalReqDstHost = cacheKey.getUri().getHost();
+			}
+
 			// https://datatracker.ietf.org/doc/html/draft-tiloca-core-groupcomm-proxy-07#section-3
 			ResponseForwardingOption responseForwarding = new ResponseForwardingOption(ResponseForwardingOption.NUMBER);
 			responseForwarding.setTpId(1);
 			responseForwarding.setSrvHost(responseSourceHost);
-			if (responseSourcePort != CoAP.DEFAULT_COAP_PORT) {
+			if (responseSourcePort != -1 && responseSourcePort != CoAP.DEFAULT_COAP_PORT) {
 				responseForwarding.setSrvPort(responseSourcePort);
 			}
+			if (originalReqDstPort != null && originalReqDstPort == responseSourcePort) {
+				responseForwarding.setSrvPortNull();
+			}
+
 			incomingResponse.getOptions().addOption(responseForwarding);
 
 			// Build outgoing response with option
 			Response outgoingResponse = translator.getResponse(incomingResponse);
+
+			System.out.println("AAA " + cacheKey);
+			System.out.println("BBB " + cacheKey.getUri());
+			// System.out.println("CCC " + cacheKey.getResponse().toString());
+
+			// Iterating HashMap through for loop
+			for (String q : baseResource.getDestinationSchemes()) {
+
+				System.out.println("Q: " + q);
+			}
 
 			incomingExchange.sendResponse(outgoingResponse);
 		}
