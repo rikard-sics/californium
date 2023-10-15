@@ -816,9 +816,21 @@ public class SharedSecretCalculation {
 
 		if (privateCurve == KeyKeys.OKP_X25519 /*|| privateCurve == KeyKeys.OKP_X448*/) {
 			// Use X25519 directly
-			return X25519(privateScalar, publicUCoordinate);
-		}
+			byte[] ret = null;
+			byte[] check = new byte[] {0x00};
 
+			ret = X25519(privateScalar, publicUCoordinate);
+			for (int i = 0; i < ret.length; i++) {
+			   check[0] |= ret[i];
+			}
+			if (check[0] == 0x00) {
+			   // The shared secret is the all-zero value
+			   System.err.println("The shared secret is the all-zero value.\n");
+			   ret = null;
+			}
+
+			return ret;
+		}
 		
 		System.err.println("Failed to generate shared secret.");
 
