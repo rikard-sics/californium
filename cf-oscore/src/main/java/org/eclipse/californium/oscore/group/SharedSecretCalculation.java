@@ -503,7 +503,7 @@ public class SharedSecretCalculation {
 	 * @param publicKey the public key (of the other party)
 	 * @param privateKey the private key (your own)
 	 * @return the shared secret calculated
-	 * @throws CoseException on failure
+	 * @throws CoseException on failure or all zero shared secret
 	 */
 	public static byte[] calculateSharedSecret(OneKey publicKey, OneKey privateKey) throws CoseException {
 
@@ -522,6 +522,18 @@ public class SharedSecretCalculation {
 		// secret = X25519(my private scalar, your public key U)
 
 		byte[] sharedSecret = X25519(private_scalar, public_u_array);
+
+		// Check if the shared secret is all zeroes
+		boolean allZero = true;
+		for (int i = 0; i < sharedSecret.length; i++) {
+			if (sharedSecret[i] != 0x00) {
+				allZero = false;
+				break;
+			}
+		}
+		if(allZero) {
+			throw new CoseException("Shared secret has all zero value");
+		}
 
 		return sharedSecret;
 	}
