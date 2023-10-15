@@ -166,6 +166,14 @@ public class KeyRemapping {
 		// 1 - y -> -y + 1
 		FieldElement one_minus_y = (y.negate()).addOne();
 
+		// Check that y is neither -1 (which maps to u = 0 that corresponds to
+		// the neutral group element) nor 1 (for which the mapping is not
+		// defined)
+		if (!one_plus_y.isNonZero() || !one_minus_y.isNonZero()) {
+			System.err.println("Invalid value of y: it cannot be -1 or 1");
+			return null;
+		}
+
 		// invert(1 - y)
 		FieldElement one_minus_y_invert = one_minus_y.invert();
 
@@ -173,7 +181,6 @@ public class KeyRemapping {
 		FieldElement u = one_plus_y.multiply(one_minus_y_invert);
 
 		return u;
-
 	}
 
 	/**
