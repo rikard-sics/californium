@@ -1012,6 +1012,7 @@ public class OSCoreCtx {
 	 */
 	protected byte[] getNonceHandover() {
 		return nonceHandover;
+	}
 
 	/**
 	 * Provides a method to check if this context is used for Group OSCORE.
