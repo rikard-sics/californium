@@ -54,6 +54,10 @@ import org.eclipse.californium.cose.OneKey;
 
 public class EdhocClient {
 
+	static {
+	    CoapConfig.register();
+	}
+	
 	private static final File CONFIG_FILE = new File("Californium.properties");
 	private static final String CONFIG_HEADER = "Californium CoAP Properties file for Fileclient";
 	private static final int DEFAULT_MAX_RESOURCE_SIZE = 2 * 1024 * 1024; // 2 MB

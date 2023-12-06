@@ -52,6 +52,10 @@ import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 public class EdhocServer extends CoapServer {
 
+	static {
+	    CoapConfig.register();
+	}
+	
 	private static final int COAP_PORT = Configuration.getStandard().get(CoapConfig.COAP_PORT);
 
 	private final static Provider EdDSA = new EdDSASecurityProvider();

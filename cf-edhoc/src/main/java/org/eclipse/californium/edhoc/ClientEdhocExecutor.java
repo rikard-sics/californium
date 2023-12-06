@@ -614,7 +614,6 @@ class ClientEdhocExecutor {
 							}
 							else {
 								// This is a generic response received as reply to EDHOC Message 3
-								System.out.println("here");
 								processResponseAfterEdhoc(edhocMessageResp2);
 							}
 						}
