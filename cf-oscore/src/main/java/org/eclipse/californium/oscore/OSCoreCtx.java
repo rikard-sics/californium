@@ -991,6 +991,30 @@ public class OSCoreCtx {
 	}
 
 	/**
+	 * Holds nonce to hand over between different Security Contexts during
+	 * execution of Appendix B.2
+	 */
+	private byte[] nonceHandover;
+
+	/**
+	 * Set nonce to hand over during execution of Appendix B.2
+	 * 
+	 * @param nonce the nonce value to hand over
+	 */
+	protected void setNonceHandover(byte[] nonce) {
+		this.nonceHandover = nonce;
+	}
+
+	/**
+	 * Get nonce for hand over during execution of Appendix B.2
+	 * 
+	 * @return the retrieved nonce value
+	 */
+	protected byte[] getNonceHandover() {
+		return nonceHandover;
+	}
+
+	/**
 	 * Provides a method to check if this context is used for Group OSCORE.
 	 * 
 	 * @return if this is a group (Group OSCORE) context
