@@ -308,10 +308,9 @@ public class GroupOSCOREReceiver {
 		// CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector).build();
 
 
-		// FIXME: Make it more easy to work when on WiFi only
-		NetworkInterface networkInterface = NetworkInterfacesUtil.getMulticastInterface().getByName("wlp3s0");
 		// NetworkInterface networkInterface =
-		// NetworkInterfacesUtil.getMulticastInterface();
+		// NetworkInterfacesUtil.getMulticastInterface().getByName("wlp3s0");
+		NetworkInterface networkInterface = NetworkInterfacesUtil.getMulticastInterface();
 
 		if (networkInterface == null) {
 			LOGGER.warn("No multicast network-interface found!");
