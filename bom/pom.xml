@@ -1,7 +1,8 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
-	xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
 	<modelVersion>4.0.0</modelVersion>
 
@@ -11,7 +12,7 @@
 		<version>3.10.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>cf-bom</artifactId>
- 	<packaging>pom</packaging>
+	<packaging>pom</packaging>
 
 	<name>Californium (Cf) BOM</name>
 	<description>Californium (Cf) Bill Of Materials</description>
@@ -27,6 +28,13 @@
 		<hamcrest.version>1.3</hamcrest.version>
 		<mockito.version>2.28.2</mockito.version>
 		<eddsa.version>0.3.0</eddsa.version>
+
+		<!-- Federated learning below -->
+		<dl4j-master.version>1.0.0-M2.1</dl4j-master.version>
+		<logback.version>1.2.3</logback.version>
+		<java.version>1.8</java.version>
+		<maven-shade-plugin.version>2.4.3</maven-shade-plugin.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
 	<dependencyManagement>
@@ -107,7 +115,32 @@
 				<version>${picocli.version}</version>
 			</dependency>
 
-			<!--  tests & runtime -->
+			<!-- For federated learning code -->
+			<!-- deeplearning4j-core: contains main functionality and neural networks -->
+			<dependency>
+				<groupId>org.deeplearning4j</groupId>
+				<artifactId>deeplearning4j-core</artifactId>
+				<version>${dl4j-master.version}</version>
+			</dependency>
+
+			<!-- ND4J backend: every project needs one of these. The backend defines 
+				the hardware on which network training will occur. "nd4j-native-platform" 
+				is for CPUs only (for running on all operating systems). -->
+			<dependency>
+				<groupId>org.nd4j</groupId>
+				<artifactId>nd4j-native</artifactId>
+				<version>${dl4j-master.version}</version>
+			</dependency>
+			<!-- CUDA: to use GPU for training (CUDA) instead of CPU, uncomment this, 
+				and remove nd4j-native-platform -->
+			<!-- Requires CUDA to be installed to use. Change the version (8.0, 9.0, 
+				9.1) to change the CUDA version -->
+			<!-- Optional, but recommended: if you use CUDA, also use CuDNN. To use 
+				this, CuDNN must also be installed -->
+			<!-- See: https://deeplearning4j.konduit.ai/config/backends/config-cudnn#using-deeplearning-4-j-with-cudnn -->
+
+
+			<!-- tests & runtime -->
 			<dependency>
 				<groupId>${project.groupId}</groupId>
 				<artifactId>demo-certs</artifactId>
@@ -134,7 +167,7 @@
 				<scope>runtime</scope>
 			</dependency>
 
-			<!--  tests -->
+			<!-- tests -->
 			<dependency>
 				<groupId>${project.groupId}</groupId>
 				<artifactId>element-connector</artifactId>

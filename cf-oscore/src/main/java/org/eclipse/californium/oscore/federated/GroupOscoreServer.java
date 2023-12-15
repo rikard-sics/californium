@@ -14,7 +14,7 @@
  *    Bosch Software Innovations - initial creation
  *    Rikard Höglund (RISE SICS) - Group OSCORE receiver functionality
  ******************************************************************************/
-package org.eclipse.californium.oscore.group;
+package org.eclipse.californium.oscore.federated;
 
 import java.io.IOException;
 import java.net.BindException;
@@ -48,6 +48,8 @@ import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
+import org.eclipse.californium.oscore.group.GroupCtx;
+import org.eclipse.californium.oscore.group.MultiKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,9 +58,9 @@ import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 /**
  * Test receiver using {@link UdpMulticastConnector}.
  */
-public class GroupOSCOREReceiver {
+public class GroupOscoreServer {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(GroupOSCOREReceiver.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(GroupOscoreServer.class);
 
 	/**
 	 * Controls whether or not the receiver will reply to incoming multicast

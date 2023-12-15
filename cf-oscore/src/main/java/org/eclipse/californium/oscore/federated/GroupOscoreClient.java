@@ -14,7 +14,7 @@
  *    Bosch Software Innovations - initial creation
  *    Rikard Höglund (RISE SICS) - Group OSCORE sender functionality
  ******************************************************************************/
-package org.eclipse.californium.oscore.group;
+package org.eclipse.californium.oscore.federated;
 
 import java.io.File;
 import java.net.Inet6Address;
@@ -40,6 +40,8 @@ import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
+import org.eclipse.californium.oscore.group.GroupCtx;
+import org.eclipse.californium.oscore.group.MultiKey;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
@@ -48,7 +50,7 @@ import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider
 /**
  * Test sender configured to support multicast requests. Rebased.
  */
-public class GroupOSCORESender {
+public class GroupOscoreClient {
 
 	/**
 	 * File name for network configuration.
