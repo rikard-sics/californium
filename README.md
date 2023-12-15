@@ -9,7 +9,7 @@ mvn eclipse:eclipse
 File->Import->Existing Maven Projects
 
 3. Ensure that the cf-oscore subproject is using Java 11  
-Properties->Libraries->JRE System Library->Edit
+Properties->Java Build Path->Libraries->JRE System Library->Edit
 
 
 ![Californium logo](cf_64.png)
