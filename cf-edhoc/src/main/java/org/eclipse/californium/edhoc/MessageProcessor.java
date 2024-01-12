@@ -1042,7 +1042,7 @@ public class MessageProcessor {
     	session.setPeerCred(peerCredential); // Store CRED_R
     	
     	// Compute MAC_2
-    	byte[] mac2 = computeMAC2(session, prk3e2m, th2, idCredR, peerCredential, ead2);
+    	byte[] mac2 = computeMAC2(session, prk3e2m, th2, cR, idCredR, peerCredential, ead2);
     	if (mac2 == null) {
         	errMsg = new String("Error when computing MAC_2");
         	responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
@@ -2388,7 +2388,7 @@ public class MessageProcessor {
 
     	// Compute MAC_2
         if (error == false) {       	
-	    	mac2 = computeMAC2(session, prk3e2m, th2, session.getIdCred(), session.getCred(), ead2);
+	    	mac2 = computeMAC2(session, prk3e2m, th2, cR, session.getIdCred(), session.getCred(), ead2);
 	    	if (mac2 == null) {
 	    		System.err.println("Error when computing MAC_2");
 	    		errMsg = new String("Error when computing MAC_2");
@@ -3895,17 +3895,19 @@ public class MessageProcessor {
      * @param session   The used EDHOC session
      * @param prk3e2m   The PRK used to compute MAC_2
      * @param th2   The transcript hash TH2
+     * @param cR   The Connection Identifier C_R, encoded as a CBOR byte string or integer 
      * @param idCredR   The ID_CRED_R associated to the long-term public key of the Responder
      * @param credR   The long-term public key of the Responder, as the serialization of a CBOR object
      * @param ead2   The External Authorization Data from EDHOC Message 2, it can be null
      * @return  The computed MAC_2
      */
-	public static byte[] computeMAC2(EdhocSession session, byte[] prk3e2m, byte[] th2,
+	public static byte[] computeMAC2(EdhocSession session, byte[] prk3e2m, byte[] th2, CBORObject cR,
 			                         CBORObject idCredR, byte[] credR, CBORObject[] ead2) {
 		
-		// Build the CBOR sequence to use for 'context': ( ID_CRED_R, TH_2, CRED_R, ? EAD_2 )
+		// Build the CBOR sequence to use for 'context': ( C_R, ID_CRED_R, TH_2, CRED_R, ? EAD_2 )
 		// The actual 'context' is a CBOR byte string with value the serialization of the CBOR sequence
         List<CBORObject> objectList = new ArrayList<>();
+        objectList.add(cR);
     	objectList.add(idCredR);
     	objectList.add(CBORObject.FromObject(th2));
     	objectList.add(CBORObject.DecodeFromBytes(credR));
