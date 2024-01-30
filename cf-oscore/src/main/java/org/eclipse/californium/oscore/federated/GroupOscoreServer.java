@@ -48,10 +48,33 @@ import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
+import org.eclipse.californium.oscore.OSCoreResource;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.MultiKey;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.upokecenter.cbor.CBORObject;
+
+import org.apache.commons.io.FilenameUtils;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.PoolingType;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.api.InvocationType;
+import org.deeplearning4j.optimize.listeners.EvaluativeListener;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
@@ -59,9 +82,12 @@ import net.i2p.crypto.eddsa.EdDSASecurityProvider;
  * Test receiver using {@link UdpMulticastConnector}.
  */
 public class GroupOscoreServer {
+	
+	
+
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GroupOscoreServer.class);
-
+	static MultiLayerNetwork model;
 	/**
 	 * Controls whether or not the receiver will reply to incoming multicast
 	 * non-confirmable requests.
@@ -98,6 +124,12 @@ public class GroupOscoreServer {
 	 * Port to listen to.
 	 */
 	static final int listenPort = CoAP.DEFAULT_COAP_PORT;
+	
+	
+	/**
+	 * Port to the source to the responses.
+	 */
+	static int unicastPort = CoAP.DEFAULT_COAP_PORT + 10;
 
 	/**
 	 * ED25519 curve value.
@@ -159,6 +191,71 @@ public class GroupOscoreServer {
 	 * @throws Exception on setup or message processing failure
 	 */
 	public static void main(String[] args) throws Exception {
+		
+		
+		int nChannels = 1; // Number of input channels
+		int outputNum = 10; // The number of possible outcomes
+		int batchSize = 64; // Test batch size
+		int nEpochs = 1; // Number of training epochs
+		int seed = 123; //
+		
+		/*
+		 * Create an iterator using the batch size for one iteration
+		 */
+		LOGGER.info("Load data....");
+		DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize, true, 12345);
+		DataSetIterator mnistTest = new MnistDataSetIterator(batchSize, false, 12345);
+
+		/*
+		 * Construct the neural network
+		 */
+		LOGGER.info("Build model....");
+
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).l2(0.0005)
+				.weightInit(WeightInit.XAVIER).updater(new Adam(1e-3)).list().layer(new ConvolutionLayer.Builder(5, 5)
+						// nIn and nOut specify depth. nIn here is the nChannels
+						// and nOut is the number of filters to be applied
+						.nIn(nChannels).stride(1, 1).nOut(20).activation(Activation.IDENTITY).build())
+				.layer(new SubsamplingLayer.Builder(PoolingType.MAX).kernelSize(2, 2).stride(2, 2).build())
+				.layer(new ConvolutionLayer.Builder(5, 5)
+						// Note that nIn need not be specified in later layers
+						.stride(1, 1).nOut(50).activation(Activation.IDENTITY).build())
+				.layer(new SubsamplingLayer.Builder(PoolingType.MAX).kernelSize(2, 2).stride(2, 2).build())
+				.layer(new DenseLayer.Builder().activation(Activation.RELU).nOut(500).build())
+				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(outputNum)
+						.activation(Activation.SOFTMAX).build())
+				.setInputType(InputType.convolutionalFlat(28, 28, 1)) // See
+																		// note
+																		// below
+				.build();
+		
+		model = new MultiLayerNetwork(conf);
+		model.init();
+
+		LOGGER.info("Train model...");
+		model.setListeners(new ScoreIterationListener(10),
+				new EvaluativeListener(mnistTest, 1, InvocationType.EPOCH_END)); // Print
+																					// score
+																					// every
+																					// 10
+																					// iterations
+																					// and
+																					// evaluate
+																					// on
+																					// test
+																					// set
+																					// every
+																					// epoch
+		model.fit(mnistTrain, nEpochs);
+
+		LOGGER.info(model.params().toString());
+		System.out.println(model.params());
+		LOGGER.info(model.summary());
+		System.out.println(model.params().length());
+
+		LOGGER.info("****************Training finished********************");
+		
+		
 		// Install cryptographic providers
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 1);
@@ -170,6 +267,7 @@ public class GroupOscoreServer {
 		// Check command line arguments (flag to use different sid and sid key)
 		if (args.length != 0) {
 			System.out.println("Starting with alternative sid 0x77.");
+			unicastPort = unicastPort + 1;
 			sid = new byte[] { 0x77 };
 			sid_public_key_bytes = StringUtil.hex2ByteArray(
 					"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820105B8C6A8C88019BF0C354592934130BAA8007399CC2AC3BE845884613D5BA2E");
@@ -193,7 +291,9 @@ public class GroupOscoreServer {
 
 			commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
 
-			commonCtx.setResponsesIncludePartialIV(true);
+			commonCtx.setResponsesIncludePartialIV(false);
+			
+			commonCtx.setPairwiseModeResponses(true);
 
 			db.addContext(uriLocal, commonCtx);
 
@@ -205,9 +305,10 @@ public class GroupOscoreServer {
 
 		Configuration config = Configuration.getStandard();
 		CoapServer server = new CoapServer(config);
-		createEndpoints(server, listenPort, listenPort, config);
-		Endpoint endpoint = server.getEndpoint(listenPort);
+		createEndpoints(server, unicastPort, listenPort, config);
+		Endpoint endpoint = server.getEndpoint(unicastPort);
 		server.add(new HelloWorldResource());
+		server.add(new ModelResource());
 
 		// Information about the receiver
 		System.out.println("==================");
@@ -225,6 +326,61 @@ public class GroupOscoreServer {
 		System.out.println("==================");
 
 		server.start();
+	}
+	
+	private static class ModelResource extends OSCoreResource {
+		
+		private ModelResource() {
+			// set resource identifier
+			super("model", true); // Changed
+
+			// set display name
+			getAttributes().setTitle("Model Resource");
+
+		
+		}
+	
+	
+			@Override
+			public void handlePOST(CoapExchange exchange) {
+				byte[] payload = exchange.getRequestPayload();
+				System.out.println("Accessing model resource");
+				
+				CBORObject arrayReq = CBORObject.DecodeFromBytes(payload);
+				double[] modelReq = new double[arrayReq.size()];
+				
+				for (int i=0; i<arrayReq.size(); i++) {
+					modelReq[i] = arrayReq.get(i).AsDouble(); 
+					System.out.print(modelReq[i] + " ");
+					
+				}
+				System.out.println();
+				
+				
+				double[] modelRes = null;
+				
+				
+				
+				//Creating response
+				Response r = new Response(ResponseCode.CHANGED);
+				
+				modelRes = model.params().toDoubleVector();
+				
+				CBORObject array = CBORObject.NewArray();
+				for (int i=0; i<modelRes.length; i++) {
+					array.Add(modelRes[i]);
+					System.out.print(modelRes[i] + " ");
+				}
+				System.out.println();
+				
+				byte[] payloadRes = array.EncodeToBytes();
+				System.out.println("Payload Length: " + payloadRes.length);
+				r.setPayload(payloadRes);
+				
+			
+				exchange.respond(r);
+			}
+		
 	}
 
 	private static class HelloWorldResource extends CoapResource {

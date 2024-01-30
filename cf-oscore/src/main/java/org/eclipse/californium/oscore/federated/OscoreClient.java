@@ -38,7 +38,7 @@ public class OscoreClient {
 
 	private final static HashMapCtxDB db = new HashMapCtxDB();
 	private final static String uriLocal = "coap://localhost";
-	private final static String hello1 = "/hello/1";
+	private final static String hello1 = "/model";
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
 	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
 
@@ -58,11 +58,11 @@ public class OscoreClient {
 		OSCoreCoapStackFactory.useAsDefault(db);
 		CoapClient c = new CoapClient(uriLocal + hello1);
 
-		Request r = new Request(Code.GET);
+		Request r = new Request(Code.POST);
 		CoapResponse resp = c.advanced(r);
 		printResponse(resp);
 
-		r = new Request(Code.GET);
+		r = new Request(Code.POST);
 		r.getOptions().setOscore(new byte[0]);
 		resp = c.advanced(r);
 		printResponse(resp);

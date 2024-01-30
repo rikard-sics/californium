@@ -43,6 +43,8 @@ import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.MultiKey;
 
+import com.upokecenter.cbor.CBORObject;
+
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
@@ -97,7 +99,7 @@ public class GroupOscoreClient {
 	/**
 	 * Resource to perform request against.
 	 */
-	static final String requestResource = "/helloWorld";
+	static final String requestResource = "/model";
 
 	/**
 	 * Payload in request sent (POST)
@@ -220,7 +222,7 @@ public class GroupOscoreClient {
 
 		client.setURI(requestURI);
 		Request multicastRequest = Request.newPost();
-		multicastRequest.setPayload(requestPayload);
+		multicastRequest.setPayload(CBORObject.NewArray().EncodeToBytes());
 		multicastRequest.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 		multicastRequest.setType(Type.NON);
 		if (useOSCORE) {
