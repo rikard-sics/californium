@@ -23,13 +23,14 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Provider;
 import java.security.Security;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
-import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.network.CoapEndpoint;
@@ -40,9 +41,9 @@ import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
+import org.eclipse.californium.oscore.OSException;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.MultiKey;
-
 import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
@@ -58,10 +59,23 @@ public class GroupOscoreClient {
 	 * File name for network configuration.
 	 */
 	private static final File CONFIG_FILE = new File("CaliforniumMulticast.properties");
+
 	/**
 	 * Header for network configuration.
 	 */
 	private static final String CONFIG_HEADER = "Californium CoAP Properties file for Multicast Client";
+
+	/**
+	 * Maximum message size
+	 */
+	private static int MAX_MSG_SIZE = 1400;
+
+	/**
+	 * Maximum size of vectors to send (so it fits in the message). It seems
+	 * every number takes around 6 bytes on average
+	 */
+	private static int MAX_VECTOR_SIZE = MAX_MSG_SIZE / 6;
+
 	/**
 	 * Special network configuration defaults handler.
 	 */
@@ -70,6 +84,9 @@ public class GroupOscoreClient {
 		@Override
 		public void applyDefinitions(Configuration config) {
 			config.set(CoapConfig.MULTICAST_BASE_MID, 65000);
+			config.set(CoapConfig.PREFERRED_BLOCK_SIZE, MAX_MSG_SIZE);
+			config.set(CoapConfig.MAX_RESOURCE_BODY_SIZE, MAX_MSG_SIZE);
+			config.set(CoapConfig.MAX_MESSAGE_SIZE, MAX_MSG_SIZE);
 		}
 
 	};
@@ -101,18 +118,6 @@ public class GroupOscoreClient {
 	 */
 	static final String requestResource = "/model";
 
-	/**
-	 * Payload in request sent (POST)
-	 */
-	static final String requestPayload = "test";
-
-	/**
-	 * ED25519 curve value.
-	 * https://www.iana.org/assignments/cose/cose.xhtml#elliptic-curves
-	 */
-	// static final int ED25519 = KeyKeys.OKP_Ed25519.AsInt32(); //Integer value
-	// 6
-
 	/* --- OSCORE Security Context information (sender) --- */
 	private final static HashMapCtxDB db = new HashMapCtxDB();
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
@@ -128,9 +133,9 @@ public class GroupOscoreClient {
 	private final static AlgorithmID algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
 
 	// test vector OSCORE draft Appendix C.1.1
-	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
-			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
-	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
+	private final static byte[] masterSecret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C,
+			0x0D, 0x0E, 0x0F, 0x10 };
+	private final static byte[] masterSalt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
 			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
 
 	private static final int REPLAY_WINDOW = 32;
@@ -138,29 +143,17 @@ public class GroupOscoreClient {
 	private final static byte[] gm_public_key_bytes = StringUtil.hex2ByteArray(
 			"A501781A636F6170733A2F2F6D79736974652E6578616D706C652E636F6D026C67726F75706D616E6167657203781A636F6170733A2F2F646F6D61696E2E6578616D706C652E6F7267041AAB9B154F08A101A4010103272006215820CDE3EFD3BC3F99C9C9EE210415C6CBA55061B5046E963B8A58C9143A61166472");
 
-	private final static byte[] sid = new byte[] { 0x25 };
-	private final static byte[] sid_public_key_bytes = StringUtil.hex2ByteArray(
+	private final static byte[] clientSid = new byte[] { 0x25 };
+	private final static byte[] clientPublicKeyBytes = StringUtil.hex2ByteArray(
 			"A501781B636F6170733A2F2F746573746572312E6578616D706C652E636F6D02666D796E616D6503781A636F6170733A2F2F68656C6C6F312E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820069E912B83963ACC5941B63546867DEC106E5B9051F2EE14F3BC5CC961ACD43A");
-	private static MultiKey sid_private_key;
-	private static byte[] sid_private_key_bytes = new byte[] { (byte) 0x64, (byte) 0x71, (byte) 0x4D, (byte) 0x41,
+	private static MultiKey clientPublicPrivateKey;
+	private static byte[] clientPrivateKeyBytes = new byte[] { (byte) 0x64, (byte) 0x71, (byte) 0x4D, (byte) 0x41,
 			(byte) 0xA2, (byte) 0x40, (byte) 0xB6, (byte) 0x1D, (byte) 0x8D, (byte) 0x82, (byte) 0x35, (byte) 0x02,
 			(byte) 0x71, (byte) 0x7A, (byte) 0xB0, (byte) 0x88, (byte) 0xC9, (byte) 0xF4, (byte) 0xAF, (byte) 0x6F,
 			(byte) 0xC9, (byte) 0x84, (byte) 0x45, (byte) 0x53, (byte) 0xE4, (byte) 0xAD, (byte) 0x4C, (byte) 0x42,
 			(byte) 0xCC, (byte) 0x73, (byte) 0x52, (byte) 0x39 };
 
-	private final static byte[] rid1 = new byte[] { 0x52 }; // Recipient 1
-	private static byte[] rid1_public_key_bytes = StringUtil.hex2ByteArray(
-			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A401010327200621582077EC358C1D344E41EE0E87B8383D23A2099ACD39BDF989CE45B52E887463389B");
-	private static MultiKey rid1_public_key;
-
-	private final static byte[] rid2 = new byte[] { 0x77 }; // Recipient 2
-	private final static byte[] rid2_public_key_bytes = StringUtil.hex2ByteArray(
-			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820105B8C6A8C88019BF0C354592934130BAA8007399CC2AC3BE845884613D5BA2E");
-	private static MultiKey rid2_public_key;
-
-	private final static byte[] rid0 = new byte[] { (byte) 0xCC }; // Dummy
-
-	private final static byte[] group_identifier = new byte[] { 0x44, 0x61, 0x6c }; // GID
+	private final static byte[] groupIdentifier = new byte[] { 0x44, 0x61, 0x6c }; // GID
 
 	/* --- OSCORE Security Context information --- */
 
@@ -188,25 +181,16 @@ public class GroupOscoreClient {
 		// InstallCryptoProviders.generateCounterSignKey();
 
 		// Add private & public keys for sender & receiver(s)
-		sid_private_key = new MultiKey(sid_public_key_bytes, sid_private_key_bytes);
-		rid1_public_key = new MultiKey(rid1_public_key_bytes);
-		rid2_public_key = new MultiKey(rid2_public_key_bytes);
+		clientPublicPrivateKey = new MultiKey(clientPublicKeyBytes, clientPrivateKeyBytes);
 
 		// If OSCORE is being used set the context information
 		if (useOSCORE) {
 
 			byte[] gmPublicKey = gm_public_key_bytes;
-			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign,
+			GroupCtx commonCtx = new GroupCtx(masterSecret, masterSalt, alg, kdf, groupIdentifier, algCountersign,
 					algGroupEnc, algKeyAgreement, gmPublicKey);
 
-			commonCtx.addSenderCtxCcs(sid, sid_private_key);
-
-			commonCtx.addRecipientCtxCcs(rid0, REPLAY_WINDOW, null);
-			commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
-			commonCtx.addRecipientCtxCcs(rid2, REPLAY_WINDOW, rid2_public_key);
-
-			commonCtx.setResponsesIncludePartialIV(true);
-			commonCtx.setResponsesIncludePartialIV(true);
+			addServerContexts(commonCtx);
 
 			db.addContext(requestURI, commonCtx);
 
@@ -223,7 +207,8 @@ public class GroupOscoreClient {
 		client.setURI(requestURI);
 		Request multicastRequest = Request.newPost();
 		multicastRequest.setPayload(CBORObject.NewArray().EncodeToBytes());
-		multicastRequest.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
+		// TODO: Set payload with model params
+
 		multicastRequest.setType(Type.NON);
 		if (useOSCORE) {
 			// For group mode request
@@ -241,7 +226,6 @@ public class GroupOscoreClient {
 		System.out.println("Request destination: " + requestURI);
 		System.out.println("Request destination port: " + destinationPort);
 		System.out.println("Request method: " + multicastRequest.getCode());
-		System.out.println("Request payload: " + requestPayload);
 		System.out.println("Outgoing port: " + endpoint.getAddress().getPort());
 		System.out.println("==================");
 
@@ -257,18 +241,77 @@ public class GroupOscoreClient {
 		System.out.println(Utils.prettyPrint(multicastRequest));
 
 		// sends a multicast request
+		handler.clearResponses();
 		client.advanced(handler, multicastRequest);
 		while (handler.waitOn(HANDLER_TIMEOUT)) {
 			// Wait for responses
 		}
 
+		// Print received responses
+		List<CoapResponse> responses = handler.getResponses();
+		for (int i = 0; i < responses.size(); i++) {
+			CoapResponse resp = responses.get(i);
+
+			System.out.println("=== Response " + (i + 1) + " ===");
+			System.out.println("Response from from: " + resp.advanced().getSourceContext().getPeerAddress());
+
+			// Parse and handle response
+			System.out.println(Utils.prettyPrint(resp));
+			System.out.println("Payload: " + resp.getResponseText());
+
+			byte[] payloadRes = resp.getPayload();
+			CBORObject arrayRes = CBORObject.DecodeFromBytes(payloadRes);
+			float[] modelRes = new float[arrayRes.size()];
+
+			System.out.print("Incoming payload in response: ");
+			for (int n = 0; n < arrayRes.size(); n++) {
+				modelRes[n] = arrayRes.get(n).AsSingle();
+				System.out.print(modelRes[n] + " ");
+
+			}
+			System.out.println();
+		}
+
+	}
+
+	/**
+	 * Add the Group OSCORE contexts for the servers
+	 * 
+	 * @param commonCtx the group context
+	 * @throws OSException on failure to add contexts
+	 */
+	private static void addServerContexts(GroupCtx commonCtx) throws OSException {
+		commonCtx.addSenderCtxCcs(clientSid, clientPublicPrivateKey);
+
+		for (int i = 0; i < Credentials.serverPublicKeys.size(); i++) {
+			MultiKey serverPublicKey = new MultiKey(Credentials.serverPublicKeys.get(i));
+			byte[] rid = Credentials.serverSenderIds.get(i);
+			System.out.println("=== Adding Server Context for RID " + StringUtil.byteArray2Hex(rid));
+			commonCtx.addRecipientCtxCcs(rid, REPLAY_WINDOW, serverPublicKey);
+		}
+
+		commonCtx.setResponsesIncludePartialIV(false);
 	}
 
 	private static final MultiCoapHandler handler = new MultiCoapHandler();
 
+	/**
+	 * Handler for sending requests and receiving responses
+	 *
+	 */
 	private static class MultiCoapHandler implements CoapHandler {
 
+		List<CoapResponse> responses = new ArrayList<CoapResponse>();
+
 		private boolean on;
+
+		public List<CoapResponse> getResponses() {
+			return responses;
+		}
+
+		public void clearResponses() {
+			responses.clear();
+		}
 
 		public synchronized boolean waitOn(long timeout) {
 			on = false;
@@ -292,10 +335,27 @@ public class GroupOscoreClient {
 		public void onLoad(CoapResponse response) {
 			on();
 
-			// System.out.println("Receiving to: "); //TODO
-			System.out.println("Receiving from: " + response.advanced().getSourceContext().getPeerAddress());
+			responses.add(response);
 
-			System.out.println(Utils.prettyPrint(response));
+			// // System.out.println("Receiving to: "); //TODO
+			// System.out.println("Receiving from: " +
+			// response.advanced().getSourceContext().getPeerAddress());
+			//
+			// // Parse and handle response
+			// System.out.println(Utils.prettyPrint(response));
+			// System.out.println("Payload: " + response.getResponseText());
+			//
+			// byte[] payloadRes = response.getPayload();
+			// CBORObject arrayRes = CBORObject.DecodeFromBytes(payloadRes);
+			// double[] modelRes = new double[arrayRes.size()];
+			//
+			// System.out.print("Incoming payload in response: ");
+			// for (int i = 0; i < arrayRes.size(); i++) {
+			// modelRes[i] = arrayRes.get(i).AsDouble();
+			// System.out.print(modelRes[i] + " ");
+			//
+			// }
+			// System.out.println();
 		}
 
 		@Override
@@ -303,4 +363,5 @@ public class GroupOscoreClient {
 			System.err.println("error");
 		}
 	}
+
 }

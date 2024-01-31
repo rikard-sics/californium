@@ -36,6 +36,7 @@ import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.CoAP.Type;
+import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.californium.elements.config.Configuration;
@@ -60,7 +61,6 @@ import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
-import org.apache.commons.io.FilenameUtils;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -82,12 +82,20 @@ import net.i2p.crypto.eddsa.EdDSASecurityProvider;
  * Test receiver using {@link UdpMulticastConnector}.
  */
 public class GroupOscoreServer {
-	
-	
-
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GroupOscoreServer.class);
-	static MultiLayerNetwork model;
+
+	/**
+	 * Maximum message size
+	 */
+	private static int MAX_MSG_SIZE = 1400;
+
+	/**
+	 * Maximum size of vectors to send (so it fits in the message). It seems
+	 * every number takes around 6 bytes on average
+	 */
+	private static int MAX_VECTOR_SIZE = MAX_MSG_SIZE / 6;
+
 	/**
 	 * Controls whether or not the receiver will reply to incoming multicast
 	 * non-confirmable requests.
@@ -124,10 +132,9 @@ public class GroupOscoreServer {
 	 * Port to listen to.
 	 */
 	static final int listenPort = CoAP.DEFAULT_COAP_PORT;
-	
-	
+
 	/**
-	 * Port to the source to the responses.
+	 * Unicast port to respond from.
 	 */
 	static int unicastPort = CoAP.DEFAULT_COAP_PORT + 10;
 
@@ -154,35 +161,32 @@ public class GroupOscoreServer {
 	private final static AlgorithmID algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
 
 	// test vector OSCORE draft Appendix C.1.2
-	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
-			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
-	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
+	private final static byte[] masterSecret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C,
+			0x0D, 0x0E, 0x0F, 0x10 };
+	private final static byte[] masterSalt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
 			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
 
 	private static final int REPLAY_WINDOW = 32;
 
-	private final static byte[] gm_public_key_bytes = StringUtil.hex2ByteArray(
+	private final static byte[] gmPublicKeyBytes = StringUtil.hex2ByteArray(
 			"A501781A636F6170733A2F2F6D79736974652E6578616D706C652E636F6D026C67726F75706D616E6167657203781A636F6170733A2F2F646F6D61696E2E6578616D706C652E6F7267041AAB9B154F08A101A4010103272006215820CDE3EFD3BC3F99C9C9EE210415C6CBA55061B5046E963B8A58C9143A61166472");
 
-	private static byte[] sid = new byte[] { 0x52 };
-	private static byte[] sid_public_key_bytes = StringUtil.hex2ByteArray(
-			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A401010327200621582077EC358C1D344E41EE0E87B8383D23A2099ACD39BDF989CE45B52E887463389B");
-	private static byte[] sid_private_key_bytes = new byte[] { (byte) 0x85, 0x7E, (byte) 0xB6, 0x1D, 0x3F, 0x6D, 0x70,
-			(byte) 0xA2, 0x78, (byte) 0xA3, 0x67, 0x40, (byte) 0xD1, 0x32, (byte) 0xC0, (byte) 0x99, (byte) 0xF6, 0x28,
-			(byte) 0x80, (byte) 0xED, 0x49, 0x7E, 0x27, (byte) 0xBD, (byte) 0xFD, 0x46, (byte) 0x85, (byte) 0xFA, 0x1A,
-			0x30, 0x4F, 0x26 };
-	private static MultiKey sid_private_key;
+	private static byte[] sid;
+	private static byte[] serverPublicKey;
+	private static byte[] serverPrivateKey;
 
-	private final static byte[] rid1 = new byte[] { 0x25 };
-	private final static byte[] rid1_public_key_bytes = StringUtil.hex2ByteArray(
+	private final static byte[] clientRid = new byte[] { 0x25 };
+	private final static byte[] clientPublicKeyBytes = StringUtil.hex2ByteArray(
 			"A501781B636F6170733A2F2F746573746572312E6578616D706C652E636F6D02666D796E616D6503781A636F6170733A2F2F68656C6C6F312E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820069E912B83963ACC5941B63546867DEC106E5B9051F2EE14F3BC5CC961ACD43A");
-	private static MultiKey rid1_public_key;
+	private static MultiKey clientPublicKey;
 
-	private final static byte[] group_identifier = new byte[] { 0x44, 0x61, 0x6c }; // GID
+	private final static byte[] groupIdentifier = new byte[] { 0x44, 0x61, 0x6c }; // GID
 
 	/* --- OSCORE Security Context information --- */
 
 	private static Random random;
+
+	static MultiLayerNetwork model;
 
 	/**
 	 * Main method
@@ -191,14 +195,13 @@ public class GroupOscoreServer {
 	 * @throws Exception on setup or message processing failure
 	 */
 	public static void main(String[] args) throws Exception {
-		
-		
+
 		int nChannels = 1; // Number of input channels
 		int outputNum = 10; // The number of possible outcomes
 		int batchSize = 64; // Test batch size
 		int nEpochs = 1; // Number of training epochs
 		int seed = 123; //
-		
+
 		/*
 		 * Create an iterator using the batch size for one iteration
 		 */
@@ -228,24 +231,15 @@ public class GroupOscoreServer {
 																		// note
 																		// below
 				.build();
-		
+
 		model = new MultiLayerNetwork(conf);
 		model.init();
 
 		LOGGER.info("Train model...");
+		// Print score every 10 iterations and evaluate on test set every epoch
 		model.setListeners(new ScoreIterationListener(10),
-				new EvaluativeListener(mnistTest, 1, InvocationType.EPOCH_END)); // Print
-																					// score
-																					// every
-																					// 10
-																					// iterations
-																					// and
-																					// evaluate
-																					// on
-																					// test
-																					// set
-																					// every
-																					// epoch
+				new EvaluativeListener(mnistTest, 1, InvocationType.EPOCH_END));
+
 		model.fit(mnistTrain, nEpochs);
 
 		LOGGER.info(model.params().toString());
@@ -254,45 +248,39 @@ public class GroupOscoreServer {
 		System.out.println(model.params().length());
 
 		LOGGER.info("****************Training finished********************");
-		
-		
+
 		// Install cryptographic providers
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 1);
 
 		// Set sender & receiver keys for countersignatures
-		sid_private_key = new MultiKey(sid_public_key_bytes, sid_private_key_bytes);
-		rid1_public_key = new MultiKey(rid1_public_key_bytes);
+		clientPublicKey = new MultiKey(clientPublicKeyBytes);
 
-		// Check command line arguments (flag to use different sid and sid key)
-		if (args.length != 0) {
-			System.out.println("Starting with alternative sid 0x77.");
-			unicastPort = unicastPort + 1;
-			sid = new byte[] { 0x77 };
-			sid_public_key_bytes = StringUtil.hex2ByteArray(
-					"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820105B8C6A8C88019BF0C354592934130BAA8007399CC2AC3BE845884613D5BA2E");
-			sid_private_key_bytes = new byte[] { 0x7B, (byte) 0xF6, 0x2F, 0x76, 0x7E, (byte) 0xD1, (byte) 0xCF, 0x4C,
-					0x60, (byte) 0x91, 0x1F, (byte) 0xC4, (byte) 0x9F, (byte) 0xDF, (byte) 0xCC, (byte) 0xB9,
-					(byte) 0xBD, 0x47, (byte) 0xCC, 0x7E, (byte) 0x9F, (byte) 0xAF, 0x41, (byte) 0xCB, 0x66, 0x36,
-					(byte) 0x9D, 0x5C, (byte) 0x85, 0x08, (byte) 0xB2, 0x39 };
-			sid_private_key = new MultiKey(sid_public_key_bytes, sid_private_key_bytes);
+		// Check command line arguments (integer representing a server to run)
+		MultiKey serverPublicPrivateKey = null;
+		int serverNr;
+		if (args.length == 0) {
+			serverNr = 0;
 		} else {
-			System.out.println("Starting with sid 0x52.");
+			serverNr = Integer.parseInt(args[0].replace("-", ""));
 		}
+		unicastPort = unicastPort + serverNr;
+		sid = Credentials.serverSenderIds.get(serverNr);
+		serverPublicKey = Credentials.serverPublicKeys.get(serverNr);
+		serverPrivateKey = Credentials.serverPrivateKeys.get(serverNr);
+		serverPublicPrivateKey = new MultiKey(serverPublicKey, serverPrivateKey);
+		System.out.println("Starting with SID " + StringUtil.byteArray2Hex(sid));
 
 		// If OSCORE is being used set the context information
 		if (useOSCORE) {
 
-			byte[] gmPublicKey = gm_public_key_bytes;
-			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign,
+			byte[] gmPublicKey = gmPublicKeyBytes;
+			GroupCtx commonCtx = new GroupCtx(masterSecret, masterSalt, alg, kdf, groupIdentifier, algCountersign,
 					algGroupEnc, algKeyAgreement, gmPublicKey);
 
-			commonCtx.addSenderCtxCcs(sid, sid_private_key);
-
-			commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
-
+			commonCtx.addSenderCtxCcs(sid, serverPublicPrivateKey);
+			commonCtx.addRecipientCtxCcs(clientRid, REPLAY_WINDOW, clientPublicKey);
 			commonCtx.setResponsesIncludePartialIV(false);
-			
 			commonCtx.setPairwiseModeResponses(true);
 
 			db.addContext(uriLocal, commonCtx);
@@ -304,6 +292,10 @@ public class GroupOscoreServer {
 		random = new Random();
 
 		Configuration config = Configuration.getStandard();
+		config.set(CoapConfig.PREFERRED_BLOCK_SIZE, MAX_MSG_SIZE);
+		config.set(CoapConfig.MAX_RESOURCE_BODY_SIZE, MAX_MSG_SIZE);
+		config.set(CoapConfig.MAX_MESSAGE_SIZE, MAX_MSG_SIZE);
+
 		CoapServer server = new CoapServer(config);
 		createEndpoints(server, unicastPort, listenPort, config);
 		Endpoint endpoint = server.getEndpoint(unicastPort);
@@ -317,7 +309,8 @@ public class GroupOscoreServer {
 		System.out.println("Respond to non-confirmable messages: " + replyToNonConfirmable);
 		System.out.println("Listening to Multicast IP: " + multicastIP.getHostAddress());
 		System.out.println("Unicast IP: " + endpoint.getAddress().getHostString());
-		System.out.println("Incoming port: " + endpoint.getAddress().getPort());
+		System.out.println("Unicast port: " + endpoint.getAddress().getPort());
+		System.out.println("Multicast port: " + listenPort);
 		System.out.print("CoAP resources: ");
 		for (Resource res : server.getRoot().getChildren()) {
 			System.out.print(res.getURI() + " ");
@@ -327,9 +320,9 @@ public class GroupOscoreServer {
 
 		server.start();
 	}
-	
+
 	private static class ModelResource extends OSCoreResource {
-		
+
 		private ModelResource() {
 			// set resource identifier
 			super("model", true); // Changed
@@ -337,50 +330,51 @@ public class GroupOscoreServer {
 			// set display name
 			getAttributes().setTitle("Model Resource");
 
-		
 		}
-	
-	
-			@Override
-			public void handlePOST(CoapExchange exchange) {
-				byte[] payload = exchange.getRequestPayload();
-				System.out.println("Accessing model resource");
-				
-				CBORObject arrayReq = CBORObject.DecodeFromBytes(payload);
-				double[] modelReq = new double[arrayReq.size()];
-				
-				for (int i=0; i<arrayReq.size(); i++) {
-					modelReq[i] = arrayReq.get(i).AsDouble(); 
-					System.out.print(modelReq[i] + " ");
-					
-				}
-				System.out.println();
-				
-				
-				double[] modelRes = null;
-				
-				
-				
-				//Creating response
-				Response r = new Response(ResponseCode.CHANGED);
-				
-				modelRes = model.params().toDoubleVector();
-				
-				CBORObject array = CBORObject.NewArray();
-				for (int i=0; i<modelRes.length; i++) {
-					array.Add(modelRes[i]);
-					System.out.print(modelRes[i] + " ");
-				}
-				System.out.println();
-				
-				byte[] payloadRes = array.EncodeToBytes();
-				System.out.println("Payload Length: " + payloadRes.length);
-				r.setPayload(payloadRes);
-				
-			
-				exchange.respond(r);
+
+		@Override
+		public void handlePOST(CoapExchange exchange) {
+			System.out.println("Accessing model resource");
+
+			// Parse and handle request
+			byte[] payloadReq = exchange.getRequestPayload();
+			CBORObject arrayReq = CBORObject.DecodeFromBytes(payloadReq);
+			float[] modelReq = new float[arrayReq.size()];
+
+			System.out.print("Incoming payload: ");
+			for (int i = 0; i < arrayReq.size(); i++) {
+				modelReq[i] = arrayReq.get(i).AsSingle();
+				System.out.print(modelReq[i] + " ");
+
 			}
-		
+			System.out.println();
+
+			// Train
+			float[] modelRes = null;
+
+			// Create response
+			Response r = new Response(ResponseCode.CHANGED);
+
+			modelRes = model.params().toFloatVector();
+
+			CBORObject arrayRes = CBORObject.NewArray();
+			System.out.print("Outgoing payload: ");
+			for (int i = 0; i < modelRes.length && i < MAX_VECTOR_SIZE; i++) {
+				arrayRes.Add(modelRes[i]);
+				System.out.print(modelRes[i] + " ");
+			}
+			System.out.println();
+
+			byte[] payloadRes = arrayRes.EncodeToBytes();
+			System.out.println("Payload Length: " + payloadRes.length);
+			if (payloadRes.length > MAX_MSG_SIZE) {
+				System.err.println("Too large payload in response!");
+			}
+			r.setPayload(payloadRes);
+
+			exchange.respond(r);
+		}
+
 	}
 
 	private static class HelloWorldResource extends CoapResource {
@@ -420,9 +414,8 @@ public class GroupOscoreServer {
 			boolean isConfirmable = exchange.advanced().getRequest().isConfirmable();
 
 			// respond to the request if confirmable or replies are set to be
-			// sent for non-confirmable
-			// payload is set to request payload changed to uppercase plus the
-			// receiver ID
+			// sent for non-confirmable payload is set to request payload
+			// changed to uppercase plus the receiver ID
 			if (isConfirmable || replyToNonConfirmable) {
 				Response r = Response.createResponse(exchange.advanced().getRequest(), ResponseCode.CONTENT);
 				r.setPayload(exchange.getRequestText().toUpperCase() + ". ID: " + id);
@@ -464,7 +457,6 @@ public class GroupOscoreServer {
 		// udpConnector.setReuseAddress(true);
 		// CoapEndpoint coapEndpoint = new
 		// CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector).build();
-
 
 		// NetworkInterface networkInterface =
 		// NetworkInterfacesUtil.getMulticastInterface().getByName("wlp3s0");
