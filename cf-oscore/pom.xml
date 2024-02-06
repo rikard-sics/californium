@@ -61,12 +61,21 @@
 			<groupId>com.upokecenter</groupId>
 			<artifactId>cbor</artifactId>
 		</dependency>
+		
 		<dependency> <!-- Rikard: Added this as Jim did in his pom -->
 			<groupId>net.i2p.crypto</groupId>
 			<artifactId>eddsa</artifactId>
 			<version>0.3.0</version>
 			<type>jar</type>
 		</dependency>
+		
+		<dependency>
+			<groupId>org.datavec</groupId>
+			<artifactId>datavec-api</artifactId>
+			<version>1.0.0-M2.1</version>
+		</dependency>
+		
+		
 		<!-- test dependencies -->
 		<dependency>
 			<groupId>junit</groupId>

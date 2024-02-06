@@ -16,6 +16,7 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore.federated;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.Inet4Address;
@@ -53,23 +54,25 @@ import org.eclipse.californium.oscore.OSCoreResource;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.MultiKey;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.nd4j.linalg.dataset.SplitTestAndTrain;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 
 import com.upokecenter.cbor.CBORObject;
 
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
+import org.datavec.api.split.FileSplit;
+import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.PoolingType;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.InvocationType;
@@ -77,6 +80,7 @@ import org.deeplearning4j.optimize.listeners.EvaluativeListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
+
 
 /**
  * Test receiver using {@link UdpMulticastConnector}.
@@ -196,51 +200,87 @@ public class GroupOscoreServer {
 	 */
 	public static void main(String[] args) throws Exception {
 
-		int nChannels = 1; // Number of input channels
-		int outputNum = 10; // The number of possible outcomes
+		int outputNum = 1; // The number of possible outcomes
 		int batchSize = 64; // Test batch size
 		int nEpochs = 1; // Number of training epochs
 		int seed = 123; //
 
 		/*
-		 * Create an iterator using the batch size for one iteration
+		 * Create an iterator using the batch size for one iteration for
+		 * MnistData
 		 */
 		LOGGER.info("Load data....");
-		DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize, true, 12345);
-		DataSetIterator mnistTest = new MnistDataSetIterator(batchSize, false, 12345);
+		// DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize,
+		// true, 12345);
+		// DataSetIterator mnistTest = new MnistDataSetIterator(batchSize,
+		// false, 12345);
+
+		/*
+		 * Load Data from local csv file
+		 */
+		int numLinesToSkip = 1;
+		char delimiter = ',';
+		RecordReader recordReader = new CSVRecordReader(numLinesToSkip, delimiter);
+		recordReader.initialize(new FileSplit(new File("dataset_c1.csv")));
+
+		int labelIndex = 116; // Labels: a single integer representing the class
+								// index in column number 116
+		int numLabelClasses = 2; // 2 classes for the label
+		DataSetIterator iterator = new RecordReaderDataSetIterator(recordReader, batchSize, labelIndex,
+				numLabelClasses);
+
+		DataSet allData = iterator.next();
+		allData.shuffle();
+		SplitTestAndTrain testAndTrain = allData.splitTestAndTrain(0.7); // Use
+																			// 65%
+																			// of
+																			// data
+																			// for
+																			// training
+
+		DataSet trainIoT = testAndTrain.getTrain();
+		DataSet testIoT = testAndTrain.getTest();
+
+		/*
+		 * Normalize the dataset
+		 */
+		DataNormalization normalizer = new NormalizerStandardize();
+		normalizer.fit(trainIoT); // Collect the statistics (mean/stdev) from
+									// the training data. This does not modify
+									// the input data
+		normalizer.transform(trainIoT); // Apply normalization to the training
+										// data
+		normalizer.transform(testIoT); // Apply normalization to the test data.
+										// This is using statistics calculated
+										// from the *training* set
+
 
 		/*
 		 * Construct the neural network
 		 */
+		final int numInputs = 115;
 		LOGGER.info("Build model....");
 
-		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).l2(0.0005)
-				.weightInit(WeightInit.XAVIER).updater(new Adam(1e-3)).list().layer(new ConvolutionLayer.Builder(5, 5)
-						// nIn and nOut specify depth. nIn here is the nChannels
-						// and nOut is the number of filters to be applied
-						.nIn(nChannels).stride(1, 1).nOut(20).activation(Activation.IDENTITY).build())
-				.layer(new SubsamplingLayer.Builder(PoolingType.MAX).kernelSize(2, 2).stride(2, 2).build())
-				.layer(new ConvolutionLayer.Builder(5, 5)
-						// Note that nIn need not be specified in later layers
-						.stride(1, 1).nOut(50).activation(Activation.IDENTITY).build())
-				.layer(new SubsamplingLayer.Builder(PoolingType.MAX).kernelSize(2, 2).stride(2, 2).build())
-				.layer(new DenseLayer.Builder().activation(Activation.RELU).nOut(500).build())
-				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(outputNum)
-						.activation(Activation.SOFTMAX).build())
-				.setInputType(InputType.convolutionalFlat(28, 28, 1)) // See
-																		// note
-																		// below
+
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.RELU)
+				.weightInit(WeightInit.XAVIER).l2(1e-4).list()
+				.layer(new DenseLayer.Builder().nIn(numInputs).nOut(80).build())
+				.layer(new DenseLayer.Builder().nIn(80).nOut(50).build())
+				.layer(new DenseLayer.Builder().nIn(50).nOut(10).build())
+				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.SIGMOID).nIn(3)
+						.nOut(outputNum).build())
 				.build();
 
 		model = new MultiLayerNetwork(conf);
 		model.init();
 
+
 		LOGGER.info("Train model...");
 		// Print score every 10 iterations and evaluate on test set every epoch
 		model.setListeners(new ScoreIterationListener(10),
-				new EvaluativeListener(mnistTest, 1, InvocationType.EPOCH_END));
+				new EvaluativeListener(testIoT, 1, InvocationType.EPOCH_END));
 
-		model.fit(mnistTrain, nEpochs);
+		model.fit(trainIoT);
 
 		LOGGER.info(model.params().toString());
 		System.out.println(model.params());
