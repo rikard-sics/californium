@@ -62,6 +62,7 @@ import org.slf4j.LoggerFactory;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
+import org.nd4j.linalg.learning.config.Nesterovs;
 
 import com.upokecenter.cbor.CBORObject;
 
@@ -190,7 +191,12 @@ public class GroupOscoreServer {
 
 	private static Random random;
 
-	static MultiLayerNetwork model;
+	/* --- Parameters used for model training --- */
+	private static int nLocalEpochs = 5; // Number of training epochs
+	private static MultiLayerConfiguration conf;
+	private static MultiLayerNetwork model;
+	private static DataSetIterator trainIter;
+	private static DataSetIterator testIter;
 
 	/**
 	 * Main method
@@ -200,11 +206,12 @@ public class GroupOscoreServer {
 	 */
 	public static void main(String[] args) throws Exception {
 
-		int outputNum = 1; // The number of possible outcomes
+		int outputNum = 2; // The number of possible outcomes
+		final int numInputs = 115;
 		int batchSize = 64; // Test batch size
-		int nEpochs = 1; // Number of training epochs
+		
 		int seed = 123; //
-
+		
 		/*
 		 * Create an iterator using the batch size for one iteration for
 		 * MnistData
@@ -220,75 +227,46 @@ public class GroupOscoreServer {
 		 */
 		int numLinesToSkip = 1;
 		char delimiter = ',';
-		RecordReader recordReader = new CSVRecordReader(numLinesToSkip, delimiter);
-		recordReader.initialize(new FileSplit(new File("dataset_c1.csv")));
-
-		int labelIndex = 116; // Labels: a single integer representing the class
-								// index in column number 116
+		int labelIndex = 115; // Labels: a single integer representing the class
+		// index in column number 116
 		int numLabelClasses = 2; // 2 classes for the label
-		DataSetIterator iterator = new RecordReaderDataSetIterator(recordReader, batchSize, labelIndex,
+		
+		//Load the training data:
+		RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
+		rrTrain.initialize(new FileSplit(new File("train_c1.csv")));
+		trainIter = new RecordReaderDataSetIterator(rrTrain,batchSize,labelIndex,
 				numLabelClasses);
 
-		DataSet allData = iterator.next();
-		allData.shuffle();
-		SplitTestAndTrain testAndTrain = allData.splitTestAndTrain(0.7); // Use
-																			// 65%
-																			// of
-																			// data
-																			// for
-																			// training
+		//Load the test/evaluation data:
+		RecordReader rrTest = new CSVRecordReader(numLinesToSkip, delimiter);
+		rrTest.initialize(new FileSplit(new File("test_c1.csv")));
+		testIter = new RecordReaderDataSetIterator(rrTest, batchSize, labelIndex,
+				numLabelClasses);
 
-		DataSet trainIoT = testAndTrain.getTrain();
-		DataSet testIoT = testAndTrain.getTest();
-
+		
 		/*
 		 * Normalize the dataset
 		 */
 		DataNormalization normalizer = new NormalizerStandardize();
-		normalizer.fit(trainIoT); // Collect the statistics (mean/stdev) from
+		normalizer.fit(trainIter); // Collect the statistics (mean/stdev) from
 									// the training data. This does not modify
 									// the input data
-		normalizer.transform(trainIoT); // Apply normalization to the training
-										// data
-		normalizer.transform(testIoT); // Apply normalization to the test data.
-										// This is using statistics calculated
-										// from the *training* set
+		trainIter.setPreProcessor(normalizer);
+		testIter.setPreProcessor(normalizer);
 
 
 		/*
 		 * Construct the neural network
-		 */
-		final int numInputs = 115;
+		 */		
 		LOGGER.info("Build model....");
-
-
-		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.RELU)
+		conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.RELU)
 				.weightInit(WeightInit.XAVIER).l2(1e-4).list()
-				.layer(new DenseLayer.Builder().nIn(numInputs).nOut(80).build())
-				.layer(new DenseLayer.Builder().nIn(80).nOut(50).build())
-				.layer(new DenseLayer.Builder().nIn(50).nOut(10).build())
+				.layer(new DenseLayer.Builder().nIn(numInputs).nOut(10).build())
 				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.SIGMOID).nIn(3)
 						.nOut(outputNum).build())
 				.build();
 
-		model = new MultiLayerNetwork(conf);
-		model.init();
-
-
-		LOGGER.info("Train model...");
-		// Print score every 10 iterations and evaluate on test set every epoch
-		model.setListeners(new ScoreIterationListener(10),
-				new EvaluativeListener(testIoT, 1, InvocationType.EPOCH_END));
-
-		model.fit(trainIoT);
-
-		LOGGER.info(model.params().toString());
-		System.out.println(model.params());
-		LOGGER.info(model.summary());
-		System.out.println(model.params().length());
-
-		LOGGER.info("****************Training finished********************");
-
+		
 		// Install cryptographic providers
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 1);
@@ -360,6 +338,28 @@ public class GroupOscoreServer {
 
 		server.start();
 	}
+	
+	private static void TrainModel() {
+		
+		model = new MultiLayerNetwork(conf);
+		model.init();
+
+
+		LOGGER.info("Train model...");
+		// Print score every 10 iterations and evaluate on test set every epoch
+		model.setListeners(new ScoreIterationListener(100),
+				new EvaluativeListener(testIter, 1, InvocationType.EPOCH_END));
+
+		model.fit(trainIter, nLocalEpochs);
+
+		System.out.println(model.params());
+		LOGGER.info(model.summary());
+		System.out.println(model.params().length());
+
+		LOGGER.info("****************Training finished********************");
+
+		
+	}
 
 	private static class ModelResource extends OSCoreResource {
 
@@ -390,6 +390,7 @@ public class GroupOscoreServer {
 			System.out.println();
 
 			// Train
+			TrainModel();
 			float[] modelRes = null;
 
 			// Create response
@@ -399,7 +400,7 @@ public class GroupOscoreServer {
 
 			CBORObject arrayRes = CBORObject.NewArray();
 			System.out.print("Outgoing payload: ");
-			for (int i = 0; i < modelRes.length && i < MAX_VECTOR_SIZE; i++) {
+			for (int i = 0; i < modelRes.length; i++) {
 				arrayRes.Add(modelRes[i]);
 				System.out.print(modelRes[i] + " ");
 			}
