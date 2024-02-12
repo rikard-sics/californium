@@ -27,6 +27,8 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.security.Provider;
 import java.security.Security;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import org.eclipse.californium.core.CoapResource;
@@ -53,16 +55,20 @@ import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 import org.eclipse.californium.oscore.OSCoreResource;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.MultiKey;
+import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.MiniBatchFileDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.TestDataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
-import org.nd4j.linalg.learning.config.Nesterovs;
+import org.nd4j.linalg.dimensionalityreduction.PCA;
 
 import com.upokecenter.cbor.CBORObject;
 
@@ -70,6 +76,7 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
+import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -192,9 +199,11 @@ public class GroupOscoreServer {
 	private static Random random;
 
 	/* --- Parameters used for model training --- */
-	private static int nLocalEpochs = 5; // Number of training epochs
+	private static int nLocalEpochs = 50; // Number of training epochs
+	private static int outputNum = 2; // Number of outputs
 	private static MultiLayerConfiguration conf;
 	private static MultiLayerNetwork model;
+	private static DataSetIterator Iter;
 	private static DataSetIterator trainIter;
 	private static DataSetIterator testIter;
 
@@ -206,8 +215,7 @@ public class GroupOscoreServer {
 	 */
 	public static void main(String[] args) throws Exception {
 
-		int outputNum = 2; // The number of possible outcomes
-		final int numInputs = 115;
+		final int numInputs = 30;
 		int batchSize = 64; // Test batch size
 		
 		int seed = 123; //
@@ -231,29 +239,64 @@ public class GroupOscoreServer {
 		// index in column number 116
 		int numLabelClasses = 2; // 2 classes for the label
 		
-		//Load the training data:
-		RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
-		rrTrain.initialize(new FileSplit(new File("train_c1.csv")));
-		trainIter = new RecordReaderDataSetIterator(rrTrain,batchSize,labelIndex,
+		//Load the dataset:
+		RecordReader rr = new CSVRecordReader(numLinesToSkip, delimiter);
+		rr.initialize(new FileSplit(new File("dataset_c1.csv")));
+		Iter = new RecordReaderDataSetIterator(rr,batchSize,labelIndex,
 				numLabelClasses);
+		
+		
+		List<DataSet> ret = new ArrayList<>();
+		while (Iter.hasNext()) {
+			ret.add(Iter.next());
+        }
+		DataSet allData = DataSet.merge(ret);
+		
+		
+		allData.shuffle();
+		System.out.println("Orignal Training set: " + allData.numExamples());
+		INDArray features = allData.getFeatures();
+		INDArray reduced_feature = PCA.pca(features, numInputs, true);
+		DataSet reduced_set = new DataSet(reduced_feature, allData.getLabels());
+		System.out.println("Training set: " + reduced_set.numExamples());
+        SplitTestAndTrain testAndTrain = reduced_set.splitTestAndTrain(0.70);  //Use 65% of data for training
+        
+        
+        DataSet trainingData = testAndTrain.getTrain();
+        DataSet testData = testAndTrain.getTest();
+        
+       
+
+		
+		//Load the training data:
+		//RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
+		//rrTrain.initialize(new FileSplit(new File("train_c1.csv")));
+		//trainIter = new RecordReaderDataSetIterator(rrTrain,batchSize,labelIndex,
+		//		numLabelClasses);
 
 		//Load the test/evaluation data:
-		RecordReader rrTest = new CSVRecordReader(numLinesToSkip, delimiter);
-		rrTest.initialize(new FileSplit(new File("test_c1.csv")));
-		testIter = new RecordReaderDataSetIterator(rrTest, batchSize, labelIndex,
-				numLabelClasses);
+		//RecordReader rrTest = new CSVRecordReader(numLinesToSkip, delimiter);
+		//rrTest.initialize(new FileSplit(new File("test_c1.csv")));
+		//testIter = new RecordReaderDataSetIterator(rrTest, batchSize, labelIndex,
+		//		numLabelClasses);
 
 		
 		/*
 		 * Normalize the dataset
 		 */
 		DataNormalization normalizer = new NormalizerStandardize();
-		normalizer.fit(trainIter); // Collect the statistics (mean/stdev) from
+		normalizer.fit(trainingData); // Collect the statistics (mean/stdev) from
 									// the training data. This does not modify
 									// the input data
-		trainIter.setPreProcessor(normalizer);
-		testIter.setPreProcessor(normalizer);
-
+		//trainIter.setPreProcessor(normalizer);
+		//testIter.setPreProcessor(normalizer);
+		normalizer.transform(trainingData);     //Apply normalization to the training data
+        normalizer.transform(testData);         //Apply normalization to the test data. This is using statistics calculated from the *training* set
+        
+        
+        
+        trainIter = new MiniBatchFileDataSetIterator(trainingData, batchSize);
+        testIter = new TestDataSetIterator(testData, batchSize);
 
 		/*
 		 * Construct the neural network
@@ -261,7 +304,7 @@ public class GroupOscoreServer {
 		LOGGER.info("Build model....");
 		conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.RELU)
 				.weightInit(WeightInit.XAVIER).l2(1e-4).list()
-				.layer(new DenseLayer.Builder().nIn(numInputs).nOut(10).build())
+				.layer(new DenseLayer.Builder().nIn(numInputs).nOut(5).build())
 				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.SIGMOID).nIn(3)
 						.nOut(outputNum).build())
 				.build();
@@ -344,19 +387,29 @@ public class GroupOscoreServer {
 		model = new MultiLayerNetwork(conf);
 		model.init();
 
-
 		LOGGER.info("Train model...");
 		// Print score every 10 iterations and evaluate on test set every epoch
-		model.setListeners(new ScoreIterationListener(100),
-				new EvaluativeListener(testIter, 1, InvocationType.EPOCH_END));
+		model.setListeners(new ScoreIterationListener(10));
 
 		model.fit(trainIter, nLocalEpochs);
 
-		System.out.println(model.params());
-		LOGGER.info(model.summary());
+		System.out.println("The number of parameters:"+model.params());
+		System.out.println(model.summary());
 		System.out.println(model.params().length());
 
-		LOGGER.info("****************Training finished********************");
+		Evaluation eval = new Evaluation(outputNum);
+        while (testIter.hasNext()) {
+            DataSet t = testIter.next();
+            INDArray features = t.getFeatures();
+            INDArray labels = t.getLabels();
+            INDArray predicted = model.output(features, false);
+            eval.eval(labels, predicted);
+        }
+        //An alternate way to do the above loop
+        //Evaluation evalResults = model.evaluate(testIter);
+
+        //Print the evaluation statistics
+        System.out.println(eval.stats());
 
 		
 	}
