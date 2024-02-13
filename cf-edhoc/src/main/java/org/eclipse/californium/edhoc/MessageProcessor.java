@@ -4236,7 +4236,8 @@ public class MessageProcessor {
 		
     	if (authenticationMethod == Constants.EDHOC_AUTH_METHOD_1 || authenticationMethod == Constants.EDHOC_AUTH_METHOD_3) {
     		// The responder does not use signatures as authentication method, then Signature_or_MAC_2 has to be equal to MAC_2
-    		return Arrays.equals(signatureOrMac2, mac2);
+    		
+    		return Util.compareByteArrays(signatureOrMac2, mac2);
     	}
     	else if (authenticationMethod == Constants.EDHOC_AUTH_METHOD_0 || authenticationMethod == Constants.EDHOC_AUTH_METHOD_2) {
     		// The responder uses signatures as authentication method, then Signature_or_MAC_2 is a signature to verify
@@ -4278,7 +4279,8 @@ public class MessageProcessor {
 		
     	if (authenticationMethod == Constants.EDHOC_AUTH_METHOD_2 || authenticationMethod == Constants.EDHOC_AUTH_METHOD_3) {
     		// The initiator does not use signatures as authentication method, then Signature_or_MAC_3 has to be equal to MAC_3
-    		return Arrays.equals(signatureOrMac3, mac3);
+    		
+    		return Util.compareByteArrays(signatureOrMac3, mac3);
     	}
     	else if (authenticationMethod == Constants.EDHOC_AUTH_METHOD_0 || authenticationMethod == Constants.EDHOC_AUTH_METHOD_1) {
     		// The initiator uses signatures as authentication method, then Signature_or_MAC_3 is a signature to verify
