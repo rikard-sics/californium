@@ -85,4 +85,23 @@ public class Credentials {
 		serverPrivateKeys.put(10,
 				StringUtil.hex2ByteArray("A90B7D8A9E6D32DDFC794494D446F0E56505094203209BEF64A6800CF35F3988"));
 	}
+	
+	/**
+	 * Map with the Dataset ID of the servers
+	 */
+	public static Map<Integer, String> serverDatasets;
+	static {
+		serverDatasets = new HashMap<>();
+		serverDatasets.put(0, "dataset_c1.csv");
+		serverDatasets.put(1, "dataset_c2.csv");
+		serverDatasets.put(2, "dataset_c3.csv");
+		serverDatasets.put(3, "dataset_c4.csv");
+		serverDatasets.put(4, "dataset_c5.csv");
+		serverDatasets.put(5, "dataset_c1.csv");
+		serverDatasets.put(6, "dataset_c2.csv");
+		serverDatasets.put(7, "dataset_c3.csv");
+		serverDatasets.put(8, "dataset_c4.csv");
+		serverDatasets.put(9, "dataset_c5.csv");
+		serverDatasets.put(10, "dataset_c1.csv");
+	}
 }

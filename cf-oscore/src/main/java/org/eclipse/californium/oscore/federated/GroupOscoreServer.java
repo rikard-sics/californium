@@ -199,8 +199,10 @@ public class GroupOscoreServer {
 	private static Random random;
 
 	/* --- Parameters used for model training --- */
-	private static int nLocalEpochs = 50; // Number of training epochs
+	private static int nLocalEpochs = 5; // Number of training epochs
 	private static int outputNum = 2; // Number of outputs
+	private static int numInputs = 30; // Number of intput features to the model
+	private static int batchSize = 640; // Batch size
 	private static MultiLayerConfiguration conf;
 	private static MultiLayerNetwork model;
 	private static DataSetIterator Iter;
@@ -214,102 +216,8 @@ public class GroupOscoreServer {
 	 * @throws Exception on setup or message processing failure
 	 */
 	public static void main(String[] args) throws Exception {
-
-		final int numInputs = 30;
-		int batchSize = 64; // Test batch size
 		
-		int seed = 123; //
-		
-		/*
-		 * Create an iterator using the batch size for one iteration for
-		 * MnistData
-		 */
-		LOGGER.info("Load data....");
-		// DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize,
-		// true, 12345);
-		// DataSetIterator mnistTest = new MnistDataSetIterator(batchSize,
-		// false, 12345);
-
-		/*
-		 * Load Data from local csv file
-		 */
-		int numLinesToSkip = 1;
-		char delimiter = ',';
-		int labelIndex = 115; // Labels: a single integer representing the class
-		// index in column number 116
-		int numLabelClasses = 2; // 2 classes for the label
-		
-		//Load the dataset:
-		RecordReader rr = new CSVRecordReader(numLinesToSkip, delimiter);
-		rr.initialize(new FileSplit(new File("dataset_c1.csv")));
-		Iter = new RecordReaderDataSetIterator(rr,batchSize,labelIndex,
-				numLabelClasses);
-		
-		
-		List<DataSet> ret = new ArrayList<>();
-		while (Iter.hasNext()) {
-			ret.add(Iter.next());
-        }
-		DataSet allData = DataSet.merge(ret);
-		
-		
-		allData.shuffle();
-		System.out.println("Orignal Training set: " + allData.numExamples());
-		INDArray features = allData.getFeatures();
-		INDArray reduced_feature = PCA.pca(features, numInputs, true);
-		DataSet reduced_set = new DataSet(reduced_feature, allData.getLabels());
-		System.out.println("Training set: " + reduced_set.numExamples());
-        SplitTestAndTrain testAndTrain = reduced_set.splitTestAndTrain(0.70);  //Use 65% of data for training
-        
-        
-        DataSet trainingData = testAndTrain.getTrain();
-        DataSet testData = testAndTrain.getTest();
-        
-       
-
-		
-		//Load the training data:
-		//RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
-		//rrTrain.initialize(new FileSplit(new File("train_c1.csv")));
-		//trainIter = new RecordReaderDataSetIterator(rrTrain,batchSize,labelIndex,
-		//		numLabelClasses);
-
-		//Load the test/evaluation data:
-		//RecordReader rrTest = new CSVRecordReader(numLinesToSkip, delimiter);
-		//rrTest.initialize(new FileSplit(new File("test_c1.csv")));
-		//testIter = new RecordReaderDataSetIterator(rrTest, batchSize, labelIndex,
-		//		numLabelClasses);
-
-		
-		/*
-		 * Normalize the dataset
-		 */
-		DataNormalization normalizer = new NormalizerStandardize();
-		normalizer.fit(trainingData); // Collect the statistics (mean/stdev) from
-									// the training data. This does not modify
-									// the input data
-		//trainIter.setPreProcessor(normalizer);
-		//testIter.setPreProcessor(normalizer);
-		normalizer.transform(trainingData);     //Apply normalization to the training data
-        normalizer.transform(testData);         //Apply normalization to the test data. This is using statistics calculated from the *training* set
-        
-        
-        
-        trainIter = new MiniBatchFileDataSetIterator(trainingData, batchSize);
-        testIter = new TestDataSetIterator(testData, batchSize);
-
-		/*
-		 * Construct the neural network
-		 */		
-		LOGGER.info("Build model....");
-		conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.RELU)
-				.weightInit(WeightInit.XAVIER).l2(1e-4).list()
-				.layer(new DenseLayer.Builder().nIn(numInputs).nOut(5).build())
-				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.SIGMOID).nIn(3)
-						.nOut(outputNum).build())
-				.build();
-
-		
+	
 		// Install cryptographic providers
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 1);
@@ -378,6 +286,77 @@ public class GroupOscoreServer {
 		}
 		System.out.println("");
 		System.out.println("==================");
+		
+		/*
+		 * Create an iterator using the batch size for one iteration for
+		 * MnistData
+		 */
+		LOGGER.info("Load data....");
+
+		/*
+		 * Load Data from local csv file
+		 */
+		int numLinesToSkip = 1;
+		char delimiter = ',';
+		int labelIndex = 115; // Labels: a single integer representing the class
+		// index in column number 116
+		int numLabelClasses = 2; // 2 classes for the label
+		
+		//Load the dataset:
+		RecordReader rr = new CSVRecordReader(numLinesToSkip, delimiter);
+		rr.initialize(new FileSplit(new File( Credentials.serverDatasets.get(serverNr))));
+		Iter = new RecordReaderDataSetIterator(rr,batchSize,labelIndex,
+				numLabelClasses);
+		
+		
+		List<DataSet> ret = new ArrayList<>();
+		while (Iter.hasNext()) {
+			ret.add(Iter.next());
+        }
+		DataSet allData = DataSet.merge(ret);
+		
+		
+		allData.shuffle();
+		INDArray features = allData.getFeatures();
+		INDArray reduced_feature = PCA.pca(features, numInputs, true);
+		DataSet reduced_set = new DataSet(reduced_feature, allData.getLabels());
+		System.out.println("Training set: " + reduced_set.numExamples());
+        SplitTestAndTrain testAndTrain = reduced_set.splitTestAndTrain(0.7);  //Use 70% of data for training
+        
+        
+        DataSet trainingData = testAndTrain.getTrain();
+        DataSet testData = testAndTrain.getTest();
+        
+		
+		/*
+		 * Normalize the dataset
+		 */
+		DataNormalization normalizer = new NormalizerStandardize();
+		normalizer.fit(trainingData); // Collect the statistics (mean/stdev) from
+									// the training data. This does not modify
+									// the input data
+		normalizer.transform(trainingData);     //Apply normalization to the training data
+        normalizer.transform(testData);         //Apply normalization to the test data. This is using statistics calculated from the *training* set
+        
+        
+        trainIter = new MiniBatchFileDataSetIterator(trainingData, batchSize);
+        testIter = new TestDataSetIterator(testData, batchSize);
+      
+
+		/*
+		 * Construct the neural network
+		 */		
+        System.out.println("Build model....");
+		int seed = 123; 
+		conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.RELU)
+				.weightInit(WeightInit.XAVIER).l2(1e-4).list()
+				.layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).build())
+				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.SIGMOID).nIn(3)
+						.nOut(outputNum).build())
+				.build();
+		
+		System.out.println("");
+		System.out.println("==================");
 
 		server.start();
 	}
@@ -389,14 +368,20 @@ public class GroupOscoreServer {
 
 		LOGGER.info("Train model...");
 		// Print score every 10 iterations and evaluate on test set every epoch
-		model.setListeners(new ScoreIterationListener(10));
-
-		model.fit(trainIter, nLocalEpochs);
-
-		System.out.println("The number of parameters:"+model.params());
+		model.setListeners(new ScoreIterationListener(1));
+		
+		System.out.println("The parameters before training: "+model.params());
 		System.out.println(model.summary());
-		System.out.println(model.params().length());
+		
 
+		
+		for( int i=0; i < nLocalEpochs; i++ ) {
+		model.fit(trainIter);
+		}
+		
+		System.out.println("The parameters after training: "+model.params());
+		System.out.println("The length of model's parameters: "+model.params().length());
+		
 		Evaluation eval = new Evaluation(outputNum);
         while (testIter.hasNext()) {
             DataSet t = testIter.next();
@@ -405,8 +390,7 @@ public class GroupOscoreServer {
             INDArray predicted = model.output(features, false);
             eval.eval(labels, predicted);
         }
-        //An alternate way to do the above loop
-        //Evaluation evalResults = model.evaluate(testIter);
+ 
 
         //Print the evaluation statistics
         System.out.println(eval.stats());
