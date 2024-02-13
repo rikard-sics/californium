@@ -557,13 +557,20 @@ public class Util {
      * @return  True if the two arrays are equal, or false otherwise
      */
 	public static boolean compareByteArrays(byte[] array1, byte[] array2) {
-		
+
 		if (array1 == null) {
 			return (array2 == null);
 		}
+		else if (array2 == null) {
+			return false;
+		}
 		
+		int length = array1.length;
+		if (length != array2.length) {
+			return false;
+		}
+
 		byte[] result = new byte[] {0x00};
-		int length = (array1 == null) ? array2.length : array1.length; 
 		
 		for (int i = 0; i < length; i++) {
 			result[0] |= (array1[i] ^ array2[i]);
