@@ -551,6 +551,29 @@ public class Util {
     }
     
     /**
+     *  Check whether two byte arrays are equal, in constant time
+     * @param array1   The first byte array to compare 
+     * @param array2   The second byte array to compare
+     * @return  True if the two arrays are equal, or false otherwise
+     */
+	public static boolean compareByteArrays(byte[] array1, byte[] array2) {
+		
+		if (array1 == null) {
+			return (array2 == null);
+		}
+		
+		byte[] result = new byte[] {0x00};
+		int length = (array1 == null) ? array2.length : array1.length; 
+		
+		for (int i = 0; i < length; i++) {
+			result[0] |= (array1[i] ^ array2[i]);
+		}
+
+		return Arrays.equals(new byte[] {0x00}, result);
+
+	}
+    
+    /**
      * Get an available Connection Identifier to offer to the other peer
      *  
      * @param usedConnectionIds   The set of already allocated Connection Identifiers
