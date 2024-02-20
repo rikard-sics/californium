@@ -44,6 +44,10 @@ import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 import org.eclipse.californium.oscore.OSException;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.MultiKey;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
+
 import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
@@ -156,6 +160,10 @@ public class GroupOscoreClient {
 	private final static byte[] groupIdentifier = new byte[] { 0x44, 0x61, 0x6c }; // GID
 
 	/* --- OSCORE Security Context information --- */
+	
+	private static List<INDArray> models = new ArrayList<>();
+	private static int commuEpoch = 2;
+	private static int modelsize = 0;
 
 	/**
 	 * Main method
@@ -205,73 +213,128 @@ public class GroupOscoreClient {
 		client.setEndpoint(endpoint);
 
 		client.setURI(requestURI);
-		Request multicastRequest = Request.newPost();
-		multicastRequest.setPayload(CBORObject.NewArray().EncodeToBytes());
-		// TODO: Set payload with model params
-
-		multicastRequest.setType(Type.NON);
-		if (useOSCORE) {
-			// For group mode request
-			multicastRequest.getOptions().setOscore(Bytes.EMPTY);
-
-			// For pairwise request:
-			// multicastRequest.getOptions().setOscore(OptionEncoder.set(true,
-			// requestURI, rid1));
-		}
-
-		// Information about the sender
-		System.out.println("==================");
-		System.out.println("*Multicast sender");
-		System.out.println("Uses OSCORE: " + useOSCORE);
-		System.out.println("Request destination: " + requestURI);
-		System.out.println("Request destination port: " + destinationPort);
-		System.out.println("Request method: " + multicastRequest.getCode());
-		System.out.println("Outgoing port: " + endpoint.getAddress().getPort());
-		System.out.println("==================");
-
-		try {
-			String host = new URI(client.getURI()).getHost();
-			int port = new URI(client.getURI()).getPort();
-			System.out.println("Sending to: " + host + ":" + port);
-		} catch (URISyntaxException e) {
-			System.err.println("Failed to parse destination URI");
-			e.printStackTrace();
-		}
-		System.out.println("Sending from: " + client.getEndpoint().getAddress());
-		System.out.println(Utils.prettyPrint(multicastRequest));
-
-		// sends a multicast request
-		handler.clearResponses();
-		client.advanced(handler, multicastRequest);
-		while (handler.waitOn(HANDLER_TIMEOUT)) {
-			// Wait for responses
-		}
-
-		// Print received responses
-		List<CoapResponse> responses = handler.getResponses();
-		for (int i = 0; i < responses.size(); i++) {
-			CoapResponse resp = responses.get(i);
-
-			System.out.println("=== Response " + (i + 1) + " ===");
-			System.out.println("Response from from: " + resp.advanced().getSourceContext().getPeerAddress());
-
-			// Parse and handle response
-			System.out.println(Utils.prettyPrint(resp));
-			System.out.println("Payload: " + resp.getResponseText());
-
-			byte[] payloadRes = resp.getPayload();
-			CBORObject arrayRes = CBORObject.DecodeFromBytes(payloadRes);
-			float[] modelRes = new float[arrayRes.size()];
-
-			System.out.print("Incoming payload in response: ");
-			for (int n = 0; n < arrayRes.size(); n++) {
-				modelRes[n] = arrayRes.get(n).AsSingle();
-				System.out.print(modelRes[n] + " ");
-
+		
+		
+		for(int i = 0; i <=commuEpoch; i++) {
+			
+			System.out.println("=== Communication Epoch: " + i + " ===");
+			Request multicastRequest = Request.newPost();
+			
+			// TODO: Set payload with model params
+			if(i==0) {		
+				multicastRequest.setPayload(CBORObject.NewArray().EncodeToBytes());
+				
+			}else {
+			
+				CBORObject arrayReq = CBORObject.NewArray();
+				double[] modelReq = null;
+				
+				// If there are more received clients
+				if(models.size()>1) {		
+					
+					INDArray avgModel = getAverage(models, modelsize);
+					modelReq = avgModel.toDoubleVector();
+	
+				}else {
+					// If there is only one model in the buffer list
+					modelReq = models.get(0).toDoubleVector();
+				}
+			
+				
+				System.out.print("Outgoing request payload: ");
+				for (int j = 0; j < modelReq.length; j++) {
+					arrayReq.Add(modelReq[j]);
+					System.out.print(modelReq[j] + " ");
+				}
+				multicastRequest.setPayload(arrayReq.EncodeToBytes());
+				models.clear();
+				
 			}
-			System.out.println();
-		}
+			
 
+			multicastRequest.setType(Type.NON);
+			if (useOSCORE) {
+				// For group mode request
+				multicastRequest.getOptions().setOscore(Bytes.EMPTY);
+
+				// For pairwise request:
+				// multicastRequest.getOptions().setOscore(OptionEncoder.set(true,
+				// requestURI, rid1));
+			}
+
+			// Information about the sender
+			System.out.println("==================");
+			System.out.println("*Multicast sender");
+			System.out.println("Uses OSCORE: " + useOSCORE);
+			System.out.println("Request destination: " + requestURI);
+			System.out.println("Request destination port: " + destinationPort);
+			System.out.println("Request method: " + multicastRequest.getCode());
+			System.out.println("Outgoing port: " + endpoint.getAddress().getPort());
+			System.out.println("==================");
+
+			try {
+				String host = new URI(client.getURI()).getHost();
+				int port = new URI(client.getURI()).getPort();
+				System.out.println("Sending to: " + host + ":" + port);
+			} catch (URISyntaxException e) {
+				System.err.println("Failed to parse destination URI");
+				e.printStackTrace();
+			}
+			System.out.println("Sending from: " + client.getEndpoint().getAddress());
+			System.out.println(Utils.prettyPrint(multicastRequest));
+
+			// sends a multicast request
+			handler.clearResponses();
+			client.advanced(handler, multicastRequest);
+			while (handler.waitOn(HANDLER_TIMEOUT)) {
+				// Wait for responses
+			}
+
+			// Print received responses
+			List<CoapResponse> responses = handler.getResponses();
+			for (int j = 0; j < responses.size(); j++) {
+				CoapResponse resp = responses.get(j);
+
+				System.out.println("=== Response " + (j + 1) + " ===");
+				System.out.println("Response from from: " + resp.advanced().getSourceContext().getPeerAddress());
+
+				// Parse and handle response
+				System.out.println(Utils.prettyPrint(resp));
+				//System.out.println("Payload: " + resp.getResponseText());
+
+				byte[] payloadRes = resp.getPayload();
+				CBORObject arrayRes = CBORObject.DecodeFromBytes(payloadRes);
+				double[] modelRes = new double[arrayRes.size()];
+
+				System.out.print("Incoming payload in response: ");
+				for (int n = 0; n < arrayRes.size(); n++) {
+					modelRes[n] = arrayRes.get(n).AsSingle();
+					System.out.print(modelRes[n] + " ");
+
+				}
+				System.out.println();
+				INDArray model = Nd4j.create(modelRes);
+				System.out.println(model.length());
+				modelsize = (int) model.length();
+				models.add(model);
+			}
+		
+		}
+	
+
+	}
+	
+	public static INDArray getAverage(List<INDArray> list, int modelsize) {
+		  
+		INDArray  avg = Nd4j.zeros(modelsize);
+		for(int i=0; i<=list.size(); i++){
+			INDArray arr = list.get(i);
+			avg = Nd4j.accumulate(arr);
+		}
+		
+		avg = avg.div(list.size());
+		 
+		return avg;
 	}
 
 	/**

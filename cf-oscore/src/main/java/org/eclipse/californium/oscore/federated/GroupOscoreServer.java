@@ -69,6 +69,7 @@ import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.dimensionalityreduction.PCA;
+import org.nd4j.linalg.factory.Nd4j;
 
 import com.upokecenter.cbor.CBORObject;
 
@@ -199,7 +200,7 @@ public class GroupOscoreServer {
 	private static Random random;
 
 	/* --- Parameters used for model training --- */
-	private static int nLocalEpochs = 5; // Number of training epochs
+	private static int nLocalEpochs = 10; // Number of training epochs
 	private static int outputNum = 2; // Number of outputs
 	private static int numInputs = 30; // Number of intput features to the model
 	private static int batchSize = 640; // Batch size
@@ -361,36 +362,41 @@ public class GroupOscoreServer {
 		server.start();
 	}
 	
-	private static void TrainModel() {
+	private static void TrainModel(INDArray updateModel, boolean initFlag) {
 		
-		model = new MultiLayerNetwork(conf);
-		model.init();
+		if(initFlag == true) {
+			model = new MultiLayerNetwork(conf);
+			model.init();
+			System.out.println(model.summary());
+		}else {
+			System.out.println("Update Local model...");
+			model.setParams(updateModel);
+		}
 
-		LOGGER.info("Train model...");
+		System.out.println("Train local model...");
 		// Print score every 10 iterations and evaluate on test set every epoch
 		model.setListeners(new ScoreIterationListener(1));
 		
 		System.out.println("The parameters before training: "+model.params());
-		System.out.println(model.summary());
 		
-
 		
 		for( int i=0; i < nLocalEpochs; i++ ) {
-		model.fit(trainIter);
+			model.fit(trainIter);
 		}
 		
-		System.out.println("The parameters after training: "+model.params());
-		System.out.println("The length of model's parameters: "+model.params().length());
+		System.out.println("The parameters after training: "+ model.params());
+		System.out.println("The length of model's parameters: "+ model.params().length());
 		
 		Evaluation eval = new Evaluation(outputNum);
         while (testIter.hasNext()) {
-            DataSet t = testIter.next();
+        	System.out.println("Evaluate with test dataset");
+        	DataSet t = testIter.next();
             INDArray features = t.getFeatures();
             INDArray labels = t.getLabels();
             INDArray predicted = model.output(features, false);
             eval.eval(labels, predicted);
         }
- 
+        testIter.reset();
 
         //Print the evaluation statistics
         System.out.println(eval.stats());
@@ -416,7 +422,7 @@ public class GroupOscoreServer {
 			// Parse and handle request
 			byte[] payloadReq = exchange.getRequestPayload();
 			CBORObject arrayReq = CBORObject.DecodeFromBytes(payloadReq);
-			float[] modelReq = new float[arrayReq.size()];
+			double[] modelReq = new double[arrayReq.size()];
 
 			System.out.print("Incoming payload: ");
 			for (int i = 0; i < arrayReq.size(); i++) {
@@ -425,15 +431,28 @@ public class GroupOscoreServer {
 
 			}
 			System.out.println();
-
+			
+			
+			/*
+			 * Get the updated model from the request message, and create
+			 * a INDArray to get
+			 * TODO: add the flag or a message to identicate the current round 
+			 */
+			INDArray updatedModel = Nd4j.create(modelReq);
+			System.out.println(updatedModel.length());
+			
+			boolean initFlag = false;
 			// Train
-			TrainModel();
-			float[] modelRes = null;
+			if(modelReq.length == 0) {
+				initFlag = true;
+			}
+			TrainModel(updatedModel, initFlag);
+			double[] modelRes = null;
 
 			// Create response
 			Response r = new Response(ResponseCode.CHANGED);
 
-			modelRes = model.params().toFloatVector();
+			modelRes = model.params().toDoubleVector();
 
 			CBORObject arrayRes = CBORObject.NewArray();
 			System.out.print("Outgoing payload: ");
@@ -441,6 +460,7 @@ public class GroupOscoreServer {
 				arrayRes.Add(modelRes[i]);
 				System.out.print(modelRes[i] + " ");
 			}
+			
 			System.out.println();
 
 			byte[] payloadRes = arrayRes.EncodeToBytes();
