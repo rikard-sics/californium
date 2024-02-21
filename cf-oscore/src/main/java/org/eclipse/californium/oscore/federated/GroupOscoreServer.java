@@ -77,19 +77,15 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
-import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.InvocationType;
-import org.deeplearning4j.optimize.listeners.EvaluativeListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
-
 
 /**
  * Test receiver using {@link UdpMulticastConnector}.
@@ -102,12 +98,6 @@ public class GroupOscoreServer {
 	 * Maximum message size
 	 */
 	private static int MAX_MSG_SIZE = 1400;
-
-	/**
-	 * Maximum size of vectors to send (so it fits in the message). It seems
-	 * every number takes around 6 bytes on average
-	 */
-	private static int MAX_VECTOR_SIZE = MAX_MSG_SIZE / 6;
 
 	/**
 	 * Controls whether or not the receiver will reply to incoming multicast
@@ -188,7 +178,7 @@ public class GroupOscoreServer {
 	private static byte[] serverPublicKey;
 	private static byte[] serverPrivateKey;
 
-	private final static byte[] clientRid = new byte[] { 0x25 };
+	private final static byte[] clientRid = new byte[] { (byte) 0xFE };
 	private final static byte[] clientPublicKeyBytes = StringUtil.hex2ByteArray(
 			"A501781B636F6170733A2F2F746573746572312E6578616D706C652E636F6D02666D796E616D6503781A636F6170733A2F2F68656C6C6F312E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820069E912B83963ACC5941B63546867DEC106E5B9051F2EE14F3BC5CC961ACD43A");
 	private static MultiKey clientPublicKey;
@@ -217,8 +207,7 @@ public class GroupOscoreServer {
 	 * @throws Exception on setup or message processing failure
 	 */
 	public static void main(String[] args) throws Exception {
-		
-	
+
 		// Install cryptographic providers
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 1);
@@ -287,7 +276,7 @@ public class GroupOscoreServer {
 		}
 		System.out.println("");
 		System.out.println("==================");
-		
+
 		/*
 		 * Create an iterator using the batch size for one iteration for
 		 * MnistData
@@ -299,76 +288,73 @@ public class GroupOscoreServer {
 		 */
 		int numLinesToSkip = 1;
 		char delimiter = ',';
-		int labelIndex = 115; // Labels: a single integer representing the class
-		// index in column number 116
+		// Labels: a single integer representing the class index in column
+		// number 116
+		int labelIndex = 115;
 		int numLabelClasses = 2; // 2 classes for the label
-		
-		//Load the dataset:
+
+		// Load the dataset:
 		RecordReader rr = new CSVRecordReader(numLinesToSkip, delimiter);
-		rr.initialize(new FileSplit(new File( Credentials.serverDatasets.get(serverNr))));
-		Iter = new RecordReaderDataSetIterator(rr,batchSize,labelIndex,
-				numLabelClasses);
-		
-		
+		rr.initialize(new FileSplit(new File(Credentials.serverDatasets.get(serverNr))));
+		Iter = new RecordReaderDataSetIterator(rr, batchSize, labelIndex, numLabelClasses);
+
 		List<DataSet> ret = new ArrayList<>();
 		while (Iter.hasNext()) {
 			ret.add(Iter.next());
-        }
+		}
 		DataSet allData = DataSet.merge(ret);
-		
-		
+
 		allData.shuffle();
 		INDArray features = allData.getFeatures();
 		INDArray reduced_feature = PCA.pca(features, numInputs, true);
 		DataSet reduced_set = new DataSet(reduced_feature, allData.getLabels());
 		System.out.println("Training set: " + reduced_set.numExamples());
-        SplitTestAndTrain testAndTrain = reduced_set.splitTestAndTrain(0.7);  //Use 70% of data for training
-        
-        
-        DataSet trainingData = testAndTrain.getTrain();
-        DataSet testData = testAndTrain.getTest();
-        
-		
+		// Use 70% of data for training
+		SplitTestAndTrain testAndTrain = reduced_set.splitTestAndTrain(0.7);
+
+		DataSet trainingData = testAndTrain.getTrain();
+		DataSet testData = testAndTrain.getTest();
+
 		/*
 		 * Normalize the dataset
 		 */
 		DataNormalization normalizer = new NormalizerStandardize();
-		normalizer.fit(trainingData); // Collect the statistics (mean/stdev) from
-									// the training data. This does not modify
-									// the input data
-		normalizer.transform(trainingData);     //Apply normalization to the training data
-        normalizer.transform(testData);         //Apply normalization to the test data. This is using statistics calculated from the *training* set
-        
-        
-        trainIter = new MiniBatchFileDataSetIterator(trainingData, batchSize);
-        testIter = new TestDataSetIterator(testData, batchSize);
-      
+		// Collect the statistics (mean/stdev) from the training data. This does
+		// not modify the input data
+		normalizer.fit(trainingData);
+		// Apply normalization to the training data
+		normalizer.transform(trainingData);
+		// Apply normalization to the test data. This is using statistics
+		// calculated from the *training* set
+		normalizer.transform(testData);
+
+		trainIter = new MiniBatchFileDataSetIterator(trainingData, batchSize);
+		testIter = new TestDataSetIterator(testData, batchSize);
 
 		/*
 		 * Construct the neural network
-		 */		
-        System.out.println("Build model....");
-		int seed = 123; 
-		conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.RELU)
-				.weightInit(WeightInit.XAVIER).l2(1e-4).list()
-				.layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).build())
+		 */
+		System.out.println("Build model....");
+		int seed = 123;
+		conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.RELU).weightInit(WeightInit.XAVIER)
+				.l2(1e-4).list().layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).build())
 				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.SIGMOID).nIn(3)
 						.nOut(outputNum).build())
 				.build();
-		
+
 		System.out.println("");
 		System.out.println("==================");
 
 		server.start();
 	}
-	
+
 	private static void TrainModel(INDArray updateModel, boolean initFlag) {
-		
-		if(initFlag == true) {
+
+		if (initFlag == true) {
 			model = new MultiLayerNetwork(conf);
 			model.init();
 			System.out.println(model.summary());
-		}else {
+		} else {
 			System.out.println("Update Local model...");
 			model.setParams(updateModel);
 		}
@@ -376,32 +362,30 @@ public class GroupOscoreServer {
 		System.out.println("Train local model...");
 		// Print score every 10 iterations and evaluate on test set every epoch
 		model.setListeners(new ScoreIterationListener(1));
-		
-		System.out.println("The parameters before training: "+model.params());
-		
-		
-		for( int i=0; i < nLocalEpochs; i++ ) {
+
+		System.out.println("The parameters before training: " + model.params());
+
+		for (int i = 0; i < nLocalEpochs; i++) {
 			model.fit(trainIter);
 		}
-		
-		System.out.println("The parameters after training: "+ model.params());
-		System.out.println("The length of model's parameters: "+ model.params().length());
-		
+
+		System.out.println("The parameters after training: " + model.params());
+		System.out.println("The length of model's parameters: " + model.params().length());
+
 		Evaluation eval = new Evaluation(outputNum);
-        while (testIter.hasNext()) {
-        	System.out.println("Evaluate with test dataset");
-        	DataSet t = testIter.next();
-            INDArray features = t.getFeatures();
-            INDArray labels = t.getLabels();
-            INDArray predicted = model.output(features, false);
-            eval.eval(labels, predicted);
-        }
-        testIter.reset();
+		while (testIter.hasNext()) {
+			System.out.println("Evaluate with test dataset");
+			DataSet t = testIter.next();
+			INDArray features = t.getFeatures();
+			INDArray labels = t.getLabels();
+			INDArray predicted = model.output(features, false);
+			eval.eval(labels, predicted);
+		}
+		testIter.reset();
 
-        //Print the evaluation statistics
-        System.out.println(eval.stats());
+		// Print the evaluation statistics
+		System.out.println(eval.stats());
 
-		
 	}
 
 	private static class ModelResource extends OSCoreResource {
@@ -431,19 +415,18 @@ public class GroupOscoreServer {
 
 			}
 			System.out.println();
-			
-			
+
 			/*
-			 * Get the updated model from the request message, and create
-			 * a INDArray to get
-			 * TODO: add the flag or a message to identicate the current round 
+			 * Get the updated model from the request message, and create a
+			 * INDArray to get TODO: add the flag or a message to identicate the
+			 * current round
 			 */
 			INDArray updatedModel = Nd4j.create(modelReq);
 			System.out.println(updatedModel.length());
-			
+
 			boolean initFlag = false;
 			// Train
-			if(modelReq.length == 0) {
+			if (modelReq.length == 0) {
 				initFlag = true;
 			}
 			TrainModel(updatedModel, initFlag);
@@ -460,7 +443,7 @@ public class GroupOscoreServer {
 				arrayRes.Add(modelRes[i]);
 				System.out.print(modelRes[i] + " ");
 			}
-			
+
 			System.out.println();
 
 			byte[] payloadRes = arrayRes.EncodeToBytes();

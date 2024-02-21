@@ -91,7 +91,8 @@ Thumbs.db
 Desktop.ini
 *~
 
-# Group OSCORE test vectors #
+# Group OSCORE test vectors and similar #
 ######################
 cf-oscore/*.txt
+Credentials-new.java
 

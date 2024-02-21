@@ -45,7 +45,6 @@ import org.eclipse.californium.oscore.OSException;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.MultiKey;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
 import com.upokecenter.cbor.CBORObject;
@@ -73,12 +72,6 @@ public class GroupOscoreClient {
 	 * Maximum message size
 	 */
 	private static int MAX_MSG_SIZE = 1400;
-
-	/**
-	 * Maximum size of vectors to send (so it fits in the message). It seems
-	 * every number takes around 6 bytes on average
-	 */
-	private static int MAX_VECTOR_SIZE = MAX_MSG_SIZE / 6;
 
 	/**
 	 * Special network configuration defaults handler.
@@ -147,7 +140,7 @@ public class GroupOscoreClient {
 	private final static byte[] gm_public_key_bytes = StringUtil.hex2ByteArray(
 			"A501781A636F6170733A2F2F6D79736974652E6578616D706C652E636F6D026C67726F75706D616E6167657203781A636F6170733A2F2F646F6D61696E2E6578616D706C652E6F7267041AAB9B154F08A101A4010103272006215820CDE3EFD3BC3F99C9C9EE210415C6CBA55061B5046E963B8A58C9143A61166472");
 
-	private final static byte[] clientSid = new byte[] { 0x25 };
+	private final static byte[] clientSid = new byte[] { (byte) 0xFE };
 	private final static byte[] clientPublicKeyBytes = StringUtil.hex2ByteArray(
 			"A501781B636F6170733A2F2F746573746572312E6578616D706C652E636F6D02666D796E616D6503781A636F6170733A2F2F68656C6C6F312E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820069E912B83963ACC5941B63546867DEC106E5B9051F2EE14F3BC5CC961ACD43A");
 	private static MultiKey clientPublicPrivateKey;
@@ -160,7 +153,7 @@ public class GroupOscoreClient {
 	private final static byte[] groupIdentifier = new byte[] { 0x44, 0x61, 0x6c }; // GID
 
 	/* --- OSCORE Security Context information --- */
-	
+
 	private static List<INDArray> models = new ArrayList<>();
 	private static int commuEpoch = 2;
 	private static int modelsize = 0;
@@ -198,6 +191,7 @@ public class GroupOscoreClient {
 			GroupCtx commonCtx = new GroupCtx(masterSecret, masterSalt, alg, kdf, groupIdentifier, algCountersign,
 					algGroupEnc, algKeyAgreement, gmPublicKey);
 
+			commonCtx.addSenderCtxCcs(clientSid, clientPublicPrivateKey);
 			addServerContexts(commonCtx);
 
 			db.addContext(requestURI, commonCtx);
@@ -213,34 +207,34 @@ public class GroupOscoreClient {
 		client.setEndpoint(endpoint);
 
 		client.setURI(requestURI);
-		
-		
-		for(int i = 0; i <=commuEpoch; i++) {
-			
+
+		for (int i = 0; i <= commuEpoch; i++) {
+
 			System.out.println("=== Communication Epoch: " + i + " ===");
 			Request multicastRequest = Request.newPost();
-			
+
 			// TODO: Set payload with model params
-			if(i==0) {		
+			if (i == 0) {
 				multicastRequest.setPayload(CBORObject.NewArray().EncodeToBytes());
-				
-			}else {
-			
+
+			} else {
+
 				CBORObject arrayReq = CBORObject.NewArray();
 				double[] modelReq = null;
-				
+
 				// If there are more received clients
-				if(models.size()>1) {		
-					
+				if (models.size() > 1) {
+
 					INDArray avgModel = getAverage(models, modelsize);
 					modelReq = avgModel.toDoubleVector();
-	
-				}else {
+
+				} else if (models.size() == 1) {
 					// If there is only one model in the buffer list
 					modelReq = models.get(0).toDoubleVector();
+				} else {
+					System.err.println("Error: No model received");
 				}
-			
-				
+
 				System.out.print("Outgoing request payload: ");
 				for (int j = 0; j < modelReq.length; j++) {
 					arrayReq.Add(modelReq[j]);
@@ -248,9 +242,8 @@ public class GroupOscoreClient {
 				}
 				multicastRequest.setPayload(arrayReq.EncodeToBytes());
 				models.clear();
-				
+
 			}
-			
 
 			multicastRequest.setType(Type.NON);
 			if (useOSCORE) {
@@ -300,7 +293,7 @@ public class GroupOscoreClient {
 
 				// Parse and handle response
 				System.out.println(Utils.prettyPrint(resp));
-				//System.out.println("Payload: " + resp.getResponseText());
+				// System.out.println("Payload: " + resp.getResponseText());
 
 				byte[] payloadRes = resp.getPayload();
 				CBORObject arrayRes = CBORObject.DecodeFromBytes(payloadRes);
@@ -318,22 +311,21 @@ public class GroupOscoreClient {
 				modelsize = (int) model.length();
 				models.add(model);
 			}
-		
+
 		}
-	
 
 	}
-	
+
 	public static INDArray getAverage(List<INDArray> list, int modelsize) {
-		  
-		INDArray  avg = Nd4j.zeros(modelsize);
-		for(int i=0; i<=list.size(); i++){
+
+		INDArray avg = Nd4j.zeros(modelsize);
+		for (int i = 0; i < list.size(); i++) {
 			INDArray arr = list.get(i);
 			avg = Nd4j.accumulate(arr);
 		}
-		
+
 		avg = avg.div(list.size());
-		 
+
 		return avg;
 	}
 
@@ -344,7 +336,6 @@ public class GroupOscoreClient {
 	 * @throws OSException on failure to add contexts
 	 */
 	private static void addServerContexts(GroupCtx commonCtx) throws OSException {
-		commonCtx.addSenderCtxCcs(clientSid, clientPublicPrivateKey);
 
 		for (int i = 0; i < Credentials.serverPublicKeys.size(); i++) {
 			MultiKey serverPublicKey = new MultiKey(Credentials.serverPublicKeys.get(i));
