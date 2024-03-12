@@ -22,7 +22,7 @@ package org.eclipse.californium.oscore;
 import java.io.ByteArrayOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
@@ -48,6 +48,8 @@ public abstract class Encryptor {
 	 * The logger
 	 */
 	private static final Logger LOGGER = LoggerFactory.getLogger(Encryptor.class);
+
+	public static boolean EXTRA_LOGGING = false;
 
 	/**
 	 * Encrypt the COSE message using the OSCore context.
@@ -111,6 +113,14 @@ public abstract class Encryptor {
 			enc.addAttribute(HeaderKeys.IV, CBORObject.FromObject(nonce), Attribute.DO_NOT_SEND);
 			enc.addAttribute(HeaderKeys.Algorithm, ctx.getAlg().AsCBOR(), Attribute.DO_NOT_SEND);
 			enc.encrypt(key);
+
+			if (EXTRA_LOGGING == true) {
+				System.out.println("Sender Key: " + Utils.toHexString(key));
+				System.out.println("External AAD: " + Utils.toHexString(aad));
+				System.out.println("Nonce: " + Utils.toHexString(nonce));
+				System.out.println("Plaintext: " + Utils.toHexString(enc.GetContent()));
+				System.out.println("Ciphertext: " + Utils.toHexString(enc.getEncryptedContent()));
+			}
 
 			return enc.getEncryptedContent();
 		} catch (CoseException e) {

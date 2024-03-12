@@ -18,6 +18,7 @@ package org.eclipse.californium.oscore;
 
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
@@ -40,13 +41,16 @@ public class HelloWorldServer {
 	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
 			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
 	private final static byte[] sid = new byte[] { 0x01 };
-	private final static byte[] rid = new byte[0];
+	private final static byte[] rid = new byte[] { 0x02 };
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 
 	public static void main(String[] args) throws OSException {
-		OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, null, MAX_UNFRAGMENTED_SIZE);
+		OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, null,
+				MAX_UNFRAGMENTED_SIZE);
 		db.addContext(uriLocal, ctx);
 		OSCoreCoapStackFactory.useAsDefault(db);
+
+		ctx.setContextRederivationEnabled(true);
 
 		final CoapServer server = new CoapServer(5683);
 
@@ -67,6 +71,7 @@ public class HelloWorldServer {
 			public void handleGET(CoapExchange exchange) {
 				System.out.println("Accessing hello/1 resource");
 				Response r = new Response(ResponseCode.CONTENT);
+				r.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 				r.setPayload("Hello World!");
 				exchange.respond(r);
 				server.destroy();
