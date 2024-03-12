@@ -47,6 +47,8 @@ public class ContextRederivation {
 
 	private static final String SCHEME = "coap://";
 
+	public static boolean EXTRA_LOGGING = false;
+
 	/**
 	 * The different phases of the re-derivation procedure.
 	 *
@@ -545,7 +547,7 @@ public class ContextRederivation {
 	 */
 	private static void printStateLogging(OSCoreCtx ctx) {
 
-		if (!LOGGER.isDebugEnabled()) {
+		if (!LOGGER.isDebugEnabled() && EXTRA_LOGGING == false) {
 			return;
 		}
 
@@ -583,6 +585,10 @@ public class ContextRederivation {
 		default:
 			supplemental = "context re-derivation is in unknown state indicating a problem";
 			break;
+		}
+
+		if (EXTRA_LOGGING == true) {
+			System.out.println("Context re-derivation phase: " + currentPhase + "(" + supplemental + ")");
 		}
 
 		if (currentPhase == PHASE.INACTIVE) {
