@@ -91,7 +91,7 @@ public class GroupOscoreClient {
 	/**
 	 * Time to wait for replies to the multicast request
 	 */
-	private static final int HANDLER_TIMEOUT = 2000;
+	private static final int HANDLER_TIMEOUT = 10000;
 
 	/**
 	 * Whether to use OSCORE or not.
@@ -155,7 +155,7 @@ public class GroupOscoreClient {
 	/* --- OSCORE Security Context information --- */
 
 	private static List<INDArray> models = new ArrayList<>();
-	private static int commuEpoch = 2;
+	private static int commuEpoch = 50;
 	private static int modelsize = 0;
 
 	/**
@@ -283,8 +283,16 @@ public class GroupOscoreClient {
 				// Wait for responses
 			}
 
+			
+			
 			// Print received responses
 			List<CoapResponse> responses = handler.getResponses();
+			
+			if (responses.size() == 0) {
+				
+				System.out.println("ERROR: No Response from severs.");
+			
+			}
 			for (int j = 0; j < responses.size(); j++) {
 				CoapResponse resp = responses.get(j);
 

@@ -190,7 +190,7 @@ public class GroupOscoreServer {
 	private static Random random;
 
 	/* --- Parameters used for model training --- */
-	private static int nLocalEpochs = 10; // Number of training epochs
+	private static int nLocalEpochs = 50; // Number of training epochs
 	private static int outputNum = 2; // Number of outputs
 	private static int numInputs = 30; // Number of intput features to the model
 	private static int batchSize = 640; // Batch size
@@ -371,10 +371,11 @@ public class GroupOscoreServer {
 
 		System.out.println("The parameters after training: " + model.params());
 		System.out.println("The length of model's parameters: " + model.params().length());
-
+		
+		
 		Evaluation eval = new Evaluation(outputNum);
+		System.out.println("Evaluate with test dataset");
 		while (testIter.hasNext()) {
-			System.out.println("Evaluate with test dataset");
 			DataSet t = testIter.next();
 			INDArray features = t.getFeatures();
 			INDArray labels = t.getLabels();
