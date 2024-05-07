@@ -409,12 +409,19 @@ public class GroupOscoreServer {
 
 			// Parse and handle request
 			byte[] payloadReq = exchange.getRequestPayload();
-			CBORObject arrayReq = CBORObject.DecodeFromBytes(payloadReq);
-			double[] modelReq = new double[arrayReq.size()];
-
+			
+			final int floatSize = Float.SIZE / 8;
+			int numElements = payloadReq.length / floatSize;
+			
+			float[] modelReq = new float[numElements];			
+			for (int i = 0; i < numElements; i++) {
+				byte[] elementBytes = new byte[floatSize]; 
+				System.arraycopy(payloadReq, i*floatSize, elementBytes, 0, floatSize);
+				modelReq[i] = ByteBuffer.wrap(elementBytes).getFloat();
+			}
+						
 			System.out.print("Incoming payload: ");
-			for (int i = 0; i < arrayReq.size(); i++) {
-				modelReq[i] = arrayReq.get(i).AsSingle();
+			for (int i = 0; i < numElements; i++) {
 				System.out.print(modelReq[i] + " ");
 
 			}
@@ -434,45 +441,23 @@ public class GroupOscoreServer {
 				initFlag = true;
 			}
 			TrainModel(updatedModel, initFlag);
-			double[] modelRes = null;
-			float[] modelRes2 = null;
+			
+			float[] modelRes = model.params().toFloatVector();
+			
+			numElements = modelRes.length;
+			byte[] payloadRes = new byte[floatSize * numElements];
+			for (int i = 0; i < numElements; i++) {
+				byte[] elementBytes = ByteBuffer.allocate(floatSize).putFloat(modelRes[i]).array();
+				System.arraycopy(elementBytes, 0, payloadRes, i*floatSize, floatSize);
+			}
+						
+			System.out.println();
 
 			// Create response
 			Response r = new Response(ResponseCode.CHANGED);
-
-			modelRes = model.params().toDoubleVector();
-			modelRes2 = model.params().toFloatVector();
-			
-			byte[] buffer = new byte[4 * modelRes.length];
-			for (int i = 0; i < modelRes.length; i++) {
-
-			}
-			
-			
-		    /*
-
-			CBORObject arrayRes = CBORObject.NewArray();
-			System.out.print("Outgoing payload: ");
-			for (int i = 0; i < modelRes.length; i++) {
-				arrayRes.Add(modelRes[i]);
-				System.out.print(modelRes[i] + " ");
-			}
-			*/
-
-			System.out.println();
-
-			/*
-			byte[] payloadRes = arrayRes.EncodeToBytes();
-			System.out.println("Payload Length: " + payloadRes.length);
-			if (payloadRes.length > MAX_MSG_SIZE) {
-				System.err.println("Too large payload in response!");
-			}*/
-			
-			
-			byte[] payloadRes = null;
 			r.setPayload(payloadRes);
-
 			exchange.respond(r);
+			
 		}
 
 	}
