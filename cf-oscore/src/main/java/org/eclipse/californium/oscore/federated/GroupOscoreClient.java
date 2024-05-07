@@ -21,6 +21,7 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
@@ -47,7 +48,6 @@ import org.eclipse.californium.oscore.group.MultiKey;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
@@ -91,7 +91,7 @@ public class GroupOscoreClient {
 	/**
 	 * Time to wait for replies to the multicast request
 	 */
-	private static final int HANDLER_TIMEOUT = 10000;
+	private static final int HANDLER_TIMEOUT = 30000;
 
 	/**
 	 * Whether to use OSCORE or not.
@@ -209,38 +209,47 @@ public class GroupOscoreClient {
 		client.setURI(requestURI);
 
 		for (int i = 0; i <= commuEpoch; i++) {
-
+			
 			System.out.println("=== Communication Epoch: " + i + " ===");
 			Request multicastRequest = Request.newPost();
+			
+			final int floatSize = Float.SIZE / 8;
+			int numElements;
+			float[] modelReq = null;
+			
 
 			// TODO: Set payload with model params
 			if (i == 0) {
-				multicastRequest.setPayload(CBORObject.NewArray().EncodeToBytes());
+				byte[] emptymodel = new byte[0];
+				multicastRequest.setPayload(emptymodel);
 
 			} else {
-
-				CBORObject arrayReq = CBORObject.NewArray();
-				double[] modelReq = null;
 
 				// If there are more received clients
 				if (models.size() > 1) {
 
 					INDArray avgModel = getAverage(models, modelsize);
-					modelReq = avgModel.toDoubleVector();
+					modelReq = avgModel.toFloatVector();
 
 				} else if (models.size() == 1) {
 					// If there is only one model in the buffer list
-					modelReq = models.get(0).toDoubleVector();
+					modelReq = models.get(0).toFloatVector();
 				} else {
 					System.err.println("Error: No model received");
 				}
+				
+				numElements =modelReq.length;
+				byte[] payloadReq = new byte[floatSize * numElements];
+				for (int j = 0; j < numElements; j++) {
+					byte[] elementBytes = ByteBuffer.allocate(floatSize).putFloat(modelReq[j]).array();
+					System.arraycopy(elementBytes, 0, payloadReq, j*floatSize, floatSize);
+				}
 
 				System.out.print("Outgoing request payload: ");
-				for (int j = 0; j < modelReq.length; j++) {
-					arrayReq.Add(modelReq[j]);
-					System.out.print(modelReq[j] + " ");
+				for (int j = 0; j <numElements; j++) {
+					System.out.print(modelReq[i] + " ");
 				}
-				multicastRequest.setPayload(arrayReq.EncodeToBytes());
+				multicastRequest.setPayload(payloadReq);
 				models.clear();
 
 			}
@@ -304,16 +313,23 @@ public class GroupOscoreClient {
 				// System.out.println("Payload: " + resp.getResponseText());
 
 				byte[] payloadRes = resp.getPayload();
-				CBORObject arrayRes = CBORObject.DecodeFromBytes(payloadRes);
-				double[] modelRes = new double[arrayRes.size()];
-
+				numElements = payloadRes.length / floatSize;
+				float[] modelRes = new float[numElements];	
+				
+				for (int k = 0; k < numElements; k++) {
+					byte[] elementBytes = new byte[floatSize]; 
+					System.arraycopy(payloadRes, k*floatSize, elementBytes, 0, floatSize);
+					modelRes[k] = ByteBuffer.wrap(elementBytes).getFloat();
+				}
+							
+				System.out.println();
+				
 				System.out.print("Incoming payload in response: ");
-				for (int n = 0; n < arrayRes.size(); n++) {
-					modelRes[n] = arrayRes.get(n).AsSingle();
-					System.out.print(modelRes[n] + " ");
+				for (int k = 0; k < numElements; k++) {
+					System.out.print(modelRes[i] + " ");
 
 				}
-				System.out.println();
+				
 				INDArray model = Nd4j.create(modelRes);
 				System.out.println(model.length());
 				modelsize = (int) model.length();
