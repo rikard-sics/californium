@@ -18,6 +18,7 @@ package org.eclipse.californium.oscore.federated;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.net.BindException;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
@@ -25,6 +26,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.nio.ByteBuffer;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
@@ -338,6 +340,7 @@ public class GroupOscoreServer {
 		int seed = 123;
 		conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.RELU).weightInit(WeightInit.XAVIER)
 				.l2(1e-4).list().layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).build())
+				.layer(new DenseLayer.Builder().nIn(8).nOut(3).build())
 				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.SIGMOID).nIn(3)
 						.nOut(outputNum).build())
 				.build();
@@ -432,11 +435,21 @@ public class GroupOscoreServer {
 			}
 			TrainModel(updatedModel, initFlag);
 			double[] modelRes = null;
+			float[] modelRes2 = null;
 
 			// Create response
 			Response r = new Response(ResponseCode.CHANGED);
 
 			modelRes = model.params().toDoubleVector();
+			modelRes2 = model.params().toFloatVector();
+			
+			byte[] buffer = new byte[4 * modelRes.length];
+			for (int i = 0; i < modelRes.length; i++) {
+
+			}
+			
+			
+		    /*
 
 			CBORObject arrayRes = CBORObject.NewArray();
 			System.out.print("Outgoing payload: ");
@@ -444,14 +457,19 @@ public class GroupOscoreServer {
 				arrayRes.Add(modelRes[i]);
 				System.out.print(modelRes[i] + " ");
 			}
+			*/
 
 			System.out.println();
 
+			/*
 			byte[] payloadRes = arrayRes.EncodeToBytes();
 			System.out.println("Payload Length: " + payloadRes.length);
 			if (payloadRes.length > MAX_MSG_SIZE) {
 				System.err.println("Too large payload in response!");
-			}
+			}*/
+			
+			
+			byte[] payloadRes = null;
 			r.setPayload(payloadRes);
 
 			exchange.respond(r);
