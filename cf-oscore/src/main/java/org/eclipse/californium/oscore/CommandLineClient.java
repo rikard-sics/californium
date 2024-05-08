@@ -144,6 +144,7 @@ public class CommandLineClient {
 			System.out.println("Sender Key: " + Utils.toHexString(ctx.getSenderKey()));
 			System.out.println("Recipient Key: " + Utils.toHexString(ctx.getRecipientKey()));
 			Encryptor.EXTRA_LOGGING = true;
+			Decryptor.EXTRA_LOGGING = true;
 			ContextRederivation.EXTRA_LOGGING = true;
 		}
 

@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
@@ -52,6 +53,8 @@ public abstract class Decryptor {
 	 * The logger
 	 */
 	private static final Logger LOGGER = LoggerFactory.getLogger(Decryptor.class);
+
+	public static boolean EXTRA_LOGGING = false;
 
 	/**
 	 * Empty option set
@@ -139,12 +142,37 @@ public abstract class Decryptor {
 		byte[] key = ctx.getRecipientKey();
 
 		enc.setExternal(aad);
+
+		if (EXTRA_LOGGING == true) {
+			boolean request = message instanceof Request;
+			System.out.println("===");
+			System.out.print("Decrypting incoming: ");
+			if (request) {
+				System.out.println("Request");
+			} else {
+				System.out.println("Response");
+			}
+
+			System.out.println("Recipient Key: " + Utils.toHexString(key));
+			System.out.println("External AAD: " + Utils.toHexString(aad));
+			System.out.println("Nonce: " + Utils.toHexString(nonce));
+			try {
+				System.out.println("Ciphertext: " + Utils.toHexString(enc.getEncryptedContent()));
+			} catch (CoseException e) {
+				// TODO Auto-generated catch block
+			}
+		}
 			
 		try {
 
 			enc.addAttribute(HeaderKeys.Algorithm, ctx.getAlg().AsCBOR(), Attribute.DO_NOT_SEND);
 			enc.addAttribute(HeaderKeys.IV, CBORObject.FromObject(nonce), Attribute.DO_NOT_SEND);
 			plaintext = enc.decrypt(key);
+
+			if (EXTRA_LOGGING) {
+				System.out.println("Plaintext: " + Utils.toHexString(enc.GetContent()));
+				System.out.println("===");
+			}
 
 		} catch (CoseException e) {
 			String details = ErrorDescriptions.DECRYPTION_FAILED + " " + e.getMessage();

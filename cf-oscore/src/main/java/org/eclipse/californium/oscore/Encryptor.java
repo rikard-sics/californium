@@ -115,11 +115,22 @@ public abstract class Encryptor {
 			enc.encrypt(key);
 
 			if (EXTRA_LOGGING == true) {
+				boolean request = message instanceof Request;
+				System.out.println("===");
+				System.out.print("Encrypting outgoing: ");
+				if (request) {
+					System.out.println("Request");
+				} else {
+					System.out.println("Response");
+				}
+
 				System.out.println("Sender Key: " + Utils.toHexString(key));
 				System.out.println("External AAD: " + Utils.toHexString(aad));
 				System.out.println("Nonce: " + Utils.toHexString(nonce));
-				System.out.println("Plaintext: " + Utils.toHexString(enc.GetContent()));
 				System.out.println("Ciphertext: " + Utils.toHexString(enc.getEncryptedContent()));
+				System.out.println("Plaintext: " + Utils.toHexString(enc.GetContent()));
+
+				System.out.println("===");
 			}
 
 			return enc.getEncryptedContent();
