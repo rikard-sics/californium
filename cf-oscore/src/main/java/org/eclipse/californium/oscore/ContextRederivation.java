@@ -64,6 +64,10 @@ public class ContextRederivation {
 	 */
 	protected static int SEGMENT_LENGTH = 8;
 
+	public static void setSegmentLength(int len) {
+		SEGMENT_LENGTH = len;
+	}
+
 	/**
 	 * The logger
 	 */

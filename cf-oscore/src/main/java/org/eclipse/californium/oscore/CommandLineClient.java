@@ -73,6 +73,9 @@ public class CommandLineClient {
 	static String defaultUseAppendixB2 = "false";
 	static boolean useAppendixB2;
 
+	static String defaultNonceLength = "8";
+	static int nonceLength;
+
 	public static void main(String[] args) throws InterruptedException, ConnectorException, IOException {
 		// Parse command line arguments
 		HashMap<String, String> cmdArgs = new HashMap<>();
@@ -106,6 +109,7 @@ public class CommandLineClient {
 			debugMode = Boolean.parseBoolean(cmdArgs.getOrDefault("--debug", defaultDebugMode));
 			useOscore = Boolean.parseBoolean(cmdArgs.getOrDefault("--oscore", defaultUseOscore));
 			useAppendixB2 = Boolean.parseBoolean(cmdArgs.getOrDefault("--appendixb2", defaultUseAppendixB2));
+			nonceLength = Integer.parseInt(cmdArgs.getOrDefault("--nonce-len", defaultNonceLength));
 		} catch (Exception e) {
 			printHelp();
 		}
@@ -117,6 +121,23 @@ public class CommandLineClient {
 		if (rid == null) {
 			rid = Bytes.EMPTY;
 		}
+
+		// Print settings
+		System.out.println("===");
+		System.out.println("Settings:");
+		System.out.println("Master Secret: " + Utils.toHexString(masterSecret));
+		System.out.println("Master Salt: " + Utils.toHexString(masterSalt));
+		System.out.println("Sender ID: " + Utils.toHexString(sid));
+		System.out.println("Recipient ID: " + Utils.toHexString(rid));
+		System.out.println("ID Context: " + Utils.toHexString(idContext));
+		System.out.println("URI: " + uri);
+		System.out.println("Message Count: " + requestCount);
+		System.out.println("Initial Sender Sequence Number: " + initialSeq);
+		System.out.println("Debug Mode: " + debugMode);
+		System.out.println("Use OSCORE: " + useOscore);
+		System.out.println("Use Appendix B.2: " + useAppendixB2);
+		System.out.println("Nonce Length: " + nonceLength);
+		System.out.println("===");
 
 		// Create and set OSCORE Security Context
 		OSCoreCtx ctx = null;
@@ -135,6 +156,8 @@ public class CommandLineClient {
 		}
 
 		OSCoreCoapStackFactory.useAsDefault(db);
+
+		ContextRederivation.setSegmentLength(nonceLength);
 
 		if (debugMode) {
 			System.out.println("RID: " + Utils.toHexString(rid));
@@ -183,6 +206,7 @@ public class CommandLineClient {
 		System.out.println("--debug: True/False - Enable or disable debug printing");
 		System.out.println("--oscore: True/False - Use OSCORE");
 		System.out.println("--appendixb2: True/False - Initiate the Appendix B.2 procedure");
+		System.out.println("--nonce-len: Length of N1 and N2 nonces");
 		System.exit(1);
 	}
 
