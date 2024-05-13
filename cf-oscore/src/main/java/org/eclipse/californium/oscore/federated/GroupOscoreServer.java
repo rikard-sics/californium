@@ -18,7 +18,6 @@ package org.eclipse.californium.oscore.federated;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.net.BindException;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
@@ -113,12 +112,6 @@ public class GroupOscoreServer {
 	 * Whether to use OSCORE or not.
 	 */
 	static final boolean useOSCORE = true;
-
-	/**
-	 * Give the receiver a random unicast IP (from the loopback 127.0.0.0/8
-	 * range) FIXME: Communication does not work with this turned on
-	 */
-	static final boolean randomUnicastIP = false;
 
 	/**
 	 * Multicast address to listen to (use the first line to set a custom one).
@@ -372,8 +365,7 @@ public class GroupOscoreServer {
 
 		System.out.println("The parameters after training: " + model.params());
 		System.out.println("The length of model's parameters: " + model.params().length());
-		
-		
+
 		Evaluation eval = new Evaluation(outputNum);
 		System.out.println("Evaluate with test dataset");
 		while (testIter.hasNext()) {
@@ -407,17 +399,17 @@ public class GroupOscoreServer {
 
 			// Parse and handle request
 			byte[] payloadReq = exchange.getRequestPayload();
-			
+
 			final int floatSize = Float.SIZE / 8;
 			int numElements = payloadReq.length / floatSize;
-			
-			float[] modelReq = new float[numElements];			
+
+			float[] modelReq = new float[numElements];
 			for (int i = 0; i < numElements; i++) {
-				byte[] elementBytes = new byte[floatSize]; 
-				System.arraycopy(payloadReq, i*floatSize, elementBytes, 0, floatSize);
+				byte[] elementBytes = new byte[floatSize];
+				System.arraycopy(payloadReq, i * floatSize, elementBytes, 0, floatSize);
 				modelReq[i] = ByteBuffer.wrap(elementBytes).getFloat();
 			}
-						
+
 			System.out.print("Incoming payload: ");
 			for (int i = 0; i < numElements; i++) {
 				System.out.print(modelReq[i] + " ");
@@ -427,8 +419,9 @@ public class GroupOscoreServer {
 
 			/*
 			 * Get the updated model from the request message, and create a
-			 * INDArray to get TODO: add the flag or a message to identicate the
-			 * current round
+			 * INDArray to get
+			 * 
+			 * TODO: add the flag or a message to indicate the current round
 			 */
 			INDArray updatedModel = Nd4j.create(modelReq);
 			System.out.println(updatedModel.length());
@@ -439,23 +432,24 @@ public class GroupOscoreServer {
 				initFlag = true;
 			}
 			TrainModel(updatedModel, initFlag);
-			
+
 			float[] modelRes = model.params().toFloatVector();
-			
+
 			numElements = modelRes.length;
 			byte[] payloadRes = new byte[floatSize * numElements];
 			for (int i = 0; i < numElements; i++) {
 				byte[] elementBytes = ByteBuffer.allocate(floatSize).putFloat(modelRes[i]).array();
-				System.arraycopy(elementBytes, 0, payloadRes, i*floatSize, floatSize);
+				System.arraycopy(elementBytes, 0, payloadRes, i * floatSize, floatSize);
 			}
-						
+
 			System.out.println();
 
 			// Create response
 			Response r = new Response(ResponseCode.CHANGED);
 			r.setPayload(payloadRes);
+			r.setType(Type.NON);
 			exchange.respond(r);
-			
+
 		}
 
 	}

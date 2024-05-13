@@ -48,7 +48,6 @@ import org.eclipse.californium.oscore.group.MultiKey;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
@@ -89,9 +88,27 @@ public class GroupOscoreClient {
 	};
 
 	/**
-	 * Time to wait for replies to the multicast request
+	 * Time to wait before checking for the first time if responses from 80% of
+	 * the servers have been received.
 	 */
-	private static final int HANDLER_TIMEOUT = 30000;
+	private static final int CHECK1_TIMEOUT = 15000;
+
+	/**
+	 * Time to wait before checking for the second time if responses from 80% of
+	 * the servers have been received.
+	 */
+	private static final int CHECK2_TIMEOUT = 22000;
+
+	/**
+	 * Maximum time to wait for replies to the multicast request
+	 */
+	private static final int FINAL_TIMEOUT = 30000;
+
+	/**
+	 * Ratio of servers that need to have responded for the client to stop
+	 * listening at the check points
+	 */
+	private static final double SERVER_RESPONSE_RATIO = 0.8;
 
 	/**
 	 * Whether to use OSCORE or not.
@@ -181,6 +198,17 @@ public class GroupOscoreClient {
 		Security.insertProviderAt(EdDSA, 1);
 		// InstallCryptoProviders.generateCounterSignKey();
 
+		// Check command line arguments (integer representing how many servers
+		// are used)
+		int serverCount = 0;
+		if (args.length == 0) {
+			System.err.println(
+					"Please indicate number of servers with command line argument -X, where X is the number of servers");
+			System.exit(1);
+		} else {
+			serverCount = Integer.parseInt(args[0].replace("-", ""));
+		}
+
 		// Add private & public keys for sender & receiver(s)
 		clientPublicPrivateKey = new MultiKey(clientPublicKeyBytes, clientPrivateKeyBytes);
 
@@ -209,16 +237,15 @@ public class GroupOscoreClient {
 		client.setURI(requestURI);
 
 		for (int i = 0; i <= commuEpoch; i++) {
-			
+
 			System.out.println("=== Communication Epoch: " + i + " ===");
 			Request multicastRequest = Request.newPost();
-			
+
 			final int floatSize = Float.SIZE / 8;
 			int numElements;
 			float[] modelReq = null;
-			
 
-			// TODO: Set payload with model params
+			// TODO: Set payload with model params (done?)
 			if (i == 0) {
 				byte[] emptymodel = new byte[0];
 				multicastRequest.setPayload(emptymodel);
@@ -237,16 +264,16 @@ public class GroupOscoreClient {
 				} else {
 					System.err.println("Error: No model received");
 				}
-				
-				numElements =modelReq.length;
+
+				numElements = modelReq.length;
 				byte[] payloadReq = new byte[floatSize * numElements];
 				for (int j = 0; j < numElements; j++) {
 					byte[] elementBytes = ByteBuffer.allocate(floatSize).putFloat(modelReq[j]).array();
-					System.arraycopy(elementBytes, 0, payloadReq, j*floatSize, floatSize);
+					System.arraycopy(elementBytes, 0, payloadReq, j * floatSize, floatSize);
 				}
 
 				System.out.print("Outgoing request payload: ");
-				for (int j = 0; j <numElements; j++) {
+				for (int j = 0; j < numElements; j++) {
 					System.out.print(modelReq[i] + " ");
 				}
 				multicastRequest.setPayload(payloadReq);
@@ -285,22 +312,23 @@ public class GroupOscoreClient {
 			System.out.println("Sending from: " + client.getEndpoint().getAddress());
 			System.out.println(Utils.prettyPrint(multicastRequest));
 
+			// Create handler for responses
+			MultiCoapHandler handler = new MultiCoapHandler(serverCount);
+
 			// sends a multicast request
 			handler.clearResponses();
 			client.advanced(handler, multicastRequest);
-			while (handler.waitOn(HANDLER_TIMEOUT)) {
+			while (handler.waitOn(FINAL_TIMEOUT)) {
 				// Wait for responses
 			}
 
-			
-			
 			// Print received responses
 			List<CoapResponse> responses = handler.getResponses();
-			
+
 			if (responses.size() == 0) {
-				
+
 				System.out.println("ERROR: No Response from severs.");
-			
+
 			}
 			for (int j = 0; j < responses.size(); j++) {
 				CoapResponse resp = responses.get(j);
@@ -314,22 +342,22 @@ public class GroupOscoreClient {
 
 				byte[] payloadRes = resp.getPayload();
 				numElements = payloadRes.length / floatSize;
-				float[] modelRes = new float[numElements];	
-				
+				float[] modelRes = new float[numElements];
+
 				for (int k = 0; k < numElements; k++) {
-					byte[] elementBytes = new byte[floatSize]; 
-					System.arraycopy(payloadRes, k*floatSize, elementBytes, 0, floatSize);
+					byte[] elementBytes = new byte[floatSize];
+					System.arraycopy(payloadRes, k * floatSize, elementBytes, 0, floatSize);
 					modelRes[k] = ByteBuffer.wrap(elementBytes).getFloat();
 				}
-							
+
 				System.out.println();
-				
+
 				System.out.print("Incoming payload in response: ");
 				for (int k = 0; k < numElements; k++) {
 					System.out.print(modelRes[i] + " ");
 
 				}
-				
+
 				INDArray model = Nd4j.create(modelRes);
 				System.out.println(model.length());
 				modelsize = (int) model.length();
@@ -371,8 +399,6 @@ public class GroupOscoreClient {
 		commonCtx.setResponsesIncludePartialIV(false);
 	}
 
-	private static final MultiCoapHandler handler = new MultiCoapHandler();
-
 	/**
 	 * Handler for sending requests and receiving responses
 	 *
@@ -380,8 +406,13 @@ public class GroupOscoreClient {
 	private static class MultiCoapHandler implements CoapHandler {
 
 		List<CoapResponse> responses = new ArrayList<CoapResponse>();
-
 		private boolean on;
+		int serverCount = 0;
+		boolean keepWaiting = true;
+
+		public MultiCoapHandler(int serverCount) {
+			this.serverCount = serverCount;
+		}
 
 		public List<CoapResponse> getResponses() {
 			return responses;
@@ -394,7 +425,29 @@ public class GroupOscoreClient {
 		public synchronized boolean waitOn(long timeout) {
 			on = false;
 			try {
-				wait(timeout);
+
+				// First waiting period
+				wait(CHECK1_TIMEOUT);
+				if (responses.size() * SERVER_RESPONSE_RATIO > serverCount) {
+					keepWaiting = false;
+				}
+
+				// Second waiting period
+				if (keepWaiting) {
+					wait(CHECK2_TIMEOUT - CHECK1_TIMEOUT);
+				}
+				if (responses.size() * SERVER_RESPONSE_RATIO > serverCount) {
+					keepWaiting = false;
+				}
+
+				// Final waiting period
+				if (keepWaiting) {
+					wait(FINAL_TIMEOUT - CHECK2_TIMEOUT);
+				}
+				if (responses.size() * SERVER_RESPONSE_RATIO > serverCount) {
+					keepWaiting = false;
+				}
+
 			} catch (InterruptedException e) {
 				//
 			}
@@ -413,27 +466,13 @@ public class GroupOscoreClient {
 		public void onLoad(CoapResponse response) {
 			on();
 
+			// Add response to list of responses
 			responses.add(response);
 
-			// // System.out.println("Receiving to: "); //TODO
-			// System.out.println("Receiving from: " +
-			// response.advanced().getSourceContext().getPeerAddress());
-			//
-			// // Parse and handle response
-			// System.out.println(Utils.prettyPrint(response));
-			// System.out.println("Payload: " + response.getResponseText());
-			//
-			// byte[] payloadRes = response.getPayload();
-			// CBORObject arrayRes = CBORObject.DecodeFromBytes(payloadRes);
-			// double[] modelRes = new double[arrayRes.size()];
-			//
-			// System.out.print("Incoming payload in response: ");
-			// for (int i = 0; i < arrayRes.size(); i++) {
-			// modelRes[i] = arrayRes.get(i).AsDouble();
-			// System.out.print(modelRes[i] + " ");
-			//
-			// }
-			// System.out.println();
+			// Stop waiting if all servers have responded
+			if (responses.size() == serverCount) {
+				keepWaiting = false;
+			}
 		}
 
 		@Override
