@@ -329,6 +329,8 @@ public class GroupOscoreClient {
 			// Print received responses
 			List<CoapResponse> responses = handler.getResponses();
 
+			// FIXME: Don't do aggregation if too few servers responded (min 3)
+
 			if (responses.size() == 0) {
 
 				System.out.println("ERROR: No Response from severs.");
@@ -477,6 +479,9 @@ public class GroupOscoreClient {
 		@Override
 		public void onLoad(CoapResponse response) {
 			on();
+
+			// FIXME: Check that response is semantically valid. And only accept
+			// one response from each server.
 
 			// Add response to list of responses
 			responses.add(response);
