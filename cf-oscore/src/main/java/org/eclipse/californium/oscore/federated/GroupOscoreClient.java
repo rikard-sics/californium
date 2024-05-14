@@ -405,6 +405,11 @@ public class GroupOscoreClient {
 	 */
 	private static class MultiCoapHandler implements CoapHandler {
 
+		// Check amount of received responses periodically to stop early
+		private int interval1 = CHECK1_TIMEOUT;
+		private int interval2 = CHECK2_TIMEOUT - CHECK1_TIMEOUT;
+		private int interval3 = FINAL_TIMEOUT - CHECK2_TIMEOUT;
+
 		List<CoapResponse> responses = new ArrayList<CoapResponse>();
 		private boolean on;
 		int serverCount = 0;
@@ -426,25 +431,28 @@ public class GroupOscoreClient {
 			on = false;
 			try {
 
-				// First waiting period
-				wait(CHECK1_TIMEOUT);
-				if (responses.size() * SERVER_RESPONSE_RATIO > serverCount) {
+				// First waiting period (split into parts of 10 to stop early if
+				// all responses are received)
+				for (int i = 0; keepWaiting && i < 10; i++) {
+					wait(interval1 / 10);
+				}
+				if (responses.size() > serverCount * SERVER_RESPONSE_RATIO) {
 					keepWaiting = false;
 				}
 
 				// Second waiting period
-				if (keepWaiting) {
-					wait(CHECK2_TIMEOUT - CHECK1_TIMEOUT);
+				for (int i = 0; keepWaiting && i < 10; i++) {
+					wait(interval2 / 10);
 				}
-				if (responses.size() * SERVER_RESPONSE_RATIO > serverCount) {
+				if (responses.size() > serverCount * SERVER_RESPONSE_RATIO) {
 					keepWaiting = false;
 				}
 
 				// Final waiting period
-				if (keepWaiting) {
-					wait(FINAL_TIMEOUT - CHECK2_TIMEOUT);
+				for (int i = 0; keepWaiting && i < 10; i++) {
+					wait(interval3 / 10);
 				}
-				if (responses.size() * SERVER_RESPONSE_RATIO > serverCount) {
+				if (responses.size() > serverCount * SERVER_RESPONSE_RATIO) {
 					keepWaiting = false;
 				}
 
