@@ -276,6 +276,10 @@ public class GroupOscoreClient {
 				for (int j = 0; j < numElements; j++) {
 					System.out.print(modelReq[i] + " ");
 				}
+				if (payloadReq.length > MAX_MSG_SIZE) {
+					System.err.println("Error: Payload exceeds maximum messages size (" + MAX_MSG_SIZE + " bytes)");
+				}
+
 				multicastRequest.setPayload(payloadReq);
 				models.clear();
 

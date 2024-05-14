@@ -443,6 +443,9 @@ public class GroupOscoreServer {
 			}
 
 			System.out.println();
+			if (payloadRes.length > MAX_MSG_SIZE) {
+				System.err.println("Error: Payload exceeds maximum messages size (" + MAX_MSG_SIZE + " bytes)");
+			}
 
 			// Create response
 			Response r = new Response(ResponseCode.CHANGED);
