@@ -340,6 +340,7 @@ public class GroupOscoreServer {
 		System.out.println("==================");
 
 		server.start();
+		System.out.println("CoAP server started on port: " + unicastPort);
 	}
 
 	private static void TrainModel(INDArray updateModel, boolean initFlag) {
