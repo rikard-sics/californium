@@ -79,6 +79,7 @@ import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.DropoutLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -330,8 +331,11 @@ public class GroupOscoreServer {
 		System.out.println("Build model....");
 		int seed = 123;
 		conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.RELU).weightInit(WeightInit.XAVIER)
-				.l2(1e-4).list().layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).build())
-				.layer(new DenseLayer.Builder().nIn(8).nOut(3).build())
+				.l2(1e-4).list()
+				.layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).hasLayerNorm(true).build())
+				.layer(new DropoutLayer.Builder(0.1).build())
+				.layer(new DenseLayer.Builder().nIn(8).nOut(3).hasLayerNorm(true).build())
+				.layer(new DropoutLayer.Builder(0.1).build())
 				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.SIGMOID).nIn(3)
 						.nOut(outputNum).build())
 				.build();
