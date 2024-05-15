@@ -25,6 +25,8 @@ import java.util.Arrays;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.eclipse.californium.core.Utils;
+import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.cose.AlgorithmID;
@@ -57,6 +59,8 @@ public class OSCoreCtx {
 	 * The logger
 	 */
 	private static final Logger LOGGER = LoggerFactory.getLogger(OSCoreCtx.class);
+
+	public static boolean EXTRA_LOGGING = false;
 
 	private static final byte ZERO = 0;
 	private static final byte ONE = 1;
@@ -212,6 +216,17 @@ public class OSCoreCtx {
 	 */
 	public OSCoreCtx(byte[] master_secret, boolean client, AlgorithmID alg, byte[] sender_id, byte[] recipient_id,
 			AlgorithmID kdf, Integer replay_size, byte[] master_salt, byte[] contextId, int maxUnfragmentedSize) throws OSException {
+
+		if (EXTRA_LOGGING == true) {
+			System.out.println("===");
+			System.out.println("Deriving new OSCORE Security Context");
+			System.out.println("Master Secret: " + Utils.toHexString(master_secret));
+			System.out.println("Master Salt: " + Utils.toHexString(master_salt));
+			System.out.println("Sender ID: " + Utils.toHexString(sender_id));
+			System.out.println("Recipient ID: " + Utils.toHexString(recipient_id));
+			System.out.println("ID Context: " + Utils.toHexString(contextId));
+			System.out.println("===");
+		}
 
 		if (alg == null) {
 			this.common_alg = AlgorithmID.AES_CCM_16_64_128;

@@ -139,6 +139,10 @@ public class CommandLineClient {
 		System.out.println("Nonce Length: " + nonceLength);
 		System.out.println("===");
 
+		if (debugMode) {
+			OSCoreCtx.EXTRA_LOGGING = true;
+		}
+
 		// Create and set OSCORE Security Context
 		OSCoreCtx ctx = null;
 		try {
