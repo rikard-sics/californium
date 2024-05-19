@@ -547,11 +547,11 @@ public class SideProcessor {
 	    	
 	    	// TODO: Check whether the authentication credential is good to use in the context of this EDHOC session
 		}		
-		else if (trustModel == Constants.TRUST_MODEL_STRICT) {
+		else if (trustModel == Constants.TRUST_MODEL_NO_LEARNING) {
 				return peerCredentialCBOR;
 		}
 
-		// TODO: Add support for the alternative trust models
+		// TODO: Add support for the LEARNING trust model
     			
 		return peerCredentialCBOR;
 	}
