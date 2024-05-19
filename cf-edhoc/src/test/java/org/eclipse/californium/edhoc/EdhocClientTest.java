@@ -89,7 +89,7 @@ public class EdhocClientTest {
     private static int idCredType = Constants.ID_CRED_TYPE_X5T;
 
     // The trust model used to validate authentication credentials of other peers
-    private static int trustModel = Constants.TRUST_MODEL_STRICT;
+    private static int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
     
     // Authentication credentials of this peer
     //
