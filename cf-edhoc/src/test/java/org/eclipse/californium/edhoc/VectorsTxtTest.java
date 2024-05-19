@@ -217,7 +217,7 @@ public class VectorsTxtTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
-		int trustModel = Constants.TRUST_MODEL_STRICT;
+		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();

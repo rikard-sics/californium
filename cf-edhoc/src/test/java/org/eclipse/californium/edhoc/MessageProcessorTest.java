@@ -123,7 +123,7 @@ public class MessageProcessorTest {
 
 		// Create the session for the Initiator (with only the minimal set of information required for this test)
 		boolean initiator = true;
-		int trustModel = Constants.TRUST_MODEL_STRICT;
+		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		HashMapCtxDB db = new HashMapCtxDB();
 		EdhocSession sessionInitiator = new EdhocSession(initiator, true, method, connectionIdentifierInitiator,
 														 keyPairsI, idCredsI, credsI, supportedCipherSuites,
@@ -355,7 +355,7 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
-		int trustModel = Constants.TRUST_MODEL_STRICT;
+		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
@@ -537,7 +537,7 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
-		int trustModel = Constants.TRUST_MODEL_STRICT;
+		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
@@ -618,7 +618,7 @@ public class MessageProcessorTest {
 		boolean supportCombinedRequest = false;
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		
-		int trustModel = Constants.TRUST_MODEL_STRICT;
+		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
 		
 		// Note: the actual EDHOC message 1 starts with 0x00. The byte 0xf5 (CBOR simple value True) is prepended,
@@ -759,7 +759,7 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
-		int trustModel = Constants.TRUST_MODEL_STRICT;
+		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
@@ -900,7 +900,7 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
-		int trustModel = Constants.TRUST_MODEL_STRICT;
+		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
@@ -1075,7 +1075,7 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
-		int trustModel = Constants.TRUST_MODEL_STRICT;
+		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
@@ -1279,7 +1279,7 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
-		int trustModel = Constants.TRUST_MODEL_STRICT;
+		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
@@ -1455,7 +1455,7 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
-		int trustModel = Constants.TRUST_MODEL_STRICT;
+		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
@@ -1609,7 +1609,7 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
-		int trustModel = Constants.TRUST_MODEL_STRICT;
+		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
@@ -1744,7 +1744,7 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
-		int trustModel = Constants.TRUST_MODEL_STRICT;
+		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
@@ -1821,7 +1821,7 @@ public class MessageProcessorTest {
 		boolean supportCombinedRequest = false;
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		
-		int trustModel = Constants.TRUST_MODEL_STRICT;
+		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
 		
 				
@@ -1924,7 +1924,7 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
-		int trustModel = Constants.TRUST_MODEL_STRICT;
+		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 				
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
@@ -2065,7 +2065,7 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
-		int trustModel = Constants.TRUST_MODEL_STRICT;
+		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
@@ -2244,7 +2244,7 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
-		int trustModel = Constants.TRUST_MODEL_STRICT;
+		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 				
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
@@ -2453,7 +2453,7 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
-		int trustModel = Constants.TRUST_MODEL_STRICT;
+		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
@@ -2631,7 +2631,7 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
-		int trustModel = Constants.TRUST_MODEL_STRICT;
+		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
@@ -2784,7 +2784,7 @@ public class MessageProcessorTest {
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
-		int trustModel = Constants.TRUST_MODEL_STRICT;
+		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
 		HashMapCtxDB db = new HashMapCtxDB();
