@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
@@ -117,9 +118,9 @@ public class GroupOscoreServer {
 	/**
 	 * Multicast address to listen to (use the first line to set a custom one).
 	 */
-	// static final InetAddress multicastIP = new
+	// static InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
+	static InetAddress multicastIP = CoAP.MULTICAST_IPV4;
 
 	// Use IPv4
 	private static boolean ipv4 = true;
@@ -209,18 +210,51 @@ public class GroupOscoreServer {
 		// Set sender & receiver keys for countersignatures
 		clientPublicKey = new MultiKey(clientPublicKeyBytes);
 
-		// Check command line arguments (integer representing a server to run)
-		MultiKey serverPublicPrivateKey = null;
-		int serverNr;
-		if (args.length == 0) {
-			serverNr = 0;
-		} else {
-			serverNr = Integer.parseInt(args[0].replace("-", ""));
+		// Parse command line arguments
+		HashMap<String, String> cmdArgs = new HashMap<>();
+		if (args.length % 2 != 0) {
+			printHelp();
 		}
-		unicastPort = unicastPort + serverNr;
-		sid = Credentials.serverSenderIds.get(serverNr);
-		serverPublicKey = Credentials.serverPublicKeys.get(serverNr);
-		serverPrivateKey = Credentials.serverPrivateKeys.get(serverNr);
+
+		for (int i = 0; i < args.length; i += 2) {
+
+			if (args[i + 1].toLowerCase().equals("null")) {
+				;
+			} else {
+				cmdArgs.put(args[i], args[i + 1]);
+			}
+		}
+
+		if (cmdArgs.containsValue("--help")) {
+			printHelp();
+		}
+
+		int serverCount = -1;
+		int serverId = -1;
+		String multicastStr = null;
+		try {
+			serverId = Integer.parseInt(cmdArgs.get("--server-id"));
+			serverCount = Integer.parseInt(cmdArgs.get("--server-count"));
+			multicastStr = cmdArgs.get("--multicast-ip");
+
+		} catch (Exception e) {
+			printHelp();
+		}
+
+		if (multicastStr != null) {
+			multicastIP = new InetSocketAddress(multicastStr, 0).getAddress();
+		}
+
+		if (serverCount == -1 || serverId == -1) {
+			printHelp();
+		}
+		// End parse command line arguments
+
+		MultiKey serverPublicPrivateKey = null;
+		unicastPort = unicastPort + serverId;
+		sid = Credentials.serverSenderIds.get(serverId);
+		serverPublicKey = Credentials.serverPublicKeys.get(serverId);
+		serverPrivateKey = Credentials.serverPrivateKeys.get(serverId);
 		serverPublicPrivateKey = new MultiKey(serverPublicKey, serverPrivateKey);
 		System.out.println("Starting with SID " + StringUtil.byteArray2Hex(sid));
 
@@ -264,6 +298,8 @@ public class GroupOscoreServer {
 		System.out.println("Unicast IP: " + endpoint.getAddress().getHostString());
 		System.out.println("Unicast port: " + endpoint.getAddress().getPort());
 		System.out.println("Multicast port: " + listenPort);
+		System.out.println("Server ID: " + serverId);
+		System.out.println("Total server count: " + serverCount);
 		System.out.print("CoAP resources: ");
 		for (Resource res : server.getRoot().getChildren()) {
 			System.out.print(res.getURI() + " ");
@@ -289,7 +325,7 @@ public class GroupOscoreServer {
 
 		// Load the dataset:
 		RecordReader rr = new CSVRecordReader(numLinesToSkip, delimiter);
-		rr.initialize(new FileSplit(new File(Credentials.serverDatasets.get(serverNr))));
+		rr.initialize(new FileSplit(new File(Credentials.serverDatasets.get(serverId))));
 		Iter = new RecordReaderDataSetIterator(rr, batchSize, labelIndex, numLabelClasses);
 
 		List<DataSet> ret = new ArrayList<>();
@@ -644,5 +680,13 @@ public class GroupOscoreServer {
 		if (multicastConnector != null && connector != null) {
 			connector.addMulticastReceiver(multicastConnector);
 		}
+	}
+
+	private static void printHelp() {
+		System.out.println("Arguments:");
+		System.out.println("--multicast-ip: Multicast IP to listen to [optional]");
+		System.out.println("--server-count: Total number of servers");
+		System.out.println("--server-id: ID for this server");
+		System.exit(1);
 	}
 }

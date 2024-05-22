@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.eclipse.californium.core.CoapClient;
@@ -198,16 +199,39 @@ public class GroupOscoreClient {
 		Security.insertProviderAt(EdDSA, 1);
 		// InstallCryptoProviders.generateCounterSignKey();
 
-		// Check command line arguments (integer representing how many servers
-		// are used)
-		int serverCount = 0;
-		if (args.length == 0) {
-			System.err.println(
-					"Please indicate number of servers with command line argument -X, where X is the number of servers");
-			System.exit(1);
-		} else {
-			serverCount = Integer.parseInt(args[0].replace("-", ""));
+		// Parse command line arguments
+		HashMap<String, String> cmdArgs = new HashMap<>();
+		if (args.length % 2 != 0) {
+			printHelp();
 		}
+
+		for (int i = 0; i < args.length; i += 2) {
+
+			if (args[i + 1].toLowerCase().equals("null")) {
+				;
+			} else {
+				cmdArgs.put(args[i], args[i + 1]);
+			}
+		}
+
+		if (cmdArgs.containsValue("--help")) {
+			printHelp();
+		}
+
+		int serverCount = -1;
+		try {
+			serverCount = Integer.parseInt(cmdArgs.get("--server-count"));
+			requestURI = cmdArgs.getOrDefault("--uri", requestURI);
+
+		} catch (Exception e) {
+			printHelp();
+		}
+
+		if (serverCount == -1) {
+			printHelp();
+		}
+
+		// End parse command line arguments
 
 		// Add private & public keys for sender & receiver(s)
 		clientPublicPrivateKey = new MultiKey(clientPublicKeyBytes, clientPrivateKeyBytes);
@@ -303,6 +327,7 @@ public class GroupOscoreClient {
 			System.out.println("Request destination port: " + destinationPort);
 			System.out.println("Request method: " + multicastRequest.getCode());
 			System.out.println("Outgoing port: " + endpoint.getAddress().getPort());
+			System.out.println("Total server count: " + serverCount);
 			System.out.println("==================");
 
 			try {
@@ -496,6 +521,13 @@ public class GroupOscoreClient {
 		public void onError() {
 			System.err.println("error");
 		}
+	}
+
+	private static void printHelp() {
+		System.out.println("Arguments: ");
+		System.out.println("--url: Destination URL for requests [optional]");
+		System.out.println("--server-count: Total number of servers");
+		System.exit(1);
 	}
 
 }
