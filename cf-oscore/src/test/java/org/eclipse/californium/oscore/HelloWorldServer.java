@@ -49,8 +49,13 @@ public class HelloWorldServer {
 				MAX_UNFRAGMENTED_SIZE);
 		db.addContext(uriLocal, ctx);
 		OSCoreCoapStackFactory.useAsDefault(db);
+		KudosRederivation.EXTRA_LOGGING = true;
 
+		ctx.setKudosContextRederivationEnabled(true);
 		ctx.setContextRederivationEnabled(true);
+		Decryptor.EXTRA_LOGGING = true;
+		Encryptor.EXTRA_LOGGING = true;
+		OSCoreCtx.EXTRA_LOGGING = true;
 
 		final CoapServer server = new CoapServer(5683);
 
@@ -63,12 +68,30 @@ public class HelloWorldServer {
 				r.setPayload("Hello Resource");
 				exchange.respond(r);
 			}
+
+			@Override
+			public void handlePOST(CoapExchange exchange) {
+				System.out.println("Accessing hello resource");
+				Response r = new Response(ResponseCode.CONTENT);
+				r.setPayload("Hello Resource");
+				exchange.respond(r);
+			}
 		};
 
 		OSCoreResource hello1 = new OSCoreResource("1", true) {
 
 			@Override
 			public void handleGET(CoapExchange exchange) {
+				System.out.println("Accessing hello/1 resource");
+				Response r = new Response(ResponseCode.CONTENT);
+				r.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
+				r.setPayload("Hello World!");
+				exchange.respond(r);
+				server.destroy();
+			}
+
+			@Override
+			public void handlePOST(CoapExchange exchange) {
 				System.out.println("Accessing hello/1 resource");
 				Response r = new Response(ResponseCode.CONTENT);
 				r.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);

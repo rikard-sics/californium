@@ -37,6 +37,8 @@ public class OscoreOptionEncoder {
 	private byte[] partialIV;
 	private byte[] kid;
 
+	private byte[] nonce;
+
 	/**
 	 * Retrieve the encoded bytes of the OSCORE option.
 	 * 
@@ -57,11 +59,13 @@ public class OscoreOptionEncoder {
 	 */
 	private byte[] encode() {
 		int firstByte = 0x00;
+		int secondByte = 0x00;
 		ByteArrayOutputStream bRes = new ByteArrayOutputStream();
 
 		boolean hasContextID = this.idContext != null;
 		boolean hasPartialIV = this.partialIV != null;
 		boolean hasKid = this.kid != null;
+		boolean hasNonce = this.nonce != null;
 
 		// If the Context ID should be included, set its bit
 		if (hasContextID) {
@@ -73,12 +77,22 @@ public class OscoreOptionEncoder {
 			firstByte = firstByte | 0x08; // Set the KID bit
 		}
 
+		// If the KUDOS nonce should be included, set the extension and d bits
+		if (hasNonce) {
+			firstByte = firstByte | 0x80; // Set the extension bit
+			secondByte = secondByte | 0x01; // Set the d bit
+		}
+
 		// If the Partial IV should be included, encode it
 		if (hasPartialIV) {
 			byte[] partialIV = this.partialIV;
 			firstByte = firstByte | (partialIV.length & 0x07);
 
 			bRes.write(firstByte);
+			if (hasNonce) {
+				bRes.write(secondByte);
+			}
+
 			try {
 				bRes.write(partialIV);
 			} catch (IOException e) {
@@ -93,6 +107,17 @@ public class OscoreOptionEncoder {
 			try {
 				bRes.write(this.idContext.length);
 				bRes.write(this.idContext);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		// Encode the x byte and KUDOS nonce if to be included
+		if (hasNonce) {
+			int x = nonce.length - 1;
+			try {
+				bRes.write(x);
+				bRes.write(this.nonce);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -187,4 +212,22 @@ public class OscoreOptionEncoder {
 		this.kid = kid;
 	}
 
+	/**
+	 * Set the KUDOS nonce
+	 * 
+	 * @param nonce the KUDOS nonce to set
+	 */
+	public void setNonce(byte[] nonce) {
+		encoded = false;
+		this.nonce = nonce;
+	}
+
+	/**
+	 * Retrieve the set KUDOS nonce
+	 * 
+	 * @return the KUDOS nonce
+	 */
+	public byte[] getNonce() {
+		return nonce;
+	}
 }

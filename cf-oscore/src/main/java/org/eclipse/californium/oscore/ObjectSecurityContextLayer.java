@@ -131,7 +131,7 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 				}
 
 				// Initiate context re-derivation procedure if flag is set
-				if (ctx.getContextRederivationPhase() == PHASE.CLIENT_INITIATE) {
+				if (ctx.getContextRederivationEnabled() && ctx.getContextRederivationPhase() == PHASE.CLIENT_INITIATE) {
 					ContextRederivation.setLostContext(ctxDb, uri);
 					// send dummy request before to rederive the new context
 					// and then send the original request using this new context

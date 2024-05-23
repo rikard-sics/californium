@@ -18,6 +18,7 @@
 package org.eclipse.californium.oscore;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.HashMap;
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResponse;
@@ -73,6 +74,9 @@ public class CommandLineClient {
 	static String defaultUseAppendixB2 = "false";
 	static boolean useAppendixB2;
 
+	static String defaultUseKudos = "false";
+	static boolean useKudos;
+
 	static String defaultNonceLength = "8";
 	static int nonceLength;
 
@@ -109,6 +113,7 @@ public class CommandLineClient {
 			debugMode = Boolean.parseBoolean(cmdArgs.getOrDefault("--debug", defaultDebugMode));
 			useOscore = Boolean.parseBoolean(cmdArgs.getOrDefault("--oscore", defaultUseOscore));
 			useAppendixB2 = Boolean.parseBoolean(cmdArgs.getOrDefault("--appendixb2", defaultUseAppendixB2));
+			useKudos = Boolean.parseBoolean(cmdArgs.getOrDefault("--kudos", defaultUseKudos));
 			nonceLength = Integer.parseInt(cmdArgs.getOrDefault("--nonce-len", defaultNonceLength));
 		} catch (Exception e) {
 			printHelp();
@@ -136,6 +141,7 @@ public class CommandLineClient {
 		System.out.println("Debug Mode: " + debugMode);
 		System.out.println("Use OSCORE: " + useOscore);
 		System.out.println("Use Appendix B.2: " + useAppendixB2);
+		System.out.println("Use KUDOS: " + useKudos);
 		System.out.println("Nonce Length: " + nonceLength);
 		System.out.println("===");
 
@@ -162,6 +168,7 @@ public class CommandLineClient {
 		OSCoreCoapStackFactory.useAsDefault(db);
 
 		ContextRederivation.setSegmentLength(nonceLength);
+		KudosRederivation.NONCE_LENGTH = nonceLength;
 
 		if (debugMode) {
 			System.out.println("RID: " + Utils.toHexString(rid));
@@ -173,9 +180,43 @@ public class CommandLineClient {
 			Encryptor.EXTRA_LOGGING = true;
 			Decryptor.EXTRA_LOGGING = true;
 			ContextRederivation.EXTRA_LOGGING = true;
+			KudosRederivation.EXTRA_LOGGING = true;
 		}
 
-		CoapClient c = new CoapClient(uri);
+		CoapClient c;
+		if (useKudos) {
+			ctx.setKudosContextRederivationEnabled(true);
+			System.out.println("[KUDOS] Running KUDOS with server");
+			try {
+				// Set up the client side context to be ready for using KUDOS
+				// (practically derive CTX_1)
+				ctx.setContextRederivationPhase(PHASE.KUDOS_CLIENT_INITIATE);
+				KudosRederivation.initiateRequestKudos(db, uri);
+			} catch (OSException e) {
+				System.err.println("Failed to initiate KUDOS procedure in client");
+				e.printStackTrace();
+			}
+
+			// Now proceed to send a request (which will be KUDOS Request #1)
+			URI newUri = URI.create(uri);
+			int port = newUri.getPort() == -1 ? 5683 : newUri.getPort();
+			String kudosUri = newUri.getScheme() + "://" + newUri.getHost() + ":" + port + "/.well-known/kudos";
+			System.out.println("[KUDOS] Request Target: " + kudosUri);
+
+			c = new CoapClient(kudosUri);
+			Request req = new Request(Code.GET);
+			req.setURI(kudosUri);
+			if (useOscore) {
+				req.getOptions().setOscore(Bytes.EMPTY);
+			}
+			CoapResponse resp = c.advanced(req);
+
+			System.out.println(Utils.prettyPrint(resp));
+			System.out.println("Payload bytes: " + Utils.toHexString(resp.getPayload()));
+			ctx.setKudosContextRederivationEnabled(false);
+		}
+
+		c = new CoapClient(uri);
 
 		// Send normal request
 		for (int i = 0; i < requestCount; i++) {
@@ -210,7 +251,8 @@ public class CommandLineClient {
 		System.out.println("--debug: True/False - Enable or disable debug printing");
 		System.out.println("--oscore: True/False - Use OSCORE");
 		System.out.println("--appendixb2: True/False - Initiate the Appendix B.2 procedure");
-		System.out.println("--nonce-len: Length of N1 and N2 nonces");
+		System.out.println("--kudos: True/False - Initiate the KUDOS procedure");
+		System.out.println("--nonce-len: Length of nonces for Appendix B.2 and KUDOS");
 		System.exit(1);
 	}
 

@@ -43,9 +43,15 @@ public class OscoreOptionDecoder {
 	private byte[] partialIV;
 	private byte[] kid;
 
+	private byte[] nonce;
+
 	private int n;
 	private int k;
 	private int h;
+
+	private int m;
+	private int d;
+	private int x;
 
 	/**
 	 * Initialize the OSCORE option with a certain array of bytes and decode
@@ -94,11 +100,23 @@ public class OscoreOptionDecoder {
 		int n = flagByte & 0x07;
 		int k = (flagByte & 0x08) >> 3;
 		int h = (flagByte & 0x10) >> 4;
+		int extension = (flagByte & 0x80);
 
 		byte[] partialIV = null;
 		byte[] kid = null;
 		byte[] kidContext = null;
+		byte[] nonce = null;
 		int index = 1;
+
+		int d = 0;
+		int m = 0;
+		int x = 0;
+		if (extension != 0) {
+			byte flagByte2 = total[1];
+			d = (flagByte2 & 0x01);
+
+			index = 2;
+		}
 
 		try {
 			// Parsing Partial IV
@@ -126,6 +144,21 @@ public class OscoreOptionDecoder {
 		}
 
 		try {
+			// Parsing x byte and KUDOS nonce
+			if (d != 0) {
+				x = total[index++];
+				m = (x & 0x0F) + 1;
+
+				nonce = Arrays.copyOfRange(total, index, index + m);
+
+				index += m;
+			}
+		} catch (Exception e) {
+			LOGGER.error("Failed to parse KUDOS nonce in OSCORE option.");
+			throw new CoapOSException(ErrorDescriptions.FAILED_TO_DECODE_COSE, ResponseCode.BAD_OPTION);
+		}
+
+		try {
 			// Parsing KID
 			if (k != 0) {
 				kid = Arrays.copyOfRange(total, index, total.length);
@@ -146,9 +179,13 @@ public class OscoreOptionDecoder {
 		this.n = n;
 		this.k = k;
 		this.h = h;
+		this.m = m;
+		this.d = d;
+		this.x = x;
 		this.partialIV = partialIV;
 		this.kid = kid;
 		this.idContext = kidContext;
+		this.nonce = nonce;
 	}
 
 	/**
@@ -180,6 +217,15 @@ public class OscoreOptionDecoder {
 		}
 
 		return new DatagramReader(partialIV, false).read(partialIV.length * Byte.SIZE);
+	}
+
+	/**
+	 * Retrieve the KUDOS nonce
+	 * 
+	 * @return the KUDOS nonce
+	 */
+	public byte[] getNonce() {
+		return nonce;
 	}
 
 	/**
@@ -216,6 +262,33 @@ public class OscoreOptionDecoder {
 	 */
 	public int getH() {
 		return h;
+	}
+
+	/**
+	 * Return m value from KUDOS x byte
+	 * 
+	 * @return the m value (nonce length -1)
+	 */
+	public int getM() {
+		return m - 1;
+	}
+
+	/**
+	 * Return d value (KUDOS flag)
+	 * 
+	 * @return the d value (KUDOS flag)
+	 */
+	public int getD() {
+		return d;
+	}
+
+	/**
+	 * Return KUDOS x byte
+	 * 
+	 * @return the KUDOS x byte
+	 */
+	public byte getX() {
+		return (byte) x;
 	}
 
 }

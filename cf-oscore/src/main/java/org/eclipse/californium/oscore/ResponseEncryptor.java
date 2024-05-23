@@ -62,6 +62,12 @@ public class ResponseEncryptor extends Encryptor {
 			throw new OSException(ErrorDescriptions.CTX_NULL);
 		}
 
+		// Perform KUDOS context re-derivation procedure if ongoing
+		if (ctx.getContextRederivationPhase() == ContextRederivation.PHASE.KUDOS_SERVER_PHASE2) {
+			ctx = KudosRederivation.outgoingResponse(db, ctx);
+			newPartialIV = true;
+		}
+
 		// Perform context re-derivation procedure if ongoing
 		try {
 			ctx = ContextRederivation.outgoingResponse(db, ctx);

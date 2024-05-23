@@ -87,6 +87,20 @@ public class RequestDecryptor extends Decryptor {
 			contextID = kidContext.GetByteString();
 		}
 
+		// Check if KUDOS context re-derivation is ongoing and mark in context if so
+		OscoreOptionDecoder decoder = new OscoreOptionDecoder(request.getOptions().getOscore());
+		if (decoder.getD() != 0 && ctx.getKudosContextRederivationEnabled()) {
+			ctx.setContextRederivationPhase(ContextRederivation.PHASE.KUDOS_SERVER_PHASE1);
+			ctx.setKudosN1(decoder.getNonce());
+			ctx.setKudosX1(decoder.getX());
+			try {
+				ctx = KudosRederivation.incomingRequest(db, ctx, contextID, rid);
+			} catch (OSException e) {
+				LOGGER.error(ErrorDescriptions.CONTEXT_REGENERATION_FAILED);
+				throw new CoapOSException(ErrorDescriptions.CONTEXT_REGENERATION_FAILED, ResponseCode.BAD_REQUEST);
+			}
+		}
+		
 		// Perform context re-derivation procedure if triggered or ongoing
 		try {
 			ctx = ContextRederivation.incomingRequest(db, ctx, contextID, rid);
