@@ -153,6 +153,7 @@ public abstract class Decryptor {
 				System.out.println("Response");
 			}
 
+			System.out.println("Master Secret: " + Utils.toHexString(ctx.getMasterSecret()));
 			System.out.println("Recipient Key: " + Utils.toHexString(key));
 			System.out.println("External AAD: " + Utils.toHexString(aad));
 			System.out.println("Nonce: " + Utils.toHexString(nonce));

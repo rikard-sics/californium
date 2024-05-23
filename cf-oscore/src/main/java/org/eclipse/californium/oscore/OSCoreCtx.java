@@ -26,7 +26,6 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.eclipse.californium.core.Utils;
-import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.cose.AlgorithmID;
@@ -91,6 +90,11 @@ public class OSCoreCtx {
 
 	private Code CoAPCode = null;
 
+	private byte[] kudosN1;
+	private byte kudosX1;
+	private byte[] kudosN2;
+	private byte kudosX2;
+
 	/**
 	 * Include the context id in messages generated using this context. This is
 	 * generally optional and can be controlled by the application.
@@ -122,6 +126,14 @@ public class OSCoreCtx {
 	 * See https://tools.ietf.org/html/rfc8613#appendix-B.2
 	 */
 	private boolean contextRederivationEnabled;
+
+	/**
+	 * Indicates if this client/server shall support the context KUDOS
+	 * re-derivation procedure.
+	 * 
+	 * See https://datatracker.ietf.org/doc/draft-ietf-core-oscore-key-update/
+	 */
+	private boolean kudosContextRederivationEnabled;
 
 	/**
 	 * When using outer block-wise with OSCORE a proxy can maliciously inject
@@ -602,6 +614,26 @@ public class OSCoreCtx {
 	}
 
 	/**
+	 * Set the flag controlling whether or not this context supports the KUDOS
+	 * context re-derivation procedure.
+	 * 
+	 * @param kudosContextRederivationEnabled
+	 */
+	public void setKudosContextRederivationEnabled(boolean kudosContextRederivationEnabled) {
+		this.kudosContextRederivationEnabled = kudosContextRederivationEnabled;
+	}
+
+	/**
+	 * Get the flag controlling whether or not this context supports the KUDOS
+	 * re-derivation procedure.
+	 * 
+	 * @return the kudosContextRederivationEnabled
+	 */
+	public boolean getKudosContextRederivationEnabled() {
+		return kudosContextRederivationEnabled;
+	}
+
+	/**
 	 * Gets the current value of the MAX_UNFRAGMENTED_SIZE parameter. It is used
 	 * to prevent malicious behaviour by a proxy when using block-wise.
 	 * 
@@ -972,4 +1004,55 @@ public class OSCoreCtx {
 		return nonceHandover;
 	}
 
+	/**
+	 * Set KUDOS N1 value
+	 * 
+	 * @param the KUDOS nonce n1
+	 */
+	public void setKudosN1(byte[] n1) {
+		this.kudosN1 = n1;
+	}
+
+	/**
+	 * Get a previously used KUDOS N1 value
+	 * 
+	 * @return the KUDOS nonce N1
+	 */
+	public byte[] getKudosN1() {
+		return kudosN1;
+	}
+
+	/**
+	 * Set KUDOS N2 value
+	 * 
+	 * @param the KUDOS nonce n2
+	 */
+	public void setKudosN2(byte[] n2) {
+		this.kudosN2 = n2;
+	}
+
+	/**
+	 * Get a previously used KUDOS N2 value
+	 * 
+	 * @return the KUDOS nonce N2
+	 */
+	public byte[] getKudosN2() {
+		return kudosN2;
+	}
+
+	public byte getKudosX1() {
+		return kudosX1;
+	}
+
+	public void setKudosX1(byte b) {
+		this.kudosX1 = b;
+	}
+
+	public void setKudosX2(byte x) {
+		this.kudosX2 = x;
+	}
+
+	public byte getKudosX2() {
+		return kudosX2;
+	}
 }

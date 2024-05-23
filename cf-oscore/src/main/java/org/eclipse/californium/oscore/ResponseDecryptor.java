@@ -25,10 +25,12 @@ import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.Token;
+import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.network.serialization.UdpDataParser;
 import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.elements.util.DatagramReader;
@@ -85,6 +87,21 @@ public class ResponseDecryptor extends Decryptor {
 		byte[] contextID = null;
 		if (kidContext != null) {
 			contextID = kidContext.GetByteString();
+		}
+
+		// Check if KUDOS context re-derivation is ongoing and mark in context
+		OscoreOptionDecoder decoder = new OscoreOptionDecoder(response.getOptions().getOscore());
+		if (decoder.getD() != 0 && ctx.getContextRederivationPhase() == ContextRederivation.PHASE.KUDOS_CLIENT_PHASE1) {
+			ctx.setContextRederivationPhase(ContextRederivation.PHASE.KUDOS_CLIENT_PHASE2);
+			ctx.setKudosN2(decoder.getNonce());
+			ctx.setKudosX2(decoder.getX());
+
+			try {
+				ctx = KudosRederivation.incomingResponse(db, ctx, contextID);
+			} catch (OSException e) {
+				LOGGER.error(ErrorDescriptions.CONTEXT_REGENERATION_FAILED);
+				throw new CoapOSException(ErrorDescriptions.CONTEXT_REGENERATION_FAILED, ResponseCode.BAD_REQUEST);
+			}
 		}
 
 		// Perform context re-derivation procedure if ongoing

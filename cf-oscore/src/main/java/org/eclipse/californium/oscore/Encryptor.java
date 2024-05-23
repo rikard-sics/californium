@@ -124,6 +124,7 @@ public abstract class Encryptor {
 					System.out.println("Response");
 				}
 
+				System.out.println("Master Secret: " + Utils.toHexString(ctx.getMasterSecret()));
 				System.out.println("Sender Key: " + Utils.toHexString(key));
 				System.out.println("External AAD: " + Utils.toHexString(aad));
 				System.out.println("Nonce: " + Utils.toHexString(nonce));
@@ -197,6 +198,12 @@ public abstract class Encryptor {
 		optionEncoder.setPartialIV(ctx.getSenderSeq());
 		optionEncoder.setKid(ctx.getSenderId());
 
+		// Handle client side operations for KUDOS (sending of Request #1) by
+		// setting the nonce N1 in the request
+		if (ctx.getContextRederivationPhase() == PHASE.KUDOS_CLIENT_PHASE1) {
+			optionEncoder.setNonce(ctx.getKudosN1());
+		}
+
 		return optionEncoder.getBytes();
 	}
 
@@ -216,6 +223,12 @@ public abstract class Encryptor {
 		}
 		if (newPartialIV) {
 			optionEncoder.setPartialIV(ctx.getSenderSeq());
+		}
+
+		// KUDOS: Place Nonce N2 in the response
+		if (ctx.getContextRederivationPhase() == ContextRederivation.PHASE.KUDOS_SERVER_PHASE3) {
+			optionEncoder.setNonce(ctx.getKudosN2());
+			ctx.setContextRederivationPhase(ContextRederivation.PHASE.INACTIVE);
 		}
 
 		return optionEncoder.getBytes();

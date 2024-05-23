@@ -249,6 +249,8 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		String normalized = null;
 		int port = -1;
 
+		uri = uri.replace("coap://coap://", "coap://");
+		
 		try {
 			URI serverUri = new URI(uri);
 			port = serverUri.getPort();

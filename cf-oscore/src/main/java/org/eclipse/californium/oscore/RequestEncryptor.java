@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.cose.Encrypt0Message;
+import org.eclipse.californium.oscore.ContextRederivation.PHASE;
 
 /**
  * 
