@@ -87,7 +87,6 @@ public class HelloWorldServer {
 				r.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 				r.setPayload("Hello World!");
 				exchange.respond(r);
-				server.destroy();
 			}
 
 			@Override
@@ -97,7 +96,6 @@ public class HelloWorldServer {
 				r.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 				r.setPayload("Hello World!");
 				exchange.respond(r);
-				server.destroy();
 			}
 		};
 

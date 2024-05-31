@@ -248,8 +248,6 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	private static String normalizeServerUri(String uri) throws OSException {
 		String normalized = null;
 		int port = -1;
-
-		uri = uri.replace("coap://coap://", "coap://");
 		
 		try {
 			URI serverUri = new URI(uri);

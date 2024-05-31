@@ -96,7 +96,10 @@ public class KudosRederivation {
 		newCtx.setContextRederivationPhase(ContextRederivation.PHASE.KUDOS_CLIENT_PHASE1);
 	
 		db.removeContext(ctx);
-		db.addContext(SCHEME + uri, newCtx);
+		if (!uri.startsWith(SCHEME)) {
+			uri = SCHEME + uri;
+		}
+		db.addContext(uri, newCtx);
 	}
 
 	/**
@@ -137,7 +140,12 @@ public class KudosRederivation {
 			ctxOut.setKudosN1(ctx.getKudosN1());
 			ctxOut.setKudosX1(ctx.getKudosX1());
 			db.removeContext(ctx);
-			db.addContext(SCHEME + ctx.getUri(), ctxOut);
+
+			String uri = ctx.getUri();
+			if (!uri.startsWith(SCHEME)) {
+				uri = SCHEME + uri;
+			}
+			db.addContext(uri, ctxOut);
 			return ctxOut;
 		}
 
@@ -198,10 +206,13 @@ public class KudosRederivation {
 			newCtx.setContextRederivationPhase(ContextRederivation.PHASE.INACTIVE);
 	
 			db.removeContext(ctx);
-			db.addContext(SCHEME + ctx.getUri(), newCtx);
+			String uri = ctx.getUri();
+			if (!uri.startsWith(SCHEME)) {
+				uri = SCHEME + uri;
+			}
+			db.addContext(uri, newCtx);
 	
 			return newCtx;
-	
 		}
 	
 		return ctx;
@@ -263,7 +274,11 @@ public class KudosRederivation {
 		newCtx.setContextRederivationPhase(ContextRederivation.PHASE.KUDOS_SERVER_PHASE3);
 
 		db.removeContext(ctx);
-		db.addContext(SCHEME + ctx.getUri(), newCtx);
+		String uri = ctx.getUri();
+		if (!uri.startsWith(SCHEME)) {
+			uri = SCHEME + uri;
+		}
+		db.addContext(uri, newCtx);
 
 		return newCtx;
 	}
@@ -295,7 +310,7 @@ public class KudosRederivation {
 
 			// Build the info (ExpandLabel) structure
 			ByteArrayOutputStream expandLabel = new ByteArrayOutputStream();
-			byte[] length = ByteBuffer.allocate(8).putInt(4, oscoreKeyLength).array();
+			byte[] length = ByteBuffer.allocate(2).putShort((short) oscoreKeyLength).array();
 			expandLabel.write(length);
 
 			byte[] labelBytes = ("oscore " + label).getBytes();
