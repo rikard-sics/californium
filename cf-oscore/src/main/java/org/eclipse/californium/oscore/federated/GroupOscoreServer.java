@@ -191,7 +191,8 @@ public class GroupOscoreServer {
 	private static int batchSize = 640; // Batch size
 	private static MultiLayerConfiguration conf;
 	private static MultiLayerNetwork model;
-	private static DataSetIterator Iter;
+	private static DataSetIterator IterTrain;
+	private static DataSetIterator IterTest;
 	private static DataSetIterator trainIter;
 	private static DataSetIterator testIter;
 
@@ -232,9 +233,11 @@ public class GroupOscoreServer {
 		int serverCount = -1;
 		int serverId = -1;
 		String multicastStr = null;
+		String serverDataset = null;
 		try {
 			serverId = Integer.parseInt(cmdArgs.get("--server-id"));
 			serverCount = Integer.parseInt(cmdArgs.get("--server-count"));
+			serverDataset = cmdArgs.get("--server-data");
 			multicastStr = cmdArgs.get("--multicast-ip");
 
 		} catch (Exception e) {
@@ -300,6 +303,7 @@ public class GroupOscoreServer {
 		System.out.println("Multicast port: " + listenPort);
 		System.out.println("Server ID: " + serverId);
 		System.out.println("Total server count: " + serverCount);
+		System.out.println("Dataset:" + serverDataset);
 		System.out.print("CoAP resources: ");
 		for (Resource res : server.getRoot().getChildren()) {
 			System.out.print(res.getURI() + " ");
@@ -320,43 +324,199 @@ public class GroupOscoreServer {
 		char delimiter = ',';
 		// Labels: a single integer representing the class index in column
 		// number 116
-		int labelIndex = 115;
+		int labelIndex = 0;
 		int numLabelClasses = 2; // 2 classes for the label
-
-		// Load the dataset:
-		RecordReader rr = new CSVRecordReader(numLinesToSkip, delimiter);
-		rr.initialize(new FileSplit(new File(Credentials.serverDatasets.get(serverId))));
-		Iter = new RecordReaderDataSetIterator(rr, batchSize, labelIndex, numLabelClasses);
-
-		List<DataSet> ret = new ArrayList<>();
-		while (Iter.hasNext()) {
-			ret.add(Iter.next());
-		}
-		DataSet allData = DataSet.merge(ret);
-
-		allData.shuffle();
-		INDArray features = allData.getFeatures();
-		INDArray reduced_feature = PCA.pca(features, numInputs, true);
-		DataSet reduced_set = new DataSet(reduced_feature, allData.getLabels());
-		System.out.println("Training set: " + reduced_set.numExamples());
-		// Use 70% of data for training
-		SplitTestAndTrain testAndTrain = reduced_set.splitTestAndTrain(0.7);
-
-		DataSet trainingData = testAndTrain.getTrain();
-		DataSet testData = testAndTrain.getTest();
+		int Max_servers = 32;
+		int numTrunks = 0;
+		int stratTrunkId = 0;
+		DataSet allData_train = null;
+		DataSet allData_test = null;
 
 		/*
-		 * Normalize the dataset
+		 * Load the training and test dataset for three datasets
 		 */
-		DataNormalization normalizer = new NormalizerStandardize();
+		if(serverDataset.endsWith("IoT")) {
+			
+			/*
+			 * Load the training dataset
+			 */
+			
+			if(serverCount == Max_servers) {
+				//
+				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
+				rrTrain.initialize(new FileSplit(new File(Credentials.serverIoTDatasets.get(serverId))));
+				List<DataSet> ret_train = new ArrayList<>();
+				IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);			
+				while (IterTrain.hasNext()) {
+					ret_train.add(IterTrain.next());
+				}
+				allData_train = DataSet.merge(ret_train);
+				
+			}else {
+				
+				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
+				numTrunks = Max_servers/serverCount; // Get the number of trunks to read files
+				stratTrunkId = numTrunks * serverId; // Get the starting Trunk Id
+				List<DataSet> ret_train = new ArrayList<>();
+				
+				
+				for (int i = stratTrunkId; i < (stratTrunkId+numTrunks); i++) {
+					
+					rrTrain.initialize(new FileSplit(new File(Credentials.serverIoTDatasets.get(i))));
+					IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);			
+					while (IterTrain.hasNext()) {
+						ret_train.add(IterTrain.next());
+					}
+				}
+				allData_train = DataSet.merge(ret_train);
+				
+			}
+			
+			/*
+			 * Load the test dataset
+			 */
+			List<DataSet> ret_test = new ArrayList<>();
+			RecordReader rrTest = new CSVRecordReader(numLinesToSkip, delimiter);
+			rrTest.initialize(new FileSplit(new File("datasets/N_BaIoT/IoT_test.csv")));
+			IterTest = new RecordReaderDataSetIterator(rrTest, batchSize, labelIndex, numLabelClasses);			
+			while (IterTest.hasNext()) {
+				ret_test.add(IterTest.next());
+			}
+			allData_test = DataSet.merge(ret_test);
+			
+			labelIndex = 115;
+			
+		}
+		else if(serverDataset.endsWith("SD")){
+			/*
+			 * Load the training dataset
+			 */
+			
+			if(serverCount == Max_servers) {
+				//
+				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
+				rrTrain.initialize(new FileSplit(new File(Credentials.serverSmokeDetectDatasets.get(serverId))));
+				List<DataSet> ret_train = new ArrayList<>();
+				IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);			
+				while (IterTrain.hasNext()) {
+					ret_train.add(IterTrain.next());
+				}
+				allData_train = DataSet.merge(ret_train);
+				
+			}else {
+				
+				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
+				numTrunks = Max_servers/serverCount; // Get the number of trunks to read files
+				stratTrunkId = numTrunks * serverId; // Get the starting Trunk Id
+				List<DataSet> ret_train = new ArrayList<>();
+				
+				
+				for (int i = stratTrunkId; i < (stratTrunkId+numTrunks); i++) {
+					
+					rrTrain.initialize(new FileSplit(new File(Credentials.serverSmokeDetectDatasets.get(i))));
+					IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);			
+					while (IterTrain.hasNext()) {
+						ret_train.add(IterTrain.next());
+					}
+				}
+				allData_train = DataSet.merge(ret_train);
+				
+			}
+			
+			/*
+			 * Load the test dataset
+			 */
+			List<DataSet> ret_test = new ArrayList<>();
+			RecordReader rrTest = new CSVRecordReader(numLinesToSkip, delimiter);
+			rrTest.initialize(new FileSplit(new File("datasets/Smoke_Detection/SD_test.csv")));
+			IterTest = new RecordReaderDataSetIterator(rrTest, batchSize, labelIndex, numLabelClasses);			
+			while (IterTest.hasNext()) {
+				ret_test.add(IterTest.next());
+			}
+			allData_test = DataSet.merge(ret_test);
+			
+			labelIndex = 14;
+		}
+		else if(serverDataset.endsWith("Diabetes")){
+			
+			if(serverCount == Max_servers) {
+				//
+				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
+				rrTrain.initialize(new FileSplit(new File(Credentials.serverDiabetesDatasets.get(serverId))));
+				List<DataSet> ret_train = new ArrayList<>();
+				IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);			
+				while (IterTrain.hasNext()) {
+					ret_train.add(IterTrain.next());
+				}
+				allData_train = DataSet.merge(ret_train);
+				
+			}else {
+				
+				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
+				numTrunks = Max_servers/serverCount; // Get the number of trunks to read files
+				stratTrunkId = numTrunks * serverId; // Get the starting Trunk Id
+				List<DataSet> ret_train = new ArrayList<>();
+				
+				
+				for (int i = stratTrunkId; i < (stratTrunkId+numTrunks); i++) {
+					
+					rrTrain.initialize(new FileSplit(new File(Credentials.serverDiabetesDatasets.get(i))));
+					IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);			
+					while (IterTrain.hasNext()) {
+						ret_train.add(IterTrain.next());
+					}
+				}
+				allData_train = DataSet.merge(ret_train);
+				
+			}
+			
+			/*
+			 * Load the test dataset
+			 */
+			List<DataSet> ret_test = new ArrayList<>();
+			RecordReader rrTest = new CSVRecordReader(numLinesToSkip, delimiter);
+			rrTest.initialize(new FileSplit(new File("datasets/Diabetes/Dia_test.csv")));
+			IterTest = new RecordReaderDataSetIterator(rrTest, batchSize, labelIndex, numLabelClasses);			
+			while (IterTest.hasNext()) {
+				ret_test.add(IterTest.next());
+			}
+			allData_test = DataSet.merge(ret_test);
+			
+			labelIndex = 8;
+		}
+				
+
+		allData_train.shuffle();
+		allData_test.shuffle();
+		INDArray features_train = allData_train.getFeatures();
+		INDArray features_test = allData_test.getFeatures();
+		if(labelIndex>numInputs) {
+			features_train = PCA.pca(features_train, numInputs, true);
+			features_test = PCA.pca(features_test, numInputs, true);
+		}	
+		DataSet trainingData = new DataSet(features_train, allData_train.getLabels());
+		DataSet testData = new DataSet(features_test, allData_test.getLabels());
+		System.out.println("Number of examples in the training set: " + trainingData.numExamples());
+		System.out.println("Number of examples in thee test set: " + testData.numExamples());
+				
+
+		/*
+		 * Normalize the training and test dataset
+		 */
+		DataNormalization normalizer_train = new NormalizerStandardize();
 		// Collect the statistics (mean/stdev) from the training data. This does
 		// not modify the input data
-		normalizer.fit(trainingData);
+		normalizer_train.fit(trainingData);
 		// Apply normalization to the training data
-		normalizer.transform(trainingData);
-		// Apply normalization to the test data. This is using statistics
-		// calculated from the *training* set
-		normalizer.transform(testData);
+		normalizer_train.transform(trainingData);
+		
+		DataNormalization normalizer_test = new NormalizerStandardize();
+		// Collect the statistics (mean/stdev) from the training data. This does
+		// not modify the input data
+		normalizer_test.fit(testData);
+		// Apply normalization to the training data
+		normalizer_test.transform(testData);
+		
 
 		trainIter = new MiniBatchFileDataSetIterator(trainingData, batchSize);
 		testIter = new TestDataSetIterator(testData, batchSize);
@@ -686,6 +846,7 @@ public class GroupOscoreServer {
 		System.out.println("Arguments:");
 		System.out.println("--multicast-ip: Multicast IP to listen to [optional]");
 		System.out.println("--server-count: Total number of servers");
+		System.out.println("--server-data: Dataset for this server");
 		System.out.println("--server-id: ID for this server");
 		System.exit(1);
 	}
