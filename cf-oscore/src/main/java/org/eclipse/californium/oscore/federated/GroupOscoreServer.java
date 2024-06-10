@@ -94,6 +94,10 @@ public class GroupOscoreServer {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GroupOscoreServer.class);
 
+	static {
+		CoapConfig.register();
+	}
+
 	/**
 	 * Maximum message size
 	 */
@@ -123,7 +127,7 @@ public class GroupOscoreServer {
 	static InetAddress multicastIP;
 
 	// Use IPv4
-	private static boolean ipv4 = true;
+	private static boolean ipv4;
 	private static final boolean LOOPBACK = false;
 
 	/**
@@ -244,11 +248,13 @@ public class GroupOscoreServer {
 			printHelp();
 		}
 
-		// Parse multicast IP to use
+		// Multicast IP to use
 		if (multicastStr.toLowerCase().equals("ipv4")) {
 			multicastIP = CoAP.MULTICAST_IPV4;
+			ipv4 = true;
 		} else if (multicastStr.toLowerCase().equals("ipv6")) {
 			multicastIP = CoAP.MULTICAST_IPV6_SITELOCAL;
+			ipv4 = false;
 		} else {
 			System.err.println("Invalid option for --multicast-ip, must be IPv4 or IPv6");
 		}
@@ -333,7 +339,7 @@ public class GroupOscoreServer {
 		int numLabelClasses = 2; // 2 classes for the label
 		int Max_servers = 32;
 		int numTrunks = 0;
-		int stratTrunkId = 0;
+		int startTrunkId = 0;
 		DataSet allData_train = null;
 		DataSet allData_test = null;
 
@@ -362,11 +368,11 @@ public class GroupOscoreServer {
 				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
 				numTrunks = Max_servers / serverCount; // Get the number of
 														// trunks to read files
-				stratTrunkId = numTrunks * serverId; // Get the starting Trunk
+				startTrunkId = numTrunks * serverId; // Get the starting Trunk
 														// Id
 				List<DataSet> ret_train = new ArrayList<>();
 
-				for (int i = stratTrunkId; i < (stratTrunkId + numTrunks); i++) {
+				for (int i = startTrunkId; i < (startTrunkId + numTrunks); i++) {
 
 					rrTrain.initialize(new FileSplit(new File(Credentials.serverIoTDatasets.get(i))));
 					IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);
@@ -413,11 +419,11 @@ public class GroupOscoreServer {
 				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
 				numTrunks = Max_servers / serverCount; // Get the number of
 														// trunks to read files
-				stratTrunkId = numTrunks * serverId; // Get the starting Trunk
+				startTrunkId = numTrunks * serverId; // Get the starting Trunk
 														// Id
 				List<DataSet> ret_train = new ArrayList<>();
 
-				for (int i = stratTrunkId; i < (stratTrunkId + numTrunks); i++) {
+				for (int i = startTrunkId; i < (startTrunkId + numTrunks); i++) {
 
 					rrTrain.initialize(new FileSplit(new File(Credentials.serverSmokeDetectDatasets.get(i))));
 					IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);
@@ -460,11 +466,11 @@ public class GroupOscoreServer {
 				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
 				numTrunks = Max_servers / serverCount; // Get the number of
 														// trunks to read files
-				stratTrunkId = numTrunks * serverId; // Get the starting Trunk
+				startTrunkId = numTrunks * serverId; // Get the starting Trunk
 														// Id
 				List<DataSet> ret_train = new ArrayList<>();
 
-				for (int i = stratTrunkId; i < (stratTrunkId + numTrunks); i++) {
+				for (int i = startTrunkId; i < (startTrunkId + numTrunks); i++) {
 
 					rrTrain.initialize(new FileSplit(new File(Credentials.serverDiabetesDatasets.get(i))));
 					IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);
@@ -674,6 +680,7 @@ public class GroupOscoreServer {
 
 			id = random.nextInt(1000);
 
+			System.out.println("Incoming Request to HelloWorld Resource");
 			System.out.println("coap receiver: " + id);
 		}
 

@@ -132,7 +132,7 @@ public class GroupOscoreClient {
 	/**
 	 * Resource to perform request against.
 	 */
-	static final String requestResource = "/model";
+	static String requestResource = "/model";
 
 	/* --- OSCORE Security Context information (sender) --- */
 	private final static HashMapCtxDB db = new HashMapCtxDB();
@@ -211,15 +211,17 @@ public class GroupOscoreClient {
 
 		int serverCount = -1;
 		String multicastStr = "ipv4";
+		boolean useFederatedLearning = true;
 		try {
 			serverCount = Integer.parseInt(cmdArgs.get("--server-count"));
 			multicastStr = cmdArgs.get("--multicast-ip");
 			useGroupOSCORE = Boolean.parseBoolean(cmdArgs.get("--group-oscore"));
+			useFederatedLearning = Boolean.parseBoolean(cmdArgs.get("--federated-learning"));
 		} catch (Exception e) {
 			printHelp();
 		}
 
-		// Parse multicast IP to use
+		// Multicast IP to use
 		if (multicastStr.toLowerCase().equals("ipv4")) {
 			multicastIP = CoAP.MULTICAST_IPV4;
 		} else if (multicastStr.toLowerCase().equals("ipv6")) {
@@ -243,6 +245,11 @@ public class GroupOscoreClient {
 			requestURI = "coap://" + "[" + multicastIP.getHostAddress() + "]" + ":" + destinationPort + requestResource;
 		} else {
 			requestURI = "coap://" + multicastIP.getHostAddress() + ":" + destinationPort + requestResource;
+		}
+
+		// Set request target when not using federated learning
+		if (useFederatedLearning == false) {
+			requestResource = "/helloWorld";
 		}
 
 		// Add private & public keys for sender & receiver(s)
@@ -540,6 +547,7 @@ public class GroupOscoreClient {
 		System.out.println("--multicast-ip: IPv4 or IPv6 [Optional]");
 		System.out.println("--server-count: Total number of servers");
 		System.out.println("--group-oscore: Use Group OSCORE [Optional. Default: true]");
+		System.out.println("--federated-learning: Use Federated Learning [Optional. Default: true]");
 		System.exit(1);
 	}
 
