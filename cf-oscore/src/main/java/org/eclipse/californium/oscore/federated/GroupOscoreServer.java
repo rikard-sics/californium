@@ -67,7 +67,6 @@ import org.nd4j.linalg.dataset.api.iterator.TestDataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.dimensionalityreduction.PCA;
@@ -111,9 +110,9 @@ public class GroupOscoreServer {
 	static final boolean replyToNonConfirmable = true;
 
 	/**
-	 * Whether to use OSCORE or not.
+	 * Whether to use Group OSCORE or not.
 	 */
-	static final boolean useOSCORE = true;
+	static final boolean useGroupOSCORE = true;
 
 	/**
 	 * Multicast address to listen to (use the first line to set a custom one).
@@ -262,7 +261,7 @@ public class GroupOscoreServer {
 		System.out.println("Starting with SID " + StringUtil.byteArray2Hex(sid));
 
 		// If OSCORE is being used set the context information
-		if (useOSCORE) {
+		if (useGroupOSCORE) {
 
 			byte[] gmPublicKey = gmPublicKeyBytes;
 			GroupCtx commonCtx = new GroupCtx(masterSecret, masterSalt, alg, kdf, groupIdentifier, algCountersign,
@@ -295,7 +294,7 @@ public class GroupOscoreServer {
 		// Information about the receiver
 		System.out.println("==================");
 		System.out.println("*Multicast receiver");
-		System.out.println("Uses OSCORE: " + useOSCORE);
+		System.out.println("Uses Group OSCORE: " + useGroupOSCORE);
 		System.out.println("Respond to non-confirmable messages: " + replyToNonConfirmable);
 		System.out.println("Listening to Multicast IP: " + multicastIP.getHostAddress());
 		System.out.println("Unicast IP: " + endpoint.getAddress().getHostString());
@@ -303,7 +302,7 @@ public class GroupOscoreServer {
 		System.out.println("Multicast port: " + listenPort);
 		System.out.println("Server ID: " + serverId);
 		System.out.println("Total server count: " + serverCount);
-		System.out.println("Dataset:" + serverDataset);
+		System.out.println("Dataset: " + serverDataset);
 		System.out.print("CoAP resources: ");
 		for (Resource res : server.getRoot().getChildren()) {
 			System.out.print(res.getURI() + " ");
@@ -335,170 +334,169 @@ public class GroupOscoreServer {
 		/*
 		 * Load the training and test dataset for three datasets
 		 */
-		if(serverDataset.endsWith("IoT")) {
-			
+		if (serverDataset.endsWith("IoT")) {
+
 			/*
 			 * Load the training dataset
 			 */
-			
-			if(serverCount == Max_servers) {
+
+			if (serverCount == Max_servers) {
 				//
 				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
 				rrTrain.initialize(new FileSplit(new File(Credentials.serverIoTDatasets.get(serverId))));
 				List<DataSet> ret_train = new ArrayList<>();
-				IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);			
+				IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);
 				while (IterTrain.hasNext()) {
 					ret_train.add(IterTrain.next());
 				}
 				allData_train = DataSet.merge(ret_train);
-				
-			}else {
-				
+
+			} else {
+
 				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
-				numTrunks = Max_servers/serverCount; // Get the number of trunks to read files
-				stratTrunkId = numTrunks * serverId; // Get the starting Trunk Id
+				numTrunks = Max_servers / serverCount; // Get the number of
+														// trunks to read files
+				stratTrunkId = numTrunks * serverId; // Get the starting Trunk
+														// Id
 				List<DataSet> ret_train = new ArrayList<>();
-				
-				
-				for (int i = stratTrunkId; i < (stratTrunkId+numTrunks); i++) {
-					
+
+				for (int i = stratTrunkId; i < (stratTrunkId + numTrunks); i++) {
+
 					rrTrain.initialize(new FileSplit(new File(Credentials.serverIoTDatasets.get(i))));
-					IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);			
+					IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);
 					while (IterTrain.hasNext()) {
 						ret_train.add(IterTrain.next());
 					}
 				}
 				allData_train = DataSet.merge(ret_train);
-				
+
 			}
-			
+
 			/*
 			 * Load the test dataset
 			 */
 			List<DataSet> ret_test = new ArrayList<>();
 			RecordReader rrTest = new CSVRecordReader(numLinesToSkip, delimiter);
 			rrTest.initialize(new FileSplit(new File("datasets/N_BaIoT/IoT_test.csv")));
-			IterTest = new RecordReaderDataSetIterator(rrTest, batchSize, labelIndex, numLabelClasses);			
+			IterTest = new RecordReaderDataSetIterator(rrTest, batchSize, labelIndex, numLabelClasses);
 			while (IterTest.hasNext()) {
 				ret_test.add(IterTest.next());
 			}
 			allData_test = DataSet.merge(ret_test);
-			
+
 			labelIndex = 115;
-			
-		}
-		else if(serverDataset.endsWith("SD")){
+
+		} else if (serverDataset.endsWith("SD")) {
 			/*
 			 * Load the training dataset
 			 */
-			
-			if(serverCount == Max_servers) {
+
+			if (serverCount == Max_servers) {
 				//
 				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
 				rrTrain.initialize(new FileSplit(new File(Credentials.serverSmokeDetectDatasets.get(serverId))));
 				List<DataSet> ret_train = new ArrayList<>();
-				IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);			
+				IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);
 				while (IterTrain.hasNext()) {
 					ret_train.add(IterTrain.next());
 				}
 				allData_train = DataSet.merge(ret_train);
-				
-			}else {
-				
+
+			} else {
+
 				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
-				numTrunks = Max_servers/serverCount; // Get the number of trunks to read files
-				stratTrunkId = numTrunks * serverId; // Get the starting Trunk Id
+				numTrunks = Max_servers / serverCount; // Get the number of
+														// trunks to read files
+				stratTrunkId = numTrunks * serverId; // Get the starting Trunk
+														// Id
 				List<DataSet> ret_train = new ArrayList<>();
-				
-				
-				for (int i = stratTrunkId; i < (stratTrunkId+numTrunks); i++) {
-					
+
+				for (int i = stratTrunkId; i < (stratTrunkId + numTrunks); i++) {
+
 					rrTrain.initialize(new FileSplit(new File(Credentials.serverSmokeDetectDatasets.get(i))));
-					IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);			
+					IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);
 					while (IterTrain.hasNext()) {
 						ret_train.add(IterTrain.next());
 					}
 				}
 				allData_train = DataSet.merge(ret_train);
-				
+
 			}
-			
+
 			/*
 			 * Load the test dataset
 			 */
 			List<DataSet> ret_test = new ArrayList<>();
 			RecordReader rrTest = new CSVRecordReader(numLinesToSkip, delimiter);
 			rrTest.initialize(new FileSplit(new File("datasets/Smoke_Detection/SD_test.csv")));
-			IterTest = new RecordReaderDataSetIterator(rrTest, batchSize, labelIndex, numLabelClasses);			
+			IterTest = new RecordReaderDataSetIterator(rrTest, batchSize, labelIndex, numLabelClasses);
 			while (IterTest.hasNext()) {
 				ret_test.add(IterTest.next());
 			}
 			allData_test = DataSet.merge(ret_test);
-			
+
 			labelIndex = 14;
-		}
-		else if(serverDataset.endsWith("Diabetes")){
-			
-			if(serverCount == Max_servers) {
+		} else if (serverDataset.endsWith("Diabetes")) {
+
+			if (serverCount == Max_servers) {
 				//
 				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
 				rrTrain.initialize(new FileSplit(new File(Credentials.serverDiabetesDatasets.get(serverId))));
 				List<DataSet> ret_train = new ArrayList<>();
-				IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);			
+				IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);
 				while (IterTrain.hasNext()) {
 					ret_train.add(IterTrain.next());
 				}
 				allData_train = DataSet.merge(ret_train);
-				
-			}else {
-				
+
+			} else {
+
 				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
-				numTrunks = Max_servers/serverCount; // Get the number of trunks to read files
-				stratTrunkId = numTrunks * serverId; // Get the starting Trunk Id
+				numTrunks = Max_servers / serverCount; // Get the number of
+														// trunks to read files
+				stratTrunkId = numTrunks * serverId; // Get the starting Trunk
+														// Id
 				List<DataSet> ret_train = new ArrayList<>();
-				
-				
-				for (int i = stratTrunkId; i < (stratTrunkId+numTrunks); i++) {
-					
+
+				for (int i = stratTrunkId; i < (stratTrunkId + numTrunks); i++) {
+
 					rrTrain.initialize(new FileSplit(new File(Credentials.serverDiabetesDatasets.get(i))));
-					IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);			
+					IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);
 					while (IterTrain.hasNext()) {
 						ret_train.add(IterTrain.next());
 					}
 				}
 				allData_train = DataSet.merge(ret_train);
-				
+
 			}
-			
+
 			/*
 			 * Load the test dataset
 			 */
 			List<DataSet> ret_test = new ArrayList<>();
 			RecordReader rrTest = new CSVRecordReader(numLinesToSkip, delimiter);
 			rrTest.initialize(new FileSplit(new File("datasets/Diabetes/Dia_test.csv")));
-			IterTest = new RecordReaderDataSetIterator(rrTest, batchSize, labelIndex, numLabelClasses);			
+			IterTest = new RecordReaderDataSetIterator(rrTest, batchSize, labelIndex, numLabelClasses);
 			while (IterTest.hasNext()) {
 				ret_test.add(IterTest.next());
 			}
 			allData_test = DataSet.merge(ret_test);
-			
+
 			labelIndex = 8;
 		}
-				
 
 		allData_train.shuffle();
 		allData_test.shuffle();
 		INDArray features_train = allData_train.getFeatures();
 		INDArray features_test = allData_test.getFeatures();
-		if(labelIndex>numInputs) {
+		if (labelIndex > numInputs) {
 			features_train = PCA.pca(features_train, numInputs, true);
 			features_test = PCA.pca(features_test, numInputs, true);
-		}	
+		}
 		DataSet trainingData = new DataSet(features_train, allData_train.getLabels());
 		DataSet testData = new DataSet(features_test, allData_test.getLabels());
 		System.out.println("Number of examples in the training set: " + trainingData.numExamples());
 		System.out.println("Number of examples in thee test set: " + testData.numExamples());
-				
 
 		/*
 		 * Normalize the training and test dataset
@@ -509,14 +507,13 @@ public class GroupOscoreServer {
 		normalizer_train.fit(trainingData);
 		// Apply normalization to the training data
 		normalizer_train.transform(trainingData);
-		
+
 		DataNormalization normalizer_test = new NormalizerStandardize();
 		// Collect the statistics (mean/stdev) from the training data. This does
 		// not modify the input data
 		normalizer_test.fit(testData);
 		// Apply normalization to the training data
 		normalizer_test.transform(testData);
-		
 
 		trainIter = new MiniBatchFileDataSetIterator(trainingData, batchSize);
 		testIter = new TestDataSetIterator(testData, batchSize);
@@ -527,8 +524,7 @@ public class GroupOscoreServer {
 		System.out.println("Build model....");
 		int seed = 123;
 		conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.RELU).weightInit(WeightInit.XAVIER)
-				.l2(1e-4).list()
-				.layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).hasLayerNorm(true).build())
+				.l2(1e-4).list().layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).hasLayerNorm(true).build())
 				.layer(new DropoutLayer.Builder(0.1).build())
 				.layer(new DenseLayer.Builder().nIn(8).nOut(3).hasLayerNorm(true).build())
 				.layer(new DropoutLayer.Builder(0.1).build())

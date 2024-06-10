@@ -112,9 +112,9 @@ public class GroupOscoreClient {
 	private static final double SERVER_RESPONSE_RATIO = 0.8;
 
 	/**
-	 * Whether to use OSCORE or not.
+	 * Whether to use Group OSCORE or not.
 	 */
-	static final boolean useOSCORE = true;
+	static final boolean useGroupOSCORE = true;
 
 	/**
 	 * Multicast address to send to (use the first line to set a custom one).
@@ -237,7 +237,7 @@ public class GroupOscoreClient {
 		clientPublicPrivateKey = new MultiKey(clientPublicKeyBytes, clientPrivateKeyBytes);
 
 		// If OSCORE is being used set the context information
-		if (useOSCORE) {
+		if (useGroupOSCORE) {
 
 			byte[] gmPublicKey = gm_public_key_bytes;
 			GroupCtx commonCtx = new GroupCtx(masterSecret, masterSalt, alg, kdf, groupIdentifier, algCountersign,
@@ -310,7 +310,7 @@ public class GroupOscoreClient {
 			}
 
 			multicastRequest.setType(Type.NON);
-			if (useOSCORE) {
+			if (useGroupOSCORE) {
 				// For group mode request
 				multicastRequest.getOptions().setOscore(Bytes.EMPTY);
 
@@ -322,7 +322,7 @@ public class GroupOscoreClient {
 			// Information about the sender
 			System.out.println("==================");
 			System.out.println("*Multicast sender");
-			System.out.println("Uses OSCORE: " + useOSCORE);
+			System.out.println("Uses Group OSCORE: " + useGroupOSCORE);
 			System.out.println("Request destination: " + requestURI);
 			System.out.println("Request destination port: " + destinationPort);
 			System.out.println("Request method: " + multicastRequest.getCode());
