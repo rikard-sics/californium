@@ -252,11 +252,11 @@ public class FederatedClient {
 			requestURI = "coap://" + multicastIP.getHostAddress() + ":" + destinationPort + requestResource;
 		}
 
-		// Add private & public keys for sender & receiver(s)
-		clientPublicPrivateKey = new MultiKey(clientPublicKeyBytes, clientPrivateKeyBytes);
-
 		// If OSCORE is being used set the context information
 		if (useGroupOSCORE) {
+
+			// Add private & public keys for sender & receiver(s)
+			clientPublicPrivateKey = new MultiKey(clientPublicKeyBytes, clientPrivateKeyBytes);
 
 			byte[] gmPublicKey = gm_public_key_bytes;
 			GroupCtx commonCtx = new GroupCtx(masterSecret, masterSalt, alg, kdf, groupIdentifier, algCountersign,
@@ -288,7 +288,6 @@ public class FederatedClient {
 			int numElements;
 			float[] modelReq = null;
 
-			// TODO: Set payload with model params (done?)
 			if (i == 0) {
 				byte[] emptymodel = new byte[0];
 				multicastRequest.setPayload(emptymodel);
@@ -332,10 +331,6 @@ public class FederatedClient {
 			if (useGroupOSCORE) {
 				// For group mode request
 				multicastRequest.getOptions().setOscore(Bytes.EMPTY);
-
-				// For pairwise request:
-				// multicastRequest.getOptions().setOscore(OptionEncoder.set(true,
-				// requestURI, rid1));
 			}
 
 			// Information about the sender
@@ -544,7 +539,7 @@ public class FederatedClient {
 
 	private static void printHelp() {
 		System.out.println("Arguments: ");
-		System.out.println("--multicast-ip: IPv4 or IPv6 [Optional]");
+		System.out.println("--multicast-ip: IPv4 or IPv6 [Optional. Default: ipv4]");
 		System.out.println("--server-count: Total number of servers");
 		System.out.println("--group-oscore: Use Group OSCORE [Optional. Default: true]");
 		System.out.println("--federated-learning: Use Federated Learning [Optional. Default: true]");

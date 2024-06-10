@@ -137,6 +137,11 @@ public class FederatedServer {
 	static int unicastPort = CoAP.DEFAULT_COAP_PORT + 10;
 
 	/**
+	 * Total server count in the federation
+	 */
+	static int serverCount;
+
+	/**
 	 * ED25519 curve value.
 	 * https://www.iana.org/assignments/cose/cose.xhtml#elliptic-curves
 	 */
@@ -230,7 +235,6 @@ public class FederatedServer {
 			printHelp();
 		}
 
-		int serverCount = -1;
 		int serverId = -1;
 		String multicastStr = "ipv4";
 		String serverDataset = null;
@@ -260,16 +264,17 @@ public class FederatedServer {
 		}
 		// End parse command line arguments
 
-		MultiKey serverPublicPrivateKey = null;
-		unicastPort = unicastPort + serverId + 1;
-		sid = Credentials.serverSenderIds.get(serverId);
-		serverPublicKey = Credentials.serverPublicKeys.get(serverId);
-		serverPrivateKey = Credentials.serverPrivateKeys.get(serverId);
-		serverPublicPrivateKey = new MultiKey(serverPublicKey, serverPrivateKey);
-		System.out.println("Starting with SID " + StringUtil.byteArray2Hex(sid));
+		unicastPort = unicastPort + serverId;
 
 		// If OSCORE is being used set the context information
 		if (useGroupOSCORE) {
+
+			MultiKey serverPublicPrivateKey = null;
+			sid = Credentials.serverSenderIds.get(serverId);
+			serverPublicKey = Credentials.serverPublicKeys.get(serverId);
+			serverPrivateKey = Credentials.serverPrivateKeys.get(serverId);
+			serverPublicPrivateKey = new MultiKey(serverPublicKey, serverPrivateKey);
+			System.out.println("Starting with SID " + StringUtil.byteArray2Hex(sid));
 
 			byte[] gmPublicKey = gmPublicKeyBytes;
 			GroupCtx commonCtx = new GroupCtx(masterSecret, masterSalt, alg, kdf, groupIdentifier, algCountersign,
@@ -333,7 +338,7 @@ public class FederatedServer {
 		// number 116
 		int labelIndex = 0;
 		int numLabelClasses = 2; // 2 classes for the label
-		int Max_servers = 32;
+		int maxServers = 32;
 		int numTrunks = 0;
 		int startTrunkId = 0;
 		DataSet allData_train = null;
@@ -348,7 +353,7 @@ public class FederatedServer {
 			 * Load the training dataset
 			 */
 
-			if (serverCount == Max_servers) {
+			if (serverCount == maxServers) {
 				//
 				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
 				rrTrain.initialize(new FileSplit(new File(Credentials.serverIoTDatasets.get(serverId))));
@@ -362,7 +367,7 @@ public class FederatedServer {
 			} else {
 
 				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
-				numTrunks = Max_servers / serverCount; // Get the number of
+				numTrunks = maxServers / serverCount; // Get the number of
 														// trunks to read files
 				startTrunkId = numTrunks * serverId; // Get the starting Trunk
 														// Id
@@ -399,7 +404,7 @@ public class FederatedServer {
 			 * Load the training dataset
 			 */
 
-			if (serverCount == Max_servers) {
+			if (serverCount == maxServers) {
 				//
 				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
 				rrTrain.initialize(new FileSplit(new File(Credentials.serverSmokeDetectDatasets.get(serverId))));
@@ -413,7 +418,7 @@ public class FederatedServer {
 			} else {
 
 				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
-				numTrunks = Max_servers / serverCount; // Get the number of
+				numTrunks = maxServers / serverCount; // Get the number of
 														// trunks to read files
 				startTrunkId = numTrunks * serverId; // Get the starting Trunk
 														// Id
@@ -446,7 +451,7 @@ public class FederatedServer {
 			labelIndex = 14;
 		} else if (serverDataset.endsWith("Diabetes")) {
 
-			if (serverCount == Max_servers) {
+			if (serverCount == maxServers) {
 				//
 				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
 				rrTrain.initialize(new FileSplit(new File(Credentials.serverDiabetesDatasets.get(serverId))));
@@ -460,7 +465,7 @@ public class FederatedServer {
 			} else {
 
 				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
-				numTrunks = Max_servers / serverCount; // Get the number of
+				numTrunks = maxServers / serverCount; // Get the number of
 														// trunks to read files
 				startTrunkId = numTrunks * serverId; // Get the starting Trunk
 														// Id
@@ -589,6 +594,8 @@ public class FederatedServer {
 
 	private static class ModelResource extends OSCoreResource {
 
+		private double lbLeisureMs;
+
 		private ModelResource() {
 			// set resource identifier
 			super("model", true); // Changed
@@ -596,6 +603,14 @@ public class FederatedServer {
 			// set display name
 			getAttributes().setTitle("Model Resource");
 
+			/**
+			 * Calculate leisure time:
+			 * https://www.rfc-editor.org/rfc/rfc7252#section-8.2
+			 */
+			double G = serverCount;
+			double S = MAX_MSG_SIZE;
+			double R = 1250000.0; // 10 Mbit/s
+			lbLeisureMs = 1000.0 * ((S * G) / R);
 		}
 
 		@Override
@@ -626,7 +641,8 @@ public class FederatedServer {
 			 * Get the updated model from the request message, and create a
 			 * INDArray to get
 			 * 
-			 * TODO: add the flag or a message to indicate the current round
+			 * TODO: add the flag or a message to indicate the current round (Do
+			 * we still need this?)
 			 */
 			INDArray updatedModel = Nd4j.create(modelReq);
 			System.out.println(updatedModel.length());
@@ -656,8 +672,17 @@ public class FederatedServer {
 			Response r = new Response(ResponseCode.CHANGED);
 			r.setPayload(payloadRes);
 			r.setType(Type.NON);
-			exchange.respond(r);
 
+			// Wait random amount up to leisure time
+			int waitTime = random.nextInt((int) lbLeisureMs);
+			try {
+				Thread.sleep(waitTime);
+			} catch (InterruptedException e) {
+				System.err.println("Failed to sleep for leisure time before responding");
+				e.printStackTrace();
+			}
+
+			exchange.respond(r);
 		}
 
 	}
@@ -702,7 +727,6 @@ public class FederatedServer {
 			try {
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 
@@ -723,6 +747,7 @@ public class FederatedServer {
 				System.out.println("Sending to: " + r.getDestinationContext().getPeerAddress());
 				System.out.println("Sending from: " + exchange.advanced().getEndpoint().getAddress());
 				System.out.println(Utils.prettyPrint(r));
+
 
 				exchange.respond(r);
 			}
@@ -856,9 +881,9 @@ public class FederatedServer {
 
 	private static void printHelp() {
 		System.out.println("Arguments:");
-		System.out.println("--multicast-ip: IPv4 or IPv6 [Optional]");
+		System.out.println("--multicast-ip: IPv4 or IPv6 [Optional. Default: ipv4]");
 		System.out.println("--server-count: Total number of servers");
-		System.out.println("--server-data: Dataset for this server");
+		System.out.println("--server-data: Dataset for this server [IoT, SD, Diabetes]");
 		System.out.println("--server-id: ID for this server");
 		System.out.println("--group-oscore: Use Group OSCORE [Optional. Default: true]");
 		System.exit(1);
