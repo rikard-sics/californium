@@ -65,8 +65,6 @@ import org.nd4j.linalg.dataset.MiniBatchFileDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestDataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.dimensionalityreduction.PCA;
@@ -90,9 +88,7 @@ import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 /**
  * Test receiver using {@link UdpMulticastConnector}.
  */
-public class GroupOscoreServer {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(GroupOscoreServer.class);
+public class FederatedServer {
 
 	static {
 		CoapConfig.register();
@@ -326,7 +322,7 @@ public class GroupOscoreServer {
 		 * Create an iterator using the batch size for one iteration for
 		 * MnistData
 		 */
-		LOGGER.info("Load data....");
+		System.out.println("Load data....");
 
 		/*
 		 * Load Data from local csv file
@@ -753,16 +749,16 @@ public class GroupOscoreServer {
 		NetworkInterface networkInterface = NetworkInterfacesUtil.getMulticastInterface();
 
 		if (networkInterface == null) {
-			LOGGER.warn("No multicast network-interface found!");
+			System.out.println("No multicast network-interface found!");
 			throw new Error("No multicast network-interface found!");
 		}
-		LOGGER.info("Multicast Network Interface: {}", networkInterface.getDisplayName());
+		System.out.println("Multicast Network Interface: " + networkInterface.getDisplayName());
 
 		UdpMulticastConnector.Builder builder = new UdpMulticastConnector.Builder();
 
 		if (!ipv4 && NetworkInterfacesUtil.isAnyIpv6()) {
 			Inet6Address ipv6 = NetworkInterfacesUtil.getMulticastInterfaceIpv6();
-			LOGGER.info("Multicast: IPv6 Network Address: {}", StringUtil.toString(ipv6));
+			System.out.println("Multicast: IPv6 Network Address: " + StringUtil.toString(ipv6));
 			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv6, unicastPort), config);
 			udpConnector.setReuseAddress(true);
 			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector)
@@ -781,12 +777,12 @@ public class GroupOscoreServer {
 			createReceiver(builder, udpConnector);
 
 			server.addEndpoint(coapEndpoint);
-			LOGGER.info("IPv6 - multicast");
+			System.out.println("IPv6 - multicast");
 		}
 
 		if (ipv4 && NetworkInterfacesUtil.isAnyIpv4()) {
 			Inet4Address ipv4 = NetworkInterfacesUtil.getMulticastInterfaceIpv4();
-			LOGGER.info("Multicast: IPv4 Network Address: {}", StringUtil.toString(ipv4));
+			System.out.println("Multicast: IPv4 Network Address: " + StringUtil.toString(ipv4));
 			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv4, unicastPort), config);
 			udpConnector.setReuseAddress(true);
 			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector)
@@ -803,7 +799,7 @@ public class GroupOscoreServer {
 				createReceiver(builder, udpConnector);
 			}
 			server.addEndpoint(coapEndpoint);
-			LOGGER.info("IPv4 - multicast");
+			System.out.println("IPv4 - multicast");
 		}
 		UDPConnector udpConnector = new UDPConnector(
 				new InetSocketAddress(InetAddress.getLoopbackAddress(), unicastPort), config);
@@ -811,7 +807,7 @@ public class GroupOscoreServer {
 		CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector)
 				.build();
 		server.addEndpoint(coapEndpoint);
-		LOGGER.info("loopback");
+		System.out.println("loopback");
 	}
 
 	/**

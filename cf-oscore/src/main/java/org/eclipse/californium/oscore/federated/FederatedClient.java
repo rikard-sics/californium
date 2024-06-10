@@ -56,7 +56,7 @@ import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider
 /**
  * Test sender configured to support multicast requests. Rebased.
  */
-public class GroupOscoreClient {
+public class FederatedClient {
 
 	/**
 	 * File name for network configuration.
