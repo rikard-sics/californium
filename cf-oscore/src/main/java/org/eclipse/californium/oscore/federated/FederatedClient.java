@@ -20,13 +20,13 @@ import java.io.File;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
@@ -92,18 +92,23 @@ public class FederatedClient {
 	 * Time to wait before checking for the first time if responses from 80% of
 	 * the servers have been received.
 	 */
-	private static final int CHECK1_TIMEOUT = 15000;
+	private static int CHECK1_TIMEOUT = 15000;
 
 	/**
 	 * Time to wait before checking for the second time if responses from 80% of
 	 * the servers have been received.
 	 */
-	private static final int CHECK2_TIMEOUT = 22000;
+	private static int CHECK2_TIMEOUT = 22000;
 
 	/**
 	 * Maximum time to wait for replies to the multicast request
 	 */
-	private static final int FINAL_TIMEOUT = 30000;
+	private static int FINAL_TIMEOUT = 30000;
+
+	/**
+	 * Maximum time to wait for replies when using unicast (one by one)
+	 */
+	private static final int UNICAST_TIMEOUT = 5000;
 
 	/**
 	 * Ratio of servers that need to have responded for the client to stop
@@ -115,6 +120,16 @@ public class FederatedClient {
 	 * Whether to use Group OSCORE or not.
 	 */
 	static boolean useGroupOSCORE = true;
+
+	/**
+	 * Whether to use OSCORE or not.
+	 */
+	static boolean useOSCORE = false;
+
+	/**
+	 * Use unicast one-by-one to the servers
+	 */
+	static boolean unicastMode = false;
 
 	/**
 	 * Multicast address to send to (use the first line to set a custom one).
@@ -210,13 +225,15 @@ public class FederatedClient {
 		}
 
 		int serverCount = -1;
-		String multicastStr = "ipv4";
+		String multicastStr = null;
 		boolean useFederatedLearning = true;
 		try {
 			serverCount = Integer.parseInt(cmdArgs.get("--server-count"));
-			multicastStr = cmdArgs.get("--multicast-ip");
-			useGroupOSCORE = Boolean.parseBoolean(cmdArgs.get("--group-oscore"));
-			useFederatedLearning = Boolean.parseBoolean(cmdArgs.get("--federated-learning"));
+			multicastStr = cmdArgs.getOrDefault("--multicast-ip", "ipv4");
+			useGroupOSCORE = Boolean.parseBoolean(cmdArgs.getOrDefault("--group-oscore", "true"));
+			useFederatedLearning = Boolean.parseBoolean(cmdArgs.getOrDefault("--federated-learning", "true"));
+			useOSCORE = Boolean.parseBoolean(cmdArgs.getOrDefault("--oscore", "false"));
+			unicastMode = Boolean.parseBoolean(cmdArgs.getOrDefault("--unicast", "false"));
 		} catch (Exception e) {
 			printHelp();
 		}
@@ -232,6 +249,35 @@ public class FederatedClient {
 
 		if (serverCount == -1) {
 			printHelp();
+		}
+
+		if (useOSCORE && !unicastMode) {
+			System.out.println("Invalid config: " + "useOSCORE: " + useOSCORE + " unicastMode: " + unicastMode);
+			printHelp();
+		}
+
+		if (useGroupOSCORE && unicastMode) {
+			System.out
+					.println("Invalid config: " + "useGroupOSCORE: " + useGroupOSCORE + " unicastMode: " + unicastMode);
+			printHelp();
+		}
+
+		// Parse list of IPs for the servers
+		List<String> unicastServerIps = new ArrayList<String>();
+		if (unicastMode) {
+			Pattern PATTERN = Pattern
+					.compile("^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
+
+			for (int i = 0; i < args.length; i++) {
+				if (PATTERN.matcher(args[i]).matches()) {
+					unicastServerIps.add(args[i]);
+				}
+			}
+		}
+		if (unicastMode) {
+			CHECK1_TIMEOUT = UNICAST_TIMEOUT;
+			CHECK2_TIMEOUT = UNICAST_TIMEOUT;
+			FINAL_TIMEOUT = UNICAST_TIMEOUT;
 		}
 
 		// End parse command line arguments
@@ -279,18 +325,37 @@ public class FederatedClient {
 
 		client.setURI(requestURI);
 
+		// Information about the sender
+		System.out.println("==================");
+		System.out.println("*Sender");
+		System.out.println("Uses Group OSCORE: " + useGroupOSCORE);
+		System.out.println("Uses OSCORE: " + useOSCORE);
+		System.out.println("Use multicast: " + !unicastMode);
+		System.out.println("Request destination: " + requestURI);
+		System.out.println("Request destination port: " + destinationPort);
+		System.out.println("Outgoing port: " + endpoint.getAddress().getPort());
+		System.out.println("Total server count: " + serverCount);
+
+		if (unicastMode) {
+			System.out.println("Unicast Server IPs: ");
+			for (int i = 0; i < unicastServerIps.size(); i++) {
+				System.out.println(unicastServerIps.get(i));
+			}
+		}
+		System.out.println("==================");
+
 		for (int i = 0; i <= commuEpoch; i++) {
 
 			System.out.println("=== Communication Epoch: " + i + " ===");
-			Request multicastRequest = Request.newPost();
+			Request request = Request.newPost();
 
 			final int floatSize = Float.SIZE / 8;
 			int numElements;
 			float[] modelReq = null;
 
+			byte[] payloadReq;
 			if (i == 0) {
-				byte[] emptymodel = new byte[0];
-				multicastRequest.setPayload(emptymodel);
+				payloadReq = new byte[0];
 
 			} else {
 
@@ -308,7 +373,7 @@ public class FederatedClient {
 				}
 
 				numElements = modelReq.length;
-				byte[] payloadReq = new byte[floatSize * numElements];
+				payloadReq = new byte[floatSize * numElements];
 				for (int j = 0; j < numElements; j++) {
 					byte[] elementBytes = ByteBuffer.allocate(floatSize).putFloat(modelReq[j]).array();
 					System.arraycopy(elementBytes, 0, payloadReq, j * floatSize, floatSize);
@@ -322,47 +387,63 @@ public class FederatedClient {
 					System.err.println("Error: Payload exceeds maximum messages size (" + MAX_MSG_SIZE + " bytes)");
 				}
 
-				multicastRequest.setPayload(payloadReq);
 				models.clear();
 
 			}
 
-			multicastRequest.setType(Type.NON);
+			request.setPayload(payloadReq);
+			request.setType(Type.NON);
 			if (useGroupOSCORE) {
 				// For group mode request
-				multicastRequest.getOptions().setOscore(Bytes.EMPTY);
+				request.getOptions().setOscore(Bytes.EMPTY);
 			}
-
-			// Information about the sender
-			System.out.println("==================");
-			System.out.println("*Multicast sender");
-			System.out.println("Uses Group OSCORE: " + useGroupOSCORE);
-			System.out.println("Request destination: " + requestURI);
-			System.out.println("Request destination port: " + destinationPort);
-			System.out.println("Request method: " + multicastRequest.getCode());
-			System.out.println("Outgoing port: " + endpoint.getAddress().getPort());
-			System.out.println("Total server count: " + serverCount);
-			System.out.println("==================");
-
-			try {
-				String host = new URI(client.getURI()).getHost();
-				int port = new URI(client.getURI()).getPort();
-				System.out.println("Sending to: " + host + ":" + port);
-			} catch (URISyntaxException e) {
-				System.err.println("Failed to parse destination URI");
-				e.printStackTrace();
-			}
-			System.out.println("Sending from: " + client.getEndpoint().getAddress());
-			System.out.println(Utils.prettyPrint(multicastRequest));
 
 			// Create handler for responses
 			MultiCoapHandler handler = new MultiCoapHandler(serverCount);
 
-			// sends a multicast request
-			handler.clearResponses();
-			client.advanced(handler, multicastRequest);
-			while (handler.waitOn(FINAL_TIMEOUT)) {
-				// Wait for responses
+			// Either loop and send unicast requests or send 1 multicast
+			if (unicastMode) {
+
+				handler.clearResponses();
+
+				for (int n = 0; n < unicastServerIps.size(); n++) {
+					URI unicastURI;
+					if (unicastServerIps.get(n).contains(":")) {
+						unicastURI = URI.create("coap://" + "[" + unicastServerIps.get(n) + "]");
+					} else {
+						unicastURI = URI.create("coap://" + unicastServerIps.get(n));
+					}
+					requestURI = unicastURI + requestResource;
+
+					request = Request.newPost();
+					if (useOSCORE) {
+						request.getOptions().setOscore(Bytes.EMPTY);
+					}
+					request.setPayload(payloadReq);
+					request.setType(Type.NON);
+					client = new CoapClient();
+					client.setURI(requestURI);
+					request.setURI(requestURI);
+
+					System.out.println("Sending request to: " + client.getURI());
+					System.out.println(Utils.prettyPrint(request));
+					client.advanced(handler, request);
+					while (handler.waitOn(UNICAST_TIMEOUT)) {
+						// Wait for responses
+					}
+				}
+
+			} else {
+				// sends a multicast request
+				handler.clearResponses();
+				System.out.println("Sending request to: " + client.getURI());
+				System.out.println("Sending from: " + client.getEndpoint().getAddress());
+				System.out.println(Utils.prettyPrint(request));
+
+				client.advanced(handler, request);
+				while (handler.waitOn(FINAL_TIMEOUT)) {
+					// Wait for responses
+				}
 			}
 
 			// Print received responses
@@ -372,7 +453,7 @@ public class FederatedClient {
 
 			if (responses.size() == 0) {
 
-				System.out.println("ERROR: No Response from severs.");
+				System.out.println("ERROR: No Response from servers.");
 
 			}
 			for (int j = 0; j < responses.size(); j++) {
@@ -526,7 +607,7 @@ public class FederatedClient {
 			responses.add(response);
 
 			// Stop waiting if all servers have responded
-			if (responses.size() == serverCount) {
+			if (responses.size() == serverCount || unicastMode) {
 				keepWaiting = false;
 			}
 		}
@@ -539,10 +620,12 @@ public class FederatedClient {
 
 	private static void printHelp() {
 		System.out.println("Arguments: ");
-		System.out.println("--multicast-ip: IPv4 or IPv6 [Optional. Default: ipv4]");
 		System.out.println("--server-count: Total number of servers");
-		System.out.println("--group-oscore: Use Group OSCORE [Optional. Default: true]");
 		System.out.println("--federated-learning: Use Federated Learning [Optional. Default: true]");
+		System.out.println("--group-oscore: Use Group OSCORE [Optional. Default: true]");
+		System.out.println("--multicast-ip: IPv4 or IPv6 [Optional. Default: ipv4]");
+		System.out.println("--oscore: Use OSCORE [Optional. Default: false]");
+		System.out.println("--unicast: Use unicast one-by-one to the servers [Optional. Default: false]");
 		System.exit(1);
 	}
 

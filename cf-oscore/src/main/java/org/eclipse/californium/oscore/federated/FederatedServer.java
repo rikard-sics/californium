@@ -115,6 +115,16 @@ public class FederatedServer {
 	static boolean useGroupOSCORE = true;
 
 	/**
+	 * Whether to use OSCORE or not.
+	 */
+	static boolean useOSCORE = false;
+
+	/**
+	 * Use unicast (one-by-one to the servers)
+	 */
+	static boolean unicastMode = false;
+
+	/**
 	 * Multicast address to listen to (use the first line to set a custom one).
 	 */
 	// static InetAddress multicastIP = new
@@ -236,14 +246,16 @@ public class FederatedServer {
 		}
 
 		int serverId = -1;
-		String multicastStr = "ipv4";
+		String multicastStr = null;
 		String serverDataset = null;
 		try {
 			serverId = Integer.parseInt(cmdArgs.get("--server-id"));
 			serverCount = Integer.parseInt(cmdArgs.get("--server-count"));
 			serverDataset = cmdArgs.get("--server-data");
-			multicastStr = cmdArgs.get("--multicast-ip");
-			useGroupOSCORE = Boolean.parseBoolean(cmdArgs.get("--group-oscore"));
+			multicastStr = cmdArgs.getOrDefault("--multicast-ip", "ipv4");
+			useGroupOSCORE = Boolean.parseBoolean(cmdArgs.getOrDefault("--group-oscore", "true"));
+			useOSCORE = Boolean.parseBoolean(cmdArgs.getOrDefault("--oscore", "false"));
+			unicastMode = Boolean.parseBoolean(cmdArgs.getOrDefault("--unicast", "false"));
 		} catch (Exception e) {
 			printHelp();
 		}
@@ -259,12 +271,28 @@ public class FederatedServer {
 			System.err.println("Invalid option for --multicast-ip, must be IPv4 or IPv6");
 		}
 
-		if (serverCount == -1 || serverId == -1) {
+		if (serverCount == -1 || serverId == -1 || serverDataset == null) {
 			printHelp();
 		}
-		// End parse command line arguments
 
+		if (useOSCORE && !unicastMode) {
+			System.out.println("Invalid config: " + "useOSCORE: " + useOSCORE + " unicastMode: " + unicastMode);
+			printHelp();
+		}
+
+		if (useGroupOSCORE && unicastMode) {
+			System.out
+					.println("Invalid config: " + "useGroupOSCORE: " + useGroupOSCORE + " unicastMode: " + unicastMode);
+			printHelp();
+		}
+
+		// Set port depending on server ID (for multicast case)
 		unicastPort = unicastPort + serverId;
+
+		if (unicastMode) {
+			unicastPort = CoAP.DEFAULT_COAP_PORT;
+		}
+		// End parse command line arguments
 
 		// If OSCORE is being used set the context information
 		if (useGroupOSCORE) {
@@ -299,15 +327,25 @@ public class FederatedServer {
 		config.set(CoapConfig.MAX_MESSAGE_SIZE, MAX_MSG_SIZE);
 
 		CoapServer server = new CoapServer(config);
-		createEndpoints(server, unicastPort, listenPort, config);
-		Endpoint endpoint = server.getEndpoint(unicastPort);
+		// Create multicast or unicast endpoint
+		if (unicastMode == false) {
+			createEndpoints(server, unicastPort, listenPort, config);
+		}
+
 		server.add(new HelloWorldResource());
 		server.add(new ModelResource());
 
+		server.start();
+		System.out.println("CoAP server started on port: " + unicastPort);
+
+		Endpoint endpoint = server.getEndpoint(unicastPort);
+
 		// Information about the receiver
 		System.out.println("==================");
-		System.out.println("*Multicast receiver");
+		System.out.println("*Receiver");
 		System.out.println("Uses Group OSCORE: " + useGroupOSCORE);
+		System.out.println("Uses OSCORE: " + useOSCORE);
+		System.out.println("Use multicast: " + !unicastMode);
 		System.out.println("Respond to non-confirmable messages: " + replyToNonConfirmable);
 		System.out.println("Listening to Multicast IP: " + multicastIP.getHostAddress());
 		System.out.println("Unicast IP: " + endpoint.getAddress().getHostString());
@@ -545,11 +583,8 @@ public class FederatedServer {
 						.nOut(outputNum).build())
 				.build();
 
-		System.out.println("");
 		System.out.println("==================");
-
-		server.start();
-		System.out.println("CoAP server started on port: " + unicastPort);
+		System.out.println("Server Ready");
 	}
 
 	private static void TrainModel(INDArray updateModel, boolean initFlag) {
@@ -674,7 +709,7 @@ public class FederatedServer {
 			r.setType(Type.NON);
 
 			// Wait random amount up to leisure time
-			int waitTime = random.nextInt((int) lbLeisureMs);
+			int waitTime = random.nextInt((int) Math.ceil(lbLeisureMs));
 			try {
 				Thread.sleep(waitTime);
 			} catch (InterruptedException e) {
@@ -747,7 +782,6 @@ public class FederatedServer {
 				System.out.println("Sending to: " + r.getDestinationContext().getPeerAddress());
 				System.out.println("Sending from: " + exchange.advanced().getEndpoint().getAddress());
 				System.out.println(Utils.prettyPrint(r));
-
 
 				exchange.respond(r);
 			}
@@ -881,11 +915,13 @@ public class FederatedServer {
 
 	private static void printHelp() {
 		System.out.println("Arguments:");
-		System.out.println("--multicast-ip: IPv4 or IPv6 [Optional. Default: ipv4]");
 		System.out.println("--server-count: Total number of servers");
 		System.out.println("--server-data: Dataset for this server [IoT, SD, Diabetes]");
 		System.out.println("--server-id: ID for this server");
 		System.out.println("--group-oscore: Use Group OSCORE [Optional. Default: true]");
+		System.out.println("--multicast-ip: IPv4 or IPv6 [Optional. Default: ipv4]");
+		System.out.println("--oscore: Use OSCORE [Optional. Default: false]");
+		System.out.println("--unicast: Use unicast (one-by-one to the servers) [Optional. Default: false]");
 		System.exit(1);
 	}
 }
