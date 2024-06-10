@@ -112,10 +112,6 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 			if (cache != null) {
 				cacheKey = new CacheKey(outgoingRequest.getCode(), destination, outgoingRequest.getOptions().getAccept(), outgoingRequest.getPayload());
 				Response response = cache.getResponse(cacheKey);
-				StatsResource statsResource = getStatsResource();
-				if (statsResource != null) {
-					statsResource.updateStatistics(destination, response != null);
-				}
 				if (response != null) {
 					LOGGER.info("Cache returned {}", response);
 					exchange.sendResponse(response);

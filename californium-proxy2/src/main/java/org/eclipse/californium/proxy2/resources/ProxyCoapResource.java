@@ -104,7 +104,7 @@ public abstract class ProxyCoapResource extends CoapResource {
 	 * 
 	 * @since 2.4
 	 */
-	private volatile StatsResource statsResource;
+	private volatile Object statsResource;
 
 	/**
 	 * Max resource body size.
@@ -152,7 +152,7 @@ public abstract class ProxyCoapResource extends CoapResource {
 	 * @return statistic resource
 	 * @since 2.4
 	 */
-	public StatsResource getStatsResource() {
+	public Object getStatsResource() {
 		return statsResource;
 	}
 
@@ -162,7 +162,7 @@ public abstract class ProxyCoapResource extends CoapResource {
 	 * @param statsResource statistic resource
 	 * @since 2.4
 	 */
-	public void setStatsResource(StatsResource statsResource) {
+	public void setStatsResource(Object statsResource) {
 		this.statsResource = statsResource;
 	}
 

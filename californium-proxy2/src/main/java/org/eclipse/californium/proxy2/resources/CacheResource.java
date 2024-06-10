@@ -19,7 +19,6 @@ package org.eclipse.californium.proxy2.resources;
 
 import org.eclipse.californium.core.coap.Response;
 
-import com.google.common.cache.CacheStats;
 
 /**
  * Basic API for response cache.
@@ -42,7 +41,7 @@ public interface CacheResource {
 	 * 
 	 * @return cache statistics
 	 */
-	public CacheStats getCacheStats();
+	public Object getCacheStats();
 
 	/**
 	 * Gets cached response.

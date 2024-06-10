@@ -207,11 +207,12 @@ public class FederatedClient {
 
 		// Parse command line arguments
 		HashMap<String, String> cmdArgs = new HashMap<>();
-		if (args.length % 2 != 0) {
-			printHelp();
-		}
 
 		for (int i = 0; i < args.length; i += 2) {
+
+			if (i + 1 >= args.length) {
+				continue;
+			}
 
 			if (args[i + 1].toLowerCase().equals("null")) {
 				;
@@ -265,11 +266,15 @@ public class FederatedClient {
 		// Parse list of IPs for the servers
 		List<String> unicastServerIps = new ArrayList<String>();
 		if (unicastMode) {
-			Pattern PATTERN = Pattern
+			Pattern ipv4Pattern = Pattern
 					.compile("^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
+			Pattern ipv6Pattern = Pattern.compile("\\A(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\\z");
 
 			for (int i = 0; i < args.length; i++) {
-				if (PATTERN.matcher(args[i]).matches()) {
+				if (ipv4Pattern.matcher(args[i]).matches()) {
+					unicastServerIps.add(args[i]);
+				}
+				if (ipv6Pattern.matcher(args[i]).matches()) {
 					unicastServerIps.add(args[i]);
 				}
 			}
