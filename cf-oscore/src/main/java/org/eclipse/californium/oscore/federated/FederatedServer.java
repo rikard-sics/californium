@@ -646,6 +646,9 @@ public class FederatedServer {
 			double S = MAX_MSG_SIZE;
 			double R = 1250000.0; // 10 Mbit/s
 			lbLeisureMs = 1000.0 * ((S * G) / R);
+			if (unicastMode) {
+				lbLeisureMs = 0;
+			}
 		}
 
 		@Override
