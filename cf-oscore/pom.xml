@@ -61,21 +61,45 @@
 			<groupId>com.upokecenter</groupId>
 			<artifactId>cbor</artifactId>
 		</dependency>
-		
+
 		<dependency> <!-- Rikard: Added this as Jim did in his pom -->
 			<groupId>net.i2p.crypto</groupId>
 			<artifactId>eddsa</artifactId>
 			<version>0.3.0</version>
 			<type>jar</type>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.datavec</groupId>
 			<artifactId>datavec-api</artifactId>
 			<version>1.0.0-M2.1</version>
 		</dependency>
-		
-		
+
+		<!-- RH: Below for gRPC -->
+		<dependency>
+			<groupId>io.grpc</groupId>
+			<artifactId>grpc-netty-shaded</artifactId>
+			<version>1.64.0</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.grpc</groupId>
+			<artifactId>grpc-protobuf</artifactId>
+			<version>1.64.0</version>
+		</dependency>
+		<dependency>
+			<groupId>io.grpc</groupId>
+			<artifactId>grpc-stub</artifactId>
+			<version>1.64.0</version>
+		</dependency>
+		<dependency> <!-- necessary for Java 9+ -->
+			<groupId>org.apache.tomcat</groupId>
+			<artifactId>annotations-api</artifactId>
+			<version>6.0.53</version>
+			<scope>provided</scope>
+		</dependency>
+
+
 		<!-- test dependencies -->
 		<dependency>
 			<groupId>junit</groupId>

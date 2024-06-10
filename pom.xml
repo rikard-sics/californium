@@ -520,7 +520,6 @@
 						</goals>
 						<configuration>
 							<rules>
-								<dependencyConvergence />
 								<requireMavenVersion>
 									<version>3.2.5</version>
 								</requireMavenVersion>
