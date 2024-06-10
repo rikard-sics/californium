@@ -38,10 +38,8 @@ import org.eclipse.californium.proxy2.config.Proxy2Config;
 import org.eclipse.californium.proxy2.http.Coap2HttpTranslator;
 import org.eclipse.californium.proxy2.http.HttpClientFactory;
 import org.eclipse.californium.proxy2.resources.ForwardProxyMessageDeliverer;
-import org.eclipse.californium.proxy2.resources.ProxyCacheResource;
 import org.eclipse.californium.proxy2.resources.ProxyCoapResource;
 import org.eclipse.californium.proxy2.resources.ProxyHttpClientResource;
-import org.eclipse.californium.proxy2.resources.StatsResource;
 import org.eclipse.californium.unixhealth.NetStatLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,19 +116,9 @@ public class ExampleCoapToHttpProxy2 {
 				new DaemonThreadFactory("Proxy#"));
 		ScheduledExecutorService secondaryExecutor = ExecutorsUtil.newDefaultSecondaryScheduler("ProxyTimer#");
 		Coap2CoapTranslator translater = new Coap2CoapTranslator();
-		ProxyCacheResource cacheResource = null;
-		StatsResource statsResource = null;
-		if (cache) {
-			cacheResource = new ProxyCacheResource(config, true);
-			statsResource = new StatsResource(cacheResource);
-		}
 		ProxyCoapResource coap2http = new ProxyHttpClientResource(COAP2HTTP, false, accept, new Coap2HttpTranslator(),
 				"http", "https");
 		coap2http.setMaxResourceBodySize(config.get(CoapConfig.MAX_RESOURCE_BODY_SIZE));
-		if (cache) {
-			coap2http.setCache(cacheResource);
-			coap2http.setStatsResource(statsResource);
-		}
 		// Forwards requests Coap to Coap or Coap to Http server
 		coapProxyServer = new CoapServer(config, coapPort);
 		ForwardProxyMessageDeliverer proxyMessageDeliverer = new ForwardProxyMessageDeliverer(coapProxyServer.getRoot(),
@@ -140,9 +128,6 @@ public class ExampleCoapToHttpProxy2 {
 		coapProxyServer.setMessageDeliverer(proxyMessageDeliverer);
 		coapProxyServer.setExecutors(mainExecutor, secondaryExecutor, false);
 		coapProxyServer.add(coap2http);
-		if (cache) {
-			coapProxyServer.add(statsResource);
-		}
 		coapProxyServer.start();
 		System.out.println("** CoAP Proxy at: coap://localhost:" + coapPort + "/coap2http");
 		// receiving on any address => enable LocalAddressResolver

@@ -57,11 +57,9 @@ import org.eclipse.californium.proxy2.http.HttpClientFactory;
 import org.eclipse.californium.proxy2.http.server.ProxyHttpServer;
 import org.eclipse.californium.proxy2.resources.CacheResource;
 import org.eclipse.californium.proxy2.resources.ForwardProxyMessageDeliverer;
-import org.eclipse.californium.proxy2.resources.ProxyCacheResource;
 import org.eclipse.californium.proxy2.resources.ProxyCoapClientResource;
 import org.eclipse.californium.proxy2.resources.ProxyCoapResource;
 import org.eclipse.californium.proxy2.resources.ProxyHttpClientResource;
-import org.eclipse.californium.proxy2.resources.StatsResource;
 import org.eclipse.californium.unixhealth.NetStatLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -178,22 +176,10 @@ public class ExampleCrossProxy2 {
 					.setConfiguration(outgoingConfig);
 			endpoints = new ClientSingleEndpoint(builder.build());
 		}
-		ProxyCacheResource cacheResource = null;
-		StatsResource statsResource = null;
-		if (cache) {
-			cacheResource = new ProxyCacheResource(config, true);
-			statsResource = new StatsResource(cacheResource);
-		}
 		ProxyCoapResource coap2coap = new ProxyCoapClientResource(COAP2COAP, false, accept, translater, endpoints);
 		coap2coap.setMaxResourceBodySize(config.get(CoapConfig.MAX_RESOURCE_BODY_SIZE));
 		ProxyCoapResource coap2http = new ProxyHttpClientResource(COAP2HTTP, false, accept, new Coap2HttpTranslator());
 		coap2http.setMaxResourceBodySize(config.get(CoapConfig.MAX_RESOURCE_BODY_SIZE));
-		if (cache) {
-			coap2coap.setCache(cacheResource);
-			coap2coap.setStatsResource(statsResource);
-			coap2http.setCache(cacheResource);
-			coap2http.setStatsResource(statsResource);
-		}
 		// Forwards requests Coap to Coap or Coap to Http server
 		coapProxyServer = new CoapServer(config, coapPort);
 		MessageDeliverer local = coapProxyServer.getMessageDeliverer();
@@ -205,9 +191,6 @@ public class ExampleCrossProxy2 {
 		coapProxyServer.setExecutors(mainExecutor, secondaryExecutor, false);
 		coapProxyServer.add(coap2http);
 		coapProxyServer.add(coap2coap);
-		if (cache) {
-			coapProxyServer.add(statsResource);
-		}
 		coapProxyServer.add(new SimpleCoapResource("target",
 				"Hi! I am the local coap server on port " + coapPort + ". Request %d."));
 
@@ -231,7 +214,6 @@ public class ExampleCrossProxy2 {
 		coapProxyServer.start();
 		System.out.println("** CoAP Proxy at: coap://localhost:" + coapPort + "/coap2http");
 		System.out.println("** CoAP Proxy at: coap://localhost:" + coapPort + "/coap2coap");
-		this.cache = cacheResource;
 		// receiving on any address => enable LocalAddressResolver
 		proxyMessageDeliverer.startLocalAddressResolver();
 	}
