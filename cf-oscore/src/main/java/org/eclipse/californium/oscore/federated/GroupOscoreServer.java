@@ -119,7 +119,8 @@ public class GroupOscoreServer {
 	 */
 	// static InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	static InetAddress multicastIP = CoAP.MULTICAST_IPV4;
+	// static InetAddress multicastIP = CoAP.MULTICAST_IPV4;
+	static InetAddress multicastIP;
 
 	// Use IPv4
 	private static boolean ipv4 = true;
@@ -231,7 +232,7 @@ public class GroupOscoreServer {
 
 		int serverCount = -1;
 		int serverId = -1;
-		String multicastStr = null;
+		String multicastStr = "ipv4";
 		String serverDataset = null;
 		try {
 			serverId = Integer.parseInt(cmdArgs.get("--server-id"));
@@ -243,8 +244,13 @@ public class GroupOscoreServer {
 			printHelp();
 		}
 
-		if (multicastStr != null) {
-			multicastIP = new InetSocketAddress(multicastStr, 0).getAddress();
+		// Parse multicast IP to use
+		if (multicastStr.toLowerCase().equals("ipv4")) {
+			multicastIP = CoAP.MULTICAST_IPV4;
+		} else if (multicastStr.toLowerCase().equals("ipv6")) {
+			multicastIP = CoAP.MULTICAST_IPV6_SITELOCAL;
+		} else {
+			System.err.println("Invalid option for --multicast-ip, must be IPv4 or IPv6");
 		}
 
 		if (serverCount == -1 || serverId == -1) {
@@ -840,7 +846,7 @@ public class GroupOscoreServer {
 
 	private static void printHelp() {
 		System.out.println("Arguments:");
-		System.out.println("--multicast-ip: Multicast IP to listen to [optional]");
+		System.out.println("--multicast-ip: IPv4 or IPv6 [optional]");
 		System.out.println("--server-count: Total number of servers");
 		System.out.println("--server-data: Dataset for this server");
 		System.out.println("--server-id: ID for this server");

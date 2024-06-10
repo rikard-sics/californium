@@ -121,7 +121,8 @@ public class GroupOscoreClient {
 	 */
 	// static final InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
+	// static InetAddress multicastIP = CoAP.MULTICAST_IPV4;
+	static InetAddress multicastIP;
 
 	/**
 	 * Port to send to.
@@ -183,16 +184,6 @@ public class GroupOscoreClient {
 	 * @throws Exception on setup or message processing failure
 	 */
 	public static void main(String args[]) throws Exception {
-		/**
-		 * URI to perform request against. Need to check for IPv6 to surround it
-		 * with []
-		 */
-		String requestURI;
-		if (multicastIP instanceof Inet6Address) {
-			requestURI = "coap://" + "[" + multicastIP.getHostAddress() + "]" + ":" + destinationPort + requestResource;
-		} else {
-			requestURI = "coap://" + multicastIP.getHostAddress() + ":" + destinationPort + requestResource;
-		}
 
 		// Install cryptographic providers
 		Provider EdDSA = new EdDSASecurityProvider();
@@ -219,12 +210,22 @@ public class GroupOscoreClient {
 		}
 
 		int serverCount = -1;
+		String multicastStr = "ipv4";
 		try {
 			serverCount = Integer.parseInt(cmdArgs.get("--server-count"));
-			requestURI = cmdArgs.getOrDefault("--uri", requestURI);
+			multicastStr = cmdArgs.get("--multicast-ip");
 
 		} catch (Exception e) {
 			printHelp();
+		}
+
+		// Parse multicast IP to use
+		if (multicastStr.toLowerCase().equals("ipv4")) {
+			multicastIP = CoAP.MULTICAST_IPV4;
+		} else if (multicastStr.toLowerCase().equals("ipv6")) {
+			multicastIP = CoAP.MULTICAST_IPV6_SITELOCAL;
+		} else {
+			System.err.println("Invalid option for --multicast-ip, must be IPv4 or IPv6");
 		}
 
 		if (serverCount == -1) {
@@ -232,6 +233,17 @@ public class GroupOscoreClient {
 		}
 
 		// End parse command line arguments
+
+		/**
+		 * URI to perform request against. Need to check for IPv6 to surround it
+		 * with []
+		 */
+		String requestURI;
+		if (multicastIP instanceof Inet6Address) {
+			requestURI = "coap://" + "[" + multicastIP.getHostAddress() + "]" + ":" + destinationPort + requestResource;
+		} else {
+			requestURI = "coap://" + multicastIP.getHostAddress() + ":" + destinationPort + requestResource;
+		}
 
 		// Add private & public keys for sender & receiver(s)
 		clientPublicPrivateKey = new MultiKey(clientPublicKeyBytes, clientPrivateKeyBytes);
@@ -525,7 +537,7 @@ public class GroupOscoreClient {
 
 	private static void printHelp() {
 		System.out.println("Arguments: ");
-		System.out.println("--url: Destination URL for requests [optional]");
+		System.out.println("--multicast-ip: IPv4 or IPv6 [optional]");
 		System.out.println("--server-count: Total number of servers");
 		System.exit(1);
 	}
