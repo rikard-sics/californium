@@ -112,7 +112,7 @@ public class GroupOscoreServer {
 	/**
 	 * Whether to use Group OSCORE or not.
 	 */
-	static final boolean useGroupOSCORE = true;
+	static boolean useGroupOSCORE = true;
 
 	/**
 	 * Multicast address to listen to (use the first line to set a custom one).
@@ -239,7 +239,7 @@ public class GroupOscoreServer {
 			serverCount = Integer.parseInt(cmdArgs.get("--server-count"));
 			serverDataset = cmdArgs.get("--server-data");
 			multicastStr = cmdArgs.get("--multicast-ip");
-
+			useGroupOSCORE = Boolean.parseBoolean(cmdArgs.get("--group-oscore"));
 		} catch (Exception e) {
 			printHelp();
 		}
@@ -846,10 +846,11 @@ public class GroupOscoreServer {
 
 	private static void printHelp() {
 		System.out.println("Arguments:");
-		System.out.println("--multicast-ip: IPv4 or IPv6 [optional]");
+		System.out.println("--multicast-ip: IPv4 or IPv6 [Optional]");
 		System.out.println("--server-count: Total number of servers");
 		System.out.println("--server-data: Dataset for this server");
 		System.out.println("--server-id: ID for this server");
+		System.out.println("--group-oscore: Use Group OSCORE [Optional. Default: true]");
 		System.exit(1);
 	}
 }
