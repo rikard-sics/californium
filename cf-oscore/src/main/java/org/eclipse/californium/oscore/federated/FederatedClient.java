@@ -236,6 +236,11 @@ public class FederatedClient {
 
 		// End parse command line arguments
 
+		// Set request target when not using federated learning
+		if (useFederatedLearning == false) {
+			requestResource = "/helloWorld";
+		}
+
 		/**
 		 * URI to perform request against. Need to check for IPv6 to surround it
 		 * with []
@@ -245,11 +250,6 @@ public class FederatedClient {
 			requestURI = "coap://" + "[" + multicastIP.getHostAddress() + "]" + ":" + destinationPort + requestResource;
 		} else {
 			requestURI = "coap://" + multicastIP.getHostAddress() + ":" + destinationPort + requestResource;
-		}
-
-		// Set request target when not using federated learning
-		if (useFederatedLearning == false) {
-			requestResource = "/helloWorld";
 		}
 
 		// Add private & public keys for sender & receiver(s)
@@ -317,7 +317,7 @@ public class FederatedClient {
 
 				System.out.print("Outgoing request payload: ");
 				for (int j = 0; j < numElements; j++) {
-					System.out.print(modelReq[i] + " ");
+					System.out.print(modelReq[j] + " ");
 				}
 				if (payloadReq.length > MAX_MSG_SIZE) {
 					System.err.println("Error: Payload exceeds maximum messages size (" + MAX_MSG_SIZE + " bytes)");
@@ -404,7 +404,7 @@ public class FederatedClient {
 
 				System.out.print("Incoming payload in response: ");
 				for (int k = 0; k < numElements; k++) {
-					System.out.print(modelRes[i] + " ");
+					System.out.print(modelRes[k] + " ");
 
 				}
 

@@ -261,7 +261,7 @@ public class FederatedServer {
 		// End parse command line arguments
 
 		MultiKey serverPublicPrivateKey = null;
-		unicastPort = unicastPort + serverId;
+		unicastPort = unicastPort + serverId + 1;
 		sid = Credentials.serverSenderIds.get(serverId);
 		serverPublicKey = Credentials.serverPublicKeys.get(serverId);
 		serverPrivateKey = Credentials.serverPrivateKeys.get(serverId);
@@ -675,8 +675,6 @@ public class FederatedServer {
 			getAttributes().setTitle("Hello-World Resource");
 
 			id = random.nextInt(1000);
-
-			System.out.println("Incoming Request to HelloWorld Resource");
 			System.out.println("coap receiver: " + id);
 		}
 
@@ -689,6 +687,8 @@ public class FederatedServer {
 		@Override
 		public void handlePOST(CoapExchange exchange) {
 
+			System.out.println("Incoming Request to HelloWorld Resource");
+
 			System.out.println("Receiving request #" + count);
 			count++;
 
@@ -699,12 +699,19 @@ public class FederatedServer {
 
 			boolean isConfirmable = exchange.advanced().getRequest().isConfirmable();
 
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
 			// respond to the request if confirmable or replies are set to be
 			// sent for non-confirmable payload is set to request payload
 			// changed to uppercase plus the receiver ID
 			if (isConfirmable || replyToNonConfirmable) {
 				Response r = Response.createResponse(exchange.advanced().getRequest(), ResponseCode.CONTENT);
-				r.setPayload(exchange.getRequestText().toUpperCase() + ". ID: " + id);
+				r.setPayload("Response count: " + count);
 				r.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 				if (isConfirmable) {
 					r.setType(Type.ACK);
