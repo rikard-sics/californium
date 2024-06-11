@@ -248,6 +248,7 @@ public class FederatedServer {
 		int serverId = -1;
 		String multicastStr = null;
 		String serverDataset = null;
+		boolean useFederatedLearning = true;
 		try {
 			serverId = Integer.parseInt(cmdArgs.get("--server-id"));
 			serverCount = Integer.parseInt(cmdArgs.get("--server-count"));
@@ -256,6 +257,7 @@ public class FederatedServer {
 			useGroupOSCORE = Boolean.parseBoolean(cmdArgs.getOrDefault("--group-oscore", "true"));
 			useOSCORE = Boolean.parseBoolean(cmdArgs.getOrDefault("--oscore", "false"));
 			unicastMode = Boolean.parseBoolean(cmdArgs.getOrDefault("--unicast", "false"));
+			useFederatedLearning = Boolean.parseBoolean(cmdArgs.getOrDefault("--federated-learning", "true"));
 		} catch (Exception e) {
 			printHelp();
 		}
@@ -409,6 +411,9 @@ public class FederatedServer {
 														// trunks to read files
 				startTrunkId = numTrunks * serverId; // Get the starting Trunk
 														// Id
+				if (useFederatedLearning == false) {
+					startTrunkId = 0;
+				}
 				List<DataSet> ret_train = new ArrayList<>();
 
 				for (int i = startTrunkId; i < (startTrunkId + numTrunks); i++) {
@@ -921,6 +926,7 @@ public class FederatedServer {
 		System.out.println("--server-count: Total number of servers");
 		System.out.println("--server-data: Dataset for this server [IoT, SD, Diabetes]");
 		System.out.println("--server-id: ID for this server");
+		System.out.println("--federated-learning: Use Federated Learning [Optional. Default: true]");
 		System.out.println("--group-oscore: Use Group OSCORE [Optional. Default: true]");
 		System.out.println("--multicast-ip: IPv4 or IPv6 [Optional. Default: ipv4]");
 		System.out.println("--oscore: Use OSCORE [Optional. Default: false]");
