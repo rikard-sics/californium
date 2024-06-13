@@ -557,21 +557,49 @@ public class SharedSecretCalculation {
 		// System.out.println("Root2: " +
 		// StringUtil.byteArray2HexString(root2.toByteArray()));
 
+		// The size of the returned binary representation of a BigInteger will be
+		// the minimum number of bytes required to represent that BigInteger.
+		// Hence, left-padding with 0x00 byes may be needed to comply with the
+		// expected size of the coordinates.
+		
 		byte[] root1Bytes = root1.toByteArray();
 		byte[] root2Bytes = root2.toByteArray();
-
+		
+		if (root1Bytes.length < 32) {
+			root1Bytes = leftPadByteArray(root1Bytes, 32 - root1Bytes.length);
+			if (root1Bytes == null) {
+				System.out.println("Error when computing the Y value.");
+				return null;
+			}
+		}
 		if (root1Bytes.length == 33) {
 			root1Bytes = Arrays.copyOfRange(root1Bytes, 1, 33);
+		}
+		
+		if (root2Bytes.length < 32) {
+			root2Bytes = leftPadByteArray(root2Bytes, 32 - root2Bytes.length);
+			if (root2Bytes == null) {
+				System.out.println("Error when computing the Y value.");
+				return null;
+			}
 		}
 		if (root2Bytes.length == 33) {
 			root2Bytes = Arrays.copyOfRange(root2Bytes, 1, 33);
 		}
 
 		byte[] xBytes = x.toByteArray();
+		
+		if (xBytes.length < 32) {
+			xBytes = leftPadByteArray(xBytes, 32 - xBytes.length);
+			if (xBytes == null) {
+				System.out.println("Error when computing the Y value.");
+				return null;
+			}
+		}
 		if (xBytes.length == 33) {
 			xBytes = Arrays.copyOfRange(xBytes, 1, 33);
 		}
-
+		
 		// Now build 2 keys from the potential Y values
 		OneKey possibleKey1 = null;
 		OneKey possibleKey2 = null;
@@ -667,17 +695,45 @@ public class SharedSecretCalculation {
 		BigInteger root1 = squareMod(combined, prime);
 		BigInteger root2 = root1.negate().mod(prime);
 
+		// The size of the returned binary representation of a BigInteger will be
+		// the minimum number of bytes required to represent that BigInteger.
+		// Hence, left-padding with 0x00 byes may be needed to comply with the
+		// expected size of the coordinates.
+		
 		byte[] root1Bytes = root1.toByteArray();
 		byte[] root2Bytes = root2.toByteArray();
 
+		if (root1Bytes.length < 48) {
+		    root1Bytes = leftPadByteArray(root1Bytes, 48 - root1Bytes.length);
+		    if (root1Bytes == null) {
+		        System.out.println("Error when computing the Y value.");
+		        return null;
+		    }
+		}
 		if (root1Bytes.length == 49) {
 			root1Bytes = Arrays.copyOfRange(root1Bytes, 1, 49);
+		}
+		
+		if (root2Bytes.length < 48) {
+		    root2Bytes = leftPadByteArray(root2Bytes, 48 - root2Bytes.length);
+		    if (root2Bytes == null) {
+		        System.out.println("Error when computing the Y value.");
+		        return null;
+		    }
 		}
 		if (root2Bytes.length == 49) {
 			root2Bytes = Arrays.copyOfRange(root2Bytes, 1, 49);
 		}
 
 		byte[] xBytes = x.toByteArray();
+		
+		if (xBytes.length < 48) {
+			xBytes = leftPadByteArray(xBytes, 48 - xBytes.length);
+		    if (xBytes == null) {
+		        System.out.println("Error when computing the Y value.");
+		        return null;
+		    }
+		}
 		if (xBytes.length == 49) {
 			xBytes = Arrays.copyOfRange(xBytes, 1, 49);
 		}
@@ -685,7 +741,7 @@ public class SharedSecretCalculation {
 		// System.out.println("Root1: " + StringUtil.byteArray2HexString(root1Bytes));
 		// System.out.println("Root2: " + StringUtil.byteArray2HexString(root2Bytes));
 		// System.out.println("X: " + StringUtil.byteArray2HexString(xBytes));
-		
+
 		// Now build 2 keys from the potential Y values
 		OneKey possibleKey1 = null;
 		OneKey possibleKey2 = null;
@@ -1745,6 +1801,30 @@ public class SharedSecretCalculation {
 		for (int i = 0; i < input.length; i++) {
 			output[i] = input[input.length - i - 1];
 		}
+		return output;
+	}
+	
+	/**
+	 * Left-pad a byte array with 0x00 bytes 
+	 * 
+	 * @param input the input byte array to pad
+	 * @param paddingSize the number of 0x00 bytes to use for padding
+	 * @return the left-padded byte array, or null in case of invalid input
+	 */
+	private static byte[] leftPadByteArray(byte[] input, int paddingSize) {
+		
+		if (input == null || paddingSize < 0)
+			return null;
+		
+		if (paddingSize == 0)
+			return input;
+
+		byte[] output = new byte[input.length + paddingSize];
+		for (int i = 0; i < paddingSize; i++) {
+			output[i] = (byte) 0x00;
+		}
+		System.arraycopy(input, 0, output, paddingSize, input.length);
+		
 		return output;
 	}
 
