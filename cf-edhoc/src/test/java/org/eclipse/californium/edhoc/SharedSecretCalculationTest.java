@@ -332,6 +332,19 @@ public class SharedSecretCalculationTest {
 
 		Assert.assertArrayEquals(expectedY.toByteArray(), y);
 
+		// This test considers an X coordinate that starts with 0x00 bytes,
+		// which triggers padding during the recomputation of the Y coordinate
+		x = new BigInteger(StringUtil.hex2ByteArray("0000950841d26c8dde8994398b8f5d475a022bc63de7773fcf8d552e01f1ba0a"));
+		y = SharedSecretCalculation.recomputeEcdsa256YFromX(x.toByteArray(), true);
+		
+		expectedY = new BigInteger(
+				StringUtil.hex2ByteArray("c0f53b5aa36a2c77b5fc8960574121d1e62d8589981b80e2f2cd7a035c9e9369"));
+
+		System.out.println("Y " + StringUtil.byteArray2HexString(y));
+		System.out.println("Expected Y " + StringUtil.byteArray2HexString(expectedY.toByteArray()));
+		
+		Assert.assertArrayEquals(expectedY.toByteArray(), y);
+		
 	}
 
 	@Test
@@ -363,6 +376,20 @@ public class SharedSecretCalculationTest {
 		System.out.println("Y " + StringUtil.byteArray2HexString(y));
 		System.out.println("Expected Y " + StringUtil.byteArray2HexString(expectedY.toByteArray()));
 
+		Assert.assertArrayEquals(expectedY.toByteArray(), y);
+		
+		// This test considers an X coordinate that starts with 0x00 bytes,
+		// which triggers padding during the recomputation of the Y coordinate
+		x = new BigInteger(StringUtil.hex2ByteArray(
+				"0000ff8fb15eeda94a2563b78180cdc6bf75a413668c0b33895e16140e5046fb8854ba1826dc9994d793853476176e21"));
+		y = SharedSecretCalculation.recomputeEcdsa384YFromX(x.toByteArray(), true);
+		
+		expectedY = new BigInteger(
+				StringUtil.hex2ByteArray("1a4afeb53b65803ff07b8a314cbd48e3f05441290dcf5f83150c99b8746945a6f0fded7e56c45b96ebe7f74e3a09ed05"));
+
+		System.out.println("Y " + StringUtil.byteArray2HexString(y));
+		System.out.println("Expected Y " + StringUtil.byteArray2HexString(expectedY.toByteArray()));
+		
 		Assert.assertArrayEquals(expectedY.toByteArray(), y);
 
 	}
