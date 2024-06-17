@@ -204,6 +204,7 @@ public class FederatedServer {
 	private static int outputNum = 2; // Number of outputs
 	private static int numInputs = 30; // Number of intput features to the model
 	private static int batchSize = 640; // Batch size
+	private static int ReadFileBatch = 64; // Batch size
 	private static MultiLayerConfiguration conf;
 	private static MultiLayerNetwork model;
 	private static DataSetIterator IterTrain;
@@ -388,6 +389,8 @@ public class FederatedServer {
 		 * Load the training and test dataset for three datasets
 		 */
 		if (serverDataset.endsWith("IoT")) {
+			
+			labelIndex = 115;
 
 			/*
 			 * Load the training dataset
@@ -398,7 +401,7 @@ public class FederatedServer {
 				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
 				rrTrain.initialize(new FileSplit(new File(Credentials.serverIoTDatasets.get(serverId))));
 				List<DataSet> ret_train = new ArrayList<>();
-				IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);
+				IterTrain = new RecordReaderDataSetIterator(rrTrain, ReadFileBatch, labelIndex, numLabelClasses);
 				while (IterTrain.hasNext()) {
 					ret_train.add(IterTrain.next());
 				}
@@ -417,9 +420,8 @@ public class FederatedServer {
 				List<DataSet> ret_train = new ArrayList<>();
 
 				for (int i = startTrunkId; i < (startTrunkId + numTrunks); i++) {
-
 					rrTrain.initialize(new FileSplit(new File(Credentials.serverIoTDatasets.get(i))));
-					IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);
+					IterTrain = new RecordReaderDataSetIterator(rrTrain, ReadFileBatch, labelIndex, numLabelClasses);
 					while (IterTrain.hasNext()) {
 						ret_train.add(IterTrain.next());
 					}
@@ -440,19 +442,22 @@ public class FederatedServer {
 			}
 			allData_test = DataSet.merge(ret_test);
 
-			labelIndex = 115;
+			
 
 		} else if (serverDataset.endsWith("SD")) {
+			
+			labelIndex = 14;
 			/*
 			 * Load the training dataset
 			 */
 
 			if (serverCount == maxServers) {
+				
 				//
 				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
 				rrTrain.initialize(new FileSplit(new File(Credentials.serverSmokeDetectDatasets.get(serverId))));
 				List<DataSet> ret_train = new ArrayList<>();
-				IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);
+				IterTrain = new RecordReaderDataSetIterator(rrTrain, ReadFileBatch, labelIndex, numLabelClasses);
 				while (IterTrain.hasNext()) {
 					ret_train.add(IterTrain.next());
 				}
@@ -468,7 +473,6 @@ public class FederatedServer {
 				List<DataSet> ret_train = new ArrayList<>();
 
 				for (int i = startTrunkId; i < (startTrunkId + numTrunks); i++) {
-
 					rrTrain.initialize(new FileSplit(new File(Credentials.serverSmokeDetectDatasets.get(i))));
 					IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);
 					while (IterTrain.hasNext()) {
@@ -491,8 +495,10 @@ public class FederatedServer {
 			}
 			allData_test = DataSet.merge(ret_test);
 
-			labelIndex = 14;
+			
 		} else if (serverDataset.endsWith("Diabetes")) {
+			
+			labelIndex = 8;
 
 			if (serverCount == maxServers) {
 				//
@@ -515,7 +521,6 @@ public class FederatedServer {
 				List<DataSet> ret_train = new ArrayList<>();
 
 				for (int i = startTrunkId; i < (startTrunkId + numTrunks); i++) {
-
 					rrTrain.initialize(new FileSplit(new File(Credentials.serverDiabetesDatasets.get(i))));
 					IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);
 					while (IterTrain.hasNext()) {
@@ -538,7 +543,7 @@ public class FederatedServer {
 			}
 			allData_test = DataSet.merge(ret_test);
 
-			labelIndex = 8;
+			
 		}
 
 		allData_train.shuffle();
