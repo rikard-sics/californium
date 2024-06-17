@@ -43,6 +43,7 @@ import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
+import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSException;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.MultiKey;
@@ -149,6 +150,11 @@ public class FederatedClient {
 	 */
 	static String requestResource = "/model";
 
+	/**
+	 * MAX UNFRAGMENTED SIZE parameter for block-wise (block-wise is not used)
+	 */
+	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
+
 	/* --- OSCORE Security Context information (sender) --- */
 	private final static HashMapCtxDB db = new HashMapCtxDB();
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
@@ -253,13 +259,18 @@ public class FederatedClient {
 		}
 
 		if (useOSCORE && !unicastMode) {
-			System.out.println("Invalid config: " + "useOSCORE: " + useOSCORE + " unicastMode: " + unicastMode);
+			System.out.println("Invalid config:");
+			System.out.println("useOSCORE: " + useOSCORE);
+			System.out.println("unicastMode: " + unicastMode);
+			System.out.println();
 			printHelp();
 		}
 
 		if (useGroupOSCORE && unicastMode) {
-			System.out
-					.println("Invalid config: " + "useGroupOSCORE: " + useGroupOSCORE + " unicastMode: " + unicastMode);
+			System.out.println("Invalid config:");
+			System.out.println("useGroupOSCORE: " + useGroupOSCORE);
+			System.out.println("unicastMode: " + unicastMode);
+			System.out.println();
 			printHelp();
 		}
 
@@ -303,7 +314,7 @@ public class FederatedClient {
 			requestURI = "coap://" + multicastIP.getHostAddress() + ":" + destinationPort + requestResource;
 		}
 
-		// If OSCORE is being used set the context information
+		// If Group OSCORE is being used set the context information
 		if (useGroupOSCORE) {
 
 			// Add private & public keys for sender & receiver(s)
@@ -314,9 +325,16 @@ public class FederatedClient {
 					algGroupEnc, algKeyAgreement, gmPublicKey);
 
 			commonCtx.addSenderCtxCcs(clientSid, clientPublicPrivateKey);
-			addServerContexts(commonCtx);
+			addGroupServerContexts(commonCtx);
 
 			db.addContext(requestURI, commonCtx);
+
+			OSCoreCoapStackFactory.useAsDefault(db);
+		}
+
+		// If OSCORE is being used set the context information
+		if (useOSCORE) {
+			addServerContexts(unicastServerIps);
 
 			OSCoreCoapStackFactory.useAsDefault(db);
 		}
@@ -518,16 +536,41 @@ public class FederatedClient {
 	 * @param commonCtx the group context
 	 * @throws OSException on failure to add contexts
 	 */
-	private static void addServerContexts(GroupCtx commonCtx) throws OSException {
+	private static void addGroupServerContexts(GroupCtx commonCtx) throws OSException {
 
 		for (int i = 0; i < Credentials.serverPublicKeys.size(); i++) {
 			MultiKey serverPublicKey = new MultiKey(Credentials.serverPublicKeys.get(i));
 			byte[] rid = Credentials.serverSenderIds.get(i);
-			System.out.println("=== Adding Server Context for RID " + StringUtil.byteArray2Hex(rid));
+			System.out.println("=== Adding Group OSCORE Server Context for RID " + StringUtil.byteArray2Hex(rid));
 			commonCtx.addRecipientCtxCcs(rid, REPLAY_WINDOW, serverPublicKey);
 		}
 
 		commonCtx.setResponsesIncludePartialIV(false);
+	}
+
+	/**
+	 * Add the OSCORE contexts for the servers
+	 * 
+	 * @throws OSException on failure to add contexts
+	 */
+	private static void addServerContexts(List<String> unicastServerIps) throws OSException {
+
+		for (int i = 0; i < unicastServerIps.size(); i++) {
+			URI unicastURI;
+			if (unicastServerIps.get(i).contains(":")) {
+				unicastURI = URI.create("coap://" + "[" + unicastServerIps.get(i) + "]");
+			} else {
+				unicastURI = URI.create("coap://" + unicastServerIps.get(i));
+			}
+			String requestURI = unicastURI + requestResource;
+
+			byte[] rid = Credentials.serverSenderIds.get(i);
+			OSCoreCtx ctx = new OSCoreCtx(masterSecret, false, alg, clientSid, rid, kdf, 32, masterSalt, null,
+					MAX_UNFRAGMENTED_SIZE);
+			ctx.setResponsesIncludePartialIV(false);
+			System.out.println("=== Adding OSCORE Server Context for RID " + StringUtil.byteArray2Hex(rid));
+			db.addContext(requestURI, ctx);
+		}
 	}
 
 	/**

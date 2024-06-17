@@ -54,6 +54,7 @@ import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
+import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSCoreResource;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.MultiKey;
@@ -157,6 +158,11 @@ public class FederatedServer {
 	 */
 	// static final int ED25519 = KeyKeys.OKP_Ed25519.AsInt32(); //Integer value
 	// 6
+
+	/**
+	 * MAX UNFRAGMENTED SIZE parameter for block-wise (block-wise is not used)
+	 */
+	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 
 	/* --- OSCORE Security Context information (receiver) --- */
 	private final static HashMapCtxDB db = new HashMapCtxDB();
@@ -279,13 +285,18 @@ public class FederatedServer {
 		}
 
 		if (useOSCORE && !unicastMode) {
-			System.out.println("Invalid config: " + "useOSCORE: " + useOSCORE + " unicastMode: " + unicastMode);
+			System.out.println("Invalid config:");
+			System.out.println("useOSCORE: " + useOSCORE);
+			System.out.println("unicastMode: " + unicastMode);
+			System.out.println();
 			printHelp();
 		}
 
 		if (useGroupOSCORE && unicastMode) {
-			System.out
-					.println("Invalid config: " + "useGroupOSCORE: " + useGroupOSCORE + " unicastMode: " + unicastMode);
+			System.out.println("Invalid config:");
+			System.out.println("useGroupOSCORE: " + useGroupOSCORE);
+			System.out.println("unicastMode: " + unicastMode);
+			System.out.println();
 			printHelp();
 		}
 
@@ -297,7 +308,7 @@ public class FederatedServer {
 		}
 		// End parse command line arguments
 
-		// If OSCORE is being used set the context information
+		// If Group OSCORE is being used set the context information
 		if (useGroupOSCORE) {
 
 			MultiKey serverPublicPrivateKey = null;
@@ -317,6 +328,19 @@ public class FederatedServer {
 			commonCtx.setPairwiseModeResponses(true);
 
 			db.addContext(uriLocal, commonCtx);
+
+			OSCoreCoapStackFactory.useAsDefault(db);
+		}
+
+		// If OSCORE is being used set the context information
+		if (useOSCORE) {
+			sid = Credentials.serverSenderIds.get(serverId);
+			System.out.println("Starting with SID " + StringUtil.byteArray2Hex(sid));
+
+			OSCoreCtx ctx = new OSCoreCtx(masterSecret, false, alg, sid, clientRid, kdf, 32, masterSalt, null,
+					MAX_UNFRAGMENTED_SIZE);
+			ctx.setResponsesIncludePartialIV(false);
+			db.addContext(ctx);
 
 			OSCoreCoapStackFactory.useAsDefault(db);
 		}
@@ -389,7 +413,7 @@ public class FederatedServer {
 		 * Load the training and test dataset for three datasets
 		 */
 		if (serverDataset.endsWith("IoT")) {
-			
+
 			labelIndex = 115;
 
 			/*
@@ -442,17 +466,15 @@ public class FederatedServer {
 			}
 			allData_test = DataSet.merge(ret_test);
 
-			
-
 		} else if (serverDataset.endsWith("SD")) {
-			
+
 			labelIndex = 14;
 			/*
 			 * Load the training dataset
 			 */
 
 			if (serverCount == maxServers) {
-				
+
 				//
 				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
 				rrTrain.initialize(new FileSplit(new File(Credentials.serverSmokeDetectDatasets.get(serverId))));
@@ -495,9 +517,8 @@ public class FederatedServer {
 			}
 			allData_test = DataSet.merge(ret_test);
 
-			
 		} else if (serverDataset.endsWith("Diabetes")) {
-			
+
 			labelIndex = 8;
 
 			if (serverCount == maxServers) {
@@ -543,7 +564,6 @@ public class FederatedServer {
 			}
 			allData_test = DataSet.merge(ret_test);
 
-			
 		}
 
 		allData_train.shuffle();
