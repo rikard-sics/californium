@@ -60,6 +60,7 @@ import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.MultiKey;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MiniBatchFileDataSetIterator;
@@ -75,6 +76,7 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
+import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -83,6 +85,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.util.ModelSerializer;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
@@ -582,19 +585,15 @@ public class FederatedServer {
 		/*
 		 * Normalize the training and test dataset
 		 */
-		DataNormalization normalizer_train = new NormalizerStandardize();
+		DataNormalization normalizer = new NormalizerStandardize();
 		// Collect the statistics (mean/stdev) from the training data. This does
 		// not modify the input data
-		normalizer_train.fit(trainingData);
+		normalizer.fit(trainingData);
 		// Apply normalization to the training data
-		normalizer_train.transform(trainingData);
-
-		DataNormalization normalizer_test = new NormalizerStandardize();
-		// Collect the statistics (mean/stdev) from the training data. This does
-		// not modify the input data
-		normalizer_test.fit(testData);
+		normalizer.transform(trainingData);
+		
 		// Apply normalization to the training data
-		normalizer_test.transform(testData);
+		normalizer.transform(testData);
 
 		trainIter = new MiniBatchFileDataSetIterator(trainingData, batchSize);
 		testIter = new TestDataSetIterator(testData, batchSize);
@@ -603,11 +602,13 @@ public class FederatedServer {
 		 * Construct the neural network
 		 */
 		System.out.println("Build model....");
-		int seed = 123;
-		conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.RELU).weightInit(WeightInit.XAVIER)
-				.l2(1e-4).list().layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).hasLayerNorm(true).build())
+		
+		int seed = 12;
+		conf = new NeuralNetConfiguration.Builder().seed(seed).weightInit(WeightInit.XAVIER)
+				.dataType(DataType.HALF)
+				.l2(1e-4).list().layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).activation(Activation.RELU).gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).build())
 				.layer(new DropoutLayer.Builder(0.1).build())
-				.layer(new DenseLayer.Builder().nIn(8).nOut(3).hasLayerNorm(true).build())
+				.layer(new DenseLayer.Builder().nIn(8).nOut(3).activation(Activation.RELU).gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).build())
 				.layer(new DropoutLayer.Builder(0.1).build())
 				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.SIGMOID).nIn(3)
 						.nOut(outputNum).build())
@@ -615,6 +616,7 @@ public class FederatedServer {
 
 		System.out.println("==================");
 		System.out.println("Server Ready");
+		System.out.println(conf.getDataType());
 	}
 
 	private static void TrainModel(INDArray updateModel, boolean initFlag) {
@@ -640,6 +642,7 @@ public class FederatedServer {
 
 		System.out.println("The parameters after training: " + model.params());
 		System.out.println("The length of model's parameters: " + model.params().length());
+		
 
 		Evaluation eval = new Evaluation(outputNum);
 		System.out.println("Evaluate with test dataset");
