@@ -93,6 +93,7 @@ public class KudosRederivation {
 		// Save the generated N1 value in the new context
 		newCtx.setKudosN1(n1);
 		newCtx.setKudosX1(x);
+		newCtx.setKudosCtxOld(ctx);
 		newCtx.setContextRederivationPhase(ContextRederivation.PHASE.KUDOS_CLIENT_PHASE1);
 	
 		db.removeContext(ctx);
@@ -139,6 +140,7 @@ public class KudosRederivation {
 			ctxOut.setContextRederivationPhase(PHASE.KUDOS_SERVER_PHASE2);
 			ctxOut.setKudosN1(ctx.getKudosN1());
 			ctxOut.setKudosX1(ctx.getKudosX1());
+			ctxOut.setKudosCtxOld(ctx);
 			db.removeContext(ctx);
 
 			String uri = ctx.getUri();
@@ -196,7 +198,8 @@ public class KudosRederivation {
 			}
 	
 			// Generate new OSCORE Context
-			OSCoreCtx newCtx = updateCtx(xInput, nInput, ctx);
+			OSCoreCtx ctxOld = ctx.getKudosCtxOld();
+			OSCoreCtx newCtx = updateCtx(xInput, nInput, ctxOld);
 	
 			// Save the generated N2 value in the new context
 			newCtx.setKudosN1(n1);
@@ -264,7 +267,8 @@ public class KudosRederivation {
 		}
 
 		// Generate new OSCORE Context
-		OSCoreCtx newCtx = updateCtx(xInput, nInput, ctx);
+		OSCoreCtx ctxOld = ctx.getKudosCtxOld();
+		OSCoreCtx newCtx = updateCtx(xInput, nInput, ctxOld);
 
 		// Save the generated N2 value in the new context
 		newCtx.setKudosN1(n1);
@@ -367,6 +371,7 @@ public class KudosRederivation {
 				ctx.getMaxUnfragmentedSize());
 		newCtx.setContextRederivationKey(ctx.getContextRederivationKey());
 		newCtx.setKudosContextRederivationEnabled(ctx.getKudosContextRederivationEnabled());
+		newCtx.setKudosCtxOld(ctx.getKudosCtxOld());
 		return newCtx;
 	}
 

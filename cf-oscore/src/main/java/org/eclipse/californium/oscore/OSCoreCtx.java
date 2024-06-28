@@ -94,6 +94,7 @@ public class OSCoreCtx {
 	private byte kudosX1;
 	private byte[] kudosN2;
 	private byte kudosX2;
+	private OSCoreCtx kudosCtxOld;
 
 	/**
 	 * Include the context id in messages generated using this context. This is
@@ -118,7 +119,7 @@ public class OSCoreCtx {
 	 * Default value is false.
 	 */
 	private boolean responsesIncludePartialIV;
-	
+
 	/**
 	 * Indicates if this client/server shall support the context re-derivation
 	 * procedure.
@@ -221,13 +222,14 @@ public class OSCoreCtx {
 	 * @param replay_size the replay window size or null for the default
 	 * @param master_salt the optional master salt, can be null
 	 * @param contextId the context id, can be null
-	 * @param maxUnfragmentedSize maximum unfragmented size 
+	 * @param maxUnfragmentedSize maximum unfragmented size
 	 *
 	 * @throws OSException if the KDF is not supported
 	 * @since 3.0 (added parameter maxUnfragmentedSize)
 	 */
 	public OSCoreCtx(byte[] master_secret, boolean client, AlgorithmID alg, byte[] sender_id, byte[] recipient_id,
-			AlgorithmID kdf, Integer replay_size, byte[] master_salt, byte[] contextId, int maxUnfragmentedSize) throws OSException {
+			AlgorithmID kdf, Integer replay_size, byte[] master_salt, byte[] contextId, int maxUnfragmentedSize)
+			throws OSException {
 
 		if (EXTRA_LOGGING == true) {
 			System.out.println("===");
@@ -299,18 +301,18 @@ public class OSCoreCtx {
 		}
 
 		// Set default values for these flags
-		//They can be set by the application using their setters
+		// They can be set by the application using their setters
 		includeContextId = false;
 		responsesIncludePartialIV = false;
 		contextRederivationEnabled = false;
 
-		//Set string versions of sender ID, recipient ID and Context ID
+		// Set string versions of sender ID, recipient ID and Context ID
 		contextIdString = toHex(this.context_id);
 		senderIdString = toHex(this.sender_id);
 		recipientIdString = toHex(this.recipient_id);
 
-		//Initialize the URI associated with the context
-		//It will be overwritten if this context is added to a HashMapCtxDB
+		// Initialize the URI associated with the context
+		// It will be overwritten if this context is added to a HashMapCtxDB
 		uri = "";
 
 		overrideContextId = null;
@@ -319,7 +321,7 @@ public class OSCoreCtx {
 		// Set default value of MAX_UNFRAGMENTED_SIZE
 		this.maxUnfragmentedSize = maxUnfragmentedSize;
 
-		//Set digest value depending on HKDF
+		// Set digest value depending on HKDF
 		String digest = null;
 		switch (this.kdf) {
 		case HKDF_HMAC_SHA_256:
@@ -500,7 +502,7 @@ public class OSCoreCtx {
 	public AlgorithmID getKdf() {
 		return kdf;
 	}
-	
+
 	/**
 	 * Enables getting the ID Context
 	 * 
@@ -540,18 +542,20 @@ public class OSCoreCtx {
 	 * Set the flag controlling whether or not to include the Context ID in
 	 * messages generated using this context.
 	 * 
-	 * Note that this flag should never be set to true in a context without a Context ID set.
+	 * Note that this flag should never be set to true in a context without a
+	 * Context ID set.
 	 *
 	 * @param includeContextId the includeContextId to set
 	 *
-	 * @throws IllegalStateException if a Context ID has not been set for this context
+	 * @throws IllegalStateException if a Context ID has not been set for this
+	 *             context
 	 */
 	public void setIncludeContextId(boolean includeContextId) {
 		if (context_id == null && overrideContextId == null) {
 			LOGGER.error("Context ID cannot be included for a context without one set.");
 			throw new IllegalStateException("Context ID cannot be included for a context without one set.");
 		}
-		
+
 		// If Context ID is not to be included clear the overriding Context ID
 		// possibly set to be included in messages
 		if (!includeContextId) {
@@ -714,7 +718,7 @@ public class OSCoreCtx {
 	public void setSenderKey(byte[] senderKey) {
 		this.sender_key = senderKey.clone();
 	}
-	
+
 	/**
 	 * Enables setting the recipient key
 	 * 
@@ -723,7 +727,7 @@ public class OSCoreCtx {
 	public void setRecipientKey(byte[] recipientKey) {
 		this.recipient_key = recipientKey.clone();
 	}
-	
+
 	/**
 	 * Set the maximum sequence number.
 	 * 
@@ -766,8 +770,8 @@ public class OSCoreCtx {
 	}
 
 	/**
-	 * Sets the URI this context is associated with.
-	 * (The URI it is saved under in the HashMapCtxDB.)
+	 * Sets the URI this context is associated with. (The URI it is saved under
+	 * in the HashMapCtxDB.)
 	 *
 	 * This will be set when added to the HashMapCtxDB.
 	 *
@@ -909,7 +913,7 @@ public class OSCoreCtx {
 	 * @return the string representation
 	 */
 	private String toHex(byte[] bytes) {
-		if(bytes == null || bytes.length == 0) {
+		if (bytes == null || bytes.length == 0) {
 			return "";
 		} else {
 			return StringUtil.byteArray2Hex(bytes);
@@ -950,14 +954,13 @@ public class OSCoreCtx {
 		case AES_CCM_64_64_128:
 		case AES_CCM_64_128_128:
 
-			byte[] key = { (byte) 0xEB, (byte) 0xDE, (byte) 0xBC, (byte) 0x51, (byte) 0xF1, (byte) 0x03,
-					(byte) 0x79, (byte) 0x14, (byte) 0x14, (byte) 0x4F, (byte) 0xC3, (byte) 0xAC, (byte) 0x40,
-					(byte) 0x14, (byte) 0xD2, (byte) 0x4C };
+			byte[] key = { (byte) 0xEB, (byte) 0xDE, (byte) 0xBC, (byte) 0x51, (byte) 0xF1, (byte) 0x03, (byte) 0x79,
+					(byte) 0x14, (byte) 0x14, (byte) 0x4F, (byte) 0xC3, (byte) 0xAC, (byte) 0x40, (byte) 0x14,
+					(byte) 0xD2, (byte) 0x4C };
 			byte[] nonce = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 			try {
-				CCMBlockCipher.encrypt(new SecretKeySpec(key, "AES"), nonce, Bytes.EMPTY,
-						Bytes.EMPTY, 0);
+				CCMBlockCipher.encrypt(new SecretKeySpec(key, "AES"), nonce, Bytes.EMPTY, Bytes.EMPTY, 0);
 			} catch (GeneralSecurityException e) {
 				LOGGER.error("Failed to initialize cipher.");
 				throw new RuntimeException("Failed to initialize cipher.");
@@ -1040,19 +1043,58 @@ public class OSCoreCtx {
 		return kudosN2;
 	}
 
+	/**
+	 * Get the KUDOS X1 value
+	 * 
+	 * @return the X1 value
+	 */
 	public byte getKudosX1() {
 		return kudosX1;
 	}
 
+	/**
+	 * Set the KUDOS X1 value
+	 * 
+	 * @param b the KUDOS X1 value
+	 */
 	public void setKudosX1(byte b) {
 		this.kudosX1 = b;
 	}
 
+	/**
+	 * Get the KUDOS X2 value
+	 * 
+	 * @return the KUDOS X2 value
+	 */
+	public byte getKudosX2() {
+		return kudosX2;
+	}
+
+	/**
+	 * Set the KUDOS X2 value
+	 * 
+	 * @param x the KUDOS X2 value
+	 */
 	public void setKudosX2(byte x) {
 		this.kudosX2 = x;
 	}
 
-	public byte getKudosX2() {
-		return kudosX2;
+	/**
+	 * Get KUDOS CTX_OLD, for rollback and generation of CTX_NEW
+	 * 
+	 * @return the kudosCtxOld
+	 */
+	public OSCoreCtx getKudosCtxOld() {
+		return kudosCtxOld;
 	}
+
+	/**
+	 * Set KUDOS CTX_OLD, for rollback and generation of CTX_NEW
+	 * 
+	 * @param kudosCtxOld the kudosCtxOld to set
+	 */
+	public void setKudosCtxOld(OSCoreCtx kudosCtxOld) {
+		this.kudosCtxOld = kudosCtxOld;
+	}
+
 }
