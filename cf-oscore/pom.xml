@@ -45,6 +45,18 @@
 			this, CuDNN must also be installed -->
 		<!-- See: https://deeplearning4j.konduit.ai/config/backends/config-cudnn#using-deeplearning-4-j-with-cudnn -->
 
+		<!-- For float16 support -->
+		<dependency>
+			<groupId>org.apache.arrow</groupId>
+			<artifactId>arrow-vector</artifactId>
+			<version>16.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.arrow</groupId>
+			<artifactId>arrow-memory-netty</artifactId>
+			<version>16.1.0</version>
+		</dependency>
+
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>californium-legal</artifactId>
