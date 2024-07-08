@@ -20,7 +20,6 @@ import java.io.File;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
@@ -372,8 +371,6 @@ public class FederatedClient {
 			System.out.println("=== Communication Epoch: " + i + " ===");
 			Request request = Request.newPost();
 
-			final int floatSize = Float.SIZE / 8;
-			int numElements;
 			float[] modelReq = null;
 
 			byte[] payloadReq;
@@ -395,15 +392,11 @@ public class FederatedClient {
 					System.err.println("Error: No model received");
 				}
 
-				numElements = modelReq.length;
-				payloadReq = new byte[floatSize * numElements];
-				for (int j = 0; j < numElements; j++) {
-					byte[] elementBytes = ByteBuffer.allocate(floatSize).putFloat(modelReq[j]).array();
-					System.arraycopy(elementBytes, 0, payloadReq, j * floatSize, floatSize);
-				}
+				// Build byte payload to send from float vector
+				payloadReq = FloatConverter.floatVectorToBytes(modelReq);
 
 				System.out.print("Outgoing request payload: ");
-				for (int j = 0; j < numElements; j++) {
+				for (int j = 0; j < modelReq.length; j++) {
 					System.out.print(modelReq[j] + " ");
 				}
 				if (payloadReq.length > MAX_MSG_SIZE) {
@@ -472,11 +465,9 @@ public class FederatedClient {
 			// Print received responses
 			List<CoapResponse> responses = handler.getResponses();
 
-			// FIXME: Don't do aggregation if too few servers responded (min 3)
-
 			if (responses.size() == 0) {
 
-				System.out.println("ERROR: No Response from servers.");
+				System.err.println("ERROR: No Response from servers.");
 
 			}
 			for (int j = 0; j < responses.size(); j++) {
@@ -490,19 +481,14 @@ public class FederatedClient {
 				// System.out.println("Payload: " + resp.getResponseText());
 
 				byte[] payloadRes = resp.getPayload();
-				numElements = payloadRes.length / floatSize;
-				float[] modelRes = new float[numElements];
 
-				for (int k = 0; k < numElements; k++) {
-					byte[] elementBytes = new byte[floatSize];
-					System.arraycopy(payloadRes, k * floatSize, elementBytes, 0, floatSize);
-					modelRes[k] = ByteBuffer.wrap(elementBytes).getFloat();
-				}
+				// Parse bytes in response payload into float vector
+				float[] modelRes = FloatConverter.bytesToFloatVector(payloadRes);
 
 				System.out.println();
 
 				System.out.print("Incoming payload in response: ");
-				for (int k = 0; k < numElements; k++) {
+				for (int k = 0; k < modelRes.length; k++) {
 					System.out.print(modelRes[k] + " ");
 
 				}

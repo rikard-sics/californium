@@ -25,7 +25,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.nio.ByteBuffer;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
@@ -60,7 +59,6 @@ import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.MultiKey;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MiniBatchFileDataSetIterator;
@@ -76,7 +74,6 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
-import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -85,8 +82,6 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.deeplearning4j.util.ModelSerializer;
-
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 /**
@@ -591,7 +586,7 @@ public class FederatedServer {
 		normalizer.fit(trainingData);
 		// Apply normalization to the training data
 		normalizer.transform(trainingData);
-		
+
 		// Apply normalization to the training data
 		normalizer.transform(testData);
 
@@ -602,21 +597,20 @@ public class FederatedServer {
 		 * Construct the neural network
 		 */
 		System.out.println("Build model....");
-		
-		int seed = 12;
-		conf = new NeuralNetConfiguration.Builder().seed(seed).weightInit(WeightInit.XAVIER)
-				.dataType(DataType.HALF)
-				.l2(1e-4).list().layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).activation(Activation.RELU).gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).build())
+
+		int seed = 123;
+		conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.RELU).weightInit(WeightInit.XAVIER)
+				.l2(1e-4).list().layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).hasLayerNorm(true).build())
 				.layer(new DropoutLayer.Builder(0.1).build())
-				.layer(new DenseLayer.Builder().nIn(8).nOut(3).activation(Activation.RELU).gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).build())
+				.layer(new DenseLayer.Builder().nIn(8).nOut(3).hasLayerNorm(true).build())
 				.layer(new DropoutLayer.Builder(0.1).build())
 				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.SIGMOID).nIn(3)
 						.nOut(outputNum).build())
 				.build();
 
+		System.out.println("Model Data Type: " + conf.getDataType());
 		System.out.println("==================");
 		System.out.println("Server Ready");
-		System.out.println(conf.getDataType());
 	}
 
 	private static void TrainModel(INDArray updateModel, boolean initFlag) {
@@ -642,7 +636,6 @@ public class FederatedServer {
 
 		System.out.println("The parameters after training: " + model.params());
 		System.out.println("The length of model's parameters: " + model.params().length());
-		
 
 		Evaluation eval = new Evaluation(outputNum);
 		System.out.println("Evaluate with test dataset");
@@ -680,7 +673,7 @@ public class FederatedServer {
 			double R = 1250000.0; // 10 Mbit/s
 			lbLeisureMs = 1000.0 * ((S * G) / R);
 			if (unicastMode) {
-				lbLeisureMs = 0;
+				lbLeisureMs = 1;
 			}
 		}
 
@@ -691,18 +684,11 @@ public class FederatedServer {
 			// Parse and handle request
 			byte[] payloadReq = exchange.getRequestPayload();
 
-			final int floatSize = Float.SIZE / 8;
-			int numElements = payloadReq.length / floatSize;
-
-			float[] modelReq = new float[numElements];
-			for (int i = 0; i < numElements; i++) {
-				byte[] elementBytes = new byte[floatSize];
-				System.arraycopy(payloadReq, i * floatSize, elementBytes, 0, floatSize);
-				modelReq[i] = ByteBuffer.wrap(elementBytes).getFloat();
-			}
+			// Parse bytes in request payload into float vector
+			float[] modelReq = FloatConverter.bytesToFloatVector(payloadReq);
 
 			System.out.print("Incoming payload: ");
-			for (int i = 0; i < numElements; i++) {
+			for (int i = 0; i < modelReq.length; i++) {
 				System.out.print(modelReq[i] + " ");
 
 			}
@@ -711,9 +697,6 @@ public class FederatedServer {
 			/*
 			 * Get the updated model from the request message, and create a
 			 * INDArray to get
-			 * 
-			 * TODO: add the flag or a message to indicate the current round (Do
-			 * we still need this?)
 			 */
 			INDArray updatedModel = Nd4j.create(modelReq);
 			System.out.println(updatedModel.length());
@@ -727,12 +710,8 @@ public class FederatedServer {
 
 			float[] modelRes = model.params().toFloatVector();
 
-			numElements = modelRes.length;
-			byte[] payloadRes = new byte[floatSize * numElements];
-			for (int i = 0; i < numElements; i++) {
-				byte[] elementBytes = ByteBuffer.allocate(floatSize).putFloat(modelRes[i]).array();
-				System.arraycopy(elementBytes, 0, payloadRes, i * floatSize, floatSize);
-			}
+			// Build byte payload to send from float vector
+			byte[] payloadRes = FloatConverter.floatVectorToBytes(modelRes);
 
 			System.out.println();
 			if (payloadRes.length > MAX_MSG_SIZE) {
