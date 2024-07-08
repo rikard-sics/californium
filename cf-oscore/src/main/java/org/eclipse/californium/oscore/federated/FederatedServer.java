@@ -16,7 +16,9 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore.federated;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.Inet4Address;
@@ -69,16 +71,17 @@ import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.dimensionalityreduction.PCA;
 import org.nd4j.linalg.factory.Nd4j;
-
+import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.DropoutLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -150,6 +153,7 @@ public class FederatedServer {
 	 * Total server count in the federation
 	 */
 	static int serverCount;
+	static int serverId;
 
 	/**
 	 * ED25519 curve value.
@@ -205,7 +209,7 @@ public class FederatedServer {
 	private static Random random;
 
 	/* --- Parameters used for model training --- */
-	private static int nLocalEpochs = 50; // Number of training epochs
+	private static int nLocalEpochs = 5; // Number of training epochs
 	private static int outputNum = 2; // Number of outputs
 	private static int numInputs = 30; // Number of intput features to the model
 	private static int batchSize = 640; // Batch size
@@ -251,7 +255,7 @@ public class FederatedServer {
 			printHelp();
 		}
 
-		int serverId = -1;
+		
 		String multicastStr = null;
 		String serverDataset = null;
 		boolean useFederatedLearning = true;
@@ -599,12 +603,15 @@ public class FederatedServer {
 		 */
 		System.out.println("Build model....");
 
-		int seed = 123;
-		conf = new NeuralNetConfiguration.Builder().seed(seed).weightInit(WeightInit.XAVIER)
-				.l2(1e-1).list().layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).activation(Activation.LEAKYRELU).gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).build())
-				.layer(new DropoutLayer.Builder(0.1).build())
-				.layer(new DenseLayer.Builder().nIn(8).nOut(3).activation(Activation.LEAKYRELU).gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).build())
-				.layer(new DropoutLayer.Builder(0.1).build())
+		int seed = 1;
+		conf = new NeuralNetConfiguration.Builder()
+				.seed(seed)
+				.weightInit(WeightInit.XAVIER)
+				.updater(new Sgd.Builder().learningRate(1e-2).build())
+				.gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
+				.list()
+				.layer(new DenseLayer.Builder().dropOut(0.9).nIn(numInputs).nOut(8).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+				.layer(new DenseLayer.Builder().dropOut(0.9).nIn(8).nOut(3).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
 				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.SIGMOID).nIn(3)
 						.nOut(outputNum).build())
 				.build();
@@ -651,6 +658,19 @@ public class FederatedServer {
 
 		// Print the evaluation statistics
 		System.out.println(eval.stats());
+		
+		String stringToWrite = "Accuracy: " + eval.accuracy();
+		
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter("AccuracyFile_"+ serverId + ".txt", true));
+            writer.write(stringToWrite);
+            writer.newLine();
+            writer.close();
+        } catch (IOException ioe) {
+            System.out.println("Couldn't write to file");
+        }
+		    
+	
 
 	}
 
