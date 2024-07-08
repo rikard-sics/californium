@@ -74,6 +74,7 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
+import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -599,10 +600,10 @@ public class FederatedServer {
 		System.out.println("Build model....");
 
 		int seed = 123;
-		conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.RELU).weightInit(WeightInit.XAVIER)
-				.l2(1e-4).list().layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).hasLayerNorm(true).build())
+		conf = new NeuralNetConfiguration.Builder().seed(seed).weightInit(WeightInit.XAVIER)
+				.l2(1e-1).list().layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).activation(Activation.LEAKYRELU).gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).build())
 				.layer(new DropoutLayer.Builder(0.1).build())
-				.layer(new DenseLayer.Builder().nIn(8).nOut(3).hasLayerNorm(true).build())
+				.layer(new DenseLayer.Builder().nIn(8).nOut(3).activation(Activation.LEAKYRELU).gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).build())
 				.layer(new DropoutLayer.Builder(0.1).build())
 				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.SIGMOID).nIn(3)
 						.nOut(outputNum).build())
