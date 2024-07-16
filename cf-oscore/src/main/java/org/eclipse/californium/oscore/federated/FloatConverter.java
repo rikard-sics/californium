@@ -15,7 +15,7 @@ public class FloatConverter {
 	private static final int SHORT_SIZE = Short.SIZE / 8;
 	private static final float SHORT_MAX = 32767.0F;
 
-	private static final int BITS_PER_FLOAT = 16;
+	private static final int BITS_PER_FLOAT = 32;
 
 	/**
 	 * Convert a Java array of float values to a sequence of bytes in a byte

@@ -60,6 +60,7 @@ import org.eclipse.californium.oscore.OSCoreResource;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.MultiKey;
 import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.evaluation.classification.EvaluationBinary;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -81,6 +82,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -210,7 +212,7 @@ public class FederatedServer {
 
 	/* --- Parameters used for model training --- */
 	private static int nLocalEpochs = 5; // Number of training epochs
-	private static int outputNum = 2; // Number of outputs
+	private static int outputNum = 1; // Number of outputs
 	private static int numInputs = 30; // Number of intput features to the model
 	private static int batchSize = 640; // Batch size
 	private static int ReadFileBatch = 64; // Batch size
@@ -405,7 +407,7 @@ public class FederatedServer {
 		// Labels: a single integer representing the class index in column
 		// number 116
 		int labelIndex = 0;
-		int numLabelClasses = 2; // 2 classes for the label
+		int numLabelClasses = 1; // 2 classes for the label
 		int maxServers = 32;
 		int numTrunks = 0;
 		int startTrunkId = 0;
@@ -468,6 +470,21 @@ public class FederatedServer {
 				ret_test.add(IterTest.next());
 			}
 			allData_test = DataSet.merge(ret_test);
+			
+			
+			int seed = 1;
+			conf = new NeuralNetConfiguration.Builder()
+					.seed(seed)
+					.weightInit(WeightInit.XAVIER)
+					.updater(new Adam.Builder().learningRate(5e-3).build())
+					.gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
+					.biasInit(0)
+					.list()
+					.layer(new DenseLayer.Builder().dropOut(0.3).nIn(numInputs).nOut(8).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+					.layer(new DenseLayer.Builder().dropOut(0.3).nIn(8).nOut(3).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+					.layer(new OutputLayer.Builder(LossFunctions.LossFunction.XENT).weightInit(WeightInit.XAVIER).activation(Activation.SIGMOID).nIn(3)
+							.nOut(outputNum).build())
+					.build();
 
 		} else if (serverDataset.endsWith("SD")) {
 
@@ -505,6 +522,7 @@ public class FederatedServer {
 					}
 				}
 				allData_train = DataSet.merge(ret_train);
+				
 
 			}
 
@@ -519,10 +537,26 @@ public class FederatedServer {
 				ret_test.add(IterTest.next());
 			}
 			allData_test = DataSet.merge(ret_test);
+			
+			int seed = 1;
+			conf = new NeuralNetConfiguration.Builder()
+					.seed(seed)
+					.weightInit(WeightInit.XAVIER)
+					.updater(new Adam.Builder().learningRate(1e-2).build())
+					.gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
+					.biasInit(0)
+					.l2(1e-4)
+					.list()
+					.layer(new DenseLayer.Builder().dropOut(0.1).nIn(numInputs).nOut(8).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+					.layer(new DenseLayer.Builder().dropOut(0.1).nIn(8).nOut(3).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+					.layer(new OutputLayer.Builder(LossFunctions.LossFunction.XENT).weightInit(WeightInit.XAVIER).activation(Activation.SIGMOID).nIn(3)
+							.nOut(outputNum).build())
+					.build();
 
 		} else if (serverDataset.endsWith("Diabetes")) {
 
 			labelIndex = 8;
+			numInputs = 8;
 
 			if (serverCount == maxServers) {
 				//
@@ -566,6 +600,20 @@ public class FederatedServer {
 				ret_test.add(IterTest.next());
 			}
 			allData_test = DataSet.merge(ret_test);
+			
+			int seed = 1;
+			conf = new NeuralNetConfiguration.Builder()
+					.seed(seed)
+					.weightInit(WeightInit.XAVIER)
+					.updater(new Adam.Builder().learningRate(1e-4).build())
+					.gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
+					.biasInit(0)
+					.l2(1e-4)
+					.list()
+					.layer(new DenseLayer.Builder().nIn(numInputs).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+					.layer(new OutputLayer.Builder(LossFunctions.LossFunction.XENT).weightInit(WeightInit.XAVIER).activation(Activation.SIGMOID).nIn(3)
+							.nOut(outputNum).build())
+					.build();
 
 		}
 
@@ -603,18 +651,7 @@ public class FederatedServer {
 		 */
 		System.out.println("Build model....");
 
-		int seed = 1;
-		conf = new NeuralNetConfiguration.Builder()
-				.seed(seed)
-				.weightInit(WeightInit.XAVIER)
-				.updater(new Sgd.Builder().learningRate(1e-2).build())
-				.gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
-				.list()
-				.layer(new DenseLayer.Builder().dropOut(0.9).nIn(numInputs).nOut(8).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
-				.layer(new DenseLayer.Builder().dropOut(0.9).nIn(8).nOut(3).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
-				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.SIGMOID).nIn(3)
-						.nOut(outputNum).build())
-				.build();
+		
 
 		System.out.println("Model Data Type: " + conf.getDataType());
 		System.out.println("==================");
@@ -645,7 +682,7 @@ public class FederatedServer {
 		System.out.println("The parameters after training: " + model.params());
 		System.out.println("The length of model's parameters: " + model.params().length());
 
-		Evaluation eval = new Evaluation(outputNum);
+		EvaluationBinary eval = new EvaluationBinary();
 		System.out.println("Evaluate with test dataset");
 		while (testIter.hasNext()) {
 			DataSet t = testIter.next();
@@ -659,7 +696,7 @@ public class FederatedServer {
 		// Print the evaluation statistics
 		System.out.println(eval.stats());
 		
-		String stringToWrite = "Accuracy: " + eval.accuracy();
+		String stringToWrite = "Accuracy: " + eval.accuracy(0);
 		
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter("AccuracyFile_"+ serverId + ".txt", true));
