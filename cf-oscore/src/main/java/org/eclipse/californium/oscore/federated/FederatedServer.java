@@ -83,6 +83,7 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -214,7 +215,7 @@ public class FederatedServer {
 	private static int nLocalEpochs = 5; // Number of training epochs
 	private static int outputNum = 1; // Number of outputs
 	private static int numInputs = 30; // Number of intput features to the model
-	private static int batchSize = 640; // Batch size
+	private static int batchSize = 256; // Batch size
 	private static int ReadFileBatch = 64; // Batch size
 	private static MultiLayerConfiguration conf;
 	private static MultiLayerNetwork model;
@@ -476,12 +477,12 @@ public class FederatedServer {
 			conf = new NeuralNetConfiguration.Builder()
 					.seed(seed)
 					.weightInit(WeightInit.XAVIER)
-					.updater(new Adam.Builder().learningRate(5e-3).build())
+					.updater(new Sgd.Builder().learningRate(5e-3).build())
 					.gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
 					.biasInit(0)
 					.list()
-					.layer(new DenseLayer.Builder().dropOut(0.3).nIn(numInputs).nOut(8).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
-					.layer(new DenseLayer.Builder().dropOut(0.3).nIn(8).nOut(3).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+					.layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).dropOut(0.8).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+					.layer(new DenseLayer.Builder().nIn(8).nOut(3).dropOut(0.8).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
 					.layer(new OutputLayer.Builder(LossFunctions.LossFunction.XENT).weightInit(WeightInit.XAVIER).activation(Activation.SIGMOID).nIn(3)
 							.nOut(outputNum).build())
 					.build();
@@ -605,13 +606,15 @@ public class FederatedServer {
 			conf = new NeuralNetConfiguration.Builder()
 					.seed(seed)
 					.weightInit(WeightInit.XAVIER)
-					.updater(new Adam.Builder().learningRate(1e-4).build())
+					.updater(new Adam.Builder().learningRate(1e-3).build())
 					.gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
 					.biasInit(0)
-					.l2(1e-4)
 					.list()
-					.layer(new DenseLayer.Builder().nIn(numInputs).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
-					.layer(new OutputLayer.Builder(LossFunctions.LossFunction.XENT).weightInit(WeightInit.XAVIER).activation(Activation.SIGMOID).nIn(3)
+					.layer(new DenseLayer.Builder().nIn(numInputs).nOut(10).dropOut(0.5).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+					.layer(new BatchNormalization())
+					.layer(new DenseLayer.Builder().nIn(10).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+					.layer(new BatchNormalization())
+					.layer(new OutputLayer.Builder(LossFunctions.LossFunction.XENT).weightInit(WeightInit.XAVIER).activation(Activation.SIGMOID).nIn(5)
 							.nOut(outputNum).build())
 					.build();
 
@@ -677,6 +680,8 @@ public class FederatedServer {
 
 		for (int i = 0; i < nLocalEpochs; i++) {
 			model.fit(trainIter);
+			System.out.println(model.score());
+			
 		}
 
 		System.out.println("The parameters after training: " + model.params());

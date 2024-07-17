@@ -508,10 +508,12 @@ public class FederatedClient {
 		INDArray avg = Nd4j.zeros(modelsize);
 		for (int i = 0; i < list.size(); i++) {
 			INDArray arr = list.get(i);
-			avg = Nd4j.accumulate(arr);
+			System.out.println("Model:" + arr);
+			avg = avg.add(arr);
 		}
 
 		avg = avg.div(list.size());
+		System.out.println("Updated Model:" + avg);
 
 		return avg;
 	}
