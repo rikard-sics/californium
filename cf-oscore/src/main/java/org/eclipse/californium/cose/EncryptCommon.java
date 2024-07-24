@@ -49,6 +49,7 @@ import java.util.Arrays;
 
 
 import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -65,14 +66,14 @@ import org.eclipse.californium.scandium.dtls.cipher.ThreadLocalCipher;
  */
 public abstract class EncryptCommon extends Message {
 
-	/**
-	 * ChaCha20-Poly1305: Size of the IV/nonce in bytes
-	 */
 	private static final int CHACHA_POLY_IV_LENGTH = 96 / 8;
-	
 	private final static int AES_CCM_16_IV_LENGTH = 13;
 	private final static int AES_CCM_64_IV_LENGTH = 7;
+	private final static int AES_GCM_IV_LENGTH = 12;
+	private final static int AES_CBC_IV_LENGTH = 16;
+	private final static int AES_CTR_IV_LENGTH = 16;
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 	private final static int AES_GCM_IV_LENGTH = 12;
 	private static final int CHACHA_POLY_IV_LENGTH = 12;
@@ -92,6 +93,13 @@ public abstract class EncryptCommon extends Message {
 	private final String AES_SPEC = "AES";
 	private final String AES_GCM_SPEC = AES_SPEC + "/GCM/NoPadding";
 	private final static int AES_GCM_IV_LENGTH = 12;
+
+	private static final String AES_SPEC = "AES";
+	private static final String AES_256_SPEC = "AES/CCM/NoPadding";
+	private static final String AES_GCM_SPEC = "AES/GCM/NoPadding";
+	private static final String AES_CTR_SPEC = "AES/CTR/NoPadding";
+	private static final String AES_CBC_SPEC = "AES/CBC/PKCS5Padding";
+
 
 
 	protected String context;
@@ -141,8 +149,12 @@ public abstract class EncryptCommon extends Message {
 			AES_CCM256_Decrypt(alg, rgbKey);
 		} else if (isSupportedAesGcm(alg)) {
 			AES_GCM_Decrypt(alg, rgbKey);
-		} else if(isSupportedChaChaPoly(alg)) {
+		} else if (isSupportedChaChaPoly(alg)) {
 			ChaCha20_Poly1305_Decrypt(alg, rgbKey);
+		} else if (isSupportedAesCbc(alg)) {
+			AES_CBC_Decrypt(alg, rgbKey);
+		} else if (isSupportedAesCtr(alg)) {
+			AES_CTR_Decrypt(alg, rgbKey);
 		} else {
 			throw new CoseException("Unsupported Algorithm Specified");
 		}
@@ -197,6 +209,10 @@ public abstract class EncryptCommon extends Message {
 			AES_GCM_Encrypt(alg, rgbKey);
 		} else if (isSupportedChaChaPoly(alg)) {
 			ChaCha20_Poly1305_Encrypt(alg, rgbKey);
+		} else if (isSupportedAesCbc(alg)) {
+			AES_CBC_Encrypt(alg, rgbKey);
+		} else if (isSupportedAesCtr(alg)) {
+			AES_CTR_Encrypt(alg, rgbKey);
 		} else {
 			throw new CoseException("Unsupported Algorithm Specified");
 		}
@@ -328,6 +344,7 @@ public abstract class EncryptCommon extends Message {
 		byte[] aad = getAADBytes();
 
 		try {
+<<<<<<< HEAD
 			// get and prepare cipher
 			Cipher cipher = AES_GCM_CIPHER.currentWithCause();
 			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(rgbKey, AES_SPEC),
@@ -395,6 +412,10 @@ public abstract class EncryptCommon extends Message {
 			// process the plaintext and generate the ciphertext
 			rgbEncrypt = cipher.doFinal(rgbContent);
 
+
+			rgbEncrypt = CCMBlockCipher.encrypt(new SecretKeySpec(rgbKey, AES_SPEC), iv.GetByteString(), aad,
+					GetContent(), alg.getTagSize() / Byte.SIZE);
+
 		} catch (NoSuchAlgorithmException ex) {
 			throw new CoseException("Algorithm not supported", ex);
 		} catch (Exception ex) {
@@ -426,7 +447,7 @@ public abstract class EncryptCommon extends Message {
 			// create and prepare cipher
 			Cipher cipher;
 			cipher = Cipher.getInstance(AES_GCM_SPEC);
-			cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(rgbKey, "AES"),
+			cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(rgbKey, AES_SPEC),
 					new GCMParameterSpec(alg.getTagSize(), iv.GetByteString()));
 			cipher.updateAAD(getAADBytes());
 
@@ -637,7 +658,7 @@ public abstract class EncryptCommon extends Message {
 			// Initialize cipher and key specification.
 			Cipher cipher = Cipher.getInstance(AES_256_SPEC);
 			GCMParameterSpec spec = new GCMParameterSpec(alg.getTagSize(), nonce);
-			SecretKeySpec keySpec = new SecretKeySpec(rgbKey, "AES");
+			SecretKeySpec keySpec = new SecretKeySpec(rgbKey, AES_SPEC);
 
 			// Initialize cipher in decryption mode.
 			cipher.init(Cipher.DECRYPT_MODE, keySpec, spec);
@@ -692,7 +713,7 @@ public abstract class EncryptCommon extends Message {
 			// Initialize cipher and key specification.
 			Cipher cipher = Cipher.getInstance(AES_256_SPEC);
 			GCMParameterSpec spec = new GCMParameterSpec(alg.getTagSize(), nonce);
-			SecretKeySpec keySpec = new SecretKeySpec(rgbKey, "AES");
+			SecretKeySpec keySpec = new SecretKeySpec(rgbKey, AES_SPEC);
 
 			// Initialize cipher in encryption mode.
 			cipher.init(Cipher.ENCRYPT_MODE, keySpec, spec);
@@ -716,6 +737,142 @@ public abstract class EncryptCommon extends Message {
 		} catch (Exception ex) {
 			ex.printStackTrace();
 			throw new CoseException("Decryption failure", ex);
+		}
+	}
+
+	private void AES_CTR_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException {
+		// validate key
+		if (rgbKey.length != alg.getKeySize() / Byte.SIZE) {
+			throw new CoseException("Key Size is incorrect");
+		}
+
+		// obtain and validate IV
+		final int ivLen = ivLengthCtr(alg);
+		CBORObject iv = findAttribute(HeaderKeys.IV);
+		if (iv == null) {
+			throw new CoseException("Missing IV during decryption");
+		}
+		if (iv.getType() != CBORType.ByteString) {
+			throw new CoseException("IV is incorrectly formed");
+		}
+		if (iv.GetByteString().length != ivLen) {
+			throw new CoseException("IV size is incorrect");
+		}
+
+		try {
+			Cipher cipher = Cipher.getInstance(AES_CTR_SPEC);
+			SecretKeySpec keySpec = new SecretKeySpec(rgbKey, AES_SPEC);
+			IvParameterSpec ivSpec = new IvParameterSpec(iv.GetByteString());
+			cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
+			rgbContent = cipher.doFinal(getEncryptedContent());
+		} catch (NoSuchAlgorithmException | NoSuchPaddingException ex) {
+			throw new CoseException("Algorithm not supported", ex);
+		} catch (InvalidKeyException ex) {
+			if (ex.getMessage().equals("Illegal key size")) {
+				throw new CoseException("Unsupported key size", ex);
+			}
+			throw new CoseException("Decryption failure", ex);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw new CoseException("Decryption failure", ex);
+		}
+	}
+
+	private void AES_CTR_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException {
+
+		// validate key
+		if (rgbKey.length != alg.getKeySize() / Byte.SIZE) {
+			throw new CoseException("Key Size is incorrect");
+		}
+
+		// obtain and validate iv
+		CBORObject iv = findAttribute(HeaderKeys.IV);
+		int ivLen = ivLengthCtr(alg);
+		if (iv.getType() != CBORType.ByteString) {
+			throw new CoseException("IV is incorrectly formed.");
+		}
+		if (iv.GetByteString().length != ivLen) {
+			throw new CoseException("IV size is incorrect.");
+		}
+
+		try {
+			Cipher cipher = Cipher.getInstance(AES_CTR_SPEC);
+			SecretKeySpec keySpec = new SecretKeySpec(rgbKey, AES_SPEC);
+			IvParameterSpec ivSpec = new IvParameterSpec(iv.GetByteString());
+			cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
+			rgbEncrypt = cipher.doFinal(GetContent());
+		} catch (NoSuchAlgorithmException | NoSuchPaddingException ex) {
+			throw new CoseException("Algorithm not supported", ex);
+		} catch (Exception ex) {
+			throw new CoseException("Encryption failure", ex);
+		}
+	}
+
+	private void AES_CBC_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException {
+		// validate key
+		if (rgbKey.length != alg.getKeySize() / Byte.SIZE) {
+			throw new CoseException("Key Size is incorrect");
+		}
+
+		// obtain and validate IV
+		final int ivLen = ivLengthCbc(alg);
+		CBORObject iv = findAttribute(HeaderKeys.IV);
+		if (iv == null) {
+			throw new CoseException("Missing IV during decryption");
+		}
+		if (iv.getType() != CBORType.ByteString) {
+			throw new CoseException("IV is incorrectly formed");
+		}
+		if (iv.GetByteString().length != ivLen) {
+			throw new CoseException("IV size is incorrect");
+		}
+
+		try {
+			Cipher cipher = Cipher.getInstance(AES_CBC_SPEC);
+			SecretKeySpec keySpec = new SecretKeySpec(rgbKey, AES_SPEC);
+			IvParameterSpec ivSpec = new IvParameterSpec(iv.GetByteString());
+			cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
+			rgbContent = cipher.doFinal(getEncryptedContent());
+		} catch (NoSuchAlgorithmException | NoSuchPaddingException ex) {
+			throw new CoseException("Algorithm not supported", ex);
+		} catch (InvalidKeyException ex) {
+			if (ex.getMessage().equals("Illegal key size")) {
+				throw new CoseException("Unsupported key size", ex);
+			}
+			throw new CoseException("Decryption failure", ex);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw new CoseException("Decryption failure", ex);
+		}
+	}
+
+	private void AES_CBC_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException {
+
+		// validate key
+		if (rgbKey.length != alg.getKeySize() / Byte.SIZE) {
+			throw new CoseException("Key Size is incorrect");
+		}
+
+		// obtain and validate iv
+		CBORObject iv = findAttribute(HeaderKeys.IV);
+		int ivLen = ivLengthCbc(alg);
+		if (iv.getType() != CBORType.ByteString) {
+			throw new CoseException("IV is incorrectly formed.");
+		}
+		if (iv.GetByteString().length != ivLen) {
+			throw new CoseException("IV size is incorrect.");
+		}
+
+		try {
+			Cipher cipher = Cipher.getInstance(AES_CBC_SPEC);
+			SecretKeySpec keySpec = new SecretKeySpec(rgbKey, AES_SPEC);
+			IvParameterSpec ivSpec = new IvParameterSpec(iv.GetByteString());
+			cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
+			rgbEncrypt = cipher.doFinal(GetContent());
+		} catch (NoSuchAlgorithmException | NoSuchPaddingException ex) {
+			throw new CoseException("Algorithm not supported", ex);
+		} catch (Exception ex) {
+			throw new CoseException("Encryption failure", ex);
 		}
 	}
 
@@ -897,7 +1054,7 @@ public abstract class EncryptCommon extends Message {
 			return -1;
 		}
 	}
-	
+
 	/**
 	 * Get IV length for ChaCha20-Poly1305 in bytes.
 	 * 
@@ -914,7 +1071,45 @@ public abstract class EncryptCommon extends Message {
 	}
 
 	/**
-	 * Get IV length for AES CCM/GCM in bytes.
+	 * Get IV length for AES CTR in bytes.
+	 * 
+	 * @param alg algorithm ID:
+	 * @return iv length
+	 */
+	private static int ivLengthCtr(AlgorithmID alg) {
+		switch (alg) {
+		case A128CTR:
+			return AES_CTR_IV_LENGTH;
+		case A192CTR:
+			return AES_CTR_IV_LENGTH;
+		case A256CTR:
+			return AES_CTR_IV_LENGTH;
+		default:
+			return -1;
+		}
+	}
+
+	/**
+	 * Get IV length for AES CBC in bytes.
+	 * 
+	 * @param alg algorithm ID:
+	 * @return iv length
+	 */
+	private static int ivLengthCbc(AlgorithmID alg) {
+		switch (alg) {
+		case A128CBC:
+			return AES_CBC_IV_LENGTH;
+		case A192CBC:
+			return AES_CBC_IV_LENGTH;
+		case A256CBC:
+			return AES_CBC_IV_LENGTH;
+		default:
+			return -1;
+		}
+	}
+
+	/**
+	 * Get IV length for supported algorithms in bytes.
 	 * 
 	 * @param alg algorithm ID:
 	 * @return iv length
@@ -938,6 +1133,16 @@ public abstract class EncryptCommon extends Message {
 		int chaChaPolyIvLength = ivLengthChaChaPoly(alg);
 		if (chaChaPolyIvLength != -1) {
 			return chaChaPolyIvLength;
+		}
+
+		int cbcIvLength = ivLengthCbc(alg);
+		if (cbcIvLength != -1) {
+			return cbcIvLength;
+		}
+
+		int ctrIvLength = ivLengthCtr(alg);
+		if (ctrIvLength != -1) {
+			return ctrIvLength;
 		}
 
 		return -1;
@@ -985,7 +1190,6 @@ public abstract class EncryptCommon extends Message {
 		return true;
 	}
 
-	
 
 	/**
 	 * Check if a ChaCha20-Poly1305 algorithm is supported.
@@ -995,6 +1199,35 @@ public abstract class EncryptCommon extends Message {
 	 */
 	private static boolean isSupportedChaChaPoly(AlgorithmID alg) {
 		if (ivLengthChaChaPoly(alg) == -1) {
+			return false;
+		}
+
+		return true;
+	}
+
+
+	/**
+	 * Check if an AES CTR algorithm is supported.
+	 * 
+	 * @param alg the algorithm
+	 * @return if it is supported
+	 */
+	private static boolean isSupportedAesCtr(AlgorithmID alg) {
+		if (ivLengthCtr(alg) == -1) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Check if an AES CBC algorithm is supported.
+	 * 
+	 * @param alg the algorithm
+	 * @return if it is supported
+	 */
+	private static boolean isSupportedAesCbc(AlgorithmID alg) {
+		if (ivLengthCbc(alg) == -1) {
 			return false;
 		}
 

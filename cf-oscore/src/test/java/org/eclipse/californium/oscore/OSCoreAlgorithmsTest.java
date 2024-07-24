@@ -55,8 +55,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.upokecenter.cbor.CBORObject;
-
 /**
  * Test usage of the supported encryption algorithms with OSCORE.
  * 
@@ -216,12 +214,10 @@ public class OSCoreAlgorithmsTest {
 		sendRequest(AlgorithmID.AES_CCM_64_64_256);
 	}
 
-
 	@Test
 	public void test_AES_CCM_16_64_256() throws Exception {
 		sendRequest(AlgorithmID.AES_CCM_16_64_256);
 	}
-
 
 	@Test
 	public void test_AES_CCM_16_128_256() throws Exception {
@@ -232,6 +228,37 @@ public class OSCoreAlgorithmsTest {
 	public void test_AES_CCM_64_128_256() throws Exception {
 		sendRequest(AlgorithmID.AES_CCM_64_128_256);
 	}
+
+	@Test
+	public void test_AES_CTR_128() throws Exception {
+		sendRequest(AlgorithmID.A128CTR);
+	}
+
+	@Test
+	public void test_AES_CTR_192() throws Exception {
+		sendRequest(AlgorithmID.A192CTR);
+	}
+
+	@Test
+	public void test_AES_CTR_256() throws Exception {
+		sendRequest(AlgorithmID.A256CTR);
+	}
+
+	@Test
+	public void test_AES_CBC_128() throws Exception {
+		sendRequest(AlgorithmID.A128CBC);
+	}
+
+	@Test
+	public void test_AES_CBC_192() throws Exception {
+		sendRequest(AlgorithmID.A192CBC);
+	}
+
+	@Test
+	public void test_AES_CBC_256() throws Exception {
+		sendRequest(AlgorithmID.A256CBC);
+	}
+
 
 	@Rule
 	public ExpectedException exceptionRule = ExpectedExceptionWrapper.none();
