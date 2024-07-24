@@ -102,7 +102,12 @@ public abstract class Encryptor {
 			nonceLength = algIvLen;
 			commonIV = Arrays.copyOfRange(ctx.getCommonIV(), 0, nonceLength);
 		}
-		System.out.println("Encryption once length: " + nonceLength);
+		System.out.println("Encryption nonce length: " + nonceLength);
+
+		// Warning: Using algos without integrity in pairwise mode
+		if (encryptionAlg.getTagSize() == 0 && !groupModeMessage) {
+			LOGGER.warn("Using an algorithm without integrity protection in pairwise mode!");
+		}
 
 		try {
 			byte[] key = ctx.getSenderKey();
