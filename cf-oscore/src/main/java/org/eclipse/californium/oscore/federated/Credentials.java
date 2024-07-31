@@ -610,41 +610,41 @@ public class Credentials {
 		
 	}
 	
-	public static Map<Integer, String> serverDiabetesDatasets;
+	public static Map<Integer, String> serverTrojanDatasets;
 	static {
-		serverDiabetesDatasets = new HashMap<>();
-		serverDiabetesDatasets.put(0, "datasets/Diabetes/Dia_train_0.csv");
-		serverDiabetesDatasets.put(1, "datasets/Diabetes/Dia_train_1.csv");
-		serverDiabetesDatasets.put(2, "datasets/Diabetes/Dia_train_2.csv");
-		serverDiabetesDatasets.put(3, "datasets/Diabetes/Dia_train_3.csv");
-		serverDiabetesDatasets.put(4, "datasets/Diabetes/Dia_train_4.csv");
-		serverDiabetesDatasets.put(5, "datasets/Diabetes/Dia_train_5.csv");
-		serverDiabetesDatasets.put(6, "datasets/Diabetes/Dia_train_6.csv");
-		serverDiabetesDatasets.put(7, "datasets/Diabetes/Dia_train_7.csv");
-		serverDiabetesDatasets.put(8, "datasets/Diabetes/Dia_train_8.csv");
-		serverDiabetesDatasets.put(9, "datasets/Diabetes/Dia_train_9.csv");
-		serverDiabetesDatasets.put(10, "datasets/Diabetes/Dia_train_10.csv");
-		serverDiabetesDatasets.put(11, "datasets/Diabetes/Dia_train_11.csv");
-		serverDiabetesDatasets.put(12, "datasets/Diabetes/Dia_train_12.csv");
-		serverDiabetesDatasets.put(13, "datasets/Diabetes/Dia_train_13.csv");
-		serverDiabetesDatasets.put(14, "datasets/Diabetes/Dia_train_14.csv");
-		serverDiabetesDatasets.put(15, "datasets/Diabetes/Dia_train_15.csv");
-		serverDiabetesDatasets.put(16, "datasets/Diabetes/Dia_train_16.csv");
-		serverDiabetesDatasets.put(17, "datasets/Diabetes/Dia_train_17.csv");
-		serverDiabetesDatasets.put(18, "datasets/Diabetes/Dia_train_18.csv");
-		serverDiabetesDatasets.put(19, "datasets/Diabetes/Dia_train_19.csv");
-		serverDiabetesDatasets.put(20, "datasets/Diabetes/Dia_train_20.csv");
-		serverDiabetesDatasets.put(21, "datasets/Diabetes/Dia_train_21.csv");
-		serverDiabetesDatasets.put(22, "datasets/Diabetes/Dia_train_22.csv");
-		serverDiabetesDatasets.put(23, "datasets/Diabetes/Dia_train_23.csv");
-		serverDiabetesDatasets.put(24, "datasets/Diabetes/Dia_train_24.csv");
-		serverDiabetesDatasets.put(25, "datasets/Diabetes/Dia_train_25.csv");
-		serverDiabetesDatasets.put(26, "datasets/Diabetes/Dia_train_26.csv");
-		serverDiabetesDatasets.put(27, "datasets/Diabetes/Dia_train_27.csv");
-		serverDiabetesDatasets.put(28, "datasets/Diabetes/Dia_train_28.csv");
-		serverDiabetesDatasets.put(29, "datasets/Diabetes/Dia_train_29.csv");
-		serverDiabetesDatasets.put(30, "datasets/Diabetes/Dia_train_30.csv");
-		serverDiabetesDatasets.put(31, "datasets/Diabetes/Dia_train_31.csv");
+		serverTrojanDatasets = new HashMap<>();
+		serverTrojanDatasets.put(0, "datasets/Trojan_Detection/Tro_train_0.csv");
+		serverTrojanDatasets.put(1, "datasets/Trojan_Detection/Tro_train_1.csv");
+		serverTrojanDatasets.put(2, "datasets/Trojan_Detection/Tro_train_2.csv");
+		serverTrojanDatasets.put(3, "datasets/Trojan_Detection/Tro_train_3.csv");
+		serverTrojanDatasets.put(4, "datasets/Trojan_Detection/Tro_train_4.csv");
+		serverTrojanDatasets.put(5, "datasets/Trojan_Detection/Tro_train_5.csv");
+		serverTrojanDatasets.put(6, "datasets/Trojan_Detection/Tro_train_6.csv");
+		serverTrojanDatasets.put(7, "datasets/Trojan_Detection/Tro_train_7.csv");
+		serverTrojanDatasets.put(8, "datasets/Trojan_Detection/Tro_train_8.csv");
+		serverTrojanDatasets.put(9, "datasets/Trojan_Detection/Tro_train_9.csv");
+		serverTrojanDatasets.put(10, "datasets/Trojan_Detection/Tro_train_10.csv");
+		serverTrojanDatasets.put(11, "datasets/Trojan_Detection/Tro_train_11.csv");
+		serverTrojanDatasets.put(12, "datasets/Trojan_Detection/Tro_train_12.csv");
+		serverTrojanDatasets.put(13, "datasets/Trojan_Detection/Tro_train_13.csv");
+		serverTrojanDatasets.put(14, "datasets/Trojan_Detection/Tro_train_14.csv");
+		serverTrojanDatasets.put(15, "datasets/Trojan_Detection/Tro_train_15.csv");
+		serverTrojanDatasets.put(16, "datasets/Trojan_Detection/Tro_train_16.csv");
+		serverTrojanDatasets.put(17, "datasets/Trojan_Detection/Tro_train_17.csv");
+		serverTrojanDatasets.put(18, "datasets/Trojan_Detection/Tro_train_18.csv");
+		serverTrojanDatasets.put(19, "datasets/Trojan_Detection/Tro_train_19.csv");
+		serverTrojanDatasets.put(20, "datasets/Trojan_Detection/Tro_train_20.csv");
+		serverTrojanDatasets.put(21, "datasets/Trojan_Detection/Tro_train_21.csv");
+		serverTrojanDatasets.put(22, "datasets/Trojan_Detection/Tro_train_22.csv");
+		serverTrojanDatasets.put(23, "datasets/Trojan_Detection/Tro_train_23.csv");
+		serverTrojanDatasets.put(24, "datasets/Trojan_Detection/Tro_train_24.csv");
+		serverTrojanDatasets.put(25, "datasets/Trojan_Detection/Tro_train_25.csv");
+		serverTrojanDatasets.put(26, "datasets/Trojan_Detection/Tro_train_26.csv");
+		serverTrojanDatasets.put(27, "datasets/Trojan_Detection/Tro_train_27.csv");
+		serverTrojanDatasets.put(28, "datasets/Trojan_Detection/Tro_train_28.csv");
+		serverTrojanDatasets.put(29, "datasets/Trojan_Detection/Tro_train_29.csv");
+		serverTrojanDatasets.put(30, "datasets/Trojan_Detection/Tro_train_30.csv");
+		serverTrojanDatasets.put(31, "datasets/Trojan_Detection/Tro_train_31.csv");
 		
 	}
 

@@ -555,17 +555,17 @@ public class FederatedServer {
 							.nOut(outputNum).build())
 					.build();
 
-		} else if (serverDataset.endsWith("Diabetes")) {
+		} else if (serverDataset.endsWith("Tro")) {
 
-			labelIndex = 13;
-			numInputs = 13;
+			labelIndex = 77;
+			numInputs = 77;
 
 			if (serverCount == maxServers) {
 				//
 				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
-				rrTrain.initialize(new FileSplit(new File(Credentials.serverDiabetesDatasets.get(serverId))));
+				rrTrain.initialize(new FileSplit(new File(Credentials.serverTrojanDatasets.get(serverId))));
 				List<DataSet> ret_train = new ArrayList<>();
-				IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);
+				IterTrain = new RecordReaderDataSetIterator(rrTrain,  ReadFileBatch, labelIndex, numLabelClasses);
 				while (IterTrain.hasNext()) {
 					ret_train.add(IterTrain.next());
 				}
@@ -581,10 +581,14 @@ public class FederatedServer {
 				List<DataSet> ret_train = new ArrayList<>();
 
 				for (int i = startTrunkId; i < (startTrunkId + numTrunks); i++) {
-					rrTrain.initialize(new FileSplit(new File(Credentials.serverDiabetesDatasets.get(i))));
-					IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);
+					System.out.println(i);
+					rrTrain.initialize(new FileSplit(new File(Credentials.serverTrojanDatasets.get(i))));
+					IterTrain = new RecordReaderDataSetIterator(rrTrain,  ReadFileBatch, labelIndex, numLabelClasses);
+					int line = 0;
 					while (IterTrain.hasNext()) {
+						System.out.println(line);
 						ret_train.add(IterTrain.next());
+						line = line + 1;
 					}
 				}
 				allData_train = DataSet.merge(ret_train);
@@ -596,7 +600,7 @@ public class FederatedServer {
 			 */
 			List<DataSet> ret_test = new ArrayList<>();
 			RecordReader rrTest = new CSVRecordReader(numLinesToSkip, delimiter);
-			rrTest.initialize(new FileSplit(new File("datasets/Diabetes/Dia_test.csv")));
+			rrTest.initialize(new FileSplit(new File("datasets/Trojan_Detection/Tro_test.csv")));
 			IterTest = new RecordReaderDataSetIterator(rrTest, batchSize, labelIndex, numLabelClasses);
 			while (IterTest.hasNext()) {
 				ret_test.add(IterTest.next());
@@ -607,15 +611,13 @@ public class FederatedServer {
 			conf = new NeuralNetConfiguration.Builder()
 					.seed(seed)
 					.weightInit(WeightInit.XAVIER)
-					.updater(new Sgd.Builder().learningRate(1e-5).build())
+					.updater(new Sgd.Builder().learningRate(1e-3).build())
 					.gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
 					.l2(1e-4)
 					.biasInit(0)
 					.list()
-					.layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).dropOut(0.8).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
-					.layer(new BatchNormalization())
-					.layer(new DenseLayer.Builder().nIn(5).nOut(3).dropOut(0.8).weightInit(WeightInit.XAVIER).activation(Activation.RELU).hasLayerNorm(true).build())
-					.layer(new BatchNormalization())
+					.layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).dropOut(0.7).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+					.layer(new DenseLayer.Builder().nIn(8).nOut(3).dropOut(0.7).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
 					.layer(new OutputLayer.Builder(LossFunctions.LossFunction.XENT).weightInit(WeightInit.XAVIER).activation(Activation.SIGMOID).nIn(3)
 							.nOut(outputNum).build())
 					.build();
