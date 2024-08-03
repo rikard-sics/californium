@@ -787,8 +787,9 @@ public class Util {
     				
     				// Rollback
     				usedConnectionIds.remove(identifierCbor);
-    				if (ctx != null)
+    				if (ctx != null) {
     					db.removeContext(ctx);
+    				}
     				
     				return null;
     			}
