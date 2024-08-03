@@ -410,7 +410,6 @@ class ClientEdhocExecutor {
 				// The Error Message was generated while reading EDHOC Message 2,
 				
 				Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-				edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
 				System.out.println("Sent EDHOC Error Message\n");
 				
 				if (debugPrint) {
@@ -457,7 +456,9 @@ class ClientEdhocExecutor {
 					if (session.getApplicationProfile().getUseMessage4() == true) {
 						System.err.println("Cannot send the EDHOC + OSCORE combined request if message_4 is expected\n");
 						Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-						edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
+						if (ctx != null) {
+							edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
+						}
 						client.shutdown();
 						return false;
 					}
@@ -483,13 +484,17 @@ class ClientEdhocExecutor {
 					} catch (ConnectorException e) {
 						System.err.println("ConnectorException when sending a protected request\n");
 						Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-						edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
+						if (ctx != null) {
+							edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
+						}
 						client.shutdown();
 						return false;
 					} catch (IOException e) {
 						System.err.println("IOException when sending a protected request\n");
 						Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-						edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
+						if (ctx != null) {
+							edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
+						}
 						client.shutdown();
 						return false;
 					}
@@ -538,7 +543,9 @@ class ClientEdhocExecutor {
 					
 					if (error == true) {
 						Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-						edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
+						if (ctx != null) {
+							edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
+						}
 						client.shutdown();
 						return false;
 					}
@@ -567,13 +574,17 @@ class ClientEdhocExecutor {
 			} catch (ConnectorException e) {
 				System.err.println("ConnectorException when sending " + myString + "\n");
 				Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-				edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
+				if (ctx != null) {
+					edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
+				}
 				client.shutdown();
 				return false;
 			} catch (IOException e) {
 				System.err.println("IOException when sending "  + myString + "\n");
 				Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-				edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
+				if (ctx != null) {
+					edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context'
+				}
 				client.shutdown();
 				return false;
 			}
@@ -631,7 +642,9 @@ class ClientEdhocExecutor {
 				}
 				if (discontinue == true) {
 					Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-					edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
+					if (ctx != null) {
+						edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
+					}
 					client.shutdown();
 					return false;
 				}
@@ -643,7 +656,9 @@ class ClientEdhocExecutor {
 					if (processingResult.get(0) == null || processingResult.get(0).getType() != CBORType.ByteString) {
 						System.err.println("Error when processing EDHOC Message 4");
 						Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-						edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
+						if (ctx != null) {
+							edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
+						}
 						client.shutdown();
 						return false;
 					}
@@ -674,7 +689,9 @@ class ClientEdhocExecutor {
 							System.err.println("IOException when sending EDHOC Error Message");
 						}
 						Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
-						edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
+						if (ctx != null) {
+							edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
+						}
 						client.shutdown();
 						return false;
 					}
