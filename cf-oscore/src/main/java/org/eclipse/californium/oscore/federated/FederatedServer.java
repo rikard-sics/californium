@@ -64,6 +64,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MiniBatchFileDataSetIterator;
+import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestDataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -71,6 +72,7 @@ import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.dimensionalityreduction.PCA;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
@@ -213,11 +215,10 @@ public class FederatedServer {
 	private static int numInputs = 30; // Number of intput features to the model
 	private static int batchSize = 256; // Batch size
 	private static int ReadFileBatch = 64; // Batch size
-	private static int seed = 8888; // seed number 
+	private static int seed = 77; // seed number 
 	private static MultiLayerConfiguration conf;
 	private static MultiLayerNetwork model;
-	private static DataSetIterator IterTrain;
-	private static DataSetIterator IterTest;
+	private static DataSetIterator IterLoad;
 	private static DataSetIterator trainIter;
 	private static DataSetIterator testIter;
 
@@ -409,8 +410,7 @@ public class FederatedServer {
 		int maxServers = 32;
 		int numTrunks = 0;
 		int startTrunkId = 0;
-		DataSet allData_train = null;
-		DataSet allData_test = null;
+		DataSet allData = null;
 
 		/*
 		 * Load the training and test dataset for three datasets
@@ -426,14 +426,14 @@ public class FederatedServer {
 
 			if (serverCount == maxServers) {
 				//
-				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
-				rrTrain.initialize(new FileSplit(new File(Credentials.serverIoTDatasets.get(serverId))));
-				List<DataSet> ret_train = new ArrayList<>();
-				IterTrain = new RecordReaderDataSetIterator(rrTrain, ReadFileBatch, labelIndex, numLabelClasses);
-				while (IterTrain.hasNext()) {
-					ret_train.add(IterTrain.next());
+				RecordReader rr = new CSVRecordReader(numLinesToSkip, delimiter);
+				rr.initialize(new FileSplit(new File(Credentials.serverIoTDatasets.get(serverId))));
+				List<DataSet> ret = new ArrayList<>();
+				IterLoad = new RecordReaderDataSetIterator(rr, ReadFileBatch, labelIndex, numLabelClasses);
+				while (IterLoad.hasNext()) {
+					ret.add(IterLoad.next());
 				}
-				allData_train = DataSet.merge(ret_train);
+				allData = DataSet.merge(ret);
 
 			} else {
 
@@ -445,31 +445,18 @@ public class FederatedServer {
 				if (useFederatedLearning == false) {
 					startTrunkId = 0;
 				}
-				List<DataSet> ret_train = new ArrayList<>();
+				List<DataSet> ret = new ArrayList<>();
 
 				for (int i = startTrunkId; i < (startTrunkId + numTrunks); i++) {
 					rrTrain.initialize(new FileSplit(new File(Credentials.serverIoTDatasets.get(i))));
-					IterTrain = new RecordReaderDataSetIterator(rrTrain, ReadFileBatch, labelIndex, numLabelClasses);
-					while (IterTrain.hasNext()) {
-						ret_train.add(IterTrain.next());
+					IterLoad = new RecordReaderDataSetIterator(rrTrain, ReadFileBatch, labelIndex, numLabelClasses);
+					while (IterLoad.hasNext()) {
+						ret.add(IterLoad.next());
 					}
 				}
-				allData_train = DataSet.merge(ret_train);
+				allData = DataSet.merge(ret);
 
 			}
-
-			/*
-			 * Load the test dataset
-			 */
-			List<DataSet> ret_test = new ArrayList<>();
-			RecordReader rrTest = new CSVRecordReader(numLinesToSkip, delimiter);
-			rrTest.initialize(new FileSplit(new File("datasets/N_BaIoT/IoT_test.csv")));
-			IterTest = new RecordReaderDataSetIterator(rrTest, batchSize, labelIndex, numLabelClasses);
-			while (IterTest.hasNext()) {
-				ret_test.add(IterTest.next());
-			}
-			allData_test = DataSet.merge(ret_test);
-			
 			
 			
 			conf = new NeuralNetConfiguration.Builder()
@@ -480,11 +467,13 @@ public class FederatedServer {
 					.l2(1e-4)
 					.biasInit(0)
 					.list()
-					.layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).dropOut(0.7).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
-					.layer(new DenseLayer.Builder().nIn(8).nOut(3).dropOut(0.7).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+					.layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).dropOut(0.8).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+					.layer(new DenseLayer.Builder().nIn(8).nOut(3).dropOut(0.8).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
 					.layer(new OutputLayer.Builder(LossFunctions.LossFunction.XENT).weightInit(WeightInit.XAVIER).activation(Activation.SIGMOID).nIn(3)
 							.nOut(outputNum).build())
 					.build();
+			
+		
 
 		} else if (serverDataset.endsWith("SD")) {
 
@@ -498,47 +487,34 @@ public class FederatedServer {
 			if (serverCount == maxServers) {
 
 				//
-				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
-				rrTrain.initialize(new FileSplit(new File(Credentials.serverSmokeDetectDatasets.get(serverId))));
-				List<DataSet> ret_train = new ArrayList<>();
-				IterTrain = new RecordReaderDataSetIterator(rrTrain, ReadFileBatch, labelIndex, numLabelClasses);
-				while (IterTrain.hasNext()) {
-					ret_train.add(IterTrain.next());
+				RecordReader rr = new CSVRecordReader(numLinesToSkip, delimiter);
+				rr.initialize(new FileSplit(new File(Credentials.serverSmokeDetectDatasets.get(serverId))));
+				List<DataSet> ret = new ArrayList<>();
+				IterLoad = new RecordReaderDataSetIterator(rr, ReadFileBatch, labelIndex, numLabelClasses);
+				while (IterLoad.hasNext()) {
+					ret.add(IterLoad.next());
 				}
-				allData_train = DataSet.merge(ret_train);
+				allData = DataSet.merge(ret);
 
 			} else {
 
-				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
+				RecordReader rr = new CSVRecordReader(numLinesToSkip, delimiter);
 				numTrunks = maxServers / serverCount; // Get the number of
 														// trunks to read files
 				startTrunkId = numTrunks * serverId; // Get the starting Trunk
 														// Id
-				List<DataSet> ret_train = new ArrayList<>();
+				List<DataSet> ret = new ArrayList<>();
 
 				for (int i = startTrunkId; i < (startTrunkId + numTrunks); i++) {
-					rrTrain.initialize(new FileSplit(new File(Credentials.serverSmokeDetectDatasets.get(i))));
-					IterTrain = new RecordReaderDataSetIterator(rrTrain, batchSize, labelIndex, numLabelClasses);
-					while (IterTrain.hasNext()) {
-						ret_train.add(IterTrain.next());
+					rr.initialize(new FileSplit(new File(Credentials.serverSmokeDetectDatasets.get(i))));
+					IterLoad = new RecordReaderDataSetIterator(rr, batchSize, labelIndex, numLabelClasses);
+					while (IterLoad.hasNext()) {
+						ret.add(IterLoad.next());
 					}
 				}
-				allData_train = DataSet.merge(ret_train);
-				
+				allData = DataSet.merge(ret);	
 
 			}
-
-			/*
-			 * Load the test dataset
-			 */
-			List<DataSet> ret_test = new ArrayList<>();
-			RecordReader rrTest = new CSVRecordReader(numLinesToSkip, delimiter);
-			rrTest.initialize(new FileSplit(new File("datasets/Smoke_Detection/SD_test.csv")));
-			IterTest = new RecordReaderDataSetIterator(rrTest, batchSize, labelIndex, numLabelClasses);
-			while (IterTest.hasNext()) {
-				ret_test.add(IterTest.next());
-			}
-			allData_test = DataSet.merge(ret_test);
 			
 			
 			conf = new NeuralNetConfiguration.Builder()
@@ -554,104 +530,99 @@ public class FederatedServer {
 					.layer(new OutputLayer.Builder(LossFunctions.LossFunction.XENT).weightInit(WeightInit.XAVIER).activation(Activation.SIGMOID).nIn(3)
 							.nOut(outputNum).build())
 					.build();
+					
 
 		} else if (serverDataset.endsWith("Tro")) {
 
-			labelIndex = 77;
-			numInputs = 77;
+			labelIndex = 30;
+			
 
 			if (serverCount == maxServers) {
 				//
-				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
-				rrTrain.initialize(new FileSplit(new File(Credentials.serverTrojanDatasets.get(serverId))));
+				RecordReader rr = new CSVRecordReader(numLinesToSkip, delimiter);
+				rr.initialize(new FileSplit(new File(Credentials.serverTrojanDatasets.get(serverId))));
 				List<DataSet> ret_train = new ArrayList<>();
-				IterTrain = new RecordReaderDataSetIterator(rrTrain,  ReadFileBatch, labelIndex, numLabelClasses);
-				while (IterTrain.hasNext()) {
-					ret_train.add(IterTrain.next());
+				IterLoad = new RecordReaderDataSetIterator(rr,  ReadFileBatch, labelIndex, numLabelClasses);
+				while (IterLoad.hasNext()) {
+					ret_train.add(IterLoad.next());
 				}
-				allData_train = DataSet.merge(ret_train);
+				allData = DataSet.merge(ret_train);
 
 			} else {
 
-				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
+				RecordReader rr = new CSVRecordReader(numLinesToSkip, delimiter);
 				numTrunks = maxServers / serverCount; // Get the number of
 														// trunks to read files
 				startTrunkId = numTrunks * serverId; // Get the starting Trunk
 														// Id
-				List<DataSet> ret_train = new ArrayList<>();
+				List<DataSet> ret = new ArrayList<>();
 
 				for (int i = startTrunkId; i < (startTrunkId + numTrunks); i++) {
-					System.out.println(i);
-					rrTrain.initialize(new FileSplit(new File(Credentials.serverTrojanDatasets.get(i))));
-					IterTrain = new RecordReaderDataSetIterator(rrTrain,  ReadFileBatch, labelIndex, numLabelClasses);
-					int line = 0;
-					while (IterTrain.hasNext()) {
-						System.out.println(line);
-						ret_train.add(IterTrain.next());
-						line = line + 1;
+					rr.initialize(new FileSplit(new File(Credentials.serverTrojanDatasets.get(i))));
+					IterLoad = new RecordReaderDataSetIterator(rr,  ReadFileBatch, labelIndex, numLabelClasses);
+					while (IterLoad.hasNext()) {
+						ret.add(IterLoad.next());
 					}
 				}
-				allData_train = DataSet.merge(ret_train);
+				allData = DataSet.merge(ret);
 
 			}
-
-			/*
-			 * Load the test dataset
-			 */
-			List<DataSet> ret_test = new ArrayList<>();
-			RecordReader rrTest = new CSVRecordReader(numLinesToSkip, delimiter);
-			rrTest.initialize(new FileSplit(new File("datasets/Trojan_Detection/Tro_test.csv")));
-			IterTest = new RecordReaderDataSetIterator(rrTest, batchSize, labelIndex, numLabelClasses);
-			while (IterTest.hasNext()) {
-				ret_test.add(IterTest.next());
-			}
-			allData_test = DataSet.merge(ret_test);
-			
+						
 			
 			conf = new NeuralNetConfiguration.Builder()
 					.seed(seed)
 					.weightInit(WeightInit.XAVIER)
 					.updater(new Sgd.Builder().learningRate(1e-3).build())
 					.gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
-					.l2(1e-4)
+					.l2(1e-2)
 					.biasInit(0)
 					.list()
-					.layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).dropOut(0.7).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
-					.layer(new DenseLayer.Builder().nIn(8).nOut(3).dropOut(0.7).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+					.layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+					.layer(new DenseLayer.Builder().nIn(8).nOut(3).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
 					.layer(new OutputLayer.Builder(LossFunctions.LossFunction.XENT).weightInit(WeightInit.XAVIER).activation(Activation.SIGMOID).nIn(3)
 							.nOut(outputNum).build())
 					.build();
 
 		}
 
-		allData_train.shuffle(seed);
-		allData_test.shuffle(seed);
-		INDArray features_train = allData_train.getFeatures();
-		INDArray features_test = allData_test.getFeatures();
+		allData.shuffle(seed);
+		//allData_test.shuffle(seed);
+		
+		INDArray features_train = allData.getFeatures();
+		//INDArray features_test = test_Data.getFeatures();
 		if (labelIndex > numInputs) {
 			features_train = PCA.pca(features_train, numInputs, true);
-			features_test = PCA.pca(features_test, numInputs, true);
+			//features_test = PCA.pca(features_test, numInputs, true);
+			System.out.println("PCA is done.");
+			allData = new DataSet(features_train, allData.getLabels());
+			
 		}
-		DataSet trainingData = new DataSet(features_train, allData_train.getLabels());
-		DataSet testData = new DataSet(features_test, allData_test.getLabels());
-		System.out.println("Number of examples in the training set: " + trainingData.numExamples());
-		System.out.println("Number of examples in thee test set: " + testData.numExamples());
+		
+		SplitTestAndTrain testAndTrain = allData.splitTestAndTrain(0.9);  
 
+		DataSet training_Data = testAndTrain.getTrain();
+		DataSet test_Data = testAndTrain.getTest();
+		
 		/*
 		 * Normalize the training and test dataset
 		 */
 		DataNormalization normalizer = new NormalizerStandardize();
 		// Collect the statistics (mean/stdev) from the training data. This does
 		// not modify the input data
-		normalizer.fit(trainingData);
+		normalizer.fit(training_Data);
 		// Apply normalization to the training data
-		normalizer.transform(trainingData);
+		normalizer.transform(training_Data);
 
 		// Apply normalization to the training data
-		normalizer.transform(testData);
+		normalizer.transform(test_Data);
+		
+		System.out.println("Number of examples in the training set: " + training_Data.numExamples());
+		System.out.println("Number of examples in the test set: " + test_Data.numExamples());
 
-		trainIter = new MiniBatchFileDataSetIterator(trainingData, batchSize);
-		testIter = new TestDataSetIterator(testData, batchSize);
+		
+
+		trainIter = new MiniBatchFileDataSetIterator(training_Data, batchSize);
+		testIter = new TestDataSetIterator(test_Data, batchSize);
 
 		/*
 		 * Construct the neural network
@@ -681,13 +652,15 @@ public class FederatedServer {
 		model.setListeners(new ScoreIterationListener(1));
 
 		System.out.println("The parameters before training: " + model.params());
-
+		EvaluationBinary eval_train = new EvaluationBinary();
 		for (int i = 0; i < nLocalEpochs; i++) {
 			
 			model.fit(trainIter);
 			System.out.println("Loss:" + model.score());
+			model.doEvaluation(trainIter, eval_train);
 			
 		}
+		System.out.println(eval_train.stats());
 
 		System.out.println("The parameters after training: " + model.params());
 		System.out.println("The length of model's parameters: " + model.params().length());
