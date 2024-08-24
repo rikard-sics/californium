@@ -91,6 +91,12 @@ public enum AlgorithmID {
 	 * @deprecated Do NOT use without an integrity protection mechanism
 	 */
 	@Deprecated
+	CHACHA20(23, 256, 0),
+
+	/**
+	 * @deprecated Do NOT use without an integrity protection mechanism
+	 */
+	@Deprecated
 	A128CTR(-65534, 128, 0),
 	/**
 	 * @deprecated Do NOT use without an integrity protection mechanism
