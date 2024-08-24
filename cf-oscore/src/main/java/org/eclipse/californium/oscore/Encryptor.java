@@ -112,11 +112,6 @@ public abstract class Encryptor {
 		}
 		System.out.println("Encryption nonce length: " + nonceLength);
 
-		// Warning: Using algos without integrity in pairwise mode
-		if (encryptionAlg.getTagSize() == 0 && !groupModeMessage) {
-			LOGGER.warn("Using an algorithm without integrity protection in pairwise mode!");
-		}
-
 		try {
 			byte[] key = ctx.getSenderKey();
 			byte[] partialIV = null;
@@ -325,6 +320,19 @@ public abstract class Encryptor {
 			if (isRequest) {
 				System.out.println("\nDeterministic request: " + isDetReq + "\n");
 			}
+			
+			// Warning: Using algos without integrity in pairwise mode
+			if (encryptionAlg.getTagSize() == 0 && !groupModeMessage) {
+				LOGGER.warn("Using an algorithm without integrity protection in pairwise mode!");
+			}
+
+			if (ctx.getContextRederivationPhase() == PHASE.SERVER_PHASE_2 && ctx.getNonceHandover() != null) {
+				nonce = ctx.getNonceHandover();
+			} else if (ctx.getContextRederivationPhase() == PHASE.CLIENT_PHASE_1
+					|| ctx.getContextRederivationPhase() == PHASE.INACTIVE) {
+				ctx.setNonceHandover(nonce);
+			}
+
 			// DET_REQ
 			// Moved down here
 			System.out.println("Encrypting outgoing " + message.getClass().getSimpleName());

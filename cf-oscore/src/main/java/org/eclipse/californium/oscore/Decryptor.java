@@ -234,6 +234,11 @@ public abstract class Decryptor {
 				
 		}
 
+		// Warning: Using algos without integrity in pairwise mode
+		if (decryptionAlg.getTagSize() == 0 && !groupModeMessage) {
+			LOGGER.warn("Using an algorithm without integrity protection in pairwise mode!");
+		}
+
 		if (ctx.getContextRederivationPhase() == PHASE.SERVER_PHASE_1) {
 			ctx.setNonceHandover(nonce);
 		} else if (ctx.getContextRederivationPhase() == PHASE.CLIENT_PHASE_2 && ctx.getNonceHandover() != null) {
@@ -244,8 +249,9 @@ public abstract class Decryptor {
 		System.out.println("Key " + Utils.toHexString(ctx.getRecipientKey()));
 		System.out.println("PartialIV " + Utils.toHexString(partialIV));
 		System.out.println("Nonce " + Utils.toHexString(nonce));
+		System.out.println("Common IV " + Utils.toHexString(ctx.getCommonIV()));
 		System.out.println("AAD " + Utils.toHexString(aad));
-
+		
 		byte[] plaintext = null;
 		byte[] key = ctx.getRecipientKey();
 		byte[] detRecipientKey = null;

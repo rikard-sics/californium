@@ -303,14 +303,8 @@ public abstract class EncryptCommon extends Message {
 		byte[] aad = getAADBytes();
 
 		try {
-<<<<<<< HEAD
 			// get and prepare cipher
 			Cipher cipher = AES_GCM_CIPHER.currentWithCause();
-=======
-			// create and prepare cipher
-			Cipher cipher;
-			cipher = Cipher.getInstance(AES_GCM_SPEC);
->>>>>>> 4734a8681 (Add support for AES-CTR and AES-CBC)
 			cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(rgbKey, AES_SPEC),
 					new GCMParameterSpec(alg.getTagSize(), iv.GetByteString()));
 			cipher.updateAAD(aad);
@@ -511,6 +505,106 @@ public abstract class EncryptCommon extends Message {
 			if (aadCopy != null) {
 				cipher.updateAAD(aadCopy);
 			}
+
+			// Process the plaintext and generate the ciphertext
+			rgbEncrypt = cipher.doFinal(plaintext);
+
+		} catch (NoSuchAlgorithmException ex) {
+			throw new CoseException("Algorithm not supported", ex);
+		} catch (Exception ex) {
+			throw new CoseException("Encryption failure", ex);
+		}
+	}
+
+	/**
+	 * Decrypts the ciphertext using ChaCha20 algorithm (without Poly1305) with no additional authenticated data (AAD)
+	 * 
+	 * @param alg the algorithm to use
+	 * @param rgbKey the key
+	 * @throws CoseException on encryption failure
+	 *
+	 */
+	private void ChaCha20_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException {
+		byte[] ciphertext = rgbEncrypt;
+
+		// validate key
+		if (rgbKey.length != alg.getKeySize() / 8) {
+			throw new CoseException("Key Size is incorrect");
+		}
+
+		// obtain and validate iv
+		final int ivLen = ivLengthChaCha(alg);
+		CBORObject iv = findAttribute(HeaderKeys.IV);
+		if (iv.getType() != CBORType.ByteString) {
+			throw new CoseException("IV is incorrectly formed.");
+		}
+		if (iv.GetByteString().length != ivLen) {
+			throw new CoseException("IV length is incorrect.");
+		}
+		byte[] nonce = iv.GetByteString();
+
+		try {
+			// Create a ChaCha20 cipher instance
+			Cipher cipher = Cipher.getInstance("ChaCha20");
+
+			// Create ivParameterSpec with nonce
+			AlgorithmParameterSpec ivParameterSpec = new IvParameterSpec(nonce);
+
+			// Set the decryption key
+			SecretKeySpec keySpec = new SecretKeySpec(rgbKey, "ChaCha20");
+
+			// Initialize the cipher for decryption
+			cipher.init(Cipher.DECRYPT_MODE, keySpec, ivParameterSpec);
+
+			// Process the ciphertext and generate the plaintext
+			rgbContent = cipher.doFinal(ciphertext);
+		} catch (NoSuchAlgorithmException ex) {
+			throw new CoseException("Algorithm not supported", ex);
+		} catch (Exception ex) {
+			throw new CoseException("Encryption failure", ex);
+		}
+	}
+
+	/**
+	 * Encrypts the plaintext using ChaCha20 algorithm (without Poly1305) with
+	 * no additional authenticated data (AAD)
+	 * 
+	 * @param alg the algorithm to use
+	 * @param rgbKey the key
+	 * @throws CoseException on encryption failure
+	 *
+	 */
+	private void ChaCha20_Encrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException {
+		byte[] plaintext = rgbContent;
+
+		// validate key
+		if (rgbKey.length != alg.getKeySize() / 8) {
+			throw new CoseException("Key Size is incorrect");
+		}
+
+		// obtain and validate iv
+		final int ivLen = ivLengthChaCha(alg);
+		CBORObject iv = findAttribute(HeaderKeys.IV);
+		if (iv.getType() != CBORType.ByteString) {
+			throw new CoseException("IV is incorrectly formed.");
+		}
+		if (iv.GetByteString().length != ivLen) {
+			throw new CoseException("IV length is incorrect.");
+		}
+		byte[] nonce = iv.GetByteString();
+
+		try {
+			// Create a ChaCha20 cipher instance
+			Cipher cipher = Cipher.getInstance("ChaCha20");
+
+			// Create ivParameterSpec with nonce
+			AlgorithmParameterSpec ivParameterSpec = new IvParameterSpec(nonce);
+
+			// Set the encryption key
+			SecretKeySpec keySpec = new SecretKeySpec(rgbKey, "ChaCha20");
+
+			// Initialize the cipher for encryption
+			cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivParameterSpec);
 
 			// Process the plaintext and generate the ciphertext
 			rgbEncrypt = cipher.doFinal(plaintext);
@@ -917,6 +1011,21 @@ public abstract class EncryptCommon extends Message {
 	}
 
 	/**
+	 * Get IV length for ChaCha20 in bytes.
+	 * 
+	 * @param alg algorithm ID:
+	 * @return iv length
+	 */
+	private static int ivLengthChaCha(AlgorithmID alg) {
+		switch (alg) {
+		case CHACHA20:
+			return CHACHA_IV_LENGTH;
+		default:
+			return -1;
+		}
+	}
+
+	/**
 	 * Get IV length for AES CTR in bytes.
 	 * 
 	 * @param alg algorithm ID:
@@ -979,6 +1088,11 @@ public abstract class EncryptCommon extends Message {
 		int chaChaPolyIvLength = ivLengthChaChaPoly(alg);
 		if (chaChaPolyIvLength != -1) {
 			return chaChaPolyIvLength;
+		}
+
+		int chaChaIvLength = ivLengthChaCha(alg);
+		if (chaChaIvLength != -1) {
+			return chaChaIvLength;
 		}
 
 		int cbcIvLength = ivLengthCbc(alg);
@@ -1058,11 +1172,6 @@ public abstract class EncryptCommon extends Message {
 
 		return true;
 	}
-<<<<<<< HEAD
-	
-=======
-
->>>>>>> 3f1495e0f (Add support for AES-CTR and AES-CBC)
 
 	/**
 	 * Check if a ChaCha20-Poly1305 algorithm is supported.
@@ -1077,37 +1186,5 @@ public abstract class EncryptCommon extends Message {
 
 		return true;
 	}
-<<<<<<< HEAD
-=======
 
-
-	/**
-	 * Check if an AES CTR algorithm is supported.
-	 * 
-	 * @param alg the algorithm
-	 * @return if it is supported
-	 */
-	private static boolean isSupportedAesCtr(AlgorithmID alg) {
-		if (ivLengthCtr(alg) == -1) {
-			return false;
-		}
-
-		return true;
-	}
-
-	/**
-	 * Check if an AES CBC algorithm is supported.
-	 * 
-	 * @param alg the algorithm
-	 * @return if it is supported
-	 */
-	private static boolean isSupportedAesCbc(AlgorithmID alg) {
-		if (ivLengthCbc(alg) == -1) {
-			return false;
-		}
-
-		return true;
-	}
-
->>>>>>> 3f1495e0f (Add support for AES-CTR and AES-CBC)
 }
