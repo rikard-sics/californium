@@ -157,6 +157,11 @@ public abstract class Decryptor {
 			aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), seq, ctx.getSenderId(), message.getOptions());
 		}
 
+		// Warning: Using algos without integrity in pairwise mode
+		if (decryptionAlg.getTagSize() == 0 && !groupModeMessage) {
+			LOGGER.warn("Using an algorithm without integrity protection in pairwise mode!");
+		}
+
 		if (ctx.getContextRederivationPhase() == PHASE.SERVER_PHASE_1) {
 			ctx.setNonceHandover(nonce);
 		} else if (ctx.getContextRederivationPhase() == PHASE.CLIENT_PHASE_2 && ctx.getNonceHandover() != null) {
