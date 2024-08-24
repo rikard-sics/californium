@@ -210,6 +210,11 @@ public class OSCoreAlgorithmsTest {
 	}
 
 	@Test
+	public void test_CHACHA20() throws Exception {
+		sendRequest(AlgorithmID.CHACHA20);
+	}
+
+	@Test
 	public void test_AES_CCM_64_64_256() throws Exception {
 		sendRequest(AlgorithmID.AES_CCM_64_64_256);
 	}
