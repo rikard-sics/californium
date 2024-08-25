@@ -94,11 +94,11 @@ public abstract class Encryptor {
 		int nonceLength = ctx.getIVLength();
 		byte[] commonIV = ctx.getCommonIV();
 		if (ctx.isGroupContext() && groupModeMessage) {
-			int algGroupEncIvLen = EncryptCommon.ivLength(((GroupSenderCtx) ctx).getAlgGroupEnc());
+			int algGroupEncIvLen = EncryptCommon.getIvLength(((GroupSenderCtx) ctx).getAlgGroupEnc());
 			nonceLength = algGroupEncIvLen;
 			commonIV = Arrays.copyOfRange(ctx.getCommonIV(), 0, nonceLength);
 		} else if (ctx.isGroupContext() && !groupModeMessage) {
-			int algIvLen = EncryptCommon.ivLength(((GroupSenderCtx) ctx).getAlg());
+			int algIvLen = EncryptCommon.getIvLength(((GroupSenderCtx) ctx).getAlg());
 			nonceLength = algIvLen;
 			commonIV = Arrays.copyOfRange(ctx.getCommonIV(), 0, nonceLength);
 		}
