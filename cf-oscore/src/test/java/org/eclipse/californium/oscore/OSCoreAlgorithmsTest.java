@@ -22,11 +22,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import java.security.NoSuchAlgorithmException;
+import java.security.Security;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
-
-import java.security.Security;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.californium.TestTools;
@@ -95,7 +94,6 @@ public class OSCoreAlgorithmsTest {
 		EndpointManager.clear();
 	}
 
-<<<<<<< HEAD
 	@BeforeClass
 	public static void init() {
 		JceProviderUtil.init();
@@ -116,12 +114,9 @@ public class OSCoreAlgorithmsTest {
 		}
 	}
 
-	// Use the OSCORE stack factory
-
 	// Install crypto provider and use the OSCORE stack factory
-
 	@BeforeClass
-	public static void setup() {
+	public static void setStackFactory() {
 		Security.addProvider(new BouncyCastleProvider());
 		OSCoreCoapStackFactory.useAsDefault(dbClient);
 	}
@@ -155,7 +150,6 @@ public class OSCoreAlgorithmsTest {
 	}
 
 	@Test
-
 	public void test_AES_CCM_64_64_256() throws Exception {
 		assumeTrue("Requires strong encryption", supportStrongCrypto);
 		sendRequest(AlgorithmID.AES_CCM_64_64_256);
@@ -182,7 +176,11 @@ public class OSCoreAlgorithmsTest {
 	@Test
 	public void test_AES_GCM_128() throws Exception {
 		assumeTrue("Requires GCM support by JCE", supportGcm);
+		sendRequest(AlgorithmID.AES_GCM_128);
+	}
 
+	@Test
+	public void test_AES_GCM_192() throws Exception {
 		assumeTrue("Requires GCM support by JCE", supportGcm);
 		assumeTrue("Requires strong encryption", supportStrongCrypto);
 		sendRequest(AlgorithmID.AES_GCM_192);
@@ -201,37 +199,12 @@ public class OSCoreAlgorithmsTest {
 		assumeTrue("Requires strong encryption", supportStrongCrypto);
 		sendRequest(AlgorithmID.CHACHA20_POLY1305);
 	}
-		sendRequest(AlgorithmID.AES_GCM_256);
-	}
-
-	@Test
-	public void test_CHACHA20_POLY1305() throws Exception {
-		sendRequest(AlgorithmID.CHACHA20_POLY1305);
-	}
 
 	@Test
 	public void test_CHACHA20() throws Exception {
+		assumeTrue("Requires ChaCha support by JCE", supportChaChaPoly);
+		assumeTrue("Requires strong encryption", supportStrongCrypto);
 		sendRequest(AlgorithmID.CHACHA20);
-	}
-
-	@Test
-	public void test_AES_CCM_64_64_256() throws Exception {
-		sendRequest(AlgorithmID.AES_CCM_64_64_256);
-	}
-
-	@Test
-	public void test_AES_CCM_16_64_256() throws Exception {
-		sendRequest(AlgorithmID.AES_CCM_16_64_256);
-	}
-
-	@Test
-	public void test_AES_CCM_16_128_256() throws Exception {
-		sendRequest(AlgorithmID.AES_CCM_16_128_256);
-	}
-
-	@Test
-	public void test_AES_CCM_64_128_256() throws Exception {
-		sendRequest(AlgorithmID.AES_CCM_64_128_256);
 	}
 
 	@Test
@@ -241,11 +214,13 @@ public class OSCoreAlgorithmsTest {
 
 	@Test
 	public void test_AES_CTR_192() throws Exception {
+		assumeTrue("Requires strong encryption", supportStrongCrypto);
 		sendRequest(AlgorithmID.A192CTR);
 	}
 
 	@Test
 	public void test_AES_CTR_256() throws Exception {
+		assumeTrue("Requires strong encryption", supportStrongCrypto);
 		sendRequest(AlgorithmID.A256CTR);
 	}
 
@@ -256,14 +231,15 @@ public class OSCoreAlgorithmsTest {
 
 	@Test
 	public void test_AES_CBC_192() throws Exception {
+		assumeTrue("Requires strong encryption", supportStrongCrypto);
 		sendRequest(AlgorithmID.A192CBC);
 	}
 
 	@Test
 	public void test_AES_CBC_256() throws Exception {
+		assumeTrue("Requires strong encryption", supportStrongCrypto);
 		sendRequest(AlgorithmID.A256CBC);
 	}
-
 
 	@Rule
 	public ExpectedException exceptionRule = ExpectedExceptionWrapper.none();
@@ -274,7 +250,6 @@ public class OSCoreAlgorithmsTest {
 
 		exceptionRule.expect(RuntimeException.class);
 		exceptionRule.expectMessage("AEAD algorithm not supported");
-
 
 		sendRequest(alg);
 	}
@@ -292,7 +267,8 @@ public class OSCoreAlgorithmsTest {
 		// Set up OSCORE context information for request (client)
 		byte[] sid = new byte[] { 0x02 };
 		byte[] rid = new byte[] { 0x01 };
-		OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, context_id, MAX_UNFRAGMENTED_SIZE);
+		OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, context_id,
+				MAX_UNFRAGMENTED_SIZE);
 		dbClient.addContext(TestTools.getUri(serverEndpoint, ""), ctx);
 
 		// send request
@@ -313,7 +289,8 @@ public class OSCoreAlgorithmsTest {
 		// Set up OSCORE context information for response (server)
 		byte[] sid = new byte[] { 0x01 };
 		byte[] rid = new byte[] { 0x02 };
-		OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, context_id, MAX_UNFRAGMENTED_SIZE);
+		OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, context_id,
+				MAX_UNFRAGMENTED_SIZE);
 		dbServer.addContext(ctx);
 
 		// Create server
