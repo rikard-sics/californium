@@ -36,7 +36,6 @@ import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.examples.util.CoapResponsePrinter;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
-import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSException;
 import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.MultiKey;
@@ -136,8 +135,6 @@ public class ExampleProxy2CoapClient {
 	private final static byte[] rid0 = new byte[] { (byte) 0xCC }; // Dummy
 
 	private final static byte[] group_identifier = new byte[] { 0x44, 0x61, 0x6c }; // GID
-
-	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 
 	static String serverResourceUri = "coap://224.0.1.187:5685/coap-target";
 
@@ -472,7 +469,7 @@ public class ExampleProxy2CoapClient {
 		public void onLoad(CoapResponse response) {
 			on();
 
-			// System.out.println("Receiving to: "); //TODO
+			// System.out.println("Receiving to: ");
 			System.out.println("Receiving from: " + response.advanced().getSourceContext().getPeerAddress());
 
 			// https://datatracker.ietf.org/doc/html/draft-tiloca-core-groupcomm-proxy-07#section-3
@@ -496,17 +493,6 @@ public class ExampleProxy2CoapClient {
 		}
 	}
 
-		client.setURI("http://localhost:8000/http-empty");
-		try {
-			CoapResponse response = client.get();
-			CoapResponsePrinter.printResponse(response);
-		} catch (ConnectorException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		client.shutdown();
 	// Handler for Observe responses (unused)
 	static class ObserveHandler implements CoapHandler {
 
@@ -530,3 +516,4 @@ public class ExampleProxy2CoapClient {
 		}
 	}
 }
+
