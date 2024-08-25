@@ -95,12 +95,12 @@ public abstract class Decryptor {
 		int nonceLength = ctx.getIVLength();
 		byte[] commonIV = ctx.getCommonIV();
 		if (ctx.isGroupContext() && groupModeMessage) {
-			int algGroupEncIvLen = EncryptCommon.ivLength(((GroupRecipientCtx) ctx).getAlgGroupEnc());
+			int algGroupEncIvLen = EncryptCommon.getIvLength(((GroupRecipientCtx) ctx).getAlgGroupEnc());
 			nonceLength = algGroupEncIvLen;
 			commonIV = Arrays.copyOfRange(ctx.getCommonIV(), 0, nonceLength);
 			System.out.println("AAA " + nonceLength + " " + ((GroupRecipientCtx) ctx).getAlgGroupEnc());
 		} else if (ctx.isGroupContext() && !groupModeMessage) {
-			int algIvLen = EncryptCommon.ivLength(((GroupRecipientCtx) ctx).getAlg());
+			int algIvLen = EncryptCommon.getIvLength(((GroupRecipientCtx) ctx).getAlg());
 			nonceLength = algIvLen;
 			commonIV = Arrays.copyOfRange(ctx.getCommonIV(), 0, nonceLength);
 			System.out.println("BBB " + nonceLength);
