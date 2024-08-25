@@ -790,13 +790,13 @@ public class GroupCtx {
 		// Find length of Common IV to use
 		int iv_length;
 		if (aeadAlg == null) {
-			iv_length = EncryptCommon.ivLength(algGroupEnc);
+			iv_length = EncryptCommon.getIvLength(algGroupEnc);
 		} else if (algGroupEnc == null) {
-			iv_length = EncryptCommon.ivLength(aeadAlg);
+			iv_length = EncryptCommon.getIvLength(aeadAlg);
 		} else {
-			iv_length = (EncryptCommon.ivLength(algGroupEnc) > EncryptCommon.ivLength(aeadAlg))
-					? EncryptCommon.ivLength(algGroupEnc)
-					: EncryptCommon.ivLength(aeadAlg);
+			iv_length = (EncryptCommon.getIvLength(algGroupEnc) > EncryptCommon.getIvLength(aeadAlg))
+					? EncryptCommon.getIvLength(algGroupEnc)
+					: EncryptCommon.getIvLength(aeadAlg);
 		}
 
 		AlgorithmID ivAlg = null;
