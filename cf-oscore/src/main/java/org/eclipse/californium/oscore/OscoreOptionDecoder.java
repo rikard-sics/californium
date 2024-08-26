@@ -52,6 +52,16 @@ public class OscoreOptionDecoder {
 	private int m;
 	private int d;
 	private int x;
+	private int nonceLength;
+
+	private int z;
+	private int b;
+	private int p;
+
+	private int y;
+	private int w;
+	private byte[] oldNonce;
+	private int oldNonceLength;
 
 	/**
 	 * Initialize the OSCORE option with a certain array of bytes and decode
@@ -111,6 +121,17 @@ public class OscoreOptionDecoder {
 		int d = 0;
 		int m = 0;
 		int x = 0;
+
+		int z = 0;
+		int b = 0;
+		int p = 0;
+		int nonceLength = 0;
+
+		int y = 0;
+		int w = 0;
+		int oldNonceLength = 0;
+		byte[] oldNonce = null;
+
 		if (extension != 0) {
 			byte flagByte2 = total[1];
 			d = (flagByte2 & 0x01);
@@ -147,11 +168,25 @@ public class OscoreOptionDecoder {
 			// Parsing x byte and KUDOS nonce
 			if (d != 0) {
 				x = total[index++];
-				m = (x & 0x0F) + 1;
+				m = (x & 0x0F);
 
-				nonce = Arrays.copyOfRange(total, index, index + m);
+				z = (x & 0b01000000) >> 6;
+				b = (x & 0b00100000) >> 5;
+				p = (x & 0b00010000) >> 4;
 
-				index += m;
+				nonceLength = m + 1;
+				nonce = Arrays.copyOfRange(total, index, index + nonceLength);
+
+				index += nonceLength;
+
+				// Parsing y byte and KUDOS old_nonce
+				if (z != 0) {
+					y = total[index++];
+					w = (y & 0x0F);
+					oldNonceLength = w + 1;
+					oldNonce = Arrays.copyOfRange(total, index, index + oldNonceLength);
+					index += oldNonceLength;
+				}
 			}
 		} catch (Exception e) {
 			LOGGER.error("Failed to parse KUDOS nonce in OSCORE option.");
@@ -179,9 +214,17 @@ public class OscoreOptionDecoder {
 		this.n = n;
 		this.k = k;
 		this.h = h;
+		this.nonceLength = nonceLength;
 		this.m = m;
 		this.d = d;
 		this.x = x;
+		this.z = z;
+		this.b = b;
+		this.p = p;
+		this.y = y;
+		this.w = w;
+		this.oldNonce = oldNonce;
+		this.oldNonceLength = oldNonceLength;
 		this.partialIV = partialIV;
 		this.kid = kid;
 		this.idContext = kidContext;
@@ -270,7 +313,16 @@ public class OscoreOptionDecoder {
 	 * @return the m value (nonce length -1)
 	 */
 	public int getM() {
-		return m - 1;
+		return m;
+	}
+
+	/**
+	 * Return nonce length from KUDOS x byte
+	 * 
+	 * @return the nonce length (m + 1)
+	 */
+	public int getNonceLength() {
+		return nonceLength;
 	}
 
 	/**
@@ -289,6 +341,69 @@ public class OscoreOptionDecoder {
 	 */
 	public byte getX() {
 		return (byte) x;
+	}
+
+	/**
+	 * Return p bit (No Forward Secrecy)
+	 * 
+	 * @return the p bit value
+	 */
+	public int getP() {
+		return p;
+	}
+
+	/**
+	 * Return b bit (Preserve Observations)
+	 * 
+	 * @return the b bit value
+	 */
+	public int getB() {
+		return b;
+	}
+
+	/**
+	 * Return z bit (presence of field 'y' and field 'old_nonce')
+	 * 
+	 * @return the z bit value
+	 */
+	public int getZ() {
+		return z;
+	}
+
+	/**
+	 * Return the y byte (contains the length of old_nonce)
+	 * 
+	 * @return the y value
+	 */
+	public int getY() {
+		return y;
+	}
+
+	/**
+	 * Return the w value (the length of the old_nonce - 1)
+	 * 
+	 * @return the w value
+	 */
+	public int getW() {
+		return w;
+	}
+
+	/**
+	 * Return the value of oldNonce
+	 * 
+	 * @return the oldNonce value
+	 */
+	public byte[] getOldNonce() {
+		return oldNonce;
+	}
+
+	/**
+	 * Return the length of old_nonce (w + 1)
+	 * 
+	 * @return the oldNonceLength value
+	 */
+	public int getOldNonceLength() {
+		return oldNonceLength;
 	}
 
 }
