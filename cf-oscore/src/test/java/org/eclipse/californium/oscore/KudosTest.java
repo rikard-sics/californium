@@ -65,8 +65,10 @@ import com.upokecenter.cbor.CBORObject;
  * 
  */
 public class KudosTest {
+
 	@ClassRule
-	public static CoapNetworkRule network = new CoapNetworkRule(CoapNetworkRule.Mode.DIRECT, CoapNetworkRule.Mode.NATIVE);
+	public static CoapNetworkRule network = new CoapNetworkRule(CoapNetworkRule.Mode.DIRECT,
+			CoapNetworkRule.Mode.NATIVE);
 
 	private CoapServer server;
 	private Endpoint serverEndpoint;
@@ -292,6 +294,33 @@ public class KudosTest {
 	}
 
 	/**
+	 * Tests the encoding of the OSCORE option for the parts relevant to KUDOS.
+	 * Also uses old_nonce
+	 */
+	@Test
+	public void testKudosOscoreOptionEncoding2() throws CoapOSException {
+
+		// Test encoding
+		byte[] correctOption = StringUtil.hex2ByteArray("9A0115B3030A0B0C47000102030405060707AABBCCDDEEFF1122AA");
+		byte[] kid = new byte[] { (byte) 0xAA };
+		int senderSequenceNumber = 5555;
+		byte[] idContext = new byte[] { (byte) 0x0A, 0x0B, 0x0C };
+		byte[] nonce = new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+		byte[] oldNonce = new byte[] { (byte) 0xAA, (byte) 0xBB, (byte) 0xCC, (byte) 0xDD, (byte) 0xEE, (byte) 0xFF,
+				0x11, 0x22 };
+
+		OscoreOptionEncoder encoder = new OscoreOptionEncoder();
+		encoder.setIdContext(idContext);
+		encoder.setKid(kid);
+		encoder.setPartialIV(senderSequenceNumber);
+		encoder.setNonce(nonce);
+		encoder.setOldNonce(oldNonce);
+		byte[] encodedOption = encoder.getBytes();
+
+		assertArrayEquals("Encoded option incorrect", correctOption, encodedOption);
+	}
+
+	/**
 	 * Test the KUDOS comb function
 	 * 
 	 */
@@ -333,12 +362,13 @@ public class KudosTest {
 	@Ignore
 	public void testClientInitiatedRederivation()
 			throws OSException, ConnectorException, IOException, CoseException, InterruptedException {
-		
+
 		// Create a server that will not initiate the context re-derivation
 		// procedure. (But perform the procedure if the client initiates.)
 		createServer(false);
 
-		OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, null, MAX_UNFRAGMENTED_SIZE);
+		OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, null,
+				MAX_UNFRAGMENTED_SIZE);
 		String serverUri = serverEndpoint.getUri().toASCIIString();
 
 		// Enable context re-derivation functionality (in general)
@@ -428,7 +458,8 @@ public class KudosTest {
 		// reception of a request)
 		createServer(true);
 
-		OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, context_id, MAX_UNFRAGMENTED_SIZE);
+		OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, context_id,
+				MAX_UNFRAGMENTED_SIZE);
 		// Enable context re-derivation functionality (for client)
 		ctx.setContextRederivationEnabled(true);
 		String serverUri = serverEndpoint.getUri().toASCIIString();
@@ -546,8 +577,8 @@ public class KudosTest {
 		// Purge any old existing values from the server context database
 		dbServer.purge();
 
-		//Do not create server if it is already running
-		if(server != null) {
+		// Do not create server if it is already running
+		if (server != null) {
 			return;
 		}
 
@@ -556,10 +587,11 @@ public class KudosTest {
 			contextId = context_id;
 		}
 
-		//Set up OSCORE context information for response (server)
+		// Set up OSCORE context information for response (server)
 		byte[] sid = new byte[] { 0x01 };
 		byte[] rid = new byte[0];
-		OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, contextId, MAX_UNFRAGMENTED_SIZE);
+		OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, contextId,
+				MAX_UNFRAGMENTED_SIZE);
 		String clientUri = "coap://" + TestTools.LOCALHOST_EPHEMERAL.getAddress().getHostAddress();
 
 		// Enable context re-derivation functionality in general
@@ -573,7 +605,7 @@ public class KudosTest {
 
 		dbServer.addContext(clientUri, ctx);
 
-		//Create server
+		// Create server
 		CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
 		builder.setCustomCoapStackArgument(dbServer);
 		builder.setInetSocketAddress(TestTools.LOCALHOST_EPHEMERAL);
@@ -583,7 +615,7 @@ public class KudosTest {
 
 		/** --- Resources for tests follow --- **/
 
-		//Create Hello World-resource
+		// Create Hello World-resource
 		OSCoreResource hello = new OSCoreResource("hello", true) {
 
 			@Override
@@ -594,13 +626,13 @@ public class KudosTest {
 				exchange.respond(r);
 			}
 		};
-		
-		//Creating resource hierarchy
+
+		// Creating resource hierarchy
 		server.add(hello);
 
 		/** --- End of resources for tests **/
 
-		//Start server
+		// Start server
 		server.start();
 	}
 }
