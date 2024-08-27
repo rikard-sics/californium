@@ -38,6 +38,10 @@ public class OscoreOptionEncoder {
 	private byte[] kid;
 
 	private byte[] nonce;
+	private byte[] oldNonce;
+
+	private int p;
+	private int b;
 
 	/**
 	 * Retrieve the encoded bytes of the OSCORE option.
@@ -66,6 +70,7 @@ public class OscoreOptionEncoder {
 		boolean hasPartialIV = this.partialIV != null;
 		boolean hasKid = this.kid != null;
 		boolean hasNonce = this.nonce != null;
+		boolean hasOldNonce = this.oldNonce != null;
 
 		// If the Context ID should be included, set its bit
 		if (hasContextID) {
@@ -112,12 +117,33 @@ public class OscoreOptionEncoder {
 			}
 		}
 
-		// Encode the x byte and KUDOS nonce if to be included
+		// Encode the x byte, KUDOS nonce and flags if to be included
 		if (hasNonce) {
 			int x = nonce.length - 1;
+
+			// Set flags
+			x |= b << 5;
+			x |= p << 4;
+
+			if (hasOldNonce) {
+				x |= 1 << 6; // z bit
+			}
+
 			try {
 				bRes.write(x);
 				bRes.write(this.nonce);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		// Encode the y byte and KUDOS old_nonce
+		if (hasOldNonce) {
+			int y = oldNonce.length - 1;
+
+			try {
+				bRes.write(y);
+				bRes.write(this.oldNonce);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -230,4 +256,62 @@ public class OscoreOptionEncoder {
 	public byte[] getNonce() {
 		return nonce;
 	}
+
+	/**
+	 * Set the KUDOS old_nonce
+	 * 
+	 * @param oldNonce the KUDOS old_nonce to set
+	 */
+	public void setOldNonce(byte[] oldNonce) {
+		encoded = false;
+		this.oldNonce = oldNonce;
+	}
+
+	/**
+	 * Retrieve the set KUDOS old_nonce
+	 * 
+	 * @return the KUDOS old_nonce
+	 */
+	public byte[] getOldNonce() {
+		return oldNonce;
+	}
+
+	/**
+	 * Return p bit (No Forward Secrecy)
+	 * 
+	 * @return the p bit value
+	 */
+	public int getP() {
+		return p;
+	}
+
+	/**
+	 * Return b bit (Preserve Observations)
+	 * 
+	 * @return the b bit value
+	 */
+	public int getB() {
+		return b;
+	}
+
+	/**
+	 * Return p bit (No Forward Secrecy)
+	 * 
+	 * @param p the p bit value to set
+	 */
+	public void setP(int p) {
+		encoded = false;
+		this.p = p;
+	}
+
+	/**
+	 * Return b bit (Preserve Observations)
+	 * 
+	 * @param b the b bit value to set
+	 */
+	public void setB(int b) {
+		encoded = false;
+		this.b = b;
+	}
+
 }
