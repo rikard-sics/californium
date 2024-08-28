@@ -19,6 +19,7 @@ package org.eclipse.californium.oscore;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -77,18 +78,19 @@ public class KudosTest {
 
 	private final static HashMapCtxDB dbClient = new HashMapCtxDB();
 	private final static HashMapCtxDB dbServer = new HashMapCtxDB();
+	private final static String kudosResource = "/.well-known/kudos";
 	private final static String hello1 = "/hello";
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
 	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
 
 	// test vector OSCORE draft Appendix C.1.1
-	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
-			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
-	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
-			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
-	private final static byte[] sid = new byte[0];
-	private final static byte[] rid = new byte[] { 0x01 };
-	private final static byte[] context_id = { 0x74, 0x65, 0x73, 0x74, 0x74, 0x65, 0x73, 0x74 };
+	private static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C,
+			0x0D, 0x0E, 0x0F, 0x10 };
+	private static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23, (byte) 0x78,
+			(byte) 0x63, (byte) 0x40 };
+	private static byte[] sid = new byte[] { 0x01 };
+	private static byte[] rid = new byte[] { 0x02 };
+	private static byte[] context_id = null;
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 
 	private static int SEGMENT_LENGTH = ContextRederivation.SEGMENT_LENGTH;
@@ -344,24 +346,25 @@ public class KudosTest {
 	}
 
 	/**
-	 * Test context re-derivation followed by a normal message exchange. This
-	 * test simulates a client losing the mutable parts of the OSCORE context,
-	 * and then explicitly initiating the context re-derivation procedure.
+	 * Test context KUDOS re-derivation followed by a normal message exchange.
+	 * This test simulates a client losing the mutable parts of the OSCORE
+	 * context, and then explicitly initiating the context re-derivation
+	 * procedure.
 	 * 
-	 * Note that the asserts in this test check things regarding request #2 and
-	 * response #2 as request #1 and response #1 are taken care of in the OSCORE
-	 * library code (so the application does not need to worry about them).
-	 * 
-	 * @throws OSException
-	 * @throws ConnectorException
-	 * @throws IOException
-	 * @throws CoseException
-	 * @throws InterruptedException
+	 * @throws OSException on failure
+	 * @throws ConnectorException on failure
+	 * @throws IOException on failure
+	 * @throws CoseException on failure
+	 * @throws InterruptedException on failure
 	 */
 	@Test
-	@Ignore
 	public void testClientInitiatedRederivation()
 			throws OSException, ConnectorException, IOException, CoseException, InterruptedException {
+
+		Encryptor.EXTRA_LOGGING = true;
+		Decryptor.EXTRA_LOGGING = true;
+		ContextRederivation.EXTRA_LOGGING = true;
+		KudosRederivation.EXTRA_LOGGING = true;
 
 		// Create a server that will not initiate the context re-derivation
 		// procedure. (But perform the procedure if the client initiates.)
@@ -372,42 +375,38 @@ public class KudosTest {
 		String serverUri = serverEndpoint.getUri().toASCIIString();
 
 		// Enable context re-derivation functionality (in general)
-		ctx.setContextRederivationEnabled(true);
-		// Explicitly initiate the context re-derivation procedure
-		ctx.setContextRederivationPhase(PHASE.CLIENT_INITIATE);
-
+		ctx.setKudosContextRederivationEnabled(true);
+		// Set KUDOS state to client initiation
+		ctx.setContextRederivationPhase(PHASE.KUDOS_CLIENT_INITIATE);
 		dbClient.addContext(serverUri, ctx);
 
+		// Perform KUDOS context rederivation (request #1 and response #1)
+		KudosRederivation.initiateRequestKudos(dbClient, serverUri + kudosResource);
+
+		// Perform normal request to server (request #2)
 		CoapClient client = new CoapClient(serverUri + hello1);
 		Request request = new Request(Code.GET);
 		request.getOptions().setOscore(Bytes.EMPTY);
 		RequestTestObserver requestTestObserver = new RequestTestObserver();
 		request.addMessageObserver(requestTestObserver);
 		CoapResponse resp = client.advanced(request);
+		System.out.println((Utils.prettyPrint(request)));
 		System.out.println((Utils.prettyPrint(resp)));
 
+		// Check that phase is inactive and no ID Context is included
 		OSCoreCtx currCtx = dbClient.getContext(serverUri);
-		assertEquals(ContextRederivation.PHASE.INACTIVE, currCtx.getContextRederivationPhase()); // Phase
-		assertFalse(currCtx.getIncludeContextId()); // Do not include Context ID
+		assertEquals(ContextRederivation.PHASE.INACTIVE, currCtx.getContextRederivationPhase());
+		assertFalse(currCtx.getIncludeContextId());
 
-		// Length of Context ID in context (R2 || R3)
-		int contextIdLen = currCtx.getIdContext().length;
-		assertEquals(3 * SEGMENT_LENGTH, contextIdLen);
-		// Check length of Context ID in the request (R2 || R3)
-		assertEquals(3 * SEGMENT_LENGTH, requestTestObserver.requestIdContext.length);
-
-		// Check R2 value derived by server using its key with received one
-		// The R2 value is composed of S2 || HMAC(K_HMAC, S2).
-		OSCoreCtx serverCtx = dbServer.getContext(sid);
-		byte[] srvContextRederivationKey = serverCtx.getContextRederivationKey();
-		byte[] contextS2 = Arrays.copyOfRange(currCtx.getIdContext(), 0, SEGMENT_LENGTH);
-		byte[] hmacOutput = OSCoreCtx.deriveKey(srvContextRederivationKey, srvContextRederivationKey, SEGMENT_LENGTH,
-				"SHA256", contextS2);
-		byte[] messageHmacValue = Arrays.copyOfRange(currCtx.getIdContext(), SEGMENT_LENGTH, SEGMENT_LENGTH * 2);
-		assertArrayEquals(hmacOutput, messageHmacValue);
-
-		// Empty OSCORE option in response
-		assertArrayEquals(Bytes.EMPTY, resp.getOptions().getOscore());
+		// Check contents of OSCORE option
+		OscoreOptionDecoder decoder = new OscoreOptionDecoder(resp.getOptions().getOscore());
+		assertEquals("Invalid Z bit value", 0, decoder.getZ());
+		assertEquals("Invalid B bit value", 0, decoder.getB());
+		assertEquals("Invalid P bit value", 0, decoder.getP());
+		byte[] nonce = decoder.getNonce();
+		assertNotEquals("Invalid nonce length", 0, nonce.length);
+		assertNotEquals("Invalid m value", 0, decoder.getM());
+		assertEquals("m value and nonce length mismatch", nonce.length, decoder.getM() + 1);
 
 		assertEquals(ResponseCode.CONTENT, resp.getCode());
 		assertEquals(SERVER_RESPONSE, resp.getResponseText());
@@ -418,6 +417,8 @@ public class KudosTest {
 		resp = client.advanced(request);
 		System.out.println((Utils.prettyPrint(resp)));
 
+		// Empty OSCORE option in response
+		assertArrayEquals(Bytes.EMPTY, resp.getOptions().getOscore());
 		assertEquals(ResponseCode.CONTENT, resp.getCode());
 		assertEquals(SERVER_RESPONSE, resp.getResponseText());
 
@@ -425,6 +426,13 @@ public class KudosTest {
 		request.getOptions().setOscore(Bytes.EMPTY);
 		resp = client.advanced(request);
 		System.out.println((Utils.prettyPrint(resp)));
+
+		// Check that the master secret and salt have been updated
+		currCtx = dbClient.getContext(serverUri);
+		byte[] newMasterSecret = currCtx.getMasterSecret();
+		byte[] newMasterSalt = currCtx.getSalt();
+		assertFalse(Arrays.equals(master_secret, newMasterSecret));
+		assertFalse(Arrays.equals(master_salt, newMasterSalt));
 
 		client.shutdown();
 	}
@@ -588,19 +596,20 @@ public class KudosTest {
 		}
 
 		// Set up OSCORE context information for response (server)
-		byte[] sid = new byte[] { 0x01 };
-		byte[] rid = new byte[0];
+		byte[] rid = new byte[] { 0x01 };
+		byte[] sid = new byte[] { 0x02 };
+
 		OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, contextId,
 				MAX_UNFRAGMENTED_SIZE);
 		String clientUri = "coap://" + TestTools.LOCALHOST_EPHEMERAL.getAddress().getHostAddress();
 
 		// Enable context re-derivation functionality in general
-		ctx.setContextRederivationEnabled(true);
+		ctx.setKudosContextRederivationEnabled(true);
 
 		// If the server is to initiate the context re-derivation procedure, set
 		// accordingly in the context
 		if (initiateRederivation) {
-			ctx.setContextRederivationPhase(PHASE.SERVER_INITIATE);
+			// ctx.setContextRederivationPhase(PHASE.KUDOS_SERVER_INITIATE);
 		}
 
 		dbServer.addContext(clientUri, ctx);
