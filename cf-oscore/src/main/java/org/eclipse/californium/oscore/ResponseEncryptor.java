@@ -27,6 +27,7 @@ import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.oscore.ContextRederivation.PHASE;
 
 /**
  * 
@@ -64,6 +65,14 @@ public class ResponseEncryptor extends Encryptor {
 
 		// Perform KUDOS context re-derivation procedure if ongoing
 		if (ctx.getContextRederivationPhase() == ContextRederivation.PHASE.KUDOS_SERVER_PHASE2) {
+			ctx = KudosRederivation.outgoingResponse(db, ctx);
+			newPartialIV = true;
+		}
+
+		// Check if the server has KUDOS context re-derivation ongoing in
+		// reverse flow
+		if (ctx.getContextRederivationPhase() == PHASE.KUDOS_SERVER_PHASE1
+				&& ctx.getKudosContextRederivationEnabled()) {
 			ctx = KudosRederivation.outgoingResponse(db, ctx);
 			newPartialIV = true;
 		}

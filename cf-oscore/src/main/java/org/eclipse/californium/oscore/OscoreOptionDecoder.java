@@ -375,8 +375,8 @@ public class OscoreOptionDecoder {
 	 * 
 	 * @return the y value
 	 */
-	public int getY() {
-		return y;
+	public byte getY() {
+		return (byte) y;
 	}
 
 	/**

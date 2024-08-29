@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
-import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Response;
@@ -89,7 +88,8 @@ public class ResponseDecryptor extends Decryptor {
 			contextID = kidContext.GetByteString();
 		}
 
-		// Check if KUDOS context re-derivation is ongoing and mark in context
+		// Check if KUDOS context re-derivation is ongoing in forward flow and
+		// mark in context
 		OscoreOptionDecoder decoder = new OscoreOptionDecoder(response.getOptions().getOscore());
 		if (decoder.getD() != 0 && ctx.getContextRederivationPhase() == ContextRederivation.PHASE.KUDOS_CLIENT_PHASE1) {
 			ctx.setContextRederivationPhase(ContextRederivation.PHASE.KUDOS_CLIENT_PHASE2);
@@ -97,6 +97,19 @@ public class ResponseDecryptor extends Decryptor {
 			ctx.setKudosX2(decoder.getX());
 
 			try {
+				ctx = KudosRederivation.incomingResponse(db, ctx, contextID);
+			} catch (OSException e) {
+				LOGGER.error(ErrorDescriptions.CONTEXT_REGENERATION_FAILED);
+				throw new CoapOSException(ErrorDescriptions.CONTEXT_REGENERATION_FAILED, ResponseCode.BAD_REQUEST);
+			}
+		}
+		// Check if KUDOS context re-derivation is ongoing in reverse flow for
+		// client
+		else if (decoder.getD() != 0 && ctx.getContextRederivationPhase() == ContextRederivation.PHASE.INACTIVE) {
+			try {
+				ctx.setContextRederivationPhase(ContextRederivation.PHASE.KUDOS_CLIENT_PHASE1);
+				ctx.setKudosN1(decoder.getNonce());
+				ctx.setKudosX1(decoder.getX());
 				ctx = KudosRederivation.incomingResponse(db, ctx, contextID);
 			} catch (OSException e) {
 				LOGGER.error(ErrorDescriptions.CONTEXT_REGENERATION_FAILED);

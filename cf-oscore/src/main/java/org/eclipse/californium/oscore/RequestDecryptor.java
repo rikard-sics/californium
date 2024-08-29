@@ -32,6 +32,7 @@ import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.elements.util.DatagramReader;
+import org.eclipse.californium.oscore.ContextRederivation.PHASE;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
@@ -87,9 +88,11 @@ public class RequestDecryptor extends Decryptor {
 			contextID = kidContext.GetByteString();
 		}
 
-		// Check if KUDOS context re-derivation is ongoing and mark in context if so
+		// Check if KUDOS context re-derivation is ongoing in forward flow and
+		// mark in context if so
 		OscoreOptionDecoder decoder = new OscoreOptionDecoder(request.getOptions().getOscore());
-		if (decoder.getD() != 0 && ctx.getKudosContextRederivationEnabled()) {
+		if (decoder.getD() != 0 && ctx.getKudosContextRederivationEnabled()
+				&& ctx.getContextRederivationPhase() == PHASE.INACTIVE) {
 			ctx.setContextRederivationPhase(ContextRederivation.PHASE.KUDOS_SERVER_PHASE1);
 			ctx.setKudosN1(decoder.getNonce());
 			ctx.setKudosX1(decoder.getX());
@@ -100,7 +103,27 @@ public class RequestDecryptor extends Decryptor {
 				throw new CoapOSException(ErrorDescriptions.CONTEXT_REGENERATION_FAILED, ResponseCode.BAD_REQUEST);
 			}
 		}
-		
+		// Check if the server is to initiate KUDOS context re-derivation
+		else if (ctx != null
+				&& (ctx.getContextRederivationPhase() == PHASE.KUDOS_SERVER_INITIATE
+				|| ctx.getContextRederivationPhase() == PHASE.KUDOS_SERVER_PHASE2)
+				&& ctx.getKudosContextRederivationEnabled()) {
+
+			if (ctx.getContextRederivationPhase() == PHASE.KUDOS_SERVER_PHASE2) {
+				ctx.setContextRederivationPhase(PHASE.KUDOS_SERVER_PHASE3);
+				ctx.setKudosN1(decoder.getNonce());
+				ctx.setKudosN2(decoder.getOldNonce());
+				ctx.setKudosX1(decoder.getY());
+				ctx.setKudosX2(decoder.getX());
+			}
+			try {
+				ctx = KudosRederivation.incomingRequest(db, ctx, contextID, rid);
+			} catch (OSException e) {
+				LOGGER.error(ErrorDescriptions.CONTEXT_REGENERATION_FAILED);
+				throw new CoapOSException(ErrorDescriptions.CONTEXT_REGENERATION_FAILED, ResponseCode.BAD_REQUEST);
+			}
+		}
+
 		// Perform context re-derivation procedure if triggered or ongoing
 		try {
 			ctx = ContextRederivation.incomingRequest(db, ctx, contextID, rid);

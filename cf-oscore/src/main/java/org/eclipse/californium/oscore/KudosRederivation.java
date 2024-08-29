@@ -65,37 +65,39 @@ public class KudosRederivation {
 	 * @throws OSException on failure
 	 */
 	static void initiateRequestKudos(OSCoreCtxDB db, String uri) throws ConnectorException, OSException {
-	
+
 		// Retrieve the context for the target URI
 		OSCoreCtx ctx = db.getContext(uri);
-	
+
 		// Check that context re-derivation is enabled for this context
 		if (ctx.getKudosContextRederivationEnabled() == false) {
 			System.err.println("[KUDOS] Context re-derivation is not enabled for this context.");
 			throw new IllegalStateException("[KUDOS] Context re-derivation is not enabled for this context.");
 		}
-	
+
+		printStateLoggingKudos(ctx);
+
 		// Generate a random N1)
 		byte[] n1 = Bytes.createBytes(random, NONCE_LENGTH);
-	
+
 		if (EXTRA_LOGGING) {
 			System.out.println("[KUDOS] context re-derivation phase: " + ctx.getContextRederivationPhase());
 			System.out.println("[KUDOS] N1 value: " + Utils.toHexString(n1));
 		}
-	
+
 		// Create new context with the generated Nonce N1
 		byte x = (byte) (NONCE_LENGTH - 1);
 		byte[] xArray = new byte[] { x };
-	
+
 		// Build new OSCORE Context
 		OSCoreCtx newCtx = updateCtx(xArray, n1, ctx);
-	
+
 		// Save the generated N1 value in the new context
 		newCtx.setKudosN1(n1);
 		newCtx.setKudosX1(x);
 		newCtx.setKudosCtxOld(ctx);
 		newCtx.setContextRederivationPhase(ContextRederivation.PHASE.KUDOS_CLIENT_PHASE1);
-	
+
 		db.removeContext(ctx);
 		if (!uri.startsWith(SCHEME)) {
 			uri = SCHEME + uri;
@@ -105,7 +107,8 @@ public class KudosRederivation {
 
 	/**
 	 * Handle incoming requests for KUDOS procedure (handling of incoming
-	 * Request #1)
+	 * Request #1) and server-side reception of a normal OSCORE protected
+	 * request (reverse flow)
 	 * 
 	 * @param db OSCORE OSCORE Security Context database
 	 * @param ctx the specific OSCORE Security Context to update
@@ -129,8 +132,14 @@ public class KudosRederivation {
 			return null;
 		}
 
+		// Check if context re-derivation is enabled for this context
+		if (ctx.getKudosContextRederivationEnabled() == false) {
+			LOGGER.debug("[KUDOS] Context re-derivation not considered due to it being disabled for this context");
+			return ctx;
+		}
+
 		// First handle KUDOS context rederivation (server-side reception of
-		// Request #1)
+		// Request #1 in forward flow)
 		if (ctx.getContextRederivationPhase() == PHASE.KUDOS_SERVER_PHASE1) {
 			printStateLoggingKudos(ctx);
 
@@ -151,12 +160,138 @@ public class KudosRederivation {
 			return ctxOut;
 		}
 
+		// Handle KUDOS context rederivation (server-side reception of a normal
+		// OSCORE protected request in reverse flow)
+		if (ctx.getContextRederivationPhase() == PHASE.KUDOS_SERVER_INITIATE) {
+			printStateLoggingKudos(ctx);
+			if (EXTRA_LOGGING) {
+				System.out.println("[KUDOS] context re-derivation phase: " + ctx.getContextRederivationPhase());
+			}
+			ctx.setContextRederivationPhase(ContextRederivation.PHASE.KUDOS_SERVER_PHASE1);
+			return ctx;
+		}
+
+		// Handle KUDOS context rederivation (server-side reception of
+		// Request #2) in reverse flow
+		if (ctx.getContextRederivationPhase() == PHASE.KUDOS_SERVER_PHASE3) {
+			printStateLoggingKudos(ctx);
+
+			byte[] n1 = ctx.getKudosN1();
+			byte x1 = ctx.getKudosX1();
+			byte[] n2 = ctx.getKudosN2();
+			byte x2 = ctx.getKudosX2();
+
+			if (EXTRA_LOGGING) {
+				System.out.println("[KUDOS] context re-derivation phase: " + ctx.getContextRederivationPhase());
+				System.out.println("[KUDOS] N1 value: " + Utils.toHexString(n1));
+				System.out.println("[KUDOS] X1 value: " + x1);
+				System.out.println("[KUDOS] N2 value: " + Utils.toHexString(n2));
+				System.out.println("[KUDOS] X2 value: " + x2);
+			}
+
+			byte[] xInput = comb(x1, x2);
+			byte[] nInput = comb(n1, n2);
+
+			if (EXTRA_LOGGING) {
+				System.out.println("[KUDOS] X input to updateCtx(): " + Utils.toHexString(xInput));
+				System.out.println("[KUDOS] N input to updateCtx(): " + Utils.toHexString(nInput));
+			}
+
+			// Generate new OSCORE Context
+			OSCoreCtx ctxOld = ctx.getKudosCtxOld();
+			OSCoreCtx newCtx = updateCtx(xInput, nInput, ctxOld);
+
+			// Save the generated N2 value in the new context
+			newCtx.setKudosN1(n1);
+			newCtx.setKudosX1(x1);
+			newCtx.setKudosN2(n2);
+			newCtx.setKudosX2(x2);
+			newCtx.setContextRederivationPhase(ContextRederivation.PHASE.INACTIVE);
+
+			db.removeContext(ctx);
+			db.addContext(newCtx);
+
+			return newCtx;
+		}
+
 		return ctx;
 	}
 
 	/**
-	 * Handle incoming response messages (for client to handle incoming Response
-	 * #1).
+	 * Handle outgoing requests for KUDOS procedure (handling of client's
+	 * sending of Request #2 in reverse flow)
+	 * 
+	 * @param db OSCORE OSCORE Security Context database
+	 * @param ctx the specific OSCORE Security Context to update
+	 * @param contextID the ID Context of this context
+	 * @param rid the RID of this context
+	 * @return a new OSCORE Security Context
+	 * 
+	 * @throws OSException on failure
+	 */
+	static OSCoreCtx outgoingRequest(OSCoreCtxDB db, OSCoreCtx ctx) throws OSException {
+
+		// Check if context re-derivation is enabled for this context
+		if (ctx.getKudosContextRederivationEnabled() == false) {
+			LOGGER.debug("[KUDOS] Context re-derivation not considered due to it being disabled for this context");
+			return ctx;
+		}
+
+		if (ctx.getContextRederivationPhase() == ContextRederivation.PHASE.KUDOS_CLIENT_PHASE2) {
+			printStateLoggingKudos(ctx);
+
+			byte[] n1 = ctx.getKudosN1();
+			byte x1 = ctx.getKudosX1();
+
+			// Generate a random N2
+			byte[] n2 = Bytes.createBytes(random, NONCE_LENGTH);
+
+			if (EXTRA_LOGGING) {
+				System.out.println("[KUDOS] context re-derivation phase: " + ctx.getContextRederivationPhase());
+				System.out.println("[KUDOS] N1 value: " + Utils.toHexString(n1));
+				System.out.println("[KUDOS] X1 value: " + x1);
+				System.out.println("[KUDOS] N2 value: " + Utils.toHexString(n2));
+			}
+
+			// Create new context with the generated Nonce N2 and the received
+			// N1
+			byte x2 = (byte) ((NONCE_LENGTH - 1) | 0b01000000);
+
+			byte[] xInput = comb(x1, x2);
+			byte[] nInput = comb(n1, n2);
+
+			if (EXTRA_LOGGING) {
+				System.out.println("[KUDOS] X2 value: " + x2);
+				System.out.println("[KUDOS] X input to updateCtx(): " + Utils.toHexString(xInput));
+				System.out.println("[KUDOS] N input to updateCtx(): " + Utils.toHexString(nInput));
+			}
+
+			// Generate new OSCORE Context
+			OSCoreCtx ctxOld = ctx.getKudosCtxOld();
+			OSCoreCtx newCtx = updateCtx(xInput, nInput, ctxOld);
+
+			// Save the generated N2 value in the new context
+			newCtx.setKudosN1(n1);
+			newCtx.setKudosX1(x1);
+			newCtx.setKudosN2(n2);
+			newCtx.setKudosX2(x2);
+			newCtx.setContextRederivationPhase(ContextRederivation.PHASE.KUDOS_CLIENT_PHASE3);
+
+			db.removeContext(ctx);
+			String uri = ctx.getUri();
+			if (!uri.startsWith(SCHEME)) {
+				uri = SCHEME + uri;
+			}
+			db.addContext(uri, newCtx);
+			return newCtx;
+		}
+
+		return ctx;
+	}
+
+	/**
+	 * Handle incoming response messages. Client to handle incoming Response #1
+	 * and client reception of Response #1 (reverse flow).
 	 * 
 	 * @param db the context db
 	 * @param ctx the context
@@ -165,64 +300,85 @@ public class KudosRederivation {
 	 * @throws OSException if context re-derivation fails
 	 */
 	static OSCoreCtx incomingResponse(OSCoreCtxDB db, OSCoreCtx ctx, byte[] contextID) throws OSException {
-	
+
 		// Check if context re-derivation is enabled for this context
 		if (ctx.getKudosContextRederivationEnabled() == false) {
 			LOGGER.debug("[KUDOS] Context re-derivation not considered due to it being disabled for this context");
 			return ctx;
 		}
-	
+
+		// Handle reverse flow, client reception of Response #1 (reverse flow)
+		if (ctx.getContextRederivationPhase() == ContextRederivation.PHASE.KUDOS_CLIENT_PHASE1) {
+			printStateLoggingKudos(ctx);
+
+			// Build new OSCORE Context
+			OSCoreCtx ctxOut = updateCtx(new byte[] { ctx.getKudosX1() }, ctx.getKudosN1(), ctx);
+
+			ctxOut.setContextRederivationPhase(PHASE.KUDOS_CLIENT_PHASE2);
+			ctxOut.setKudosN1(ctx.getKudosN1());
+			ctxOut.setKudosX1(ctx.getKudosX1());
+			ctxOut.setKudosCtxOld(ctx);
+			db.removeContext(ctx);
+
+			String uri = ctx.getUri();
+			if (!uri.startsWith(SCHEME)) {
+				uri = SCHEME + uri;
+			}
+			db.addContext(uri, ctxOut);
+			return ctxOut;
+		}
+
 		// Handle client phase 2 operations
 		if (ctx.getContextRederivationPhase() == ContextRederivation.PHASE.KUDOS_CLIENT_PHASE2) {
-	
 			printStateLoggingKudos(ctx);
-	
+
 			byte[] n1 = ctx.getKudosN1();
 			byte x1 = ctx.getKudosX1();
 			byte[] n2 = ctx.getKudosN2();
 			byte x2 = ctx.getKudosX2();
-	
+
 			if (EXTRA_LOGGING) {
 				System.out.println("[KUDOS] context re-derivation phase: " + ctx.getContextRederivationPhase());
 				System.out.println("[KUDOS] N1 value: " + Utils.toHexString(n1));
 				System.out.println("[KUDOS] X1 value: " + x1);
 				System.out.println("[KUDOS] N2 value: " + Utils.toHexString(n2));
 			}
-	
+
 			byte[] xInput = comb(x1, x2);
 			byte[] nInput = comb(n1, n2);
-	
+
 			if (EXTRA_LOGGING) {
 				System.out.println("[KUDOS] X input to updateCtx(): " + Utils.toHexString(xInput));
 				System.out.println("[KUDOS] N input to updateCtx(): " + Utils.toHexString(nInput));
 			}
-	
+
 			// Generate new OSCORE Context
 			OSCoreCtx ctxOld = ctx.getKudosCtxOld();
 			OSCoreCtx newCtx = updateCtx(xInput, nInput, ctxOld);
-	
+
 			// Save the generated N2 value in the new context
 			newCtx.setKudosN1(n1);
 			newCtx.setKudosX1(x1);
 			newCtx.setKudosN2(n2);
 			newCtx.setKudosX2(x2);
 			newCtx.setContextRederivationPhase(ContextRederivation.PHASE.INACTIVE);
-	
+
 			db.removeContext(ctx);
 			String uri = ctx.getUri();
 			if (!uri.startsWith(SCHEME)) {
 				uri = SCHEME + uri;
 			}
 			db.addContext(uri, newCtx);
-	
+
 			return newCtx;
 		}
-	
+
 		return ctx;
 	}
 
 	/**
-	 * Handle outgoing response messages (for server processing of Response #1).
+	 * Handle outgoing response messages (for server processing of Response #1
+	 * in both forward and reverse flow).
 	 * 
 	 * @param db the context db
 	 * @param ctx the context
@@ -237,10 +393,43 @@ public class KudosRederivation {
 			throw new IllegalStateException("[KUDOS] Context re-derivation is not enabled for this context.");
 		}
 
-		// Check that the server is in the expected phase
+		// Handle reverse flow (server sending of Response #1)
+		if (ctx.getContextRederivationPhase() == ContextRederivation.PHASE.KUDOS_SERVER_PHASE1) {
+
+			printStateLoggingKudos(ctx);
+
+			// Generate a random N1)
+			byte[] n1 = Bytes.createBytes(random, NONCE_LENGTH);
+
+			if (EXTRA_LOGGING) {
+				System.out.println("[KUDOS] context re-derivation phase: " + ctx.getContextRederivationPhase());
+				System.out.println("[KUDOS] N1 value: " + Utils.toHexString(n1));
+			}
+
+			// Create new context with the generated Nonce N1
+			byte x = (byte) (NONCE_LENGTH - 1);
+			byte[] xArray = new byte[] { x };
+
+			// Build new OSCORE Context
+			OSCoreCtx newCtx = updateCtx(xArray, n1, ctx);
+
+			// Save the generated N1 value in the new context
+			newCtx.setKudosN1(n1);
+			newCtx.setKudosX1(x);
+			newCtx.setKudosCtxOld(ctx);
+			newCtx.setContextRederivationPhase(ContextRederivation.PHASE.KUDOS_SERVER_PHASE2);
+
+			db.removeContext(ctx);
+			db.addContext(newCtx);
+			return newCtx;
+		}
+
+		// Check that the server is in the expected phase (for clients)
 		if (ctx.getContextRederivationPhase() != ContextRederivation.PHASE.KUDOS_SERVER_PHASE2) {
 			return ctx;
 		}
+
+		printStateLoggingKudos(ctx);
 
 		byte[] n1 = ctx.getKudosN1();
 		byte x1 = ctx.getKudosX1();
@@ -298,18 +487,18 @@ public class KudosRederivation {
 	 * @return new OSCORE context
 	 */
 	static OSCoreCtx updateCtx(byte[] x, byte[] n, OSCoreCtx ctxIn) {
-	
+
 		byte[] X_cbor = CBORObject.FromObject(x).EncodeToBytes();
 		byte[] N_cbor = CBORObject.FromObject(n).EncodeToBytes();
 		byte[] X_N = concatenateArrays(X_cbor, N_cbor);
-	
+
 		byte[] masterSaltNew = n;
-	
+
 		// Generate new Master Secret
 		int oscoreKeyLength = ctxIn.getMasterSecret().length;
 		String label = "key update";
 		byte[] masterSecretNew = null;
-	
+
 		try {
 
 			// Build the info (ExpandLabel) structure
@@ -331,7 +520,7 @@ public class KudosRederivation {
 			System.err.println("Failed to generate new Master Secret when running KUDOS");
 			e1.printStackTrace();
 		}
-	
+
 		if (EXTRA_LOGGING) {
 			System.out.println("[KUDOS] # In updateCtx() # ");
 			System.out.println("[KUDOS] X_N value: " + Utils.toHexString(X_N));
@@ -340,7 +529,7 @@ public class KudosRederivation {
 			System.out.println("[KUDOS] New Master Salt: " + Utils.toHexString(masterSaltNew));
 			System.out.println("[KUDOS] # End in updateCtx() # ");
 		}
-	
+
 		// Derive the new OSCORE Security Context
 		OSCoreCtx ctxOut = null;
 		try {
@@ -349,7 +538,7 @@ public class KudosRederivation {
 			System.err.println("Failed to perform new OSCORE Security Context derivation when running KUDOS");
 			e.printStackTrace();
 		}
-	
+
 		return ctxOut;
 	}
 
@@ -384,15 +573,15 @@ public class KudosRederivation {
 	 * @return concatenated result after CBOR bstr wrapping
 	 */
 	static byte[] comb(byte[] a, byte[] b) {
-	
+
 		CBORObject aCbor = CBORObject.FromObject(a);
 		CBORObject bCbor = CBORObject.FromObject(b);
-	
+
 		byte[] aCborBytes = aCbor.EncodeToBytes();
 		byte[] bCborBytes = bCbor.EncodeToBytes();
-	
+
 		byte[] out = concatenateArrays(aCborBytes, bCborBytes);
-	
+
 		return out;
 	}
 
