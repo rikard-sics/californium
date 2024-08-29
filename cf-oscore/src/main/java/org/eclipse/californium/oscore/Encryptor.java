@@ -199,9 +199,17 @@ public abstract class Encryptor {
 		optionEncoder.setKid(ctx.getSenderId());
 
 		// Handle client side operations for KUDOS (sending of Request #1) by
-		// setting the nonce N1 in the request
+		// setting the nonce N1 in the request (forward flow)
 		if (ctx.getContextRederivationPhase() == PHASE.KUDOS_CLIENT_PHASE1) {
 			optionEncoder.setNonce(ctx.getKudosN1());
+		}
+
+		// Handle client side operations for KUDOS (sending of Request #2) by
+		// setting the nonce N1 and N2 in the request (reverse flow)
+		if (ctx.getContextRederivationPhase() == ContextRederivation.PHASE.KUDOS_CLIENT_PHASE3) {
+			optionEncoder.setNonce(ctx.getKudosN1());
+			optionEncoder.setOldNonce(ctx.getKudosN2());
+			ctx.setContextRederivationPhase(ContextRederivation.PHASE.INACTIVE);
 		}
 
 		return optionEncoder.getBytes();
@@ -229,6 +237,12 @@ public abstract class Encryptor {
 		if (ctx.getContextRederivationPhase() == ContextRederivation.PHASE.KUDOS_SERVER_PHASE3) {
 			optionEncoder.setNonce(ctx.getKudosN2());
 			ctx.setContextRederivationPhase(ContextRederivation.PHASE.INACTIVE);
+		}
+
+		// Handle server side operations for KUDOS (sending of Response #1) by
+		// setting the nonce N1 in the response (reverse flow)
+		if (ctx.getContextRederivationPhase() == PHASE.KUDOS_SERVER_PHASE2) {
+			optionEncoder.setNonce(ctx.getKudosN1());
 		}
 
 		return optionEncoder.getBytes();
