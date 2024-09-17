@@ -17,12 +17,15 @@
 package org.eclipse.californium.oscore.federated;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.URI;
 import java.security.Provider;
 import java.security.Security;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -197,6 +200,11 @@ public class FederatedClient {
 	private static int commuEpoch = 50;
 	private static int modelsize = 0;
 
+	private static int sentBytes = 0;
+	private static int receivedBytes = 0;
+	private static List<Long> epochTimes = new ArrayList<Long>();
+	private static long[][] rtts = new long[50][50];
+
 	/**
 	 * Main method
 	 * 
@@ -204,6 +212,8 @@ public class FederatedClient {
 	 * @throws Exception on setup or message processing failure
 	 */
 	public static void main(String args[]) throws Exception {
+
+		long start = System.nanoTime();
 
 		// Install cryptographic providers
 		Provider EdDSA = new EdDSASecurityProvider();
@@ -368,6 +378,8 @@ public class FederatedClient {
 
 		for (int i = 0; i <= commuEpoch; i++) {
 
+			long epochStart = System.nanoTime();
+
 			System.out.println("=== Communication Epoch: " + i + " ===");
 			Request request = Request.newPost();
 
@@ -436,6 +448,7 @@ public class FederatedClient {
 						request.getOptions().setOscore(Bytes.EMPTY);
 					}
 					request.setPayload(payloadReq);
+					sentBytes += payloadReq.length;
 					request.setType(Type.NON);
 					client = new CoapClient();
 					client.setURI(requestURI);
@@ -451,6 +464,7 @@ public class FederatedClient {
 
 			} else {
 				// sends a multicast request
+				sentBytes += payloadReq.length;
 				handler.clearResponses();
 				System.out.println("Sending request to: " + client.getURI());
 				System.out.println("Sending from: " + client.getEndpoint().getAddress());
@@ -482,6 +496,10 @@ public class FederatedClient {
 
 				byte[] payloadRes = resp.getPayload();
 
+				// Save received bytes and RTT
+				receivedBytes += payloadRes.length;
+				rtts[commuEpoch][j] = resp.advanced().getApplicationRttNanos();
+
 				// Parse bytes in response payload into float vector
 				float[] modelRes = FloatConverter.bytesToFloatVector(payloadRes);
 
@@ -499,7 +517,34 @@ public class FederatedClient {
 				models.add(model);
 			}
 
+			long epochEnd = System.nanoTime();
+			long epochTotal = epochEnd - epochStart;
+			epochTimes.add(epochTotal);
+
 		}
+
+		long finish = System.nanoTime();
+		long timeElapsed = finish - start;
+
+		/** Write results to file **/
+		FileWriter myWriter = new FileWriter(now() + "-res.txt");
+		myWriter.write("Cumulative data sent (bytes) " + sentBytes);
+		myWriter.write("Cumulative data received (bytes) " + receivedBytes);
+		myWriter.write("Time until stop condition (ns) " + timeElapsed);
+		myWriter.write("Number of epochs " + commuEpoch);
+
+		myWriter.write("Times for each epoch");
+		for (int i = 0; i < epochTimes.size(); i++) {
+			myWriter.write(i + " " + epochTimes.get(i));
+		}
+
+		myWriter.write("RTT");
+		for (int i = 0; i < rtts.length; i++) {
+			for (int j = 0; j < rtts[i].length; j++) {
+				myWriter.write(i + " " + j + " " + rtts[i][j]);
+			}
+		}
+		myWriter.close();
 
 	}
 
@@ -663,6 +708,14 @@ public class FederatedClient {
 		System.out.println("--oscore: Use OSCORE [Optional. Default: false]");
 		System.out.println("--unicast: Use unicast one-by-one to the servers [Optional. Default: false]");
 		System.exit(1);
+	}
+
+	public static final String DATE_FORMAT_NOW = "yyyy-MM-dd_HH-mm-ss";
+
+	public static String now() {
+		Calendar cal = Calendar.getInstance();
+		SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT_NOW);
+		return sdf.format(cal.getTime());
 	}
 
 }
