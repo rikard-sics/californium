@@ -72,7 +72,6 @@ import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.dimensionalityreduction.PCA;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
@@ -81,7 +80,6 @@ import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -281,7 +279,7 @@ public class FederatedServer {
 			multicastIP = CoAP.MULTICAST_IPV6_SITELOCAL;
 			ipv4 = false;
 		} else {
-			System.err.println("Invalid option for --multicast-ip, must be IPv4 or IPv6");
+			DebugOut.errPrintln("Invalid option for --multicast-ip, must be IPv4 or IPv6");
 		}
 
 		if (serverCount == -1 || serverId == -1 || serverDataset == null) {
@@ -289,18 +287,18 @@ public class FederatedServer {
 		}
 
 		if (useOSCORE && !unicastMode) {
-			System.out.println("Invalid config:");
-			System.out.println("useOSCORE: " + useOSCORE);
-			System.out.println("unicastMode: " + unicastMode);
-			System.out.println();
+			DebugOut.println("Invalid config:");
+			DebugOut.println("useOSCORE: " + useOSCORE);
+			DebugOut.println("unicastMode: " + unicastMode);
+			DebugOut.println();
 			printHelp();
 		}
 
 		if (useGroupOSCORE && unicastMode) {
-			System.out.println("Invalid config:");
-			System.out.println("useGroupOSCORE: " + useGroupOSCORE);
-			System.out.println("unicastMode: " + unicastMode);
-			System.out.println();
+			DebugOut.println("Invalid config:");
+			DebugOut.println("useGroupOSCORE: " + useGroupOSCORE);
+			DebugOut.println("unicastMode: " + unicastMode);
+			DebugOut.println();
 			printHelp();
 		}
 
@@ -320,7 +318,7 @@ public class FederatedServer {
 			serverPublicKey = Credentials.serverPublicKeys.get(serverId);
 			serverPrivateKey = Credentials.serverPrivateKeys.get(serverId);
 			serverPublicPrivateKey = new MultiKey(serverPublicKey, serverPrivateKey);
-			System.out.println("Starting with SID " + StringUtil.byteArray2Hex(sid));
+			DebugOut.println("Starting with SID " + StringUtil.byteArray2Hex(sid));
 
 			byte[] gmPublicKey = gmPublicKeyBytes;
 			GroupCtx commonCtx = new GroupCtx(masterSecret, masterSalt, alg, kdf, groupIdentifier, algCountersign,
@@ -339,7 +337,7 @@ public class FederatedServer {
 		// If OSCORE is being used set the context information
 		if (useOSCORE) {
 			sid = Credentials.serverSenderIds.get(serverId);
-			System.out.println("Starting with SID " + StringUtil.byteArray2Hex(sid));
+			DebugOut.println("Starting with SID " + StringUtil.byteArray2Hex(sid));
 
 			OSCoreCtx ctx = new OSCoreCtx(masterSecret, false, alg, sid, clientRid, kdf, 32, masterSalt, null,
 					MAX_UNFRAGMENTED_SIZE);
@@ -367,36 +365,36 @@ public class FederatedServer {
 		server.add(new ModelResource());
 
 		server.start();
-		System.out.println("CoAP server started on port: " + unicastPort);
+		DebugOut.println("CoAP server started on port: " + unicastPort);
 
 		Endpoint endpoint = server.getEndpoint(unicastPort);
 
 		// Information about the receiver
-		System.out.println("==================");
-		System.out.println("*Receiver");
-		System.out.println("Uses Group OSCORE: " + useGroupOSCORE);
-		System.out.println("Uses OSCORE: " + useOSCORE);
-		System.out.println("Use multicast: " + !unicastMode);
-		System.out.println("Respond to non-confirmable messages: " + replyToNonConfirmable);
-		System.out.println("Listening to Multicast IP: " + multicastIP.getHostAddress());
-		System.out.println("Unicast IP: " + endpoint.getAddress().getHostString());
-		System.out.println("Unicast port: " + endpoint.getAddress().getPort());
-		System.out.println("Multicast port: " + listenPort);
-		System.out.println("Server ID: " + serverId);
-		System.out.println("Total server count: " + serverCount);
-		System.out.println("Dataset: " + serverDataset);
-		System.out.print("CoAP resources: ");
+		DebugOut.println("==================");
+		DebugOut.println("*Receiver");
+		DebugOut.println("Uses Group OSCORE: " + useGroupOSCORE);
+		DebugOut.println("Uses OSCORE: " + useOSCORE);
+		DebugOut.println("Use multicast: " + !unicastMode);
+		DebugOut.println("Respond to non-confirmable messages: " + replyToNonConfirmable);
+		DebugOut.println("Listening to Multicast IP: " + multicastIP.getHostAddress());
+		DebugOut.println("Unicast IP: " + endpoint.getAddress().getHostString());
+		DebugOut.println("Unicast port: " + endpoint.getAddress().getPort());
+		DebugOut.println("Multicast port: " + listenPort);
+		DebugOut.println("Server ID: " + serverId);
+		DebugOut.println("Total server count: " + serverCount);
+		DebugOut.println("Dataset: " + serverDataset);
+		DebugOut.print("CoAP resources: ");
 		for (Resource res : server.getRoot().getChildren()) {
-			System.out.print(res.getURI() + " ");
+			DebugOut.print(res.getURI() + " ");
 		}
-		System.out.println("");
-		System.out.println("==================");
+		DebugOut.println("");
+		DebugOut.println("==================");
 
 		/*
 		 * Create an iterator using the batch size for one iteration for
 		 * MnistData
 		 */
-		System.out.println("Load data....");
+		DebugOut.println("Load data....");
 
 		/*
 		 * Load Data from local csv file
@@ -593,7 +591,7 @@ public class FederatedServer {
 		if (labelIndex > numInputs) {
 			features_train = PCA.pca(features_train, numInputs, true);
 			//features_test = PCA.pca(features_test, numInputs, true);
-			System.out.println("PCA is done.");
+			DebugOut.println("PCA is done.");
 			allData = new DataSet(features_train, allData.getLabels());
 			
 		}
@@ -616,8 +614,8 @@ public class FederatedServer {
 		// Apply normalization to the training data
 		normalizer.transform(test_Data);
 		
-		System.out.println("Number of examples in the training set: " + training_Data.numExamples());
-		System.out.println("Number of examples in the test set: " + test_Data.numExamples());
+		DebugOut.println("Number of examples in the training set: " + training_Data.numExamples());
+		DebugOut.println("Number of examples in the test set: " + test_Data.numExamples());
 
 		
 
@@ -627,13 +625,13 @@ public class FederatedServer {
 		/*
 		 * Construct the neural network
 		 */
-		System.out.println("Build model....");
+		DebugOut.println("Build model....");
 
 		
 
-		System.out.println("Model Data Type: " + conf.getDataType());
-		System.out.println("==================");
-		System.out.println("Server Ready");
+		DebugOut.println("Model Data Type: " + conf.getDataType());
+		DebugOut.println("==================");
+		DebugOut.println("Server Ready");
 	}
 
 	private static void TrainModel(INDArray updateModel, boolean initFlag) {
@@ -641,32 +639,32 @@ public class FederatedServer {
 		if (initFlag == true) {
 			model = new MultiLayerNetwork(conf);
 			model.init();
-			System.out.println(model.summary());
+			DebugOut.println(model.summary());
 		} else {
-			System.out.println("Update Local model...");
+			DebugOut.println("Update Local model...");
 			model.setParams(updateModel);
 		}
 
-		System.out.println("Train local model...");
+		DebugOut.println("Train local model...");
 		// Print score every 10 iterations and evaluate on test set every epoch
 		model.setListeners(new ScoreIterationListener(1));
 
-		System.out.println("The parameters before training: " + model.params());
+		DebugOut.println("The parameters before training: " + model.params());
 		EvaluationBinary eval_train = new EvaluationBinary();
 		for (int i = 0; i < nLocalEpochs; i++) {
 			
 			model.fit(trainIter);
-			System.out.println("Loss:" + model.score());
+			DebugOut.println("Loss:" + model.score());
 			model.doEvaluation(trainIter, eval_train);
 			
 		}
-		System.out.println(eval_train.stats());
+		DebugOut.println(eval_train.stats());
 
-		System.out.println("The parameters after training: " + model.params());
-		System.out.println("The length of model's parameters: " + model.params().length());
+		DebugOut.println("The parameters after training: " + model.params());
+		DebugOut.println("The length of model's parameters: " + model.params().length());
 
 		EvaluationBinary eval = new EvaluationBinary();
-		System.out.println("Evaluate with test dataset");
+		DebugOut.println("Evaluate with test dataset");
 		while (testIter.hasNext()) {
 			DataSet t = testIter.next();
 			INDArray features = t.getFeatures();
@@ -677,7 +675,7 @@ public class FederatedServer {
 		testIter.reset();
 
 		// Print the evaluation statistics
-		System.out.println(eval.stats());
+		DebugOut.println(eval.stats());
 		
 		String stringToWrite = "Accuracy: " + eval.accuracy(0);
 		
@@ -687,7 +685,7 @@ public class FederatedServer {
             writer.newLine();
             writer.close();
         } catch (IOException ioe) {
-            System.out.println("Couldn't write to file");
+			DebugOut.println("Couldn't write to file");
         }
 		    
 	
@@ -720,7 +718,7 @@ public class FederatedServer {
 
 		@Override
 		public void handlePOST(CoapExchange exchange) {
-			System.out.println("Accessing model resource");
+			DebugOut.println("Accessing model resource");
 
 			// Parse and handle request
 			byte[] payloadReq = exchange.getRequestPayload();
@@ -728,19 +726,19 @@ public class FederatedServer {
 			// Parse bytes in request payload into float vector
 			float[] modelReq = FloatConverter.bytesToFloatVector(payloadReq);
 
-			System.out.print("Incoming payload: ");
+			DebugOut.print("Incoming payload: ");
 			for (int i = 0; i < modelReq.length; i++) {
-				System.out.print(modelReq[i] + " ");
+				DebugOut.print(modelReq[i] + " ");
 
 			}
-			System.out.println();
+			DebugOut.println();
 
 			/*
 			 * Get the updated model from the request message, and create a
 			 * INDArray to get
 			 */
 			INDArray updatedModel = Nd4j.create(modelReq);
-			System.out.println(updatedModel.length());
+			DebugOut.println(updatedModel.length());
 
 			boolean initFlag = false;
 			// Train
@@ -754,9 +752,9 @@ public class FederatedServer {
 			// Build byte payload to send from float vector
 			byte[] payloadRes = FloatConverter.floatVectorToBytes(modelRes);
 
-			System.out.println();
+			DebugOut.println();
 			if (payloadRes.length > MAX_MSG_SIZE) {
-				System.err.println("Error: Payload exceeds maximum messages size (" + MAX_MSG_SIZE + " bytes)");
+				DebugOut.errPrintln("Error: Payload exceeds maximum messages size (" + MAX_MSG_SIZE + " bytes)");
 			}
 
 			// Create response
@@ -769,7 +767,7 @@ public class FederatedServer {
 			try {
 				Thread.sleep(waitTime);
 			} catch (InterruptedException e) {
-				System.err.println("Failed to sleep for leisure time before responding");
+				DebugOut.errPrintln("Failed to sleep for leisure time before responding");
 				e.printStackTrace();
 			}
 
@@ -791,7 +789,7 @@ public class FederatedServer {
 			getAttributes().setTitle("Hello-World Resource");
 
 			id = random.nextInt(1000);
-			System.out.println("coap receiver: " + id);
+			DebugOut.println("coap receiver: " + id);
 		}
 
 		// Added for handling GET
@@ -803,15 +801,15 @@ public class FederatedServer {
 		@Override
 		public void handlePOST(CoapExchange exchange) {
 
-			System.out.println("Incoming Request to HelloWorld Resource");
+			DebugOut.println("Incoming Request to HelloWorld Resource");
 
-			System.out.println("Receiving request #" + count);
+			DebugOut.println("Receiving request #" + count);
 			count++;
 
-			System.out.println("Receiving to: " + exchange.advanced().getEndpoint().getAddress());
-			System.out.println("Receiving from: " + exchange.getSourceAddress() + ":" + exchange.getSourcePort());
+			DebugOut.println("Receiving to: " + exchange.advanced().getEndpoint().getAddress());
+			DebugOut.println("Receiving from: " + exchange.getSourceAddress() + ":" + exchange.getSourcePort());
 
-			System.out.println(Utils.prettyPrint(exchange.advanced().getRequest()));
+			DebugOut.println(Utils.prettyPrint(exchange.advanced().getRequest()));
 
 			boolean isConfirmable = exchange.advanced().getRequest().isConfirmable();
 
@@ -834,10 +832,10 @@ public class FederatedServer {
 					r.setType(Type.NON);
 				}
 
-				System.out.println();
-				System.out.println("Sending to: " + r.getDestinationContext().getPeerAddress());
-				System.out.println("Sending from: " + exchange.advanced().getEndpoint().getAddress());
-				System.out.println(Utils.prettyPrint(r));
+				DebugOut.println();
+				DebugOut.println("Sending to: " + r.getDestinationContext().getPeerAddress());
+				DebugOut.println("Sending from: " + exchange.advanced().getEndpoint().getAddress());
+				DebugOut.println(Utils.prettyPrint(r));
 
 				exchange.respond(r);
 			}
@@ -871,16 +869,16 @@ public class FederatedServer {
 		NetworkInterface networkInterface = NetworkInterfacesUtil.getMulticastInterface();
 
 		if (networkInterface == null) {
-			System.out.println("No multicast network-interface found!");
+			DebugOut.println("No multicast network-interface found!");
 			throw new Error("No multicast network-interface found!");
 		}
-		System.out.println("Multicast Network Interface: " + networkInterface.getDisplayName());
+		DebugOut.println("Multicast Network Interface: " + networkInterface.getDisplayName());
 
 		UdpMulticastConnector.Builder builder = new UdpMulticastConnector.Builder();
 
 		if (!ipv4 && NetworkInterfacesUtil.isAnyIpv6()) {
 			Inet6Address ipv6 = NetworkInterfacesUtil.getMulticastInterfaceIpv6();
-			System.out.println("Multicast: IPv6 Network Address: " + StringUtil.toString(ipv6));
+			DebugOut.println("Multicast: IPv6 Network Address: " + StringUtil.toString(ipv6));
 			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv6, unicastPort), config);
 			udpConnector.setReuseAddress(true);
 			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector)
@@ -899,12 +897,12 @@ public class FederatedServer {
 			createReceiver(builder, udpConnector);
 
 			server.addEndpoint(coapEndpoint);
-			System.out.println("IPv6 - multicast");
+			DebugOut.println("IPv6 - multicast");
 		}
 
 		if (ipv4 && NetworkInterfacesUtil.isAnyIpv4()) {
 			Inet4Address ipv4 = NetworkInterfacesUtil.getMulticastInterfaceIpv4();
-			System.out.println("Multicast: IPv4 Network Address: " + StringUtil.toString(ipv4));
+			DebugOut.println("Multicast: IPv4 Network Address: " + StringUtil.toString(ipv4));
 			UDPConnector udpConnector = new UDPConnector(new InetSocketAddress(ipv4, unicastPort), config);
 			udpConnector.setReuseAddress(true);
 			CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector)
@@ -921,7 +919,7 @@ public class FederatedServer {
 				createReceiver(builder, udpConnector);
 			}
 			server.addEndpoint(coapEndpoint);
-			System.out.println("IPv4 - multicast");
+			DebugOut.println("IPv4 - multicast");
 		}
 		UDPConnector udpConnector = new UDPConnector(
 				new InetSocketAddress(InetAddress.getLoopbackAddress(), unicastPort), config);
@@ -929,7 +927,7 @@ public class FederatedServer {
 		CoapEndpoint coapEndpoint = new CoapEndpoint.Builder().setConfiguration(config).setConnector(udpConnector)
 				.build();
 		server.addEndpoint(coapEndpoint);
-		System.out.println("loopback");
+		DebugOut.println("loopback");
 	}
 
 	/**

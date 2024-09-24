@@ -260,7 +260,7 @@ public class FederatedClient {
 		} else if (multicastStr.toLowerCase().equals("ipv6")) {
 			multicastIP = CoAP.MULTICAST_IPV6_SITELOCAL;
 		} else {
-			System.err.println("Invalid option for --multicast-ip, must be IPv4 or IPv6");
+			DebugOut.errPrintln("Invalid option for --multicast-ip, must be IPv4 or IPv6");
 		}
 
 		if (serverCount == -1) {
@@ -268,18 +268,18 @@ public class FederatedClient {
 		}
 
 		if (useOSCORE && !unicastMode) {
-			System.out.println("Invalid config:");
-			System.out.println("useOSCORE: " + useOSCORE);
-			System.out.println("unicastMode: " + unicastMode);
-			System.out.println();
+			DebugOut.println("Invalid config:");
+			DebugOut.println("useOSCORE: " + useOSCORE);
+			DebugOut.println("unicastMode: " + unicastMode);
+			DebugOut.println();
 			printHelp();
 		}
 
 		if (useGroupOSCORE && unicastMode) {
-			System.out.println("Invalid config:");
-			System.out.println("useGroupOSCORE: " + useGroupOSCORE);
-			System.out.println("unicastMode: " + unicastMode);
-			System.out.println();
+			DebugOut.println("Invalid config:");
+			DebugOut.println("useGroupOSCORE: " + useGroupOSCORE);
+			DebugOut.println("unicastMode: " + unicastMode);
+			DebugOut.println();
 			printHelp();
 		}
 
@@ -358,29 +358,29 @@ public class FederatedClient {
 		client.setURI(requestURI);
 
 		// Information about the sender
-		System.out.println("==================");
-		System.out.println("*Sender");
-		System.out.println("Uses Group OSCORE: " + useGroupOSCORE);
-		System.out.println("Uses OSCORE: " + useOSCORE);
-		System.out.println("Use multicast: " + !unicastMode);
-		System.out.println("Request destination: " + requestURI);
-		System.out.println("Request destination port: " + destinationPort);
-		System.out.println("Outgoing port: " + endpoint.getAddress().getPort());
-		System.out.println("Total server count: " + serverCount);
+		DebugOut.println("==================");
+		DebugOut.println("*Sender");
+		DebugOut.println("Uses Group OSCORE: " + useGroupOSCORE);
+		DebugOut.println("Uses OSCORE: " + useOSCORE);
+		DebugOut.println("Use multicast: " + !unicastMode);
+		DebugOut.println("Request destination: " + requestURI);
+		DebugOut.println("Request destination port: " + destinationPort);
+		DebugOut.println("Outgoing port: " + endpoint.getAddress().getPort());
+		DebugOut.println("Total server count: " + serverCount);
 
 		if (unicastMode) {
-			System.out.println("Unicast Server IPs: ");
+			DebugOut.println("Unicast Server IPs: ");
 			for (int i = 0; i < unicastServerIps.size(); i++) {
-				System.out.println(unicastServerIps.get(i));
+				DebugOut.println(unicastServerIps.get(i));
 			}
 		}
-		System.out.println("==================");
+		DebugOut.println("==================");
 
 		for (int i = 0; i <= commuEpoch; i++) {
 
 			long epochStart = System.nanoTime();
 
-			System.out.println("=== Communication Epoch: " + i + " ===");
+			DebugOut.println("=== Communication Epoch: " + i + " ===");
 			Request request = Request.newPost();
 
 			float[] modelReq = null;
@@ -401,18 +401,18 @@ public class FederatedClient {
 					// If there is only one model in the buffer list
 					modelReq = models.get(0).toFloatVector();
 				} else {
-					System.err.println("Error: No model received");
+					DebugOut.errPrintln("Error: No model received");
 				}
 
 				// Build byte payload to send from float vector
 				payloadReq = FloatConverter.floatVectorToBytes(modelReq);
 
-				System.out.print("Outgoing request payload: ");
+				DebugOut.print("Outgoing request payload: ");
 				for (int j = 0; j < modelReq.length; j++) {
-					System.out.print(modelReq[j] + " ");
+					DebugOut.print(modelReq[j] + " ");
 				}
 				if (payloadReq.length > MAX_MSG_SIZE) {
-					System.err.println("Error: Payload exceeds maximum messages size (" + MAX_MSG_SIZE + " bytes)");
+					DebugOut.errPrintln("Error: Payload exceeds maximum messages size (" + MAX_MSG_SIZE + " bytes)");
 				}
 
 				models.clear();
@@ -454,8 +454,8 @@ public class FederatedClient {
 					client.setURI(requestURI);
 					request.setURI(requestURI);
 
-					System.out.println("Sending request to: " + client.getURI());
-					System.out.println(Utils.prettyPrint(request));
+					DebugOut.println("Sending request to: " + client.getURI());
+					DebugOut.println(Utils.prettyPrint(request));
 					client.advanced(handler, request);
 					while (handler.waitOn(UNICAST_TIMEOUT)) {
 						// Wait for responses
@@ -466,9 +466,9 @@ public class FederatedClient {
 				// sends a multicast request
 				sentBytes += payloadReq.length;
 				handler.clearResponses();
-				System.out.println("Sending request to: " + client.getURI());
-				System.out.println("Sending from: " + client.getEndpoint().getAddress());
-				System.out.println(Utils.prettyPrint(request));
+				DebugOut.println("Sending request to: " + client.getURI());
+				DebugOut.println("Sending from: " + client.getEndpoint().getAddress());
+				DebugOut.println(Utils.prettyPrint(request));
 
 				client.advanced(handler, request);
 				while (handler.waitOn(FINAL_TIMEOUT)) {
@@ -481,18 +481,18 @@ public class FederatedClient {
 
 			if (responses.size() == 0) {
 
-				System.err.println("ERROR: No Response from servers.");
+				DebugOut.errPrintln("ERROR: No Response from servers.");
 
 			}
 			for (int j = 0; j < responses.size(); j++) {
 				CoapResponse resp = responses.get(j);
 
-				System.out.println("=== Response " + (j + 1) + " ===");
-				System.out.println("Response from from: " + resp.advanced().getSourceContext().getPeerAddress());
+				DebugOut.println("=== Response " + (j + 1) + " ===");
+				DebugOut.println("Response from from: " + resp.advanced().getSourceContext().getPeerAddress());
 
 				// Parse and handle response
-				System.out.println(Utils.prettyPrint(resp));
-				// System.out.println("Payload: " + resp.getResponseText());
+				DebugOut.println(Utils.prettyPrint(resp));
+				// DebugOut.println("Payload: " + resp.getResponseText());
 
 				byte[] payloadRes = resp.getPayload();
 
@@ -503,16 +503,16 @@ public class FederatedClient {
 				// Parse bytes in response payload into float vector
 				float[] modelRes = FloatConverter.bytesToFloatVector(payloadRes);
 
-				System.out.println();
+				DebugOut.println();
 
-				System.out.print("Incoming payload in response: ");
+				DebugOut.print("Incoming payload in response: ");
 				for (int k = 0; k < modelRes.length; k++) {
-					System.out.print(modelRes[k] + " ");
+					DebugOut.print(modelRes[k] + " ");
 
 				}
 
 				INDArray model = Nd4j.create(modelRes);
-				System.out.println(model.length());
+				DebugOut.println(model.length());
 				modelsize = (int) model.length();
 				models.add(model);
 			}
@@ -553,12 +553,12 @@ public class FederatedClient {
 		INDArray avg = Nd4j.zeros(modelsize);
 		for (int i = 0; i < list.size(); i++) {
 			INDArray arr = list.get(i);
-			System.out.println("Model:" + arr);
+			DebugOut.println("Model:" + arr);
 			avg = avg.add(arr);
 		}
 
 		avg = avg.div(list.size());
-		System.out.println("Updated Model:" + avg);
+		DebugOut.println("Updated Model:" + avg);
 
 		return avg;
 	}
@@ -574,7 +574,7 @@ public class FederatedClient {
 		for (int i = 0; i < Credentials.serverPublicKeys.size(); i++) {
 			MultiKey serverPublicKey = new MultiKey(Credentials.serverPublicKeys.get(i));
 			byte[] rid = Credentials.serverSenderIds.get(i);
-			System.out.println("=== Adding Group OSCORE Server Context for RID " + StringUtil.byteArray2Hex(rid));
+			DebugOut.println("=== Adding Group OSCORE Server Context for RID " + StringUtil.byteArray2Hex(rid));
 			commonCtx.addRecipientCtxCcs(rid, REPLAY_WINDOW, serverPublicKey);
 		}
 
@@ -601,7 +601,7 @@ public class FederatedClient {
 			OSCoreCtx ctx = new OSCoreCtx(masterSecret, false, alg, clientSid, rid, kdf, 32, masterSalt, null,
 					MAX_UNFRAGMENTED_SIZE);
 			ctx.setResponsesIncludePartialIV(false);
-			System.out.println("=== Adding OSCORE Server Context for RID " + StringUtil.byteArray2Hex(rid));
+			DebugOut.println("=== Adding OSCORE Server Context for RID " + StringUtil.byteArray2Hex(rid));
 			db.addContext(requestURI, ctx);
 		}
 	}
@@ -695,7 +695,7 @@ public class FederatedClient {
 
 		@Override
 		public void onError() {
-			System.err.println("error");
+			DebugOut.errPrintln("error");
 		}
 	}
 
