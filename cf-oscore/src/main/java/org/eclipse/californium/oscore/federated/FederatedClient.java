@@ -25,6 +25,7 @@ import java.security.Provider;
 import java.security.Security;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -501,7 +502,11 @@ public class FederatedClient {
 				rtts[commuEpoch][j] = resp.advanced().getApplicationRttNanos();
 
 				// Parse bytes in response payload into float vector
-				float[] modelRes = FloatConverter.bytesToFloatVector(payloadRes);
+				float[] modelResPre = FloatConverter.bytesToFloatVector(payloadRes);
+
+				// Parse the server's accuracy
+				float serverAccuracy = modelResPre[modelResPre.length - 1];
+				float[] modelRes = Arrays.copyOf(modelResPre, modelResPre.length - 1);
 
 				DebugOut.println();
 

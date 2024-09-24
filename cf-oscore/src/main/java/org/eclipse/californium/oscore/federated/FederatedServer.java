@@ -30,6 +30,7 @@ import java.net.SocketException;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
@@ -634,7 +635,7 @@ public class FederatedServer {
 		DebugOut.println("Server Ready");
 	}
 
-	private static void TrainModel(INDArray updateModel, boolean initFlag) {
+	private static double TrainModel(INDArray updateModel, boolean initFlag) {
 
 		if (initFlag == true) {
 			model = new MultiLayerNetwork(conf);
@@ -677,7 +678,8 @@ public class FederatedServer {
 		// Print the evaluation statistics
 		DebugOut.println(eval.stats());
 		
-		String stringToWrite = "Accuracy: " + eval.accuracy(0);
+		double accuracy = eval.accuracy(0);
+		String stringToWrite = "Accuracy: " + accuracy;
 		
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter("AccuracyFile_"+ serverId + ".txt", true));
@@ -688,7 +690,7 @@ public class FederatedServer {
 			DebugOut.println("Couldn't write to file");
         }
 		    
-	
+		return accuracy;
 
 	}
 
@@ -745,9 +747,12 @@ public class FederatedServer {
 			if (modelReq.length == 0) {
 				initFlag = true;
 			}
-			TrainModel(updatedModel, initFlag);
 
-			float[] modelRes = model.params().toFloatVector();
+			// Add accuracy to float vector end
+			double epochAccuracy = TrainModel(updatedModel, initFlag);
+			float[] modelResPre = model.params().toFloatVector();
+			float[] modelRes = Arrays.copyOf(modelResPre, modelResPre.length + 1);
+			modelRes[modelResPre.length] = (float) epochAccuracy;
 
 			// Build byte payload to send from float vector
 			byte[] payloadRes = FloatConverter.floatVectorToBytes(modelRes);
