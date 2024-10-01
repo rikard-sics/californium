@@ -16,6 +16,8 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore.federated;
 
+import static org.eclipse.californium.oscore.OSCoreEndpointContextInfo.OSCORE_RECIPIENT_ID;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.net.Inet6Address;
@@ -39,6 +41,7 @@ import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.network.CoapEndpoint;
+import org.eclipse.californium.elements.EndpointContext;
 import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.cose.AlgorithmID;
@@ -198,13 +201,21 @@ public class FederatedClient {
 	/* --- OSCORE Security Context information --- */
 
 	private static List<INDArray> models = new ArrayList<>();
-	private static int commuEpoch = 50;
+	private static int MAX_GLOBAL_EPOCHS = 50;
 	private static int modelsize = 0;
 
+	// For early stopping
+	private static int epochsNoImprovement = 0;
+	private final static float IMPROVEMENT_TRESHOLD = 0.001f;
+	private final static int NO_IMPROVEMENT_EPOCHS = 5;
+	private static boolean stopEarly = false;
+
+	// Variables for storing experimental results
 	private static int sentBytes = 0;
 	private static int receivedBytes = 0;
 	private static List<Long> epochTimes = new ArrayList<Long>();
 	private static long[][] rtts = new long[50][50];
+	private static HashMap<String, Float> accuracies = new HashMap<String, Float>();
 
 	/**
 	 * Main method
@@ -377,8 +388,10 @@ public class FederatedClient {
 		}
 		DebugOut.println("==================");
 
-		for (int i = 0; i <= commuEpoch; i++) {
+		int currentEpoch = 0;
+		for (int i = 0; i <= MAX_GLOBAL_EPOCHS && stopEarly == false; i++) {
 
+			currentEpoch = i;
 			long epochStart = System.nanoTime();
 
 			DebugOut.println("=== Communication Epoch: " + i + " ===");
@@ -485,6 +498,7 @@ public class FederatedClient {
 				DebugOut.errPrintln("ERROR: No Response from servers.");
 
 			}
+			boolean improvement = false;
 			for (int j = 0; j < responses.size(); j++) {
 				CoapResponse resp = responses.get(j);
 
@@ -499,13 +513,22 @@ public class FederatedClient {
 
 				// Save received bytes and RTT
 				receivedBytes += payloadRes.length;
-				rtts[commuEpoch][j] = resp.advanced().getApplicationRttNanos();
+				rtts[currentEpoch][j] = resp.advanced().getApplicationRttNanos();
 
 				// Parse bytes in response payload into float vector
 				float[] modelResPre = FloatConverter.bytesToFloatVector(payloadRes);
 
-				// Parse the server's accuracy
+				// Check for early stopping
 				float serverAccuracy = modelResPre[modelResPre.length - 1];
+				EndpointContext responseSourceContext = resp.advanced().getSourceContext();
+				String serverRid = responseSourceContext.get(OSCORE_RECIPIENT_ID);
+				float lastAccuracy = accuracies.getOrDefault(serverRid, 0f);
+				if (serverAccuracy - lastAccuracy > IMPROVEMENT_TRESHOLD || serverAccuracy < 0.9) {
+					improvement = true;
+				}
+				accuracies.remove(serverRid);
+				accuracies.put(serverRid, serverAccuracy);
+
 				float[] modelRes = Arrays.copyOf(modelResPre, modelResPre.length - 1);
 
 				DebugOut.println();
@@ -522,6 +545,17 @@ public class FederatedClient {
 				models.add(model);
 			}
 
+			// Check early stopping criteria
+			if (epochsNoImprovement >= NO_IMPROVEMENT_EPOCHS) {
+				DebugOut.print("Early stopping criteria fulfilled");
+				stopEarly = true;
+			}
+			if (improvement) {
+				epochsNoImprovement = 0;
+			} else {
+				epochsNoImprovement++;
+			}
+
 			long epochEnd = System.nanoTime();
 			long epochTotal = epochEnd - epochStart;
 			epochTimes.add(epochTotal);
@@ -536,7 +570,7 @@ public class FederatedClient {
 		myWriter.write("Cumulative data sent (bytes) " + sentBytes);
 		myWriter.write("Cumulative data received (bytes) " + receivedBytes);
 		myWriter.write("Time until stop condition (ns) " + timeElapsed);
-		myWriter.write("Number of epochs " + commuEpoch);
+		myWriter.write("Number of epochs " + currentEpoch);
 
 		myWriter.write("Times for each epoch");
 		for (int i = 0; i < epochTimes.size(); i++) {
@@ -549,6 +583,7 @@ public class FederatedClient {
 				myWriter.write(i + " " + j + " " + rtts[i][j]);
 			}
 		}
+
 		myWriter.close();
 
 	}
