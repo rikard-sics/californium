@@ -206,7 +206,7 @@ public class FederatedClient {
 
 	// For early stopping
 	private static int epochsNoImprovement = 0;
-	private final static float IMPROVEMENT_TRESHOLD = 0.001f;
+	private final static float CONTINUE_TRESHOLD = 0.001f;
 	private final static int NO_IMPROVEMENT_EPOCHS = 5;
 	private static boolean stopEarly = false;
 
@@ -498,7 +498,7 @@ public class FederatedClient {
 				DebugOut.errPrintln("ERROR: No Response from servers.");
 
 			}
-			boolean improvement = false;
+			boolean toBeContinued = false;
 			for (int j = 0; j < responses.size(); j++) {
 				CoapResponse resp = responses.get(j);
 
@@ -523,8 +523,8 @@ public class FederatedClient {
 				EndpointContext responseSourceContext = resp.advanced().getSourceContext();
 				String serverRid = responseSourceContext.get(OSCORE_RECIPIENT_ID);
 				float lastAccuracy = accuracies.getOrDefault(serverRid, 0f);
-				if (serverAccuracy - lastAccuracy > IMPROVEMENT_TRESHOLD || serverAccuracy < 0.9) {
-					improvement = true;
+				if (serverAccuracy < 0.9 || serverAccuracy - lastAccuracy > CONTINUE_TRESHOLD) {
+					toBeContinued = true;
 				}
 				accuracies.remove(serverRid);
 				accuracies.put(serverRid, serverAccuracy);
@@ -550,7 +550,7 @@ public class FederatedClient {
 				DebugOut.print("Early stopping criteria fulfilled");
 				stopEarly = true;
 			}
-			if (improvement) {
+			if (toBeContinued) {
 				epochsNoImprovement = 0;
 			} else {
 				epochsNoImprovement++;
@@ -583,6 +583,9 @@ public class FederatedClient {
 				myWriter.write(i + " " + j + " " + rtts[i][j]);
 			}
 		}
+
+		// TODO: Save also the accuracy here, remove it on the servers
+		// Save accuracy for each server for each epoch
 
 		myWriter.close();
 
