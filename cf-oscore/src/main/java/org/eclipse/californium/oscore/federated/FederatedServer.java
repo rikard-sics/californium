@@ -737,10 +737,14 @@ public class FederatedServer {
 			}
 
 			// Add accuracy to float vector end
-			double epochAccuracy = TrainModel(updatedModel, initFlag);
+			float epochAccuracy = (float) TrainModel(updatedModel, initFlag);
+			
 			float[] modelResPre = model.params().toFloatVector();
-			float[] modelRes = Arrays.copyOf(modelResPre, modelResPre.length + 1);
-			modelRes[modelResPre.length] = (float) epochAccuracy;
+			// float[] modelRes = Arrays.copyOf(modelResPre, modelResPre.length
+			// + 1);
+			float[] modelRes = new float[modelResPre.length + 1];
+			System.arraycopy(modelResPre, 0, modelRes, 0, modelResPre.length);
+			modelRes[modelResPre.length] = epochAccuracy;
 
 			// Build byte payload to send from float vector
 			byte[] payloadRes = FloatConverter.floatVectorToBytes(modelRes);

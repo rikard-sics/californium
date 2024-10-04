@@ -204,12 +204,12 @@ public class FederatedClient {
 	/* --- OSCORE Security Context information --- */
 
 	private static List<INDArray> models = new ArrayList<>();
-	private static int MAX_GLOBAL_EPOCHS = 50;
+	private static int MAX_GLOBAL_EPOCHS = 5;
 	private static int modelsize = 0;
 
 	// For early stopping
 	private static int epochsNoImprovement = 0;
-	private final static float CONTINUE_TRESHOLD = 0.001f;
+	private final static float CONTINUE_TRESHOLD = 0.005f;
 	private final static int NO_IMPROVEMENT_EPOCHS = 5;
 	private static boolean stopEarly = false;
 
@@ -393,7 +393,7 @@ public class FederatedClient {
 		DebugOut.println("==================");
 
 		int currentEpoch = 0;
-		for (int i = 0; i <= MAX_GLOBAL_EPOCHS && stopEarly == false; i++) {
+		for (int i = 0; i < MAX_GLOBAL_EPOCHS && stopEarly == false; i++) {
 
 			currentEpoch = i;
 			long epochStart = System.nanoTime();
@@ -544,7 +544,10 @@ public class FederatedClient {
 				}
 				storedAccuracies.get(serverRid)[currentEpoch] = serverAccuracy;
 
-				float[] modelRes = Arrays.copyOf(modelResPre, modelResPre.length - 1);
+				// float[] modelRes = Arrays.copyOf(modelResPre,
+				// modelResPre.length - 1);
+				float[] modelRes = new float[modelResPre.length - 1];
+				System.arraycopy(modelResPre, 0, modelRes, 0, modelResPre.length - 1);
 
 				DebugOut.println();
 
@@ -590,7 +593,7 @@ public class FederatedClient {
 		myWriter.write("Cumulative data sent (bytes): " + sentBytes + newl);
 		myWriter.write("Cumulative data received (bytes): " + receivedBytes + newl);
 		myWriter.write("Time until stop condition (ns): " + timeElapsed + newl);
-		myWriter.write("Number of epochs: " + currentEpoch + newl + newl);
+		myWriter.write("Number of epochs: " + (currentEpoch + 1) + newl + newl);
 
 		myWriter.write("Times for each epoch" + newl);
 		for (int i = 0; i < epochTimes.size(); i++) {
@@ -617,7 +620,8 @@ public class FederatedClient {
 			float[] accuracyArray = entry.getValue();
 
 			for (int i = 0; i < accuracyArray.length; i++) {
-				myWriter.write(serverId + " " + i + " " + accuracyArray[i] + newl);
+				String val = String.format("%.12f", accuracyArray[i]);
+				myWriter.write(serverId + " " + i + " " + val + newl);
 			}
 		}
 		myWriter.write(newl);
