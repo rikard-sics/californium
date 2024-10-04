@@ -143,6 +143,7 @@ public class FloatConverter {
 		return resVector;
 	}
 
+	@SuppressWarnings("unused")
 	private static void test(String[] args) {
 
 		float[] testValues = new float[] { 0.3215081190455081F, -0.657086320195086320F, -1.0F, 0.714084413092130F,

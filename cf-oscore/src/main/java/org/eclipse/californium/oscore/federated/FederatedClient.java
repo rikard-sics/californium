@@ -29,7 +29,6 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -204,7 +203,7 @@ public class FederatedClient {
 	/* --- OSCORE Security Context information --- */
 
 	private static List<INDArray> models = new ArrayList<>();
-	private static int MAX_GLOBAL_EPOCHS = 5;
+	private static int MAX_GLOBAL_EPOCHS = 50;
 	private static int modelsize = 0;
 
 	// For early stopping
@@ -543,9 +542,6 @@ public class FederatedClient {
 					storedAccuracies.put(serverRid, new float[MAX_GLOBAL_EPOCHS]);
 				}
 				storedAccuracies.get(serverRid)[currentEpoch] = serverAccuracy;
-
-				// float[] modelRes = Arrays.copyOf(modelResPre,
-				// modelResPre.length - 1);
 				float[] modelRes = new float[modelResPre.length - 1];
 				System.arraycopy(modelResPre, 0, modelRes, 0, modelResPre.length - 1);
 

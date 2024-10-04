@@ -28,7 +28,6 @@ import java.net.SocketException;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
@@ -212,7 +211,7 @@ public class FederatedServer {
 	private static int numInputs = 30; // Number of intput features to the model
 	private static int batchSize = 256; // Batch size
 	private static int ReadFileBatch = 64; // Batch size
-	private static int seed = 77; // seed number 
+	private static int seed = 77; // seed number
 	private static MultiLayerConfiguration conf;
 	private static MultiLayerNetwork model;
 	private static DataSetIterator IterLoad;
@@ -253,7 +252,6 @@ public class FederatedServer {
 			printHelp();
 		}
 
-		
 		String multicastStr = null;
 		String serverDataset = null;
 		boolean useFederatedLearning = true;
@@ -454,23 +452,17 @@ public class FederatedServer {
 				allData = DataSet.merge(ret);
 
 			}
-			
-			
-			conf = new NeuralNetConfiguration.Builder()
-					.seed(seed)
-					.weightInit(WeightInit.XAVIER)
+
+			conf = new NeuralNetConfiguration.Builder().seed(seed).weightInit(WeightInit.XAVIER)
 					.updater(new Sgd.Builder().learningRate(1e-3).build())
-					.gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
-					.l2(1e-4)
-					.biasInit(0)
-					.list()
-					.layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).dropOut(0.8).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
-					.layer(new DenseLayer.Builder().nIn(8).nOut(3).dropOut(0.8).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
-					.layer(new OutputLayer.Builder(LossFunctions.LossFunction.XENT).weightInit(WeightInit.XAVIER).activation(Activation.SIGMOID).nIn(3)
-							.nOut(outputNum).build())
+					.gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).l2(1e-4).biasInit(0).list()
+					.layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).dropOut(0.8).weightInit(WeightInit.XAVIER)
+							.activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+					.layer(new DenseLayer.Builder().nIn(8).nOut(3).dropOut(0.8).weightInit(WeightInit.XAVIER)
+							.activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+					.layer(new OutputLayer.Builder(LossFunctions.LossFunction.XENT).weightInit(WeightInit.XAVIER)
+							.activation(Activation.SIGMOID).nIn(3).nOut(outputNum).build())
 					.build();
-			
-		
 
 		} else if (serverDataset.endsWith("SD")) {
 
@@ -509,37 +501,31 @@ public class FederatedServer {
 						ret.add(IterLoad.next());
 					}
 				}
-				allData = DataSet.merge(ret);	
+				allData = DataSet.merge(ret);
 
 			}
-			
-			
-			conf = new NeuralNetConfiguration.Builder()
-					.seed(seed)
-					.weightInit(WeightInit.XAVIER)
+
+			conf = new NeuralNetConfiguration.Builder().seed(seed).weightInit(WeightInit.XAVIER)
 					.updater(new Sgd.Builder().learningRate(0.00015).build())
-					.gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
-					.l2(1e-3)
-					.biasInit(0)
-					.list()
-					.layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).dropOut(0.6).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
-					.layer(new DenseLayer.Builder().nIn(8).nOut(3).dropOut(0.6).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
-					.layer(new OutputLayer.Builder(LossFunctions.LossFunction.XENT).weightInit(WeightInit.XAVIER).activation(Activation.SIGMOID).nIn(3)
-							.nOut(outputNum).build())
+					.gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).l2(1e-3).biasInit(0).list()
+					.layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).dropOut(0.6).weightInit(WeightInit.XAVIER)
+							.activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+					.layer(new DenseLayer.Builder().nIn(8).nOut(3).dropOut(0.6).weightInit(WeightInit.XAVIER)
+							.activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+					.layer(new OutputLayer.Builder(LossFunctions.LossFunction.XENT).weightInit(WeightInit.XAVIER)
+							.activation(Activation.SIGMOID).nIn(3).nOut(outputNum).build())
 					.build();
-					
 
 		} else if (serverDataset.endsWith("Tro")) {
 
 			labelIndex = 30;
-			
 
 			if (serverCount == maxServers) {
 				//
 				RecordReader rr = new CSVRecordReader(numLinesToSkip, delimiter);
 				rr.initialize(new FileSplit(new File(Credentials.serverTrojanDatasets.get(serverId))));
 				List<DataSet> ret_train = new ArrayList<>();
-				IterLoad = new RecordReaderDataSetIterator(rr,  ReadFileBatch, labelIndex, numLabelClasses);
+				IterLoad = new RecordReaderDataSetIterator(rr, ReadFileBatch, labelIndex, numLabelClasses);
 				while (IterLoad.hasNext()) {
 					ret_train.add(IterLoad.next());
 				}
@@ -556,7 +542,7 @@ public class FederatedServer {
 
 				for (int i = startTrunkId; i < (startTrunkId + numTrunks); i++) {
 					rr.initialize(new FileSplit(new File(Credentials.serverTrojanDatasets.get(i))));
-					IterLoad = new RecordReaderDataSetIterator(rr,  ReadFileBatch, labelIndex, numLabelClasses);
+					IterLoad = new RecordReaderDataSetIterator(rr, ReadFileBatch, labelIndex, numLabelClasses);
 					while (IterLoad.hasNext()) {
 						ret.add(IterLoad.next());
 					}
@@ -564,42 +550,38 @@ public class FederatedServer {
 				allData = DataSet.merge(ret);
 
 			}
-						
-			
-			conf = new NeuralNetConfiguration.Builder()
-					.seed(seed)
-					.weightInit(WeightInit.XAVIER)
+
+			conf = new NeuralNetConfiguration.Builder().seed(seed).weightInit(WeightInit.XAVIER)
 					.updater(new Sgd.Builder().learningRate(1e-3).build())
-					.gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
-					.l2(1e-2)
-					.biasInit(0)
-					.list()
-					.layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
-					.layer(new DenseLayer.Builder().nIn(8).nOut(3).weightInit(WeightInit.XAVIER).activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
-					.layer(new OutputLayer.Builder(LossFunctions.LossFunction.XENT).weightInit(WeightInit.XAVIER).activation(Activation.SIGMOID).nIn(3)
-							.nOut(outputNum).build())
+					.gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).l2(1e-2).biasInit(0).list()
+					.layer(new DenseLayer.Builder().nIn(numInputs).nOut(8).weightInit(WeightInit.XAVIER)
+							.activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+					.layer(new DenseLayer.Builder().nIn(8).nOut(3).weightInit(WeightInit.XAVIER)
+							.activation(Activation.LEAKYRELU).hasLayerNorm(true).build())
+					.layer(new OutputLayer.Builder(LossFunctions.LossFunction.XENT).weightInit(WeightInit.XAVIER)
+							.activation(Activation.SIGMOID).nIn(3).nOut(outputNum).build())
 					.build();
 
 		}
 
 		allData.shuffle(seed);
-		//allData_test.shuffle(seed);
-		
+		// allData_test.shuffle(seed);
+
 		INDArray features_train = allData.getFeatures();
-		//INDArray features_test = test_Data.getFeatures();
+		// INDArray features_test = test_Data.getFeatures();
 		if (labelIndex > numInputs) {
 			features_train = PCA.pca(features_train, numInputs, true);
-			//features_test = PCA.pca(features_test, numInputs, true);
+			// features_test = PCA.pca(features_test, numInputs, true);
 			DebugOut.println("PCA is done.");
 			allData = new DataSet(features_train, allData.getLabels());
-			
+
 		}
-		
-		SplitTestAndTrain testAndTrain = allData.splitTestAndTrain(0.9);  
+
+		SplitTestAndTrain testAndTrain = allData.splitTestAndTrain(0.9);
 
 		DataSet training_Data = testAndTrain.getTrain();
 		DataSet test_Data = testAndTrain.getTest();
-		
+
 		/*
 		 * Normalize the training and test dataset
 		 */
@@ -612,11 +594,9 @@ public class FederatedServer {
 
 		// Apply normalization to the training data
 		normalizer.transform(test_Data);
-		
+
 		DebugOut.println("Number of examples in the training set: " + training_Data.numExamples());
 		DebugOut.println("Number of examples in the test set: " + test_Data.numExamples());
-
-		
 
 		trainIter = new MiniBatchFileDataSetIterator(training_Data, batchSize);
 		testIter = new TestDataSetIterator(test_Data, batchSize);
@@ -625,8 +605,6 @@ public class FederatedServer {
 		 * Construct the neural network
 		 */
 		DebugOut.println("Build model....");
-
-		
 
 		DebugOut.println("Model Data Type: " + conf.getDataType());
 		DebugOut.println("==================");
@@ -651,11 +629,11 @@ public class FederatedServer {
 		DebugOut.println("The parameters before training: " + model.params());
 		EvaluationBinary eval_train = new EvaluationBinary();
 		for (int i = 0; i < nLocalEpochs; i++) {
-			
+
 			model.fit(trainIter);
 			DebugOut.println("Loss:" + model.score());
 			model.doEvaluation(trainIter, eval_train);
-			
+
 		}
 		DebugOut.println(eval_train.stats());
 
@@ -675,7 +653,7 @@ public class FederatedServer {
 
 		// Print the evaluation statistics
 		DebugOut.println(eval.stats());
-		
+
 		double accuracy = eval.accuracy(0);
 
 		return accuracy;
@@ -738,10 +716,7 @@ public class FederatedServer {
 
 			// Add accuracy to float vector end
 			float epochAccuracy = (float) TrainModel(updatedModel, initFlag);
-			
 			float[] modelResPre = model.params().toFloatVector();
-			// float[] modelRes = Arrays.copyOf(modelResPre, modelResPre.length
-			// + 1);
 			float[] modelRes = new float[modelResPre.length + 1];
 			System.arraycopy(modelResPre, 0, modelRes, 0, modelResPre.length);
 			modelRes[modelResPre.length] = epochAccuracy;
