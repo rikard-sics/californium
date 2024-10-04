@@ -26,11 +26,14 @@ import java.net.URI;
 import java.security.Provider;
 import java.security.Security;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.eclipse.californium.core.CoapClient;
@@ -214,8 +217,9 @@ public class FederatedClient {
 	private static int sentBytes = 0;
 	private static int receivedBytes = 0;
 	private static List<Long> epochTimes = new ArrayList<Long>();
-	private static long[][] rtts = new long[50][50];
+	private static Map<String, long[]> rtts = new HashMap<>();
 	private static HashMap<String, Float> accuracies = new HashMap<String, Float>();
+	private static Map<String, float[]> storedAccuracies = new HashMap<>();
 
 	/**
 	 * Main method
@@ -511,23 +515,34 @@ public class FederatedClient {
 
 				byte[] payloadRes = resp.getPayload();
 
+				// Retrieve Recipient ID of the server
+				EndpointContext responseSourceContext = resp.advanced().getSourceContext();
+				String serverRid = responseSourceContext.get(OSCORE_RECIPIENT_ID);
+
 				// Save received bytes and RTT
+				if (!rtts.containsKey(serverRid)) {
+					rtts.put(serverRid, new long[MAX_GLOBAL_EPOCHS]);
+				}
+				rtts.get(serverRid)[currentEpoch] = resp.advanced().getApplicationRttNanos();
 				receivedBytes += payloadRes.length;
-				rtts[currentEpoch][j] = resp.advanced().getApplicationRttNanos();
 
 				// Parse bytes in response payload into float vector
 				float[] modelResPre = FloatConverter.bytesToFloatVector(payloadRes);
 
 				// Check for early stopping
 				float serverAccuracy = modelResPre[modelResPre.length - 1];
-				EndpointContext responseSourceContext = resp.advanced().getSourceContext();
-				String serverRid = responseSourceContext.get(OSCORE_RECIPIENT_ID);
 				float lastAccuracy = accuracies.getOrDefault(serverRid, 0f);
 				if (serverAccuracy < 0.9 || serverAccuracy - lastAccuracy > CONTINUE_TRESHOLD) {
 					toBeContinued = true;
 				}
 				accuracies.remove(serverRid);
 				accuracies.put(serverRid, serverAccuracy);
+
+				// Save accuracies form the servers
+				if (!storedAccuracies.containsKey(serverRid)) {
+					storedAccuracies.put(serverRid, new float[MAX_GLOBAL_EPOCHS]);
+				}
+				storedAccuracies.get(serverRid)[currentEpoch] = serverAccuracy;
 
 				float[] modelRes = Arrays.copyOf(modelResPre, modelResPre.length - 1);
 
@@ -565,27 +580,47 @@ public class FederatedClient {
 		long finish = System.nanoTime();
 		long timeElapsed = finish - start;
 
+		LocalDateTime now = LocalDateTime.now();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm");
+		String dateString = now.format(formatter);
+		String newl = System.getProperty("line.separator");
+
 		/** Write results to file **/
-		FileWriter myWriter = new FileWriter(now() + "-res.txt");
-		myWriter.write("Cumulative data sent (bytes) " + sentBytes);
-		myWriter.write("Cumulative data received (bytes) " + receivedBytes);
-		myWriter.write("Time until stop condition (ns) " + timeElapsed);
-		myWriter.write("Number of epochs " + currentEpoch);
+		FileWriter myWriter = new FileWriter(dateString + "-res.txt");
+		myWriter.write("Cumulative data sent (bytes): " + sentBytes + newl);
+		myWriter.write("Cumulative data received (bytes): " + receivedBytes + newl);
+		myWriter.write("Time until stop condition (ns): " + timeElapsed + newl);
+		myWriter.write("Number of epochs: " + currentEpoch + newl + newl);
 
-		myWriter.write("Times for each epoch");
+		myWriter.write("Times for each epoch" + newl);
 		for (int i = 0; i < epochTimes.size(); i++) {
-			myWriter.write(i + " " + epochTimes.get(i));
+			myWriter.write(i + " " + epochTimes.get(i) + newl);
 		}
+		myWriter.write(newl);
 
-		myWriter.write("RTT");
-		for (int i = 0; i < rtts.length; i++) {
-			for (int j = 0; j < rtts[i].length; j++) {
-				myWriter.write(i + " " + j + " " + rtts[i][j]);
+		myWriter.write("RTT" + newl);
+		myWriter.write("ID # ns" + newl);
+		for (Map.Entry<String, long[]> entry : rtts.entrySet()) {
+			String serverId = entry.getKey();
+			long[] rttArray = entry.getValue();
+
+			for (int i = 0; i < rttArray.length; i++) {
+				myWriter.write(serverId + " " + i + " " + rttArray[i] + newl);
 			}
 		}
+		myWriter.write(newl);
 
-		// TODO: Save also the accuracy here, remove it on the servers
-		// Save accuracy for each server for each epoch
+		myWriter.write("Server Accuracy" + newl);
+		myWriter.write("ID # acc" + newl);
+		for (Map.Entry<String, float[]> entry : storedAccuracies.entrySet()) {
+			String serverId = entry.getKey();
+			float[] accuracyArray = entry.getValue();
+
+			for (int i = 0; i < accuracyArray.length; i++) {
+				myWriter.write(serverId + " " + i + " " + accuracyArray[i] + newl);
+			}
+		}
+		myWriter.write(newl);
 
 		myWriter.close();
 
@@ -723,9 +758,6 @@ public class FederatedClient {
 		@Override
 		public void onLoad(CoapResponse response) {
 			on();
-
-			// FIXME: Check that response is semantically valid. And only accept
-			// one response from each server.
 
 			// Add response to list of responses
 			responses.add(response);
