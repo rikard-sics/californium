@@ -16,9 +16,7 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore.federated;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.Inet4Address;
@@ -679,17 +677,7 @@ public class FederatedServer {
 		DebugOut.println(eval.stats());
 		
 		double accuracy = eval.accuracy(0);
-		String stringToWrite = "Accuracy: " + accuracy;
-		
-        try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter("AccuracyFile_"+ serverId + ".txt", true));
-            writer.write(stringToWrite);
-            writer.newLine();
-            writer.close();
-        } catch (IOException ioe) {
-			DebugOut.println("Couldn't write to file");
-        }
-		    
+
 		return accuracy;
 
 	}
