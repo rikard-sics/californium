@@ -26,6 +26,7 @@ import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.network.CoapEndpoint;
+import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.util.Bytes;
@@ -226,7 +227,19 @@ public class CommandLineServer {
 		};
 
 		server.add(hello.add(hello1));
-		server.start();
+
+		try {
+			server.start();
+		} catch (IllegalStateException e) {
+			System.err.println("Failed to start server endpoint!");
+			System.exit(1);
+		}
+
+		Endpoint testEndpoint = server.getEndpoint(localPort);
+		if (testEndpoint.isStarted() == false) {
+			System.err.println("Failed to start server endpoint!");
+			System.exit(1);
+		}
 	}
 
 	private static void printHelp() {
