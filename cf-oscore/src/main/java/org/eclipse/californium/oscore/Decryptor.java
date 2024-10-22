@@ -120,7 +120,6 @@ public abstract class Decryptor {
 						ctx.getIVLength());
 			} else {
 				//Since the response contains a partial IV use it for nonce calculation
-				
 				partialIV = piv.GetByteString();
 				partialIV = expandToIntSize(partialIV);
 				nonce = OSSerializer.nonceGeneration(partialIV, ctx.getRecipientId(), ctx.getCommonIV(),
@@ -155,7 +154,7 @@ public abstract class Decryptor {
 
 			System.out.println("Master Secret: " + Utils.toHexString(ctx.getMasterSecret()));
 			System.out.println("Recipient Key: " + Utils.toHexString(key));
-			System.out.println("External AAD: " + Utils.toHexString(aad));
+			System.out.println("AAD Array: " + Utils.toHexString(aad));
 			System.out.println("Nonce: " + Utils.toHexString(nonce));
 			try {
 				System.out.println("Ciphertext: " + Utils.toHexString(enc.getEncryptedContent()));

@@ -126,7 +126,7 @@ public abstract class Encryptor {
 
 				System.out.println("Master Secret: " + Utils.toHexString(ctx.getMasterSecret()));
 				System.out.println("Sender Key: " + Utils.toHexString(key));
-				System.out.println("External AAD: " + Utils.toHexString(aad));
+				System.out.println("AAD Array: " + Utils.toHexString(aad));
 				System.out.println("Nonce: " + Utils.toHexString(nonce));
 				System.out.println("Ciphertext: " + Utils.toHexString(enc.getEncryptedContent()));
 				System.out.println("Plaintext: " + Utils.toHexString(enc.GetContent()));
@@ -229,6 +229,7 @@ public abstract class Encryptor {
 		if (ctx.getIncludeContextId()) {
 			optionEncoder.setIdContext(ctx.getMessageIdContext());
 		}
+
 		if (newPartialIV) {
 			optionEncoder.setPartialIV(ctx.getSenderSeq());
 		}

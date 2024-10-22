@@ -43,6 +43,7 @@ import java.security.SecureRandom;
 
 import javax.crypto.spec.SecretKeySpec;
 
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.scandium.dtls.cipher.CCMBlockCipher;
 
@@ -94,6 +95,7 @@ public abstract class EncryptCommon extends Message {
     private byte[] getAADBytes() {
         CBORObject obj = CBORObject.NewArray();
         
+		System.out.println("External AAD: " + Utils.toHexString(CBORObject.FromObject(externalData).EncodeToBytes()));
         obj.Add(context);
         
         if (objProtected.size() == 0) {
@@ -104,7 +106,9 @@ public abstract class EncryptCommon extends Message {
         
         obj.Add(CBORObject.FromObject(externalData));
         
-        return obj.EncodeToBytes();
+		byte[] ret = obj.EncodeToBytes();
+		System.out.println("Full AAD for COSE: " + Utils.toHexString(ret));
+		return ret;
     }
 
 	private void AES_CCM_Decrypt(AlgorithmID alg, byte[] rgbKey) throws CoseException, IllegalStateException {

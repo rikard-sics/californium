@@ -226,7 +226,31 @@ public class CommandLineServer {
 			}
 		};
 
+		OSCoreResource well_known_res = new OSCoreResource(".well-known", true) {
+
+		};
+
+		OSCoreResource kudos_res = new OSCoreResource("kudos", true) {
+
+			@Override
+			public void handleGET(CoapExchange exchange) {
+				System.out.println("Accessing kudos resource");
+				Response r = new Response(ResponseCode.CONTENT);
+				r.setPayload("");
+				exchange.respond(r);
+			}
+
+			@Override
+			public void handlePOST(CoapExchange exchange) {
+				System.out.println("Accessing kudos resource");
+				Response r = new Response(ResponseCode.CONTENT);
+				r.setPayload("");
+				exchange.respond(r);
+			}
+		};
+
 		server.add(hello.add(hello1));
+		server.add(well_known_res.add(kudos_res));
 
 		try {
 			server.start();
