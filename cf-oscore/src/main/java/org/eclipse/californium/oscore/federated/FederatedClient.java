@@ -40,6 +40,7 @@ import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
+import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.network.CoapEndpoint;
@@ -507,6 +508,17 @@ public class FederatedClient {
 
 				DebugOut.println("=== Response " + (j + 1) + " ===");
 				DebugOut.println("Response from from: " + resp.advanced().getSourceContext().getPeerAddress());
+
+				if (resp.getOptions().getContentFormat() == MediaTypeRegistry.TEXT_PLAIN) {
+					DebugOut.println("Ignoring error message from server");
+					DebugOut.println(" === ");
+					DebugOut.println(Utils.prettyPrint(resp));
+					DebugOut.println(" === ");
+					continue;
+				}
+				if (resp.getPayloadSize() < 400) {
+					DebugOut.println("Ignoring malformed message from server (incorrect payload size)");
+				}
 
 				// Parse and handle response
 				DebugOut.println(Utils.prettyPrint(resp));
