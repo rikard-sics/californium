@@ -44,6 +44,7 @@ import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.network.CoapEndpoint;
+import org.eclipse.californium.core.network.serialization.UdpDataSerializer;
 import org.eclipse.californium.elements.EndpointContext;
 import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.core.config.CoapConfig;
@@ -214,8 +215,10 @@ public class FederatedClient {
 	private static boolean stopEarly = false;
 
 	// Variables for storing experimental results
-	private static int sentBytes = 0;
-	private static int receivedBytes = 0;
+	private static int sentCoapPayloadBytes = 0;
+	private static int receivedCoapPayloadBytes = 0;
+	private static int sentUdpPayloadBytes = 0;
+	private static int receivedUdpPayloadBytes = 0;
 	private static List<Long> epochTimes = new ArrayList<Long>();
 	private static Map<String, long[]> rtts = new HashMap<>();
 	private static HashMap<String, Float> accuracies = new HashMap<String, Float>();
@@ -466,7 +469,12 @@ public class FederatedClient {
 						request.getOptions().setOscore(Bytes.EMPTY);
 					}
 					request.setPayload(payloadReq);
-					sentBytes += payloadReq.length;
+
+					sentCoapPayloadBytes += payloadReq.length;
+					UdpDataSerializer serializer = new UdpDataSerializer();
+					byte[] rawBytes = serializer.getByteArray(request);
+					sentUdpPayloadBytes += rawBytes.length;
+
 					request.setType(Type.NON);
 					client = new CoapClient();
 					client.setURI(requestURI);
@@ -482,7 +490,7 @@ public class FederatedClient {
 
 			} else {
 				// sends a multicast request
-				sentBytes += payloadReq.length;
+				sentCoapPayloadBytes += payloadReq.length;
 				handler.clearResponses();
 				DebugOut.println("Sending request to: " + client.getURI());
 				DebugOut.println("Sending from: " + client.getEndpoint().getAddress());
@@ -535,7 +543,11 @@ public class FederatedClient {
 					rtts.put(serverRid, new long[MAX_GLOBAL_EPOCHS]);
 				}
 				rtts.get(serverRid)[currentEpoch] = resp.advanced().getApplicationRttNanos();
-				receivedBytes += payloadRes.length;
+				receivedCoapPayloadBytes += payloadRes.length;
+
+				UdpDataSerializer serializer = new UdpDataSerializer();
+				byte[] rawBytes = serializer.getByteArray(resp.advanced());
+				receivedUdpPayloadBytes += rawBytes.length;
 
 				// Parse bytes in response payload into float vector
 				float[] modelResPre = FloatConverter.bytesToFloatVector(payloadRes);
@@ -598,8 +610,10 @@ public class FederatedClient {
 
 		/** Write results to file **/
 		FileWriter myWriter = new FileWriter(dateString + "-res.txt");
-		myWriter.write("Cumulative data sent (bytes): " + sentBytes + newl);
-		myWriter.write("Cumulative data received (bytes): " + receivedBytes + newl);
+		myWriter.write("Cumulative CoAP payload data sent (bytes): " + sentCoapPayloadBytes + newl);
+		myWriter.write("Cumulative CoAP payload data received (bytes): " + receivedCoapPayloadBytes + newl);
+		myWriter.write("Cumulative UDP payload data sent (bytes): " + sentUdpPayloadBytes + newl);
+		myWriter.write("Cumulative UDP payload data received (bytes): " + receivedUdpPayloadBytes + newl);
 		myWriter.write("Time until stop condition (ns): " + timeElapsed + newl);
 		myWriter.write("Number of epochs: " + (currentEpoch + 1) + newl + newl);
 
