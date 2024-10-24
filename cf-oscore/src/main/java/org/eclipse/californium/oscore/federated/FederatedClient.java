@@ -205,7 +205,7 @@ public class FederatedClient {
 	/* --- OSCORE Security Context information --- */
 
 	private static List<INDArray> models = new ArrayList<>();
-	private static int MAX_GLOBAL_EPOCHS = 50;
+	private static int MAX_GLOBAL_EPOCHS;
 	private static int modelsize = 0;
 
 	// For early stopping
@@ -262,6 +262,7 @@ public class FederatedClient {
 		int serverCount = -1;
 		String multicastStr = null;
 		boolean useFederatedLearning = true;
+		boolean debugPrint = true;
 		try {
 			serverCount = Integer.parseInt(cmdArgs.get("--server-count"));
 			multicastStr = cmdArgs.getOrDefault("--multicast-ip", "ipv4");
@@ -269,8 +270,14 @@ public class FederatedClient {
 			useFederatedLearning = Boolean.parseBoolean(cmdArgs.getOrDefault("--federated-learning", "true"));
 			useOSCORE = Boolean.parseBoolean(cmdArgs.getOrDefault("--oscore", "false"));
 			unicastMode = Boolean.parseBoolean(cmdArgs.getOrDefault("--unicast", "false"));
+			MAX_GLOBAL_EPOCHS = Integer.parseInt(cmdArgs.getOrDefault("--max-epochs", "100"));
+			debugPrint = Boolean.parseBoolean(cmdArgs.getOrDefault("--debug", "true"));
 		} catch (Exception e) {
 			printHelp();
+		}
+
+		if (!debugPrint) {
+			DebugOut.ENABLE_PRINTING = false;
 		}
 
 		// Multicast IP to use
@@ -386,6 +393,7 @@ public class FederatedClient {
 		DebugOut.println("Request destination port: " + destinationPort);
 		DebugOut.println("Outgoing port: " + endpoint.getAddress().getPort());
 		DebugOut.println("Total server count: " + serverCount);
+		DebugOut.println("Max epochs: " + MAX_GLOBAL_EPOCHS);
 
 		if (unicastMode) {
 			DebugOut.println("Unicast Server IPs: ");
@@ -808,6 +816,8 @@ public class FederatedClient {
 		System.out.println("--multicast-ip: IPv4 or IPv6 [Optional. Default: ipv4]");
 		System.out.println("--oscore: Use OSCORE [Optional. Default: false]");
 		System.out.println("--unicast: Use unicast one-by-one to the servers [Optional. Default: false]");
+		System.out.println("--max-epochs: Stop the training after this many epochs [Optional. Default: 100]");
+		System.out.println("--debug: Enable/disable debug printing [Optional. Default: true]");
 		System.exit(1);
 	}
 

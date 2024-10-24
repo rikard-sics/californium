@@ -255,6 +255,7 @@ public class FederatedServer {
 		String multicastStr = null;
 		String serverDataset = null;
 		boolean useFederatedLearning = true;
+		boolean debugPrint = true;
 		try {
 			serverId = Integer.parseInt(cmdArgs.get("--server-id"));
 			serverCount = Integer.parseInt(cmdArgs.get("--server-count"));
@@ -264,8 +265,13 @@ public class FederatedServer {
 			useOSCORE = Boolean.parseBoolean(cmdArgs.getOrDefault("--oscore", "false"));
 			unicastMode = Boolean.parseBoolean(cmdArgs.getOrDefault("--unicast", "false"));
 			useFederatedLearning = Boolean.parseBoolean(cmdArgs.getOrDefault("--federated-learning", "true"));
+			debugPrint = Boolean.parseBoolean(cmdArgs.getOrDefault("--debug", "true"));
 		} catch (Exception e) {
 			printHelp();
+		}
+
+		if (!debugPrint) {
+			DebugOut.ENABLE_PRINTING = false;
 		}
 
 		// Multicast IP to use
@@ -949,6 +955,7 @@ public class FederatedServer {
 		System.out.println("--multicast-ip: IPv4 or IPv6 [Optional. Default: ipv4]");
 		System.out.println("--oscore: Use OSCORE [Optional. Default: false]");
 		System.out.println("--unicast: Use unicast (one-by-one to the servers) [Optional. Default: false]");
+		System.out.println("--debug: Enable/disable debug printing [Optional. Default: true]");
 		System.exit(1);
 	}
 }

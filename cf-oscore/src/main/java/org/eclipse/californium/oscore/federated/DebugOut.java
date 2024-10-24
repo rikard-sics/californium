@@ -2,7 +2,7 @@ package org.eclipse.californium.oscore.federated;
 
 public class DebugOut {
 
-	private static boolean ENABLE_PRINTING = true;
+	public static boolean ENABLE_PRINTING = true;
 
 	static void println(Object str) {
 		if (ENABLE_PRINTING) {
