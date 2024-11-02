@@ -29,6 +29,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -549,6 +550,7 @@ public class FederatedClient {
 				// Save received bytes and RTT
 				if (!rtts.containsKey(serverRid)) {
 					rtts.put(serverRid, new long[MAX_GLOBAL_EPOCHS]);
+					Arrays.fill(rtts.get(serverRid), -1);
 				}
 				rtts.get(serverRid)[currentEpoch] = resp.advanced().getApplicationRttNanos();
 				receivedCoapPayloadBytes += payloadRes.length;
@@ -572,6 +574,7 @@ public class FederatedClient {
 				// Save accuracies form the servers
 				if (!storedAccuracies.containsKey(serverRid)) {
 					storedAccuracies.put(serverRid, new float[MAX_GLOBAL_EPOCHS]);
+					Arrays.fill(storedAccuracies.get(serverRid), -1);
 				}
 				storedAccuracies.get(serverRid)[currentEpoch] = serverAccuracy;
 				float[] modelRes = new float[modelResPre.length - 1];
@@ -638,7 +641,13 @@ public class FederatedClient {
 			long[] rttArray = entry.getValue();
 
 			for (int i = 0; i < rttArray.length; i++) {
-				myWriter.write(serverId + " " + i + " " + rttArray[i] + newl);
+				String val = Float.toString(rttArray[i]);
+
+				if (rttArray[i] == -1) {
+					val = "N/A";
+				}
+
+				myWriter.write(serverId + " " + i + " " + val + newl);
 			}
 		}
 		myWriter.write(newl);
@@ -651,6 +660,11 @@ public class FederatedClient {
 
 			for (int i = 0; i < accuracyArray.length; i++) {
 				String val = String.format("%.12f", accuracyArray[i]);
+
+				if (accuracyArray[i] == -1) {
+					val = "N/A";
+				}
+
 				myWriter.write(serverId + " " + i + " " + val + newl);
 			}
 		}
