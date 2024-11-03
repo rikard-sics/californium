@@ -3237,8 +3237,9 @@ public class MessageProcessor {
 		// Selected cipher suites from SUITES_I
 		index++;
 		int selectedCipherSuite = -1;
-		if (objectListMessage1[index].getType() == CBORType.Integer)
+		if (objectListMessage1[index].getType() == CBORType.Integer) {
 			selectedCipherSuite = objectListMessage1[index].AsInt32();
+		}
 		else if (objectListMessage1[index].getType() == CBORType.Array) {
 			int lastElementIndex = objectListMessage1[index].size() - 1;
 			selectedCipherSuite = objectListMessage1[index].get(lastElementIndex).AsInt32();
