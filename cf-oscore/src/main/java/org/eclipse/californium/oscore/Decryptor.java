@@ -105,7 +105,7 @@ public abstract class Decryptor {
 			commonIV = Arrays.copyOfRange(ctx.getCommonIV(), 0, nonceLength);
 			System.out.println("BBB " + nonceLength);
 		}
-		System.out.println("Decryption once length: " + nonceLength);
+		System.out.println("Decryption nonce length: " + nonceLength);
 
 		if (isRequest) {
 
@@ -173,6 +173,7 @@ public abstract class Decryptor {
 		System.out.println("PartialIV " + Utils.toHexString(partialIV));
 		System.out.println("Nonce " + Utils.toHexString(nonce));
 		System.out.println("AAD " + Utils.toHexString(aad));
+		System.out.println("Common IV " + Utils.toHexString(ctx.getCommonIV()));
 		
 		byte[] plaintext = null;
 		byte[] key = ctx.getRecipientKey();
