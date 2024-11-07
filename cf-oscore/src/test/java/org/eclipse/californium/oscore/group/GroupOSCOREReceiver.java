@@ -48,6 +48,8 @@ import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
+import org.eclipse.californium.oscore.OSCoreCtx;
+import org.eclipse.californium.oscore.OSCoreResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,7 +116,7 @@ public class GroupOSCOREReceiver {
 	private final static AlgorithmID algCountersign = AlgorithmID.EDDSA;
 
 	// Encryption algorithm for when using Group mode
-	private final static AlgorithmID algGroupEnc = AlgorithmID.AES_CCM_16_64_128;
+	private final static AlgorithmID algGroupEnc = AlgorithmID.CHACHA20_POLY1305;
 
 	// Algorithm for key agreement
 	private final static AlgorithmID algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
@@ -191,8 +193,10 @@ public class GroupOSCOREReceiver {
 
 			commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
 
-			commonCtx.setResponsesIncludePartialIV(true);
+			commonCtx.setResponsesIncludePartialIV(false);
+			commonCtx.setPairwiseModeResponses(true);
 
+			OSCoreCtx.DISABLE_REPLAY_CHECKS = true;
 			db.addContext(uriLocal, commonCtx);
 
 			OSCoreCoapStackFactory.useAsDefault(db);
@@ -225,14 +229,14 @@ public class GroupOSCOREReceiver {
 		server.start();
 	}
 
-	private static class HelloWorldResource extends CoapResource {
+	private static class HelloWorldResource extends OSCoreResource {
 
 		private int id;
 		private int count = 0;
 
 		private HelloWorldResource() {
 			// set resource identifier
-			super("helloWorld"); // Changed
+			super("helloWorld", true); // Changed
 
 			// set display name
 			getAttributes().setTitle("Hello-World Resource");
@@ -267,7 +271,9 @@ public class GroupOSCOREReceiver {
 			// receiver ID
 			if (isConfirmable || replyToNonConfirmable) {
 				Response r = Response.createResponse(exchange.advanced().getRequest(), ResponseCode.CONTENT);
-				r.setPayload(exchange.getRequestText().toUpperCase() + ". ID: " + id);
+				// r.setPayload(exchange.getRequestText().toUpperCase() + ". ID:
+				// " + id);
+				r.setPayload("Hello World!");
 				r.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 				if (isConfirmable) {
 					r.setType(Type.ACK);
