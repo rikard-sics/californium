@@ -159,10 +159,11 @@ public abstract class Encryptor {
 			System.out.println("PartialIV " + Utils.toHexString(partialIV));
 			System.out.println("Nonce " + Utils.toHexString(nonce));
 			System.out.println("AAD " + Utils.toHexString(aad));
+			System.out.println("Common IV " + Utils.toHexString(ctx.getCommonIV()));
 
 			// Handle Group OSCORE messages
 			if (ctx.isGroupContext()) {
-				LOGGER.debug("Encrypting outgoing " + message.getClass().getSimpleName()
+				System.out.println("Encrypting outgoing " + message.getClass().getSimpleName()
 						+ " using Group OSCORE. Pairwise mode: " + !groupModeMessage);
 
 				// Update external AAD value for Group OSCORE
