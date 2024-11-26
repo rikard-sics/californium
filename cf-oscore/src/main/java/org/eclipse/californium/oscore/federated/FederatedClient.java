@@ -273,6 +273,7 @@ public class FederatedClient {
 			unicastMode = Boolean.parseBoolean(cmdArgs.getOrDefault("--unicast", "false"));
 			MAX_GLOBAL_EPOCHS = Integer.parseInt(cmdArgs.getOrDefault("--max-epochs", "100"));
 			debugPrint = Boolean.parseBoolean(cmdArgs.getOrDefault("--debug", "true"));
+			modelsize = Integer.parseInt(cmdArgs.getOrDefault("--model-size", "-1"));
 		} catch (Exception e) {
 			printHelp();
 		}
@@ -395,6 +396,7 @@ public class FederatedClient {
 		DebugOut.println("Outgoing port: " + endpoint.getAddress().getPort());
 		DebugOut.println("Total server count: " + serverCount);
 		DebugOut.println("Max epochs: " + MAX_GLOBAL_EPOCHS);
+		DebugOut.println("Expected model size: " + modelsize);
 
 		if (unicastMode) {
 			DebugOut.println("Unicast Server IPs: ");
@@ -413,7 +415,7 @@ public class FederatedClient {
 			DebugOut.println("=== Communication Epoch: " + i + " ===");
 			Request request = Request.newPost();
 
-			float[] modelReq = null;
+			float[] modelReq = new float[0];
 
 			byte[] payloadReq;
 			if (i == 0) {
@@ -421,7 +423,7 @@ public class FederatedClient {
 
 			} else {
 
-				// If there are more received clients
+				// If there are more received responses
 				if (models.size() > 1) {
 
 					INDArray avgModel = getAverage(models, modelsize);
@@ -436,6 +438,12 @@ public class FederatedClient {
 
 				// Build byte payload to send from float vector
 				payloadReq = FloatConverter.floatVectorToBytes(modelReq);
+
+				// Error checking model size
+				if (modelReq.length != modelsize) {
+					DebugOut.errPrintln("Invalid model size when sending!");
+					DebugOut.errPrintln("Expected model size: " + modelsize + " but sending: " + modelReq.length);
+				}
 
 				DebugOut.print("Outgoing request payload: ");
 				for (int j = 0; j < modelReq.length; j++) {
@@ -526,22 +534,29 @@ public class FederatedClient {
 				DebugOut.println("=== Response " + (j + 1) + " ===");
 				DebugOut.println("Response from from: " + resp.advanced().getSourceContext().getPeerAddress());
 
-				if (resp.getOptions().getContentFormat() == MediaTypeRegistry.TEXT_PLAIN) {
-					DebugOut.println("Ignoring error message from server");
+				// Error checking
+				if (resp.getOptions().getContentFormat() == MediaTypeRegistry.TEXT_PLAIN
+						|| resp.getPayloadSize() < 400) {
+					DebugOut.println("Ignoring error or insufficiently small message from server");
 					DebugOut.println(" === ");
 					DebugOut.println(Utils.prettyPrint(resp));
 					DebugOut.println(" === ");
 					continue;
 				}
-				if (resp.getPayloadSize() < 400) {
-					DebugOut.println("Ignoring malformed message from server (incorrect payload size)");
-				}
 
 				// Parse and handle response
 				DebugOut.println(Utils.prettyPrint(resp));
-				// DebugOut.println("Payload: " + resp.getResponseText());
 
+				// Parse bytes in response payload into float vector
 				byte[] payloadRes = resp.getPayload();
+				float[] modelResPre = FloatConverter.bytesToFloatVector(payloadRes);
+
+				// Error checking of model size
+				if (modelsize != (modelResPre.length - 1)) {
+					DebugOut.errPrintln("Invalid model size received! Ignoring response.");
+					DebugOut.errPrintln("Expected model size: " + modelsize + " but received: " + modelResPre.length);
+					continue;
+				}
 
 				// Retrieve Recipient ID of the server
 				EndpointContext responseSourceContext = resp.advanced().getSourceContext();
@@ -558,9 +573,6 @@ public class FederatedClient {
 				UdpDataSerializer serializer = new UdpDataSerializer();
 				byte[] rawBytes = serializer.getByteArray(resp.advanced());
 				receivedUdpPayloadBytes += rawBytes.length;
-
-				// Parse bytes in response payload into float vector
-				float[] modelResPre = FloatConverter.bytesToFloatVector(payloadRes);
 
 				// Check for early stopping
 				float serverAccuracy = modelResPre[modelResPre.length - 1];
@@ -589,8 +601,7 @@ public class FederatedClient {
 				}
 
 				INDArray model = Nd4j.create(modelRes);
-				DebugOut.println(model.length());
-				modelsize = (int) model.length();
+				DebugOut.println("Received model size: " + model.length());
 				models.add(model);
 			}
 
@@ -824,7 +835,8 @@ public class FederatedClient {
 
 	private static void printHelp() {
 		System.out.println("Arguments: ");
-		System.out.println("--server-count: Total number of servers");
+		System.out.println("--server-count: Total number of servers [Mandatory.]");
+		System.out.println("--model-size: The size of the model. [Mandatory.]");
 		System.out.println("--federated-learning: Use Federated Learning [Optional. Default: true]");
 		System.out.println("--group-oscore: Use Group OSCORE [Optional. Default: true]");
 		System.out.println("--multicast-ip: IPv4 or IPv6 [Optional. Default: ipv4]");
