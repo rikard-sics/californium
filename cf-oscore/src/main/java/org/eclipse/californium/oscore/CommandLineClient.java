@@ -167,7 +167,7 @@ public class CommandLineClient {
 
 		OSCoreCoapStackFactory.useAsDefault(db);
 
-		ContextRederivation.setSegmentLength(nonceLength);
+		ContextRederivation.setNonceLength(nonceLength);
 		KudosRederivation.NONCE_LENGTH = nonceLength;
 
 		if (debugMode) {
