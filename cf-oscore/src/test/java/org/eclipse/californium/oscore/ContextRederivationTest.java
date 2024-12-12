@@ -93,7 +93,7 @@ public class ContextRederivationTest {
 	private final static byte[] context_id = { 0x74, 0x65, 0x73, 0x74, 0x74, 0x65, 0x73, 0x74 };
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 
-	private static int SEGMENT_LENGTH = ContextRederivation.SEGMENT_LENGTH;
+	private static int SEGMENT_LENGTH = ContextRederivation.NONCE_LENGTH;
 
 	@Before
 	public void initLogger() {

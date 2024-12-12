@@ -19,6 +19,7 @@ package org.eclipse.californium.oscore;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.elements.exception.ConnectorException;
@@ -58,14 +59,20 @@ public class ContextRederivation {
 	}
 
 	/**
-	 * Length of each segment (ID1, S2 and R3) in the Context ID when performing
-	 * context re-derivation. R2 will be of length 2 segments since it is
-	 * actually composed of S2 || HMAC(S2).
+	 * Length of nonce and segments (ID1, S2 and R3) in the Context ID when
+	 * performing context re-derivation. R2 will be of length 2 segments since
+	 * it is actually composed of S2 || HMAC(S2).
 	 */
-	protected static int SEGMENT_LENGTH = 8;
+	protected static int NONCE_LENGTH = 8;
+	protected static int HALF_NONCE_LENGTH = NONCE_LENGTH / 2;
 
-	public static void setSegmentLength(int len) {
-		SEGMENT_LENGTH = len;
+	public static void setNonceLength(int len) {
+		NONCE_LENGTH = len;
+		HALF_NONCE_LENGTH = len / 2;
+
+		if (len <= 0 || len % 2 != 0) {
+			throw new RuntimeException("Invalid nonce length!");
+		}
 	}
 
 	/**
@@ -81,8 +88,7 @@ public class ContextRederivation {
 	 * @param uri the URI associated with context information has been lost for
 	 * @throws CoapOSException if re-generation of the context fails
 	 */
-	public static void setLostContext(OSCoreCtxDB db, String uri) throws CoapOSException
-	{
+	public static void setLostContext(OSCoreCtxDB db, String uri) throws CoapOSException {
 		try {
 			initiateRequest(db, uri);
 		} catch (ConnectorException | OSException e) {
@@ -117,7 +123,8 @@ public class ContextRederivation {
 		printStateLogging(ctx);
 
 		// Generate a random Context ID (ID1)
-		byte[] contextID1 = Bytes.createBytes(random, SEGMENT_LENGTH);
+		byte[] contextID1 = Bytes.createBytes(random, NONCE_LENGTH);
+		System.out.println("Appendix B.2 ID1: " + Utils.toHexString(contextID1));
 
 		// Create new context with the generated Context ID
 		OSCoreCtx newCtx = rederiveWithContextID(ctx, contextID1);
@@ -165,9 +172,11 @@ public class ContextRederivation {
 			// The Context ID in the incoming response is identified as R2
 			// It is first decoded as it is a CBOR byte string
 			byte[] contextR2 = decodeFromCborBstrBytes(contextID);
+			System.out.println("Appendix B.2 R2: " + Utils.toHexString(contextR2));
 
 			// The Context ID of the original request in this exchange is ID1
 			byte[] contextID1 = ctx.getIdContext();
+			System.out.println("Appendix B.2 ID1: " + Utils.toHexString(contextID1));
 
 			// Create Context ID to generate the new context with (R2 || ID1)
 			byte[] verifyContextID = Bytes.concatenate(contextR2, contextID1);
@@ -206,9 +215,11 @@ public class ContextRederivation {
 			// The Context ID in the incoming response is identified as R2
 			// It is first decoded as it is a CBOR byte string
 			byte[] contextR2 = decodeFromCborBstrBytes(contextID);
+			System.out.println("Appendix B.2 R2: " + Utils.toHexString(contextR2));
 
 			// The Context ID of the original request in this exchange is ID1
 			byte[] contextID1 = ctx.getIdContext();
+			System.out.println("Appendix B.2 ID1: " + Utils.toHexString(contextID1));
 
 			// Create Context ID to generate the new context with (R2 || ID1)
 			byte[] verifyContextID = Bytes.concatenate(contextR2, contextID1);
@@ -218,7 +229,7 @@ public class ContextRederivation {
 
 			// Add the new context to the context DB (replacing the old)
 			newCtx.setContextRederivationPhase(PHASE.CLIENT_PHASE_2);
-			
+
 			newCtx.setNonceHandover(ctx.getNonceHandover());
 			db.removeContext(ctx);
 			db.addContext(SCHEME + ctx.getUri(), newCtx);
@@ -247,10 +258,12 @@ public class ContextRederivation {
 			// Extract the R2 Context ID value from the current context
 			// Currently the value will be R2 || ID1
 			byte[] currentContextID = ctx.getIdContext();
-			byte[] contextR2 = Arrays.copyOfRange(currentContextID, 0, currentContextID.length - SEGMENT_LENGTH);
+			byte[] contextR2 = Arrays.copyOfRange(currentContextID, 0, currentContextID.length - NONCE_LENGTH);
+			System.out.println("Appendix B.2 R2: " + Utils.toHexString(contextR2));
 
 			// Now create the random Context ID value R3
-			byte[] contextR3 = Bytes.createBytes(random, SEGMENT_LENGTH);
+			byte[] contextR3 = Bytes.createBytes(random, NONCE_LENGTH);
+			System.out.println("Appendix B.2 R3: " + Utils.toHexString(contextR3));
 
 			// Concatenate R2 and R3 to get the Context ID to use
 			byte[] protectContextID = Bytes.concatenate(contextR2, contextR3);
@@ -304,7 +317,7 @@ public class ContextRederivation {
 		if (ctx.getContextRederivationEnabled() == false) {
 			LOGGER.debug("Context re-derivation not considered due to it being disabled for this context");
 			return ctx;
-		 }
+		}
 
 		// Handle server phase 2 operations (reception of request #2)
 		if (ctx.getContextRederivationPhase() == PHASE.SERVER_PHASE_2) {
@@ -318,13 +331,13 @@ public class ContextRederivation {
 			 */
 
 			// Extract S2 from the Context ID
-			byte[] contextS2 = Arrays.copyOfRange(ctx.getIdContext(), 0, SEGMENT_LENGTH);
+			byte[] contextS2 = Arrays.copyOfRange(ctx.getIdContext(), 0, HALF_NONCE_LENGTH);
 
 			// Generate HMAC output using S2
 			byte[] hmacOutput = performHMAC(ctx.getContextRederivationKey(), contextS2);
 
 			// Compare the HMAC output with the equivalent in the message
-			byte[] messageHmacOutput = Arrays.copyOfRange(ctx.getIdContext(), SEGMENT_LENGTH, SEGMENT_LENGTH * 2);
+			byte[] messageHmacOutput = Arrays.copyOfRange(ctx.getIdContext(), HALF_NONCE_LENGTH, HALF_NONCE_LENGTH * 2);
 			if (Arrays.equals(hmacOutput, messageHmacOutput) == false) {
 				throw new OSException(ErrorDescriptions.CONTEXT_REGENERATION_FAILED);
 			}
@@ -332,6 +345,8 @@ public class ContextRederivation {
 			// Generate a new context with the received Context ID, after
 			// decoded from a CBOR byte string
 			byte[] contextIdParsed = decodeFromCborBstrBytes(contextID);
+			byte[] contextR3 = Arrays.copyOfRange(contextIdParsed, NONCE_LENGTH, NONCE_LENGTH * 2);
+			System.out.println("Appendix B.2 R3: " + Utils.toHexString(contextR3));
 			OSCoreCtx newCtx = rederiveWithContextID(ctx, contextIdParsed);
 
 			// Set the next phase of the re-derivation procedure
@@ -363,6 +378,7 @@ public class ContextRederivation {
 			byte[] contextID1 = null;
 			try {
 				contextID1 = decodeFromCborBstrBytes(contextID);
+				System.out.println("Appendix B.2 ID1: " + Utils.toHexString(contextID1));
 			} catch (CBORException e) {
 				LOGGER.debug(
 						"Client initiated context re-derivation not started as ID Context in request is not a CBOR byte string.");
@@ -392,6 +408,7 @@ public class ContextRederivation {
 			// The Context ID to use as ID1 is the same as the one used in the
 			// old context. The client may not include this in the request.
 			byte[] contextID1 = ctx.getIdContext();
+			System.out.println("Appendix B.2 ID1: " + Utils.toHexString(contextID1));
 
 			// Generate a new context with the received Context ID
 			OSCoreCtx newCtx = rederiveWithContextID(ctx, contextID1);
@@ -439,6 +456,7 @@ public class ContextRederivation {
 
 			// The Context ID in the original request is identified as ID1
 			byte[] contextID1 = ctx.getIdContext();
+			System.out.println("Appendix B.2 ID1: " + Utils.toHexString(contextID1));
 
 			/*
 			 * Generate new Context ID (R2) with a byte array (S2) & an HMAC
@@ -446,13 +464,14 @@ public class ContextRederivation {
 			 */
 
 			// Generate S2
-			byte[] contextS2 = Bytes.createBytes(random, SEGMENT_LENGTH);
+			byte[] contextS2 = Bytes.createBytes(random, HALF_NONCE_LENGTH);
 
 			// Generate HMAC output using S2
 			byte[] hmacOutput = performHMAC(ctx.getContextRederivationKey(), contextS2);
 
 			// Create R2 by concatenating S2 and the HMAC output
 			byte[] contextR2 = Bytes.concatenate(contextS2, hmacOutput);
+			System.out.println("Appendix B.2 R2: " + Utils.toHexString(contextR2));
 
 			/* Create Context ID to generate the new context with (R2 || ID1) */
 
@@ -490,8 +509,8 @@ public class ContextRederivation {
 	 */
 	private static OSCoreCtx rederiveWithContextID(OSCoreCtx ctx, byte[] contextID) throws OSException {
 		OSCoreCtx newCtx = new OSCoreCtx(ctx.getMasterSecret(), true, ctx.getAlg(), ctx.getSenderId(),
-				ctx.getRecipientId(), ctx.getKdf(), ctx.getRecipientReplaySize(), ctx.getSalt(),
-				contextID, ctx.getMaxUnfragmentedSize());
+				ctx.getRecipientId(), ctx.getKdf(), ctx.getRecipientReplaySize(), ctx.getSalt(), contextID,
+				ctx.getMaxUnfragmentedSize());
 		newCtx.setContextRederivationKey(ctx.getContextRederivationKey());
 		newCtx.setContextRederivationEnabled(ctx.getContextRederivationEnabled());
 		return newCtx;
@@ -508,7 +527,8 @@ public class ContextRederivation {
 	private static byte[] performHMAC(byte[] contextRederivationKey, byte[] input) throws OSException {
 		byte[] key = null;
 		try {
-			key = OSCoreCtx.deriveKey(contextRederivationKey, contextRederivationKey, SEGMENT_LENGTH, "SHA256", input);
+			key = OSCoreCtx.deriveKey(contextRederivationKey, contextRederivationKey, HALF_NONCE_LENGTH, "SHA256",
+					input);
 		} catch (CoseException e) {
 			throw new OSException(ErrorDescriptions.CONTEXT_REGENERATION_FAILED);
 		}

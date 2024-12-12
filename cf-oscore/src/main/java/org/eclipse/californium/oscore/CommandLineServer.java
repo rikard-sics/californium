@@ -157,7 +157,7 @@ public class CommandLineServer {
 		}
 
 		// Set nonce lengths
-		ContextRederivation.setSegmentLength(nonceLength);
+		ContextRederivation.setNonceLength(nonceLength);
 		KudosRederivation.NONCE_LENGTH = nonceLength;
 		if (debugMode) {
 			System.out.println("RID: " + Utils.toHexString(rid));
