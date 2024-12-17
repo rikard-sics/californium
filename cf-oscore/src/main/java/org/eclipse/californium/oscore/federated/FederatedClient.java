@@ -225,6 +225,11 @@ public class FederatedClient {
 	private static HashMap<String, Float> accuracies = new HashMap<String, Float>();
 	private static Map<String, float[]> storedAccuracies = new HashMap<>();
 
+	// For controlling aggregation and model version
+	private static int latestModelVersion = -1;
+	private static int AGGREGATION_THRESHOLD;
+	private static boolean didAggregation = true;
+
 	/**
 	 * Main method
 	 * 
@@ -335,6 +340,9 @@ public class FederatedClient {
 
 		// End parse command line arguments
 
+		// Set threshold for doing aggregation (ceil 40%)
+		AGGREGATION_THRESHOLD = (int) Math.ceil(serverCount * 0.40);
+
 		// Set request target when not using federated learning
 		if (useFederatedLearning == false) {
 			requestResource = "/helloWorld";
@@ -406,6 +414,8 @@ public class FederatedClient {
 		}
 		DebugOut.println("==================");
 
+		byte[] prevPayloadReq = null;
+
 		int currentEpoch = 0;
 		for (int i = 0; i < MAX_GLOBAL_EPOCHS && stopEarly == false; i++) {
 
@@ -420,6 +430,12 @@ public class FederatedClient {
 			byte[] payloadReq;
 			if (i == 0) {
 				payloadReq = new byte[0];
+
+				// Append version number to payload
+				latestModelVersion++;
+				byte[] tempArray = Arrays.copyOf(payloadReq, payloadReq.length + 1);
+				tempArray[tempArray.length - 1] = (byte) latestModelVersion;
+				payloadReq = Arrays.copyOf(tempArray, tempArray.length);
 
 			} else {
 
@@ -437,13 +453,25 @@ public class FederatedClient {
 				}
 
 				// Build byte payload to send from float vector
-				payloadReq = FloatConverter.floatVectorToBytes(modelReq);
+				if (didAggregation) {
+					payloadReq = FloatConverter.floatVectorToBytes(modelReq);
+					prevPayloadReq = Arrays.copyOf(payloadReq, payloadReq.length);
+					latestModelVersion++;
+				} else {
+					// Sent previous model
+					payloadReq = Arrays.copyOf(prevPayloadReq, prevPayloadReq.length);
+				}
 
 				// Error checking model size
 				if (modelReq.length != modelsize) {
 					DebugOut.errPrintln("Invalid model size when sending!");
 					DebugOut.errPrintln("Expected model size: " + modelsize + " but sending: " + modelReq.length);
 				}
+
+				// Append version number to payload
+				byte[] tempArray = Arrays.copyOf(payloadReq, payloadReq.length + 1);
+				tempArray[tempArray.length - 1] = (byte) latestModelVersion;
+				payloadReq = Arrays.copyOf(tempArray, tempArray.length);
 
 				DebugOut.print("Outgoing request payload: ");
 				for (int j = 0; j < modelReq.length; j++) {
@@ -600,9 +628,16 @@ public class FederatedClient {
 
 				}
 
-				INDArray model = Nd4j.create(modelRes);
-				DebugOut.println("Received model size: " + model.length());
-				models.add(model);
+				if (responses.size() < AGGREGATION_THRESHOLD) {
+					// Do not aggregate
+					didAggregation = false;
+				} else {
+					INDArray model = Nd4j.create(modelRes);
+					DebugOut.println("Received model size: " + model.length());
+					models.add(model);
+					didAggregation = true;
+				}
+
 			}
 
 			// Check early stopping criteria

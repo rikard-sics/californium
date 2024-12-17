@@ -28,6 +28,7 @@ import java.net.SocketException;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
@@ -217,6 +218,8 @@ public class FederatedServer {
 	private static DataSetIterator IterLoad;
 	private static DataSetIterator trainIter;
 	private static DataSetIterator testIter;
+
+	private static int latestVersionNumber = -1;
 
 	/**
 	 * Main method
@@ -617,7 +620,7 @@ public class FederatedServer {
 		DebugOut.println("Server Ready");
 	}
 
-	private static double TrainModel(INDArray updateModel, boolean initFlag) {
+	private static double TrainModel(INDArray updateModel, boolean initFlag, boolean processRequestModel) {
 
 		if (initFlag == true) {
 			model = new MultiLayerNetwork(conf);
@@ -625,7 +628,9 @@ public class FederatedServer {
 			DebugOut.println(model.summary());
 		} else {
 			DebugOut.println("Update Local model...");
-			model.setParams(updateModel);
+			if (processRequestModel) {
+				model.setParams(updateModel);
+			}
 		}
 
 		DebugOut.println("Train local model...");
@@ -697,6 +702,11 @@ public class FederatedServer {
 			// Parse and handle request
 			byte[] payloadReq = exchange.getRequestPayload();
 
+			// Extract model version from payload
+			int receivedVersion = (int) payloadReq[payloadReq.length - 1];
+			byte[] newArray = Arrays.copyOf(payloadReq, payloadReq.length - 1);
+			payloadReq = Arrays.copyOf(newArray, newArray.length);
+
 			// Parse bytes in request payload into float vector
 			float[] modelReq = FloatConverter.bytesToFloatVector(payloadReq);
 
@@ -720,8 +730,16 @@ public class FederatedServer {
 				initFlag = true;
 			}
 
+			boolean processRequestModel;
+			if (receivedVersion < latestVersionNumber) {
+				processRequestModel = false;
+			} else {
+				processRequestModel = true;
+				latestVersionNumber = receivedVersion;
+			}
+
 			// Add accuracy to float vector end
-			float epochAccuracy = (float) TrainModel(updatedModel, initFlag);
+			float epochAccuracy = (float) TrainModel(updatedModel, initFlag, processRequestModel);
 			float[] modelResPre = model.params().toFloatVector();
 			float[] modelRes = new float[modelResPre.length + 1];
 			System.arraycopy(modelResPre, 0, modelRes, 0, modelResPre.length);
