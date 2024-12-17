@@ -562,16 +562,6 @@ public abstract class Encryptor {
 		}
 		
 		System.out.println("Partial IV for keystream: " + StringUtil.byteArray2Hex(partialIV));
-		
-
-		System.out.println("===");
-		System.out.println("E Signature keystream: " + Utils.toHexString(keystream));
-		System.out.println("E signatureEncryptionKey: " + Utils.toHexString(signatureEncryptionKey));
-		System.out.println("E partialIV: " + Utils.toHexString(partialIV));
-		System.out.println("E kid: " + Utils.toHexString(kid));
-		System.out.println("E IdContext: " + Utils.toHexString(ctx.getIdContext()));
-		System.out.println("E isRequest: " + isRequest);
-		System.out.println("===");
 
 		// Now actually encrypt the signature
 		byte[] countersignBytes = enc.getUnprotectedAttributes().get(HeaderKeys.CounterSignature0.AsCBOR())
@@ -581,6 +571,17 @@ public abstract class Encryptor {
 		for (int i = 0; i < keystream.length; i++) {
 			encryptedCountersign[i] = (byte) (countersignBytes[i] ^ keystream[i]);
 		}
+		
+		System.out.println("===");
+		System.out.println("E Signature before encryption: " + Utils.toHexString(countersignBytes));
+		System.out.println("E Signature after encryption: " + Utils.toHexString(encryptedCountersign));
+		System.out.println("E Signature keystream: " + Utils.toHexString(keystream));
+		System.out.println("E signatureEncryptionKey: " + Utils.toHexString(signatureEncryptionKey));
+		System.out.println("E partialIV: " + Utils.toHexString(partialIV));
+		System.out.println("E kid: " + Utils.toHexString(kid));
+		System.out.println("E IdContext: " + Utils.toHexString(ctx.getIdContext()));
+		System.out.println("E isRequest: " + isRequest);
+		System.out.println("===");
 
 		// Replace the signature in the Encrypt0 object
 		enc.getUnprotectedAttributes().set(HeaderKeys.CounterSignature0.AsCBOR(),

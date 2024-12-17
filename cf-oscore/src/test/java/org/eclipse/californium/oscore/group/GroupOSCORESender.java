@@ -118,7 +118,7 @@ public class GroupOSCORESender {
 	private final static AlgorithmID algCountersign = AlgorithmID.EDDSA;
 
 	// Encryption algorithm for when using Group mode
-	private final static AlgorithmID algGroupEnc = AlgorithmID.AES_CCM_16_64_128;
+	private final static AlgorithmID algGroupEnc = AlgorithmID.CHACHA20_POLY1305;
 
 	// Algorithm for key agreement
 	private final static AlgorithmID algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
@@ -221,7 +221,7 @@ public class GroupOSCORESender {
 		Request multicastRequest = Request.newPost();
 		multicastRequest.setPayload(requestPayload);
 		multicastRequest.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
-		multicastRequest.setType(Type.NON);
+		multicastRequest.setType(Type.CON);
 		if (useOSCORE) {
 			// For group mode request
 			multicastRequest.getOptions().setOscore(Bytes.EMPTY);
