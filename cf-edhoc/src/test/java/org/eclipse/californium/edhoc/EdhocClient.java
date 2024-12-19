@@ -217,7 +217,7 @@ public class EdhocClient {
 		// Set up the authentication credentials for this peer and the other peer
 		setupOwnAuthenticationCredentials();
 		
-		// Set up the authentication credentials for the other peers 
+		// Set up the authentication credentials for the other peers
 		setupPeerAuthenticationCredentials();
 		
 		// Set the application profile
@@ -350,7 +350,7 @@ public class EdhocClient {
 			client.shutdown();
 			return;
         }
-        
+
 	}
 	
 	private static void helloWorldExchange(final String args[], final URI targetUri) {
@@ -392,7 +392,7 @@ public class EdhocClient {
 	private static void setupSupportedCipherSuites() {
 		
 		// Add the supported cipher suites in decreasing order of preference
-		
+
 		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_0);
 		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_1);
 		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_2);

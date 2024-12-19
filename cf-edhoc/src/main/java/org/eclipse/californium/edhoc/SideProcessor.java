@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.StringUtil;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
@@ -29,9 +31,14 @@ public class SideProcessor {
 	// Authentication credentials of other peers
 	// 
 	// The map label is a CBOR Map used as ID_CRED_X
+	private HashMap<CBORObject, OneKey> peerPublicKeys = new HashMap<CBORObject, OneKey>();
+    
+	// Authentication credentials of other peers
+	// 
+	// The map label is a CBOR Map used as ID_CRED_X
 	// The map value is a CBOR Byte String, with value the serialization of CRED_X
 	private HashMap<CBORObject, CBORObject> peerCredentials = new HashMap<CBORObject, CBORObject>();
-	
+		
 	// The EDHOC session this side process object is tied to
 	private EdhocSession session;
 	
@@ -79,10 +86,12 @@ public class SideProcessor {
 	private HashMap<Integer, List<CBORObject>> eadProductionInput = new HashMap<Integer, List<CBORObject>>();
 
 
-	public SideProcessor(int trustModel, HashMap<CBORObject, CBORObject> peerCredentials,
+	public SideProcessor(int trustModel, HashMap<CBORObject, OneKey> peerPublicKeys,
+						 HashMap<CBORObject, CBORObject> peerCredentials,
 						 HashMap<Integer, List<CBORObject>> eadProductionInput) {
 
 		this.trustModel = trustModel;
+		this.peerPublicKeys = peerPublicKeys;
 		this.peerCredentials = peerCredentials;
 		this.session = null;
 		
@@ -538,22 +547,428 @@ public class SideProcessor {
  	 *          or null in case a peer's authentication credential to use is not found. 
 	 */
 	private CBORObject findValidPeerCredential(CBORObject idCredX, CBORObject[] ead) {
+		boolean newCredential = true;
+		CBORObject peerCredentialContainer = null;
 		CBORObject peerCredentialCBOR = null;
-		
+
 		if (peerCredentials.containsKey(idCredX)) {
-	    	peerCredentialCBOR = peerCredentials.get(idCredX);
-	    	
-	    	// TODO: Check whether the authentication credential is still valid (for applicable credential types)
-	    	
-	    	// TODO: Check whether the authentication credential is good to use in the context of this EDHOC session
-		}		
-		else if (trustModel == Constants.TRUST_MODEL_NO_LEARNING) {
-				return peerCredentialCBOR;
+			newCredential = false;
+			peerCredentialContainer = peerCredentials.get(idCredX);
+	    	peerCredentialCBOR = CBORObject.DecodeFromBytes(peerCredentialContainer.GetByteString());
+		}
+		
+		if (peerCredentialContainer == null) {
+
+			// CRED_X was not found among the stored authentication credentials.
+			// Then, ID_CRED_X has to specify CRED_X by value.
+			
+			Set<CBORObject> credTypesForCredByValue = new HashSet<>();
+			credTypesForCredByValue.add(CBORObject.FromObject(Constants.COSE_HEADER_PARAM_KCWT));
+			credTypesForCredByValue.add(CBORObject.FromObject(Constants.COSE_HEADER_PARAM_KCCS));
+			credTypesForCredByValue.add(CBORObject.FromObject(Constants.COSE_HEADER_PARAM_X5CHAIN));
+			
+			boolean credByValue = false;
+			for (CBORObject obj : idCredX.getKeys()) {
+				if (credTypesForCredByValue.contains(obj)) {
+					peerCredentialCBOR = idCredX.get(obj);
+					credByValue = true;
+					break;
+				}
+			}
+			
+			if (credByValue == false) {
+				// ID_CRED_X does not transport CRED_X by value
+				
+				// Check for any relevant EAD items that transport the authentication credential by value
+				
+				return null;
+			}
+			
+			if (trustModel == Constants.TRUST_MODEL_NO_LEARNING) {
+				// Only already known CRED_X are admitted to use
+				
+				// Admit potential exception for well-defined circumstances
+				
+				System.err.println("New authentication credentials cannot be learned during an EDHOC session");
+				
+				return null;
+			}
+	
+		}
+		
+		int credentialType = -1;
+		
+		if (idCredX.getKeys().contains(CBORObject.FromObject(Constants.COSE_HEADER_PARAM_KID))) {
+
+			if (peerCredentialCBOR.getType().equals(CBORType.Array)) {
+				credentialType = Constants.CRED_TYPE_CWT;
+			}
+			if (peerCredentialCBOR.getType().equals(CBORType.Map)) {
+				credentialType = Constants.CRED_TYPE_CCS;
+			}
+		}
+		if (idCredX.getKeys().contains(CBORObject.FromObject(Constants.COSE_HEADER_PARAM_KCWT))) {
+			credentialType = Constants.CRED_TYPE_CWT;
+		}
+		if (idCredX.getKeys().contains(CBORObject.FromObject(Constants.COSE_HEADER_PARAM_KCCS))) {
+			credentialType = Constants.CRED_TYPE_CCS;
+		}
+		if (idCredX.getKeys().contains(CBORObject.FromObject(Constants.COSE_HEADER_PARAM_X5CHAIN)) ||
+			idCredX.getKeys().contains(CBORObject.FromObject(Constants.COSE_HEADER_PARAM_X5T)) ||
+			idCredX.getKeys().contains(CBORObject.FromObject(Constants.COSE_HEADER_PARAM_X5U))) {
+			credentialType = Constants.CRED_TYPE_X509;
+		}
+		
+		if (credentialType < 0) {
+			return null;
+		}
+		
+		// Check whether the authentication credential is valid (for applicable credential types)
+		
+		boolean validCred = false;
+		
+		switch(credentialType) {
+			case Constants.CRED_TYPE_CWT:
+				validCred = validateCWT(peerCredentialCBOR, newCredential);
+				if (validCred && newCredential) {
+					if (storeNewCWT(peerCredentialCBOR) == false) {
+						return null;
+					}
+				}
+				break;
+			case Constants.CRED_TYPE_CCS:
+				validCred = validateCCS(peerCredentialCBOR, newCredential);
+				if (validCred && newCredential) {
+					if (storeNewCCS(peerCredentialCBOR) == false) {
+						return null;
+					}
+				}
+				break;
+			case Constants.CRED_TYPE_X509:
+				validCred = validateX5chain(peerCredentialCBOR, newCredential);
+				if (validCred && newCredential) {
+					if (storeNewX509(peerCredentialCBOR) == false) {
+						return null;
+					}
+				}
+				break;
 		}
 
-		// TODO: Add support for the LEARNING trust model
-    			
-		return peerCredentialCBOR;
+		if (validCred == false) {
+			
+			if (newCredential == false) {
+			// Remove all the stored entries for the authentication credential corresponding public key
+
+				this.peerCredentials.remove(idCredX);
+				this.peerPublicKeys.remove(idCredX);
+				
+				for (CBORObject key : this.peerCredentials.keySet()) {
+					if (this.peerCredentials.get(key).equals(peerCredentialContainer)) {
+						this.peerCredentials.remove(key);
+						this.peerPublicKeys.remove(key);
+					}
+				}
+			}
+			
+			return null;
+		}
+
+		if (peerCredentialContainer == null) {
+			// If this point is reached, the authentication credential is valid and learned now.
+			// The container to return was stored in the appropriate data structure and can be retrieved from there.
+		
+			peerCredentialContainer = this.peerCredentials.get(idCredX);
+		}
+		
+    	// TODO: Check whether the authentication credential is good to use in the context of this EDHOC session
+		
+		return peerCredentialContainer;
+	}
+	
+	/**
+	 * Store a CWT as the authentication credential of another peer,
+	 * together with the corresponding public key specified therein
+	 * 
+ 	 * @param cwt  The CWT as a CBOR array
+ 	 * @return  True if the storing succeeds, or false otherwise. 
+	 */
+	private boolean storeNewCWT(CBORObject cwt) {
+		
+		// Store two entries, using the COSE Header Parameters 'kcwt' and 'kid', thus allowing
+		// a retrieval in case a later ID_CRED_X specifies the credential by value or by reference
+		
+		// TBD
+		
+		return true;
+		
+	}
+	
+	/**
+	 * Store a CCS as the authentication credential of another peer,
+	 * together with the corresponding public key specified therein
+	 * 
+ 	 * @param ccs  The CCS as a CBOR map
+ 	 * @return  True if the storing succeeds, or false otherwise. 
+	 */
+	private boolean storeNewCCS(CBORObject ccs) {
+		
+		// Store two entries, using the COSE Header Parameters 'kccs' and 'kid', thus allowing
+		// a retrieval in case a later ID_CRED_X specifies the credential by value or by reference
+
+		OneKey peerPublicKey = null;
+
+		CBORObject coseKey = ccs.get(CBORObject.FromObject(Constants.CWT_CLAIMS_CNF)).
+								 get(CBORObject.FromObject(Constants.CWT_CNF_COSE_KEY));
+		
+		int curve = 0;
+		int keyType = coseKey.get(Constants.COSE_KEY_COMMON_PARAM_KTY).AsInt32();
+		
+		if (keyType == Constants.COSE_KEY_TYPE_OKP || keyType == Constants.COSE_KEY_TYPE_EC2) {
+			curve = coseKey.get(Constants.COSE_KEY_TYPE_PARAM_CRV).AsInt32();
+			
+			byte[] x = null;			
+			byte[] y = null;
+			
+			x  = coseKey.get(Constants.COSE_KEY_TYPE_PARAM_X).GetByteString();			
+			if (keyType == Constants.COSE_KEY_TYPE_EC2) {
+				y  = coseKey.get(Constants.COSE_KEY_TYPE_PARAM_Y).GetByteString();
+			}
+			
+			if (curve == Constants.CURVE_X25519) {
+				peerPublicKey =  SharedSecretCalculation.buildCurve25519OneKey(null, x);
+			}
+			if (curve == Constants.CURVE_Ed25519) {
+				peerPublicKey =  SharedSecretCalculation.buildEd25519OneKey(null, x);
+			}
+			if (curve == Constants.CURVE_P256) {
+				peerPublicKey =  SharedSecretCalculation.buildEcdsa256OneKey(null, x, y);
+			}
+			
+			if (peerPublicKey == null) {
+				return false;
+			}
+			
+		}
+		
+		CBORObject peerCredentialContainer = CBORObject.FromObject(ccs.EncodeToBytes());
+		
+		CBORObject idCredKccs = Util.buildIdCredKccs(ccs);
+		peerPublicKeys.put(idCredKccs, peerPublicKey);
+		peerCredentials.put(idCredKccs, peerCredentialContainer);
+		
+		// If the COSE Key specifies 'kid', store one additional entry identified by the 'kid' value
+		if (coseKey.ContainsKey(Constants.COSE_KEY_COMMON_PARAM_KID)) {
+			CBORObject kidCBOR = coseKey.get(Constants.COSE_KEY_COMMON_PARAM_KID);
+			if (kidCBOR.getType().equals(CBORType.ByteString)) {
+				byte[] kid = coseKey.get(Constants.COSE_KEY_COMMON_PARAM_KID).GetByteString();
+				CBORObject idCredKid = Util.buildIdCredKid(kid);
+				peerPublicKeys.put(idCredKid, peerPublicKey);
+				peerCredentials.put(idCredKid, peerCredentialContainer);
+			}
+		}
+		
+		return true;
+		
+	}
+	
+	/**
+	 * Store an X.509 certificate as the authentication credential of another peer,
+	 * together with the corresponding public key specified therein.
+	 * 
+	 * Note that only the end-entity certificate associated with the other peer is considered.
+	 * 
+ 	 * @param cwt  A CBOR byte string with value an end-entity X.509 certificate
+  	 * @return  True if the storing succeeds, or false otherwise. 
+	 */
+	private boolean storeNewX509(CBORObject x509) {
+		
+		// Store two entries, using the COSE Header Parameters 'x5chain' and 'x5t', thus allowing
+		// a retrieval in case a later ID_CRED_X specifies the credential by value or by reference
+		
+		// TBD
+		
+		return true;
+		
+	}
+	
+	/**
+	 * Determine whether a CWT is valid or not
+	 * 
+ 	 * @param cwt  The CWT as a CBOR array
+	 * @param newCredential  True if the CWT was not already stored when invoking this method, or false otherwise
+ 	 * @return  True if the CWT is valid, or false otherwise. 
+	 */
+	private boolean validateCWT(final CBORObject cwt, final boolean newCredential) {
+		
+		if (newCredential) {
+			// The credential is new, so more thorough checks are required
+			
+			if (cwt.getType().equals(CBORType.Array) == false) {
+				return false;
+			}
+			
+			// TBD
+		}
+		
+		// TBD
+		
+		return true;
+		
+	}
+	
+	/**
+	 * Determine whether a CCS is valid or not
+	 * 
+ 	 * @param ccs  The CCS as a CBOR map
+	 * @param newCredential  True if the CCS was not already stored when invoking this method, or false otherwise
+ 	 * @return  True if the CCS is valid, or false otherwise. 
+	 */
+	private boolean validateCCS(final CBORObject ccs, final boolean newCredential) {
+		
+		if (newCredential) {
+			// The credential is new, so more thorough checks are required
+			
+			if (ccs.getType().equals(CBORType.Map) == false) {
+				return false;
+			}
+			if (ccs.ContainsKey(CBORObject.FromObject(Constants.CWT_CLAIMS_CNF)) == false) {
+				return false;
+			}
+			
+			CBORObject cnfValue = ccs.get(CBORObject.FromObject(Constants.CWT_CLAIMS_CNF));
+			if (cnfValue.getType().equals(CBORType.Map) == false) {
+				return false;
+			}
+			if (cnfValue.ContainsKey(CBORObject.FromObject(Constants.CWT_CNF_COSE_KEY)) == false) {
+				return false;
+			}
+			
+			CBORObject coseKeyValue = cnfValue.get(CBORObject.FromObject(Constants.CWT_CNF_COSE_KEY));
+			
+			if (checkCoseKey(coseKeyValue) == false) {
+				return false;
+			}
+			
+		}
+		
+		if (ccs.ContainsKey(Constants.CWT_CLAIMS_EXP)) {
+			Long expValue = ccs.get(Constants.CWT_CLAIMS_EXP).AsInt64Value();
+			if (expValue < (System.currentTimeMillis() / 1000)) {
+				// The credential is expired
+				return false;
+			}
+		}
+
+		return true;
+		
+	}
+	
+	/**
+	 * Determine whether an end-entity X.509 certificate is valid or not
+	 * 
+ 	 * @param x509  A CBOR byte string with value the serialization of an x5chain.
+ 	 * 				- If the credential is not new, the value of the CBOR byte string is the binary encoding
+ 	 * 				  of a CBOR byte string, whose value is the end-entity X.509 certificate of the other peer
+ 	 * 				- If the credential is new, the value of the CBOR byte string is the binary encoding
+ 	 * 				  of a chain of X.509 certificates, i.e., either:
+ 	 * 				  - The binary encoding of a CBOR byte string, whose value is the end-entity X.509 certificate of the other peer; or
+ 	 * 				  - The binary encoding of a CBOR array. Each element of the array is a CBOR byte string, whose value
+ 	 *                  is an X.509 certificate. The first element corresponds to the end-entity X.509 certificate of the other peer.
+ 	 * 
+	 * @param newCredential  True if the end-entity X.509 certificate was not already stored
+	 *                       when invoking this method, or false otherwise
+ 	 * @return  True if the end-entity X.509 certificate is valid, or false otherwise. 
+	 */
+	private boolean validateX5chain(final CBORObject x5chain, final boolean newCredential) {
+		
+		if (newCredential) {
+			// The credential is new, so more thorough checks are required
+			
+			CBORType cborType = x5chain.getType();
+			
+			if ((cborType.equals(CBORType.ByteString) == false) && (cborType.equals(CBORType.Array) == false)) {
+				return false;
+			}
+			if (cborType.equals(CBORType.Array)) {
+				int size = x5chain.size();
+				if (size < 2) {
+					return false;
+				}
+				for (int i = 0; i < size; i++) {
+					if (x5chain.get(i).getType().equals(CBORType.ByteString) == false) {
+						return false;
+					}
+				}
+			}
+			
+			// TBD
+		}
+		
+		// TBD
+		
+		return true;
+		
+	}
+	
+	/**
+	 * Check whether a COSE Key is well-formed
+	 * 
+	 * This method does not perform cryptographic-relevant validation (e.g., correctness
+	 * of the public key coordinates), which is left to later invocation of the COSE library
+	 * 
+ 	 * @param coseKey  The COSE Key as a CBOR map
+ 	 * @return  True if the COSE Key is well-formed, or false otherwise. 
+	 */
+	private boolean checkCoseKey(final CBORObject coseKey) {
+		
+		if (coseKey.getType().equals(CBORType.Map) == false) {
+			return false;
+		}
+		if (coseKey.ContainsKey(CBORObject.FromObject(Constants.COSE_KEY_COMMON_PARAM_KTY)) == false) {
+			return false;
+		}
+		if (coseKey.get(CBORObject.FromObject(Constants.COSE_KEY_COMMON_PARAM_KTY)).getType().equals(CBORType.Integer) == false) {
+			return false;
+		}
+		
+		int curve = 0;
+		int keyType = coseKey.get(CBORObject.FromObject(Constants.COSE_KEY_COMMON_PARAM_KTY)).AsInt32();
+		if ((keyType == Constants.COSE_KEY_TYPE_OKP) || (keyType == Constants.COSE_KEY_TYPE_EC2)) {
+			if (coseKey.ContainsKey(CBORObject.FromObject(Constants.COSE_KEY_TYPE_PARAM_CRV)) == false ||
+				coseKey.ContainsKey(CBORObject.FromObject(Constants.COSE_KEY_TYPE_PARAM_X)) == false) {
+				return false;
+			}
+			if (coseKey.get(CBORObject.FromObject(Constants.COSE_KEY_TYPE_PARAM_CRV)).getType().equals(CBORType.Integer) == false) {
+				return false;
+			}
+			if (coseKey.get(CBORObject.FromObject(Constants.COSE_KEY_TYPE_PARAM_X)).getType().equals(CBORType.ByteString) == false) {
+				return false;
+			}
+			curve = coseKey.get(CBORObject.FromObject(Constants.COSE_KEY_TYPE_PARAM_CRV)).AsInt32();
+		}
+		else {
+			return false;
+		}
+		
+		if (keyType == Constants.COSE_KEY_TYPE_OKP) {
+			if (curve != Constants.CURVE_X25519 && curve != Constants.CURVE_Ed25519) {
+				return false;
+			}
+		}
+		if (keyType == Constants.COSE_KEY_TYPE_EC2) {
+			if (curve != Constants.CURVE_P256) {
+				return false;
+			}
+			if (coseKey.ContainsKey(CBORObject.FromObject(Constants.COSE_KEY_TYPE_PARAM_Y)) == false) {
+				return false;
+			}
+			if (coseKey.get(CBORObject.FromObject(Constants.COSE_KEY_TYPE_PARAM_Y)).getType().equals(CBORType.ByteString) == false) {
+				return false;
+			}
+		}
+		
+		return true;
+		
 	}
 
 }
