@@ -184,6 +184,7 @@ class EdhocResource extends CoapResource {
 		if (messageType == Constants.EDHOC_MESSAGE_1) {
 			
 			SideProcessor sideProcessor = new SideProcessor(edhocEndpointInfo.getTrustModel(),
+															edhocEndpointInfo.getPeerPublicKeys(),
 															edhocEndpointInfo.getPeerCredentials(),
 															edhocEndpointInfo.getEadProductionInput());
 			

@@ -561,7 +561,7 @@ public class MessageProcessorTest {
 												keyPairs, idCreds, creds, cipherSuites, peerSupportedCipherSuites,
 												supportedEADs, appProfile, trustModel, db);
 
-		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null);
 		sideProcessor.setEdhocSession(session);
 		
 		
@@ -619,7 +619,7 @@ public class MessageProcessorTest {
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		
 		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
-		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null);
 		
 		// Note: the actual EDHOC message 1 starts with 0x00. The byte 0xf5 (CBOR simple value True) is prepended,
 		//       in order to enable the reading of the message as the first one in a new EDHOC session
@@ -784,7 +784,7 @@ public class MessageProcessorTest {
 												idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
 												supportedEADs, appProfile, trustModel, db);
 
-		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null);
 		sideProcessor.setEdhocSession(session);
 		
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
@@ -942,7 +942,7 @@ public class MessageProcessorTest {
 		CBORObject idCred = Util.buildIdCredX5t(serializedCert);
 		ownIdCreds.add(idCred);
 		
-		SideProcessor sideProcessor = new SideProcessor(trustModel, peerCredentials, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, peerPublicKeys, peerCredentials, null);
 		sideProcessor.setEdhocSession(session);
 		
 		// Set the ephemeral keys of the initiator, i.e., X and G_X
@@ -1100,7 +1100,7 @@ public class MessageProcessorTest {
 												idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
 												supportedEADs, appProfile, trustModel, db);
 
-		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null);
 		sideProcessor.setEdhocSession(session);
 		
 		// Set the ephemeral keys, i.e., X and G_X for the initiator, as well as G_Y for the Responder
@@ -1324,7 +1324,7 @@ public class MessageProcessorTest {
 		CBORObject idCred = Util.buildIdCredX5t(serializedCert);
 		ownIdCreds.add(idCred);
 		
-		SideProcessor sideProcessor = new SideProcessor(trustModel, peerCredentials, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, peerPublicKeys, peerCredentials, null);
 		sideProcessor.setEdhocSession(session);
 		
 		// Set the ephemeral keys of the responder, i.e., Y and G_Y
@@ -1480,7 +1480,7 @@ public class MessageProcessorTest {
 												idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
 												supportedEADs, appProfile, trustModel, db);
 
-		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null);
 		sideProcessor.setEdhocSession(session);
 		
 		session.setCurrentStep(Constants.EDHOC_AFTER_M3);
@@ -1651,7 +1651,7 @@ public class MessageProcessorTest {
 		CBORObject idCred = Util.buildIdCredX5t(serializedCert);
 		ownIdCreds.add(idCred);
 		
-		SideProcessor sideProcessor = new SideProcessor(trustModel, peerCredentials, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, peerPublicKeys, peerCredentials, null);
 		sideProcessor.setEdhocSession(session);
 		
 		// Set the ephemeral keys of the initiator, i.e., X and G_X
@@ -1768,7 +1768,7 @@ public class MessageProcessorTest {
 				                                idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
 				                                supportedEADs, appProfile, trustModel, db);
 
-		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null);
 		sideProcessor.setEdhocSession(session);
 		
 		// Force a specific ephemeral key
@@ -1822,7 +1822,7 @@ public class MessageProcessorTest {
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		
 		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
-		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null);
 		
 				
 		// Note: the actual EDHOC message 1 starts with 0x00. The byte 0xf5 (CBOR simple value True) is prepended,
@@ -1949,7 +1949,7 @@ public class MessageProcessorTest {
 												idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
 												supportedEADs, appProfile, trustModel, db);
 
-		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null);
 		sideProcessor.setEdhocSession(session);
 		
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
@@ -2111,7 +2111,7 @@ public class MessageProcessorTest {
 		CBORObject idCred = Util.buildIdCredKid(idCredKid);
 		ownIdCreds.add(idCred);
 		
-		SideProcessor sideProcessor = new SideProcessor(trustModel, peerCredentials, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, peerPublicKeys, peerCredentials, null);
 		sideProcessor.setEdhocSession(session);
 		
 		// Set the ephemeral keys of the initiator, i.e., X and G_X
@@ -2269,7 +2269,7 @@ public class MessageProcessorTest {
 												idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
 												supportedEADs, appProfile, trustModel, db);
 
-		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null);
 		sideProcessor.setEdhocSession(session);
 		
 		// Set the ephemeral keys, i.e., X and G_X for the initiator, as well as G_Y for the Responder
@@ -2496,7 +2496,7 @@ public class MessageProcessorTest {
 		CBORObject idCred = Util.buildIdCredKid(idCredKid);
 		ownIdCreds.add(idCred);
 		
-		SideProcessor sideProcessor = new SideProcessor(trustModel, peerCredentials, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, peerPublicKeys, peerCredentials, null);
 		sideProcessor.setEdhocSession(session);
 		
 		// Set the ephemeral keys of the responder, i.e., Y and G_Y
@@ -2656,7 +2656,7 @@ public class MessageProcessorTest {
 												idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
 												supportedEADs, appProfile, trustModel, db);
 		
-		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null);
 		sideProcessor.setEdhocSession(session);
 		
 		session.setCurrentStep(Constants.EDHOC_AFTER_M3);
@@ -2830,7 +2830,7 @@ public class MessageProcessorTest {
 		CBORObject idCred = Util.buildIdCredKid(idCredKid);
 		ownIdCreds.add(idCred);
 		
-		SideProcessor sideProcessor = new SideProcessor(trustModel, peerCredentials, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, peerPublicKeys, peerCredentials, null);
 		sideProcessor.setEdhocSession(session);
 		
 		// Set the ephemeral keys of the initiator, i.e., X and G_X
