@@ -286,7 +286,7 @@ public class SharedSecretCalculation {
 	 * 
 	 * @return a OneKey representing the input material
 	 */
-	static OneKey buildEd25519OneKey(byte[] privateKey, byte[] publicKey) {
+	public static OneKey buildEd25519OneKey(byte[] privateKey, byte[] publicKey) {
 		byte[] rgbX = publicKey;
 		byte[] rgbD = privateKey;
 
@@ -321,7 +321,7 @@ public class SharedSecretCalculation {
 	 * 
 	 * @return a OneKey representing the input material
 	 */
-	static OneKey buildCurve25519OneKey(byte[] privateKey, byte[] publicKey) {
+	public static OneKey buildCurve25519OneKey(byte[] privateKey, byte[] publicKey) {
 		byte[] rgbX = publicKey;
 		byte[] rgbD = privateKey;
 
@@ -476,7 +476,7 @@ public class SharedSecretCalculation {
 	 * 
 	 * @return a OneKey representing the input material
 	 */
-	static OneKey buildEcdsa256OneKey(byte[] privateKey, byte[] publicKeyX, byte[] publicKeyY) {
+	public static OneKey buildEcdsa256OneKey(byte[] privateKey, byte[] publicKeyX, byte[] publicKeyY) {
 
         // Attempt to recalculate Y value if missing
 		if (publicKeyY == null) {
