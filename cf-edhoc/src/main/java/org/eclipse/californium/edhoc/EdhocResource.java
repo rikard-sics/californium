@@ -41,7 +41,7 @@ import com.upokecenter.cbor.CBORType;
 /*
  * Definition of the EDHOC Resource
  */
-class EdhocResource extends CoapResource {
+public class EdhocResource extends CoapResource {
 
 	private EdhocEndpointInfo edhocEndpointInfo;
 	private Set<CBORObject> ownIdCreds;
