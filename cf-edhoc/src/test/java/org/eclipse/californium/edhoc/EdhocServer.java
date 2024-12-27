@@ -155,10 +155,7 @@ public class EdhocServer extends CoapServer {
 		
 		// Set up the authentication credentials for this peer and the other peer
 		setupOwnAuthenticationCredentials();
-		
-		// Set up the authentication credentials for this peer and the other peer
-		setupOwnAuthenticationCredentials();
-		
+
 		// Set up the authentication credentials for the other peers 
 		setupPeerAuthenticationCredentials();
 		
