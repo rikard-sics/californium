@@ -45,7 +45,7 @@ import org.eclipse.californium.oscore.OSException;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
-class ClientEdhocExecutor {
+public class ClientEdhocExecutor {
 	
 	private final boolean debugPrint = true;
 
