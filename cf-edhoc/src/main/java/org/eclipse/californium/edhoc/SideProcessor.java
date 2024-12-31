@@ -468,7 +468,7 @@ public class SideProcessor {
 			
 			// A fatal error occurred while producing this EAD item
 			if (eadItem[0].getType() == CBORType.TextString) {
-				if (eadItem[1].getType() != CBORType.ByteString)
+				if (eadItem[1].getType() != CBORType.Integer)
 					return false;
 				
 				addErrorResult(messageNumber, true, eadItem[0].AsString(), eadItem[1].AsInt32());
