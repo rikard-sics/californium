@@ -452,13 +452,26 @@ public class FederatedClient {
 					DebugOut.errPrintln("Error: No model received");
 				}
 
+				// Ensure that the model to be sent is valid
+				boolean invalidModel = false;
+				if (modelReq == null || modelReq.length != modelsize) {
+					invalidModel = true;
+				}
+
+				if (!didAggregation) {
+					DebugOut.errPrintln("Not sending latest model since aggregation was not done!");
+				}
+				if (invalidModel) {
+					DebugOut.errPrintln("Not sending latest model since it is invalid!");
+				}
+
 				// Build byte payload to send from float vector
-				if (didAggregation) {
+				if (didAggregation == true && invalidModel == false) {
 					payloadReq = FloatConverter.floatVectorToBytes(modelReq);
 					prevPayloadReq = Arrays.copyOf(payloadReq, payloadReq.length);
 					latestModelVersion++;
 				} else {
-					// Sent previous model
+					// Send previous model
 					payloadReq = Arrays.copyOf(prevPayloadReq, prevPayloadReq.length);
 				}
 
@@ -645,10 +658,14 @@ public class FederatedClient {
 				DebugOut.print("Early stopping criteria fulfilled");
 				stopEarly = true;
 			}
-			if (toBeContinued) {
+
+			if (toBeContinued == true) {
 				epochsNoImprovement = 0;
 			} else {
-				epochsNoImprovement++;
+				// Only count as epoch of no improvement if aggregation happened
+				if (didAggregation == true) {
+					epochsNoImprovement++;
+				}
 			}
 
 			long epochEnd = System.nanoTime();

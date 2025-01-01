@@ -728,11 +728,13 @@ public class FederatedServer {
 			// Train
 			if (modelReq.length == 0) {
 				initFlag = true;
+				DebugOut.println("Model with size 0 received!");
 			}
 
 			boolean processRequestModel;
-			if (receivedVersion < latestVersionNumber) {
+			if (receivedVersion <= latestVersionNumber) {
 				processRequestModel = false;
+				initFlag = false;
 			} else {
 				processRequestModel = true;
 				latestVersionNumber = receivedVersion;
