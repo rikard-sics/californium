@@ -568,7 +568,13 @@ public class FederatedClient {
 				DebugOut.errPrintln("ERROR: No Response from servers.");
 
 			}
+			
 			boolean toBeContinued = false;
+			// Ensure to continue if no responses were received this epoch
+			if (responses == null || responses.size() == 0) {
+				toBeContinued = true;
+			}
+			
 			for (int j = 0; j < responses.size(); j++) {
 				CoapResponse resp = responses.get(j);
 
