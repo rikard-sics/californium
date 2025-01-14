@@ -855,8 +855,10 @@ public class Util {
 		    releaseConnectionId(connectionIdentifier, usedConnectionIds, session.getOscoreDb());
 		    
 		    session.deleteTemporaryMaterial();
-		    if(session.getSideProcessor() != null)
+		    if(session.getSideProcessor() != null) {
+		    	session.getSideProcessor().removeResults();
 		    	session.getSideProcessor().setEdhocSession(null);
+		    }
 		    
 		    session = null;
 		}

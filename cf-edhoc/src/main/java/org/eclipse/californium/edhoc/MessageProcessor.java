@@ -1484,6 +1484,7 @@ public class MessageProcessor {
     	byte[] peerCredential = peerCredentialCBOR.GetByteString(); // CRED_I
     	    	
     	session.setPeerIdCred(idCredI); // Store ID_CRED_I
+    	session.setPeerCred(peerCredential); // Store CRED_I
     	
     	// Compute MAC_3
     	byte[] mac3 = computeMAC3(session, prk4e3m, th3, idCredI, peerCredential, ead3);

@@ -84,6 +84,14 @@ public class SideProcessor {
 	// The CBOR map provides input on how to produce the EAD item,
 	// with the map keys from a namespace specific of the ead_label.
 	private HashMap<Integer, List<CBORObject>> eadProductionInput = new HashMap<Integer, List<CBORObject>>();
+	
+	// This data structure collects the number of occurrences of EAD items in different EDHOC messages
+	//
+	// The outer map key is the EAD label
+	//
+	// The inner map key is a value from (1, 2, 3, 4), denoting one of the four EDHOC messages
+	// The inner map value is the number of times that the EAD item with that EAD label has occurred in that EDHOC message 
+	private HashMap<Integer, HashMap<Integer, Integer>> eadItemsOccurrences = new HashMap<Integer, HashMap<Integer, Integer>>();
 
 
 	public SideProcessor(int trustModel, HashMap<CBORObject, OneKey> peerPublicKeys,
@@ -132,12 +140,14 @@ public class SideProcessor {
     * Delete all the results obtained from the side processing
 	*/
 	public void removeResults() {
-		resMessage1.clear();
-		resMessage2Pre.clear();
-		resMessage2Post.clear();
-		resMessage3Pre.clear();
-		resMessage3Post.clear();
-		resMessage4.clear();
+		
+		removeResults(Constants.EDHOC_MESSAGE_1, false);
+		removeResults(Constants.EDHOC_MESSAGE_2, false);
+		removeResults(Constants.EDHOC_MESSAGE_2, true);
+		removeResults(Constants.EDHOC_MESSAGE_3, false);
+		removeResults(Constants.EDHOC_MESSAGE_3, true);
+		removeResults(Constants.EDHOC_MESSAGE_4, false);
+
 	}
 	
 	/**
@@ -148,6 +158,11 @@ public class SideProcessor {
     */
 	public void removeResults(int messageNumber, boolean postValidation) {
 		HashMap<Integer, List<HashMap<Integer, CBORObject>>> myResults = whichResults(messageNumber, postValidation);
+		
+		for (Integer index : myResults.keySet()) {
+			eadSpecificCleanup(myResults, index.intValue());
+		}
+		
 		myResults.clear();
 	}
 
@@ -162,7 +177,39 @@ public class SideProcessor {
 		HashMap<Integer, List<HashMap<Integer, CBORObject>>> myResults = whichResults(messageNumber, postValidation);
 		if (myResults.size() == 0)
 			return;
+		
+		eadSpecificCleanup(myResults, keyValue);
+		
 		myResults.remove(Integer.valueOf(keyValue));
+	}
+	
+	/**
+	  * Contextually with the deletion of the results from the processing
+	  * of an EAD item, perform cleanup actions specific to that EAD item, 
+	  *  
+	  * @param messageNumber  The number of EDHOC message that the EAD items refer to
+	  * @param keyValue   The identifier of the result set to delete
+	  * @param postValidation  True to select the results of EAD processing after EDHOC message validation, or false otherwise
+	*/
+	private void eadSpecificCleanup(HashMap<Integer, List<HashMap<Integer, CBORObject>>> myResults, final int eadLabel) {
+		
+		List<HashMap<Integer, CBORObject>> resultList = myResults.get(Integer.valueOf(eadLabel));
+		
+		if (resultList == null) {
+			return;
+		}
+		
+		CBORObject peerCred = null;
+		CBORObject ownCred = null;
+		
+		/*
+		 * Template for each entry
+		 * 
+		if (eadLabel == Constants.EAD_LABEL_TBD) {
+		  // TBD
+		}
+		*/
+				
 	}
 	
 	/**
@@ -271,6 +318,12 @@ public class SideProcessor {
 		// ...
 		//
 		
+		if (ead1 != null && ead1.length > 0) {
+			if (eadConsumptionDispatcher(org.eclipse.californium.edhoc.Constants.EDHOC_MESSAGE_1, false, sideProcessorInfo, ead1) == false) {
+				return;
+			}
+		}
+		
 	}
 
 	/**
@@ -284,7 +337,24 @@ public class SideProcessor {
 	// 1) A CBOR byte string, with value C_R (in its original, binary format)
 	// 2) A CBOR map, as ID_CRED_R
 	public void sideProcessingMessage2PreVerification(CBORObject[] sideProcessorInfo, CBORObject[] ead2) {
-				
+		
+		// Go through the EAD_2 items, if any
+		//
+		// For each EAD item, invoke the corresponding consume() method, and then addResult(). 
+		// Stop in case the consumption of an EAD item returns a fatal error.
+		//
+		// This may further trigger the production of new EAD items to include in the next, outgoing EDHOC message.
+		// In such a case, invoke eadProductionDispatcher() for each of those EAD items to produce.
+		//
+		// ...
+		//
+		
+		if (ead2 != null && ead2.length > 0) {
+			if (eadConsumptionDispatcher(org.eclipse.californium.edhoc.Constants.EDHOC_MESSAGE_2, false, sideProcessorInfo, ead2) == false) {
+				return;
+			}
+		}
+		
 		CBORObject gY = sideProcessorInfo[0];
 		CBORObject connectionIdentifierResponder = sideProcessorInfo[1];
 		CBORObject idCredR = sideProcessorInfo[2];
@@ -302,17 +372,6 @@ public class SideProcessor {
 			resultContent.put(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_CRED_VALUE), peerCredentialCBOR);
 			addResult(Constants.EDHOC_MESSAGE_2, false, Constants.SIDE_PROCESSOR_OUTER_CRED, resultContent);
 		}
-		
-		// Go through the EAD_2 items, if any
-		//
-		// For each EAD item, invoke the corresponding consume() method, and then addResult(). 
-		// Stop in case the consumption of an EAD item returns a fatal error.
-		//
-		// This may further trigger the production of new EAD items to include in the next, outgoing EDHOC message.
-		// In such a case, invoke eadProductionDispatcher() for each of those EAD items to produce.
-		//
-		// ...
-		//
 		
 	}
 
@@ -342,6 +401,12 @@ public class SideProcessor {
 		// ...
 		//
 		
+		if (ead2 != null && ead2.length > 0) {
+			if (eadConsumptionDispatcher(org.eclipse.californium.edhoc.Constants.EDHOC_MESSAGE_2, true, sideProcessorInfo, ead2) == false) {
+				return;
+			}
+		}
+		
 	}
 
 	/**
@@ -354,6 +419,23 @@ public class SideProcessor {
 	// 0) A CBOR map, as ID_CRED_I
 	//
 	public void sideProcessingMessage3PreVerification(CBORObject[] sideProcessorInfo, CBORObject[] ead3) {
+		
+		// Go through the EAD_3 items, if any
+		//
+		// For each EAD item, invoke the corresponding consume() method, and then addResult(). 
+		// Stop in case the consumption of an EAD item returns a fatal error.
+		//
+		// This may further trigger the production of new EAD items to include in the next, outgoing EDHOC message.
+		// In such a case, invoke eadProductionDispatcher() for each of those EAD items to produce.
+		//
+		// ...
+		//
+		
+		if (ead3 != null && ead3.length > 0) {
+			if (eadConsumptionDispatcher(org.eclipse.californium.edhoc.Constants.EDHOC_MESSAGE_3, false, sideProcessorInfo, ead3) == false) {
+				return;
+			}
+		}
 		
 		CBORObject idCredI = sideProcessorInfo[0];
 		
@@ -370,17 +452,6 @@ public class SideProcessor {
 			resultContent.put(Integer.valueOf(Constants.SIDE_PROCESSOR_INNER_CRED_VALUE), peerCredentialCBOR);
 			addResult(Constants.EDHOC_MESSAGE_3, false, Constants.SIDE_PROCESSOR_OUTER_CRED, resultContent);
 		}
-		
-		// Go through the EAD_3 items, if any
-		//
-		// For each EAD item, invoke the corresponding consume() method, and then addResult(). 
-		// Stop in case the consumption of an EAD item returns a fatal error.
-		//
-		// This may further trigger the production of new EAD items to include in the next, outgoing EDHOC message.
-		// In such a case, invoke eadProductionDispatcher() for each of those EAD items to produce.
-		//
-		// ...
-		//
 		
 	}
 
@@ -406,6 +477,12 @@ public class SideProcessor {
 		// ...
 		//
 		
+		if (ead3 != null && ead3.length > 0) {
+			if (eadConsumptionDispatcher(org.eclipse.californium.edhoc.Constants.EDHOC_MESSAGE_3, true, sideProcessorInfo, ead3) == false) {
+				return;
+			}
+		}
+		
 	}
 	
 	/**
@@ -425,6 +502,12 @@ public class SideProcessor {
 		//
 		// ...
 		//
+		
+		if (ead4 != null && ead4.length > 0) {
+			if (eadConsumptionDispatcher(org.eclipse.californium.edhoc.Constants.EDHOC_MESSAGE_4, false, null, ead4) == false) {
+				return;
+			}
+		}
 
 	}
 	
@@ -462,6 +545,11 @@ public class SideProcessor {
 			index++;
 			CBORObject productionInput = myList.get(Integer.valueOf(index));
 			CBORObject[] eadItem = eadProductionDispatcher(eadLabel, critical, messageNumber, productionInput);
+			
+			// The production of this EAD item is actually not supported. Silently continue.
+			if (eadItem == null) {
+				continue;
+			}
 			
 			if (eadItem[0].getType() != CBORType.Integer && eadItem[0].getType() != CBORType.TextString)
 				return false;
@@ -506,6 +594,69 @@ public class SideProcessor {
 		
 	}
 	
+	/**
+	 * Invoke the consume() method of the right EAD item to consume
+	 * 
+	 * Due to early parsing of the EAD field when processing the EDHOC message, an EAD item considered here is always supported 
+	 * 
+ 	 * @param messageNumber  The number of the incoming EDHOC message that includes the EAD item to consume
+ 	 * @param postValidation  True to indicate EAD processing after EDHOC message validation, or false otherwise
+ 	 * @param sideProcessorInfo  Information generally required for processing the EAD field. It can be null, when processing the EAD_4 field
+ 	 * @param eadField  The EAD field from the incoming EDHOC message
+ 	 * @return  True in case of no error when processing any critical item, in order to continue the EDHOC session can continue 
+ 	 *          False in case of error when processing any critical item, in order to abort the EDHOC session 
+	 */
+	public boolean eadConsumptionDispatcher(int messageNumber, boolean postValidation, CBORObject[] sideProcessorInfo, CBORObject[] eadField) {
+		
+		int index = 0;
+		boolean success = true;
+		
+		while (index < eadField.length) {
+			int eadLabel = eadField[index].AsInt32();
+			byte[] eadValue = null;
+			index++;
+			if ((index < eadField.length) && ((eadField[index].getType()) == CBORType.ByteString)) {
+				eadValue = eadField[index].GetByteString();
+				index++;
+			}
+			
+			boolean critical = false;
+			if (eadLabel < 0) {
+				critical = true;
+				eadLabel = -eadLabel;
+			}
+			
+			if (eadItemsOccurrences.containsKey(Integer.valueOf(eadLabel)) == false) {
+				HashMap<Integer, Integer> innerMap = new HashMap<Integer, Integer>();
+				innerMap.put(Integer.valueOf(Constants.EDHOC_MESSAGE_1), Integer.valueOf(0));
+				innerMap.put(Integer.valueOf(Constants.EDHOC_MESSAGE_2), Integer.valueOf(0));
+				innerMap.put(Integer.valueOf(Constants.EDHOC_MESSAGE_3), Integer.valueOf(0));
+				innerMap.put(Integer.valueOf(Constants.EDHOC_MESSAGE_4), Integer.valueOf(0));
+				eadItemsOccurrences.put(Integer.valueOf(eadLabel), innerMap);
+			}
+			
+			// This has to be populated with the invocation of the consume() method for the EAD item to produce
+			switch(eadLabel) {
+				/*
+				 Template case
+				
+				 case Constants.EAD_LABEL_TBD:
+				 if (postValidation == false) {
+					// This EAD item is intended to be processed only before validating the peer's authentication credential 
+					success = eadConsumeTBD(critical, messageNumber, postValidation, sideProcessorInfo, eadValue);
+				 }
+				 break;
+				*/
+			}
+			
+			if (success == false) {
+				break;
+			}
+		}
+		return success;
+		
+	}
+	
 	public void showResultsFromSideProcessing(int messageNumber, boolean postValidation) {
 		HashMap<Integer, List<HashMap<Integer, CBORObject>>> myResults = whichResults(messageNumber, postValidation);
 		if (myResults.size() == 0)
@@ -527,7 +678,7 @@ public class SideProcessor {
 			for(HashMap<Integer, CBORObject> myMap : myList) {
 				for (Integer j : myMap.keySet()) {
 					CBORObject obj = myMap.get(j);
-					System.out.print("Result element #" + j.intValue() + ": " + obj.toString());				
+					System.out.println("Result element #" + j.intValue() + ": " + obj.toString());				
 				}	
 			}			
 			System.out.println("\n");
