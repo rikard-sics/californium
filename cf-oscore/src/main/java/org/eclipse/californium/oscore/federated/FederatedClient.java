@@ -573,6 +573,7 @@ public class FederatedClient {
 			// Ensure to continue if no responses were received this epoch
 			if (responses == null || responses.size() == 0) {
 				toBeContinued = true;
+				didAggregation = false;
 			}
 			
 			for (int j = 0; j < responses.size(); j++) {
