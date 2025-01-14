@@ -389,19 +389,19 @@ public static final int TRUST_MODEL_LEARNING    = 1; // Trust and use any (new) 
  * 
  */
 
-// Outer map keys used for the results of an EAD item consumption
+//Results of an EAD item consumption (TODO:redundant to remove?) 
 public static final int SIDE_PROCESSOR_CONSUMPTION_ERROR    = -1;
 public static final int SIDE_PROCESSOR_CONSUMPTION_SUCCESS  =  0;
 
-// Result labels not associated with EAD labels
+//Result maps: outer map keys not associated with EAD labels
 public static final int SIDE_PROCESSOR_OUTER_ERROR = -1;
 public static final int SIDE_PROCESSOR_OUTER_CRED  =  0;
 
-// Result content for result label -1
+//Result maps: inner map keys for outer map key -1
 public static final int SIDE_PROCESSOR_INNER_ERROR_DESCRIPTION = 0; // Value: the text string to use in the EDHOC error message
 public static final int SIDE_PROCESSOR_INNER_ERROR_RESP_CODE =   1; // Value: the response code to use if EDHOC error message is a response
 
-// Result content for result label 0
+//Result maps: inner map keys for outer map key 0
 public static final int SIDE_PROCESSOR_INNER_CRED_VALUE = 0;        // Value: the authentication credential of the other peer
 
 }
