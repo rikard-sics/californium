@@ -435,6 +435,9 @@ public class EdhocResource extends CoapResource {
 		        
 				}
 		        
+				// Perform any follow-up actions based on the processing results of EAD items
+				mySession.getSideProcessor().eadProcessingFollowUp();
+				
 		        // Prepare the response to send back
 		        Response myResponse = new Response(ResponseCode.CHANGED);
 		        
