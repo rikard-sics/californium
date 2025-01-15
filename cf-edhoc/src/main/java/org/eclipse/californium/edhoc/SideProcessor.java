@@ -1017,14 +1017,14 @@ public class SideProcessor {
 	/**
 	 * Determine whether an end-entity X.509 certificate is valid or not
 	 * 
- 	 * @param x509  A CBOR byte string with value the serialization of an x5chain.
- 	 * 				- If the credential is not new, the value of the CBOR byte string is the binary encoding
- 	 * 				  of a CBOR byte string, whose value is the end-entity X.509 certificate of the other peer
- 	 * 				- If the credential is new, the value of the CBOR byte string is the binary encoding
- 	 * 				  of a chain of X.509 certificates, i.e., either:
- 	 * 				  - The binary encoding of a CBOR byte string, whose value is the end-entity X.509 certificate of the other peer; or
- 	 * 				  - The binary encoding of a CBOR array. Each element of the array is a CBOR byte string, whose value
- 	 *                  is an X.509 certificate. The first element corresponds to the end-entity X.509 certificate of the other peer.
+ 	 * @param x5chain  A CBOR byte string with value the serialization of an x5chain.
+ 	 * 				   - If the credential is not new, the value of the CBOR byte string is the binary encoding
+ 	 * 		   		     of a CBOR byte string, whose value is the end-entity X.509 certificate of the other peer
+ 	 * 				   - If the credential is new, the value of the CBOR byte string is the binary encoding
+ 	 * 				     of a chain of X.509 certificates, i.e., either:
+ 	 * 				     - The binary encoding of a CBOR byte string, whose value is the end-entity X.509 certificate of the other peer; or
+ 	 * 				     - The binary encoding of a CBOR array. Each element of the array is a CBOR byte string, whose value
+ 	 *                     is an X.509 certificate. The first element corresponds to the end-entity X.509 certificate of the other peer.
  	 * 
 	 * @param newCredential  True if the end-entity X.509 certificate was not already stored
 	 *                       when invoking this method, or false otherwise
@@ -1119,6 +1119,55 @@ public class SideProcessor {
 		}
 		
 		return true;
+		
+	}
+	
+	/*
+	 * After successfully completing an EDHOC session, perform follow-up actions related to EAD items provided in the session
+	 */
+	public void eadProcessingFollowUp() {
+		
+		for (Integer i : this.resMessage1.keySet()) {
+			
+			// If processing results for a certain EAD item are present, invoke the
+			// corresponding method to perform follow-up actions based on those
+			
+		}
+		
+		for (Integer i : this.resMessage2Pre.keySet()) {
+			
+			// If processing results for a certain EAD item are present, invoke the
+			// corresponding method to perform follow-up actions based on those
+			
+		}
+
+		for (Integer i : this.resMessage2Post.keySet()) {
+			
+			// If processing results for a certain EAD item are present, invoke the
+			// corresponding method to perform follow-up actions based on those
+			
+		}
+		
+		for (Integer i : this.resMessage3Pre.keySet()) {
+			
+			// If processing results for a certain EAD item are present, invoke the
+			// corresponding method to perform follow-up actions based on those
+
+		}
+
+		for (Integer i : this.resMessage3Post.keySet()) {
+			
+			// If processing results for a certain EAD item are present, invoke the
+			// corresponding method to perform follow-up actions based on those
+			
+		}
+		
+		for (Integer i : this.resMessage4.keySet()) {
+			
+			// If processing results for a certain EAD item are present, invoke the
+			// corresponding method to perform follow-up actions based on those
+			
+		}
 		
 	}
 
