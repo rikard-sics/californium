@@ -449,6 +449,9 @@ public class EdhocLayer extends AbstractLayer {
 				// Remove the EDHOC option
 				request.getOptions().setEdhoc(false);
 				
+				// Perform any follow-up actions based on the processing results of EAD items
+				mySession.getSideProcessor().eadProcessingFollowUp();
+				
 				// The next step is to pass the OSCORE request to the next layer for processing
 			
 			}
