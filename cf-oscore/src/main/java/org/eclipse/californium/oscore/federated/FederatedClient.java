@@ -516,6 +516,12 @@ public class FederatedClient {
 				Collections.shuffle(unicastServerIps);
 				
 				for (int n = 0; n < unicastServerIps.size(); n++) {
+
+					// Stop if sufficient servers have responded this epoch
+					if (handler.getResponses().size() > serverCount * SERVER_RESPONSE_RATIO) {
+						break;
+					}
+
 					handler.resumeWaiting(true);
 
 					URI unicastURI;
