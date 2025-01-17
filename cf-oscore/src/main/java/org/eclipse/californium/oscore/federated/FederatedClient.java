@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.Collections;
 
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
@@ -512,7 +513,8 @@ public class FederatedClient {
 			if (unicastMode) {
 
 				handler.clearResponses();
-
+				Collections.shuffle(unicastServerIps);
+				
 				for (int n = 0; n < unicastServerIps.size(); n++) {
 					URI unicastURI;
 					if (unicastServerIps.get(n).contains(":")) {
