@@ -120,7 +120,7 @@ public class FederatedClient {
 	/**
 	 * Maximum time to wait for replies when using unicast (one by one)
 	 */
-	private static final int UNICAST_TIMEOUT = 5000;
+	private static final int UNICAST_TIMEOUT = 30000;
 
 	/**
 	 * Ratio of servers that need to have responded for the client to stop
