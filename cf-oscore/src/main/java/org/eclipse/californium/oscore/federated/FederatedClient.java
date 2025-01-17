@@ -331,6 +331,10 @@ public class FederatedClient {
 				if (ipv6Pattern.matcher(args[i]).matches()) {
 					unicastServerIps.add(args[i]);
 				}
+				if (args[i].contains(":")) {
+					unicastServerIps.add(args[i]);
+				}
+
 			}
 		}
 		if (unicastMode) {
@@ -516,6 +520,8 @@ public class FederatedClient {
 				Collections.shuffle(unicastServerIps);
 				
 				for (int n = 0; n < unicastServerIps.size(); n++) {
+					handler.resumeWaiting(true);
+
 					URI unicastURI;
 					if (unicastServerIps.get(n).contains(":")) {
 						unicastURI = URI.create("coap://" + "[" + unicastServerIps.get(n) + "]");
@@ -531,9 +537,9 @@ public class FederatedClient {
 					request.setPayload(payloadReq);
 
 					sentCoapPayloadBytes += payloadReq.length;
-					UdpDataSerializer serializer = new UdpDataSerializer();
-					byte[] rawBytes = serializer.getByteArray(request);
-					sentUdpPayloadBytes += rawBytes.length;
+					// UdpDataSerializer serializer = new UdpDataSerializer();
+					// byte[] rawBytes = serializer.getByteArray(request);
+					// sentUdpPayloadBytes += rawBytes.length;
 
 					request.setType(Type.NON);
 					client = new CoapClient();
@@ -620,9 +626,9 @@ public class FederatedClient {
 				rtts.get(serverRid)[currentEpoch] = resp.advanced().getApplicationRttNanos();
 				receivedCoapPayloadBytes += payloadRes.length;
 
-				UdpDataSerializer serializer = new UdpDataSerializer();
-				byte[] rawBytes = serializer.getByteArray(resp.advanced());
-				receivedUdpPayloadBytes += rawBytes.length;
+				// UdpDataSerializer serializer = new UdpDataSerializer();
+				// byte[] rawBytes = serializer.getByteArray(resp.advanced());
+				// receivedUdpPayloadBytes += rawBytes.length;
 
 				// Check for early stopping
 				float serverAccuracy = modelResPre[modelResPre.length - 1];
@@ -819,6 +825,10 @@ public class FederatedClient {
 		private boolean on;
 		int serverCount = 0;
 		boolean keepWaiting = true;
+
+		public void resumeWaiting(boolean resume) {
+			keepWaiting = resume;
+		}
 
 		public MultiCoapHandler(int serverCount) {
 			this.serverCount = serverCount;

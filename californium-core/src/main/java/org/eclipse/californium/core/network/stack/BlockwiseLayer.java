@@ -1606,7 +1606,8 @@ public class BlockwiseLayer extends AbstractLayer {
 			LOGGER.debug("{}request body [{}/{}] requires blockwise transfer", tag, request.getPayloadSize(),
 					maxMessageSize);
 		}
-		return blockwiseRequired;
+		// return blockwiseRequired;
+		return false;
 	}
 
 	private boolean requiresBlock2wise(Response response, BlockOption requestBlock2) {
@@ -1622,7 +1623,8 @@ public class BlockwiseLayer extends AbstractLayer {
 			LOGGER.debug("{}response body [{}/{}] requires blockwise transfer", tag, response.getPayloadSize(),
 					maxMessageSize);
 		}
-		return blockwiseRequired;
+		// return blockwiseRequired;
+		return false;
 	}
 
 	private boolean requiresBlock2(BlockOption requestBlock2) {
@@ -1631,7 +1633,8 @@ public class BlockwiseLayer extends AbstractLayer {
 		if (block2Required) {
 			LOGGER.debug("{}response requires requested {} blockwise transfer", tag, requestBlock2);
 		}
-		return block2Required;
+		// return block2Required;
+		return false;
 	}
 
 	/**
@@ -1649,7 +1652,8 @@ public class BlockwiseLayer extends AbstractLayer {
 	}
 
 	private boolean isTransparentBlockwiseHandlingEnabled() {
-		return maxResourceBodySize > 0;
+		// return maxResourceBodySize > 0;
+		return false;
 	}
 
 	private boolean responseExceedsMaxBodySize(final Response response) {
