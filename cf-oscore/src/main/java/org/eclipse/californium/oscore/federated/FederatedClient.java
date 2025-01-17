@@ -47,6 +47,7 @@ import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.elements.EndpointContext;
+import org.eclipse.californium.elements.UDPConnector;
 import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.cose.AlgorithmID;
@@ -216,8 +217,6 @@ public class FederatedClient {
 	private static boolean stopEarly = false;
 
 	// Variables for storing experimental results
-	private static int sentUdpPayloadBytes = 0;
-	private static int receivedUdpPayloadBytes = 0;
 	private static List<Long> epochTimes = new ArrayList<Long>();
 	private static Map<String, long[]> rtts = new HashMap<>();
 	private static HashMap<String, Float> accuracies = new HashMap<String, Float>();
@@ -685,8 +684,8 @@ public class FederatedClient {
 
 		/** Write results to file **/
 		FileWriter myWriter = new FileWriter(dateString + "-res.txt");
-		myWriter.write("Cumulative UDP payload data sent (bytes): " + sentUdpPayloadBytes + newl);
-		myWriter.write("Cumulative UDP payload data received (bytes): " + receivedUdpPayloadBytes + newl);
+		myWriter.write("Cumulative UDP payload data sent (bytes): " + UDPConnector.getSentPayload() + newl);
+		myWriter.write("Cumulative UDP payload data received (bytes): " + UDPConnector.getReceivedPayload() + newl);
 		myWriter.write("Time until stop condition (ns): " + timeElapsed + newl);
 		myWriter.write("Number of epochs: " + (currentEpoch + 1) + newl + newl);
 

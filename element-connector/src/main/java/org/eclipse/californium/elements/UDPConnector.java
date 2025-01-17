@@ -85,6 +85,19 @@ import org.slf4j.LoggerFactory;
  * {@link UdpConfig#UDP_SEND_BUFFER_SIZE} in the provided {@link Configuration}.
  */
 public class UDPConnector implements Connector {
+
+	// Variables for storing experimental results
+	private static int sentUdpPayloadBytes = 0;
+	private static int receivedUdpPayloadBytes = 0;
+
+	public static int getSentPayload() {
+		return sentUdpPayloadBytes;
+	}
+
+	public static int getReceivedPayload() {
+		return receivedUdpPayloadBytes;
+	}
+
 	/**
 	 * The logger.
 	 * 
@@ -349,6 +362,8 @@ public class UDPConnector implements Connector {
 			return;
 		}
 
+		sentUdpPayloadBytes += msg.getSize();
+
 		// move onError callback out of synchronized block
 		boolean running;
 		boolean added = false;
@@ -571,6 +586,7 @@ public class UDPConnector implements Connector {
 			LOGGER.debug("UDPConnector ({}) received UDP datagram from {} without receiver. Discarding ...", connector,
 					StringUtil.toLog(datagram.getSocketAddress()));
 		} else {
+			receivedUdpPayloadBytes += datagram.getLength();
 			long timestamp = ClockUtil.nanoRealtime();
 			String local = StringUtil.toString(connector);
 			if (multicast) {
