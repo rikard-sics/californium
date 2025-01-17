@@ -703,7 +703,7 @@ public class FederatedClient {
 			long[] rttArray = entry.getValue();
 
 			for (int i = 0; i < rttArray.length; i++) {
-				String val = Float.toString(rttArray[i]);
+				String val = Long.toString(rttArray[i]);
 
 				if (rttArray[i] == -1) {
 					val = "N/A";
