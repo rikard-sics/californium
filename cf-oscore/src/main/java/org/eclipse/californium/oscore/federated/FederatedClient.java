@@ -226,6 +226,7 @@ public class FederatedClient {
 	private static int latestModelVersion = -1;
 	private static int AGGREGATION_THRESHOLD;
 	private static boolean didAggregation = true;
+	private static HashMap<String, Boolean> sentInitialRequest = new HashMap<String, Boolean>();
 
 	/**
 	 * Main method
@@ -517,9 +518,27 @@ public class FederatedClient {
 				
 				for (int n = 0; n < unicastServerIps.size(); n++) {
 
+					// Empty payload for servers being contacted first time
+					byte[] emptyPayload = new byte[0];
+					// Append version number to payload
+					byte[] tempArray2 = Arrays.copyOf(emptyPayload, emptyPayload.length + 1);
+					tempArray2[tempArray2.length - 1] = (byte) latestModelVersion;
+					emptyPayload = Arrays.copyOf(tempArray2, tempArray2.length);
+
 					// Stop if sufficient servers have responded this epoch
 					if (handler.getResponses().size() > serverCount * SERVER_RESPONSE_RATIO) {
 						break;
+					}
+
+					request = Request.newPost();
+
+					// Use empty request for servers not yet contacted
+					if (sentInitialRequest.containsKey(unicastServerIps.get(n)) == false
+							|| sentInitialRequest.get(unicastServerIps.get(n)) == false) {
+						request.setPayload(emptyPayload);
+						sentInitialRequest.put(unicastServerIps.get(n), true);
+					} else {
+						request.setPayload(payloadReq);
 					}
 
 					handler.resumeWaiting(true);
@@ -532,11 +551,9 @@ public class FederatedClient {
 					}
 					requestURI = unicastURI + requestResource;
 
-					request = Request.newPost();
 					if (useOSCORE) {
 						request.getOptions().setOscore(Bytes.EMPTY);
 					}
-					request.setPayload(payloadReq);
 
 					request.setType(Type.NON);
 					client = new CoapClient();
