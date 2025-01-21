@@ -119,6 +119,12 @@
 
 <dependency>
   <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-client</artifactId>
+  <version>12.0.16</version>
+</dependency>
+
+<dependency>
+  <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-alpn-server</artifactId>
   <version>12.0.16</version>
 </dependency>
@@ -126,6 +132,18 @@
 <dependency>
   <groupId>org.eclipse.jetty.http2</groupId>
   <artifactId>jetty-http2-server</artifactId>
+  <version>12.0.16</version>
+</dependency>
+
+<dependency>
+  <groupId>org.eclipse.jetty.http2</groupId>
+  <artifactId>jetty-http2-client</artifactId>
+  <version>12.0.16</version>
+</dependency>
+
+<dependency>
+  <groupId>org.eclipse.jetty.http2</groupId>
+  <artifactId>jetty-http2-client-transport</artifactId>
   <version>12.0.16</version>
 </dependency>
 
