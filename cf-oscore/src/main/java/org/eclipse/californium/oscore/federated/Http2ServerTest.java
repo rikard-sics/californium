@@ -2,12 +2,18 @@ package org.eclipse.californium.oscore.federated;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class Http2ServerTest {
@@ -19,7 +25,9 @@ public class Http2ServerTest {
 		// The HTTP configuration object.
 		HttpConfiguration httpConfig = new HttpConfiguration();
 		// Add the SecureRequestCustomizer because TLS is used.
-		httpConfig.addCustomizer(new SecureRequestCustomizer());
+		SecureRequestCustomizer src = new SecureRequestCustomizer();
+		src.setSniHostCheck(false);
+		httpConfig.addCustomizer(src);
 
 		// The ConnectionFactory for HTTP/1.1.
 		HttpConnectionFactory http11 = new HttpConnectionFactory(httpConfig);
@@ -30,7 +38,7 @@ public class Http2ServerTest {
 		// The ALPN ConnectionFactory.
 		ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
 		// The default protocol to use in case there is no negotiation.
-		alpn.setDefaultProtocol(http11.getProtocol());
+		alpn.setDefaultProtocol(h2.getProtocol()); // Changed
 
 		// Configure the SslContextFactory with the keyStore information.
 		SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
@@ -45,6 +53,24 @@ public class Http2ServerTest {
 		connector.setPort(8443);
 
 		server.addConnector(connector);
+
+
+		Handler myHandler = new Handler.Abstract()
+		{
+
+			@Override
+			public boolean handle(Request request, Response response, Callback callback) throws Exception {
+				// TODO Auto-generated method stub
+				System.out.println("Request received");
+				callback.succeeded();
+
+				return true;
+			}
+		};
+
+		server.setHandler(myHandler);
+
 		server.start();
+
 	}
 }
