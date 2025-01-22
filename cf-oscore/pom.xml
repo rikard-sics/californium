@@ -86,85 +86,72 @@
 			<artifactId>datavec-api</artifactId>
 			<version>1.0.0-M2.1</version>
 		</dependency>
+  
+    <!-- Jetty Server -->
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+      <version>11.0.14</version> <!-- or any Jetty 11+ version -->
+    </dependency>
 
-		<!-- RH: Below for gRPC -->
-		<dependency>
-			<groupId>io.grpc</groupId>
-			<artifactId>grpc-netty-shaded</artifactId>
-			<version>1.64.0</version>
-			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>io.grpc</groupId>
-			<artifactId>grpc-protobuf</artifactId>
-			<version>1.64.0</version>
-		</dependency>
-		<dependency>
-			<groupId>io.grpc</groupId>
-			<artifactId>grpc-stub</artifactId>
-			<version>1.64.0</version>
-		</dependency>
-		<dependency> <!-- necessary for Java 9+ -->
-			<groupId>org.apache.tomcat</groupId>
-			<artifactId>annotations-api</artifactId>
-			<version>6.0.53</version>
-			<scope>provided</scope>
-		</dependency>
+    <!-- HTTP/2 server support -->
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>http2-server</artifactId>
+      <version>11.0.14</version>
+    </dependency>
 
-<dependency>
-  <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-server</artifactId>
-  <version>12.0.16</version>
-</dependency>
+    <!-- ALPN support -->
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-server</artifactId>
+      <version>11.0.14</version>
+    </dependency>
+        <!-- ALPN support -->
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-java-server</artifactId>
+      <version>11.0.14</version>
+    </dependency>
 
-<dependency>
-  <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-client</artifactId>
-  <version>12.0.16</version>
-</dependency>
+    <!-- Servlet API (if you want to add servlet support) -->
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlet</artifactId>
+      <version>11.0.14</version>
+    </dependency>
+    
+    
+    <!-- For client side Jetty -->
+    
+        <!-- Core Jetty HTTP client -->
+    <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-client</artifactId>
+        <version>11.0.14</version>
+    </dependency>
 
-<dependency>
-  <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-alpn-server</artifactId>
-  <version>12.0.16</version>
-</dependency>
+    <!-- HTTP/2 Client support -->
+    <dependency>
+        <groupId>org.eclipse.jetty.http2</groupId>
+        <artifactId>http2-client</artifactId>
+        <version>11.0.14</version>
+    </dependency>
 
-<dependency>
-  <groupId>org.eclipse.jetty.http2</groupId>
-  <artifactId>jetty-http2-server</artifactId>
-  <version>12.0.16</version>
-</dependency>
+    <!-- ALPN support for Java 11+ (client side) -->
+    <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-alpn-java-client</artifactId>
+        <version>11.0.14</version>
+    </dependency>
 
-<dependency>
-  <groupId>org.eclipse.jetty.http2</groupId>
-  <artifactId>jetty-http2-client</artifactId>
-  <version>12.0.16</version>
-</dependency>
+    <dependency>
+        <groupId>org.eclipse.jetty.http2</groupId>
+        <artifactId>http2-http-client-transport</artifactId>
+        <version>11.0.14</version>
+    </dependency>
 
-<dependency>
-  <groupId>org.eclipse.jetty.http2</groupId>
-  <artifactId>jetty-http2-client-transport</artifactId>
-  <version>12.0.16</version>
-</dependency>
 
-<dependency>
-  <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-alpn-java-server</artifactId>
-  <version>12.0.16</version>
-</dependency>
-
-<dependency>  
-  <groupId>jakarta.servlet</groupId>
-  <artifactId>jakarta.servlet-api</artifactId>
-  <version>6.1.0</version>
-  <scope>provided</scope>
-</dependency>
-
-     <dependency>
-           <groupId>org.eclipse.jetty</groupId>
-           <artifactId>jetty-servlet</artifactId>
-          <version>11.0.24</version>
-       </dependency>
 
 
 

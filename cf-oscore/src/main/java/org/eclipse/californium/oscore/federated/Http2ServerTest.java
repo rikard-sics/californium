@@ -1,24 +1,15 @@
 package org.eclipse.californium.oscore.federated;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 
@@ -60,47 +51,16 @@ public class Http2ServerTest {
 
 		server.addConnector(connector);
 
-		Handler myHandler = new Handler.Abstract()
-		{
+		//
 
-			public boolean handleOld(Request request, Response response, Callback callback) throws Exception {
-				// TODO Auto-generated method stub
-				System.out.println("Request received");
-				callback.succeeded();
+		// Create a servlet context handler at the root path
+		ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+		context.setContextPath("/");
+		server.setHandler(context);
 
-				ByteBuffer res = ByteBuffer.wrap(new byte[] { 0x61, 0x73, 0x64 });
-				response.write(true, res, callback);
-				return true;
-			}
-
-			@Override
-			public boolean handle(Request request, Response response, Callback callback) {
-				// Set the response status code.
-				response.setStatus(HttpStatus.OK_200);
-				// Set the response headers.
-				response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
-
-				String hello = "HELLO";
-
-				// Commit the response with a "flush" write.
-				Callback.Completable.with(flush -> response.write(false, null, flush))
-						// When the flush is finished, send the content and
-						// complete the callback.
-						.whenComplete((ignored, failure) -> {
-							if (failure == null)
-								response.write(true, null, callback);
-							else
-								callback.failed(failure);
-						});
-
-				// Return true because the callback will eventually be
-				// completed.
-				return true;
-			}
-
-		};
-
-		server.setHandler(myHandler);
+		// Add a simple Hello World servlet
+		context.addServlet(new ServletHolder(new HelloWorldServlet()), "/model");
+		//
 
 		server.start();
 
