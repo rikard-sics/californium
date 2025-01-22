@@ -1,4 +1,4 @@
-package org.eclipse.californium.oscore.federated;
+package org.eclipse.californium.http2;
 
 import java.io.IOException;
 
@@ -6,7 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-public class HelloWorldServlet extends HttpServlet {
+public class ResourceServlet extends HttpServlet {
 
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {

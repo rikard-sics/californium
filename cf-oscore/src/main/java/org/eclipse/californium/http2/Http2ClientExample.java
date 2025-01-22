@@ -1,4 +1,4 @@
-package org.eclipse.californium.oscore.federated;
+package org.eclipse.californium.http2;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -8,7 +8,7 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory.Client.SniProvider;
 
-public class Http2ClientNew {
+public class Http2ClientExample {
 
 	public static void main(String[] args) throws Exception {
 

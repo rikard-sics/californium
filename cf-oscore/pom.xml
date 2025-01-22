@@ -86,70 +86,70 @@
 			<artifactId>datavec-api</artifactId>
 			<version>1.0.0-M2.1</version>
 		</dependency>
-  
-    <!-- Jetty Server -->
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
-      <version>11.0.14</version> <!-- or any Jetty 11+ version -->
-    </dependency>
 
-    <!-- HTTP/2 server support -->
-    <dependency>
-      <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-server</artifactId>
-      <version>11.0.14</version>
-    </dependency>
+		<!-- Jetty Server -->
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-server</artifactId>
+			<version>11.0.14</version> <!-- or any Jetty 11+ version -->
+		</dependency>
 
-    <!-- ALPN support -->
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-server</artifactId>
-      <version>11.0.14</version>
-    </dependency>
-        <!-- ALPN support -->
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-java-server</artifactId>
-      <version>11.0.14</version>
-    </dependency>
+		<!-- HTTP/2 server support -->
+		<dependency>
+			<groupId>org.eclipse.jetty.http2</groupId>
+			<artifactId>http2-server</artifactId>
+			<version>11.0.14</version>
+		</dependency>
 
-    <!-- Servlet API (if you want to add servlet support) -->
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-servlet</artifactId>
-      <version>11.0.14</version>
-    </dependency>
-    
-    
-    <!-- For client side Jetty -->
-    
-        <!-- Core Jetty HTTP client -->
-    <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-client</artifactId>
-        <version>11.0.14</version>
-    </dependency>
+		<!-- ALPN support -->
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-alpn-server</artifactId>
+			<version>11.0.14</version>
+		</dependency>
+		<!-- ALPN support -->
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-alpn-java-server</artifactId>
+			<version>11.0.14</version>
+		</dependency>
 
-    <!-- HTTP/2 Client support -->
-    <dependency>
-        <groupId>org.eclipse.jetty.http2</groupId>
-        <artifactId>http2-client</artifactId>
-        <version>11.0.14</version>
-    </dependency>
+		<!-- Servlet API (if you want to add servlet support) -->
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-servlet</artifactId>
+			<version>11.0.14</version>
+		</dependency>
 
-    <!-- ALPN support for Java 11+ (client side) -->
-    <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-alpn-java-client</artifactId>
-        <version>11.0.14</version>
-    </dependency>
 
-    <dependency>
-        <groupId>org.eclipse.jetty.http2</groupId>
-        <artifactId>http2-http-client-transport</artifactId>
-        <version>11.0.14</version>
-    </dependency>
+		<!-- For client side Jetty -->
+
+		<!-- Core Jetty HTTP client -->
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-client</artifactId>
+			<version>11.0.14</version>
+		</dependency>
+
+		<!-- HTTP/2 Client support -->
+		<dependency>
+			<groupId>org.eclipse.jetty.http2</groupId>
+			<artifactId>http2-client</artifactId>
+			<version>11.0.14</version>
+		</dependency>
+
+		<!-- ALPN support for Java 11+ (client side) -->
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-alpn-java-client</artifactId>
+			<version>11.0.14</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.eclipse.jetty.http2</groupId>
+			<artifactId>http2-http-client-transport</artifactId>
+			<version>11.0.14</version>
+		</dependency>
 
 
 

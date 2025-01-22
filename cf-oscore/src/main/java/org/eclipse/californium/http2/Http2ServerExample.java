@@ -1,4 +1,4 @@
-package org.eclipse.californium.oscore.federated;
+package org.eclipse.californium.http2;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
@@ -12,8 +12,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-
-public class Http2ServerTest {
+public class Http2ServerExample {
 
 	public static void main(String[] args) throws Exception {
 
@@ -59,7 +58,7 @@ public class Http2ServerTest {
 		server.setHandler(context);
 
 		// Add a simple Hello World servlet
-		context.addServlet(new ServletHolder(new HelloWorldServlet()), "/model");
+		context.addServlet(new ServletHolder(new ResourceServlet()), "/model");
 		//
 
 		server.start();
