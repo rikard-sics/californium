@@ -1,6 +1,8 @@
 package org.eclipse.californium.http2;
 
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
@@ -31,7 +33,10 @@ public class Http2ClientExample {
 		httpClient.start();
 		try {
 			// Perform a GET request over HTTP/2
-			ContentResponse response = httpClient.GET("https://localhost:8443/model");
+			httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, "grpc-java-netty/1.69.1"));
+
+			ContentResponse response = httpClient.GET("https://localhost:8443/helloworld.Greeter/SayHello");
+
 			System.out.println("Status: " + response.getStatus());
 			System.out.println("Response: " + response.getContentAsString());
 		} finally {

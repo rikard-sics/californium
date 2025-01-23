@@ -58,7 +58,7 @@ public class Http2ServerExample {
 		server.setHandler(context);
 
 		// Add a simple Hello World servlet
-		context.addServlet(new ServletHolder(new ResourceServlet()), "/model");
+		context.addServlet(new ServletHolder(new ResourceServlet()), "/helloworld.Greeter/SayHello");
 		//
 
 		server.start();
