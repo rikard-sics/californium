@@ -12,14 +12,28 @@ import org.eclipse.jetty.util.ssl.SslContextFactory.Client.SniProvider;
 
 public class Http2ClientExample {
 
+	static final boolean USE_TLS = false;
+	static String scheme;
+	static int port;
+
 	public static void main(String[] args) throws Exception {
+
+		if (USE_TLS) {
+			scheme = "https";
+			port = 8443;
+		} else {
+			scheme = "http";
+			port = 8080;
+		}
 
 		ClientConnector connector = new ClientConnector();
 
 		SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
 		sslContextFactory.setTrustAll(true);
 		sslContextFactory.setSNIProvider(SniProvider.NON_DOMAIN_SNI_PROVIDER);
-		connector.setSslContextFactory(sslContextFactory);
+		if (USE_TLS) {
+			connector.setSslContextFactory(sslContextFactory);
+		}
 
 		// Low-level HTTP/2 engine
 		HTTP2Client http2Client = new HTTP2Client(connector);
@@ -35,7 +49,7 @@ public class Http2ClientExample {
 			// Perform a GET request over HTTP/2
 			httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, "grpc-java-netty/1.69.1"));
 
-			ContentResponse response = httpClient.GET("https://localhost:8443/helloworld.Greeter/SayHello");
+			ContentResponse response = httpClient.GET(scheme + "://localhost:" + port + "/helloworld.Greeter/SayHello");
 
 			System.out.println("Status: " + response.getStatus());
 			System.out.println("Response: " + response.getContentAsString());
