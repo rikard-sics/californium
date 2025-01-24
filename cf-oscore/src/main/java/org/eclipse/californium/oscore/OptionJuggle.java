@@ -407,7 +407,7 @@ public class OptionJuggle {
 		}
 
 		// TODO: Avoid using BigInteger
-		BigInteger partialIVBi = new BigInteger(partialIV);
+		BigInteger partialIVBi = new BigInteger(1, partialIV);
 		int ret = partialIVBi.intValue();
 
 		return ret;
