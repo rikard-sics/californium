@@ -442,7 +442,7 @@ public class FederatedServer {
 			} else {
 
 				RecordReader rrTrain = new CSVRecordReader(numLinesToSkip, delimiter);
-				numTrunks = maxServers / serverCount; // Get the number of
+				numTrunks = Math.floorDiv(maxServers, serverCount); // Get the number of
 														// trunks to read files
 				startTrunkId = numTrunks * serverId; // Get the starting Trunk
 														// Id
@@ -497,7 +497,7 @@ public class FederatedServer {
 			} else {
 
 				RecordReader rr = new CSVRecordReader(numLinesToSkip, delimiter);
-				numTrunks = maxServers / serverCount; // Get the number of
+				numTrunks =Math.floorDiv(maxServers, serverCount); // Get the number of
 														// trunks to read files
 				startTrunkId = numTrunks * serverId; // Get the starting Trunk
 														// Id
@@ -543,7 +543,7 @@ public class FederatedServer {
 			} else {
 
 				RecordReader rr = new CSVRecordReader(numLinesToSkip, delimiter);
-				numTrunks = maxServers / serverCount; // Get the number of
+				numTrunks = Math.floorDiv(maxServers, serverCount); // Get the number of
 														// trunks to read files
 				startTrunkId = numTrunks * serverId; // Get the starting Trunk
 														// Id
