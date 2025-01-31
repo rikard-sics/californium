@@ -215,7 +215,7 @@ public class SimpleProxyProxy {
 		CoapResource targets = new CoapResource("targets");
 		coapProxyServer.add(targets);
 
-		// HTTP Proxy which forwards http request to coap server and forwards
+		/*// HTTP Proxy which forwards http request to coap server and forwards
 		// translated coap response back to http client
 		httpServer = ProxyHttpServer.buider()
 				.setConfiguration(config)
@@ -228,6 +228,7 @@ public class SimpleProxyProxy {
 		httpServer.start();
 		System.out.println("** HTTP Local at: http://localhost:" + httpPort + "/local/");
 		System.out.println("** HTTP Proxy at: http://localhost:" + httpPort + "/proxy/");
+		*/
 
 		coapProxyServer.start();
 		System.out.println("** CoAP Proxy at: coap://localhost:" + coapPort + "/coap2http");

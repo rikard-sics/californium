@@ -141,10 +141,25 @@ public class ObjectSecurityLayer extends AbstractLayer {
 							}
 						});
 						super.sendRequest(exchange, request);
-						return;
+						return; 
 					}
 				}
-
+				
+				/* 	OSCORE option is ordered CBOR array/list/map of proxy endpoints 
+				 * How to get CID? extract from context based on URI? or
+				 * Hardcode CBOR with (URI, CID, IDCONTEXT) into OSCORE option? 
+				 * 
+				 * 	i.e. 1,2,3 with topology 1-> 2-> 3-> not 2->1-->3
+				 * 
+				 * if has proxy uri (check if proxying happens (why? to skip?))
+				 * 		if (InstructionList(CBOR) (from oscore option) > 1 or 0 (depends) remove after consumption/pop )
+				 * 			retrieve the correct context
+				 * 			apply context to request
+				 * 
+				 * 
+				 * 
+				 * 
+				 */
 				final String uri;
 				if (request.getOptions().hasProxyUri()) {
 					uri = request.getOptions().getProxyUri();
@@ -175,6 +190,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				 */
 				OSCoreEndpointContextInfo.sendingRequest(ctx, exchange);
 
+				//encryption here
 				final Request preparedRequest = prepareSend(ctxDb, request);
 				final OSCoreCtx finalCtx = ctxDb.getContext(uri);
 
@@ -184,6 +200,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				preparedRequest.addMessageObserver(0, new MessageObserverAdapter() {
 
+					//this isn't called until it is ready to send, i.e. super.sendRequest2
+					//only creates the Token and associates it with the ctx
 					@Override
 					public void onReadyToSend() {
 						Token token = preparedRequest.getToken();
@@ -215,6 +233,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			}
 		}
 		LOGGER.trace("Request: {}", exchange.getRequest());
+		
+		//this is swoosh, no more changes
 		super.sendRequest(exchange, req);
 	}
 

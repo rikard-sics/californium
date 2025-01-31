@@ -83,6 +83,7 @@ public class OptionJuggle {
 		boolean hasProxyScheme = options.hasProxyScheme();
 		boolean hasMaxAge = options.hasMaxAge();
 		boolean hasObserve = options.hasObserve();
+		// hmmm, has OSCORE?
 
 		OptionSet ret = new OptionSet();
 

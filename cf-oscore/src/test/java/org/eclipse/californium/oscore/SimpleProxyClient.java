@@ -37,7 +37,7 @@ public class SimpleProxyClient {
 	public static void main(String[] args) throws OSException, ConnectorException, IOException {
 		OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, null, MAX_UNFRAGMENTED_SIZE);
 		db.addContext(uriLocal, ctx);
-
+		
 		OSCoreCoapStackFactory.useAsDefault(db);
 		CoapClient c = new CoapClient(uriLocal + hello1);
 
@@ -109,8 +109,8 @@ public class SimpleProxyClient {
 	}
 	
 	private static void printResponse(CoapResponse resp) {
-		System.out.println("Token=" + resp.advanced().getTokenString());
 		if (resp != null) {
+			System.out.println("Token=" + resp.advanced().getTokenString());
 			System.out.println("RESPONSE CODE: " + resp.getCode().name() + " " + resp.getCode());
 			if (resp.getPayload() != null) {
 				System.out.print("RESPONSE PAYLOAD: ");
@@ -120,7 +120,8 @@ public class SimpleProxyClient {
 				System.out.println();
 			}
 			System.out.println("RESPONSE TEXT: " + resp.getResponseText());
-		} else {
+		} 
+		else {
 			System.out.println("RESPONSE IS NULL");
 		}
 	}
