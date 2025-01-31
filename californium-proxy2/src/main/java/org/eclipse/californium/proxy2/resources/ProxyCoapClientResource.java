@@ -78,6 +78,7 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 	public void handleRequest(final Exchange exchange) {
 		Request incomingRequest = exchange.getRequest();
 		LOGGER.debug("ProxyCoapClientResource forwards {}", incomingRequest);
+		System.out.println("Forwarding message with Token=" + incomingRequest.getTokenString());
 
 		try {
 			// create the new request from the original

@@ -160,7 +160,9 @@ public class ExampleCrossProxy2 {
 
 	public ExampleCrossProxy2(Configuration config, boolean accept, boolean cache) throws IOException {
 		HttpClientFactory.setNetworkConfig(config);
-		coapPort = config.get(CoapConfig.COAP_PORT);
+		
+		// Add 2 to port number to not locally occupy the servers port
+		coapPort = config.get(CoapConfig.COAP_PORT) + 2;
 		httpPort = config.get(Proxy2Config.HTTP_PORT);
 		int threads = config.get(CoapConfig.PROTOCOL_STAGE_THREAD_COUNT);
 		ProtocolScheduledExecutorService executor = ExecutorsUtil.newProtocolScheduledThreadPool(threads,
