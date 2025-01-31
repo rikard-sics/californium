@@ -78,7 +78,7 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 	public void handleRequest(final Exchange exchange) {
 		Request incomingRequest = exchange.getRequest();
 		LOGGER.debug("ProxyCoapClientResource forwards {}", incomingRequest);
-		System.out.println("Forwarding message with Token=" + incomingRequest.getTokenString());
+		System.out.println("Recieved forwarding Request with " + incomingRequest.getToken());
 
 		try {
 			// create the new request from the original
@@ -112,6 +112,7 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 			outgoingRequest.addMessageObserver(
 					new ProxySendResponseMessageObserver(translator, exchange, cacheKey, cache, this));
 			ClientEndpoints endpoints = mapSchemeToEndpoints.get(outgoingRequest.getScheme());
+			
 			endpoints.sendRequest(outgoingRequest);
 		} catch (TranslationException e) {
 			LOGGER.debug("Proxy-uri option malformed: {}", e.getMessage());
@@ -153,6 +154,7 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 
 		@Override
 		public void onResponse(Response incomingResponse) {
+			System.out.println("Received forwarding Response with " + incomingResponse.getToken());
 			int size = incomingResponse.getPayloadSize();
 			if (!baseResource.checkMaxResourceBodySize(size)) {
 				incomingResponse = new Response(ResponseCode.BAD_GATEWAY);
@@ -164,7 +166,9 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 				cache.cacheResponse(cacheKey, incomingResponse);
 			}
 			ProxyCoapClientResource.LOGGER.debug("ProxyCoapClientResource received {}", incomingResponse);
+		
 			incomingExchange.sendResponse(translator.getResponse(incomingResponse));
+			
 		}
 
 		@Override

@@ -35,7 +35,7 @@ public class SimpleProxyServer {
 		OSCoreCoapStackFactory.useAsDefault(db);
 
 		final CoapServer server = new CoapServer(5683);
-
+		
 		OSCoreResource hello = new OSCoreResource("hello", true) {
 
 			@Override
@@ -54,6 +54,7 @@ public class SimpleProxyServer {
 				System.out.println("Accessing hello/1 resource");
 				Response r = new Response(ResponseCode.CONTENT);
 				r.setPayload("Hello World!");
+				System.out.println("Recieved GET with " + exchange.advanced().getRequest().getToken());
 				exchange.respond(r);
 				//server.destroy();
 			}

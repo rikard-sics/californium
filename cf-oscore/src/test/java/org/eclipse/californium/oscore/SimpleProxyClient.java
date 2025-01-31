@@ -17,7 +17,8 @@ import org.eclipse.californium.elements.exception.ConnectorException;
  *
  */
 public class SimpleProxyClient {
-
+	
+	private final static String ProxyURI = "coap://localhost:5685/target";
 	private final static HashMapCtxDB db = new HashMapCtxDB();
 	private final static String uriLocal = "coap://localhost:5683";
 	private final static String hello1 = "/hello/1";
@@ -41,43 +42,72 @@ public class SimpleProxyClient {
 		CoapClient c = new CoapClient(uriLocal + hello1);
 
 		System.out.println("Sending without proxy");
+		
 		// send without OSCORE
-		Request r = new Request(Code.GET);
-		CoapResponse resp = c.advanced(r);
-		printResponse(resp);
+		SimpleProxyClient.SendGet(c);
+		try { Thread.sleep(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
 		
 		// Send with OSCORE
-		r = new Request(Code.GET);
-		r.getOptions().setOscore(new byte[0]);
-		resp = c.advanced(r);
-		printResponse(resp);
+		SimpleProxyClient.SendGet(c, new byte[0]);
+		try { Thread.sleep(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
 		
 		
 		System.out.println("\nSending with proxy");
-		// Send to through proxy
-		// set URI to proxy
-		c.setURI("coap://localhost:5685/coap2coap");
-				
-		// send without OSCORE through proxy
-		r = new Request(Code.GET);
-		// set URI for proxy to forward/reverse to
-		r.getOptions().setProxyUri(uriLocal + hello1);
-		resp = c.advanced(r);
-		printResponse(resp);
-				
-		// Send with OSCORE through proxy
-		r = new Request(Code.GET);
-		// set URI for proxy to forward/reverse to
-		r.getOptions().setProxyUri(uriLocal + hello1);
-		r.getOptions().setOscore(new byte[0]);
-		resp = c.advanced(r);
-		printResponse(resp);
 		
-		System.out.println("sending ending");
+		// send without OSCORE through proxy
+		SimpleProxyClient.SendGet(c, ProxyURI);
+		try { Thread.sleep(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+		
+		// Send with OSCORE through proxy
+		SimpleProxyClient.SendGet(c, ProxyURI, new byte[0]);
+		try { Thread.sleep(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+		
+		System.out.println("\nSending to proxy");
+		SimpleProxyClient.SendGet(c.setURI(ProxyURI));
+		
+		System.out.println("\nSending ending");
 		
 		c.shutdown();
 	}
 
+	private static void SendGet(CoapClient c) throws IOException, ConnectorException {
+		Request r = new Request(Code.GET);
+		CoapResponse resp = c.advanced(r);
+		printResponse(resp);
+	}
+	
+	private static void SendGet(CoapClient c, String ProxyURI) throws IOException, ConnectorException {
+		final String temp = c.getURI();
+		c.setURI(ProxyURI);
+		
+		Request r = new Request(Code.GET);
+		r.getOptions().setProxyUri(uriLocal + hello1);
+		CoapResponse resp = c.advanced(r);
+		printResponse(resp);
+		
+		c.setURI(temp);
+	}
+	
+	private static void SendGet(CoapClient c, byte[] OscoreOption) throws IOException, ConnectorException {
+		Request r = new Request(Code.GET);
+		r.getOptions().setOscore(OscoreOption);
+		CoapResponse resp = c.advanced(r);
+		printResponse(resp);
+	}
+	
+	private static void SendGet(CoapClient c, String ProxyURI, byte[] OscoreOption) throws IOException, ConnectorException {
+		final String temp = c.getURI();
+		c.setURI(ProxyURI);
+		
+		Request r = new Request(Code.GET);
+		r.getOptions().setOscore(OscoreOption);
+		r.getOptions().setProxyUri(uriLocal + hello1);
+		CoapResponse resp = c.advanced(r);
+		printResponse(resp);
+		
+		c.setURI(temp);
+	}
+	
 	private static void printResponse(CoapResponse resp) {
 		System.out.println("Token=" + resp.advanced().getTokenString());
 		if (resp != null) {
