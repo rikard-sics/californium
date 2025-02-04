@@ -25,6 +25,19 @@ public class ResourceServlet extends HttpServlet {
 
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+		buildResponse(response);
+	}
+
+	@Override
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+		buildResponse(response);
+	}
+
+	/**
+	 * @param response
+	 * @throws IOException
+	 */
+	private void buildResponse(HttpServletResponse response) throws IOException {
 		// Set header values
 
 		response.setContentType("application/grpc");

@@ -1,6 +1,10 @@
 package org.eclipse.californium.http2;
 
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Request.Content;
+import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.client.HttpClient;
@@ -49,7 +53,18 @@ public class Http2ClientExample {
 			// Perform a GET request over HTTP/2
 			httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, "grpc-java-netty/1.69.1"));
 
-			ContentResponse response = httpClient.GET(scheme + "://localhost:" + port + "/helloworld.Greeter/SayHello");
+			Request req = httpClient.POST(scheme + "://localhost:" + port + "/helloworld.Greeter/SayHello");
+			req.header("content-type", "application/grpc");
+
+			String payload = "{\"message\":\"Hello, World!\"}";
+			// StringContentProvider myCont = new
+			// StringContentProvider(payload);
+			BytesContentProvider myCont = new BytesContentProvider(
+					new byte[] { (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x07, (byte) 0x0a,
+							(byte) 0x05, (byte) 0x77, (byte) 0x6f, (byte) 0x72, (byte) 0x6c, (byte) 0x64 });
+			req.content(myCont);
+
+			ContentResponse response = req.send();
 
 			System.out.println("Status: " + response.getStatus());
 			System.out.println("Response: " + response.getContentAsString());
