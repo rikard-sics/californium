@@ -11,6 +11,7 @@ import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.exception.ConnectorException;
 
+import com.upokecenter.cbor.CBORObject; // CBOR
 /**
  * 
  * SimpleProxyClient to display the basic OSCORE mechanics through a proxy
@@ -43,6 +44,30 @@ public class SimpleProxyClient {
 
 		System.out.println("Sending without proxy");
 		
+		/* === In Application ===
+		cborSequence = []
+  		cborSequence.append(CBOR.encodeBstr(EMPTY))
+  		cborSequence.append(CBOR.encodeInt(2))
+  		for i in 0 to instr_count:
+   			mapItem = {}
+   			mapItem["RID"]        = 0xAA     // As appropriate
+   			mapItem["ID_Context"] = 0X112233 // As appropriate
+ 
+   			cborMap = CBOR.encodeMap(mapItem)
+   			cborSequence.append(cborMap)
+ 
+			request.getOptions().setOscore(cborSequence)
+		 */
+		byte[] data = new byte[0];
+		CBORObject[] cborSequence;
+		
+		CBORObject.FromObject(new byte[0]); // init oscore option value
+		
+		CBORObject.DecodeSequenceFromBytes(data);
+		
+	
+	}
+		/*
 		// send without OSCORE
 		SimpleProxyClient.SendGet(c);
 		try { Thread.sleep(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
@@ -107,6 +132,7 @@ public class SimpleProxyClient {
 		
 		c.setURI(temp);
 	}
+	*/
 	
 	private static void printResponse(CoapResponse resp) {
 		if (resp != null) {
