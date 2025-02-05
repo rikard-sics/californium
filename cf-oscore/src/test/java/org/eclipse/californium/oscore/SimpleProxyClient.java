@@ -10,8 +10,10 @@ import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.exception.ConnectorException;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 
-import com.upokecenter.cbor.CBORObject; // CBOR
+import com.upokecenter.cbor.CBORObject;
+
 /**
  * 
  * SimpleProxyClient to display the basic OSCORE mechanics through a proxy
@@ -35,6 +37,16 @@ public class SimpleProxyClient {
 	private final static byte[] rid = new byte[] { 0x01 };
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 
+	private final static byte[][] rids = {
+			new byte[] { 0x01 }, 
+			new byte[] { 0x02 }
+			};
+	
+	private final static byte[][] idcontexts = {
+			new byte[] { 0x01 }, 
+			new byte[] { 0x02 }
+			};
+
 	public static void main(String[] args) throws OSException, ConnectorException, IOException {
 		OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, null, MAX_UNFRAGMENTED_SIZE);
 		db.addContext(uriLocal, ctx);
@@ -44,28 +56,16 @@ public class SimpleProxyClient {
 
 		System.out.println("Sending without proxy");
 		
-		/* === In Application ===
-		cborSequence = []
-  		cborSequence.append(CBOR.encodeBstr(EMPTY))
-  		cborSequence.append(CBOR.encodeInt(2))
-  		for i in 0 to instr_count:
-   			mapItem = {}
-   			mapItem["RID"]        = 0xAA     // As appropriate
-   			mapItem["ID_Context"] = 0X112233 // As appropriate
- 
-   			cborMap = CBOR.encodeMap(mapItem)
-   			cborSequence.append(cborMap)
- 
-			request.getOptions().setOscore(cborSequence)
-		 */
-		byte[] data = new byte[0];
-		CBORObject[] cborSequence;
+		byte[] CBOROption = OptionEncoder.set(rids, idcontexts);
 		
-		CBORObject.FromObject(new byte[0]); // init oscore option value
+		Request r = new Request(Code.GET);
+		r.getOptions().setOscore(CBOROption);
+		CoapResponse resp = c.advanced(r);
+		printResponse(resp);
 		
-		CBORObject.DecodeSequenceFromBytes(data);
-		
-	
+		System.out.println("\nSending ending");
+
+		c.shutdown();
 	}
 		/*
 		// send without OSCORE

@@ -70,6 +70,41 @@ public class OptionEncoder {
 	public static byte[] set(boolean pairwiseMode, String contextUri) {
 		return set(pairwiseMode, contextUri, null);
 	}
+	
+	/**
+	 * here be Javadoc
+	 * @param endpoints ordered array of endpoints
+	 */
+	public static byte[] set(byte[][] rids, byte[][] idcontexts) {
+		if (rids.length != idcontexts.length) { 
+			System.out.println("mismatch length of rids and idcontexts"); 
+		} // should maybe be {throw Exception} 
+		
+		// container for all oscore options
+		CBORObject option = CBORObject.NewMap();
+		
+		// container for instructions
+		CBORObject instructions = CBORObject.NewArray();
+		
+		// initial real oscore value and index
+		instructions.Add(new byte[0]);
+		instructions.Add(2);
+		
+		// append rid and idcontext to instruction array
+		for (int i = 0; i < rids.length; i++) {
+			CBORObject map = CBORObject.NewOrderedMap();
+			map.Add("rid",rids[i]);
+			map.Add("idcontexts",idcontexts[i]);
+			
+			instructions.Add(map);
+		}
+
+		option.Add(5, instructions);
+		
+		System.out.println(option);
+		
+		return option.EncodeToBytes();
+	}
 
 	/**
 	 * Get the pairwise mode boolean value from the option.
