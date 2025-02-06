@@ -246,12 +246,10 @@ public abstract class Decryptor {
 		}
 
 		System.out.println("Decrypting incoming " + message.getClass().getSimpleName());
-		System.out.println("Key " + Utils.toHexString(ctx.getRecipientKey()));
 		System.out.println("PartialIV " + Utils.toHexString(partialIV));
 		System.out.println("Nonce " + Utils.toHexString(nonce));
 		System.out.println("Common IV " + Utils.toHexString(ctx.getCommonIV()));
 		System.out.println("AAD " + Utils.toHexString(aad));
-		System.out.println("Common IV " + Utils.toHexString(ctx.getCommonIV()));
 		
 		byte[] plaintext = null;
 		byte[] key = ctx.getRecipientKey();
@@ -345,7 +343,7 @@ public abstract class Decryptor {
 		System.out.println("PartialIV " + Utils.toHexString(partialIV));
 		System.out.println("Nonce " + Utils.toHexString(nonce));
 		System.out.println("AAD " + Utils.toHexString(aad));
-		
+
 		enc.setExternal(aad);
 
 		// Check signature before decrypting
@@ -469,6 +467,7 @@ public abstract class Decryptor {
 
 		if (cipherText != null)
 			enc.setEncryptedContent(cipherText);
+		System.out.println("Ciphertext: " + Utils.toHexString(cipherText));
 		return enc;
 	}
 
