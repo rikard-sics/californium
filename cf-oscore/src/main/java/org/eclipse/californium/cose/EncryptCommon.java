@@ -47,7 +47,6 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.scandium.dtls.cipher.CCMBlockCipher;
 import org.eclipse.californium.scandium.dtls.cipher.ThreadLocalCipher;
 
