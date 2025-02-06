@@ -37,8 +37,6 @@ package org.eclipse.californium.cose;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
-import net.i2p.crypto.eddsa.Utils;
-
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.AlgorithmParameterSpec;
@@ -185,31 +183,16 @@ public abstract class EncryptCommon extends Message {
 
 	// Method taken from EncryptCommon in COSE. This will provide the full AAD /
 	// Encrypt0-structure.
-	//
-	// ===
-	// Fix is not applied when AAD is not retrieved, such as for the no-MAC
-	// algos ===
 	private byte[] getAADBytes() {
 		CBORObject obj = CBORObject.NewArray();
-
-		if (objProtected != null) {
-			System.out.println("Checking objProtected before fix: " + Utils.bytesToHex(objProtected.EncodeToBytes()));			
-		} else {
-			System.out.println("Checking objProtected before fix: " + "NULL");
-		}
-		
 
 		obj.Add(context);
 
 		// Fix issue with rgbProtected being NULL instead of empty CBOR bstr
 		if (objProtected.size() == 0)
-		{
 			rgbProtected = new byte[0];
-			System.out.println("** Did normal fix");
-		} else {
+		else
 			rgbProtected = objProtected.EncodeToBytes();
-			System.out.println("** No normal fix");
-		}
 
 		obj.Add(rgbProtected);
 		obj.Add(CBORObject.FromObject(externalData));
@@ -646,12 +629,6 @@ public abstract class EncryptCommon extends Message {
 			}
 		}
 
-		System.out.println("## rgbBodyProtect: " + rgbProtected);
-		System.out.println("## rgbBodyProtect: " + Utils.bytesToHex(rgbProtected));
-
-		System.out.println("## rgbEncrypt: " + rgbEncrypt);
-		System.out.println("## rgbEncrypt: " + Utils.bytesToHex(rgbEncrypt));
-
 		if (counterSign1 != null) {
 			counterSign1.sign(rgbProtected, rgbEncrypt);
 			addAttribute(HeaderKeys.CounterSignature0, counterSign1.EncodeToCBORObject(), Attribute.UNPROTECTED);
@@ -663,13 +640,10 @@ public abstract class EncryptCommon extends Message {
 
 		// Fix issue with rgbProtected being NULL instead of empty CBOR bstr
 		// when doing verification before decryption.
-		if (objProtected.size() == 0) {
+		if (objProtected.size() == 0)
 			rgbProtected = new byte[0];
-			System.out.println("Did normal fix");
-		} else {
+		else
 			rgbProtected = objProtected.EncodeToBytes();
-			System.out.println("No normal fix");
-		}
 
 		return countersignature.validate(rgbProtected, rgbEncrypt);
 	}
