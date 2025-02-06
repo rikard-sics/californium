@@ -21,8 +21,12 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.Security;
+
+import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
 
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
@@ -37,6 +41,7 @@ import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.elements.util.JceProviderUtil;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
@@ -85,7 +90,8 @@ public class GroupOSCORESender {
 	 */
 	// static final InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
+	// static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
+	static InetAddress multicastIP = null;
 
 	/**
 	 * Port to send to.
@@ -111,7 +117,7 @@ public class GroupOSCORESender {
 
 	/* --- OSCORE Security Context information (sender) --- */
 	private final static HashMapCtxDB db = new HashMapCtxDB();
-	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
+	private final static AlgorithmID alg = AlgorithmID.CHACHA20_POLY1305;
 	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
 
 	// Group OSCORE specific values for the countersignature (EdDSA)
@@ -167,6 +173,33 @@ public class GroupOSCORESender {
 	 * @throws Exception on setup or message processing failure
 	 */
 	public static void main(String args[]) throws Exception {
+
+		//
+		JceProviderUtil.init();
+		boolean supportStrongCrypto = JceProviderUtil.hasStrongEncryption();
+		boolean supportGcm = false;
+		boolean supportChaChaPoly = false;
+
+		try {
+			Cipher.getInstance("AES/GCM/NoPadding");
+			supportGcm = true;
+		} catch (NoSuchAlgorithmException e) {
+		} catch (NoSuchPaddingException e) {
+		}
+
+		try {
+			Cipher.getInstance("ChaCha20-Poly1305");
+			supportChaChaPoly = true;
+		} catch (NoSuchAlgorithmException e) {
+		} catch (NoSuchPaddingException e) {
+		}
+		System.out.println("supportStrongCrypto: " + supportStrongCrypto);
+		System.out.println("supportGcm: " + supportGcm);
+		System.out.println("supportChaChaPoly: " + supportChaChaPoly);
+		//
+
+		multicastIP = InetAddress.getByName("127.0.0.1");
+
 		/**
 		 * URI to perform request against. Need to check for IPv6 to surround it
 		 * with []
@@ -201,8 +234,8 @@ public class GroupOSCORESender {
 			commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
 			commonCtx.addRecipientCtxCcs(rid2, REPLAY_WINDOW, rid2_public_key);
 
-			commonCtx.setResponsesIncludePartialIV(true);
-			commonCtx.setResponsesIncludePartialIV(true);
+			commonCtx.setPairwiseModeResponses(true);
+			commonCtx.setResponsesIncludePartialIV(false);
 
 			db.addContext(requestURI, commonCtx);
 

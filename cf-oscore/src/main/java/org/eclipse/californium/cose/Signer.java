@@ -7,6 +7,9 @@ package org.eclipse.californium.cose;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
+
+import net.i2p.crypto.eddsa.Utils;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -184,6 +187,9 @@ public class Signer extends Attribute {
             else rgbProtected = objProtected.EncodeToBytes();
         }
         
+		// DID FIX HERE
+		// rgbBodyProtected = new byte[0];
+
         CBORObject obj = CBORObject.NewArray();
         obj.Add(contextString);
         obj.Add(rgbBodyProtected);
@@ -191,10 +197,17 @@ public class Signer extends Attribute {
         obj.Add(externalData);
         obj.Add(rgbContent);
 
+		System.out.println("rgbBodyProtect: " + rgbBodyProtected);
+		System.out.println("rgbBodyProtect: " + Utils.bytesToHex(rgbBodyProtected));
+
+		System.out.println("rgbProtected: " + rgbProtected);
+		System.out.println("rgbProtected: " + Utils.bytesToHex(rgbProtected));
+
         AlgorithmID alg = AlgorithmID.FromCBOR(findAttribute(HeaderKeys.Algorithm));
         
         rgbSignature = SignCommon.computeSignature(alg, obj.EncodeToBytes(), cnKey);   
         
+
         ProcessCounterSignatures();
     }
     
@@ -250,6 +263,12 @@ public class Signer extends Attribute {
             }
         }
         
+		System.out.println("xx rgbBodyProtect: " + rgbProtected);
+		System.out.println("xx rgbBodyProtect: " + Utils.bytesToHex(rgbProtected));
+
+		System.out.println("xx rgbSignature: " + rgbSignature);
+		System.out.println("xx rgbSignature: " + Utils.bytesToHex(rgbSignature));
+
         if (counterSign1 != null) {
             counterSign1.sign(rgbProtected, rgbSignature);
             addAttribute(HeaderKeys.CounterSignature0, counterSign1.EncodeToCBORObject(), Attribute.UNPROTECTED);
