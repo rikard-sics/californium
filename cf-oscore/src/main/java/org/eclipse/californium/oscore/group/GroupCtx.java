@@ -24,7 +24,6 @@ import java.util.Map.Entry;
 
 import javax.crypto.KeyAgreement;
 
-import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.EncryptCommon;
@@ -476,14 +475,6 @@ public class GroupCtx {
 		info.Add(this.aeadAlg.AsCBOR());
 		info.Add(CBORObject.FromObject("Key"));
 		info.Add(this.aeadAlg.getKeySize() / 8);
-
-		System.out.println("=====");
-		System.out.println("Pairwise key derivation. ");
-
-		System.out.println("Info for pairwise keys: " + Utils.toHexString(info.EncodeToBytes()));
-		System.out.println("Shared secret: " + Utils.toHexString(sharedSecret));
-
-		System.out.println("=====");
 
 		System.out.println("derivePairwiseSenderKey");
 		System.out.println("sharedSecret: " + StringUtil.byteArray2HexString(sharedSecret));
