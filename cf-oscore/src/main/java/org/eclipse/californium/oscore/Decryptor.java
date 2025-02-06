@@ -98,12 +98,10 @@ public abstract class Decryptor {
 			int algGroupEncIvLen = EncryptCommon.getIvLength(((GroupRecipientCtx) ctx).getAlgGroupEnc());
 			nonceLength = algGroupEncIvLen;
 			commonIV = Arrays.copyOfRange(ctx.getCommonIV(), 0, nonceLength);
-			System.out.println("AAA " + nonceLength + " " + ((GroupRecipientCtx) ctx).getAlgGroupEnc());
 		} else if (ctx.isGroupContext() && !groupModeMessage) {
 			int algIvLen = EncryptCommon.getIvLength(((GroupRecipientCtx) ctx).getAlg());
 			nonceLength = algIvLen;
 			commonIV = Arrays.copyOfRange(ctx.getCommonIV(), 0, nonceLength);
-			System.out.println("BBB " + nonceLength);
 		}
 		System.out.println("Decryption nonce length: " + nonceLength);
 
@@ -216,6 +214,7 @@ public abstract class Decryptor {
 		System.out.println("AAD " + Utils.toHexString(aad));
 		System.out.println("Recipient Key " + Utils.toHexString(ctx.getRecipientKey()));
 		System.out.println("Key used " + Utils.toHexString(key));
+
 		enc.setExternal(aad);
 
 		// Check signature before decrypting
@@ -299,7 +298,7 @@ public abstract class Decryptor {
 
 		if (cipherText != null)
 			enc.setEncryptedContent(cipherText);
-		System.out.println("Ciphertext: " + Utils.toHexString(cipherText));
+
 		return enc;
 	}
 

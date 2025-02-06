@@ -44,7 +44,6 @@ import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 import org.eclipse.californium.oscore.OSCoreCtxDB;
 import org.eclipse.californium.oscore.OSException;
-import org.eclipse.californium.oscore.OscoreOptionDecoder;
 import org.eclipse.californium.oscore.RequestDecryptor;
 import org.eclipse.californium.oscore.ResponseDecryptor;
 import org.eclipse.californium.rule.CoapNetworkRule;
@@ -59,8 +58,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.upokecenter.cbor.CBORObject;
-
-import net.i2p.crypto.eddsa.Utils;
 
 /**
  * Test message decryption for Group OSCORE

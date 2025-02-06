@@ -118,7 +118,7 @@ public class GroupOSCORESender {
 	private final static AlgorithmID algCountersign = AlgorithmID.EDDSA;
 
 	// Encryption algorithm for when using Group mode
-	private final static AlgorithmID algGroupEnc = AlgorithmID.CHACHA20_POLY1305;
+	private final static AlgorithmID algGroupEnc = AlgorithmID.AES_CCM_16_64_128;
 
 	// Algorithm for key agreement
 	private final static AlgorithmID algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
@@ -200,9 +200,6 @@ public class GroupOSCORESender {
 			commonCtx.addRecipientCtxCcs(rid0, REPLAY_WINDOW, null);
 			commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
 			commonCtx.addRecipientCtxCcs(rid2, REPLAY_WINDOW, rid2_public_key);
-
-			commonCtx.setResponsesIncludePartialIV(true);
-			commonCtx.setResponsesIncludePartialIV(true);
 
 			db.addContext(requestURI, commonCtx);
 
