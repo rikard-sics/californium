@@ -109,14 +109,14 @@ public class GroupOSCOREReceiver {
 	/* --- OSCORE Security Context information (receiver) --- */
 	private final static HashMapCtxDB db = new HashMapCtxDB();
 	private final static String uriLocal = "coap://localhost";
-	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
+	private final static AlgorithmID alg = AlgorithmID.CHACHA20_POLY1305;
 	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
 
 	// Group OSCORE specific values for the countersignature (EdDSA)
 	private final static AlgorithmID algCountersign = AlgorithmID.EDDSA;
 
 	// Encryption algorithm for when using Group mode
-	private final static AlgorithmID algGroupEnc = AlgorithmID.CHACHA20_POLY1305;
+	private final static AlgorithmID algGroupEnc = AlgorithmID.A128CBC;
 
 	// Algorithm for key agreement
 	private final static AlgorithmID algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
@@ -194,7 +194,7 @@ public class GroupOSCOREReceiver {
 			commonCtx.addRecipientCtxCcs(rid1, REPLAY_WINDOW, rid1_public_key);
 
 			commonCtx.setResponsesIncludePartialIV(false);
-			commonCtx.setPairwiseModeResponses(true);
+			commonCtx.setPairwiseModeResponses(false);
 
 			OSCoreCtx.DISABLE_REPLAY_CHECKS = true;
 			db.addContext(uriLocal, commonCtx);
@@ -206,8 +206,9 @@ public class GroupOSCOREReceiver {
 		random = new Random();
 
 		Configuration config = Configuration.getStandard();
-		CoapServer server = new CoapServer(config);
-		createEndpoints(server, listenPort, listenPort, config);
+		// CoapServer server = new CoapServer(config);
+		CoapServer server = new CoapServer(5683);
+		// createEndpoints(server, listenPort, listenPort, config);
 		Endpoint endpoint = server.getEndpoint(listenPort);
 		server.add(new HelloWorldResource());
 
@@ -229,7 +230,7 @@ public class GroupOSCOREReceiver {
 		server.start();
 	}
 
-	private static class HelloWorldResource extends OSCoreResource {
+	private static class HelloWorldResource extends CoapResource {
 
 		private int id;
 		private int count = 0;
