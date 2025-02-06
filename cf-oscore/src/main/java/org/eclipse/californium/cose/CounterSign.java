@@ -7,8 +7,6 @@ package org.eclipse.californium.cose;
 
 import com.upokecenter.cbor.CBORObject;
 
-import net.i2p.crypto.eddsa.Utils;
-
 /**
  *
  * @author jimsch
@@ -45,12 +43,6 @@ public class CounterSign extends Signer {
         if (message.objProtected.size() > 0) rgbBodyProtect = message.objProtected.EncodeToBytes();
         else rgbBodyProtect = new byte[0];
         
-		System.out.println("** rgbBodyProtect: " + rgbBodyProtect);
-		System.out.println("** rgbBodyProtect: " + Utils.bytesToHex(rgbBodyProtect));
-
-		System.out.println("** message.objProtected: " + message.objProtected);
-		System.out.println("** message.objProtected: " + Utils.bytesToHex(message.objProtected.EncodeToBytes()));
-
         sign(rgbBodyProtect, message.rgbContent);        
     }
     

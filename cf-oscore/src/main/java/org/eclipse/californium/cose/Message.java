@@ -260,12 +260,6 @@ public abstract class Message extends Attribute {
 			}
 		}
 
-		System.out.println("ww rgbBodyProtect: " + rgbProtected);
-		System.out.println("ww rgbBodyProtect: " + Utils.bytesToHex(rgbProtected));
-
-		System.out.println("ww rgbEncrypt: " + rgbContent);
-		System.out.println("w rgbEncrypt: " + Utils.bytesToHex(rgbContent));
-
 		if (counterSign1 != null) {
 			counterSign1.sign(rgbProtected, rgbContent);
 			addAttribute(HeaderKeys.CounterSignature0, counterSign1.EncodeToCBORObject(), Attribute.UNPROTECTED);
