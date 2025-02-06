@@ -101,6 +101,8 @@ public abstract class Encryptor {
 		groupModeMessage = ctx.isGroupContext() && !pairwiseResponse && !pairwiseRequest;
 		int nonceLength = ctx.getIVLength();
 		byte[] commonIV = ctx.getCommonIV();
+
+		// Set appropriate nonce length
 		if (ctx.isGroupContext() && groupModeMessage) {
 			int algGroupEncIvLen = EncryptCommon.getIvLength(((GroupSenderCtx) ctx).getAlgGroupEnc());
 			nonceLength = algGroupEncIvLen;
@@ -188,11 +190,9 @@ public abstract class Encryptor {
 			}
 
 			System.out.println("Encrypting outgoing " + message.getClass().getSimpleName());
-			System.out.println("Key " + Utils.toHexString(ctx.getSenderKey()));
 			System.out.println("Plaintext " + Utils.toHexString(enc.GetContent()));
 			System.out.println("PartialIV " + Utils.toHexString(partialIV));
 			System.out.println("Nonce " + Utils.toHexString(nonce));
-			System.out.println("AAD " + Utils.toHexString(aad));
 			System.out.println("Common IV " + Utils.toHexString(ctx.getCommonIV()));
 
 			// Handle Group OSCORE messages
@@ -324,7 +324,7 @@ public abstract class Encryptor {
 			if (isRequest) {
 				System.out.println("\nDeterministic request: " + isDetReq + "\n");
 			}
-			
+
 			// Warning: Using algos without integrity in pairwise mode
 			if (encryptionAlg.getTagSize() == 0 && !groupModeMessage) {
 				LOGGER.warn("Using an algorithm without integrity protection in pairwise mode!");
