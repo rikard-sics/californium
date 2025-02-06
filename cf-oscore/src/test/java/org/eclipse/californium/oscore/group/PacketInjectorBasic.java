@@ -28,7 +28,7 @@ public class PacketInjectorBasic {
 		byte[] buffer = StringUtil.hex2ByteArray(message);
 
 
-		InetAddress address = InetAddress.getByName("31.133.128.149");
+		InetAddress address = InetAddress.getByName("127.0.0.1");
 		DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, dstPort);
 		DatagramSocket datagramSocket = new DatagramSocket(5683, address);
 		datagramSocket.send(packet);

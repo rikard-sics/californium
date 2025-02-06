@@ -28,7 +28,6 @@ import java.security.Provider;
 import java.security.Security;
 import java.util.Random;
 
-import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
@@ -116,7 +115,7 @@ public class GroupOSCOREReceiver {
 	private final static AlgorithmID algCountersign = AlgorithmID.EDDSA;
 
 	// Encryption algorithm for when using Group mode
-	private final static AlgorithmID algGroupEnc = AlgorithmID.CHACHA20_POLY1305;
+	private final static AlgorithmID algGroupEnc = AlgorithmID.AES_CCM_16_64_128;
 
 	// Algorithm for key agreement
 	private final static AlgorithmID algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
@@ -196,7 +195,7 @@ public class GroupOSCOREReceiver {
 			commonCtx.setResponsesIncludePartialIV(false);
 			commonCtx.setPairwiseModeResponses(true);
 
-			OSCoreCtx.DISABLE_REPLAY_CHECKS = true;
+			OSCoreCtx.DISABLE_REPLAY_CHECKS = false;
 			db.addContext(uriLocal, commonCtx);
 
 			OSCoreCoapStackFactory.useAsDefault(db);
