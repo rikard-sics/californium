@@ -49,6 +49,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.eclipse.californium.scandium.dtls.cipher.CCMBlockCipher;
 import org.eclipse.californium.scandium.dtls.cipher.ThreadLocalCipher;
+import org.junit.Assert;
 
 /**
  * 
@@ -185,6 +186,8 @@ public abstract class EncryptCommon extends Message {
 		CBORObject obj = CBORObject.NewArray();
 
 		obj.Add(context);
+
+		// Fix issue with rgbProtected being NULL instead of empty CBOR bstr
 		if (objProtected.size() == 0)
 			rgbProtected = new byte[0];
 		else
@@ -192,6 +195,8 @@ public abstract class EncryptCommon extends Message {
 
 		obj.Add(rgbProtected);
 		obj.Add(CBORObject.FromObject(externalData));
+
+		Assert.assertNotNull("rgbProtected is null!", rgbProtected);
 
 		return obj.EncodeToBytes();
 	}
@@ -591,6 +596,13 @@ public abstract class EncryptCommon extends Message {
 
 	@Override
 	protected void ProcessCounterSignatures() throws CoseException {
+
+		// Fix issue with rgbProtected being NULL instead of empty CBOR bstr
+		if (objProtected.size() == 0)
+			rgbProtected = new byte[0];
+		else
+			rgbProtected = objProtected.EncodeToBytes();
+
 		if (!counterSignList.isEmpty()) {
 			if (counterSignList.size() == 1) {
 				counterSignList.get(0).sign(rgbProtected, rgbEncrypt);
