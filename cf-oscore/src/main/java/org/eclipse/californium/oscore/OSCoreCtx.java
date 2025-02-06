@@ -794,7 +794,7 @@ public class OSCoreCtx {
 	}
 
 	// For interop testing
-	public static boolean DISABLE_REPLAY_CHECKS = false;
+	public static boolean DISABLE_REPLAY_CHECKS = true;
 
 	/**
 	 * Checks and validates the sequence number for incoming messages.

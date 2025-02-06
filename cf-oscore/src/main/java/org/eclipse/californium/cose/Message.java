@@ -44,6 +44,7 @@ import java.nio.charset.StandardCharsets;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
+import net.i2p.crypto.eddsa.Utils;
 import java.util.ArrayList;
 import java.util.List;
 import org.eclipse.californium.elements.util.StandardCharsets;
@@ -258,6 +259,12 @@ public abstract class Message extends Attribute {
 				addAttribute(HeaderKeys.CounterSignature, list, Attribute.UNPROTECTED);
 			}
 		}
+
+		System.out.println("ww rgbBodyProtect: " + rgbProtected);
+		System.out.println("ww rgbBodyProtect: " + Utils.bytesToHex(rgbProtected));
+
+		System.out.println("ww rgbEncrypt: " + rgbContent);
+		System.out.println("w rgbEncrypt: " + Utils.bytesToHex(rgbContent));
 
 		if (counterSign1 != null) {
 			counterSign1.sign(rgbProtected, rgbContent);
