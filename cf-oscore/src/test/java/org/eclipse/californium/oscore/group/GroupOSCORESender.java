@@ -19,6 +19,7 @@ package org.eclipse.californium.oscore.group;
 import java.io.File;
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Provider;
@@ -85,6 +86,8 @@ public class GroupOSCORESender {
 	 */
 	// static final InetAddress multicastIP = new
 	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
+	// static final InetAddress multicastIP = new InetSocketAddress("127.0.0.1",
+	// 0).getAddress();
 	static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
 
 	/**
@@ -218,7 +221,7 @@ public class GroupOSCORESender {
 		Request multicastRequest = Request.newPost();
 		multicastRequest.setPayload(requestPayload);
 		multicastRequest.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
-		multicastRequest.setType(Type.CON);
+		multicastRequest.setType(Type.NON);
 		if (useOSCORE) {
 			// For group mode request
 			multicastRequest.getOptions().setOscore(Bytes.EMPTY);
