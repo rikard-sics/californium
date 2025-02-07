@@ -18,6 +18,7 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
+import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Token;
 
 /**
@@ -32,6 +33,15 @@ public interface OSCoreCtxDB {
 	 * @return the OSCore context
 	 */
 	public OSCoreCtx getContext(byte[] cid);
+
+	/**
+	 * Retrieve a context also using the ID Context
+	 * 
+	 * @param request the request
+	 * @return the OSCore context
+	 * @throws OSException when retrieving URI from request and finds none
+	 */
+	public OSCoreCtx getContext(Request request) throws OSException;
 
 	/**
 	 * Retrieve a context also using the ID Context

@@ -16,6 +16,8 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore.group;
 
+import org.eclipse.californium.oscore.OSException;
+
 import com.upokecenter.cbor.CBORObject;
 
 /**
@@ -93,8 +95,8 @@ public class OptionEncoder {
 		// append rid and idcontext to instruction array
 		for (int i = 0; i < rids.length; i++) {
 			CBORObject map = CBORObject.NewOrderedMap();
-			map.Add("rid",rids[i]);
-			map.Add("idcontexts",idcontexts[i]);
+			map.Add("RID",rids[i]);
+			map.Add("IDCONTEXT",idcontexts[i]);
 			
 			instructions.Add(map);
 		}
@@ -142,5 +144,23 @@ public class OptionEncoder {
 		CBORObject option = CBORObject.DecodeFromBytes(optionBytes);
 		return option.get(3).GetByteString();
 	}
+	
 
+	public static CBORObject getInstructions(byte[] optionBytes) {
+		CBORObject option = CBORObject.DecodeFromBytes(optionBytes);		
+		return option.get(5);
+	}
+
+	public static boolean containsInstructions(byte[] optionBytes) throws OSException {
+		try {
+			CBORObject option = CBORObject.DecodeFromBytes(optionBytes);
+			return option.ContainsKey(5);
+		} catch (com.upokecenter.cbor.CBORException e) {
+			if ( e.getLocalizedMessage().equals("data is empty.")) {
+				return false;
+			} else {
+				throw new OSException(e.getLocalizedMessage());
+			}
+		}
+	}
 }

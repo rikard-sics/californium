@@ -20,6 +20,9 @@ package org.eclipse.californium.oscore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.upokecenter.cbor.CBORObject;
+
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
@@ -27,11 +30,16 @@ import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.Token;
+
+import java.util.Objects;
+
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ContextRederivation.PHASE;
+import org.eclipse.californium.oscore.group.OptionEncoder;
+
 
 /**
  * 
@@ -145,34 +153,16 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					}
 				}
 				
-				/* 	OSCORE option is ordered CBOR array/list/map of proxy endpoints 
-				 * How to get CID? extract from context based on URI? or
-				 * Hardcode CBOR with (URI, CID, IDCONTEXT) into OSCORE option? 
-				 * 
-				 * 	i.e. 1,2,3 with topology 1-> 2-> 3-> not 2->1-->3
-				 * 
-				 * if has proxy uri (check if proxying happens (why? to skip?))
-				 * 		if (InstructionList(CBOR) (from oscore option) > 1 or 0 (depends) remove after consumption/pop )
-				 * 			retrieve the correct context
-				 * 			apply context to request
-				 * 
-				 * 
-				 * 
-				 * 
-				 */
-				final String uri;
-				if (request.getOptions().hasProxyUri()) {
-					uri = request.getOptions().getProxyUri();
-				} else {
-					uri = request.getURI();
+				//byte[] goodCBORObject = { (byte)0x83,(byte) 0x18,(byte) 0x7B,(byte) 0x18,(byte) 0x21,(byte) 0x04 };
+				//byte[] malformedCBORObject = { (byte)0x83,(byte) 0x18,(byte) 0x7B,(byte) 0x18,(byte) 0x21 };
+
+				CBORObject instructions = null;
+				
+				if (OptionEncoder.containsInstructions(req.getOptions().getOscore())) {
+					instructions = OptionEncoder.getInstructions(req.getOptions().getOscore());
 				}
 
-				if (uri == null) {
-					LOGGER.error(ErrorDescriptions.URI_NULL);
-					throw new OSException(ErrorDescriptions.URI_NULL);
-				}
-
-				OSCoreCtx ctx = ctxDb.getContext(uri);
+				OSCoreCtx ctx = ctxDb.getContext(req);
 				if (ctx == null) {
 					LOGGER.error(ErrorDescriptions.CTX_NULL);
 					throw new OSException(ErrorDescriptions.CTX_NULL);
@@ -192,7 +182,28 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				//encryption here
 				final Request preparedRequest = prepareSend(ctxDb, request);
-				final OSCoreCtx finalCtx = ctxDb.getContext(uri);
+				
+				// is there an instruction?
+				if (Objects.nonNull(instructions)) {
+					int currentIndex = instructions.get(1).ToObject(int.class);
+					
+					// are there still instructions left?
+					if (currentIndex != (instructions.size() - 1)) {
+						// increment index
+						instructions.set(1, CBORObject.FromObject(currentIndex + 1));
+						
+						byte[] latestOSCOREOptionValue = request.getOptions().getOscore();
+						instructions.set(0, CBORObject.FromObject(latestOSCOREOptionValue));
+						req.getOptions().setOscore(instructions.EncodeToBytes());
+						
+						// apply OSCORE layer again
+						sendRequest(exchange, request);
+					}
+					
+				}
+				
+				final CBORObject finalInstructions = instructions;
+				final OSCoreCtx finalCtx = ctxDb.getContext(req);
 
 				if (outgoingExceedsMaxUnfragSize(preparedRequest, false, ctx.getMaxUnfragmentedSize())) {
 					throw new IllegalStateException("outgoing request is exceeding the MAX_UNFRAGMENTED_SIZE!");
@@ -216,8 +227,22 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						if (!request.hasMID() && preparedRequest.hasMID()) {
 							request.setMID(preparedRequest.getMID());
 						}
-
+						
+						/*
+						 * db.addInstr(Token, savedInstr)
+						 * latestOscoreOptionValue = CBOR.decodeBstr(savedInstr.getIndex(0))
+						 * request.getOptions().setOscore(latestOscoreOptionValue)
+						 */
+						
+						if (Objects.nonNull(finalInstructions)) {
+							//ctxDb.addContext(token, finalInstructions);
+							
+							byte[] latestOSCOREOptionValue = finalInstructions.get(0).ToObject(byte[].class);
+							request.getOptions().setOscore(latestOSCOREOptionValue);
+							
+						}
 						ctxDb.addContext(token, finalCtx);
+						
 					}
 				});
 

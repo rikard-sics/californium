@@ -32,10 +32,16 @@ import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.upokecenter.cbor.CBORObject;
+
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.oscore.group.OptionEncoder;
+
 
 /**
  * 
@@ -56,7 +62,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	private HashMap<String, OSCoreCtx> uriMap;
 
 	private ArrayList<Token> allTokens;
-
+	
 	/**
 	 * Create the database
 	 */
@@ -68,6 +74,45 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		this.allTokens = new ArrayList<Token>();
 	}
 
+	/*
+	 * 
+	 */
+	@Override
+	public synchronized OSCoreCtx getContext(Request request) throws OSException {
+		
+		if (!OptionEncoder.containsInstructions(request.getOptions().getOscore())) { 
+			String uri; 
+			if (request.getOptions().hasProxyUri()) {
+				uri = request.getOptions().getProxyUri();
+			} else {
+				uri = request.getURI();
+			}
+			
+			if (uri == null) {
+				LOGGER.error(ErrorDescriptions.URI_NULL);
+				throw new OSException(ErrorDescriptions.URI_NULL);
+			}
+			
+			return getContext(uri);
+		}
+		
+		CBORObject instructions = OptionEncoder.getInstructions(request.getOptions().getOscore());
+
+		// Retrieve OSCORE option value
+		byte[] OSCOREOptionValue = instructions.get(0).ToObject(byte[].class);
+		request.getOptions().setOscore(OSCOREOptionValue);
+		
+		// get index for current instruction
+		int index = instructions.get(1).ToObject(int.class);
+		
+		// get instruction
+		CBORObject decodeArray = instructions.get(index);
+		byte[] RID       = decodeArray.get("RID").ToObject(byte[].class);
+		byte[] IDCONTEXT = decodeArray.get("IDCONTEXT").ToObject(byte[].class);
+		
+		return getContext(RID, IDCONTEXT);
+	}
+	
 	/**
 	 * Retrieve context using RID and ID Context. If the provided ID Context is
 	 * null a result will be returned if there is only one unique context for
