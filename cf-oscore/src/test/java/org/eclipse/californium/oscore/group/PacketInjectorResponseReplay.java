@@ -49,7 +49,7 @@ public class PacketInjectorResponseReplay {
 
 		// Send response with PIV2
 		byte[] buffer = StringUtil.hex2ByteArray(responsePIV2);
-		InetAddress address = InetAddress.getByName("31.133.128.149");
+		InetAddress address = InetAddress.getByName("127.0.0.1");
 		DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, dstPort);
 		DatagramSocket datagramSocket = new DatagramSocket(5683, address);
 		datagramSocket.send(packet);
@@ -57,7 +57,7 @@ public class PacketInjectorResponseReplay {
 
 		// Send response with PIV1
 		buffer = StringUtil.hex2ByteArray(responsePIV1);
-		address = InetAddress.getByName("31.133.128.149");
+		address = InetAddress.getByName("127.0.0.1");
 		packet = new DatagramPacket(buffer, buffer.length, address, dstPort);
 		// datagramSocket = new DatagramSocket(5683, address);
 		datagramSocket.send(packet);
@@ -65,7 +65,7 @@ public class PacketInjectorResponseReplay {
 
 		// Send response with PIV1
 		buffer = StringUtil.hex2ByteArray(responsePIV1);
-		address = InetAddress.getByName("31.133.128.149");
+		address = InetAddress.getByName("127.0.0.1");
 		packet = new DatagramPacket(buffer, buffer.length, address, dstPort);
 		// datagramSocket = new DatagramSocket(5683, address);
 		datagramSocket.send(packet);
