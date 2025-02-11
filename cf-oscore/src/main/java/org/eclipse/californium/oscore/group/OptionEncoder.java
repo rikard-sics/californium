@@ -145,12 +145,22 @@ public class OptionEncoder {
 		return option.get(3).GetByteString();
 	}
 	
-
+	/**
+	 * 
+	 * @param optionBytes
+	 * @return
+	 */
 	public static CBORObject getInstructions(byte[] optionBytes) {
 		CBORObject option = CBORObject.DecodeFromBytes(optionBytes);		
 		return option.get(5);
 	}
 
+	/**
+	 * 
+	 * @param optionBytes
+	 * @return
+	 * @throws OSException
+	 */
 	public static boolean containsInstructions(byte[] optionBytes) throws OSException {
 		try {
 			CBORObject option = CBORObject.DecodeFromBytes(optionBytes);
@@ -162,5 +172,11 @@ public class OptionEncoder {
 				throw new OSException(e.getLocalizedMessage());
 			}
 		}
+	}
+	
+	public static CBORObject updateInstructions(byte[] optionBytes, CBORObject instructions) {
+		CBORObject option = CBORObject.DecodeFromBytes(optionBytes);
+		option.set(5, instructions);
+		return option;
 	}
 }

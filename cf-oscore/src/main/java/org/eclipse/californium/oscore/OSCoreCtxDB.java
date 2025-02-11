@@ -20,6 +20,7 @@ package org.eclipse.californium.oscore;
 
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Token;
+import com.upokecenter.cbor.CBORObject;
 
 /**
  * 
@@ -27,12 +28,19 @@ import org.eclipse.californium.core.coap.Token;
  *
  */
 public interface OSCoreCtxDB {
+	
+	/**
+	 * @param token the token of the request
+	 * @param instructions the instructions
+	 */
+	public void addInstructions(Token token, CBORObject instructions);
 
 	/**
-	 * @param cid the context identifier
-	 * @return the OSCore context
+	 * 
+	 * @param token the token associated with the instructions
+	 * @return the instructions
 	 */
-	public OSCoreCtx getContext(byte[] cid);
+	public CBORObject getInstructions(Token token);
 
 	/**
 	 * Retrieve a context also using the ID Context
@@ -42,7 +50,7 @@ public interface OSCoreCtxDB {
 	 * @throws OSException when retrieving URI from request and finds none
 	 */
 	public OSCoreCtx getContext(Request request) throws OSException;
-
+	
 	/**
 	 * Retrieve a context also using the ID Context
 	 * 
@@ -53,13 +61,19 @@ public interface OSCoreCtxDB {
 	 *             matching contexts are found
 	 */
 	public OSCoreCtx getContext(byte[] cid, byte[] IDContext) throws CoapOSException;
+	
+	/**
+	 * @param cid the context identifier
+	 * @return the OSCore context
+	 */
+	public OSCoreCtx getContext(byte[] cid);
 
 	/**
 	 * @param token the token of the request
 	 * @return the OSCore context
 	 */
 	public OSCoreCtx getContextByToken(Token token);
-
+	
 	/**
 	 * @param token the token of the request
 	 * @param ctx the OSCore context

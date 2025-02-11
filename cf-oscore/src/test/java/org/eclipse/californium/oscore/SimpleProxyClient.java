@@ -37,6 +37,11 @@ public class SimpleProxyClient {
 	private final static byte[] rid = new byte[] { 0x01 };
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 
+	private final static byte[][] sids = {
+			new byte[] { 0x01 }, 
+			new byte[] { 0x02 }
+			};
+	
 	private final static byte[][] rids = {
 			new byte[] { 0x01 }, 
 			new byte[] { 0x02 }
@@ -48,24 +53,26 @@ public class SimpleProxyClient {
 			};
 
 	public static void main(String[] args) throws OSException, ConnectorException, IOException {
-		OSCoreCtx ctxserver = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, idcontexts[0], MAX_UNFRAGMENTED_SIZE);
+		OSCoreCtx ctxserver = new OSCoreCtx(master_secret, true, alg, sids[0], rids[0], kdf, 32, master_salt, idcontexts[0], MAX_UNFRAGMENTED_SIZE);
 		db.addContext(uriServer, ctxserver);
-		
-		OSCoreCtx ctxproxy = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, null, MAX_UNFRAGMENTED_SIZE);
-		db.addContext(uriProxy, ctxproxy);
-		
-		OSCoreCoapStackFactory.useAsDefault(db);
-				
-		boolean testing = true;
-		
-		if (!testing) {
-			CoapClient c = new CoapClient(uriServer + uriServerPath);
 
-			//CoapClient c = new CoapClient(uriProxy + uriProxyPath);
+		OSCoreCtx ctxproxy = new OSCoreCtx(master_secret, true, alg, sids[1], rids[1], kdf, 32, master_salt, idcontexts[1], MAX_UNFRAGMENTED_SIZE);
+		db.addContext(uriProxy, ctxproxy);
+
+		OSCoreCoapStackFactory.useAsDefault(db);
+		
+		//12-15 bytes
+				
+		boolean notTesting = true;
+		
+		if (notTesting) {
+			//CoapClient c = new CoapClient(uriServer + uriServerPath);
+
+			CoapClient c = new CoapClient(uriProxy + uriProxyPath);
 			
 			//c.setTimeout((long) 100);
 
-			System.out.println("Sending to server through proxy");
+			System.out.println("Sending to server");
 			
 			byte[] CBOROption = OptionEncoder.set(rids, idcontexts);
 			
@@ -76,13 +83,10 @@ public class SimpleProxyClient {
 			r.getOptions().setProxyUri(uriServer + uriServerPath);
 			r.getOptions().setOscore(new byte[0]);
 
-			
+			*/
 			r.getOptions().setProxyUri(uriServer + uriServerPath);
 			r.getOptions().setOscore(CBOROption);
-			*/
-			
-			r.getOptions().setOscore(CBOROption);
-			
+						
 			CoapResponse resp = c.advanced(r);
 			printResponse(resp);
 			

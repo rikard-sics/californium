@@ -60,6 +60,8 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 
 	private HashMap<Token, OSCoreCtx> tokenMap;
 	private HashMap<String, OSCoreCtx> uriMap;
+	private HashMap<Token, CBORObject> instructionMap;
+
 
 	private ArrayList<Token> allTokens;
 	
@@ -71,15 +73,38 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		this.tokenMap = new HashMap<>();
 		this.contextMap = new HashMap<>();
 		this.uriMap = new HashMap<>();
+		this.instructionMap = new HashMap<>();
 		this.allTokens = new ArrayList<Token>();
 	}
 
-	/*
+	@Override
+	public synchronized void addInstructions(Token token, CBORObject instructions) {
+		if (token != null && allTokens.contains(token)) {
+			instructionMap.put(token, instructions);	
+		}
+	}
+
+	/**
 	 * 
 	 */
 	@Override
+	public synchronized CBORObject getInstructions(Token token) {
+		if (token != null) {
+			return instructionMap.get(token);
+		} else {
+			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
+			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
+		}
+	}
+	/**
+	 * Retrieve context using a request. If the provided request has 
+	 * instructions in the OSCORE option, the context will be returned
+	 * from the current instruction, otherwise it will return the 
+	 * context using the URI or ProxyUri
+	 */
+	@Override
 	public synchronized OSCoreCtx getContext(Request request) throws OSException {
-		
+		System.out.println(contextMap.size());
 		if (!OptionEncoder.containsInstructions(request.getOptions().getOscore())) { 
 			String uri; 
 			if (request.getOptions().hasProxyUri()) {
@@ -240,6 +265,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 
 	@Override
 	public synchronized void removeContext(OSCoreCtx ctx) {
+		System.out.println("removing context");
 		if (ctx != null) {
 
 			ByteId rid = new ByteId(ctx.getRecipientId());
@@ -363,6 +389,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	@Override
 	public synchronized void removeToken(Token token) {
 		tokenMap.remove(token);
+		instructionMap.remove(token); //maybe
 	}
 
 	/**
