@@ -162,6 +162,10 @@ public class OptionEncoder {
 	 * @throws OSException
 	 */
 	public static boolean containsInstructions(byte[] optionBytes) throws OSException {
+		if (optionBytes == null) {
+			return false;
+		}
+		
 		try {
 			CBORObject option = CBORObject.DecodeFromBytes(optionBytes);
 			return option.ContainsKey(5);

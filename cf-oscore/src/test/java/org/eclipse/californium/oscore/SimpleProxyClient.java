@@ -60,19 +60,17 @@ public class SimpleProxyClient {
 		db.addContext(uriProxy, ctxproxy);
 
 		OSCoreCoapStackFactory.useAsDefault(db);
+						
+		boolean hasInstructions= true;
 		
-		//12-15 bytes
-				
-		boolean notTesting = true;
-		
-		if (notTesting) {
+		if (hasInstructions) {
 			//CoapClient c = new CoapClient(uriServer + uriServerPath);
 
 			CoapClient c = new CoapClient(uriProxy + uriProxyPath);
 			
 			//c.setTimeout((long) 100);
 
-			System.out.println("Sending to server");
+			System.out.println("Sending to proxy");
 			
 			byte[] CBOROption = OptionEncoder.set(rids, idcontexts);
 			
@@ -97,22 +95,22 @@ public class SimpleProxyClient {
 			CoapClient c = new CoapClient(uriServer + uriServerPath);
 			// send without OSCORE
 			SendGet(c);
-			try { Thread.sleep(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-			
+			try { Thread.sleep(10); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+
 			// Send with OSCORE
 			SendGet(c, new byte[0]);
-			try { Thread.sleep(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+			try { Thread.sleep(100); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
 			
 			
 			System.out.println("\nSending with proxy");
 			
 			// send without OSCORE through proxy
 			SendGet(c, uriProxy + uriProxyPath);
-			try { Thread.sleep(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+			try { Thread.sleep(100); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
 			
 			// Send with OSCORE through proxy
 			SendGet(c, uriProxy + uriProxyPath, new byte[0]);
-			try { Thread.sleep(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+			try { Thread.sleep(100); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
 			
 			System.out.println("\nSending to proxy");
 			SendGet(c.setURI(uriProxy + "/target"));

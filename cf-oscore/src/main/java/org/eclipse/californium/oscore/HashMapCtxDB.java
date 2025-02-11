@@ -78,6 +78,11 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	}
 
 	@Override
+	public synchronized void size() {
+		System.out.println(contextMap.size());
+	}
+	
+	@Override
 	public synchronized void addInstructions(Token token, CBORObject instructions) {
 		if (token != null && allTokens.contains(token)) {
 			instructionMap.put(token, instructions);	
@@ -103,8 +108,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	 * context using the URI or ProxyUri
 	 */
 	@Override
-	public synchronized OSCoreCtx getContext(Request request) throws OSException {
-		System.out.println(contextMap.size());
+	public synchronized OSCoreCtx getContext(Request request, boolean overwrite) throws OSException {
 		if (!OptionEncoder.containsInstructions(request.getOptions().getOscore())) { 
 			String uri; 
 			if (request.getOptions().hasProxyUri()) {
@@ -117,15 +121,18 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 				LOGGER.error(ErrorDescriptions.URI_NULL);
 				throw new OSException(ErrorDescriptions.URI_NULL);
 			}
-			
+			System.out.println("getting context from uri");
 			return getContext(uri);
 		}
 		
 		CBORObject instructions = OptionEncoder.getInstructions(request.getOptions().getOscore());
 
-		// Retrieve OSCORE option value
-		byte[] OSCOREOptionValue = instructions.get(0).ToObject(byte[].class);
-		request.getOptions().setOscore(OSCOREOptionValue);
+		if (overwrite) {
+			// Retrieve OSCORE option value
+			byte[] OSCOREOptionValue = instructions.get(0).ToObject(byte[].class);
+			request.getOptions().setOscore(OSCOREOptionValue);
+		}
+		
 		
 		// get index for current instruction
 		int index = instructions.get(1).ToObject(int.class);
@@ -135,6 +142,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		byte[] RID       = decodeArray.get("RID").ToObject(byte[].class);
 		byte[] IDCONTEXT = decodeArray.get("IDCONTEXT").ToObject(byte[].class);
 		
+		System.out.println("getting context from rid and idcontext: " + decodeArray.get("RID") + " " + decodeArray.get("RID"));
 		return getContext(RID, IDCONTEXT);
 	}
 	

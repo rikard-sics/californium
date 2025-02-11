@@ -21,6 +21,9 @@ package org.eclipse.californium.oscore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.upokecenter.cbor.CBORObject;
+
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.cose.Encrypt0Message;
@@ -47,7 +50,7 @@ public class RequestEncryptor extends Encryptor {
 	 */
 	public static Request encrypt(OSCoreCtxDB db, Request request) throws OSException {
 
-		OSCoreCtx ctx = db.getContext(request);
+		OSCoreCtx ctx = db.getContext(request, true);
 
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CTX_NULL);

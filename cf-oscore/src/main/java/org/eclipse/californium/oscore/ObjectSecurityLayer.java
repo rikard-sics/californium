@@ -132,156 +132,151 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	public void sendRequest(final Exchange exchange, final Request request) {
 		Request req = request;
 
-		if (!shouldProtectRequest(request)) {
+		if (shouldProtectRequest(request)) {
+			try {
+				// Handle outgoing requests for more data from a responder that
+				// is responding with outer block-wise. These requests should
+				// not be processed with OSCORE.
+				Response response = exchange.getCurrentResponse();
+				if (request.getOptions().hasBlock2() && response != null) {
+					final OSCoreCtx ctx = ctxDb.getContextByToken(response.getToken());
+					if (ctx != null) {
+						request.addMessageObserver(0, new MessageObserverAdapter() {
+
+							@Override
+							public void onReadyToSend() {
+								ctxDb.addContext(request.getToken(), ctx);
+							}
+						});
+						super.sendRequest(exchange, request);
+						return; 
+					}
+				}
+
+				//byte[] goodCBORObject = { (byte)0x83,(byte) 0x18,(byte) 0x7B,(byte) 0x18,(byte) 0x21,(byte) 0x04 };
+				//byte[] malformedCBORObject = { (byte)0x83,(byte) 0x18,(byte) 0x7B,(byte) 0x18,(byte) 0x21 };
+
+				CBORObject instructions = null;
+				byte[] OscoreOption = request.getOptions().getOscore();
+
+				if (OptionEncoder.containsInstructions(OscoreOption)) {
+					instructions = OptionEncoder.getInstructions(OscoreOption);
+					System.out.println("instructions are: " + instructions);
+				}
+				
+				final OSCoreCtx ctx = ctxDb.getContext(request, false);
+
+				if (ctx == null) {
+					LOGGER.error(ErrorDescriptions.CTX_NULL);
+					throw new OSException(ErrorDescriptions.CTX_NULL);
+				}
+
+				// Initiate context re-derivation procedure if flag is set
+				if (ctx.getContextRederivationPhase() == PHASE.CLIENT_INITIATE) {
+					throw new IllegalStateException("must be handled in ObjectSecurityContextLayer!");
+				}
+
+				/*
+				 * Sets an operator on the exchange. This operator will in
+				 * turn set information about the OSCORE context used in the
+				 * endpoint context that will be created after the request is sent.
+				 */
+				OSCoreEndpointContextInfo.sendingRequest(ctx, exchange);
+
+				//encryption here
+				final Request preparedRequest = prepareSend(ctxDb, request);
+
+				// is there an instruction?
+				boolean instructionExists = Objects.nonNull(instructions);
+				boolean instructionsRemaining = true;
+
+				if (instructionExists) {
+					int currentIndex = instructions.get(1).ToObject(int.class);
+
+					// are there still instructions left?
+					instructionsRemaining = currentIndex != (instructions.size() - 1);
+					if (instructionsRemaining) {
+						// increment index
+						instructions.set(1, CBORObject.FromObject(currentIndex + 1));
+
+						byte[] latestOSCOREOptionValue = request.getOptions().getOscore();
+						instructions.set(0, CBORObject.FromObject(latestOSCOREOptionValue));
+
+						//update Oscore
+						CBORObject updatedOSCOREOption = OptionEncoder.updateInstructions(OscoreOption, instructions);
+						req.getOptions().setOscore(updatedOSCOREOption.EncodeToBytes());
+
+						// apply OSCORE layer again
+						System.out.println("applying again");
+						System.out.println("updated oscore is: " + updatedOSCOREOption);
+						sendRequest(exchange, request);
+					}
+				}
+
+				if (!instructionExists || (instructionExists && !instructionsRemaining)) {
+
+					System.out.println("sending");
+					final CBORObject finalInstructions = instructions;
+					final OSCoreCtx finalCtx = ctxDb.getContext(request, true);
+
+					if (outgoingExceedsMaxUnfragSize(preparedRequest, false, ctx.getMaxUnfragmentedSize())) {
+						throw new IllegalStateException("outgoing request is exceeding the MAX_UNFRAGMENTED_SIZE!");
+					}
+
+					preparedRequest.addMessageObserver(0, new MessageObserverAdapter() {
+
+						//this isn't called until it is ready to send, i.e. super.sendRequest
+						//only creates the Token and associates it with the ctx
+						@Override
+						public void onReadyToSend() {
+							Token token = preparedRequest.getToken();
+
+							// add at head of message observers to update
+							// the token of the original request first,
+							// before calling other message observers!
+							if (request.getToken() == null) {
+								request.setToken(token);
+							}
+
+							if (!request.hasMID() && preparedRequest.hasMID()) {
+								request.setMID(preparedRequest.getMID());
+							}
+
+							if (Objects.nonNull(finalInstructions)) {
+								System.out.println("adding final: " + finalInstructions);
+								ctxDb.addInstructions(token, finalInstructions);
+
+								byte[] latestOSCOREOptionValue = finalInstructions.get(0).ToObject(byte[].class);
+								request.getOptions().setOscore(latestOSCOREOptionValue);
+
+							}
+							System.out.println(finalCtx.getRecipientIdString());
+							ctxDb.addContext(token, finalCtx);
+
+						}
+					});
+
+					req = preparedRequest;
+
+					exchange.setCryptographicContextID(req.getOptions().getOscore());
+					LOGGER.trace("Request: {}", exchange.getRequest());
+
+					super.sendRequest(exchange, req);
+
+				}
+
+			} catch (OSException e) {
+				LOGGER.error("Error sending request: {}", e.getMessage());
+				return;
+			} catch (IllegalArgumentException e) {
+				LOGGER.error("Unable to send request because of illegal argument: {}", e.getMessage());
+				return;
+			}
+		}
+		else {
 			LOGGER.trace("Request: {}", exchange.getRequest());
 
 			super.sendRequest(exchange, req);
-		}
-
-		try {
-			// Handle outgoing requests for more data from a responder that
-			// is responding with outer block-wise. These requests should
-			// not be processed with OSCORE.
-			Response response = exchange.getCurrentResponse();
-			if (request.getOptions().hasBlock2() && response != null) {
-				final OSCoreCtx ctx = ctxDb.getContextByToken(response.getToken());
-				if (ctx != null) {
-					request.addMessageObserver(0, new MessageObserverAdapter() {
-
-						@Override
-						public void onReadyToSend() {
-							ctxDb.addContext(request.getToken(), ctx);
-						}
-					});
-					super.sendRequest(exchange, request);
-					return; 
-				}
-			}
-
-			//byte[] goodCBORObject = { (byte)0x83,(byte) 0x18,(byte) 0x7B,(byte) 0x18,(byte) 0x21,(byte) 0x04 };
-			//byte[] malformedCBORObject = { (byte)0x83,(byte) 0x18,(byte) 0x7B,(byte) 0x18,(byte) 0x21 };
-
-			CBORObject instructions = null;
-			byte[] OscoreOption = request.getOptions().getOscore();
-
-			if (OptionEncoder.containsInstructions(OscoreOption)) {
-				instructions = OptionEncoder.getInstructions(OscoreOption);
-				System.out.println("instructions are: " + instructions);
-			}
-
-			System.out.println(request);
-			OSCoreCtx ctx = ctxDb.getContext(request);
-			if (ctx == null) {
-				LOGGER.error(ErrorDescriptions.CTX_NULL);
-				throw new OSException(ErrorDescriptions.CTX_NULL);
-			}
-
-			// Initiate context re-derivation procedure if flag is set
-			if (ctx.getContextRederivationPhase() == PHASE.CLIENT_INITIATE) {
-				throw new IllegalStateException("must be handled in ObjectSecurityContextLayer!");
-			}
-
-			/*
-			 * Sets an operator on the exchange. This operator will in
-			 * turn set information about the OSCORE context used in the
-			 * endpoint context that will be created after the request is sent.
-			 */
-			OSCoreEndpointContextInfo.sendingRequest(ctx, exchange);
-
-			//encryption here
-			final Request preparedRequest = prepareSend(ctxDb, request);
-
-			// is there an instruction?
-			boolean instructionExists = Objects.nonNull(instructions);
-			boolean instructionsRemaining = true;
-
-			if (instructionExists) {
-				int currentIndex = instructions.get(1).ToObject(int.class);
-
-				// are there still instructions left?
-				instructionsRemaining = currentIndex != (instructions.size() - 1);
-				if (instructionsRemaining) {
-					// increment index
-					instructions.set(1, CBORObject.FromObject(currentIndex + 1));
-
-					byte[] latestOSCOREOptionValue = request.getOptions().getOscore();
-					instructions.set(0, CBORObject.FromObject(latestOSCOREOptionValue));
-					System.out.println("instructions are 1: " + instructions);
-
-					//update Oscore
-					CBORObject updatedOSCOREOption = OptionEncoder.updateInstructions(OscoreOption, instructions);
-					req.getOptions().setOscore(updatedOSCOREOption.EncodeToBytes());
-
-					// apply OSCORE layer again
-					System.out.println("applying again");
-					System.out.println("updated oscore is: " + updatedOSCOREOption);
-					sendRequest(exchange, request);
-					//kill current?
-				}
-			}
-
-			if(!instructionExists || (instructionExists && !instructionsRemaining)) {
-
-				System.out.println("this is the sender ender: " + instructions);
-				final CBORObject finalInstructions = instructions;
-				final OSCoreCtx finalCtx = ctxDb.getContext(request);
-
-				if (outgoingExceedsMaxUnfragSize(preparedRequest, false, ctx.getMaxUnfragmentedSize())) {
-					throw new IllegalStateException("outgoing request is exceeding the MAX_UNFRAGMENTED_SIZE!");
-				}
-
-				preparedRequest.addMessageObserver(0, new MessageObserverAdapter() {
-
-					//this isn't called until it is ready to send, i.e. super.sendRequest2
-					//only creates the Token and associates it with the ctx
-					@Override
-					public void onReadyToSend() {
-						Token token = preparedRequest.getToken();
-
-						// add at head of message observers to update
-						// the token of the original request first,
-						// before calling other message observers!
-						if (request.getToken() == null) {
-							request.setToken(token);
-						}
-
-						if (!request.hasMID() && preparedRequest.hasMID()) {
-							request.setMID(preparedRequest.getMID());
-						}
-
-						/*
-						 * db.addInstr(Token, savedInstr)
-						 * latestOscoreOptionValue = CBOR.decodeBstr(savedInstr.getIndex(0))
-						 * request.getOptions().setOscore(latestOscoreOptionValue)
-						 */
-
-						System.out.println("on ready send: " + token);
-						if (Objects.nonNull(finalInstructions)) {
-							System.out.println("adding final");
-							ctxDb.addInstructions(token, finalInstructions);
-
-							byte[] latestOSCOREOptionValue = finalInstructions.get(0).ToObject(byte[].class);
-							request.getOptions().setOscore(latestOSCOREOptionValue);
-
-						}
-						ctxDb.addContext(token, finalCtx);
-
-					}
-				});
-
-				req = preparedRequest;
-				exchange.setCryptographicContextID(req.getOptions().getOscore());
-				LOGGER.trace("Request: {}", exchange.getRequest());
-
-				super.sendRequest(exchange, req);
-			}
-
-		} catch (OSException e) {
-			LOGGER.error("Error sending request: {}", e.getMessage());
-			return;
-		} catch (IllegalArgumentException e) {
-			LOGGER.error("Unable to send request because of illegal argument: {}", e.getMessage());
-			return;
 		}
 	}
 

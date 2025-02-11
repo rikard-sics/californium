@@ -35,6 +35,7 @@ public interface OSCoreCtxDB {
 	 */
 	public void addInstructions(Token token, CBORObject instructions);
 
+	public void size();
 	/**
 	 * 
 	 * @param token the token associated with the instructions
@@ -49,7 +50,7 @@ public interface OSCoreCtxDB {
 	 * @return the OSCore context
 	 * @throws OSException when retrieving URI from request and finds none
 	 */
-	public OSCoreCtx getContext(Request request) throws OSException;
+	public OSCoreCtx getContext(Request request, boolean overwrite) throws OSException;
 	
 	/**
 	 * Retrieve a context also using the ID Context
