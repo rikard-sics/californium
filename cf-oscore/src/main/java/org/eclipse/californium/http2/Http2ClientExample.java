@@ -48,6 +48,8 @@ public class Http2ClientExample {
 		// Create and start the Jetty HttpClient
 		HttpClient httpClient = new HttpClient(transport);
 
+		httpClient.getContentDecoderFactories().clear(); // No gzip?
+
 		httpClient.start();
 		try {
 			// Perform a GET request over HTTP/2
@@ -55,6 +57,8 @@ public class Http2ClientExample {
 
 			Request req = httpClient.POST(scheme + "://localhost:" + port + "/helloworld.Greeter/SayHello");
 			req.header("content-type", "application/grpc");
+			req.header("grpc-accept-encoding", "gzip");
+			req.header("te", "trailers");
 
 			String payload = "{\"message\":\"Hello, World!\"}";
 			// StringContentProvider myCont = new

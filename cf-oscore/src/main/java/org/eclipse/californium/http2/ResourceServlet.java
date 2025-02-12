@@ -12,13 +12,13 @@ import jakarta.servlet.http.HttpServletResponse;
 public class ResourceServlet extends HttpServlet {
 
 	protected void doGetTest(HttpServletRequest request, HttpServletResponse response) throws IOException {
-		response.setContentType("text/html;charset=utf-8");
+		// response.setContentType("text/html;charset=utf-8");
 		response.setStatus(HttpServletResponse.SC_OK);
 		response.getWriter().println("<h1>Hello Rikard1 HTTP/2 World</h1>");
 	}
 
 	protected void doPostTest(HttpServletRequest request, HttpServletResponse response) throws IOException {
-		response.setContentType("text/html;charset=utf-8");
+		// response.setContentType("text/html;charset=utf-8");
 		response.setStatus(HttpServletResponse.SC_OK);
 		response.getWriter().println("<h1>Hello Rikard2 HTTP/2 World</h1>");
 	}
@@ -43,6 +43,7 @@ public class ResourceServlet extends HttpServlet {
 		response.setContentType("application/grpc");
 		response.setStatus(HttpServletResponse.SC_OK);
 		response.setHeader("grpc-encoding", "identity");
+		// response.setHeader("content-type", "application/grpc");
 
 		Supplier<Map<String, String>> trailerSupplier = new Supplier<Map<String, String>>() {
 
@@ -55,7 +56,7 @@ public class ResourceServlet extends HttpServlet {
 		};
 		response.setTrailerFields(trailerSupplier);
 
-		// response.setHeader("grpc-accept-encoding", "gzip");
+		response.setHeader("grpc-accept-encoding", "gzip");
 
 		// Set response payload
 
