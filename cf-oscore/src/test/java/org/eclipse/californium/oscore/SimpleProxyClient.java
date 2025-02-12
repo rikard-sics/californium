@@ -12,6 +12,8 @@ import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.oscore.group.OptionEncoder;
 
+import com.upokecenter.cbor.CBORObject;
+
 /**
  * 
  * SimpleProxyClient to display the basic OSCORE mechanics through a proxy
@@ -61,29 +63,26 @@ public class SimpleProxyClient {
 
 		OSCoreCoapStackFactory.useAsDefault(db);
 						
-		boolean hasInstructions= true;
+		boolean hasInstructions= false;
 		
 		if (hasInstructions) {
-			//CoapClient c = new CoapClient(uriServer + uriServerPath);
-
 			CoapClient c = new CoapClient(uriProxy + uriProxyPath);
 			
-			//c.setTimeout((long) 100);
-
 			System.out.println("Sending to proxy");
 			
-			byte[] CBOROption = OptionEncoder.set(rids, idcontexts);
-			
 
+			byte[] oscoreopt = CBORObject.FromObject(new byte[0]).EncodeToBytes();
+			byte[] index = CBORObject.FromObject(2).EncodeToBytes();
+			
+			byte[] instructions = OptionEncoder.combine(oscoreopt, index);
+			
+			for (int i = 0; i < rids.length; i++) {
+				instructions = OptionEncoder.combine(instructions, OptionEncoder.set(rids[i], idcontexts[i]));
+			}
+			
 			Request r = new Request(Code.GET);
-			
-			/*Request r = new Request(Code.GET);
 			r.getOptions().setProxyUri(uriServer + uriServerPath);
-			r.getOptions().setOscore(new byte[0]);
-
-			*/
-			r.getOptions().setProxyUri(uriServer + uriServerPath);
-			r.getOptions().setOscore(CBOROption);
+			r.getOptions().setOscore(instructions);
 						
 			CoapResponse resp = c.advanced(r);
 			printResponse(resp);

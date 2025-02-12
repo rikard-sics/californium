@@ -128,6 +128,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		return ResponseDecryptor.decrypt(ctxDb, response, requestSequenceNr);
 	}
 
+	
 	@Override
 	public void sendRequest(final Exchange exchange, final Request request) {
 		Request req = request;
@@ -156,14 +157,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				//byte[] goodCBORObject = { (byte)0x83,(byte) 0x18,(byte) 0x7B,(byte) 0x18,(byte) 0x21,(byte) 0x04 };
 				//byte[] malformedCBORObject = { (byte)0x83,(byte) 0x18,(byte) 0x7B,(byte) 0x18,(byte) 0x21 };
 
-				CBORObject instructions = null;
 				byte[] OscoreOption = request.getOptions().getOscore();
+				CBORObject[] instructions = OptionEncoder.decodeCBORSequence(OscoreOption);
 
-				if (OptionEncoder.containsInstructions(OscoreOption)) {
-					instructions = OptionEncoder.getInstructions(OscoreOption);
-					System.out.println("instructions are: " + instructions);
-				}
-				
 				final OSCoreCtx ctx = ctxDb.getContext(request, false);
 
 				if (ctx == null) {
@@ -186,25 +182,26 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				//encryption here
 				final Request preparedRequest = prepareSend(ctxDb, request);
 
-				// is there an instruction?
-				boolean instructionExists = Objects.nonNull(instructions);
+				// are there instructions?
+				boolean instructionsExists = Objects.nonNull(instructions);
 				boolean instructionsRemaining = true;
 
-				if (instructionExists) {
-					int currentIndex = instructions.get(1).ToObject(int.class);
+				if (instructionsExists) {
+					int currentIndex = instructions[1].ToObject(int.class);
 
 					// are there still instructions left?
-					instructionsRemaining = currentIndex != (instructions.size() - 1);
+					instructionsRemaining = currentIndex != (instructions.length - 1);
+					
 					if (instructionsRemaining) {
 						// increment index
-						instructions.set(1, CBORObject.FromObject(currentIndex + 1));
+						instructions[1] = CBORObject.FromObject(currentIndex + 1);
 
 						byte[] latestOSCOREOptionValue = request.getOptions().getOscore();
-						instructions.set(0, CBORObject.FromObject(latestOSCOREOptionValue));
+						instructions[0] = CBORObject.FromObject(latestOSCOREOptionValue);
 
 						//update Oscore
-						CBORObject updatedOSCOREOption = OptionEncoder.updateInstructions(OscoreOption, instructions);
-						req.getOptions().setOscore(updatedOSCOREOption.EncodeToBytes());
+						byte[] updatedOSCOREOption = OptionEncoder.encodeSequence(instructions);
+						req.getOptions().setOscore(updatedOSCOREOption);
 
 						// apply OSCORE layer again
 						System.out.println("applying again");
@@ -213,10 +210,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					}
 				}
 
-				if (!instructionExists || (instructionExists && !instructionsRemaining)) {
+				if (!instructionsExists || (instructionsExists && !instructionsRemaining)) {
 
 					System.out.println("sending");
-					final CBORObject finalInstructions = instructions;
+					final CBORObject[] finalInstructions = instructions;
 					final OSCoreCtx finalCtx = ctxDb.getContext(request, true);
 
 					if (outgoingExceedsMaxUnfragSize(preparedRequest, false, ctx.getMaxUnfragmentedSize())) {
@@ -246,7 +243,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 								System.out.println("adding final: " + finalInstructions);
 								ctxDb.addInstructions(token, finalInstructions);
 
-								byte[] latestOSCOREOptionValue = finalInstructions.get(0).ToObject(byte[].class);
+								byte[] latestOSCOREOptionValue = finalInstructions[0].ToObject(byte[].class);
 								request.getOptions().setOscore(latestOSCOREOptionValue);
 
 							}

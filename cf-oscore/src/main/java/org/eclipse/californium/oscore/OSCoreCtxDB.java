@@ -33,7 +33,7 @@ public interface OSCoreCtxDB {
 	 * @param token the token of the request
 	 * @param instructions the instructions
 	 */
-	public void addInstructions(Token token, CBORObject instructions);
+	public void addInstructions(Token token, CBORObject[] instructions);
 
 	public void size();
 	/**
@@ -41,7 +41,7 @@ public interface OSCoreCtxDB {
 	 * @param token the token associated with the instructions
 	 * @return the instructions
 	 */
-	public CBORObject getInstructions(Token token);
+	public CBORObject[] getInstructions(Token token);
 
 	/**
 	 * Retrieve a context also using the ID Context

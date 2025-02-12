@@ -27,6 +27,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -60,7 +61,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 
 	private HashMap<Token, OSCoreCtx> tokenMap;
 	private HashMap<String, OSCoreCtx> uriMap;
-	private HashMap<Token, CBORObject> instructionMap;
+	private HashMap<Token, CBORObject[]> instructionMap;
 
 
 	private ArrayList<Token> allTokens;
@@ -83,7 +84,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	}
 	
 	@Override
-	public synchronized void addInstructions(Token token, CBORObject instructions) {
+	public synchronized void addInstructions(Token token, CBORObject[] instructions) {
 		if (token != null && allTokens.contains(token)) {
 			instructionMap.put(token, instructions);	
 		}
@@ -93,7 +94,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	 * 
 	 */
 	@Override
-	public synchronized CBORObject getInstructions(Token token) {
+	public synchronized CBORObject[] getInstructions(Token token) {
 		if (token != null) {
 			return instructionMap.get(token);
 		} else {
@@ -109,7 +110,8 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	 */
 	@Override
 	public synchronized OSCoreCtx getContext(Request request, boolean overwrite) throws OSException {
-		if (!OptionEncoder.containsInstructions(request.getOptions().getOscore())) { 
+		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(request.getOptions().getOscore());
+		if (!(Objects.nonNull(instructions))) { 
 			String uri; 
 			if (request.getOptions().hasProxyUri()) {
 				uri = request.getOptions().getProxyUri();
@@ -124,25 +126,24 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 			System.out.println("getting context from uri");
 			return getContext(uri);
 		}
-		
-		CBORObject instructions = OptionEncoder.getInstructions(request.getOptions().getOscore());
 
 		if (overwrite) {
 			// Retrieve OSCORE option value
-			byte[] OSCOREOptionValue = instructions.get(0).ToObject(byte[].class);
+			byte[] OSCOREOptionValue = instructions[0].ToObject(byte[].class);
 			request.getOptions().setOscore(OSCOREOptionValue);
 		}
 		
 		
 		// get index for current instruction
-		int index = instructions.get(1).ToObject(int.class);
+		int index = instructions[1].ToObject(int.class);
 		
 		// get instruction
-		CBORObject decodeArray = instructions.get(index);
-		byte[] RID       = decodeArray.get("RID").ToObject(byte[].class);
-		byte[] IDCONTEXT = decodeArray.get("IDCONTEXT").ToObject(byte[].class);
+		CBORObject instruction = instructions[index];
+
+		byte[] RID       = instruction.get(3).ToObject(byte[].class);
+		byte[] IDCONTEXT = instruction.get(5).ToObject(byte[].class);
 		
-		System.out.println("getting context from rid and idcontext: " + decodeArray.get("RID") + " " + decodeArray.get("RID"));
+		System.out.println("getting context from rid and idcontext: " + instruction.get(3) + " " + instruction.get(5));
 		return getContext(RID, IDCONTEXT);
 	}
 	

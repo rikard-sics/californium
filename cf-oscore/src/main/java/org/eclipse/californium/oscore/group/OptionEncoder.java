@@ -17,7 +17,7 @@
 package org.eclipse.californium.oscore.group;
 
 import org.eclipse.californium.oscore.OSException;
-
+import java.lang.reflect.Array;
 import com.upokecenter.cbor.CBORObject;
 
 /**
@@ -77,34 +77,14 @@ public class OptionEncoder {
 	 * here be Javadoc
 	 * @param endpoints ordered array of endpoints
 	 */
-	public static byte[] set(byte[][] rids, byte[][] idcontexts) {
-		if (rids.length != idcontexts.length) { 
-			System.out.println("mismatch length of rids and idcontexts"); 
-		} // should maybe be {throw Exception} 
+	public static byte[] set(byte[] rid, byte[] idcontext) {
 		
-		// container for all oscore options
 		CBORObject option = CBORObject.NewMap();
+		//option.Add(2, contextUri);
+		option.Add(3, rid);
 		
-		// container for instructions
-		CBORObject instructions = CBORObject.NewArray();
-		
-		// initial real oscore value and index
-		instructions.Add(new byte[0]);
-		instructions.Add(2);
-		
-		// append rid and idcontext to instruction array
-		for (int i = 0; i < rids.length; i++) {
-			CBORObject map = CBORObject.NewOrderedMap();
-			map.Add("RID",rids[i]);
-			map.Add("IDCONTEXT",idcontexts[i]);
-			
-			instructions.Add(map);
-		}
+		option.Add(5, idcontext);
 
-		option.Add(5, instructions);
-		
-		System.out.println(option);
-		
 		return option.EncodeToBytes();
 	}
 
@@ -146,41 +126,51 @@ public class OptionEncoder {
 	}
 	
 	/**
-	 * 
-	 * @param optionBytes
-	 * @return
+	 * Decodes and returns a CBOR sequence from a provided byte array
+	 * @param sequenceBytes the byte array containing a CBOR sequence 
+	 * @return the CBOR sequence, or null if the byte array is null or it is an invalid CBOR sequence
 	 */
-	public static CBORObject getInstructions(byte[] optionBytes) {
-		CBORObject option = CBORObject.DecodeFromBytes(optionBytes);		
-		return option.get(5);
-	}
-
-	/**
-	 * 
-	 * @param optionBytes
-	 * @return
-	 * @throws OSException
-	 */
-	public static boolean containsInstructions(byte[] optionBytes) throws OSException {
-		if (optionBytes == null) {
-			return false;
+	public static CBORObject[] decodeCBORSequence(byte[] sequenceBytes) {
+		if (sequenceBytes == null) {
+			return null;
 		}
-		
+
 		try {
-			CBORObject option = CBORObject.DecodeFromBytes(optionBytes);
-			return option.ContainsKey(5);
-		} catch (com.upokecenter.cbor.CBORException e) {
-			if ( e.getLocalizedMessage().equals("data is empty.")) {
-				return false;
-			} else {
-				throw new OSException(e.getLocalizedMessage());
+			CBORObject[] decodedSequence = CBORObject.DecodeSequenceFromBytes(sequenceBytes);
+			if (decodedSequence.length < 3) {
+				return null;
 			}
+			else return decodedSequence;
+		} catch (com.upokecenter.cbor.CBORException e) {
+			System.out.println("Threw error: " + e.getLocalizedMessage());
+			return null;
 		}
 	}
 	
-	public static CBORObject updateInstructions(byte[] optionBytes, CBORObject instructions) {
-		CBORObject option = CBORObject.DecodeFromBytes(optionBytes);
-		option.set(5, instructions);
-		return option;
+	/**
+	 * Encodes a CBOR sequence into a byte array
+	 * @param instructions CBOR sequence to be encoded
+	 * @return byte array containing the encoded CBOR sequence
+	 */
+	public static byte[] encodeSequence(CBORObject[] CBORSequence) {
+		byte[] result = new byte[0];
+		for (CBORObject object : CBORSequence) {
+			result = OptionEncoder.combine(result, object.EncodeToBytes());
+		}
+		
+		return result;
+	}
+	
+	/**
+	 * Appends the append byte array to the src byte array
+	 * @param src byte array to be appended
+	 * @param append byte array to append
+	 * @return src byte array appended with append byte array
+	 */
+	public static byte[] combine(byte[] src, byte[] append) {
+		byte[] result = new byte[src.length + append.length];
+		System.arraycopy(src, 0, result, 0, src.length);
+		System.arraycopy(append, 0, result, src.length, append.length);
+		return result;
 	}
 }
