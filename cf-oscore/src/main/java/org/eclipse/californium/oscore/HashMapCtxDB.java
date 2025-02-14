@@ -128,7 +128,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		}
 
 		if (overwrite) {
-			// Retrieve OSCORE option value
+			// Retrieve and set real OSCORE option value
 			byte[] OSCOREOptionValue = instructions[0].ToObject(byte[].class);
 			request.getOptions().setOscore(OSCOREOptionValue);
 		}

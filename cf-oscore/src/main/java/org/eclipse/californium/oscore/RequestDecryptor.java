@@ -28,6 +28,7 @@ import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.network.serialization.UdpDataParser;
 import org.eclipse.californium.cose.Encrypt0Message;
+import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
@@ -60,14 +61,20 @@ public class RequestDecryptor extends Decryptor {
 	 * @throws CoapOSException if decryption fails
 	 */
 	public static Request decrypt(OSCoreCtxDB db, Request request, OSCoreCtx ctx) throws CoapOSException {
-
+		System.out.println("context is: " + ctx.getSenderIdString());
+		System.out.println(request.getOptions());
 		discardEOptions(request);
+		System.out.println(request.getOptions());
+		System.out.println("request is: " + request);
 
+		System.out.println(request.getPayloadString());
 		byte[] protectedData = request.getPayload();
 		Encrypt0Message enc;
 		OptionSet uOptions = request.getOptions();
 		try {
+			System.out.println("aa1");
 			enc = decompression(protectedData, request);
+			System.out.println("aa2");
 		} catch (OSException e) {
 			LOGGER.error(ErrorDescriptions.FAILED_TO_DECODE_COSE);
 			throw new CoapOSException(ErrorDescriptions.FAILED_TO_DECODE_COSE, ResponseCode.BAD_OPTION);
@@ -103,6 +110,7 @@ public class RequestDecryptor extends Decryptor {
 		byte[] plaintext;
 		try {
 			plaintext = decryptAndDecode(enc, request, ctx, null);
+			System.out.println("plaintext is: " + plaintext + " : " + Hex.encodeHexString(plaintext));
 		} catch (OSException e) {
 			//First check for replay exceptions
 			if (e.getMessage().equals(ErrorDescriptions.REPLAY_DETECT)) { 

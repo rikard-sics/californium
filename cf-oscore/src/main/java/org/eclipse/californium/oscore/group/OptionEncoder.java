@@ -16,9 +16,8 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore.group;
 
-import org.eclipse.californium.oscore.OSException;
-import java.lang.reflect.Array;
 import com.upokecenter.cbor.CBORObject;
+import com.upokecenter.cbor.CBORType;
 
 /**
  * Class that allows an application to set the OSCORE option in a convenient way
@@ -137,10 +136,10 @@ public class OptionEncoder {
 
 		try {
 			CBORObject[] decodedSequence = CBORObject.DecodeSequenceFromBytes(sequenceBytes);
-			if (decodedSequence.length < 3) {
-				return null;
+			if (decodedSequence[1].isNumber() && (decodedSequence[2].getType() == CBORType.Map)) {
+				return decodedSequence;
 			}
-			else return decodedSequence;
+			else return null;
 		} catch (com.upokecenter.cbor.CBORException e) {
 			System.out.println("Threw error: " + e.getLocalizedMessage());
 			return null;

@@ -226,8 +226,13 @@ public abstract class Decryptor {
 	 */
 	private static void decodeObjectSecurity(Message message, Encrypt0Message enc) throws OSException {
 
+		System.out.println("a1");
+		System.out.println(message);
+		System.out.println(message);
 		OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(message.getOptions().getOscore());
-
+		System.out.println("a2");
+		System.out.println("decode oscore option using option decoder and puts into encrypt0message");
+		
 		int n = optionDecoder.getN();
 		int k = optionDecoder.getK();
 		int h = optionDecoder.getH();

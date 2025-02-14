@@ -24,9 +24,12 @@ import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
+import org.eclipse.californium.core.coap.MessageObserver;
+import org.eclipse.californium.core.coap.MessageObserverAdapter;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.cose.Encrypt0Message;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 
 /**
  * 
@@ -50,6 +53,7 @@ public class RequestEncryptor extends Encryptor {
 	 */
 	public static Request encrypt(OSCoreCtxDB db, Request request) throws OSException {
 
+		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(request.getOptions().getOscore());
 		OSCoreCtx ctx = db.getContext(request, true);
 
 		if (ctx == null) {
@@ -69,14 +73,18 @@ public class RequestEncryptor extends Encryptor {
 		request = OptionJuggle.setFakeCodeRequest(request);
 
 		OptionSet options = request.getOptions();
-		byte[] confidential = OSSerializer.serializeConfidentialData(options, request.getPayload(), realCode);
+		System.out.println("options here are: " + options);
+		byte[] confidential = OSSerializer.serializeConfidentialData(options, request.getPayload(), realCode, request, instructions );
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
 		byte[] cipherText = encryptAndEncode(enc, ctx, request, false, null);
+		
+		// sets correct OSCORE option values here
 		compression(ctx, cipherText, request, false);
 
 		request.setOptions(OptionJuggle.prepareUoptions(request.getOptions()));
-
+		
 		ctx.increaseSenderSeq();
+		System.out.println("Returning request:             " + request);
 		return request;
 	}
 

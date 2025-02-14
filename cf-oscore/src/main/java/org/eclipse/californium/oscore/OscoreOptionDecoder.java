@@ -17,6 +17,7 @@
 package org.eclipse.californium.oscore;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.elements.util.DatagramReader;
@@ -79,6 +80,9 @@ public class OscoreOptionDecoder {
 	 */
 	private void decode() throws CoapOSException {
 		byte[] total = encodedBytes;
+		System.out.println("decoding");
+		System.out.println(Objects.isNull(total));
+		System.out.println(total.length);
 
 		/**
 		 * If the OSCORE option value is a zero length byte array it represents
@@ -149,6 +153,7 @@ public class OscoreOptionDecoder {
 		this.partialIV = partialIV;
 		this.kid = kid;
 		this.idContext = kidContext;
+		System.out.println("this was valid");
 	}
 
 	/**

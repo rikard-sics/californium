@@ -35,6 +35,8 @@ import org.eclipse.californium.core.coap.option.StringOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.upokecenter.cbor.CBORObject;
+
 /**
  * 
  * Provides option handling methods necessary for OSCORE mechanics.
@@ -48,6 +50,10 @@ public class OptionJuggle {
 	private static final Logger LOGGER = LoggerFactory.getLogger(OptionJuggle.class);
 	
 	private static List<Integer> allEOptions = populateAllEOptions();
+	private static List<Integer> sourceDestinationEOptions = populateSourceDestinationEOptions();
+	private static List<Integer> sourceProxyEOptions = populateSourceProxyEOptions();
+	private static List<Integer> proxyDestinationEOptions = populateProxyDestinationEOptions();
+	private static List<Integer> proxypProxyEOptions = populateProxyProxyEOptions();
 
 	private static List<Integer> populateAllEOptions() {
 		List<Integer> allEOptions = new ArrayList<Integer>();
@@ -66,7 +72,92 @@ public class OptionJuggle {
 		allEOptions.add(OptionNumberRegistry.BLOCK1);
 		allEOptions.add(OptionNumberRegistry.SIZE2);
 		allEOptions.add(OptionNumberRegistry.SIZE1);
+		allEOptions.add(OptionNumberRegistry.OSCORE); 
 		return allEOptions;
+	}
+	
+	private static List<Integer> populateSourceDestinationEOptions() {
+		List<Integer> sourceDestinationEOptions = new ArrayList<Integer>();
+		sourceDestinationEOptions.add(OptionNumberRegistry.IF_MATCH);
+		sourceDestinationEOptions.add(OptionNumberRegistry.ETAG);
+		sourceDestinationEOptions.add(OptionNumberRegistry.IF_NONE_MATCH);
+		sourceDestinationEOptions.add(OptionNumberRegistry.OBSERVE);
+		sourceDestinationEOptions.add(OptionNumberRegistry.LOCATION_PATH);
+		sourceDestinationEOptions.add(OptionNumberRegistry.URI_PATH);
+		sourceDestinationEOptions.add(OptionNumberRegistry.CONTENT_FORMAT);
+		sourceDestinationEOptions.add(OptionNumberRegistry.MAX_AGE);
+		sourceDestinationEOptions.add(OptionNumberRegistry.URI_QUERY);
+		sourceDestinationEOptions.add(OptionNumberRegistry.ACCEPT);
+		sourceDestinationEOptions.add(OptionNumberRegistry.LOCATION_QUERY);
+		sourceDestinationEOptions.add(OptionNumberRegistry.BLOCK2);
+		sourceDestinationEOptions.add(OptionNumberRegistry.BLOCK1);
+		sourceDestinationEOptions.add(OptionNumberRegistry.SIZE2);
+		sourceDestinationEOptions.add(OptionNumberRegistry.SIZE1);
+		sourceDestinationEOptions.add(OptionNumberRegistry.OSCORE); 
+		return sourceDestinationEOptions;
+	}
+	
+	private static List<Integer> populateSourceProxyEOptions() {
+		List<Integer> sourceProxyEOptions = new ArrayList<Integer>();
+		sourceProxyEOptions.add(OptionNumberRegistry.IF_MATCH);
+		sourceProxyEOptions.add(OptionNumberRegistry.ETAG);
+		sourceProxyEOptions.add(OptionNumberRegistry.IF_NONE_MATCH);
+		sourceProxyEOptions.add(OptionNumberRegistry.OBSERVE);
+		sourceProxyEOptions.add(OptionNumberRegistry.LOCATION_PATH);
+		sourceProxyEOptions.add(OptionNumberRegistry.URI_PATH);
+		sourceProxyEOptions.add(OptionNumberRegistry.CONTENT_FORMAT);
+		sourceProxyEOptions.add(OptionNumberRegistry.MAX_AGE);
+		sourceProxyEOptions.add(OptionNumberRegistry.URI_QUERY);
+		sourceProxyEOptions.add(OptionNumberRegistry.ACCEPT);
+		sourceProxyEOptions.add(OptionNumberRegistry.LOCATION_QUERY);
+		sourceProxyEOptions.add(OptionNumberRegistry.BLOCK2);
+		sourceProxyEOptions.add(OptionNumberRegistry.BLOCK1);
+		sourceProxyEOptions.add(OptionNumberRegistry.SIZE2);
+		sourceProxyEOptions.add(OptionNumberRegistry.SIZE1);
+		sourceProxyEOptions.add(OptionNumberRegistry.OSCORE); 
+		return sourceProxyEOptions;
+	}
+	
+	private static List<Integer> populateProxyDestinationEOptions() {
+		List<Integer> proxyDestinationEOptions = new ArrayList<Integer>();
+		proxyDestinationEOptions.add(OptionNumberRegistry.IF_MATCH);
+		proxyDestinationEOptions.add(OptionNumberRegistry.ETAG);
+		proxyDestinationEOptions.add(OptionNumberRegistry.IF_NONE_MATCH);
+		proxyDestinationEOptions.add(OptionNumberRegistry.OBSERVE);
+		proxyDestinationEOptions.add(OptionNumberRegistry.LOCATION_PATH);
+		proxyDestinationEOptions.add(OptionNumberRegistry.URI_PATH);
+		proxyDestinationEOptions.add(OptionNumberRegistry.CONTENT_FORMAT);
+		proxyDestinationEOptions.add(OptionNumberRegistry.MAX_AGE);
+		proxyDestinationEOptions.add(OptionNumberRegistry.URI_QUERY);
+		proxyDestinationEOptions.add(OptionNumberRegistry.ACCEPT);
+		proxyDestinationEOptions.add(OptionNumberRegistry.LOCATION_QUERY);
+		proxyDestinationEOptions.add(OptionNumberRegistry.BLOCK2);
+		proxyDestinationEOptions.add(OptionNumberRegistry.BLOCK1);
+		proxyDestinationEOptions.add(OptionNumberRegistry.SIZE2);
+		proxyDestinationEOptions.add(OptionNumberRegistry.SIZE1);
+		proxyDestinationEOptions.add(OptionNumberRegistry.OSCORE); // wee wee woo
+		return proxyDestinationEOptions;
+	}
+	
+	private static List<Integer> populateProxyProxyEOptions() {
+		List<Integer> proxypProxyEOptions = new ArrayList<Integer>();
+		proxypProxyEOptions.add(OptionNumberRegistry.IF_MATCH);
+		proxypProxyEOptions.add(OptionNumberRegistry.ETAG);
+		proxypProxyEOptions.add(OptionNumberRegistry.IF_NONE_MATCH);
+		proxypProxyEOptions.add(OptionNumberRegistry.OBSERVE);
+		proxypProxyEOptions.add(OptionNumberRegistry.LOCATION_PATH);
+		proxypProxyEOptions.add(OptionNumberRegistry.URI_PATH);
+		proxypProxyEOptions.add(OptionNumberRegistry.CONTENT_FORMAT);
+		proxypProxyEOptions.add(OptionNumberRegistry.MAX_AGE);
+		proxypProxyEOptions.add(OptionNumberRegistry.URI_QUERY);
+		proxypProxyEOptions.add(OptionNumberRegistry.ACCEPT);
+		proxypProxyEOptions.add(OptionNumberRegistry.LOCATION_QUERY);
+		proxypProxyEOptions.add(OptionNumberRegistry.BLOCK2);
+		proxypProxyEOptions.add(OptionNumberRegistry.BLOCK1);
+		proxypProxyEOptions.add(OptionNumberRegistry.SIZE2);
+		proxypProxyEOptions.add(OptionNumberRegistry.SIZE1);
+		proxypProxyEOptions.add(OptionNumberRegistry.OSCORE); // wee wee woo
+		return proxypProxyEOptions;
 	}
 
 	/**
@@ -133,12 +224,26 @@ public class OptionJuggle {
 	 * 
 	 * @return the option to be encrypted
 	 */
-	public static OptionSet prepareEoptions(OptionSet options) {
+	public static OptionSet prepareEoptions(OptionSet options, Request request, CBORObject[] instructions) {
 		OptionSet ret = new OptionSet();
-
+		
+		
+		System.out.println("initial optionset: " + options);
 		for (Option o : options.asSortedList()) {
+			// did i add opt to m?
+			// maybe add onto "endpointcontext" in request if it is a creator, would need request as param to know (or just endppintcontext)
+			// Is x a consumer of opt?
+			boolean isConsumer = false;
+			if (processOptionAsE(o, request, instructions)) {
+				ret.addOption(o);
+			}
+			/*
+			// Is x the immediately next consumer of opt?
+			// assume it is for now for simplicity
+			*/
+			
+			
 			switch (o.getNumber()) {
-
 			case OptionNumberRegistry.URI_HOST:
 			case OptionNumberRegistry.URI_PORT:
 			case OptionNumberRegistry.PROXY_SCHEME:
@@ -176,9 +281,12 @@ public class OptionJuggle {
 				}
 				break;
 			default: // default is encrypt
+				System.out.println("encrypting opt: " + o);
 				ret.addOption(o);
 			}
 		}
+		System.out.println("out optionset: " + ret);
+
 		return ret;
 	}
 
@@ -199,7 +307,77 @@ public class OptionJuggle {
 		}
 		return result;
 	}
+	
+	public static boolean processOptionAsE(Option option, Request request, CBORObject[] instructions) {
+		// did I add OPT to M?
+		System.out.println(request.getSourceContext().getPeerAddress().getAddress().getCanonicalHostName());
+		String canonicalHostName = request.getSourceContext().getPeerAddress().getAddress().getCanonicalHostName();
+		// where find it's own ip adress.
+		if (canonicalHostName == "localhost" || true) {
+			// is x a consumer of opt?
+			return processIsEndpointConsumer(option, request, instructions);
+		}
+		return false;
+	}
 
+	public static boolean processIsEndpointConsumer(Option option, Request request, CBORObject[] instructions) {
+		//should check other way for normal requests (i.e. no instructions, but still source)
+		boolean isSource = instructions != null ? true : false;
+		
+		boolean toDestination = false;
+		if (isSource && ((int) instructions[1].ToObject(int.class) == 2)) {
+			toDestination = true;
+		}
+		// else check to see if not proxy sending to proxy
+		// i.e. no instructions but also not proxy but still source
+		// else check to see if proxy sending to proxy.
+		
+		if (isSource && toDestination) {      // source -> destination
+			for (Option opt : sourceDestinationSet)
+		}
+		else if (isSource && !toDestination) {// source -> proxy
+			
+		}
+		else if (!isSource && toDestination) {// proxy  -> destination
+			
+		}
+		else {                                // proxy  -> proxy
+			
+		}
+		if () { // assume x is destination endpoint
+			// list of all consumable options for a destination endpoint?
+			for (Option consumable : destinationConsumable) {
+				if (option.getNumber() == consumable.getNumber()) {
+					// source -> destination
+					// proxy  -> destination
+					
+					return processIsEndpointImmediateConsumer(option, request, instructions);
+				}
+			}
+		}
+		else { // assume x is not a destination endpoint, i.e. proxy
+			// list of all consumable options for a proxy?
+			for (Option consumable : proxyConsumable) {
+				if (option.getNumber() == consumable.getNumber()) {
+					// source -> proxy
+					// proxy  -> proxy
+					return processIsEndpointImmediateConsumer(option, request, instructions);
+				}
+			}
+		}
+		return false;
+	}
+	
+	public static boolean processIsEndpointImmediateConsumer(Option option, Request request, CBORObject[] instructions) {
+		
+		
+		
+		if (true) {
+		return processNeedBeforeDecryption(option, request, instructions);
+		}	
+		return false;
+	}
+	
 	/**
 	 * Sets the fake code in the coap header and returns the real code.
 	 * 
@@ -304,6 +482,7 @@ public class OptionJuggle {
 
 		for (Option tmp : uOptions.asSortedList()) {
 			if (Collections.binarySearch(e, tmp) < 0) {
+				System.out.println("merging eOption: " + e + " with uOption: " + tmp);
 				eOptions.addOption(tmp);
 			}
 		}

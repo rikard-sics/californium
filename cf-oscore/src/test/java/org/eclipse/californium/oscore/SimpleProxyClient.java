@@ -63,7 +63,7 @@ public class SimpleProxyClient {
 
 		OSCoreCoapStackFactory.useAsDefault(db);
 						
-		boolean hasInstructions= false;
+		boolean hasInstructions= true;
 		
 		if (hasInstructions) {
 			CoapClient c = new CoapClient(uriProxy + uriProxyPath);
@@ -83,7 +83,7 @@ public class SimpleProxyClient {
 			Request r = new Request(Code.GET);
 			r.getOptions().setProxyUri(uriServer + uriServerPath);
 			r.getOptions().setOscore(instructions);
-						
+
 			CoapResponse resp = c.advanced(r);
 			printResponse(resp);
 			

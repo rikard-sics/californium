@@ -33,6 +33,7 @@ import org.eclipse.californium.core.coap.Token;
 
 import java.util.Objects;
 
+import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
@@ -132,6 +133,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	@Override
 	public void sendRequest(final Exchange exchange, final Request request) {
 		Request req = request;
+		System.out.println(exchange);
+		System.out.println("options are: " + request.getOptions());
 
 		if (shouldProtectRequest(request)) {
 			try {
@@ -181,7 +184,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				//encryption here
 				final Request preparedRequest = prepareSend(ctxDb, request);
-
+				
+				System.out.println("request after prepare send is: " + request);
+				System.out.println("prepared request is:           " + preparedRequest);
 				// are there instructions?
 				boolean instructionsExists = Objects.nonNull(instructions);
 				boolean instructionsRemaining = true;
@@ -196,16 +201,15 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						// increment index
 						instructions[1] = CBORObject.FromObject(currentIndex + 1);
 
-						byte[] latestOSCOREOptionValue = request.getOptions().getOscore();
+						byte[] latestOSCOREOptionValue = preparedRequest.getOptions().getOscore();
 						instructions[0] = CBORObject.FromObject(latestOSCOREOptionValue);
 
 						//update Oscore
 						byte[] updatedOSCOREOption = OptionEncoder.encodeSequence(instructions);
-						req.getOptions().setOscore(updatedOSCOREOption);
+						request.getOptions().setOscore(updatedOSCOREOption);
 
 						// apply OSCORE layer again
 						System.out.println("applying again");
-						System.out.println("updated oscore is: " + updatedOSCOREOption);
 						sendRequest(exchange, request);
 					}
 				}
@@ -240,14 +244,19 @@ public class ObjectSecurityLayer extends AbstractLayer {
 							}
 
 							if (Objects.nonNull(finalInstructions)) {
-								System.out.println("adding final: " + finalInstructions);
 								ctxDb.addInstructions(token, finalInstructions);
 
 								byte[] latestOSCOREOptionValue = finalInstructions[0].ToObject(byte[].class);
+								int length = latestOSCOREOptionValue.length;
+								System.out.println("latest oscore option is length: " + length);
+								System.out.print("oscore option value is: " + Hex.encodeHexString(latestOSCOREOptionValue));
+								System.out.println();
+								System.out.println("Current option is: " + request.getOptions().getOscore().length + " " + Hex.encodeHexString(request.getOptions().getOscore()));
+								
 								request.getOptions().setOscore(latestOSCOREOptionValue);
 
 							}
-							System.out.println(finalCtx.getRecipientIdString());
+							
 							ctxDb.addContext(token, finalCtx);
 
 						}
@@ -373,12 +382,16 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				super.receiveRequest(exchange, request);
 				return;
 			}
-
+			System.out.println("weeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
 			byte[] requestOscoreOption;
 			try {
+				System.out.println("request print 1: " + request);
 				requestOscoreOption = request.getOptions().getOscore();
 				request = prepareReceive(ctxDb, request, ctx);
 				request.getOptions().setOscore(Bytes.EMPTY);
+				System.out.println("here we sett empty oscore opt");
+				System.out.println("request print 2: " + request);
+
 				exchange.setRequest(request);
 			} catch (CoapOSException e) {
 				LOGGER.error("Error while receiving OSCore request: {}", e.getMessage());
