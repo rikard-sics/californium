@@ -21,12 +21,16 @@ package org.eclipse.californium.oscore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.upokecenter.cbor.CBORObject;
+
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.option.BlockOption;
 import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 
 /**
  * 
@@ -57,6 +61,9 @@ public class ResponseEncryptor extends Encryptor {
 	 */
 	public static Response encrypt(OSCoreCtxDB db, Response response, OSCoreCtx ctx, boolean newPartialIV,
 			boolean outerBlockwise, int requestSequenceNr) throws OSException {
+		
+		CBORObject[] instructions = db.getInstructions(response.getToken());
+		
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CTX_NULL);
 			throw new OSException(ErrorDescriptions.CTX_NULL);
@@ -89,7 +96,7 @@ public class ResponseEncryptor extends Encryptor {
 			options.removeBlock1();
 		}
 
-		byte[] confidential = OSSerializer.serializeConfidentialData(options, response.getPayload(), realCode);
+		byte[] confidential = OSSerializer.serializeConfidentialData(options, response.getPayload(), realCode, response.getDestinationContext());
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
 		byte[] cipherText = encryptAndEncode(enc, ctx, response, newPartialIV, requestSequenceNr);
 		compression(ctx, cipherText, response, newPartialIV);

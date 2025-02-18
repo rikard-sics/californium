@@ -74,7 +74,7 @@ public class RequestEncryptor extends Encryptor {
 
 		OptionSet options = request.getOptions();
 		System.out.println("options here are: " + options);
-		byte[] confidential = OSSerializer.serializeConfidentialData(options, request.getPayload(), realCode, request, instructions );
+		byte[] confidential = OSSerializer.serializeConfidentialData(options, request.getPayload(), realCode, request.getDestinationContext() );
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
 		byte[] cipherText = encryptAndEncode(enc, ctx, request, false, null);
 		

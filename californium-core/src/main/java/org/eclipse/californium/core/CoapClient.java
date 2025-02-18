@@ -1686,7 +1686,7 @@ public class CoapClient {
 	 */
 	private Request assignClientUriIfEmpty(Request request) {
 		EndpointContext context = destinationContext.get();
-		
+		System.out.println("assign client uri if empty");
 		if (context != null && request.getDestinationContext() == null) {
 			request.setDestinationContext(context);
 			if (useProxy && proxyScheme == null) {

@@ -29,6 +29,7 @@ import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.network.serialization.DataSerializer;
 import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.elements.EndpointContext;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.DatagramWriter;
 
@@ -59,11 +60,11 @@ public class OSSerializer {
 	 * 
 	 * @return the serialized plaintext for OSCore
 	 */
-	public static byte[] serializeConfidentialData(OptionSet options, byte[] payload, int realCode, Request request, CBORObject[] instructions) {//maybe generic
+	public static byte[] serializeConfidentialData(OptionSet options, byte[] payload, int realCode, EndpointContext endpointcontext) {//maybe generic
 		if (options != null) {
 			DatagramWriter writer = new DatagramWriter();
 			if (realCode > 0) {
-				OptionSet filteredOptions = OptionJuggle.prepareEoptions(options, request, instructions); //its calling here
+				OptionSet filteredOptions = OptionJuggle.prepareEoptions(options, endpointcontext); //its calling here
 				writer.write(realCode, CoAP.MessageFormat.CODE_BITS);
 				DataSerializer.serializeOptionsAndPayload(writer, filteredOptions, payload);
 				return writer.toByteArray();

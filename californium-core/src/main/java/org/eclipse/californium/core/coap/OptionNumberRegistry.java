@@ -53,6 +53,7 @@ public final class OptionNumberRegistry {
 	public static final int CONTENT_FORMAT	= 12;
 	public static final int MAX_AGE			= 14;
 	public static final int URI_QUERY		= 15;
+	public static final int HOP_LIMIT       = 16;
 	public static final int ACCEPT			= 17;
 	public static final int LOCATION_QUERY	= 20;
 	public static final int PROXY_URI		= 35;
@@ -93,6 +94,7 @@ public final class OptionNumberRegistry {
 		public static final String Content_Format	= "Content-Format";
 		public static final String Max_Age			= "Max-Age";
 		public static final String Uri_Query		= "Uri-Query";
+		public static final String Hop_Limit        = "Hop-Limit";
 		public static final String Accept			= "Accept";
 		public static final String Location_Query	= "Location-Query";
 		public static final String Proxy_Uri		= "Proxy-Uri";

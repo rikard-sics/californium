@@ -84,6 +84,7 @@ public class SimpleProxyClient {
 			r.getOptions().setProxyUri(uriServer + uriServerPath);
 			r.getOptions().setOscore(instructions);
 
+			
 			CoapResponse resp = c.advanced(r);
 			printResponse(resp);
 			
