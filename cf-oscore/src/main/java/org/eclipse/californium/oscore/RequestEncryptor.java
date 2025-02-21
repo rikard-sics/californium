@@ -53,7 +53,7 @@ public class RequestEncryptor extends Encryptor {
 	 */
 	public static Request encrypt(OSCoreCtxDB db, Request request) throws OSException {
 
-		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(request.getOptions().getOscore());
+		byte[] encodedInstructions = request.getOptions().getOscore(); // can be null
 		OSCoreCtx ctx = db.getContext(request, true);
 
 		if (ctx == null) {
@@ -73,18 +73,28 @@ public class RequestEncryptor extends Encryptor {
 		request = OptionJuggle.setFakeCodeRequest(request);
 
 		OptionSet options = request.getOptions();
-		System.out.println("options here are: " + options);
-		byte[] confidential = OSSerializer.serializeConfidentialData(options, request.getPayload(), realCode, request.getDestinationContext() );
+		
+		System.out.println("options before preparing options are: " + options);
+		
+		//prepare options here, both E and U
+		OptionSet[] optionsUAndE = OptionJuggle.prepareUandEOptions(options, encodedInstructions);
+		// here the E options are set 
+		byte[] confidential = OSSerializer.serializeConfidentialData(optionsUAndE[1], request.getPayload(), realCode);
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
 		byte[] cipherText = encryptAndEncode(enc, ctx, request, false, null);
 		
 		// sets correct OSCORE option values here
 		compression(ctx, cipherText, request, false);
 
-		request.setOptions(OptionJuggle.prepareUoptions(request.getOptions()));
+		byte[] oscoreOption = request.getOptions().getOscore();
+
+		// here the U options are set
+		request.setOptions(optionsUAndE[0]);
+		request.getOptions().setOscore(oscoreOption);
+		//request.setOptions(OptionJuggle.prepareUoptions(request.getOptions()));
 		
 		ctx.increaseSenderSeq();
-		System.out.println("Returning request:             " + request);
+
 		return request;
 	}
 

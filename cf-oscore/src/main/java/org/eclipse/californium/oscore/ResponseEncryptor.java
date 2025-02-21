@@ -62,7 +62,9 @@ public class ResponseEncryptor extends Encryptor {
 	public static Response encrypt(OSCoreCtxDB db, Response response, OSCoreCtx ctx, boolean newPartialIV,
 			boolean outerBlockwise, int requestSequenceNr) throws OSException {
 		
-		CBORObject[] instructions = db.getInstructions(response.getToken());
+		byte[] encodedInstructions = response.getOptions().getOscore(); // can be null
+
+		CBORObject[] instructions = null; //db.getInstructions(response.getToken());
 		
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CTX_NULL);
@@ -96,14 +98,23 @@ public class ResponseEncryptor extends Encryptor {
 			options.removeBlock1();
 		}
 
-		byte[] confidential = OSSerializer.serializeConfidentialData(options, response.getPayload(), realCode, response.getDestinationContext());
+		OptionSet[] optionsUAndE = OptionJuggle.prepareUandEOptions(options, encodedInstructions);
+
+		byte[] confidential = OSSerializer.serializeConfidentialData(optionsUAndE[1], response.getPayload(), realCode);
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
 		byte[] cipherText = encryptAndEncode(enc, ctx, response, newPartialIV, requestSequenceNr);
 		compression(ctx, cipherText, response, newPartialIV);
 
+
+		byte[] oscoreOption = response.getOptions().getOscore();
+
+		// here the U options are prepared
+		response.setOptions(optionsUAndE[0]);
+		response.getOptions().setOscore(oscoreOption);
+		/*
 		options = response.getOptions();
 		response.setOptions(OptionJuggle.prepareUoptions(options));
-
+		 */
 		if (outerBlockwise) {
 			response.setOptions(response.getOptions().setBlock1(block1Option));
 		}

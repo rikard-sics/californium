@@ -22,6 +22,7 @@ package org.eclipse.californium.oscore;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
@@ -33,6 +34,7 @@ import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.option.StringOption;
 import org.eclipse.californium.elements.EndpointContext;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,9 +51,9 @@ public class OptionJuggle {
 	 * The logger
 	 */
 	private static final Logger LOGGER = LoggerFactory.getLogger(OptionJuggle.class);
-	
+
 	private static List<Integer> allEOptions = populateAllEOptions();
-	private static List<Integer> allConsumeOptions = populateAllConsumeOptions();
+	private static List<Integer> allUOptions = populateAllUOptions();
 	private static List<Integer> serverConsumeOptions = populateServerConsumeOptions();
 	private static List<Integer> proxyConsumeOptions = populateProxyConsumeOptions();
 
@@ -74,54 +76,47 @@ public class OptionJuggle {
 		allEOptions.add(OptionNumberRegistry.SIZE1);
 		return allEOptions;
 	}
-	
-	private static List<Integer> populateAllConsumeOptions() {
-		List<Integer> allConsumeOptions = new ArrayList<Integer>();
-		allConsumeOptions.add(OptionNumberRegistry.URI_HOST);
-		allConsumeOptions.add(OptionNumberRegistry.URI_PORT);
-		allConsumeOptions.add(OptionNumberRegistry.PROXY_SCHEME);
 
-		allConsumeOptions.add(OptionNumberRegistry.OBSERVE);
-		allConsumeOptions.add(OptionNumberRegistry.OSCORE);
-		allConsumeOptions.add(OptionNumberRegistry.MAX_AGE);
-		allConsumeOptions.add(OptionNumberRegistry.HOP_LIMIT);
-		allConsumeOptions.add(OptionNumberRegistry.PROXY_URI);
-
-		return allConsumeOptions;
+	private static List<Integer> populateAllUOptions() {
+		List<Integer> proxyConsumeOptions = new ArrayList<Integer>();
+		proxyConsumeOptions.add(OptionNumberRegistry.URI_HOST);
+		proxyConsumeOptions.add(OptionNumberRegistry.OBSERVE);
+		proxyConsumeOptions.add(OptionNumberRegistry.URI_PORT);
+		proxyConsumeOptions.add(OptionNumberRegistry.OSCORE);
+		proxyConsumeOptions.add(OptionNumberRegistry.MAX_AGE);
+		proxyConsumeOptions.add(OptionNumberRegistry.PROXY_URI);
+		proxyConsumeOptions.add(OptionNumberRegistry.PROXY_SCHEME);
+		return proxyConsumeOptions;
 	}
 	private static List<Integer> populateServerConsumeOptions() {
 		List<Integer> serverConsumeOptions = new ArrayList<Integer>();
-		serverConsumeOptions.add(OptionNumberRegistry.URI_HOST);
-		serverConsumeOptions.add(OptionNumberRegistry.URI_PORT);
-		serverConsumeOptions.add(OptionNumberRegistry.PROXY_SCHEME);
+		//serverConsumeOptions.add(OptionNumberRegistry.URI_HOST);
+		//serverConsumeOptions.add(OptionNumberRegistry.URI_PORT);
+		serverConsumeOptions.add(OptionNumberRegistry.URI_PATH);
+		serverConsumeOptions.add(OptionNumberRegistry.URI_QUERY);
 
-//		serverConsumeOptions.add(OptionNumberRegistry.OBSERVE);
+		serverConsumeOptions.add(OptionNumberRegistry.OBSERVE);
 		serverConsumeOptions.add(OptionNumberRegistry.OSCORE);
 		serverConsumeOptions.add(OptionNumberRegistry.MAX_AGE);
-//		serverConsumeOptions.add(OptionNumberRegistry.HOP_LIMIT);
-//		serverConsumeOptions.add(OptionNumberRegistry.PROXY_URI);
-//		serverConsumeOptions.add(OptionNumberRegistry.PROXY_SCHEME);
 
 
 		return serverConsumeOptions;
 	}
-	
+
 	private static List<Integer> populateProxyConsumeOptions() {
 		List<Integer> proxyConsumeOptions = new ArrayList<Integer>();
 		proxyConsumeOptions.add(OptionNumberRegistry.URI_HOST);
 		proxyConsumeOptions.add(OptionNumberRegistry.URI_PORT);
 		proxyConsumeOptions.add(OptionNumberRegistry.PROXY_SCHEME);
+		proxyConsumeOptions.add(OptionNumberRegistry.PROXY_URI);
 
 		proxyConsumeOptions.add(OptionNumberRegistry.OBSERVE);
 		proxyConsumeOptions.add(OptionNumberRegistry.OSCORE);
 		proxyConsumeOptions.add(OptionNumberRegistry.MAX_AGE);
-		proxyConsumeOptions.add(OptionNumberRegistry.HOP_LIMIT);
-		proxyConsumeOptions.add(OptionNumberRegistry.PROXY_URI);
 
 		return proxyConsumeOptions;
 	}
 
-	//everything consumes 
 	/**
 	 * Prepare a set or original CoAP options for unprotected use with OSCore.
 	 * 
@@ -179,6 +174,75 @@ public class OptionJuggle {
 		return ret;
 	}
 
+	public static OptionSet[] prepareUandEOptions(OptionSet options, byte[] encodedInstructions) {
+		OptionSet[] result = {
+				new OptionSet(),
+				new OptionSet()
+		};
+		if (options.hasProxyUri()) {
+			options = handleProxyUri(options.getProxyUri(), options);
+		}
+
+		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(encodedInstructions);
+
+		for (Option o : options.asSortedList()) {
+			if (processOptionAsE(o, options, instructions)) {
+				result[1].addOption(o);
+				System.out.println("processing opt " + o + " as E");
+			}
+			else {
+				result[0].addOption(o);
+				System.out.println("processing opt " + o + " as U");
+
+			}
+		}
+		System.out.println("Returning optionset to encryptor: ");
+		System.out.println("U Options are --> " + result[0]);
+
+		System.out.println("E Options are --> " + result[1]);
+
+
+		return result;
+	}
+
+	public static OptionSet handleProxyUri(String proxyUri, OptionSet options) {
+		String UProxyUri = proxyUri;
+
+		proxyUri = proxyUri.replace("coap://", "");
+		proxyUri = proxyUri.replace("coaps://", "");
+
+		int i = proxyUri.indexOf('/');
+		System.out.println(i);
+		if (i >= 0) {
+			UProxyUri = proxyUri.substring(0, i);
+			proxyUri = proxyUri.substring(i + 1, proxyUri.length());
+		} else {// No Uri-Path and Uri-Query
+
+		}
+		UProxyUri = "coap://" + UProxyUri;
+		options.setProxyUri(UProxyUri);
+
+		i = proxyUri.indexOf("?");
+		String uriPath = proxyUri;
+		String uriQuery = null;
+		if (i >= 0) {
+			uriPath = proxyUri.substring(0, i);
+			uriQuery = proxyUri.substring(i + 1, proxyUri.length());
+		}
+
+		if (uriPath != null) {
+			options.setUriPath(uriPath);
+		}
+
+		if (uriQuery != null) {
+			String[] uriQueries = uriQuery.split("&");
+			for (int idx = 0; idx < uriQueries.length; idx++) {
+				options.setUriQuery(uriQueries[idx]);
+			}
+		}
+		return options;
+	}
+
 	/**
 	 * Prepare a set or original CoAP options for encryption with OSCore.
 	 * 
@@ -186,18 +250,13 @@ public class OptionJuggle {
 	 * 
 	 * @return the option to be encrypted
 	 */
-	public static OptionSet prepareEoptions(OptionSet options, EndpointContext endpointcontext) {
+	public static OptionSet prepareEoptions(OptionSet options, CBORObject[] instructions) {
 		OptionSet ret = new OptionSet();
-		
-		
+
+
 		System.out.println("initial optionset: " + options);
 		for (Option o : options.asSortedList()) {
-			if (processOptionAsE(o, options, endpointcontext)) {
-				ret.addOption(o);
-				System.out.println("processing opt " + o + " as E");
-			}
-			
-			/*
+
 			switch (o.getNumber()) {
 			case OptionNumberRegistry.URI_HOST:
 			case OptionNumberRegistry.URI_PORT:
@@ -238,9 +297,9 @@ public class OptionJuggle {
 			default: // default is encrypt
 				System.out.println("encrypting opt: " + o);
 				ret.addOption(o);
-				
+
 			}
-			*/
+
 		}
 		System.out.println("out optionset: " + ret);
 
@@ -256,7 +315,7 @@ public class OptionJuggle {
 	public static OptionSet discardEOptions(OptionSet optionSet) {
 		LOGGER.trace("Removing inner only E options from the outer options");
 		OptionSet result = new OptionSet();
-		
+
 		for (Option opt : optionSet.asSortedList()) {
 			if (!allEOptions.contains(opt.getNumber())) {
 				result.addOption(opt);
@@ -264,98 +323,149 @@ public class OptionJuggle {
 		}
 		return result;
 	}
-	
-	public static boolean processOptionAsE(Option option, OptionSet options, EndpointContext endpointcontext) {
-		// if ( ) { } // check if class E option?
 
-		// did I add OPT to M?
-		if ( true) { 
-			// should be endpoint context check // i.e. add "I sent this request" option
-			// or check for every option // i.e. have list of options that it has added
-			
-			// is x a consumer of opt?
-			return processIsEndpointConsumer(option, options, endpointcontext);
-		}
-		else return processNotConsumeOption(option, options, endpointcontext);
-	}
-
-	public static boolean processIsEndpointConsumer(Option option, OptionSet options, EndpointContext endpointcontext) {
-
-		if (allConsumeOptions.contains(option.getNumber())) {
-			if (processIsNextImmediateConsumer(option, options, endpointcontext)) {
-				return processNeedBeforeDecryption(option, options);
-			}
-			else return false;
-		}
-		else return processNotConsumeOption(option, options, endpointcontext);
-		
+	public static boolean isClassEOption(Option option) {
+		return !isClassUOption(option);
 	}
 	
-	
-	public static boolean processNotConsumeOption(Option option, OptionSet options, EndpointContext endpointcontext) {
-
-		if (processIsNextHop(option, options) || !(processIsNextImmediateConsumer(option, options, endpointcontext ))) {
-			return processIsOptionURIHostOrURIPort(option, options);
+	public static boolean isClassUOption(Option option) {
+		if (allUOptions.contains(option.getNumber())) {
+			return true;
 		}
 		else return false;
 	}
 	
-	public static boolean processIsNextHop(Option option, OptionSet options) {
-		return true;
+	private static boolean processOptionAsE(Option option, OptionSet options, CBORObject[] instructions) {
+		if (isClassEOption(option)) {
+			return true;
+		}
+		// did I add OPT to M?
+		if (true) { 
+			// should be endpoint context check // i.e. add "I sent this request" option
+			// or check for every option // i.e. have list of options that it has added
+
+			// is x a consumer of opt?
+			return processIsEndpointConsumer(option, options, instructions);
+		}
+		else return processNotConsumeOption(option, options, instructions);
 	}
-	public static boolean processIsNextImmediateConsumer(Option option, OptionSet options, EndpointContext endpointcontext) {
-		// should check other way for normal requests (i.e. no instructions, but still source)
-		// endpoint context??
-		/*
-		boolean isSource = instructions != null ? true : false;
+
+	private static boolean processIsEndpointConsumer(Option option, OptionSet options, CBORObject[] instructions) {
+		boolean instructionsExists = Objects.nonNull(instructions);
+
+		if (instructionsExists) { 
+			int index = instructions[1].ToObject(int.class); 
+			boolean hasOptions = instructions[index].ContainsKey(6);
+
+			if (hasOptions) { 
+				int[] optionArray = instructions[index].get(6).ToObject(int[].class);
+
+				for (int optionNumber : optionArray) {
+					if (optionNumber == option.getNumber()) {
+						//This class U option is not intended for the current endpoint
+						System.out.println("Option " + option + " was not intended");
+						return processNotConsumeOption(option, options, instructions);
+
+					}
+				}
+			}
+		}
+
+		System.out.println("Option " + option + " was intended");
+		if (processIsNextImmediateConsumer(option, options, instructions)) {
+			return processNeedBeforeDecryption(option, options);
+		}
+		else return false;
+
+	}
+
+
+
+	private static boolean processNotConsumeOption(Option option, OptionSet options, CBORObject[] instructions) {
+
+		if (processIsNextHop(option, options, instructions) || !(processIsNextImmediateConsumer(option, options, instructions ))) {
+			return processIsOptionURIHostOrURIPort(option, options);
+		}
+		else return false;
+	}
+
+	private static boolean processIsNextHop(Option option, OptionSet options, CBORObject[] instructions) {
+		// how to check if as a forward proxy? didn't add option but next might be server.
+		if (Objects.nonNull(instructions)) {
+			if ((int) instructions[1].ToObject(int.class) == (instructions.length - 2)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	private static boolean processIsNextImmediateConsumer(Option option, OptionSet options, CBORObject[] instructions) {
+
+		boolean instructionsForProxyExists = false;
+
+		if (Objects.nonNull(instructions)) {
+			instructionsForProxyExists = ((int) instructions[1].ToObject(int.class) > 2);
+		}
+
+		System.out.println("instructions for proxy exists is: " + instructionsForProxyExists);
+		if (instructionsForProxyExists) { 
 			
-		boolean toDestination = false;
-		if (isSource && ((int) instructions[1].ToObject(int.class) == 2)) {
-			toDestination = true;
+			//these are options that has to be consumed by a proxy (if we guess there is one)
+			if (proxyConsumeOptions.contains(option.getNumber())) { 
+				System.out.println("returning false for optionProxy: " + option);
+				return false;
+			}
+			else return true;
+
+		}
+		
+		//no instructions = vanilla oscore, do not encrypt U options
+		return false;
+		/*
+		// we believe we are communicating with a server through a proxy
+		if (options.hasProxyScheme() || options.hasProxyUri()) {
+			// is the option an option that is needed by the proxy that we cannot encrypt
+			if (proxyConsumeOptions.contains(option.getNumber())) { 
+				System.out.println("vanilla case, not encrypting " + option);
+				return false;
+			}
 		}
 		*/
-		if (options.hasUriHost()) { // -> destination
-			if (serverConsumeOptions.contains(option.getNumber())) {
-				return true;
-			}
-			else return false;
+
+/*
+		if (serverConsumeOptions.contains(option.getNumber())) {
+			System.out.println("returning true for optionServer: " + option);
+			return true;
 		}
-		else {               // -> proxy
-			if (proxyConsumeOptions.contains(option.getNumber())) {
-				return true;
-			}
-			else return false;
-		}
+		else return false;*/
 
 	}
-	
-	public static boolean processNeedBeforeDecryption(Option option, OptionSet options) {
-		
+
+	private static boolean processNeedBeforeDecryption(Option option, OptionSet options) {
+
 		switch (option.getNumber()) {
-		// do not process these options as Class E
-			case OptionNumberRegistry.OSCORE:
-				return false;
-			default:
-				return processIsOptionURIHostOrURIPort(option, options);
-		}
-	}
-	
-	public static boolean processIsOptionURIHostOrURIPort(Option option, OptionSet options) {
-		
-		switch (option.getNumber()) {
-			case OptionNumberRegistry.URI_HOST:
-			case OptionNumberRegistry.URI_PORT:
-				if (options.getProxyScheme() != null
-						/*|| options.getProxySchemeNumber() == null*/) {
-					return true;
-				}
-				else return false;
-			default:
-				return true;
+		case OptionNumberRegistry.OSCORE:
+			return false;
+		default:
+			return processIsOptionURIHostOrURIPort(option, options);
 		}
 	}
 
-	
+	private static boolean processIsOptionURIHostOrURIPort(Option option, OptionSet options) {
+
+		switch (option.getNumber()) {
+		case OptionNumberRegistry.URI_HOST:
+		case OptionNumberRegistry.URI_PORT:
+			if (options.getProxyScheme() != null
+					/*|| options.getProxySchemeNumber() == null*/) {
+				return true;
+			}
+			else return false;
+		default:
+			return true;
+		}
+	}
+
+
 	/**
 	 * Sets the fake code in the coap header and returns the real code.
 	 * 
@@ -446,7 +556,7 @@ public class OptionJuggle {
 		newMessage.setDuplicate(oldMessage.isDuplicate());
 		newMessage.setNanoTimestamp(oldMessage.getNanoTimestamp());
 	}
-	
+
 	/**
 	 * Merges two optionSets and returns the merge. Priority is eOptions
 	 * 
@@ -460,7 +570,7 @@ public class OptionJuggle {
 
 		for (Option tmp : uOptions.asSortedList()) {
 			if (Collections.binarySearch(e, tmp) < 0) {
-				System.out.println("merging eOption: " + e + " with uOption: " + tmp);
+				System.out.println("merging E option: " + e + " with U option: " + tmp);
 				eOptions.addOption(tmp);
 			}
 		}

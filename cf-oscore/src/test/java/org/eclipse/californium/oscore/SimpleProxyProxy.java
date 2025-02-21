@@ -238,43 +238,8 @@ public class SimpleProxyProxy {
 	public static void main(String args[]) throws IOException {
 		Configuration proxyConfig = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		SimpleProxyProxy proxy = new SimpleProxyProxy(proxyConfig, false, true);
-		/*ExampleHttpServer httpServer = null;
-		Configuration config = ExampleCoapServer.init();
-		for (int index = 0; index < args.length; ++index) {
-			Integer port = parse(args[index], "coap", ExampleCoapServer.DEFAULT_COAP_PORT, config,
-					CoapConfig.COAP_PORT);
-			if (port != null) {
-				new ExampleCoapServer(config, port);
+		
 
-				// reverse proxy: add a proxy resource with a translator
-				// returning a fixed destination URI
-				// don't add this to the ProxyMessageDeliverer
-				URI destination = URI.create("coap://localhost:" + port + "/coap-target");
-				ProxyCoapResource reverseProxy = ProxyCoapResource.createReverseProxy("destination1", true, true, true,
-						destination, proxy.endpoints);
-				reverseProxy.setCache(proxy.cache);
-				proxy.coapProxyServer.getRoot().getChild("targets").add(reverseProxy);
-				System.out.println("CoAP Proxy at: coap://localhost:" + proxy.coapPort
-						+ "/coap2coap and demo-server at coap://localhost:" + port + ExampleCoapServer.RESOURCE);
-				System.out.println("HTTP Proxy at: http://localhost:" + proxy.httpPort + "/proxy/coap://localhost:"
-						+ port + ExampleCoapServer.RESOURCE);
-			} else {
-				port = parse(args[index], "http", ExampleHttpServer.DEFAULT_PORT, null, null);
-				if (port != null) {
-					httpServer = new ExampleHttpServer(config, port);
-					// reverse proxy: add a proxy resource with a translator
-					// returning a fixed destination URI
-					// don't add this to the ProxyMessageDeliverer
-					URI destination = URI.create("http://localhost:" + port + "/http-target");
-					ProxyCoapResource reverseProxy = ProxyCoapResource.createReverseProxy("destination2", true, true,
-							true, destination, proxy.endpoints);
-					reverseProxy.setCache(proxy.cache);
-					proxy.coapProxyServer.getRoot().getChild("targets").add(reverseProxy);
-					System.out.println("CoAP Proxy at: coap://localhost:" + proxy.coapPort
-							+ "/coap2http and demo server at http://localhost:" + port + ExampleHttpServer.RESOURCE);
-				}
-			}
-		}*/
 		startManagamentStatistic();
 		Runtime runtime = Runtime.getRuntime();
 		long max = runtime.maxMemory();

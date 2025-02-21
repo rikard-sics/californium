@@ -61,7 +61,10 @@ public class RequestDecryptor extends Decryptor {
 	 * @throws CoapOSException if decryption fails
 	 */
 	public static Request decrypt(OSCoreCtxDB db, Request request, OSCoreCtx ctx) throws CoapOSException {
-		System.out.println("context is: " + ctx.getSenderIdString());
+		if (ctx != null) {
+			System.out.println("context is: " + ctx.getSenderIdString());
+
+		}
 		System.out.println(request.getOptions());
 		discardEOptions(request);
 		System.out.println(request.getOptions());

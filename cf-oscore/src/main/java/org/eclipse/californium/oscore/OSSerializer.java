@@ -60,11 +60,11 @@ public class OSSerializer {
 	 * 
 	 * @return the serialized plaintext for OSCore
 	 */
-	public static byte[] serializeConfidentialData(OptionSet options, byte[] payload, int realCode, EndpointContext endpointcontext) {//maybe generic
-		if (options != null) {
+	public static byte[] serializeConfidentialData(OptionSet filteredOptions, byte[] payload, int realCode) {//maybe generic
+		if (filteredOptions != null) {
 			DatagramWriter writer = new DatagramWriter();
 			if (realCode > 0) {
-				OptionSet filteredOptions = OptionJuggle.prepareEoptions(options, endpointcontext); //its calling here
+				//OptionSet filteredOptions = OptionJuggle.prepareEoptions(options, instructions); //its calling here
 				writer.write(realCode, CoAP.MessageFormat.CODE_BITS);
 				DataSerializer.serializeOptionsAndPayload(writer, filteredOptions, payload);
 				return writer.toByteArray();

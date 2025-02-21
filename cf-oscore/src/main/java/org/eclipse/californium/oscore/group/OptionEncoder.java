@@ -16,6 +16,9 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore.group;
 
+import org.eclipse.californium.core.coap.Option;
+import org.eclipse.californium.core.coap.OptionSet;
+
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
@@ -86,6 +89,28 @@ public class OptionEncoder {
 
 		return option.EncodeToBytes();
 	}
+	
+	/**
+	 * here be Javadoc
+	 * @param endpoints ordered array of endpoints
+	 */
+	public static byte[] set(byte[] rid, byte[] idcontext, int[] options) {
+		
+		CBORObject option = CBORObject.NewMap();
+		//option.Add(2, contextUri);
+		option.Add(3, rid);
+		
+		option.Add(5, idcontext);
+		
+		// calculate delta later as optimization
+		CBORObject optionsHolder = CBORObject.NewArray();
+		for (int opt : options) {
+			
+			optionsHolder.Add(opt);
+		}
+		option.Add(6, optionsHolder);
+		return option.EncodeToBytes();
+	}
 
 	/**
 	 * Get the pairwise mode boolean value from the option.
@@ -136,12 +161,19 @@ public class OptionEncoder {
 
 		try {
 			CBORObject[] decodedSequence = CBORObject.DecodeSequenceFromBytes(sequenceBytes);
+			if (decodedSequence.length < 2 ) {
+				return null;
+			}
 			if (decodedSequence[1].isNumber() && (decodedSequence[2].getType() == CBORType.Map)) {
 				return decodedSequence;
 			}
 			else return null;
 		} catch (com.upokecenter.cbor.CBORException e) {
-			System.out.println("Threw error: " + e.getLocalizedMessage());
+			System.out.println("Decode CBORSequence Threw error: " + e.getLocalizedMessage());
+			return null;
+		}
+		catch (java.lang.ArrayIndexOutOfBoundsException e) {
+			System.out.println("Decode CBORSequence Threw error: " + e.getLocalizedMessage());
 			return null;
 		}
 	}
