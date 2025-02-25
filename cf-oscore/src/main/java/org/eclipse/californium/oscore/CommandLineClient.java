@@ -209,19 +209,30 @@ public class CommandLineClient {
 			if (useOscore) {
 				req.getOptions().setOscore(Bytes.EMPTY);
 			}
+
+			long start = System.nanoTime();
 			CoapResponse resp = c.advanced(req);
+			long time = System.nanoTime() - start;
 
 			System.out.println(Utils.prettyPrint(resp));
 			System.out.println("Payload bytes: " + Utils.toHexString(resp.getPayload()));
+			System.out.println("KUDOS Elapsed time (ms): " + time / 1000.0 / 1000.0);
 			ctx.setKudosContextRederivationEnabled(false);
 		}
 
 		c = new CoapClient(uri);
 
 		// Send normal request
+		// If Appendix B.2 is used another request will be sent first
 		for (int i = 0; i < requestCount; i++) {
 			System.out.println();
 			System.out.println("==== Sending request #" + (i + 1) + " ===");
+
+			long start = 0;
+			if (i == 0) {
+				start = System.nanoTime();
+			}
+
 			Request req = new Request(Code.GET);
 			req.setURI(uri);
 			if (useOscore) {
@@ -229,9 +240,17 @@ public class CommandLineClient {
 			}
 			CoapResponse resp = c.advanced(req);
 
+			long time = 0;
+			if (i == 0) {
+				time = System.nanoTime() - start;
+			}
+
 			System.out.println("Received Response #" + (i + 1));
 			System.out.println(Utils.prettyPrint(resp));
 			System.out.println("Payload bytes: " + Utils.toHexString(resp.getPayload()));
+			if (i == 0) {
+				System.out.println("AppendixB.2 Elapsed time (ms): " + time / 1000.0 / 1000.0);
+			}
 			Thread.sleep(1000);
 		}
 
