@@ -335,8 +335,8 @@ public class FederatedClient {
 			}
 		}
 		if (unicastMode) {
-			CHECK1_TIMEOUT = UNICAST_TIMEOUT;
-			CHECK2_TIMEOUT = UNICAST_TIMEOUT;
+			CHECK1_TIMEOUT = UNICAST_TIMEOUT / 3;
+			CHECK2_TIMEOUT = 2 * (UNICAST_TIMEOUT / 3);
 			FINAL_TIMEOUT = UNICAST_TIMEOUT;
 		}
 
@@ -838,6 +838,11 @@ public class FederatedClient {
 
 		public MultiCoapHandler(int serverCount) {
 			this.serverCount = serverCount;
+
+			if(interval1 == 0 || interval2 == 0 || interval3 == 0) {
+				DebugOut.errPrintln("error: invalid wait intervals in handler");
+				throw new IllegalArgumentException("Invalid wait intervals in handler");
+			}
 		}
 
 		public List<CoapResponse> getResponses() {
