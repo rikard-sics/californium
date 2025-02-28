@@ -55,6 +55,8 @@ public class Coap2CoapTranslator extends CoapUriTranslator {
 		if (incomingRequest == null) {
 			throw new NullPointerException("incomingRequest == null");
 		}
+		System.out.println("in translater, translating...");
+		System.out.println(incomingRequest);
 
 		// get the code
 		Code code = incomingRequest.getCode();
@@ -90,6 +92,9 @@ public class Coap2CoapTranslator extends CoapUriTranslator {
 		outgoingRequest.setURI(destination);
 
 		LOGGER.debug("Incoming request translated correctly");
+		
+		System.out.println(outgoingRequest);
+		System.out.println("returning outgoing request...");
 		return outgoingRequest;
 	}
 

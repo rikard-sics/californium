@@ -118,6 +118,8 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 				} else {
 					uri = request.getURI();
 				}
+				System.out.println("uri is " + uri);
+				System.out.println("request is " + request);
 
 				if (uri == null) {
 					LOGGER.error(ErrorDescriptions.URI_NULL);

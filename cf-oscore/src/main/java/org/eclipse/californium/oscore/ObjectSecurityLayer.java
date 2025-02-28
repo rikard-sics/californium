@@ -132,6 +132,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	
 	@Override
 	public void sendRequest(final Exchange exchange, final Request request) {
+		System.out.println("in send request ");
+		System.out.println("are we proxy = " + request.isForwardProxy());
 		Request req = request;
 		System.out.println(exchange);
 		System.out.println("options are: " + request.getOptions());
@@ -349,6 +351,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	@Override
 	public void receiveRequest(Exchange exchange, Request request) {
+		System.out.println("RECEIVE REQUEST IN OBJECTSECURITYLAYER");
+		System.out.println("in receive request ");
+		System.out.println("are we proxy = " + request.isForwardProxy());
 		if (isProtected(request)) {
 
 			OSCoreCtx ctx = null;
@@ -404,12 +409,16 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			}
 			exchange.setCryptographicContextID(requestOscoreOption);
 		}
+		System.out.println("EXITING RECEIVE REQUEST IN OBJECTSECURITYLAYER");
+
 		super.receiveRequest(exchange, request);
 	}
 
 	//Always accepts unprotected responses, which is needed for reception of error messages
 	@Override
 	public void receiveResponse(Exchange exchange, Response response) {
+		System.out.println("RECEIVE RESPONSE IN OBJECTSECURITYLAYER");
+
 		Request request = exchange.getCurrentRequest();
 		if (request == null) {
 			LOGGER.error("No request tied to this response");
@@ -463,6 +472,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		if (exchange.getRequest().isObserveCancel()) {
 			ctxDb.removeToken(response.getToken());
 		}
+		System.out.println("EXITING RECEIVE RESPONSE IN OBJECTSECURITYLAYER");
 
 		super.receiveResponse(exchange, response);
 	}

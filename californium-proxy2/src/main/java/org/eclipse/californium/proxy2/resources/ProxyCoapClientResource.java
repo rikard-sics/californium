@@ -47,11 +47,11 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 	/**
 	 * Maps scheme to client endpoints.
 	 */
-	private Map<String, ClientEndpoints> mapSchemeToEndpoints = new HashMap<>();
+	protected Map<String, ClientEndpoints> mapSchemeToEndpoints = new HashMap<>();
 	/**
 	 * Coap2Coap translator.
 	 */
-	private Coap2CoapTranslator translator;
+	protected Coap2CoapTranslator translator;
 
 	/**
 	 * Create proxy resource for outgoing coap-requests.
@@ -82,9 +82,12 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 
 		try {
 			// create the new request from the original
+			System.out.println("creating new request");
 			InetSocketAddress exposedInterface = translator.getExposedInterface(incomingRequest);
 			URI destination = translator.getDestinationURI(incomingRequest, exposedInterface);
 			Request outgoingRequest = translator.getRequest(destination, incomingRequest);
+			System.out.println("new request created");
+
 			// execute the request
 			if (outgoingRequest.getDestinationContext() == null) {
 				exchange.sendResponse(new Response(ResponseCode.INTERNAL_SERVER_ERROR));
@@ -112,7 +115,7 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 			outgoingRequest.addMessageObserver(
 					new ProxySendResponseMessageObserver(translator, exchange, cacheKey, cache, this));
 			ClientEndpoints endpoints = mapSchemeToEndpoints.get(outgoingRequest.getScheme());
-			
+			System.out.println("sending from proxy coap client resource, to sendrequest of endpoint");
 			endpoints.sendRequest(outgoingRequest);
 		} catch (TranslationException e) {
 			LOGGER.debug("Proxy-uri option malformed: {}", e.getMessage());
@@ -135,21 +138,22 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 		return Collections.unmodifiableSet(mapSchemeToEndpoints.keySet());
 	}
 
-	private static class ProxySendResponseMessageObserver extends MessageObserverAdapter {
+	protected static class ProxySendResponseMessageObserver extends MessageObserverAdapter {
 
-		private final Coap2CoapTranslator translator;
-		private final Exchange incomingExchange;
-		private final CacheKey cacheKey;
-		private final CacheResource cache;
-		private final ProxyCoapResource baseResource;
+		protected final Coap2CoapTranslator translator;
+		protected final Exchange incomingExchange;
+		protected final CacheKey cacheKey;
+		protected final CacheResource cache;
+		protected final ProxyCoapResource baseResource;
 
-		private ProxySendResponseMessageObserver(Coap2CoapTranslator translator, Exchange incomingExchange,
+		protected ProxySendResponseMessageObserver(Coap2CoapTranslator translator, Exchange incomingExchange,
 				CacheKey cacheKey, CacheResource cache, ProxyCoapResource baseResource) {
 			this.translator = translator;
 			this.incomingExchange = incomingExchange;
 			this.cacheKey = cacheKey;
 			this.cache = cache;
 			this.baseResource = baseResource;
+			System.out.println("creating base proxy send response");
 		}
 
 		@Override

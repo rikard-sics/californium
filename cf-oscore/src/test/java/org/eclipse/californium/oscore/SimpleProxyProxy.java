@@ -28,15 +28,28 @@ import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.californium.TestTools;
+import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
+import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
+import org.eclipse.californium.core.coap.Message;
+import org.eclipse.californium.core.coap.OptionSet;
+import org.eclipse.californium.core.coap.Request;
+import org.eclipse.californium.core.coap.Response;
+import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.core.config.CoapConfig.TrackerMode;
 import org.eclipse.californium.core.network.CoapEndpoint;
+import org.eclipse.californium.core.network.Exchange;
+import org.eclipse.californium.core.network.KeyToken;
 import org.eclipse.californium.core.server.MessageDeliverer;
 import org.eclipse.californium.core.server.resources.CoapExchange;
+import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.elements.EndpointContext;
 import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
 import org.eclipse.californium.elements.config.IntegerDefinition;
@@ -50,19 +63,11 @@ import org.eclipse.californium.proxy2.ClientEndpoints;
 import org.eclipse.californium.proxy2.ClientSingleEndpoint;
 import org.eclipse.californium.proxy2.Coap2CoapTranslator;
 import org.eclipse.californium.proxy2.EndpointPool;
+import org.eclipse.californium.proxy2.TranslationException;
 import org.eclipse.californium.proxy2.config.Proxy2Config;
-import org.eclipse.californium.proxy2.http.Coap2HttpTranslator;
-import org.eclipse.californium.proxy2.http.Http2CoapTranslator;
-import org.eclipse.californium.proxy2.http.HttpClientFactory;
-import org.eclipse.californium.proxy2.http.server.ProxyHttpServer;
+
 import org.eclipse.californium.proxy2.resources.CacheResource;
-import org.eclipse.californium.proxy2.resources.ForwardProxyMessageDeliverer;
-import org.eclipse.californium.proxy2.resources.ProxyCacheResource;
-import org.eclipse.californium.proxy2.resources.ProxyCoapClientResource;
-import org.eclipse.californium.proxy2.resources.ProxyCoapResource;
-import org.eclipse.californium.proxy2.resources.ProxyHttpClientResource;
-import org.eclipse.californium.proxy2.resources.StatsResource;
-//import org.eclipse.californium.unixhealth.NetStatLogger;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -145,62 +150,135 @@ public class SimpleProxyProxy {
 
 	};
 
-	private static final String COAP2COAP = "coap2coap";
-	//private static final String COAP2HTTP = "coap2http";
+	private final static HashMapCtxDB db = new HashMapCtxDB();
+	private final static String uri = "coap://localhost";
+	private final static int CoapProxyPort = 5685;
 
-	private static String start;
+	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
+	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
 
-	private CoapServer coapProxyServer;
-	private boolean useEndpointsPool = true;
-	private ClientEndpoints endpoints;
-	private int coapPort;
-	private CacheResource cache;
+	// test vector OSCORE draft Appendix C.1.1
+	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
+	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
+			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
+	private final static byte[] sid = new byte[] { 0x02 };
+	private final static byte[] rid = new byte[] { 0x02 };
+	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 
-	public SimpleProxyProxy(Configuration config, boolean accept, boolean cache) throws IOException {
-		HttpClientFactory.setNetworkConfig(config);
+	public Coap2CoapTranslator translator = new Coap2CoapTranslator() {
+		@Override
+		public Request getRequest(URI destination, Request incomingRequest) throws TranslationException {
+			// check parameters
+			if (destination == null) {
+				throw new NullPointerException("destination == null");
+			}
+			if (incomingRequest == null) {
+				throw new NullPointerException("incomingRequest == null");
+			}
+			System.out.println("in custom translator, translating...");
+			System.out.println(incomingRequest);
+
+			// get the code
+			Code code = incomingRequest.getCode();
+
+			// get message type
+			Type type = incomingRequest.getType();
+
+			// create the request
+			Request outgoingRequest = new Request(code);
+			outgoingRequest.setConfirmable(type == Type.CON);
+
+			// copy payload
+			byte[] payload = incomingRequest.getPayload();
+			outgoingRequest.setPayload(payload);
+
+			OptionSet options = new OptionSet(incomingRequest.getOptions());
+			int uriPort = options.getUriPort();
+
+			outgoingRequest.setOptions(options);
+
+			// set the proxy-uri as the outgoing uri
+			System.out.println(outgoingRequest.getURI());
+			outgoingRequest.setURI(destination);
+			outgoingRequest.getOptions().setUriPort(uriPort);
+
+			System.out.println(outgoingRequest.getURI());
+
+			System.out.println(outgoingRequest);
+			System.out.println("returning outgoing request...");
+			return outgoingRequest;
+		}
 		
+		@Override
+		public Response getResponse(Response incomingResponse) {
+			if (incomingResponse == null) {
+				throw new IllegalArgumentException("incomingResponse == null");
+			}
+
+			// get the status
+			ResponseCode status = incomingResponse.getCode();
+
+			// create the response
+			Response outgoingResponse = new Response(status);
+
+			// copy payload
+			byte[] payload = incomingResponse.getPayload();
+			outgoingResponse.setPayload(payload);
+
+			// copy the timestamp
+			long timestamp = incomingResponse.getNanoTimestamp();
+			outgoingResponse.setNanoTimestamp(timestamp);
+
+			// copy every option
+			outgoingResponse.setOptions(incomingResponse.getOptions());
+
+			return outgoingResponse;
+		}
+	};
+	public SimpleProxyProxy(Configuration config, boolean accept, boolean cache) throws IOException, OSException {
+		//HttpClientFactory.setNetworkConfig(config);
+		/*
+		OSCoreCtx ctxProxyClient = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, (new byte[] {0x02}), MAX_UNFRAGMENTED_SIZE);
+		db.addContext(uri, ctxProxyClient);
+		db.size();
+
 		// Add 2 to port number to not locally occupy the servers port
 		coapPort = config.get(CoapConfig.COAP_PORT) + 2;
-		int threads = config.get(CoapConfig.PROTOCOL_STAGE_THREAD_COUNT);
-		ProtocolScheduledExecutorService executor = ExecutorsUtil.newProtocolScheduledThreadPool(threads,
-				new DaemonThreadFactory("Proxy#"));
+		//int threads = config.get(CoapConfig.PROTOCOL_STAGE_THREAD_COUNT);
+		//ProtocolScheduledExecutorService executor = ExecutorsUtil.newProtocolScheduledThreadPool(threads,
+		//		new DaemonThreadFactory("Proxy#"));
 		Coap2CoapTranslator translater = new Coap2CoapTranslator();
 		Configuration outgoingConfig = new Configuration(config);
-		if (useEndpointsPool) {
-			outgoingConfig.set(UdpConfig.UDP_RECEIVER_THREAD_COUNT, 1);
-			outgoingConfig.set(UdpConfig.UDP_SENDER_THREAD_COUNT, 1);
-			endpoints = new EndpointPool(1000, 250, outgoingConfig, executor);
-		} else {
-			outgoingConfig.set(CoapConfig.MID_TRACKER, TrackerMode.NULL);
-			CoapEndpoint.Builder builder = CoapEndpoint.builder()
-					.setConfiguration(outgoingConfig);
-			endpoints = new ClientSingleEndpoint(builder.build());
-		}
+
+		outgoingConfig.set(CoapConfig.MID_TRACKER, TrackerMode.NULL);
+		CoapEndpoint.Builder builder = CoapEndpoint.builder()
+				.setConfiguration(outgoingConfig);
+		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
+		builder.setCustomCoapStackArgument(db);
+		endpoints = new ClientSingleEndpoint(builder.build());
 		ProxyCacheResource cacheResource = null;
 		StatsResource statsResource = null;
 		if (cache) {
 			cacheResource = new ProxyCacheResource(config, true);
 			statsResource = new StatsResource(cacheResource);
 		}
-		ProxyCoapResource coap2coap = new ProxyCoapClientResource(COAP2COAP, false, accept, translater, endpoints);
+		ProxyOSCoreClientResource coap2coap = new ProxyOSCoreClientResource(COAP2COAP, false, accept, translater, db, endpoints);
 		coap2coap.setMaxResourceBodySize(config.get(CoapConfig.MAX_RESOURCE_BODY_SIZE));
-		//ProxyCoapResource coap2http = new ProxyHttpClientResource(COAP2HTTP, false, accept, new Coap2HttpTranslator());
-		//coap2http.setMaxResourceBodySize(config.get(CoapConfig.MAX_RESOURCE_BODY_SIZE));
+
 		if (cache) {
 			coap2coap.setCache(cacheResource);
 			coap2coap.setStatsResource(statsResource);
-			//coap2http.setCache(cacheResource);
-			//coap2http.setStatsResource(statsResource);
 		}
-		// Forwards requests Coap to Coap or Coap to Http server
+		// Forwards requests Coap to Coap server
 		coapProxyServer = new CoapServer(config, coapPort);
-		MessageDeliverer local = coapProxyServer.getMessageDeliverer();
+		System.out.println(coapProxyServer.getRoot());
 		ForwardProxyMessageDeliverer proxyMessageDeliverer = new ForwardProxyMessageDeliverer(coapProxyServer.getRoot(),
 				translater, config);
 		proxyMessageDeliverer.addProxyCoapResources(coap2coap); //, coap2http);
 		proxyMessageDeliverer.addExposedServiceAddresses(new InetSocketAddress(coapPort));
 		coapProxyServer.setMessageDeliverer(proxyMessageDeliverer);
-		coapProxyServer.setExecutor(executor, false);
+		//coapProxyServer.setExecutor(executor, false);
 		//coapProxyServer.add(coap2http);
 		coapProxyServer.add(coap2coap);
 		if (cache) {
@@ -212,94 +290,112 @@ public class SimpleProxyProxy {
 		CoapResource targets = new CoapResource("targets");
 		coapProxyServer.add(targets);
 
-		/*// HTTP Proxy which forwards http request to coap server and forwards
-		// translated coap response back to http client
-		httpServer = ProxyHttpServer.buider()
-				.setConfiguration(config)
-				.setPort(8080)
-				.setExecutor(executor)
-				.setHttpTranslator(new Http2CoapTranslator())
-				.setLocalCoapDeliverer(local)
-				.setProxyCoapDeliverer(proxyMessageDeliverer)
-				.build();
-		httpServer.start();
-		System.out.println("** HTTP Local at: http://localhost:" + httpPort + "/local/");
-		System.out.println("** HTTP Proxy at: http://localhost:" + httpPort + "/proxy/");
-		*/
-
 		coapProxyServer.start();
-		System.out.println("** CoAP Proxy at: coap://localhost:" + coapPort + "/coap2http");
-		System.out.println("** CoAP Proxy at: coap://localhost:" + coapPort + "/coap2coap");
+		System.out.println("** CoAP Proxy at: coap://localhost:" + coapPort + "/coap2coap **");
 		this.cache = cacheResource;
 		// receiving on any address => enable LocalAddressResolver
 		proxyMessageDeliverer.startLocalAddressResolver();
+
+		 */
+		Configuration outgoingConfig = new Configuration(config);
+		outgoingConfig.set(CoapConfig.MID_TRACKER, TrackerMode.NULL);
+
+		CoapEndpoint.Builder builder = CoapEndpoint.builder()
+				.setConfiguration(outgoingConfig);
+		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
+		builder.setCustomCoapStackArgument(db);
+		//builder.setPort(CoapProxyPort);
+
+		CoapEndpoint proxyClientEndpoint = builder.build();
+
+		// Create proxy
+		CoapServer proxy = new CoapServer(CoapProxyPort);
+
+		proxy.addEndpoint(proxyClientEndpoint);
+		proxy.setMessageDeliverer(new MessageDeliverer() {
+			/**
+			 * Delivers an inbound CoAP request to an appropriate resource.
+			 * 
+			 * @param exchange
+			 *            the exchange containing the inbound {@code Request}
+			 * @throws NullPointerException if exchange is {@code null}.
+			 */
+			@Override
+			public void deliverRequest(Exchange exchange) {
+				Request incomingRequest = exchange.getRequest();
+				System.out.println("Recieved forwarding Request with " + incomingRequest.getToken());
+				System.out.println("wweee wooo in the custom message deliverer");
+				try {
+					if (!(incomingRequest.getScheme().equals("coap"))) {
+						Response response = new Response(ResponseCode.BAD_GATEWAY);
+						response.setPayload("Scheme not supported");
+						exchange.sendResponse(response);
+					}
+
+					System.out.println(exchange);           // localhost + UDP port
+
+					System.out.println(incomingRequest); // recieved request
+					System.out.println(incomingRequest.getDestinationContext());
+					System.out.println(incomingRequest.getSourceContext());
+
+					System.out.println("exchange info in deliver request end");
+
+					
+					InetSocketAddress exposedInterface = translator.getExposedInterface(incomingRequest);
+					URI destination = translator.getDestinationURI(incomingRequest, exposedInterface);
+					Request outgoingRequest = translator.getRequest(destination, incomingRequest);		
+					
+					if (outgoingRequest.getDestinationContext() == null) {
+						exchange.sendResponse(new Response(ResponseCode.INTERNAL_SERVER_ERROR));
+						throw new NullPointerException("Destination is null");
+					}
+					//outgoingRequest.addMessageObserver();
+					outgoingRequest.setIsForwardProxy();
+					exchange.getEndpoint().sendRequest(outgoingRequest);
+					
+				} catch (TranslationException e) {
+
+					Response response = new Response(Coap2CoapTranslator.STATUS_FIELD_MALFORMED);
+					response.setPayload(e.getMessage());
+					exchange.sendResponse(response);
+				}
+
+			}
+
+			/**
+			 * Delivers an inbound CoAP response message to its corresponding request.
+			 * 
+			 * @param exchange
+			 *            the exchange containing the originating CoAP request
+			 * @param response
+			 *            the inbound CoAP response message
+			 * @throws NullPointerException if exchange or response are {@code null}.
+			 * @throws IllegalArgumentException if the exchange does not contain a request.
+			 */
+			@Override
+			public void deliverResponse(Exchange exchange, Response response) {
+				System.out.println("Recieved forwarding Response with " + response.getToken());
+				System.out.println("Proxy: Deliver response called.");
+				response.isForwardProxy();
+				exchange.sendResponse(translator.getResponse(response));
+			}
+		});
+
+		proxy.start();
 	}
 
-	public static void main(String args[]) throws IOException {
+	public static void main(String args[]) throws IOException, OSException {
 		Configuration proxyConfig = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		SimpleProxyProxy proxy = new SimpleProxyProxy(proxyConfig, false, true);
-		
-
-		startManagamentStatistic();
-		Runtime runtime = Runtime.getRuntime();
-		long max = runtime.maxMemory();
-		System.out.println(
-				SimpleProxyProxy.class.getSimpleName() + " started (" + max / (1024 * 1024) + "MB heap) ...");
-		long lastGcCount = 0;
-		//NetStatLogger netstat = new NetStatLogger("udp", false);
-		for (;;) {
+		for(;;) {
 			try {
 				Thread.sleep(15000);
 			} catch (InterruptedException e) {
-				break;
-			}
-			long used = runtime.totalMemory() - runtime.freeMemory();
-			int fill = (int) ((used * 100L) / max);
-			if (fill > 80) {
-				System.out.println("Maxium heap size: " + max / (1024 * 1024) + "M " + fill + "% used.");
-				System.out.println("Heap may exceed! Enlarge the maxium heap size.");
-				System.out.println("Or consider to reduce the value of " + CoapConfig.EXCHANGE_LIFETIME);
-				System.out.println("in \"" + CONFIG_FILE + "\" or set");
-				System.out.println(CoapConfig.DEDUPLICATOR + " to " + CoapConfig.NO_DEDUPLICATOR + " there.");
-				break;
-			}
-			long gcCount = 0;
-			for (GarbageCollectorMXBean gcMXBean : ManagementFactory.getGarbageCollectorMXBeans()) {
-				long count = gcMXBean.getCollectionCount();
-				if (0 < count) {
-					gcCount += count;
-				}
-			}
-			if (lastGcCount < gcCount) {
-				printManagamentStatistic();
-				lastGcCount = gcCount;
-				//netstat.dump();
-				//if (httpServer != null) {
-				//	httpServer.dumpStatistic();
-				//}
-			}
-		}
-	}
 
-	/*private static Integer parse(String arg, String prefix, int defaultValue, Configuration config,
-			IntegerDefinition key) {
-		Integer result = null;
-		if (arg.startsWith(prefix)) {
-			arg = arg.substring(prefix.length());
-			if (arg.isEmpty()) {
-				if (config != null && key != null) {
-					result = config.get(key);
-				}
-				if (result == null) {
-					result = defaultValue;
-				}
-			} else if (arg.startsWith("=")) {
-				arg = arg.substring(1);
-				result = Integer.decode(arg);
 			}
 		}
-		return result;
-	}*/
+
+	}
 
 	private static class SimpleCoapResource extends CoapResource {
 
@@ -318,78 +414,6 @@ public class SimpleProxyProxy {
 			exchange.setMaxAge(0);
 			exchange.respond(ResponseCode.CONTENT, String.format(value, counter.incrementAndGet()),
 					MediaTypeRegistry.TEXT_PLAIN);
-		}
-
-	}
-
-	private static void startManagamentStatistic() {
-		ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
-		if (mxBean.isThreadCpuTimeSupported() && !mxBean.isThreadCpuTimeEnabled()) {
-			mxBean.setThreadCpuTimeEnabled(true);
-		}
-		RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
-		start = new Date(runtimeMXBean.getStartTime()).toString();
-	}
-
-	private static void printManagamentStatistic() {
-		OperatingSystemMXBean osMxBean = ManagementFactory.getOperatingSystemMXBean();
-		int processors = osMxBean.getAvailableProcessors();
-		RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
-		Logger logger = STATISTIC_LOGGER;
-		logger.info("{} processors, started {}, up {}", processors, start, formatTime(runtimeMXBean.getUptime()));
-		ThreadMXBean threadMxBean = ManagementFactory.getThreadMXBean();
-		if (threadMxBean.isThreadCpuTimeSupported() && threadMxBean.isThreadCpuTimeEnabled()) {
-			long alltime = 0;
-			long[] ids = threadMxBean.getAllThreadIds();
-			for (long id : ids) {
-				long time = threadMxBean.getThreadCpuTime(id);
-				if (0 < time) {
-					alltime += time;
-				}
-			}
-			long pTime = alltime / processors;
-			logger.info("cpu-time: {} ms (per-processor: {} ms)", TimeUnit.NANOSECONDS.toMillis(alltime),
-					TimeUnit.NANOSECONDS.toMillis(pTime));
-		}
-		long gcCount = 0;
-		long gcTime = 0;
-		for (GarbageCollectorMXBean gcMxBean : ManagementFactory.getGarbageCollectorMXBeans()) {
-			long count = gcMxBean.getCollectionCount();
-			if (0 < count) {
-				gcCount += count;
-			}
-			long time = gcMxBean.getCollectionTime();
-			if (0 < time) {
-				gcTime += time;
-			}
-		}
-		logger.info("gc: {} ms, {} calls", gcTime, gcCount);
-		double loadAverage = osMxBean.getSystemLoadAverage();
-		if (!(loadAverage < 0.0d)) {
-			logger.info("average load: {}", String.format("%.2f", loadAverage));
-		}
-	}
-
-	private static String formatTime(long millis) {
-		long time = millis;
-		if (time < 10000) {
-			return time + " [ms]";
-		}
-		time /= 100; // 1/10s
-		if (time < 10000) {
-			return (time / 10) + "." + (time % 10) + " [s]";
-		}
-		time /= 10;
-		long seconds = time % 60;
-		time /= 60;
-		long minutes = time % 60;
-		time /= 60;
-		long hours = time % 24;
-		time /= 24; // days
-		if (time > 0) {
-			return String.format("%d:%02d:%02d:%02d [d:hh:mm:ss]", time, hours, minutes, seconds);
-		} else {
-			return String.format("%d:%02d:%02d [h:mm:ss]", hours, minutes, seconds);
 		}
 	}
 }

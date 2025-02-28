@@ -112,6 +112,18 @@ public abstract class Message {
 		FULL
 	}
 
+	/** 
+	 * 
+	 */
+	private boolean isForwardProxy = false;
+	
+	public void setIsForwardProxy() {
+		this.isForwardProxy = true;
+	}
+	
+	public boolean isForwardProxy() {
+		return this.isForwardProxy;
+	}
 	/** The Constant NONE in case no MID has been set. */
 	public static final int NONE = -1;
 	/**

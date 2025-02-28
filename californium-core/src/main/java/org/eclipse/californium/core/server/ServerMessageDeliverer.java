@@ -101,11 +101,14 @@ public class ServerMessageDeliverer implements MessageDeliverer {
 		if (exchange == null) {
 			throw new NullPointerException("exchange must not be null");
 		}
+		System.out.println("in deliver request");
 		boolean processed = preDeliverRequest(exchange);
 		if (!processed) {
 			try {
+				System.out.println("try find resource");
 				final Resource resource = findResource(exchange);
 				if (resource != null) {
+					System.out.println("resource wasnt null");
 					checkForObserveOption(exchange, resource);
 
 					// Get the executor and let it process the request
@@ -114,24 +117,29 @@ public class ServerMessageDeliverer implements MessageDeliverer {
 						executor.execute(new Runnable() {
 
 							public void run() {
+								System.out.println("in run of executor for request");
 								resource.handleRequest(exchange);
 							}
 						});
 					} else {
+						System.out.println("deliver request without executor");
 						resource.handleRequest(exchange);
 					}
 				} else {
+					System.out.println("resource was null");
 					if (LOGGER.isInfoEnabled()) {
 						Request request = exchange.getRequest();
 						LOGGER.info("did not find resource /{} requested by {}",
 								request.getOptions().getUriPathString(),
 								StringUtil.toLog(request.getSourceContext().getPeerAddress()));
 					}
+					System.out.println("sending not found");
 					exchange.sendResponse(new Response(ResponseCode.NOT_FOUND, true));
 				}
 			} catch (DelivererException ex) {
 				Response response = new Response(ex.getErrorResponseCode(), ex.isInternal());
 				response.setPayload(ex.getMessage());
+				System.out.println("sending response from delivererException");
 				exchange.sendResponse(response);
 			}
 		}
@@ -265,6 +273,7 @@ public class ServerMessageDeliverer implements MessageDeliverer {
 		} else {
 			boolean processed = preDeliverResponse(exchange, response);
 			if (!processed) {
+				System.out.println("sending unprocessed response");
 				exchange.getRequest().setResponse(response);
 			}
 		}

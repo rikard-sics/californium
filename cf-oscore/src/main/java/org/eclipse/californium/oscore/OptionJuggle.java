@@ -117,6 +117,34 @@ public class OptionJuggle {
 		return proxyConsumeOptions;
 	}
 
+	public static boolean hasProxyRelatedOptions(OptionSet options) {
+		if (options.hasProxyScheme() || options.hasProxyUri()) {
+			return true;
+		}
+		else return false;
+	}
+	
+	public static boolean hasProxyUriOrCriOptions(OptionSet options) {
+		if (options.hasProxyUri() /*|| options.hasProxyCri()*/) {
+			return true;
+		}
+		else return false;
+	}
+	
+	public static boolean hasSchemeAndUri(OptionSet options) {
+		if ((options.hasProxyScheme() /* || options.hasProxySchemeNumber()*/) && 
+				(options.hasUriHost() || options.hasUriPort())) {
+			return true;
+		}
+		else return false;
+	}
+	
+	public static boolean hasUriPathHostPort(OptionSet options) {
+		if (options.hasUriHost() || options.hasUriPort() || options.hasUriPath()) {
+			return true;
+		}
+		else return false;
+	}
 	/**
 	 * Prepare a set or original CoAP options for unprotected use with OSCore.
 	 * 
@@ -250,7 +278,7 @@ public class OptionJuggle {
 	 * 
 	 * @return the option to be encrypted
 	 */
-	public static OptionSet prepareEoptions(OptionSet options, CBORObject[] instructions) {
+	public static OptionSet prepareEoptions(OptionSet options) {
 		OptionSet ret = new OptionSet();
 
 

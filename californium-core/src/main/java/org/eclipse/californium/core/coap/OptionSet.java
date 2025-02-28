@@ -808,6 +808,15 @@ public final class OptionSet {
 	public int getURIPathCount() {
 		return count(uri_path_list);
 	}
+	
+	/**
+	 * Checks if the Uri-Path option is present.
+	 * 
+	 * @return {@code true}, if present
+	 */
+	public boolean hasUriPath() {
+		return uri_path_list != null;
+	}
 
 	/**
 	 * Sets the complete relative Uri-Path.
