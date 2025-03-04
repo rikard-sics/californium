@@ -264,6 +264,7 @@ public class ServerMessageDeliverer implements MessageDeliverer {
 	 */
 	@Override
 	public final void deliverResponse(final Exchange exchange, final Response response) {
+		System.out.println("in deliver response");
 		if (response == null) {
 			throw new NullPointerException("Response must not be null");
 		} else if (exchange == null) {

@@ -31,6 +31,7 @@ import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.Token;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 import org.apache.hc.client5.http.utils.Hex;
@@ -352,8 +353,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	@Override
 	public void receiveRequest(Exchange exchange, Request request) {
 		System.out.println("RECEIVE REQUEST IN OBJECTSECURITYLAYER");
-		System.out.println("in receive request ");
 		System.out.println("are we proxy = " + request.isForwardProxy());
+		for (StackTraceElement stackelme : Thread.currentThread().getStackTrace()) {
+			System.out.println(stackelme);
+		}
+		System.out.println();
 		if (isProtected(request)) {
 
 			OSCoreCtx ctx = null;

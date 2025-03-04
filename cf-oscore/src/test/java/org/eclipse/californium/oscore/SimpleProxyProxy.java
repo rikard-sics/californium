@@ -46,6 +46,7 @@ import org.eclipse.californium.core.config.CoapConfig.TrackerMode;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.KeyToken;
+import org.eclipse.californium.core.network.interceptors.MessageInterceptorAdapter;
 import org.eclipse.californium.core.server.MessageDeliverer;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
@@ -70,6 +71,8 @@ import org.eclipse.californium.proxy2.resources.CacheResource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.eclipse.californium.core.network.interceptors.MessageInterceptor;
 
 /**
  * Demonstrates the examples for cross proxy functionality of CoAP.
@@ -237,66 +240,7 @@ public class SimpleProxyProxy {
 		}
 	};
 	public SimpleProxyProxy(Configuration config, boolean accept, boolean cache) throws IOException, OSException {
-		//HttpClientFactory.setNetworkConfig(config);
-		/*
-		OSCoreCtx ctxProxyClient = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, (new byte[] {0x02}), MAX_UNFRAGMENTED_SIZE);
-		db.addContext(uri, ctxProxyClient);
-		db.size();
-
-		// Add 2 to port number to not locally occupy the servers port
-		coapPort = config.get(CoapConfig.COAP_PORT) + 2;
-		//int threads = config.get(CoapConfig.PROTOCOL_STAGE_THREAD_COUNT);
-		//ProtocolScheduledExecutorService executor = ExecutorsUtil.newProtocolScheduledThreadPool(threads,
-		//		new DaemonThreadFactory("Proxy#"));
-		Coap2CoapTranslator translater = new Coap2CoapTranslator();
-		Configuration outgoingConfig = new Configuration(config);
-
-		outgoingConfig.set(CoapConfig.MID_TRACKER, TrackerMode.NULL);
-		CoapEndpoint.Builder builder = CoapEndpoint.builder()
-				.setConfiguration(outgoingConfig);
-		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
-		builder.setCustomCoapStackArgument(db);
-		endpoints = new ClientSingleEndpoint(builder.build());
-		ProxyCacheResource cacheResource = null;
-		StatsResource statsResource = null;
-		if (cache) {
-			cacheResource = new ProxyCacheResource(config, true);
-			statsResource = new StatsResource(cacheResource);
-		}
-		ProxyOSCoreClientResource coap2coap = new ProxyOSCoreClientResource(COAP2COAP, false, accept, translater, db, endpoints);
-		coap2coap.setMaxResourceBodySize(config.get(CoapConfig.MAX_RESOURCE_BODY_SIZE));
-
-		if (cache) {
-			coap2coap.setCache(cacheResource);
-			coap2coap.setStatsResource(statsResource);
-		}
-		// Forwards requests Coap to Coap server
-		coapProxyServer = new CoapServer(config, coapPort);
-		System.out.println(coapProxyServer.getRoot());
-		ForwardProxyMessageDeliverer proxyMessageDeliverer = new ForwardProxyMessageDeliverer(coapProxyServer.getRoot(),
-				translater, config);
-		proxyMessageDeliverer.addProxyCoapResources(coap2coap); //, coap2http);
-		proxyMessageDeliverer.addExposedServiceAddresses(new InetSocketAddress(coapPort));
-		coapProxyServer.setMessageDeliverer(proxyMessageDeliverer);
-		//coapProxyServer.setExecutor(executor, false);
-		//coapProxyServer.add(coap2http);
-		coapProxyServer.add(coap2coap);
-		if (cache) {
-			coapProxyServer.add(statsResource);
-		}
-		coapProxyServer.add(new SimpleCoapResource("target",
-				"Hi! I am the local coap server on port " + coapPort + ". Request %d."));
-
-		CoapResource targets = new CoapResource("targets");
-		coapProxyServer.add(targets);
-
-		coapProxyServer.start();
-		System.out.println("** CoAP Proxy at: coap://localhost:" + coapPort + "/coap2coap **");
-		this.cache = cacheResource;
-		// receiving on any address => enable LocalAddressResolver
-		proxyMessageDeliverer.startLocalAddressResolver();
-
-		 */
+		
 		Configuration outgoingConfig = new Configuration(config);
 		outgoingConfig.set(CoapConfig.MID_TRACKER, TrackerMode.NULL);
 
@@ -304,12 +248,13 @@ public class SimpleProxyProxy {
 				.setConfiguration(outgoingConfig);
 		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
 		builder.setCustomCoapStackArgument(db);
-		//builder.setPort(CoapProxyPort);
-
+		builder.setPort(CoapProxyPort);
+		
 		CoapEndpoint proxyClientEndpoint = builder.build();
 
-		// Create proxy
-		CoapServer proxy = new CoapServer(CoapProxyPort);
+		proxyClientEndpoint.addInterceptor(new ProxyMessageInterceptorAdapter());
+
+		CoapServer proxy = new CoapServer();
 
 		proxy.addEndpoint(proxyClientEndpoint);
 		proxy.setMessageDeliverer(new MessageDeliverer() {
@@ -324,6 +269,7 @@ public class SimpleProxyProxy {
 			public void deliverRequest(Exchange exchange) {
 				Request incomingRequest = exchange.getRequest();
 				System.out.println("Recieved forwarding Request with " + incomingRequest.getToken());
+				//throw (new TranslationException());
 				System.out.println("wweee wooo in the custom message deliverer");
 				try {
 					if (!(incomingRequest.getScheme().equals("coap"))) {
