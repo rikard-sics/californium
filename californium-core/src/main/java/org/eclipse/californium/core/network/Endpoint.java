@@ -49,6 +49,11 @@ import org.eclipse.californium.elements.util.ProtocolScheduledExecutorService;
 public interface Endpoint {
 
 	/**
+	 * 
+	 */
+	boolean isForwardProxy();
+
+	/**
 	 * Start this endpoint and all its components. The starts its connector. If
 	 * no executor has been set yet, the endpoint uses a single-threaded
 	 * executor.

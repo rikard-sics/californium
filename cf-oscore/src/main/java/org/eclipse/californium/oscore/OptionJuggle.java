@@ -118,19 +118,21 @@ public class OptionJuggle {
 	}
 
 	public static boolean hasProxyRelatedOptions(OptionSet options) {
-		if (options.hasProxyScheme() || options.hasProxyUri()) {
+		if (options.hasProxyScheme() 
+				|| options.hasProxyUri()
+				/*|| options.hasProxyCri()*/) {
 			return true;
 		}
 		else return false;
 	}
-	
+
 	public static boolean hasProxyUriOrCriOptions(OptionSet options) {
 		if (options.hasProxyUri() /*|| options.hasProxyCri()*/) {
 			return true;
 		}
 		else return false;
 	}
-	
+
 	public static boolean hasSchemeAndUri(OptionSet options) {
 		if ((options.hasProxyScheme() /* || options.hasProxySchemeNumber()*/) && 
 				(options.hasUriHost() || options.hasUriPort())) {
@@ -138,7 +140,7 @@ public class OptionJuggle {
 		}
 		else return false;
 	}
-	
+
 	public static boolean hasUriPathHostPort(OptionSet options) {
 		if (options.hasUriHost() || options.hasUriPort() || options.hasUriPath()) {
 			return true;
@@ -211,7 +213,20 @@ public class OptionJuggle {
 			options = handleProxyUri(options.getProxyUri(), options);
 		}
 
+
 		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(encodedInstructions);
+
+
+		boolean instructionsExists = Objects.nonNull(instructions);
+
+		if (instructionsExists) { 
+			if ((int) instructions[1].ToObject(int.class) != 2) {
+				// create oscore option
+				result[1].setOscore(instructions[0].ToObject(byte[].class));
+				//options.removeOscore();
+			}
+		}
+
 
 		for (Option o : options.asSortedList()) {
 			if (processOptionAsE(o, options, instructions)) {
@@ -355,15 +370,16 @@ public class OptionJuggle {
 	public static boolean isClassEOption(Option option) {
 		return !isClassUOption(option);
 	}
-	
+
 	public static boolean isClassUOption(Option option) {
 		if (allUOptions.contains(option.getNumber())) {
 			return true;
 		}
 		else return false;
 	}
-	
+
 	private static boolean processOptionAsE(Option option, OptionSet options, CBORObject[] instructions) {
+
 		if (isClassEOption(option)) {
 			return true;
 		}
@@ -436,7 +452,7 @@ public class OptionJuggle {
 
 		System.out.println("instructions for proxy exists is: " + instructionsForProxyExists);
 		if (instructionsForProxyExists) { 
-			
+
 			//these are options that has to be consumed by a proxy (if we guess there is one)
 			if (proxyConsumeOptions.contains(option.getNumber())) { 
 				System.out.println("returning false for optionProxy: " + option);
@@ -445,7 +461,7 @@ public class OptionJuggle {
 			else return true;
 
 		}
-		
+
 		//no instructions = vanilla oscore, do not encrypt U options
 		return false;
 		/*
@@ -457,9 +473,9 @@ public class OptionJuggle {
 				return false;
 			}
 		}
-		*/
+		 */
 
-/*
+		/*
 		if (serverConsumeOptions.contains(option.getNumber())) {
 			System.out.println("returning true for optionServer: " + option);
 			return true;

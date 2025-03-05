@@ -66,6 +66,7 @@ public abstract class Encryptor {
 	protected static byte[] encryptAndEncode(Encrypt0Message enc, OSCoreCtx ctx, Message message, boolean newPartialIV,
 			Integer requestSequenceNr)
 			throws OSException {
+		System.out.println("-------options in message for aad are : "+ message.getOptions());
 		boolean isRequest = message instanceof Request;
 
 		try {
@@ -78,6 +79,7 @@ public abstract class Encryptor {
 				partialIV = OSSerializer.processPartialIV(ctx.getSenderSeq());
 				nonce = OSSerializer.nonceGeneration(partialIV, ctx.getSenderId(), ctx.getCommonIV(),
 						ctx.getIVLength());
+				System.out.println("-------options in message for aad are : "+ message.getOptions());
 				aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), ctx.getSenderSeq(), ctx.getSenderId(), message.getOptions());
 				enc.addAttribute(HeaderKeys.PARTIAL_IV, CBORObject.FromObject(partialIV), Attribute.UNPROTECTED);
 				enc.addAttribute(HeaderKeys.KID, CBORObject.FromObject(ctx.getSenderId()), Attribute.UNPROTECTED);
@@ -95,6 +97,7 @@ public abstract class Encryptor {
 							ctx.getIVLength());
 				}
 
+				
 				aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), requestSequenceNr, ctx.getRecipientId(),
 						message.getOptions());
 			}

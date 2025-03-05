@@ -2,6 +2,8 @@
 
 package org.eclipse.californium.oscore;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.Response;
@@ -28,6 +30,7 @@ public class SimpleProxyServer {
 	private final static byte[] sid = new byte[] { 0x01 };
 	private final static byte[] rid = new byte[] { 0x01 }; //[0];
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
+	private static AtomicInteger counter = new AtomicInteger(0);
 
 	public static void main(String[] args) throws OSException {
 		OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, new byte[] { 0x01 }, MAX_UNFRAGMENTED_SIZE);
@@ -56,7 +59,11 @@ public class SimpleProxyServer {
 				r.setPayload("Hello World!");
 				System.out.println("Recieved GET with " + exchange.advanced().getRequest().getToken());
 				exchange.respond(r);
-				//server.destroy();
+				counter.incrementAndGet();
+				if (counter.get() == 2) {
+					server.destroy();
+				}
+				
 			}
 		};
 

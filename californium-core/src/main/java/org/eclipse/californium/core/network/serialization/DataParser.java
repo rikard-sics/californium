@@ -214,7 +214,7 @@ public abstract class DataParser {
 		int currentOptionNumber = 0;
 		byte nextByte = 0;
 		OptionSet optionSet = message.getOptions();
-
+		System.out.println("optionset in parseOptionsAndPayload is: " + optionSet);
 		while (reader.bytesAvailable()) {
 			nextByte = reader.readNextByte();
 			if (nextByte == PAYLOAD_MARKER) {
@@ -267,11 +267,13 @@ public abstract class DataParser {
 					message.setUnintendedPayload();
 				}
 				message.setPayload(reader.readBytesLeft());
+				System.out.println("Payload is: " + message.getPayloadString());
 				message.assertPayloadMatchsBlocksize();
 			}
 		} else {
 			message.setPayload(Bytes.EMPTY);
 		}
+		System.out.println("optionset in parseOptionsAndPayload is: " + optionSet);
 	}
 
 	/**

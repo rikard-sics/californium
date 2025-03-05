@@ -63,7 +63,7 @@ public class RequestDecryptor extends Decryptor {
 	public static Request decrypt(OSCoreCtxDB db, Request request, OSCoreCtx ctx) throws CoapOSException {
 		System.out.println("REQUEST DECRYPTOR IN REQUESTDECRYPTOR");
 
-		
+		db.size();
 		if (ctx != null) {
 			System.out.println("context is: " + ctx.getSenderIdString());
 
@@ -79,9 +79,9 @@ public class RequestDecryptor extends Decryptor {
 		Encrypt0Message enc;
 		OptionSet uOptions = request.getOptions();
 		try {
-			System.out.println("aa1");
+			System.out.println("before decompression");
 			enc = decompression(protectedData, request);
-			System.out.println("aa2");
+			System.out.println("after decompression");
 		} catch (OSException e) {
 			LOGGER.error(ErrorDescriptions.FAILED_TO_DECODE_COSE);
 			throw new CoapOSException(ErrorDescriptions.FAILED_TO_DECODE_COSE, ResponseCode.BAD_OPTION);
@@ -134,19 +134,23 @@ public class RequestDecryptor extends Decryptor {
 			DatagramReader reader = new DatagramReader(new ByteArrayInputStream(plaintext));
 			ctx.setCoAPCode(Code.valueOf(reader.read(CoAP.MessageFormat.CODE_BITS)));
 			// resets option so eOptions gets priority during parse
+			
 			request.setOptions(EMPTY);
 			new UdpDataParser().parseOptionsAndPayload(reader, request);
+			
 		} catch (Exception e) {
 			LOGGER.error(ErrorDescriptions.DECRYPTION_FAILED);
 			throw new CoapOSException(ErrorDescriptions.DECRYPTION_FAILED, ResponseCode.BAD_REQUEST);
 		}
-			
+		System.out.println("request oscore option is: " + request.getOptions().getOscore());
+		System.out.println("request options are: " + request.getOptions());
 		OptionSet eOptions = request.getOptions();
 		eOptions = OptionJuggle.merge(eOptions, uOptions);	
 		request.setOptions(eOptions);
 
+		System.out.println("request oscore option is: " + Hex.encodeHexString(request.getOptions().getOscore()));
 		// We need the kid value on layer level
-		request.getOptions().setOscore(rid);
+		//request.getOptions().setOscore(rid);
 
 		// Associate the Token with the context used
 		db.addContext(request.getToken(), ctx);

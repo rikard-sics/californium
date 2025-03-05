@@ -130,11 +130,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		return ResponseDecryptor.decrypt(ctxDb, response, requestSequenceNr);
 	}
 
-	
+
 	@Override
 	public void sendRequest(final Exchange exchange, final Request request) {
 		System.out.println("in send request ");
-		System.out.println("are we proxy = " + request.isForwardProxy());
+		System.out.println("are we proxy = " + exchange.getEndpoint().isForwardProxy());
 		Request req = request;
 		System.out.println(exchange);
 		System.out.println("options are: " + request.getOptions());
@@ -187,7 +187,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				//encryption here
 				final Request preparedRequest = prepareSend(ctxDb, request);
-				
+
 				System.out.println("request after prepare send is: " + request);
 				System.out.println("prepared request is:           " + preparedRequest);
 				// are there instructions?
@@ -199,7 +199,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 					// are there still instructions left?
 					instructionsRemaining = currentIndex != (instructions.length - 1);
-					
+
 					if (instructionsRemaining) {
 						// increment index
 						instructions[1] = CBORObject.FromObject(currentIndex + 1);
@@ -209,11 +209,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 						//update Oscore
 						byte[] updatedOSCOREOption = OptionEncoder.encodeSequence(instructions);
-						request.getOptions().setOscore(updatedOSCOREOption);
+						preparedRequest.getOptions().setOscore(updatedOSCOREOption);
 
 						// apply OSCORE layer again
 						System.out.println("applying again");
-						sendRequest(exchange, request);
+						sendRequest(exchange, preparedRequest);
 					}
 				}
 
@@ -255,13 +255,13 @@ public class ObjectSecurityLayer extends AbstractLayer {
 								System.out.print("oscore option value is: " + Hex.encodeHexString(latestOSCOREOptionValue));
 								System.out.println();
 								System.out.println("Current option is: " + request.getOptions().getOscore().length + " " + Hex.encodeHexString(request.getOptions().getOscore()));
-								
+
 								request.getOptions().setOscore(latestOSCOREOptionValue);
 
 							}
-							
-							ctxDb.addContext(token, finalCtx);
 
+							ctxDb.addContext(token, finalCtx);
+							System.out.println("SENT REQUEST WITH: " + token.toString());
 						}
 					});
 
@@ -353,70 +353,148 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	@Override
 	public void receiveRequest(Exchange exchange, Request request) {
 		System.out.println("RECEIVE REQUEST IN OBJECTSECURITYLAYER");
-		System.out.println("are we proxy = " + request.isForwardProxy());
-		for (StackTraceElement stackelme : Thread.currentThread().getStackTrace()) {
-			System.out.println(stackelme);
+		System.out.println(request);
+		System.out.println(exchange.getEndpoint().isForwardProxy());
+		
+		OptionSet options = request.getOptions();
+		if (OptionJuggle.hasProxyRelatedOptions(options)) {
+			System.out.println("we is in proxy");
+			if (OptionJuggle.hasProxyUriOrCriOptions(options) || OptionJuggle.hasSchemeAndUri(options)) {
+				if (exchange.getEndpoint().isForwardProxy()) {
+					if (/*isAcceptableToForward()*/ true) {
+						if (/* does uri port and host identify me?*/ false) {
+							//consume proxy related options.
+							options.removeProxyScheme();
+							options.removeProxyUri();
+							//options.removeProxySchemeNumber();
+							
+							receiveRequest(exchange, request);
+						}
+						else {
+							//no, we forward
+							super.receiveRequest(exchange, request);
+						}
+					}
+					else {
+						exchange.sendResponse(new Response(ResponseCode.UNAUTHORIZED));
+					}
+				}
+				else {
+					exchange.sendResponse(new Response(ResponseCode.PROXY_NOT_SUPPORTED));
+				}
+			}
+			else {
+				// am i a reverse proxy 
+				// do Uri path, host or/and port identfify me as a reverse proxy?
+				// if (yes) {
+				// 		if(isAcceptableToForward()){
+			 	//		super.receiveRequest(exchange, request);
+				//	}
+				// 
+				// else exchange.sendResponse(new Response(ResponseCode.UNAUTHORIZED));
+
+				// }
+			}
 		}
-		System.out.println();
-		if (isProtected(request)) {
-
-			OSCoreCtx ctx = null;
-			try {
-				// Retrieve the OSCORE context associated with this RID and ID
-				// Context
-				OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(request.getOptions().getOscore());
-				byte[] rid = optionDecoder.getKid();
-				byte[] IDContext = optionDecoder.getIdContext();
-
-				ctx = ctxDb.getContext(rid, IDContext);
-			} catch (CoapOSException e) {
-				LOGGER.error("Error while receiving OSCore request: {}", e.getMessage());
-				Response error;
-				error = CoapOSExceptionHandler.manageError(e, request);
-				if (error != null) {
-					super.sendResponse(exchange, error);
+		else { 
+			if (isProtected(request)) {
+				System.out.println("we is in oscore ");
+				if (options.hasUriPath()) {
+					exchange.sendResponse(new Response(ResponseCode.BAD_REQUEST));
 				}
-				return;
-			}
-
-			// For OSCORE-protected requests with the outer block1-option let
-			// them pass through to be re-assembled by the block-wise layer
-			if (request.getOptions().hasBlock1()) {
-
-				if (request.getMaxResourceBodySize() == 0) {
-					int maxPayloadSize = getIncomingMaxUnfragSize(request, ctx);
-					request.setMaxResourceBodySize(maxPayloadSize);
+				else {
+					// this can be "does we share security context?"
+					if (/*isAcceptableToDecrypt()*/ true) {
+						Request decryptedRequest = requestDecryption(exchange, request);
+						if (decryptedRequest != null) {
+							System.out.println("decrypted request is: " + decryptedRequest);
+							receiveRequest(exchange, decryptedRequest);
+						}
+					}
+					else {
+						exchange.sendResponse(new Response(ResponseCode.UNAUTHORIZED));
+					}
 				}
-
-				super.receiveRequest(exchange, request);
-				return;
 			}
-			System.out.println("weeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
-			byte[] requestOscoreOption;
-			try {
-				System.out.println("request print 1: " + request);
-				requestOscoreOption = request.getOptions().getOscore();
-				request = prepareReceive(ctxDb, request, ctx);
-				request.getOptions().setOscore(Bytes.EMPTY);
-				System.out.println("here we sett empty oscore opt");
-				System.out.println("request print 2: " + request);
-
-				exchange.setRequest(request);
-			} catch (CoapOSException e) {
-				LOGGER.error("Error while receiving OSCore request: {}", e.getMessage());
-				Response error;
-				error = CoapOSExceptionHandler.manageError(e, request);
-				if (error != null) {
-					super.sendResponse(exchange, error);
+			else {
+				// is there an application yes
+				if (/* hasApplication() */ true) {
+					super.receiveRequest(exchange, request);
 				}
-				return;
+				else {
+					exchange.sendResponse(new Response(ResponseCode.BAD_REQUEST));
+				}
 			}
-			exchange.setCryptographicContextID(requestOscoreOption);
 		}
-		System.out.println("EXITING RECEIVE REQUEST IN OBJECTSECURITYLAYER");
+		// We need the kid value on layer level
+		// request.getOptions().setOscore(rid);
+		// then send to upper layer.
 
-		super.receiveRequest(exchange, request);
+		//super.receiveRequest(exchange, request);
 	}
+
+	public Request requestDecryption(Exchange exchange, Request request) {
+		OSCoreCtx ctx = null;
+		try {
+			// Retrieve the OSCORE context associated with this RID and ID
+			// Context
+			OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(request.getOptions().getOscore());
+			byte[] rid = optionDecoder.getKid();
+			byte[] IDContext = optionDecoder.getIdContext();
+
+			ctx = ctxDb.getContext(rid, IDContext);
+		} catch (CoapOSException e) {
+			LOGGER.error("Error while receiving OSCore request: {}", e.getMessage());
+			Response error;
+			error = CoapOSExceptionHandler.manageError(e, request);
+			if (error != null) {
+				super.sendResponse(exchange, error);
+			}
+			return null;
+		}
+
+		// For OSCORE-protected requests with the outer block1-option let
+		// them pass through to be re-assembled by the block-wise layer
+		if (request.getOptions().hasBlock1()) {
+
+			if (request.getMaxResourceBodySize() == 0) {
+				int maxPayloadSize = getIncomingMaxUnfragSize(request, ctx);
+				request.setMaxResourceBodySize(maxPayloadSize);
+			}
+
+			super.receiveRequest(exchange, request);
+			return null;
+		}
+
+		byte[] requestOscoreOption;
+		try {
+			System.out.println("request before decryption: " + request);
+			requestOscoreOption = request.getOptions().getOscore();
+
+
+			request = prepareReceive(ctxDb, request, ctx);
+			//request.getOptions().setOscore(Bytes.EMPTY);
+			System.out.println(Hex.encodeHexString(requestOscoreOption));
+			System.out.println("here we used to set empty oscore opt");
+			System.out.println("request after decryption:: " + request);
+
+
+			// maybe breaks
+			exchange.setCryptographicContextID(requestOscoreOption);
+			exchange.setRequest(request);
+			return request;
+		} catch (CoapOSException e) {
+			LOGGER.error("Error while receiving OSCore request: {}", e.getMessage());
+			Response error;
+			error = CoapOSExceptionHandler.manageError(e, request);
+			if (error != null) {
+				super.sendResponse(exchange, error);
+			}
+			return null;
+		}
+		//exchange.setCryptographicContextID(requestOscoreOption);
+	}
+
 
 	//Always accepts unprotected responses, which is needed for reception of error messages
 	@Override

@@ -217,6 +217,21 @@ import org.slf4j.LoggerFactory;
  */
 public class CoapEndpoint implements Endpoint, Executor {
 
+	/** 
+	 * 
+	 */
+	private boolean isForwardProxy = false;
+	
+	public void setIsForwardProxy() {
+		this.isForwardProxy = true;
+	}
+	
+	public boolean isForwardProxy() {
+		return this.isForwardProxy;
+	}
+	
+	// is reverse proxy here too?
+	
 	/** the logger. */
 	private static final Logger LOGGER = LoggerFactory.getLogger(CoapEndpoint.class);
 

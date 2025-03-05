@@ -66,6 +66,7 @@ public class OSSerializer {
 			if (realCode > 0) {
 				//OptionSet filteredOptions = OptionJuggle.prepareEoptions(options, instructions); //its calling here
 				writer.write(realCode, CoAP.MessageFormat.CODE_BITS);
+				System.out.println(filteredOptions + "in serialize confidential data");
 				DataSerializer.serializeOptionsAndPayload(writer, filteredOptions, payload);
 				return writer.toByteArray();
 			} else {
