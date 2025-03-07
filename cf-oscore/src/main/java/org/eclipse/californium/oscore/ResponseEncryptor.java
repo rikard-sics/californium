@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
+import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
@@ -101,13 +102,17 @@ public class ResponseEncryptor extends Encryptor {
 		OptionSet[] optionsUAndE = OptionJuggle.prepareUandEOptions(options, encodedInstructions);
 
 		byte[] confidential = OSSerializer.serializeConfidentialData(optionsUAndE[1], response.getPayload(), realCode);
+		System.out.println(Hex.encodeHexString(confidential));
+		
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
 		byte[] cipherText = encryptAndEncode(enc, ctx, response, newPartialIV, requestSequenceNr);
+		System.out.println(Hex.encodeHexString(cipherText));
+
 		compression(ctx, cipherText, response, newPartialIV);
 
 
 		byte[] oscoreOption = response.getOptions().getOscore();
-
+		System.out.println("OScore option is: " + Hex.encodeHexString(oscoreOption));
 		// here the U options are prepared
 		response.setOptions(optionsUAndE[0]);
 		response.getOptions().setOscore(oscoreOption);

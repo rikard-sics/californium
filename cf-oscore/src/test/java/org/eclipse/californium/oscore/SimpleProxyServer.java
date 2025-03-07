@@ -34,6 +34,7 @@ public class SimpleProxyServer {
 
 	public static void main(String[] args) throws OSException {
 		OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, new byte[] { 0x01 }, MAX_UNFRAGMENTED_SIZE);
+		ctx.setIncludeContextId(true);
 		db.addContext(uriLocal, ctx);
 		OSCoreCoapStackFactory.useAsDefault(db);
 

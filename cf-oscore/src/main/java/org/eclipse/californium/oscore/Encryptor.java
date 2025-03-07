@@ -22,7 +22,7 @@ package org.eclipse.californium.oscore;
 import java.io.ByteArrayOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
@@ -150,17 +150,23 @@ public abstract class Encryptor {
 		ByteArrayOutputStream bRes = new ByteArrayOutputStream();
 		OptionSet options = message.getOptions();
 		options.removeOscore();
-
+		System.out.println("in compression------------");
+		if (ctx.getIdContext() != null) {
+			System.out.println(Hex.encodeHexString(ctx.getIdContext()));
+		}
 		if (request) {
+			System.out.println("setting oscore option");
 			message.getOptions().setOscore(encodeOSCoreRequest(ctx));
 		} else {
+			System.out.println("setting oscore option");
 			message.getOptions().setOscore(encodeOSCoreResponse(ctx, newPartialIV));
 		}
 
+		System.out.println("ciphertext is not null: " + (cipherText != null));
 		if (cipherText != null) {
 			message.setPayload(cipherText);
 		}
-
+		System.out.println(message);
 		return bRes.toByteArray();
 	}
 
@@ -173,6 +179,8 @@ public abstract class Encryptor {
 	public static byte[] encodeOSCoreRequest(OSCoreCtx ctx) {
 
 		OscoreOptionEncoder optionEncoder = new OscoreOptionEncoder();
+		System.out.println("encode oscore request ");
+		System.out.println(ctx.getIncludeContextId());
 		if (ctx.getIncludeContextId()) {
 			optionEncoder.setIdContext(ctx.getMessageIdContext());
 		}
@@ -193,6 +201,10 @@ public abstract class Encryptor {
 	public static byte[] encodeOSCoreResponse(OSCoreCtx ctx, final boolean newPartialIV) {
 
 		OscoreOptionEncoder optionEncoder = new OscoreOptionEncoder();
+		System.out.println("include context id:    " + (ctx.getIncludeContextId()));
+		System.out.println("create new partial IV: " + (newPartialIV));
+		
+		//System.out.println(Hex.encodeHexString(ctx.getMessageIdContext()));
 		if (ctx.getIncludeContextId()) {
 			optionEncoder.setIdContext(ctx.getMessageIdContext());
 		}

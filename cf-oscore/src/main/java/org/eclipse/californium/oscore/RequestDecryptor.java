@@ -142,21 +142,27 @@ public class RequestDecryptor extends Decryptor {
 			LOGGER.error(ErrorDescriptions.DECRYPTION_FAILED);
 			throw new CoapOSException(ErrorDescriptions.DECRYPTION_FAILED, ResponseCode.BAD_REQUEST);
 		}
-		System.out.println("request oscore option is: " + request.getOptions().getOscore());
+
 		System.out.println("request options are: " + request.getOptions());
 		OptionSet eOptions = request.getOptions();
 		eOptions = OptionJuggle.merge(eOptions, uOptions);	
 		request.setOptions(eOptions);
 
 		System.out.println("request oscore option is: " + Hex.encodeHexString(request.getOptions().getOscore()));
+		
+		byte[] oscoreOption = request.getOptions().getOscore();
+		
 		// We need the kid value on layer level
-		//request.getOptions().setOscore(rid);
+		request.getOptions().setOscore(rid);
+		
 
 		// Associate the Token with the context used
 		db.addContext(request.getToken(), ctx);
 
 		//Set information about the OSCORE context used in the endpoint context of this request
 		OSCoreEndpointContextInfo.receivingRequest(ctx, request);
+		
+		request.getOptions().setOscore(oscoreOption);
 
 		return OptionJuggle.setRealCodeRequest(request, ctx.getCoAPCode());
 	}
