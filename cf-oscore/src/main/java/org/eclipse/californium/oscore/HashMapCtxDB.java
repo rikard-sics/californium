@@ -80,14 +80,22 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 
 	@Override
 	public synchronized void size() {
-		System.out.println(contextMap.size());
+		System.out.println("Context map is size: " + contextMap.size());
+		System.out.println("Token map is size;   " + tokenMap.size());
+		System.out.println("instruction map is size: " + instructionMap.size());
+		
 	}
 	
 	@Override
 	public synchronized void addInstructions(Token token, CBORObject[] instructions) {
-		if (token != null && allTokens.contains(token)) {
+		if (token != null) {
+			if (!tokenExist(token)) {
+				System.out.println("ADDDING TOKEN TO ALL TOKENS (for instructions) ---------------------------------------------------------------");
+				allTokens.add(token);
+			}
 			instructionMap.put(token, instructions);	
 		}
+		
 	}
 
 	/**

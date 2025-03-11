@@ -32,6 +32,7 @@ import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.core.network.serialization.UdpDataParser;
 import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.elements.util.DatagramReader;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 
 /**
  * 
@@ -59,7 +60,8 @@ public class ResponseDecryptor extends Decryptor {
 	 * 
 	 */
 	public static Response decrypt(OSCoreCtxDB db, Response response, int requestSequenceNr) throws OSException {
-
+		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(response.getOptions().getOscore());
+		int index = 0;
 		discardEOptions(response);
 
 		byte[] protectedData = response.getPayload();
@@ -69,11 +71,54 @@ public class ResponseDecryptor extends Decryptor {
 		OptionSet uOptions = response.getOptions();
 
 		if (token != null) {
-			ctx = db.getContextByToken(token);
+			System.out.println("-----IN RESPONSE DECYRPTOR-----");
+			db.size();
+			
+			// check response oscore option if is instructions
+			
+			
+			// if is, use that 
+			if (instructions == null) {
+				System.out.println("isntructions = null, get context by token");
+			// else try and get context by token, 
+				ctx = db.getContextByToken(token);
+
+			}
+			// if fail, 
+			// retrieve instructions
+			if (instructions == null && ctx == null) {
+				System.out.println("retrieving instructiosn from token because could not retrieve from oscore option or token (vanilla)");
+				instructions = db.getInstructions(token);
+			}
+			if (instructions != null) {
+				response.getOptions().setOscore(new byte[0]);
+				// get index for current instruction
+				index = instructions[1].ToObject(int.class);
+				
+				// get instruction
+				CBORObject instruction = instructions[index];
+
+				byte[] RID       = instruction.get(3).ToObject(byte[].class);
+				byte[] IDCONTEXT = instruction.get(5).ToObject(byte[].class);
+				
+				System.out.println("getting context from rid and idcontext: " + instruction.get(3) + " " + instruction.get(5));
+				ctx = db.getContext(RID, IDCONTEXT);
+
+				instructions[1] = CBORObject.FromObject(--index);
+				
+			}
+			// if has ctx (i.e. retrieved from token) skip next, otherwise
+			// retrieve context from instructions
+			// decrement index for instructions
+			// set oscore option to instructions
+
+			
 			if (ctx == null) {
 				LOGGER.error(ErrorDescriptions.TOKEN_INVALID);
 				throw new OSException(ErrorDescriptions.TOKEN_INVALID);
 			}
+			System.out.println("ctx retrieved is: " + ctx.getContextIdString());
+
 			enc = decompression(protectedData, response);
 		} else {
 			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
@@ -97,6 +142,10 @@ public class ResponseDecryptor extends Decryptor {
 
 		//Check if parsing of response plaintext succeeds
 		try {
+			System.out.println("printing info in response decryptor");
+			System.out.println(response);
+			System.out.println("ctx is: " + ctx.getContextIdString());
+			System.out.println("request sequence nr is: " + requestSequenceNr);
 			byte[] plaintext = decryptAndDecode(enc, response, ctx, requestSequenceNr);
 	
 			DatagramReader reader = new DatagramReader(new ByteArrayInputStream(plaintext));
@@ -126,6 +175,11 @@ public class ResponseDecryptor extends Decryptor {
 
 		//Set information about the OSCORE context used in the endpoint context of this response
 		OSCoreEndpointContextInfo.receivingResponse(ctx, response);
+
+		System.out.println("index is: " + index);
+		if (index > 1) {
+			response.getOptions().setOscore(OptionEncoder.encodeSequence(instructions));
+		}
 
 		return response;
 	}

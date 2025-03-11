@@ -215,6 +215,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						System.out.println("applying again");
 						sendRequest(exchange, preparedRequest);
 					}
+					else {
+						System.out.println("send request with no instructions remaining");
+						System.out.println("Oscore option is" + Hex.encodeHexString(preparedRequest.getOptions().getOscore()));
+						System.out.println("oscore option in instructions are: " + Hex.encodeHexString(instructions[0].ToObject(byte[].class)));
+					}
 				}
 
 				if (!instructionsExists || (instructionsExists && !instructionsRemaining)) {
@@ -246,9 +251,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 								request.setMID(preparedRequest.getMID());
 							}
 
+							
+							
 							if (Objects.nonNull(finalInstructions)) {
 								ctxDb.addInstructions(token, finalInstructions);
-
+								/*
 								byte[] latestOSCOREOptionValue = finalInstructions[0].ToObject(byte[].class);
 								int length = latestOSCOREOptionValue.length;
 								System.out.println("latest oscore option is length: " + length);
@@ -256,11 +263,13 @@ public class ObjectSecurityLayer extends AbstractLayer {
 								System.out.println();
 								System.out.println("Current option is: " + request.getOptions().getOscore().length + " " + Hex.encodeHexString(request.getOptions().getOscore()));
 
-								request.getOptions().setOscore(latestOSCOREOptionValue);
+								request.getOptions().setOscore(latestOSCOREOptionValue);*/
 
 							}
+							else {
+								ctxDb.addContext(token, finalCtx);
+							}
 
-							ctxDb.addContext(token, finalCtx);
 							System.out.println("SENT REQUEST WITH: " + token.toString());
 						}
 					});
@@ -573,7 +582,17 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
 				int requestSequenceNumber = optionDecoder.getSequenceNumber();
 
+				System.out.println("Response before prepare receive: " + response);
 				response = prepareReceive(ctxDb, response, requestSequenceNumber);
+				System.out.println("Response after prepare receive:  " + response);
+				
+				if (!(Hex.encodeHexString(response.getOptions().getOscore()).equals(""))) {
+					System.out.println("sending back again");
+					receiveResponse(exchange, response);
+					return;
+				}
+				System.out.println("sending out/up");
+
 			}
 		} catch (OSException e) {
 			LOGGER.error("Error while receiving OSCore response: {}", e.getMessage());

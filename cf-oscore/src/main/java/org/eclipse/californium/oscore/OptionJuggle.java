@@ -363,6 +363,7 @@ public class OptionJuggle {
 			if (!allEOptions.contains(opt.getNumber())) {
 				result.addOption(opt);
 			}
+			System.out.println("removing inner only option: " + opt);
 		}
 		return result;
 	}

@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
@@ -141,7 +142,11 @@ public abstract class Decryptor {
 		enc.setExternal(aad);
 			
 		try {
-
+			System.out.println("-----in decryptor-----");
+			System.out.println(ctx.getContextIdString());
+			System.out.println("recipient key is: " + Hex.encodeHexString(ctx.getRecipientKey()));
+			System.out.println(partialIV);
+			System.out.println(nonce);
 			enc.addAttribute(HeaderKeys.Algorithm, ctx.getAlg().AsCBOR(), Attribute.DO_NOT_SEND);
 			enc.addAttribute(HeaderKeys.IV, CBORObject.FromObject(nonce), Attribute.DO_NOT_SEND);
 			plaintext = enc.decrypt(key);
