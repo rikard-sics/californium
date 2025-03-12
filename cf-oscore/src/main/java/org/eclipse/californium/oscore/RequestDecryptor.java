@@ -61,27 +61,14 @@ public class RequestDecryptor extends Decryptor {
 	 * @throws CoapOSException if decryption fails
 	 */
 	public static Request decrypt(OSCoreCtxDB db, Request request, OSCoreCtx ctx) throws CoapOSException {
-		System.out.println("REQUEST DECRYPTOR IN REQUESTDECRYPTOR");
 
-		db.size();
-		if (ctx != null) {
-			System.out.println("context is: " + ctx.getSenderIdString());
-
-		}
-
-		System.out.println(request.getOptions());
 		discardEOptions(request);
-		System.out.println(request.getOptions());
-		System.out.println("request is: " + request);
 
-		System.out.println(request.getPayloadString());
 		byte[] protectedData = request.getPayload();
 		Encrypt0Message enc;
 		OptionSet uOptions = request.getOptions();
 		try {
-			System.out.println("before decompression");
 			enc = decompression(protectedData, request);
-			System.out.println("after decompression");
 		} catch (OSException e) {
 			LOGGER.error(ErrorDescriptions.FAILED_TO_DECODE_COSE);
 			throw new CoapOSException(ErrorDescriptions.FAILED_TO_DECODE_COSE, ResponseCode.BAD_OPTION);
@@ -117,7 +104,6 @@ public class RequestDecryptor extends Decryptor {
 		byte[] plaintext;
 		try {
 			plaintext = decryptAndDecode(enc, request, ctx, null);
-			System.out.println("plaintext is: " + plaintext + " : " + Hex.encodeHexString(plaintext));
 		} catch (OSException e) {
 			//First check for replay exceptions
 			if (e.getMessage().equals(ErrorDescriptions.REPLAY_DETECT)) { 
@@ -143,12 +129,10 @@ public class RequestDecryptor extends Decryptor {
 			throw new CoapOSException(ErrorDescriptions.DECRYPTION_FAILED, ResponseCode.BAD_REQUEST);
 		}
 
-		System.out.println("request options are: " + request.getOptions());
 		OptionSet eOptions = request.getOptions();
 		eOptions = OptionJuggle.merge(eOptions, uOptions);	
 		request.setOptions(eOptions);
 
-		System.out.println("request oscore option is: " + Hex.encodeHexString(request.getOptions().getOscore()));
 		
 		byte[] oscoreOption = request.getOptions().getOscore();
 		

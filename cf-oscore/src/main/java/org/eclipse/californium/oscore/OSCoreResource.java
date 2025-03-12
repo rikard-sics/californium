@@ -42,7 +42,6 @@ public class OSCoreResource extends CoapResource {
 
 	@Override
 	public void handleRequest(final Exchange exchange) {
-		System.out.println("in handle request oscore resource");
 		if (isProtected) {
 			OptionSet options = exchange.getRequest().getOptions();
 			if (!options.hasOscore()) {

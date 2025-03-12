@@ -182,15 +182,15 @@ public class SimpleProxyProxy {
 
 		CoapEndpoint.Builder builder = CoapEndpoint.builder()
 				.setConfiguration(outgoingConfig);
-		//builder.setCoapStackFactory(new OSCoreCoapStackFactory());
-		//builder.setCustomCoapStackArgument(db);
+		//builder.setCoapStackFactory(new OSCoreCoapStackFactory());//
+		//builder.setCustomCoapStackArgument(db);//
 		builder.setPort(CoapProxyPort - 1);
 
-		CoapEndpoint proxyClientEndpoint = builder.build();
-		proxyClientEndpoint.setIsForwardProxy();
+		CoapEndpoint proxyToServerEndpoint = builder.build();
+		proxyToServerEndpoint.setIsForwardProxy();
 		
 		CoapClient proxyClient = new CoapClient();
-		proxyClient.setEndpoint(proxyClientEndpoint);
+		proxyClient.setEndpoint(proxyToServerEndpoint);
 		System.out.println(proxyClient.getEndpoint().getAddress());
 		
 		builder = CoapEndpoint.builder()
@@ -199,12 +199,12 @@ public class SimpleProxyProxy {
 		builder.setCustomCoapStackArgument(db);
 		builder.setPort(CoapProxyPort);
 		
-		CoapEndpoint proxyServerEndpoint = builder.build();
-		proxyServerEndpoint.setIsForwardProxy();
+		CoapEndpoint clientToProxyEndpoint = builder.build();
+		clientToProxyEndpoint.setIsForwardProxy();
 		
 		CoapServer proxyServer = new CoapServer();
 
-		proxyServer.addEndpoint(proxyServerEndpoint);
+		proxyServer.addEndpoint(clientToProxyEndpoint);
 		proxyServer.setMessageDeliverer(new MessageDeliverer() {
 			/**
 			 * Delivers an inbound CoAP request to an appropriate resource.
@@ -320,74 +320,5 @@ public class SimpleProxyProxy {
 		}
 	}
 	
-	public Coap2CoapTranslator translator = new Coap2CoapTranslator(); /*{
-		@Override
-		public Request getRequest(URI destination, Request incomingRequest) throws TranslationException {
-			// check parameters
-			if (destination == null) {
-				throw new NullPointerException("destination == null");
-			}
-			if (incomingRequest == null) {
-				throw new NullPointerException("incomingRequest == null");
-			}
-			System.out.println("in custom translator, translating...");
-			System.out.println(incomingRequest);
-
-			// get the code
-			Code code = incomingRequest.getCode();
-
-			// get message type
-			Type type = incomingRequest.getType();
-
-			// create the request
-			Request outgoingRequest = new Request(code);
-			outgoingRequest.setConfirmable(type == Type.CON);
-
-			// copy payload
-			byte[] payload = incomingRequest.getPayload();
-			outgoingRequest.setPayload(payload);
-
-			OptionSet options = new OptionSet(incomingRequest.getOptions());
-			int uriPort = options.getUriPort();
-
-			outgoingRequest.setOptions(options);
-
-			// set the proxy-uri as the outgoing uri
-			System.out.println(outgoingRequest.getURI());
-			outgoingRequest.setURI(destination);
-			outgoingRequest.getOptions().setUriPort(uriPort);
-
-			System.out.println(outgoingRequest.getURI());
-
-			System.out.println(outgoingRequest);
-			System.out.println("returning outgoing request...");
-			return outgoingRequest;
-		}
-		
-		@Override
-		public Response getResponse(Response incomingResponse) {
-			if (incomingResponse == null) {
-				throw new IllegalArgumentException("incomingResponse == null");
-			}
-
-			// get the status
-			ResponseCode status = incomingResponse.getCode();
-
-			// create the response
-			Response outgoingResponse = new Response(status);
-
-			// copy payload
-			byte[] payload = incomingResponse.getPayload();
-			outgoingResponse.setPayload(payload);
-
-			// copy the timestamp
-			long timestamp = incomingResponse.getNanoTimestamp();
-			outgoingResponse.setNanoTimestamp(timestamp);
-
-			// copy every option
-			outgoingResponse.setOptions(incomingResponse.getOptions());
-
-			return outgoingResponse;
-		}
-	};*/
+	public Coap2CoapTranslator translator = new Coap2CoapTranslator(); 
 }

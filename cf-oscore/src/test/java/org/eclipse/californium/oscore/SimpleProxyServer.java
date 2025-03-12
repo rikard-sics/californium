@@ -61,9 +61,9 @@ public class SimpleProxyServer {
 				System.out.println("Recieved GET with " + exchange.advanced().getRequest().getToken());
 				exchange.respond(r);
 				counter.incrementAndGet();
-				if (counter.get() == 2) {
+				/*if (counter.get() == 2) {
 					server.destroy();
-				}
+				}*/
 				
 			}
 		};

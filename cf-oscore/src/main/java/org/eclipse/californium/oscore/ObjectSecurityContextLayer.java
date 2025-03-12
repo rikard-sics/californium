@@ -118,8 +118,6 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 				} else {
 					uri = request.getURI();
 				}
-				System.out.println("uri is " + uri);
-				System.out.println("request is " + request);
 
 				if (uri == null) {
 					LOGGER.error(ErrorDescriptions.URI_NULL);
@@ -134,7 +132,6 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 
 				// Initiate context re-derivation procedure if flag is set
 				if (ctx.getContextRederivationPhase() == PHASE.CLIENT_INITIATE) {
-					System.out.println("awoo1");
 					ContextRederivation.setLostContext(ctxDb, uri);
 					// send dummy request before to rederive the new context
 					// and then send the original request using this new context

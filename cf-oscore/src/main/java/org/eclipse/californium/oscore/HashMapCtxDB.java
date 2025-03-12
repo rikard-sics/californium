@@ -90,7 +90,6 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	public synchronized void addInstructions(Token token, CBORObject[] instructions) {
 		if (token != null) {
 			if (!tokenExist(token)) {
-				System.out.println("ADDDING TOKEN TO ALL TOKENS (for instructions) ---------------------------------------------------------------");
 				allTokens.add(token);
 			}
 			instructionMap.put(token, instructions);	
@@ -416,6 +415,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	public synchronized void purge() {
 		contextMap.clear();
 		tokenMap.clear();
+		instructionMap.clear();
 		uriMap.clear();
 		allTokens = new ArrayList<Token>();
 	}

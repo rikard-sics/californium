@@ -255,7 +255,6 @@ public class OptionJuggle {
 		proxyUri = proxyUri.replace("coaps://", "");
 
 		int i = proxyUri.indexOf('/');
-		System.out.println(i);
 		if (i >= 0) {
 			UProxyUri = proxyUri.substring(0, i);
 			proxyUri = proxyUri.substring(i + 1, proxyUri.length());
@@ -297,7 +296,6 @@ public class OptionJuggle {
 		OptionSet ret = new OptionSet();
 
 
-		System.out.println("initial optionset: " + options);
 		for (Option o : options.asSortedList()) {
 
 			switch (o.getNumber()) {
@@ -338,13 +336,11 @@ public class OptionJuggle {
 				}
 				break;
 			default: // default is encrypt
-				System.out.println("encrypting opt: " + o);
 				ret.addOption(o);
 
 			}
 
 		}
-		System.out.println("out optionset: " + ret);
 
 		return ret;
 	}
@@ -363,7 +359,6 @@ public class OptionJuggle {
 			if (!allEOptions.contains(opt.getNumber())) {
 				result.addOption(opt);
 			}
-			System.out.println("removing inner only option: " + opt);
 		}
 		return result;
 	}
@@ -408,7 +403,6 @@ public class OptionJuggle {
 				for (int optionNumber : optionArray) {
 					if (optionNumber == option.getNumber()) {
 						//This class U option is not intended for the current endpoint
-						System.out.println("Option " + option + " was not intended");
 						return processNotConsumeOption(option, options, instructions);
 
 					}
@@ -416,7 +410,6 @@ public class OptionJuggle {
 			}
 		}
 
-		System.out.println("Option " + option + " was intended");
 		if (processIsNextImmediateConsumer(option, options, instructions)) {
 			return processNeedBeforeDecryption(option, options);
 		}
@@ -451,12 +444,10 @@ public class OptionJuggle {
 			instructionsForProxyExists = ((int) instructions[1].ToObject(int.class) > 2);
 		}
 
-		System.out.println("instructions for proxy exists is: " + instructionsForProxyExists);
 		if (instructionsForProxyExists) { 
 
 			//these are options that has to be consumed by a proxy (if we guess there is one)
 			if (proxyConsumeOptions.contains(option.getNumber())) { 
-				System.out.println("returning false for optionProxy: " + option);
 				return false;
 			}
 			else return true;
@@ -615,7 +606,6 @@ public class OptionJuggle {
 
 		for (Option tmp : uOptions.asSortedList()) {
 			if (Collections.binarySearch(e, tmp) < 0) {
-				System.out.println("merging E option: " + e + " with U option: " + tmp);
 				eOptions.addOption(tmp);
 			}
 		}

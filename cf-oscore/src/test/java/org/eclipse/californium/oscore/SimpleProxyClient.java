@@ -77,7 +77,7 @@ public class SimpleProxyClient {
 			CoapClient client = new CoapClient(uriServer + uriServerPath);
 
 			AddressEndpointContext proxy = new AddressEndpointContext("localhost", 5685);
-			/*
+			
 			System.out.println(" ----- ");
 			System.out.println();
 			System.out.println("Sending with OSCORE...");
@@ -92,9 +92,9 @@ public class SimpleProxyClient {
 			
 			CoapResponse resp = client.advanced(request);
 			printResponse(resp);
-		*/
-			Request request;
-			CoapResponse resp;
+		
+			//Request request;
+			//CoapResponse resp;
 			
 			System.out.println();
 			System.out.println(" ----- ");
@@ -120,7 +120,6 @@ public class SimpleProxyClient {
 			
 			 resp = client.advanced(request);
 			printResponse(resp);
-			
 			
 			client.shutdown();
 		}

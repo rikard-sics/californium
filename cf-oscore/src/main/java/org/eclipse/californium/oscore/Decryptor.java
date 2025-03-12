@@ -145,8 +145,11 @@ public abstract class Decryptor {
 			System.out.println("-----in decryptor-----");
 			System.out.println(ctx.getContextIdString());
 			System.out.println("recipient key is: " + Hex.encodeHexString(ctx.getRecipientKey()));
-			System.out.println(partialIV);
-			System.out.println(nonce);
+			System.out.println("Partial IV is: " + Hex.encodeHexString(partialIV));
+			System.out.println(Hex.encodeHexString(nonce));
+			System.out.println(Hex.encodeHexString(aad));
+			System.out.println("seq IV is: " + seq);
+			System.out.println("------");
 			enc.addAttribute(HeaderKeys.Algorithm, ctx.getAlg().AsCBOR(), Attribute.DO_NOT_SEND);
 			enc.addAttribute(HeaderKeys.IV, CBORObject.FromObject(nonce), Attribute.DO_NOT_SEND);
 			plaintext = enc.decrypt(key);
@@ -231,12 +234,7 @@ public abstract class Decryptor {
 	 */
 	private static void decodeObjectSecurity(Message message, Encrypt0Message enc) throws OSException {
 
-		System.out.println("a1");
-		System.out.println(message);
-		System.out.println(message);
 		OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(message.getOptions().getOscore());
-		System.out.println("a2");
-		System.out.println("decode oscore option using option decoder and puts into encrypt0message");
 		
 		int n = optionDecoder.getN();
 		int k = optionDecoder.getK();

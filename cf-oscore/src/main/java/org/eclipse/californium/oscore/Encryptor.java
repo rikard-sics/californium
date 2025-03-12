@@ -66,7 +66,6 @@ public abstract class Encryptor {
 	protected static byte[] encryptAndEncode(Encrypt0Message enc, OSCoreCtx ctx, Message message, boolean newPartialIV,
 			Integer requestSequenceNr)
 			throws OSException {
-		System.out.println("-------options in message for aad are : "+ message.getOptions());
 		boolean isRequest = message instanceof Request;
 
 		try {
@@ -79,7 +78,6 @@ public abstract class Encryptor {
 				partialIV = OSSerializer.processPartialIV(ctx.getSenderSeq());
 				nonce = OSSerializer.nonceGeneration(partialIV, ctx.getSenderId(), ctx.getCommonIV(),
 						ctx.getIVLength());
-				System.out.println("-------options in message for aad are : "+ message.getOptions());
 				aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), ctx.getSenderSeq(), ctx.getSenderId(), message.getOptions());
 				enc.addAttribute(HeaderKeys.PARTIAL_IV, CBORObject.FromObject(partialIV), Attribute.UNPROTECTED);
 				enc.addAttribute(HeaderKeys.KID, CBORObject.FromObject(ctx.getSenderId()), Attribute.UNPROTECTED);
@@ -110,6 +108,17 @@ public abstract class Encryptor {
 			}
 
 			enc.setExternal(aad);
+			
+			System.out.println("-----in encryptor-----");
+			System.out.println(ctx.getContextIdString());
+			System.out.println("recipient key is: " + Hex.encodeHexString(ctx.getRecipientKey()));
+			System.out.println("Partial IV is: " + Hex.encodeHexString(partialIV));
+			System.out.println(Hex.encodeHexString(nonce));
+			System.out.println(Hex.encodeHexString(aad));
+			System.out.println("new partial IV is:   " + newPartialIV);
+			System.out.println("ctx sender seq is:   " + ctx.getSenderSeq());
+			System.out.println("request sequence is: " + requestSequenceNr);
+			System.out.println("------");
 			
 			enc.addAttribute(HeaderKeys.IV, CBORObject.FromObject(nonce), Attribute.DO_NOT_SEND);
 			enc.addAttribute(HeaderKeys.Algorithm, ctx.getAlg().AsCBOR(), Attribute.DO_NOT_SEND);
@@ -150,23 +159,16 @@ public abstract class Encryptor {
 		ByteArrayOutputStream bRes = new ByteArrayOutputStream();
 		OptionSet options = message.getOptions();
 		options.removeOscore();
-		System.out.println("in compression------------");
-		if (ctx.getIdContext() != null) {
-			System.out.println(Hex.encodeHexString(ctx.getIdContext()));
-		}
+
 		if (request) {
-			System.out.println("setting oscore option");
 			message.getOptions().setOscore(encodeOSCoreRequest(ctx));
 		} else {
-			System.out.println("setting oscore option");
 			message.getOptions().setOscore(encodeOSCoreResponse(ctx, newPartialIV));
 		}
 
-		System.out.println("ciphertext is not null: " + (cipherText != null));
 		if (cipherText != null) {
 			message.setPayload(cipherText);
 		}
-		System.out.println(message);
 		return bRes.toByteArray();
 	}
 
@@ -179,8 +181,7 @@ public abstract class Encryptor {
 	public static byte[] encodeOSCoreRequest(OSCoreCtx ctx) {
 
 		OscoreOptionEncoder optionEncoder = new OscoreOptionEncoder();
-		System.out.println("encode oscore request ");
-		System.out.println(ctx.getIncludeContextId());
+
 		if (ctx.getIncludeContextId()) {
 			optionEncoder.setIdContext(ctx.getMessageIdContext());
 		}
@@ -201,10 +202,7 @@ public abstract class Encryptor {
 	public static byte[] encodeOSCoreResponse(OSCoreCtx ctx, final boolean newPartialIV) {
 
 		OscoreOptionEncoder optionEncoder = new OscoreOptionEncoder();
-		System.out.println("include context id:    " + (ctx.getIncludeContextId()));
-		System.out.println("create new partial IV: " + (newPartialIV));
 		
-		//System.out.println(Hex.encodeHexString(ctx.getMessageIdContext()));
 		if (ctx.getIncludeContextId()) {
 			optionEncoder.setIdContext(ctx.getMessageIdContext());
 		}

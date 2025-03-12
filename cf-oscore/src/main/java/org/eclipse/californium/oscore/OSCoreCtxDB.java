@@ -35,6 +35,7 @@ public interface OSCoreCtxDB {
 	 */
 	public void addInstructions(Token token, CBORObject[] instructions);
 
+	//
 	public void size();
 	/**
 	 * 

@@ -283,7 +283,6 @@ public class ForwardProxyMessageDeliverer extends ServerMessageDeliverer {
 		boolean proxyOption = options.hasProxyUri() || options.hasProxyScheme();
 		boolean hostOption = options.hasUriHost() || options.hasUriPort();
 		boolean local = true;
-		System.out.println("in find resource before all");
 		if (hostOption && !exposedServices.isEmpty()) {
 			// check, if proxy is final destination.
 			Integer port = options.getUriPort();
@@ -322,7 +321,6 @@ public class ForwardProxyMessageDeliverer extends ServerMessageDeliverer {
 		}
 		if (proxyOption || hostOption) {
 			try {
-				System.out.println("in find resource, proxy or host");
 				String scheme = translator.getDestinationScheme(request);
 				if (scheme != null) {
 					scheme = scheme.toLowerCase();
@@ -346,20 +344,14 @@ public class ForwardProxyMessageDeliverer extends ServerMessageDeliverer {
 					local = true;
 				}
 			} catch (TranslationException e) {
-				System.out.println("in find resource");
-
 				LOGGER.debug("Bad proxy request", e);
 			}
 		}
-		System.out.println("in find resource");
 		if (resource == null && local && getRootResource() != null) {
 			// try to find local resource
-			System.out.println("in find resource");
 			resource = super.findResource(exchange);
 		}
-		System.out.println("in find resource ender");
-		System.out.println("resource is: " + resource.getName() + resource.getPath() + resource.getURI());
-		System.out.println(resource.getAttributes().toString() + resource.getParent() + resource.getExecutor());
+		
 		return resource;
 	}
 

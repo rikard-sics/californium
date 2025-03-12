@@ -266,13 +266,11 @@ public abstract class DataParser {
 					message.setUnintendedPayload();
 				}
 				message.setPayload(reader.readBytesLeft());
-				System.out.println("Payload is: " + message.getPayloadString());
 				message.assertPayloadMatchsBlocksize();
 			}
 		} else {
 			message.setPayload(Bytes.EMPTY);
 		}
-		System.out.println("optionset in parseOptionsAndPayload is: " + optionSet);
 	}
 
 	/**

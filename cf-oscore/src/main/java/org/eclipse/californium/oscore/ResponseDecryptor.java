@@ -71,23 +71,16 @@ public class ResponseDecryptor extends Decryptor {
 		OptionSet uOptions = response.getOptions();
 
 		if (token != null) {
-			System.out.println("-----IN RESPONSE DECYRPTOR-----");
-			db.size();
-			
 			// check response oscore option if is instructions
-			
-			
 			// if is, use that 
 			if (instructions == null) {
-				System.out.println("isntructions = null, get context by token");
-			// else try and get context by token, 
+				// else try and get context by token, 
 				ctx = db.getContextByToken(token);
 
 			}
 			// if fail, 
 			// retrieve instructions
 			if (instructions == null && ctx == null) {
-				System.out.println("retrieving instructiosn from token because could not retrieve from oscore option or token (vanilla)");
 				instructions = db.getInstructions(token);
 			}
 			if (instructions != null) {
@@ -101,7 +94,6 @@ public class ResponseDecryptor extends Decryptor {
 				byte[] RID       = instruction.get(3).ToObject(byte[].class);
 				byte[] IDCONTEXT = instruction.get(5).ToObject(byte[].class);
 				
-				System.out.println("getting context from rid and idcontext: " + instruction.get(3) + " " + instruction.get(5));
 				ctx = db.getContext(RID, IDCONTEXT);
 
 				instructions[1] = CBORObject.FromObject(--index);
@@ -117,7 +109,6 @@ public class ResponseDecryptor extends Decryptor {
 				LOGGER.error(ErrorDescriptions.TOKEN_INVALID);
 				throw new OSException(ErrorDescriptions.TOKEN_INVALID);
 			}
-			System.out.println("ctx retrieved is: " + ctx.getContextIdString());
 
 			enc = decompression(protectedData, response);
 		} else {
@@ -176,7 +167,6 @@ public class ResponseDecryptor extends Decryptor {
 		//Set information about the OSCORE context used in the endpoint context of this response
 		OSCoreEndpointContextInfo.receivingResponse(ctx, response);
 
-		System.out.println("index is: " + index);
 		if (index > 1) {
 			response.getOptions().setOscore(OptionEncoder.encodeSequence(instructions));
 		}

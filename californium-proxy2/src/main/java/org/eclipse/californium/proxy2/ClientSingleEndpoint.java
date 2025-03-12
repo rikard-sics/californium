@@ -59,13 +59,11 @@ public class ClientSingleEndpoint implements ClientEndpoints {
 		if (!endpoint.isStarted()) {
 			endpoint.start();
 		}
-		System.out.println("sending request in client single endpoint");
 		endpoint.sendRequest(outgoingRequest);
 	}
 
 	@Override
 	public void destroy() {
-		System.out.println("calling destroy");
 		endpoint.destroy();
 	}
 

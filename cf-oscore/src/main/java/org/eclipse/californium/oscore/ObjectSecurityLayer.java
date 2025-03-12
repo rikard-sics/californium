@@ -133,11 +133,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	@Override
 	public void sendRequest(final Exchange exchange, final Request request) {
-		System.out.println("in send request ");
-		System.out.println("are we proxy = " + exchange.getEndpoint().isForwardProxy());
 		Request req = request;
-		System.out.println(exchange);
-		System.out.println("options are: " + request.getOptions());
 
 		if (shouldProtectRequest(request)) {
 			try {
@@ -188,8 +184,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				//encryption here
 				final Request preparedRequest = prepareSend(ctxDb, request);
 
-				System.out.println("request after prepare send is: " + request);
-				System.out.println("prepared request is:           " + preparedRequest);
+				//System.out.println("request after prepare send is: " + request);
+				//System.out.println("prepared request is:           " + preparedRequest);
+				
 				// are there instructions?
 				boolean instructionsExists = Objects.nonNull(instructions);
 				boolean instructionsRemaining = true;
@@ -212,7 +209,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						preparedRequest.getOptions().setOscore(updatedOSCOREOption);
 
 						// apply OSCORE layer again
-						System.out.println("applying again");
+						//System.out.println("applying again");
 						sendRequest(exchange, preparedRequest);
 					}
 					else {
@@ -224,7 +221,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				if (!instructionsExists || (instructionsExists && !instructionsRemaining)) {
 
-					System.out.println("sending");
 					final CBORObject[] finalInstructions = instructions;
 					final OSCoreCtx finalCtx = ctxDb.getContext(request, true);
 
@@ -300,10 +296,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	@Override
 	public void sendResponse(Exchange exchange, Response response) {
-		System.out.println("SEND RESPONSE IN OBJECTSECURITYLAYER");
-		System.out.println("exchange is: " + exchange);
-		System.out.println("response is: " + response);
-		System.out.println("request is:  " + exchange.getRequest());
+		//System.out.println("SEND RESPONSE IN OBJECTSECURITYLAYER");
+		//System.out.println("exchange is: " + exchange);
+		//System.out.println("request is:  " + exchange.getRequest());
 
 		/* If the request contained the Observe option always add a partial IV to the response.
 		 * A partial IV will also be added if the responsesIncludePartialIV flag is set in the context. */
@@ -314,9 +309,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		 * response. (They are not encrypted but external unprotected options.)
 		 */
 		boolean outerBlockwise;
-		System.out.println("should protect: " + shouldProtectResponse(exchange));
 		if (shouldProtectResponse(exchange)) {
-			System.out.println( exchange.getCurrentRequest().getOptions());
 			// If the current block-request still has a non-empty OSCORE option it
 			// means it was not unprotected by OSCORE as and individual request.
 			// Rather it was not processed by OSCORE until after being re-assembled
@@ -333,14 +326,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
 				int requestSequenceNumber = optionDecoder.getSequenceNumber();
 
-				System.out.println("Before prepare send (in response send)");
-				System.out.println("response is: " + response);
-
 				Response preparedResponse = prepareSend(ctxDb, response, ctx, addPartialIV, outerBlockwise,
 						requestSequenceNumber);
-				
-				System.out.println("After prepare send (in response send)");
-				System.out.println("prepared response is: " + preparedResponse);
 
 				if (outgoingExceedsMaxUnfragSize(preparedResponse, outerBlockwise, ctx.getMaxUnfragmentedSize())) {
 					Response error = new Response(ResponseCode.INTERNAL_SERVER_ERROR, true);
@@ -363,7 +350,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			ctxDb.removeToken(exchange.getCurrentRequest().getToken());
 		}
 		
-		System.out.println("super send response: " + response);
 		super.sendResponse(exchange, response);
 	}
 
@@ -374,13 +360,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	@Override
 	public void receiveRequest(Exchange exchange, Request request) {
-		System.out.println("RECEIVE REQUEST IN OBJECTSECURITYLAYER");
-		System.out.println(request);
-		System.out.println(exchange.getEndpoint().isForwardProxy());
+		//System.out.println("RECEIVE REQUEST IN OBJECTSECURITYLAYER");
+		//System.out.println(request);
 		
 		OptionSet options = request.getOptions();
 		if (OptionJuggle.hasProxyRelatedOptions(options)) {
-			System.out.println("we is in proxy");
 			if (OptionJuggle.hasProxyUriOrCriOptions(options) || OptionJuggle.hasSchemeAndUri(options)) {
 				if (exchange.getEndpoint().isForwardProxy()) {
 					if (/*isAcceptableToForward()*/ true) {
@@ -432,11 +416,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			}
 			
 			if (isProtected && !lastOscoreLayer) {
-				System.out.println("we is in oscore ");
-				System.out.println("we is: " + request);
 				if (options.hasUriPath()) {
-					System.out.println("bad request, uri path present");
-					exchange.sendResponse(new Response(ResponseCode.BAD_REQUEST));
+					exchange.sendResponse((Response) new Response(ResponseCode.BAD_REQUEST).setPayload("Uri path present"));
 				}
 				else {
 					if (/*isAcceptableToDecrypt()*/ true) {
@@ -458,10 +439,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 								super.sendResponse(exchange, error);
 							}
 						}						
-						System.out.println("starting decrypt");
 						Request decryptedRequest = requestDecryption(exchange, request, ctx);
 						if (decryptedRequest != null) {
-							System.out.println("decrypted request is: " + decryptedRequest);
 							receiveRequest(exchange, decryptedRequest);
 						}
 					}
@@ -506,22 +485,15 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 		byte[] requestOscoreOption;
 		try {
-			System.out.println("request before decryption: " + request);
 			requestOscoreOption = request.getOptions().getOscore();
 
 
 			request = prepareReceive(ctxDb, request, ctx);
-			//request.getOptions().setOscore(Bytes.EMPTY);
-			System.out.println(Hex.encodeHexString(requestOscoreOption));
-			System.out.println(Hex.encodeHexString(request.getOptions().getOscore()));
-			System.out.println(Hex.encodeHexString(request.getOptions().getOscore()).equals(Hex.encodeHexString(requestOscoreOption)));
-			if (Hex.encodeHexString(request.getOptions().getOscore()).equals(Hex.encodeHexString(requestOscoreOption))) {
-				request.getOptions().setOscore(ctx.getRecipientId());
-			}
-			System.out.println(Hex.encodeHexString(requestOscoreOption));
-			System.out.println("here we used to set empty oscore opt");
-			System.out.println("request after decryption:: " + request);
 			
+			// this could be better ?
+			if (Hex.encodeHexString(request.getOptions().getOscore()).equals(Hex.encodeHexString(requestOscoreOption))) {
+				request.getOptions().setOscore(new byte[] {0x01});
+			}			
 
 			// maybe breaks
 			exchange.setCryptographicContextID(requestOscoreOption);
@@ -543,8 +515,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	//Always accepts unprotected responses, which is needed for reception of error messages
 	@Override
 	public void receiveResponse(Exchange exchange, Response response) {
-		System.out.println("RECEIVE RESPONSE IN OBJECTSECURITYLAYER");
-		System.out.println(response);
+		//System.out.println("RECEIVE RESPONSE IN OBJECTSECURITYLAYER");
+		//System.out.println(response);
+		
 		Request request = exchange.getCurrentRequest();
 		if (request == null) {
 			LOGGER.error("No request tied to this response");
@@ -582,16 +555,12 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
 				int requestSequenceNumber = optionDecoder.getSequenceNumber();
 
-				System.out.println("Response before prepare receive: " + response);
 				response = prepareReceive(ctxDb, response, requestSequenceNumber);
-				System.out.println("Response after prepare receive:  " + response);
 				
 				if (!(Hex.encodeHexString(response.getOptions().getOscore()).equals(""))) {
-					System.out.println("sending back again");
 					receiveResponse(exchange, response);
 					return;
 				}
-				System.out.println("sending out/up");
 
 			}
 		} catch (OSException e) {
@@ -608,8 +577,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		if (exchange.getRequest().isObserveCancel()) {
 			ctxDb.removeToken(response.getToken());
 		}
-		System.out.println("EXITING RECEIVE RESPONSE IN OBJECTSECURITYLAYER");
-		System.out.println(response);
+
 		super.receiveResponse(exchange, response);
 	}
 

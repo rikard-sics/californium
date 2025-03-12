@@ -296,7 +296,6 @@ public class CoapResource implements Resource, ObservableResource {
 			handleIPATCH(new CoapExchange(exchange));
 			break;
 		default:
-			System.out.println("sending method not allowed in root resource (probably)");
 			exchange.sendResponse(new Response(ResponseCode.METHOD_NOT_ALLOWED, true));
 			break;
 		}
@@ -312,8 +311,6 @@ public class CoapResource implements Resource, ObservableResource {
 	 * @param exchange the CoapExchange for the simple API
 	 */
 	public void handleGET(CoapExchange exchange) {
-		System.out.println("sending method not allowed in root resource GET (probably)");
-
 		exchange.respond(ResponseCode.METHOD_NOT_ALLOWED);
 	}
 
@@ -327,8 +324,6 @@ public class CoapResource implements Resource, ObservableResource {
 	 * @param exchange the CoapExchange for the simple API
 	 */
 	public void handlePOST(CoapExchange exchange) {
-		System.out.println("sending method not allowed in root resource POST (probably)");
-
 		exchange.respond(ResponseCode.METHOD_NOT_ALLOWED);
 	}
 

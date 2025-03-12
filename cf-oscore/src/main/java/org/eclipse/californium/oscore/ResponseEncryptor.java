@@ -65,7 +65,7 @@ public class ResponseEncryptor extends Encryptor {
 		
 		byte[] encodedInstructions = response.getOptions().getOscore(); // can be null
 
-		CBORObject[] instructions = null; //db.getInstructions(response.getToken());
+		CBORObject[] instructions = null; 
 		
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CTX_NULL);
@@ -102,17 +102,15 @@ public class ResponseEncryptor extends Encryptor {
 		OptionSet[] optionsUAndE = OptionJuggle.prepareUandEOptions(options, encodedInstructions);
 
 		byte[] confidential = OSSerializer.serializeConfidentialData(optionsUAndE[1], response.getPayload(), realCode);
-		System.out.println(Hex.encodeHexString(confidential));
 		
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
 		byte[] cipherText = encryptAndEncode(enc, ctx, response, newPartialIV, requestSequenceNr);
-		System.out.println(Hex.encodeHexString(cipherText));
 
 		compression(ctx, cipherText, response, newPartialIV);
 
 
 		byte[] oscoreOption = response.getOptions().getOscore();
-		System.out.println("OScore option is: " + Hex.encodeHexString(oscoreOption));
+
 		// here the U options are prepared
 		response.setOptions(optionsUAndE[0]);
 		response.getOptions().setOscore(oscoreOption);

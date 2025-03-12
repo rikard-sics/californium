@@ -76,12 +76,9 @@ public class RequestEncryptor extends Encryptor {
 
 		//remove from options, since it is handled either through instructions or compression
 		options.removeObserve();
-		
-		System.out.println("options before preparing options are: " + options);
-		
+				
 		//prepare options here, both E and U
 		OptionSet[] optionsUAndE = OptionJuggle.prepareUandEOptions(options, encodedInstructions);
-		System.out.println(optionsUAndE[1]);
 		// here the E options are set 
 		byte[] confidential = OSSerializer.serializeConfidentialData(optionsUAndE[1], request.getPayload(), realCode);
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
@@ -95,7 +92,6 @@ public class RequestEncryptor extends Encryptor {
 		// here the U options are set
 		request.setOptions(optionsUAndE[0]);
 		request.getOptions().setOscore(oscoreOption);
-		System.out.println("---" + request + "---");
 		//request.setOptions(OptionJuggle.prepareUoptions(request.getOptions()));
 		
 		ctx.increaseSenderSeq();
