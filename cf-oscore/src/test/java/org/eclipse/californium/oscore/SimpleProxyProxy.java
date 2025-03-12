@@ -177,11 +177,11 @@ public class SimpleProxyProxy {
 		OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, new byte[] { 0x02 }, MAX_UNFRAGMENTED_SIZE);
 		db.addContext(uriLocal, ctx);
 		
-		Configuration outgoingConfig = new Configuration(config);
-		outgoingConfig.set(CoapConfig.MID_TRACKER, TrackerMode.NULL);
+		//Configuration outgoingConfig = new Configuration(config);
+		//outgoingConfig.set(CoapConfig.MID_TRACKER, TrackerMode.NULL);
 
-		CoapEndpoint.Builder builder = CoapEndpoint.builder()
-				.setConfiguration(outgoingConfig);
+		CoapEndpoint.Builder builder = CoapEndpoint.builder();
+				//.setConfiguration(outgoingConfig);
 		//builder.setCoapStackFactory(new OSCoreCoapStackFactory());//
 		//builder.setCustomCoapStackArgument(db);//
 		builder.setPort(CoapProxyPort - 1);
@@ -193,8 +193,8 @@ public class SimpleProxyProxy {
 		proxyClient.setEndpoint(proxyToServerEndpoint);
 		System.out.println(proxyClient.getEndpoint().getAddress());
 		
-		builder = CoapEndpoint.builder()
-				.setConfiguration(outgoingConfig);
+		builder = CoapEndpoint.builder();
+				//.setConfiguration(outgoingConfig);
 		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
 		builder.setCustomCoapStackArgument(db);
 		builder.setPort(CoapProxyPort);
@@ -257,13 +257,12 @@ public class SimpleProxyProxy {
 					int port = outgoingRequest.getDestinationContext().getPeerAddress().getPort();
 					System.out.println("send to port: " + port);
 					exchange.setEndpoint(proxy.getEndpoint(port));*/
-					System.out.println(exchange.getEndpointContext());
+					//System.out.println("endpoint context is: " + exchange.getEndpointContext());
 					//exchange.getEndpoint().sendRequest(outgoingRequest);
-					System.out.println("doing normal now");
 					try {
 						CoapResponse response = proxyClient.advanced(outgoingRequest);
 						Response outgoingResponse = translator.getResponse(response.advanced());
-						System.out.println("Sending response now");
+						System.out.println("Sending response from proxy now");
 						exchange.sendResponse(outgoingResponse);
 						
 					} catch (ConnectorException e) {

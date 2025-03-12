@@ -92,10 +92,10 @@ public class SimpleProxyClient {
 			
 			CoapResponse resp = client.advanced(request);
 			printResponse(resp);
-		
+
 			//Request request;
 			//CoapResponse resp;
-			
+	
 			System.out.println();
 			System.out.println(" ----- ");
 			System.out.println();
@@ -120,7 +120,7 @@ public class SimpleProxyClient {
 			
 			 resp = client.advanced(request);
 			printResponse(resp);
-			
+
 			client.shutdown();
 		}
 		else {

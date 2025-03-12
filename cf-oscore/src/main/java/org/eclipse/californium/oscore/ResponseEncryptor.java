@@ -64,8 +64,7 @@ public class ResponseEncryptor extends Encryptor {
 			boolean outerBlockwise, int requestSequenceNr) throws OSException {
 		
 		byte[] encodedInstructions = response.getOptions().getOscore(); // can be null
-
-		CBORObject[] instructions = null; 
+		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(encodedInstructions);
 		
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CTX_NULL);
@@ -99,7 +98,7 @@ public class ResponseEncryptor extends Encryptor {
 			options.removeBlock1();
 		}
 
-		OptionSet[] optionsUAndE = OptionJuggle.prepareUandEOptions(options, encodedInstructions);
+		OptionSet[] optionsUAndE = OptionJuggle.prepareUandEOptions(options, instructions);
 
 		byte[] confidential = OSSerializer.serializeConfidentialData(optionsUAndE[1], response.getPayload(), realCode);
 		

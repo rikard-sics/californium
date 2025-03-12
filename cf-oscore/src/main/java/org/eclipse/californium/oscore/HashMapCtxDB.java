@@ -130,7 +130,6 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 				LOGGER.error(ErrorDescriptions.URI_NULL);
 				throw new OSException(ErrorDescriptions.URI_NULL);
 			}
-			System.out.println("getting context from uri");
 			return getContext(uri);
 		}
 
@@ -150,7 +149,6 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		byte[] RID       = instruction.get(3).ToObject(byte[].class);
 		byte[] IDCONTEXT = instruction.get(5).ToObject(byte[].class);
 		
-		System.out.println("getting context from rid and idcontext: " + instruction.get(3) + " " + instruction.get(5));
 		return getContext(RID, IDCONTEXT);
 	}
 	

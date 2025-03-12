@@ -109,17 +109,6 @@ public abstract class Encryptor {
 
 			enc.setExternal(aad);
 			
-			System.out.println("-----in encryptor-----");
-			System.out.println(ctx.getContextIdString());
-			System.out.println("recipient key is: " + Hex.encodeHexString(ctx.getRecipientKey()));
-			System.out.println("Partial IV is: " + Hex.encodeHexString(partialIV));
-			System.out.println(Hex.encodeHexString(nonce));
-			System.out.println(Hex.encodeHexString(aad));
-			System.out.println("new partial IV is:   " + newPartialIV);
-			System.out.println("ctx sender seq is:   " + ctx.getSenderSeq());
-			System.out.println("request sequence is: " + requestSequenceNr);
-			System.out.println("------");
-			
 			enc.addAttribute(HeaderKeys.IV, CBORObject.FromObject(nonce), Attribute.DO_NOT_SEND);
 			enc.addAttribute(HeaderKeys.Algorithm, ctx.getAlg().AsCBOR(), Attribute.DO_NOT_SEND);
 			enc.encrypt(key);

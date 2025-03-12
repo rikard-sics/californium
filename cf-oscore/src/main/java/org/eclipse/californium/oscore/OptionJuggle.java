@@ -204,7 +204,7 @@ public class OptionJuggle {
 		return ret;
 	}
 
-	public static OptionSet[] prepareUandEOptions(OptionSet options, byte[] encodedInstructions) {
+	public static OptionSet[] prepareUandEOptions(OptionSet options, CBORObject[] instructions) {
 		OptionSet[] result = {
 				new OptionSet(),
 				new OptionSet()
@@ -212,10 +212,6 @@ public class OptionJuggle {
 		if (options.hasProxyUri()) {
 			options = handleProxyUri(options.getProxyUri(), options);
 		}
-
-
-		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(encodedInstructions);
-
 
 		boolean instructionsExists = Objects.nonNull(instructions);
 
@@ -231,19 +227,13 @@ public class OptionJuggle {
 		for (Option o : options.asSortedList()) {
 			if (processOptionAsE(o, options, instructions)) {
 				result[1].addOption(o);
-				System.out.println("processing opt " + o + " as E");
 			}
 			else {
 				result[0].addOption(o);
-				System.out.println("processing opt " + o + " as U");
-
 			}
 		}
-		System.out.println("Returning optionset to encryptor: ");
-		System.out.println("U Options are --> " + result[0]);
-
-		System.out.println("E Options are --> " + result[1]);
-
+		//System.out.println("U Options are --> " + result[0]);
+		//System.out.println("E Options are --> " + result[1]);
 
 		return result;
 	}

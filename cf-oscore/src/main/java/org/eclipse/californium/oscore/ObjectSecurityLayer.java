@@ -192,30 +192,35 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				boolean instructionsRemaining = true;
 
 				if (instructionsExists) {
-					int currentIndex = instructions[1].ToObject(int.class);
+					int index = instructions[1].ToObject(int.class);
 
 					// are there still instructions left?
-					instructionsRemaining = currentIndex != (instructions.length - 1);
+					instructionsRemaining = index != (instructions.length - 1);
 
 					if (instructionsRemaining) {
 						// increment index
-						instructions[1] = CBORObject.FromObject(currentIndex + 1);
+						instructions[1] = CBORObject.FromObject(index + 1);
 
+						// set correct latest oscore option value
 						byte[] latestOSCOREOptionValue = preparedRequest.getOptions().getOscore();
 						instructions[0] = CBORObject.FromObject(latestOSCOREOptionValue);
+						
+						//should this be the partial IV?
+						int requestSequenceNr = new OscoreOptionDecoder(preparedRequest.getOptions().getOscore()).getSequenceNumber();
+						instructions[index].set(6, CBORObject.FromObject(requestSequenceNr));
 
-						//update Oscore
+						//update instructions and set into oscore option
 						byte[] updatedOSCOREOption = OptionEncoder.encodeSequence(instructions);
 						preparedRequest.getOptions().setOscore(updatedOSCOREOption);
 
 						// apply OSCORE layer again
 						//System.out.println("applying again");
+						System.out.println("applying again, Instructions in send request are: " + instructions[index]);
 						sendRequest(exchange, preparedRequest);
 					}
 					else {
-						System.out.println("send request with no instructions remaining");
-						System.out.println("Oscore option is" + Hex.encodeHexString(preparedRequest.getOptions().getOscore()));
-						System.out.println("oscore option in instructions are: " + Hex.encodeHexString(instructions[0].ToObject(byte[].class)));
+						int requestSequenceNr = new OscoreOptionDecoder(preparedRequest.getOptions().getOscore()).getSequenceNumber();
+						instructions[index].set(6, CBORObject.FromObject(requestSequenceNr));
 					}
 				}
 
@@ -272,7 +277,13 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 					req = preparedRequest;
 
-					exchange.setCryptographicContextID(req.getOptions().getOscore());
+					if (!(Objects.nonNull(finalInstructions))) {
+						exchange.setCryptographicContextID(req.getOptions().getOscore());
+						System.out.println("sending request with cryptographic context id = " + Hex.encodeHexString(req.getOptions().getOscore()));
+					}
+					else {
+						System.out.println("sending with no cryptographic context set");
+					}
 					LOGGER.trace("Request: {}", exchange.getRequest());
 
 					super.sendRequest(exchange, req);
@@ -309,7 +320,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		 * response. (They are not encrypted but external unprotected options.)
 		 */
 		boolean outerBlockwise;
-		if (shouldProtectResponse(exchange)) {
+		if (shouldProtectResponse(exchange, ctxDb)) {
 			// If the current block-request still has a non-empty OSCORE option it
 			// means it was not unprotected by OSCORE as and individual request.
 			// Rather it was not processed by OSCORE until after being re-assembled
@@ -322,6 +333,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				OSCoreCtx ctx = ctxDb.getContextByToken(exchange.getCurrentRequest().getToken());
 				addPartialIV = (ctx !=null && ctx.getResponsesIncludePartialIV()) || exchange.getRequest().getOptions().hasObserve();
 
+				
+				// THIS WILL NEED TO BE CHANGED LATER, WHEN WE WANT DOUBLE ENCRYPTION ON SERVER
+				
+				
 				// Parse the OSCORE option from the corresponding request
 				OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
 				int requestSequenceNumber = optionDecoder.getSequenceNumber();
@@ -490,7 +505,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 			request = prepareReceive(ctxDb, request, ctx);
 			
-			// this could be better ?
+			// this could be better
 			if (Hex.encodeHexString(request.getOptions().getOscore()).equals(Hex.encodeHexString(requestOscoreOption))) {
 				request.getOptions().setOscore(new byte[] {0x01});
 			}			
@@ -551,10 +566,14 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 			//If response is protected with OSCORE parse it first with prepareReceive
 			if (isProtected(response)) {
-				// Parse the OSCORE option from the corresponding request
-				OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
-				int requestSequenceNumber = optionDecoder.getSequenceNumber();
-
+				int requestSequenceNumber = -1;
+				byte[] cryptographicContextID = exchange.getCryptographicContextID();
+				
+				if (cryptographicContextID != null) {
+					OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
+					requestSequenceNumber = optionDecoder.getSequenceNumber();
+				}
+								
 				response = prepareReceive(ctxDb, response, requestSequenceNumber);
 				
 				if (!(Hex.encodeHexString(response.getOptions().getOscore()).equals(""))) {
@@ -586,14 +605,17 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		super.receiveEmptyMessage(exchange, message);
 	}
 
-	private static boolean shouldProtectResponse(Exchange exchange) {
-		return exchange.getCryptographicContextID() != null;
+	private static boolean shouldProtectResponse(Exchange exchange, OSCoreCtxDB ctxDb) {
+		return exchange.getCryptographicContextID() != null 
+				|| ctxDb.getInstructions(exchange.getCurrentRequest().getToken()) != null;
 	}
 
 	//Method that checks if a response is expected to be protected with OSCORE
 	private boolean responseShouldBeProtected(Exchange exchange, Response response) throws OSException {
 		Request request = exchange.getCurrentRequest();
 		OptionSet options = request.getOptions();
+		
+		// maybe this needs changing
 		if (exchange.getCryptographicContextID() == null) {
 			if (response.getOptions().hasObserve() && request.getOptions().hasObserve()) {
 				// Since the exchange object has been re-created the
@@ -603,7 +625,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				}
 			}
 		}
-		return exchange.getCryptographicContextID() != null;
+		return exchange.getCryptographicContextID() != null 
+				|| ctxDb.getInstructions(response.getToken()) != null
+				|| OptionEncoder.decodeCBORSequence(response.getOptions().getOscore()) != null;
 	}
 
 	private static boolean shouldProtectRequest(Request request) {

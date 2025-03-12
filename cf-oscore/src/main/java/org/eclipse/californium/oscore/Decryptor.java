@@ -142,14 +142,6 @@ public abstract class Decryptor {
 		enc.setExternal(aad);
 			
 		try {
-			System.out.println("-----in decryptor-----");
-			System.out.println(ctx.getContextIdString());
-			System.out.println("recipient key is: " + Hex.encodeHexString(ctx.getRecipientKey()));
-			System.out.println("Partial IV is: " + Hex.encodeHexString(partialIV));
-			System.out.println(Hex.encodeHexString(nonce));
-			System.out.println(Hex.encodeHexString(aad));
-			System.out.println("seq IV is: " + seq);
-			System.out.println("------");
 			enc.addAttribute(HeaderKeys.Algorithm, ctx.getAlg().AsCBOR(), Attribute.DO_NOT_SEND);
 			enc.addAttribute(HeaderKeys.IV, CBORObject.FromObject(nonce), Attribute.DO_NOT_SEND);
 			plaintext = enc.decrypt(key);
