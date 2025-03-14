@@ -177,8 +177,8 @@ public class SimpleProxyProxy {
 		OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, new byte[] { 0x02 }, MAX_UNFRAGMENTED_SIZE);
 		db.addContext(uriLocal, ctx);
 		
-		//Configuration outgoingConfig = new Configuration(config);
-		//outgoingConfig.set(CoapConfig.MID_TRACKER, TrackerMode.NULL);
+		Configuration outgoingConfig = new Configuration(config);
+		outgoingConfig.set(CoapConfig.MID_TRACKER, TrackerMode.NULL);
 
 		CoapEndpoint.Builder builder = CoapEndpoint.builder();
 				//.setConfiguration(outgoingConfig);
@@ -186,12 +186,12 @@ public class SimpleProxyProxy {
 		//builder.setCustomCoapStackArgument(db);//
 		builder.setPort(CoapProxyPort - 1);
 
+
 		CoapEndpoint proxyToServerEndpoint = builder.build();
 		proxyToServerEndpoint.setIsForwardProxy();
 		
 		CoapClient proxyClient = new CoapClient();
 		proxyClient.setEndpoint(proxyToServerEndpoint);
-		System.out.println(proxyClient.getEndpoint().getAddress());
 		
 		builder = CoapEndpoint.builder();
 				//.setConfiguration(outgoingConfig);
@@ -217,6 +217,7 @@ public class SimpleProxyProxy {
 			public void deliverRequest(Exchange exchange) {
 				Request incomingRequest = exchange.getRequest();
 				System.out.println("Recieved forwarding Request with " + incomingRequest.getToken());
+				System.out.println("exchange endpoint uri is: " +  exchange.getEndpoint().getUri());
 				try {
 					if (!(incomingRequest.getScheme().equals("coap"))) {
 						Response response = new Response(ResponseCode.BAD_GATEWAY);
@@ -263,6 +264,7 @@ public class SimpleProxyProxy {
 						CoapResponse response = proxyClient.advanced(outgoingRequest);
 						Response outgoingResponse = translator.getResponse(response.advanced());
 						System.out.println("Sending response from proxy now");
+						outgoingResponse.getOptions().setContentFormat(1);
 						exchange.sendResponse(outgoingResponse);
 						
 					} catch (ConnectorException e) {

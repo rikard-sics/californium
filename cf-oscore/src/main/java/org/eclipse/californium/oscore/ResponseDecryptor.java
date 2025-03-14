@@ -20,11 +20,14 @@
 package org.eclipse.californium.oscore;
 
 import java.io.ByteArrayInputStream;
+import java.util.Objects;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
+import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Response;
@@ -61,7 +64,6 @@ public class ResponseDecryptor extends Decryptor {
 	 */
 	public static Response decrypt(OSCoreCtxDB db, Response response, int requestSequenceNr) throws OSException {
 		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(response.getOptions().getOscore());
-		int index = 0;
 		discardEOptions(response);
 
 		byte[] protectedData = response.getPayload();
@@ -69,6 +71,7 @@ public class ResponseDecryptor extends Decryptor {
 		Token token = response.getToken();
 		OSCoreCtx ctx = null;
 		OptionSet uOptions = response.getOptions();
+		int index = 0;
 
 		if (token != null) {
 			// if request sequence nr is -1, it means it should be with instructions
@@ -98,7 +101,9 @@ public class ResponseDecryptor extends Decryptor {
 
 					instructions[1] = CBORObject.FromObject(--index);
 					
+					// response.getOptions().setOscore(instructions[0].ToObject(byte[].class));
 					response.getOptions().setOscore(new byte[0]);
+					
 
 				}
 			}
@@ -139,14 +144,40 @@ public class ResponseDecryptor extends Decryptor {
 
 			// resets option so eOptions gets priority during parse
 			response.setOptions(EMPTY);
+
 			new UdpDataParser().parseOptionsAndPayload(reader, response);
+			System.out.println("after parsing options and payload: " + response);
+
 		} catch (Exception e) {
 			LOGGER.error(ErrorDescriptions.DECRYPTION_FAILED);
 			throw new OSException(ErrorDescriptions.DECRYPTION_FAILED);
 		}
 
+
 		OptionSet eOptions = response.getOptions();
+		
+		if (eOptions.hasOscore() && (index > 1)) {
+			// The message contains an inner OSCore option and it should
+			System.out.println("Message has inner oscore and it should");
+		}
+		else if (!(eOptions.hasOscore()) && (index > 1)) {
+			// Message does not contain inner OSCore option but it should
+			System.out.println("message does not contain inner oscore but it should");
+			// check if is error message?
+			index = 0;
+			uOptions.setOscore(new byte[0]);
+		}
+		else if (eOptions.hasOscore() && (index == 0)) {
+			// Message has inner oscore without instructions
+			System.out.println("Message has inner oscore without instructions");
+		}
+		else {
+			System.out.println("Message does not have inner oscore without instructions");
+			System.out.println("Which is fine");
+		}
+		
 		eOptions = OptionJuggle.merge(eOptions, uOptions);
+		
 		response.setOptions(eOptions);
 
 		//Remove token after response is received, unless it has Observe

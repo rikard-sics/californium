@@ -208,7 +208,7 @@ public class SimpleProxyClient {
 	
 	private static void printResponse(CoapResponse resp) {
 		if (resp != null) {
-			System.out.println("Token=" + resp.advanced().getTokenString());
+			System.out.println("Printing response with:  Token=" + resp.advanced().getTokenString());
 			System.out.println("RESPONSE CODE: " + resp.getCode().name() + " " + resp.getCode());
 			if (resp.getPayload() != null) {
 				System.out.print("RESPONSE PAYLOAD: ");

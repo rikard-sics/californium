@@ -596,6 +596,7 @@ public class OptionJuggle {
 
 		for (Option tmp : uOptions.asSortedList()) {
 			if (Collections.binarySearch(e, tmp) < 0) {
+				System.out.println("merging E option: " + e + " with U option: " + tmp);
 				eOptions.addOption(tmp);
 			}
 		}

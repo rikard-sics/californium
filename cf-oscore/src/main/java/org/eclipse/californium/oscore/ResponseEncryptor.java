@@ -62,10 +62,10 @@ public class ResponseEncryptor extends Encryptor {
 	 */
 	public static Response encrypt(OSCoreCtxDB db, Response response, OSCoreCtx ctx, boolean newPartialIV,
 			boolean outerBlockwise, int requestSequenceNr) throws OSException {
-		
+
 		byte[] encodedInstructions = response.getOptions().getOscore(); // can be null
 		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(encodedInstructions);
-		
+
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CTX_NULL);
 			throw new OSException(ErrorDescriptions.CTX_NULL);
@@ -97,11 +97,38 @@ public class ResponseEncryptor extends Encryptor {
 			block1Option = options.getBlock1();
 			options.removeBlock1();
 		}
-
+		if (encodedInstructions != null) {
+			System.out.println("encoded instructions are: " + Hex.encodeHexString(encodedInstructions));
+			if (instructions != null) {
+				System.out.println("there are cbor instructions");
+				// use them (might need to add signal for encryption unless it is expected that the application does that)
+			}
+			else {
+				System.out.println("there are no cbor instructions, add our own to trick optionjuggler");
+				// create cbor instructions to signal that it should encode oscore layer
+				CBORObject[] CBORSequence = new CBORObject[2];
+				CBORSequence[0] = CBORObject.FromObject(options.getOscore());
+				CBORSequence[1] = CBORObject.FromObject(0); //just has to be not 2 (i think)
+				
+				instructions = CBORSequence;
+				/*
+				 if (instructionsExists) { 
+					if ((int) instructions[1].ToObject(int.class) != 2) {
+						// create oscore option
+						result[1].setOscore(instructions[0].ToObject(byte[].class));
+						//options.removeOscore();
+					}
+				}
+				 */
+			}
+		}
+		else {
+			System.out.println("encoded instructions was null");
+		}
 		OptionSet[] optionsUAndE = OptionJuggle.prepareUandEOptions(options, instructions);
-
+		System.out.println("options to be encrypted: " + optionsUAndE[1]);
 		byte[] confidential = OSSerializer.serializeConfidentialData(optionsUAndE[1], response.getPayload(), realCode);
-		
+
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
 		byte[] cipherText = encryptAndEncode(enc, ctx, response, newPartialIV, requestSequenceNr);
 
@@ -125,7 +152,7 @@ public class ResponseEncryptor extends Encryptor {
 		if (newPartialIV) {
 			ctx.increaseSenderSeq();
 		}
-		
+
 		return response;
 	}
 }
