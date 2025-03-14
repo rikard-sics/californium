@@ -278,6 +278,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					}
 					LOGGER.trace("Request: {}", exchange.getRequest());
 
+					System.out.println("Sending request: " + req);
 					super.sendRequest(exchange, req);
 
 				}
@@ -448,7 +449,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			// compare oscore option value (assume is whatever) with old value, if idcontext is the same we send up.
 			boolean lastOscoreLayer = false;
 			boolean isProtected = isProtected(request);
-			if (Hex.encodeHexString(request.getOptions().getOscore()).equals("01")) {
+			if (request.getOptions().hasOscore() && Hex.encodeHexString(request.getOptions().getOscore()).equals("01")) {
 				lastOscoreLayer = true;
 			}
 
@@ -639,9 +640,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	private boolean isAcceptableToForward(Request request) {
 		byte[] oscoreOption = request.getOptions().getOscore();
-		OscoreOptionDecoder oscoreOptionDecoder = null;
+
 		try {
-			oscoreOptionDecoder = new OscoreOptionDecoder(oscoreOption);
+			OscoreOptionDecoder oscoreOptionDecoder = new OscoreOptionDecoder(oscoreOption);
 			// do some list or array, in ctxDB? (add flag for who can forward and who is forwardeable to?)
 			System.out.println("Kid is: " + Hex.encodeHexString(oscoreOptionDecoder.getKid()));
 			if (oscoreOptionDecoder.getKid().equals(new byte[] {0x01} )) {
@@ -650,10 +651,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			}
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
 			System.out.println("invalid oscore option decoder");
-			System.out.println("oscore option was: " + Hex.encodeHexString(oscoreOption));
-			System.out.println("oscore option decoder was: " + (oscoreOptionDecoder));
+			if (oscoreOption != null) {
+				System.out.println("oscore option was: " + Hex.encodeHexString(oscoreOption));
+			}
 		}
 		System.out.println("This is always forwarding");
 		return true;

@@ -144,23 +144,6 @@ public class SimpleProxyClient {
 			SendGet(c, uriProxy + uriProxyPath, new byte[0]);
 			try { Thread.sleep(100); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
 			
-			System.out.println();
-			System.out.println(" ----- ");
-			System.out.println();
-			final String temp = c.getURI();
-			c.setURI(uriServer + uriServerPath);
-			
-			Request r = new Request(Code.GET);
-			r.getOptions().setOscore(new byte[0]);
-			r.getOptions().setProxyScheme("coap");
-			CoapResponse resp = c.advanced(r);
-			printResponse(resp);
-			
-			c.setURI(temp);
-			
-			System.out.println("\nSending to proxy");
-			SendGet(c.setURI(uriProxy + "/target"));
-			
 			System.out.println("\nSending ending");
 			
 			c.shutdown();

@@ -261,6 +261,7 @@ public class SimpleProxyProxy {
 					//System.out.println("endpoint context is: " + exchange.getEndpointContext());
 					//exchange.getEndpoint().sendRequest(outgoingRequest);
 					try {
+						System.out.println("PROXIES OUTGOING REQUEST IS: " + outgoingRequest);
 						CoapResponse response = proxyClient.advanced(outgoingRequest);
 						Response outgoingResponse = translator.getResponse(response.advanced());
 						System.out.println("Sending response from proxy now");
