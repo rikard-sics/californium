@@ -22,6 +22,7 @@ import java.util.HashMap;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Response;
@@ -29,6 +30,7 @@ import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.StringUtil;
 
@@ -74,6 +76,9 @@ public class CommandLineServer {
 	static String listenAddr;
 
 	public static void main(String[] args) throws OSException {
+		CoapConfig.register();
+		Configuration.createStandardWithoutFile();
+
 		// Parse command line arguments
 		HashMap<String, String> cmdArgs = new HashMap<>();
 
