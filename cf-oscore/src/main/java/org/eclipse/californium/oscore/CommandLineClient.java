@@ -24,8 +24,11 @@ import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP.Code;
+import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
+import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.StringUtil;
@@ -81,6 +84,9 @@ public class CommandLineClient {
 	static int nonceLength;
 
 	public static void main(String[] args) throws InterruptedException, ConnectorException, IOException {
+		CoapConfig.register();
+		Configuration.createStandardWithoutFile();
+
 		// Parse command line arguments
 		HashMap<String, String> cmdArgs = new HashMap<>();
 
@@ -183,7 +189,16 @@ public class CommandLineClient {
 			KudosRederivation.EXTRA_LOGGING = true;
 		}
 
-		CoapClient c;
+		CoapClient c = new CoapClient();
+
+		// Send dummy request to initialize things now already, and not later
+		// when starting KUDOS or Appendix B.2
+		System.out.println("Sending dummy request to localhost for early initialization");
+		Request req = new Request(Code.GET);
+		req.setURI("coap://127.0.0.1");
+		req.setType(Type.NON);
+		req.send();
+
 		if (useKudos) {
 			ctx.setKudosContextRederivationEnabled(true);
 			System.out.println("[KUDOS] Running KUDOS with server");
@@ -203,8 +218,7 @@ public class CommandLineClient {
 			String kudosUri = newUri.getScheme() + "://" + newUri.getHost() + ":" + port + "/.well-known/kudos";
 			System.out.println("[KUDOS] Request Target: " + kudosUri);
 
-			c = new CoapClient(kudosUri);
-			Request req = new Request(Code.GET);
+			req = new Request(Code.GET);
 			req.setURI(kudosUri);
 			if (useOscore) {
 				req.getOptions().setOscore(Bytes.EMPTY);
@@ -220,8 +234,6 @@ public class CommandLineClient {
 			ctx.setKudosContextRederivationEnabled(false);
 		}
 
-		c = new CoapClient(uri);
-
 		// Send normal request
 		// If Appendix B.2 is used another request will be sent first
 		for (int i = 0; i < requestCount; i++) {
@@ -233,7 +245,7 @@ public class CommandLineClient {
 				start = System.nanoTime();
 			}
 
-			Request req = new Request(Code.GET);
+			req = new Request(Code.GET);
 			req.setURI(uri);
 			if (useOscore) {
 				req.getOptions().setOscore(Bytes.EMPTY);
