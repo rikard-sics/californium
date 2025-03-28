@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.Message;
@@ -216,10 +217,31 @@ public class OptionJuggle {
 		boolean instructionsExists = Objects.nonNull(instructions);
 
 		if (instructionsExists) { 
+			System.out.println("instructions exist");
+			System.out.println(options);
 			if ((int) instructions[1].ToObject(int.class) != 2) {
 				// create oscore option
 				result[1].setOscore(instructions[0].ToObject(byte[].class));
 				//options.removeOscore();
+			}
+			// this should be extended if proxy and wants to encrypt more, so it includes initial messages outermost
+			// oscore option as the inner oscore option initially 
+		}
+		else {
+			try {// should have another check to see if proxy 
+				// because a client who only encrypts once without instructions  
+				// but includes a valid oscore option as the oscore option 
+				// will set it to be included as inner although it shouldn't
+				// perhaps another parameter? 
+				
+				//check if valid oscore option exists in options already
+				OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(options.getOscore());
+				System.out.println("Valid oscore option");
+				System.out.println(Hex.encodeHexString(options.getOscore()));
+				result[1].setOscore(options.getOscore());
+			}
+			catch (Exception e) {
+				System.out.println("Invalid oscore option");
 			}
 		}
 
@@ -232,8 +254,8 @@ public class OptionJuggle {
 				result[0].addOption(o);
 			}
 		}
-		//System.out.println("U Options are --> " + result[0]);
-		//System.out.println("E Options are --> " + result[1]);
+		System.out.println("U Options are --> " + result[0]);
+		System.out.println("E Options are --> " + result[1]);
 
 		return result;
 	}

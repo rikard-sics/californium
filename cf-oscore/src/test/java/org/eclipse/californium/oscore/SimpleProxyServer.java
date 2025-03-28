@@ -2,13 +2,18 @@
 
 package org.eclipse.californium.oscore;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.Response;
+import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.oscore.group.OptionEncoder;
+
+import com.upokecenter.cbor.CBORObject;
 
 /**
  * 
@@ -19,6 +24,8 @@ public class SimpleProxyServer {
 
 	private final static HashMapCtxDB db = new HashMapCtxDB();
 	private final static String uriLocal = "coap://localhost";
+	private final static int CoapProxyPort = 5685;
+
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
 	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
 
@@ -31,13 +38,37 @@ public class SimpleProxyServer {
 	private final static byte[] rid = new byte[] { 0x01 }; //[0];
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 	
+	private final static byte[][] sids = {
+			new byte[] { 0x01 }, 
+			new byte[] { 0x03 }
+			};
+	
+	private final static byte[][] rids = {
+			new byte[] { 0x01 }, 
+			new byte[] { 0x03 }
+			};
+	
+	private final static byte[][] idcontexts = {
+			new byte[] { 0x01 }, 
+			new byte[] { 0x03 }
+			};
 	private static AtomicInteger counter = new AtomicInteger(0);
 
 	public static void main(String[] args) throws OSException {
-		OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, new byte[] { 0x01 }, MAX_UNFRAGMENTED_SIZE);
-		db.addContext(uriLocal, ctx);
+		OSCoreCtx ctxclient = new OSCoreCtx(master_secret, true, alg, sids[0], rids[0], kdf, 32, master_salt, idcontexts[0], MAX_UNFRAGMENTED_SIZE);
+		db.addContext(uriLocal + ":" + Objects.toString(CoapProxyPort + 1), ctxclient);
+
+		OSCoreCtx ctxproxy = new OSCoreCtx(master_secret, true, alg, sids[1], rids[1], kdf, 32, master_salt, idcontexts[1], MAX_UNFRAGMENTED_SIZE);
+		int i = CoapProxyPort - 1;
+		db.addContext(uriLocal + ":" + Objects.toString(i), ctxproxy);
 
 		OSCoreCoapStackFactory.useAsDefault(db);
+		
+		db.size();
+		//OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, new byte[] { 0x01 }, MAX_UNFRAGMENTED_SIZE);
+		//db.addContext(uriLocal, ctx);
+
+		//OSCoreCoapStackFactory.useAsDefault(db);
 
 		final CoapServer server = new CoapServer(5683);
 		
@@ -60,6 +91,12 @@ public class SimpleProxyServer {
 				Response r = new Response(ResponseCode.CONTENT);
 				r.setPayload("Hello World!");
 				System.out.println("Recieved GET with " + exchange.advanced().getRequest().getToken());
+				System.out.println(exchange.advanced().getCryptographicContextID());
+				CBORObject[] instructions = OptionEncoder.decodeCBORSequence(exchange.advanced().getCryptographicContextID());
+				System.out.println();
+				for (CBORObject obj : instructions) {
+					System.out.println(obj);
+				}
 				exchange.respond(r);
 				counter.incrementAndGet();
 				/*if (counter.get() == 2) {

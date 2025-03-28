@@ -97,6 +97,7 @@ public class ResponseEncryptor extends Encryptor {
 			block1Option = options.getBlock1();
 			options.removeBlock1();
 		}
+		
 		if (encodedInstructions != null) {
 			System.out.println("encoded instructions are: " + Hex.encodeHexString(encodedInstructions));
 			if (instructions != null) {

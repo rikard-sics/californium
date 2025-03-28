@@ -111,6 +111,24 @@ public class OptionEncoder {
 		option.Add(6, optionsHolder);
 		return option.EncodeToBytes();
 	}
+	
+	/**
+	 * here be Javadoc
+	 * @param endpoints ordered array of endpoints
+	 */
+	public static byte[] set(byte[] rid, byte[] idcontext, int requestSequenceNumber) {
+		
+		CBORObject option = CBORObject.NewMap();
+		//option.Add(2, contextUri);
+		option.Add(3, rid);
+		
+		option.Add(5, idcontext);
+		
+		
+		option.Add(6, requestSequenceNumber);
+		return option.EncodeToBytes();
+	}
+	
 
 	/**
 	 * Get the pairwise mode boolean value from the option.

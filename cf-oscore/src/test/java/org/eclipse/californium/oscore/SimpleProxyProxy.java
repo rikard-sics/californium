@@ -25,6 +25,7 @@ import java.lang.management.ThreadMXBean;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Date;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -63,6 +64,7 @@ import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.util.DaemonThreadFactory;
 import org.eclipse.californium.elements.util.ExecutorsUtil;
 import org.eclipse.californium.elements.util.ProtocolScheduledExecutorService;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 import org.eclipse.californium.proxy2.ClientEndpoints;
 import org.eclipse.californium.proxy2.ClientSingleEndpoint;
 import org.eclipse.californium.proxy2.Coap2CoapTranslator;
@@ -74,6 +76,8 @@ import org.eclipse.californium.proxy2.resources.CacheResource;
 import org.eclipse.californium.proxy2.resources.ProxyCoapClientResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.upokecenter.cbor.CBORObject;
 
 import org.eclipse.californium.core.network.interceptors.MessageInterceptor;
 
@@ -172,19 +176,37 @@ public class SimpleProxyProxy {
 	private final static byte[] rid = new byte[] { 0x02 };
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 
+	private final static byte[][] sids = {
+			new byte[] { 0x02 }, 
+			new byte[] { 0x03 }
+			};
+	
+	private final static byte[][] rids = {
+			new byte[] { 0x02 }, 
+			new byte[] { 0x03 }
+			};
+	
+	private final static byte[][] idcontexts = {
+			new byte[] { 0x02 }, 
+			new byte[] { 0x03 }
+			};
 	
 	public SimpleProxyProxy(Configuration config, boolean accept, boolean cache) throws IOException, OSException {
-		OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, new byte[] { 0x02 }, MAX_UNFRAGMENTED_SIZE);
-		db.addContext(uriLocal, ctx);
+		OSCoreCtx ctxclient = new OSCoreCtx(master_secret, true, alg, sids[0], rids[0], kdf, 32, master_salt, idcontexts[0], MAX_UNFRAGMENTED_SIZE);
+		db.addContext(uriLocal + ":" + Objects.toString(CoapProxyPort + 1), ctxclient); 
+
+		OSCoreCtx ctxserver = new OSCoreCtx(master_secret, true, alg, sids[1], rids[1], kdf, 32, master_salt, idcontexts[1], MAX_UNFRAGMENTED_SIZE);
+		//int i = CoapProxyPort - 1;
+		db.addContext(uriLocal /*+ ":" + Objects.toString(i)*/, ctxserver);
 		
 		Configuration outgoingConfig = new Configuration(config);
 		outgoingConfig.set(CoapConfig.MID_TRACKER, TrackerMode.NULL);
 
 		CoapEndpoint.Builder builder = CoapEndpoint.builder();
 				//.setConfiguration(outgoingConfig);
-		//builder.setCoapStackFactory(new OSCoreCoapStackFactory());//
-		//builder.setCustomCoapStackArgument(db);//
-		builder.setPort(CoapProxyPort - 1);
+		builder.setCoapStackFactory(new OSCoreCoapStackFactory());//
+		builder.setCustomCoapStackArgument(db);//
+		builder.setPort(CoapProxyPort - 1); 
 
 
 		CoapEndpoint proxyToServerEndpoint = builder.build();
@@ -262,6 +284,21 @@ public class SimpleProxyProxy {
 					//exchange.getEndpoint().sendRequest(outgoingRequest);
 					try {
 						System.out.println("PROXIES OUTGOING REQUEST IS: " + outgoingRequest);
+						
+						/*
+						byte[] oscoreopt = CBORObject.FromObject(outgoingRequest.getOptions().getOscore()).EncodeToBytes();
+						byte[] index = CBORObject.FromObject(2).EncodeToBytes(); 
+						
+						byte[] instructions = OptionEncoder.combine(oscoreopt, index);
+						
+						int[] emptyOptionSets = {};
+
+						//make for as many as you like
+						instructions = OptionEncoder.combine(instructions, OptionEncoder.set(rids[1], idcontexts[1], emptyOptionSets));
+						
+						outgoingRequest.getOptions().setOscore(instructions);
+						*/
+						//outgoingRequest.getOptions().setOscore(new byte[0]);
 						CoapResponse response = proxyClient.advanced(outgoingRequest);
 						Response outgoingResponse = translator.getResponse(response.advanced());
 						System.out.println("Sending response from proxy now");

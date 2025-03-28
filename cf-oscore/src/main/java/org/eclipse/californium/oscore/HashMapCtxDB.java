@@ -221,6 +221,8 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	@Override
 	public synchronized OSCoreCtx getContext(String uri) throws OSException {
 		if (uri != null) {
+			System.out.println(normalizeServerUri(uri));
+			System.out.println(uriMap.toString());
 			return uriMap.get(normalizeServerUri(uri));
 		} else {
 			LOGGER.error(ErrorDescriptions.STRING_NULL);

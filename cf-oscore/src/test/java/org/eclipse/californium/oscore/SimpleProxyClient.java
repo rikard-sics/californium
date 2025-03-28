@@ -7,6 +7,7 @@ import java.io.IOException;
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.CoAP.Code;
+import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.coap.OptionNumberRegistry;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
@@ -74,10 +75,24 @@ public class SimpleProxyClient {
 		boolean hasInstructions = true;
 		
 		if (hasInstructions) {
-			CoapClient client = new CoapClient(uriServer + uriServerPath);
+			CoapEndpoint.Builder builder = CoapEndpoint.builder();
+			//.setConfiguration(outgoingConfig);
+			builder.setCoapStackFactory(new OSCoreCoapStackFactory());//
+			builder.setCustomCoapStackArgument(db);//
+			builder.setPort(5686);
+
+
+			CoapEndpoint clientEndpoint = builder.build();
+			clientEndpoint.setIsForwardProxy();
+	
+			CoapClient client = new CoapClient();
+			client.setEndpoint(clientEndpoint);
+			client.setURI(uriServer + uriServerPath);
+	
+			//CoapClient client = new CoapClient(uriServer + uriServerPath);
 
 			AddressEndpointContext proxy = new AddressEndpointContext("localhost", 5685);
-			
+	/*		
 			System.out.println(" ----- ");
 			System.out.println();
 			System.out.println("Sending with OSCORE...");
@@ -92,9 +107,9 @@ public class SimpleProxyClient {
 			
 			CoapResponse resp = client.advanced(request);
 			printResponse(resp);
-
-			//Request request;
-			//CoapResponse resp;
+*/
+			Request request;
+			CoapResponse resp;
 	
 			System.out.println();
 			System.out.println(" ----- ");

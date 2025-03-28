@@ -66,6 +66,8 @@ public abstract class Encryptor {
 	protected static byte[] encryptAndEncode(Encrypt0Message enc, OSCoreCtx ctx, Message message, boolean newPartialIV,
 			Integer requestSequenceNr)
 			throws OSException {
+		System.out.println("Encrypting...");
+
 		boolean isRequest = message instanceof Request;
 
 		try {
