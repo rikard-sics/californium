@@ -31,6 +31,7 @@ import org.eclipse.californium.core.coap.MessageObserverAdapter;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.cose.Encrypt0Message;
+import org.eclipse.californium.elements.EndpointContext;
 import org.eclipse.californium.oscore.group.OptionEncoder;
 
 /**
@@ -55,11 +56,72 @@ public class RequestEncryptor extends Encryptor {
 	 */
 	public static Request encrypt(OSCoreCtxDB db, Request request) throws OSException {
 
-		byte[] encodedInstructions = request.getOptions().getOscore(); // can be null
-		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(encodedInstructions);
-
+		byte[] oldOscoreOption = request.getOptions().getOscore(); // can be null
+		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(oldOscoreOption);
+		
+		boolean instructionsExists = Objects.nonNull(instructions);
+		
+		
 		OSCoreCtx ctx = db.getContext(request, true);
 
+		EndpointContext srcCtx = request.getSourceContext();
+		boolean isProxy = (srcCtx != null && srcCtx.entries().get(OSCoreEndpointContextInfo.FORWARD_PROXY_FLAG) != null );
+		
+		// what do when src endpoint is aware we are a reverse proxy?
+		if (instructionsExists && (int) instructions[1].ToObject(int.class) != 2) {
+			System.out.println("adding from instructions");
+			request.getOptions().setOscore(instructions[0].ToObject(byte[].class));
+		}
+		else if (isProxy && oldOscoreOption != null) {
+			System.out.println("adding from is proxy old option");
+			request.getOptions().setOscore(oldOscoreOption);
+		}
+		else {
+			System.out.println("removing");
+			request.getOptions().removeOscore();
+		}
+		
+		System.out.println("request options are: " + request.getOptions());
+		System.out.println("source context is: " + request.getSourceContext());
+
+/*
+		
+		if (srcCtx != null && srcCtx.entries().get(OSCoreEndpointContextInfo.FORWARD_PROXY_FLAG) != null ) {
+			if (instructionsExists) { 
+				System.out.println("instructions exist");
+				if ((int) instructions[1].ToObject(int.class) != 2) {
+					// set inner oscore option
+					request.getOptions().setOscore(instructions[0].ToObject(byte[].class));
+				}
+				else {
+					// do nothing and keep the old value
+				}
+				// this should be extended if proxy and wants to encrypt more, so it includes initial messages outermost
+				// oscore option as the inner oscore option initially 
+			}
+		}
+		
+		
+		else {
+			*/
+			/*
+			try {// should have another check to see if proxy 
+				// because a client who only encrypts once without instructions  
+				// but includes a valid oscore option as the oscore option 
+				// will set it to be included as inner although it shouldn't
+				// perhaps another parameter? 
+				
+				//check if valid oscore option exists in options already
+				OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(options.getOscore());
+				System.out.println("Valid oscore option");
+				System.out.println(Hex.encodeHexString(options.getOscore()));
+				result[1].setOscore(options.getOscore());
+			}
+			catch (Exception e) {
+				System.out.println("Invalid oscore option");
+			}*/
+		//}
+		
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CTX_NULL);
 			throw new OSException(ErrorDescriptions.CTX_NULL);

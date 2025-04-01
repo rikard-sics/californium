@@ -210,41 +210,18 @@ public class OptionJuggle {
 				new OptionSet(),
 				new OptionSet()
 		};
+		
 		if (options.hasProxyUri()) {
 			options = handleProxyUri(options.getProxyUri(), options);
 		}
 
-		boolean instructionsExists = Objects.nonNull(instructions);
-
-		if (instructionsExists) { 
-			System.out.println("instructions exist");
-			System.out.println(options);
-			if ((int) instructions[1].ToObject(int.class) != 2) {
-				// create oscore option
-				result[1].setOscore(instructions[0].ToObject(byte[].class));
-				//options.removeOscore();
-			}
-			// this should be extended if proxy and wants to encrypt more, so it includes initial messages outermost
-			// oscore option as the inner oscore option initially 
+		System.out.println("hello from prepareUandE");
+		System.out.println("options.hasOscore(): " + options.hasOscore());
+		if (options.hasOscore()) {
+			result[1].setOscore(options.getOscore());
+			options.removeOscore();
 		}
-		else {
-			try {// should have another check to see if proxy 
-				// because a client who only encrypts once without instructions  
-				// but includes a valid oscore option as the oscore option 
-				// will set it to be included as inner although it shouldn't
-				// perhaps another parameter? 
-				
-				//check if valid oscore option exists in options already
-				OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(options.getOscore());
-				System.out.println("Valid oscore option");
-				System.out.println(Hex.encodeHexString(options.getOscore()));
-				result[1].setOscore(options.getOscore());
-			}
-			catch (Exception e) {
-				System.out.println("Invalid oscore option");
-			}
-		}
-
+		
 
 		for (Option o : options.asSortedList()) {
 			if (processOptionAsE(o, options, instructions)) {

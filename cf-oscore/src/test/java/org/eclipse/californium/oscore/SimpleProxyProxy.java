@@ -53,7 +53,10 @@ import org.eclipse.californium.core.network.interceptors.MessageInterceptorAdapt
 import org.eclipse.californium.core.server.MessageDeliverer;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.elements.Definition;
 import org.eclipse.californium.elements.EndpointContext;
+import org.eclipse.californium.elements.MapBasedEndpointContext;
+import org.eclipse.californium.elements.MapBasedEndpointContext.Attributes;
 import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
 import org.eclipse.californium.elements.config.IntegerDefinition;
@@ -191,6 +194,7 @@ public class SimpleProxyProxy {
 			new byte[] { 0x03 }
 			};
 	
+
 	public SimpleProxyProxy(Configuration config, boolean accept, boolean cache) throws IOException, OSException {
 		OSCoreCtx ctxclient = new OSCoreCtx(master_secret, true, alg, sids[0], rids[0], kdf, 32, master_salt, idcontexts[0], MAX_UNFRAGMENTED_SIZE);
 		db.addContext(uriLocal + ":" + Objects.toString(CoapProxyPort + 1), ctxclient); 
@@ -223,7 +227,18 @@ public class SimpleProxyProxy {
 		
 		CoapEndpoint clientToProxyEndpoint = builder.build();
 		clientToProxyEndpoint.setIsForwardProxy();
-		
+		clientToProxyEndpoint.addInterceptor(new MessageInterceptorAdapter() {
+			@Override
+			public void receiveRequest(Request request) {
+				System.out.println(request.getSourceContext().entries());
+				Attributes attributes = new Attributes();
+				attributes.add(OSCoreEndpointContextInfo.FORWARD_PROXY_FLAG, true);
+				MapBasedEndpointContext newEndpointContext = MapBasedEndpointContext.addEntries(request.getSourceContext(), attributes);
+				request.setSourceContext(newEndpointContext);
+				System.out.println(request.getSourceContext().entries());
+				System.out.println();
+			}
+		});
 		CoapServer proxyServer = new CoapServer();
 
 		proxyServer.addEndpoint(clientToProxyEndpoint);
@@ -299,6 +314,23 @@ public class SimpleProxyProxy {
 						outgoingRequest.getOptions().setOscore(instructions);
 						*/
 						//outgoingRequest.getOptions().setOscore(new byte[0]);
+						
+						/*System.out.println("\n");
+						System.out.println(exchange.getRequest().getSourceContext().entries());
+						Attributes attributes = new Attributes();
+						attributes.add(x, "2.getSenderIdString()");
+						MapBasedEndpointContext newEndpointContext = MapBasedEndpointContext.addEntries(exchange.getRequest().getSourceContext(), attributes);
+						exchange.getRequest().setSourceContext(newEndpointContext);
+						System.out.println(exchange.getRequest().getSourceContext().entries()); */
+						System.out.println();
+						System.out.println(outgoingRequest.getSourceContext());
+						outgoingRequest.setSourceContext(exchange.getRequest().getSourceContext());
+						System.out.println(outgoingRequest.getSourceContext());
+						System.out.println(outgoingRequest.getSourceContext().entries());
+
+
+						System.out.println();
+
 						CoapResponse response = proxyClient.advanced(outgoingRequest);
 						Response outgoingResponse = translator.getResponse(response.advanced());
 						System.out.println("Sending response from proxy now");

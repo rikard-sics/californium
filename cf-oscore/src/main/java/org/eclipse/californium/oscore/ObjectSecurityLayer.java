@@ -36,10 +36,17 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Objects;
 
+import javax.lang.model.util.Elements;
+
 import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
+import org.eclipse.californium.elements.Definition;
+import org.eclipse.californium.elements.Definitions;
+import org.eclipse.californium.elements.MapBasedEndpointContext;
+import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
+import org.eclipse.californium.elements.config.Configuration.ModuleDefinitionsProvider;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ContextRederivation.PHASE;
 import org.eclipse.californium.oscore.group.OptionEncoder;
@@ -138,7 +145,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	@Override
 	public void sendRequest(final Exchange exchange, final Request request) {
 		Request req = request;
-
+		
 		if (shouldProtectRequest(request)) {
 			try {
 				// Handle outgoing requests for more data from a responder that
@@ -187,7 +194,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				//encryption here
 				final Request preparedRequest = prepareSend(ctxDb, request);
-
+				
 				System.out.println("request after prepare send is: " + request);
 				System.out.println("prepared request is:           " + preparedRequest);
 
@@ -430,8 +437,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 			if (OptionJuggle.hasProxyUriOrCriOptions(options) || OptionJuggle.hasSchemeAndUri(options)) {
 
-				// do forward proxy check another way
-				if (exchange.getEndpoint().isForwardProxy()) {
+				Object forwardProxyFlag = request.getSourceContext().entries().get(OSCoreEndpointContextInfo.FORWARD_PROXY_FLAG);
+				if (forwardProxyFlag != null && (boolean) forwardProxyFlag) {
 					if (isAcceptableToForward(request)) {
 
 						//consume proxy related options.
@@ -478,7 +485,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				}
 			}
 			else {
-				if ( false /*do Uri path, host or/and port identfify me as a reverse proxy*/) {
+				Object forwardProxyFlag = request.getSourceContext().entries().get(OSCoreEndpointContextInfo.FORWARD_PROXY_FLAG);
+				/*do Uri path, host or/and port identfify me as a reverse proxy*/
+				if (forwardProxyFlag != null && !(boolean) forwardProxyFlag && identifiesMe(request)) {
 					if( false /*isAcceptableToForward()*/ ){
 						/* do consumption of proxy related options (as a reverse proxy) */
 						// forward the request
@@ -500,12 +509,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		if (performOSCoreCheck) {
 			// compare oscore option value (assume is whatever) with old value, if idcontext is the same we send up.
 			boolean lastOscoreLayer = false;
-			boolean isProtected = isProtected(request);
 			if (request.getOptions().hasOscore() && Hex.encodeHexString(request.getOptions().getOscore()).equals("01")) {
 				lastOscoreLayer = true;
 			}
 
-			if (isProtected && !lastOscoreLayer) {
+			if (isProtected(request) && !lastOscoreLayer) {
 				if (options.hasUriPath()) {
 					exchange.sendResponse((Response) new Response(ResponseCode.BAD_REQUEST).setPayload("Uri path present"));
 				}
@@ -646,7 +654,15 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	public void receiveResponse(Exchange exchange, Response response) {
 		System.out.println("RECEIVE RESPONSE IN OBJECTSECURITYLAYER");
 		System.out.println("Received response: " + response);
-
+/*
+		System.out.println();
+		System.out.println(exchange.getEndpointContext().entries());
+		System.out.println(response.getSourceContext().entries());
+		System.out.println(exchange.getRequest().getSourceContext().entries());
+		System.out.println(exchange.getResponse());
+		System.out.println();
+*/
+		
 		Request request = exchange.getCurrentRequest();
 		if (request == null) {
 			LOGGER.error("No request tied to this response");
@@ -725,6 +741,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		super.receiveEmptyMessage(exchange, message);
 	}
 
+	private boolean identifiesMe(Request request) {
+		return false;
+	}
 	private boolean isAcceptableToForward(Request request) {
 		byte[] oscoreOption = request.getOptions().getOscore();
 

@@ -119,6 +119,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	public synchronized OSCoreCtx getContext(Request request, boolean overwrite) throws OSException {
 		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(request.getOptions().getOscore());
 		if (!(Objects.nonNull(instructions))) { 
+			System.out.println("no instructions");
 			String uri; 
 			if (request.getOptions().hasProxyUri()) {
 				uri = request.getOptions().getProxyUri();
@@ -136,7 +137,15 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		if (overwrite) {
 			// Retrieve and set real OSCORE option value
 			byte[] OSCOREOptionValue = instructions[0].ToObject(byte[].class);
-			request.getOptions().setOscore(OSCOREOptionValue);
+			System.out.println("in overwrite: " + OSCOREOptionValue.length);
+			if (OSCOREOptionValue.length != 0) {
+				System.out.println("setting oscore to previous value");
+				request.getOptions().setOscore(OSCOREOptionValue);
+			}
+			else {
+				System.out.println("removing oscore");
+				request.getOptions().removeOscore();
+			}
 		}
 		
 		

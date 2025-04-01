@@ -63,6 +63,7 @@ public class RequestDecryptor extends Decryptor {
 	public static Request decrypt(OSCoreCtxDB db, Request request, OSCoreCtx ctx) throws CoapOSException {
 
 		discardEOptions(request);
+		System.out.println("source context is: " + request.getSourceContext());
 
 		byte[] protectedData = request.getPayload();
 		Encrypt0Message enc;
@@ -143,8 +144,16 @@ public class RequestDecryptor extends Decryptor {
 		// Associate the Token with the context used
 		db.addContext(request.getToken(), ctx);
 
+		System.out.println();
+		System.out.println(request.getSourceContext().entries());
+		System.out.println();
+		
 		//Set information about the OSCORE context used in the endpoint context of this request
 		OSCoreEndpointContextInfo.receivingRequest(ctx, request);
+
+		System.out.println();
+		System.out.println(request.getSourceContext().entries());
+		System.out.println();
 		
 		request.getOptions().setOscore(oscoreOption);
 
