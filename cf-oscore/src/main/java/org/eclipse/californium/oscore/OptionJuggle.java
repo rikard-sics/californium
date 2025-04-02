@@ -250,7 +250,9 @@ public class OptionJuggle {
 		} else {// No Uri-Path and Uri-Query
 
 		}
-		UProxyUri = "coap://" + UProxyUri;
+		if (!UProxyUri.contains("coap://") && !UProxyUri.contains("coaps://")) {
+			UProxyUri = "coap://" + UProxyUri;
+		}
 		options.setProxyUri(UProxyUri);
 
 		i = proxyUri.indexOf("?");

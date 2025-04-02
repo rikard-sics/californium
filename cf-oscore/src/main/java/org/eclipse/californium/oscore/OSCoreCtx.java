@@ -165,6 +165,16 @@ public class OSCoreCtx {
 	 * Indicate which phase the context re-derivation procedure is in,
 	 */
 	private ContextRederivation.PHASE contextRederivationPhase;
+	
+	private boolean proxyFunctionality = false;
+	
+	public void setProxyFunctionality(boolean value) {
+		this.proxyFunctionality = value;
+	}
+	
+	public boolean getProxyFunctionality() {
+		return this.proxyFunctionality;
+	}
 
 	/**
 	 * Constructor. Generates the context from the base parameters with the

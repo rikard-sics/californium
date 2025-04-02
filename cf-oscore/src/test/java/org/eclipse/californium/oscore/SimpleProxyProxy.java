@@ -76,7 +76,11 @@ import org.eclipse.californium.proxy2.TranslationException;
 import org.eclipse.californium.proxy2.config.Proxy2Config;
 
 import org.eclipse.californium.proxy2.resources.CacheResource;
+import org.eclipse.californium.proxy2.resources.ForwardProxyMessageDeliverer;
+import org.eclipse.californium.proxy2.resources.ProxyCacheResource;
 import org.eclipse.californium.proxy2.resources.ProxyCoapClientResource;
+import org.eclipse.californium.proxy2.resources.ProxyCoapResource;
+import org.eclipse.californium.proxy2.resources.StatsResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -163,6 +167,12 @@ public class SimpleProxyProxy {
 
 	};
 
+	private static final String COAP2COAP = "coap2coap";
+
+	private CoapServer coapProxyServer;
+	private ClientEndpoints proxyToServerEndpoint;
+	private CacheResource cache;
+	
 	private final static HashMapCtxDB db = new HashMapCtxDB();
 	private final static String uriLocal = "coap://localhost";
 	private final static int CoapProxyPort = 5685;
@@ -196,37 +206,62 @@ public class SimpleProxyProxy {
 	
 
 	public SimpleProxyProxy(Configuration config, boolean accept, boolean cache) throws IOException, OSException {
-		OSCoreCtx ctxclient = new OSCoreCtx(master_secret, true, alg, sids[0], rids[0], kdf, 32, master_salt, idcontexts[0], MAX_UNFRAGMENTED_SIZE);
-		db.addContext(uriLocal + ":" + Objects.toString(CoapProxyPort + 1), ctxclient); 
+		OSCoreCtx ctxToClient = new OSCoreCtx(master_secret, true, alg, sids[0], rids[0], kdf, 32, master_salt, idcontexts[0], MAX_UNFRAGMENTED_SIZE);
+		db.addContext(uriLocal + ":" + Objects.toString(CoapProxyPort + 1), ctxToClient); 
 
-		OSCoreCtx ctxserver = new OSCoreCtx(master_secret, true, alg, sids[1], rids[1], kdf, 32, master_salt, idcontexts[1], MAX_UNFRAGMENTED_SIZE);
-		//int i = CoapProxyPort - 1;
-		db.addContext(uriLocal /*+ ":" + Objects.toString(i)*/, ctxserver);
-		
+		OSCoreCtx ctxToServer = new OSCoreCtx(master_secret, true, alg, sids[1], rids[1], kdf, 32, master_salt, idcontexts[1], MAX_UNFRAGMENTED_SIZE);
+		int i = CoapProxyPort - 1;
+		db.addContext(uriLocal /*+ ":" + Objects.toString(i)*/, ctxToServer);
+
 		Configuration outgoingConfig = new Configuration(config);
-		outgoingConfig.set(CoapConfig.MID_TRACKER, TrackerMode.NULL);
 
-		CoapEndpoint.Builder builder = CoapEndpoint.builder();
-				//.setConfiguration(outgoingConfig);
+		outgoingConfig.set(CoapConfig.MID_TRACKER, TrackerMode.NULL);
+		CoapEndpoint.Builder builder = CoapEndpoint.builder()
+				.setConfiguration(outgoingConfig);
 		builder.setCoapStackFactory(new OSCoreCoapStackFactory());//
 		builder.setCustomCoapStackArgument(db);//
-		builder.setPort(CoapProxyPort - 1); 
-
-
-		CoapEndpoint proxyToServerEndpoint = builder.build();
-		proxyToServerEndpoint.setIsForwardProxy();
+		proxyToServerEndpoint = new ClientSingleEndpoint(builder.build());
 		
-		CoapClient proxyClient = new CoapClient();
-		proxyClient.setEndpoint(proxyToServerEndpoint);
+		ProxyCacheResource cacheResource = null;
+		StatsResource statsResource = null;
+		if (cache) {
+			cacheResource = new ProxyCacheResource(config, true);
+			statsResource = new StatsResource(cacheResource);
+		}
+		ProxyCoapResource coap2coap = new ProxyCoapClientResource(COAP2COAP, false, accept, translator, proxyToServerEndpoint);
+		coap2coap.setMaxResourceBodySize(config.get(CoapConfig.MAX_RESOURCE_BODY_SIZE));
+
+		if (cache) {
+			coap2coap.setCache(cacheResource);
+			coap2coap.setStatsResource(statsResource);
+		}
 		
 		builder = CoapEndpoint.builder();
-				//.setConfiguration(outgoingConfig);
 		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
 		builder.setCustomCoapStackArgument(db);
 		builder.setPort(CoapProxyPort);
-		
 		CoapEndpoint clientToProxyEndpoint = builder.build();
-		clientToProxyEndpoint.setIsForwardProxy();
+
+		coapProxyServer = new CoapServer(config);
+		coapProxyServer.addEndpoint(clientToProxyEndpoint);
+
+		ForwardProxyMessageDeliverer proxyMessageDeliverer = new ForwardProxyMessageDeliverer(coapProxyServer.getRoot(),
+				translator, config);
+		proxyMessageDeliverer.addProxyCoapResources(coap2coap); 
+		proxyMessageDeliverer.addExposedServiceAddresses(new InetSocketAddress(CoapProxyPort));
+		coapProxyServer.setMessageDeliverer(proxyMessageDeliverer);
+
+		coapProxyServer.add(coap2coap);
+		if (cache) {
+			coapProxyServer.add(statsResource);
+		}
+		coapProxyServer.add(new SimpleCoapResource("target",
+				"Hi! I am the local coap server on port " + CoapProxyPort + ". Request %d."));
+
+		CoapResource targets = new CoapResource("targets");
+		coapProxyServer.add(targets);
+
+		
 		clientToProxyEndpoint.addInterceptor(new MessageInterceptorAdapter() {
 			@Override
 			public void receiveRequest(Request request) {
@@ -239,146 +274,16 @@ public class SimpleProxyProxy {
 				System.out.println();
 			}
 		});
-		CoapServer proxyServer = new CoapServer();
+		
+		coapProxyServer.start();
 
-		proxyServer.addEndpoint(clientToProxyEndpoint);
-		proxyServer.setMessageDeliverer(new MessageDeliverer() {
-			/**
-			 * Delivers an inbound CoAP request to an appropriate resource.
-			 * 
-			 * @param exchange
-			 *            the exchange containing the inbound {@code Request}
-			 * @throws NullPointerException if exchange is {@code null}.
-			 */
-			@Override
-			public void deliverRequest(Exchange exchange) {
-				Request incomingRequest = exchange.getRequest();
-				System.out.println("Recieved forwarding Request with " + incomingRequest.getToken());
-				System.out.println("exchange endpoint uri is: " +  exchange.getEndpoint().getUri());
-				try {
-					if (!(incomingRequest.getScheme().equals("coap"))) {
-						Response response = new Response(ResponseCode.BAD_GATEWAY);
-						response.setPayload("Scheme not supported");
-						exchange.sendResponse(response);
-					}
-					/*
-					System.out.println(exchange);           // localhost + UDP port
-
-					System.out.println(incomingRequest); // recieved request
-					System.out.println(incomingRequest.getDestinationContext());
-					System.out.println(incomingRequest.getSourceContext());
-
-					System.out.println("exchange info in deliver request end");
-					*/
-					
-					InetSocketAddress exposedInterface = translator.getExposedInterface(incomingRequest);
-					URI destination = translator.getDestinationURI(incomingRequest, exposedInterface);
-					Request outgoingRequest = translator.getRequest(destination, incomingRequest);		
-					
-					if (outgoingRequest.getDestinationContext() == null) {
-						exchange.sendResponse(new Response(ResponseCode.INTERNAL_SERVER_ERROR));
-						throw new NullPointerException("Destination is null");
-					}
-					
-					/*outgoingRequest.addMessageObserver(new MessageObserverAdapter() {
-						protected final Exchange incomingExchange = exchange;
-						
-						@Override
-						public void onResponse(final Response response) {
-							System.out.println();
-							System.out.println("Received--------forwarding Response with " + response.getToken());
-							incomingExchange.sendResponse(translator.getResponse(response));
-						
-						}
-					});*/
-					/*System.out.println("Proxy is sending outgoing request: " + outgoingRequest);
-					int port = outgoingRequest.getDestinationContext().getPeerAddress().getPort();
-					System.out.println("send to port: " + port);
-					exchange.setEndpoint(proxy.getEndpoint(port));*/
-					//System.out.println("endpoint context is: " + exchange.getEndpointContext());
-					//exchange.getEndpoint().sendRequest(outgoingRequest);
-					try {
-						System.out.println("PROXIES OUTGOING REQUEST IS: " + outgoingRequest);
-						
-						/*
-						byte[] oscoreopt = CBORObject.FromObject(outgoingRequest.getOptions().getOscore()).EncodeToBytes();
-						byte[] index = CBORObject.FromObject(2).EncodeToBytes(); 
-						
-						byte[] instructions = OptionEncoder.combine(oscoreopt, index);
-						
-						int[] emptyOptionSets = {};
-
-						//make for as many as you like
-						instructions = OptionEncoder.combine(instructions, OptionEncoder.set(rids[1], idcontexts[1], emptyOptionSets));
-						
-						outgoingRequest.getOptions().setOscore(instructions);
-						*/
-						//outgoingRequest.getOptions().setOscore(new byte[0]);
-						
-						/*System.out.println("\n");
-						System.out.println(exchange.getRequest().getSourceContext().entries());
-						Attributes attributes = new Attributes();
-						attributes.add(x, "2.getSenderIdString()");
-						MapBasedEndpointContext newEndpointContext = MapBasedEndpointContext.addEntries(exchange.getRequest().getSourceContext(), attributes);
-						exchange.getRequest().setSourceContext(newEndpointContext);
-						System.out.println(exchange.getRequest().getSourceContext().entries()); */
-						System.out.println();
-						System.out.println(outgoingRequest.getSourceContext());
-						outgoingRequest.setSourceContext(exchange.getRequest().getSourceContext());
-						System.out.println(outgoingRequest.getSourceContext());
-						System.out.println(outgoingRequest.getSourceContext().entries());
-
-
-						System.out.println();
-
-						CoapResponse response = proxyClient.advanced(outgoingRequest);
-						Response outgoingResponse = translator.getResponse(response.advanced());
-						System.out.println("Sending response from proxy now");
-						outgoingResponse.getOptions().setContentFormat(1);
-						exchange.sendResponse(outgoingResponse);
-						
-					} catch (ConnectorException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					
-					
-				} catch (TranslationException e) {
-
-					Response response = new Response(Coap2CoapTranslator.STATUS_FIELD_MALFORMED);
-					response.setPayload(e.getMessage());
-					exchange.sendResponse(response);
-				}
-
-			}
-
-			/**
-			 * Delivers an inbound CoAP response message to its corresponding request.
-			 * 
-			 * @param exchange
-			 *            the exchange containing the originating CoAP request
-			 * @param response
-			 *            the inbound CoAP response message
-			 * @throws NullPointerException if exchange or response are {@code null}.
-			 * @throws IllegalArgumentException if the exchange does not contain a request.
-			 */
-			@Override
-			public void deliverResponse(Exchange exchange, Response response) {
-				System.out.println("Recieved forwarding Response with " + response.getToken());
-				System.out.println("Proxy: Deliver response called.");
-				System.out.println();
-				System.out.println(exchange.getEndpointContext());
-				System.out.println(exchange.getRequest());
-				//exchange.sendResponse(translator.getResponse(response));
-			}
-		});
-
-		proxyServer.start();
+		System.out.println("CoAP Proxy at: coap://localhost:" + CoapProxyPort + "/coap2coap");
+		this.cache = cacheResource;
+		// receiving on any address => enable LocalAddressResolver
+		proxyMessageDeliverer.startLocalAddressResolver();
 	}
-
+	
+	
 	public static void main(String args[]) throws IOException, OSException {
 		Configuration proxyConfig = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		SimpleProxyProxy proxy = new SimpleProxyProxy(proxyConfig, false, true);
@@ -391,5 +296,28 @@ public class SimpleProxyProxy {
 		}
 	}
 	
+
 	public Coap2CoapTranslator translator = new Coap2CoapTranslator(); 
+	
+	private static class SimpleCoapResource extends CoapResource {
+
+		private final String value;
+
+		private final AtomicInteger counter = new AtomicInteger();
+
+		public SimpleCoapResource(String name, String value) {
+			// set the resource hidden
+			super(name);
+			getAttributes().setTitle("Simple local coap resource.");
+			this.value = value;
+		}
+
+		public void handleGET(CoapExchange exchange) {
+			exchange.setMaxAge(0);
+			exchange.respond(ResponseCode.CONTENT, String.format(value, counter.incrementAndGet()),
+					MediaTypeRegistry.TEXT_PLAIN);
+		}
+
+	}
 }
+

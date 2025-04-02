@@ -236,6 +236,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				if (!instructionsExists || (instructionsExists && !instructionsRemaining)) {
 
 					final CBORObject[] finalInstructions = instructions;
+
+					System.out.println("in request send, after encryption");
 					final OSCoreCtx finalCtx = ctxDb.getContext(request, true);
 
 					if (outgoingExceedsMaxUnfragSize(preparedRequest, false, ctx.getMaxUnfragmentedSize())) {
@@ -368,20 +370,21 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						instructions[1] = CBORObject.FromObject(++index);
 						System.out.println("Index is: " + index);
 						instructionsRemaining = index < instructions.length;
-						// response.getOptions().setOscore(instructions[0].ToObject(byte[].class));
-						//exchange.setCryptographicContextID( - );
+
 					}
 					// if not last , we encrypt, then send back
 				}
 				else {
-					// Parse the OSCORE option from the corresponding request
+					// Parse the OSCORE option from the corresponding request using the cryptographic context
 					OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
 					requestSequenceNumber = optionDecoder.getSequenceNumber();
 				}
 
 				
 				addPartialIV = (ctx != null && ctx.getResponsesIncludePartialIV()) || exchange.getRequest().getOptions().hasObserve();
-				 
+				
+				
+				
 				Response preparedResponse = prepareSend(ctxDb, response, ctx, addPartialIV, outerBlockwise,
 						requestSequenceNumber);
 
@@ -602,7 +605,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			try {
 				System.out.println("cryptographic context id:" + Hex.encodeHexString(exchange.getCryptographicContextID())); 
 			}
-			catch (Exception e){
+			catch (Exception e) {
+				
 			}
 			
 			// maybe breaks

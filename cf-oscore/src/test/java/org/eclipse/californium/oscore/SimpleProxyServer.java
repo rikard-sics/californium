@@ -37,21 +37,21 @@ public class SimpleProxyServer {
 	private final static byte[] sid = new byte[] { 0x01 };
 	private final static byte[] rid = new byte[] { 0x01 }; //[0];
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
-	
+
 	private final static byte[][] sids = {
 			new byte[] { 0x01 }, 
 			new byte[] { 0x03 }
-			};
-	
+	};
+
 	private final static byte[][] rids = {
 			new byte[] { 0x01 }, 
 			new byte[] { 0x03 }
-			};
-	
+	};
+
 	private final static byte[][] idcontexts = {
 			new byte[] { 0x01 }, 
 			new byte[] { 0x03 }
-			};
+	};
 	private static AtomicInteger counter = new AtomicInteger(0);
 
 	public static void main(String[] args) throws OSException {
@@ -63,7 +63,7 @@ public class SimpleProxyServer {
 		db.addContext(uriLocal + ":" + Objects.toString(i), ctxproxy);
 
 		OSCoreCoapStackFactory.useAsDefault(db);
-		
+
 		db.size();
 		//OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, new byte[] { 0x01 }, MAX_UNFRAGMENTED_SIZE);
 		//db.addContext(uriLocal, ctx);
@@ -71,7 +71,7 @@ public class SimpleProxyServer {
 		//OSCoreCoapStackFactory.useAsDefault(db);
 
 		final CoapServer server = new CoapServer(5683);
-		
+
 		OSCoreResource hello = new OSCoreResource("hello", true) {
 
 			@Override
@@ -94,15 +94,17 @@ public class SimpleProxyServer {
 				System.out.println(exchange.advanced().getCryptographicContextID());
 				CBORObject[] instructions = OptionEncoder.decodeCBORSequence(exchange.advanced().getCryptographicContextID());
 				System.out.println();
-				for (CBORObject obj : instructions) {
-					System.out.println(obj);
+				if (instructions != null) {
+					for (CBORObject obj : instructions) {
+						System.out.println(obj);
+					}
 				}
 				exchange.respond(r);
 				counter.incrementAndGet();
 				/*if (counter.get() == 2) {
 					server.destroy();
 				}*/
-				
+
 			}
 		};
 

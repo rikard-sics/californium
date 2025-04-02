@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
+import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.Request;
@@ -65,6 +66,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 
 
 	private ArrayList<Token> allTokens;
+	
 	
 	/**
 	 * Create the database
@@ -144,6 +146,8 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 			}
 			else {
 				System.out.println("removing oscore");
+				System.out.println(Hex.encodeHexString(OSCOREOptionValue));
+				System.out.println(Hex.encodeHexString(request.getOptions().getOscore()));
 				request.getOptions().removeOscore();
 			}
 		}

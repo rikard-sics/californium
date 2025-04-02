@@ -60,7 +60,7 @@ public class SimpleProxyClient {
 	
 	private final static int[][] optionSets = {
 		{}, 
-		{OptionNumberRegistry.URI_HOST, OptionNumberRegistry.URI_PORT, OptionNumberRegistry.URI_PATH, OptionNumberRegistry.PROXY_SCHEME}
+		{OptionNumberRegistry.URI_HOST, OptionNumberRegistry.URI_PORT, OptionNumberRegistry.URI_PATH, OptionNumberRegistry.PROXY_SCHEME, OptionNumberRegistry.PROXY_URI}
 	};
 	
 	public static void main(String[] args) throws OSException, ConnectorException, IOException {
@@ -71,101 +71,171 @@ public class SimpleProxyClient {
 		db.addContext(uriProxy, ctxproxy);
 
 		OSCoreCoapStackFactory.useAsDefault(db);
-						
-		boolean hasInstructions = true;
 		
-		if (hasInstructions) {
-			CoapEndpoint.Builder builder = CoapEndpoint.builder();
-			//.setConfiguration(outgoingConfig);
-			builder.setCoapStackFactory(new OSCoreCoapStackFactory());//
-			builder.setCustomCoapStackArgument(db);//
-			builder.setPort(5686);
-
-
-			CoapEndpoint clientEndpoint = builder.build();
-			clientEndpoint.setIsForwardProxy();
-	
-			CoapClient client = new CoapClient();
-			client.setEndpoint(clientEndpoint);
-			client.setURI(uriServer + uriServerPath);
-	
-			//CoapClient client = new CoapClient(uriServer + uriServerPath);
-
-			AddressEndpointContext proxy = new AddressEndpointContext("localhost", 5685);
-	/*		
-			System.out.println(" ----- ");
-			System.out.println();
-			System.out.println("Sending with OSCORE...");
-			System.out.println();
-			System.out.println(" ----- ");
-			System.out.println();
-			
-			Request request = Request.newGet();
-			request.setDestinationContext(proxy);
-			request.setProxyScheme("coap");
-			request.getOptions().setOscore(new byte[0]);
-			
-			CoapResponse resp = client.advanced(request);
-			printResponse(resp);
-*/
-			Request request;
-			CoapResponse resp;
-	
-			System.out.println();
-			System.out.println(" ----- ");
-			System.out.println();
-			System.out.println("Sending with instructions...");
-			System.out.println();
-			System.out.println(" ----- ");
-			System.out.println();
-
-			byte[] oscoreopt = CBORObject.FromObject(new byte[0]).EncodeToBytes();
-			byte[] index = CBORObject.FromObject(2).EncodeToBytes();
-			
-			byte[] instructions = OptionEncoder.combine(oscoreopt, index);
-			
-			for (int i = 0; i < rids.length; i++) {
-				instructions = OptionEncoder.combine(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));
-			}
-			
-			request = new Request(Code.GET);
-			request.setDestinationContext(proxy);
-			request.setProxyScheme("coap");
-			request.getOptions().setOscore(instructions);
-			
-			 resp = client.advanced(request);
-			printResponse(resp);
-
-			client.shutdown();
+		//Scenario 3 cases
+		//sendVanilla();
+		
+		sendWithProxyScheme();
+		
+		//sendWithProxyURI();
+	}
+	private static void sendWithProxyURI() throws ConnectorException, IOException {
+		byte[] oscoreopt = CBORObject.FromObject(new byte[0]).EncodeToBytes();
+		byte[] index = CBORObject.FromObject(2).EncodeToBytes();
+		
+		byte[] instructions = OptionEncoder.combine(oscoreopt, index);
+		
+		for (int i = 0; i < rids.length; i++) {
+			instructions = OptionEncoder.combine(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));
 		}
-		else {
-			CoapClient c = new CoapClient(uriServer + uriServerPath);
-			// send without OSCORE
-			SendGet(c);
-			try { Thread.sleep(10); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+		
+		
+		CoapEndpoint.Builder builder = CoapEndpoint.builder();
+		//.setConfiguration(outgoingConfig);
+		builder.setCoapStackFactory(new OSCoreCoapStackFactory());//
+		builder.setCustomCoapStackArgument(db);//
+		builder.setPort(5686);
 
-			// Send with OSCORE
-			SendGet(c, new byte[0]);
-			try { Thread.sleep(100); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-			
-			
-			System.out.println("\nSending with proxy");
-			
-			// send without OSCORE through proxy
-			SendGet(c, uriProxy + uriProxyPath);
-			try { Thread.sleep(100); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-			
-			// Send with OSCORE through proxy
-			SendGet(c, uriProxy + uriProxyPath, new byte[0]);
-			try { Thread.sleep(100); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-			
-			System.out.println("\nSending ending");
-			
-			c.shutdown();
-		}		
+
+		CoapEndpoint clientEndpoint = builder.build();
+
+		CoapClient client = new CoapClient(uriProxy + uriProxyPath);
+		client.setEndpoint(clientEndpoint);
+		//client.setURI();
+
+		//CoapClient client = new CoapClient(uriServer + uriServerPath);
+
+		AddressEndpointContext proxy = new AddressEndpointContext("localhost", 5685);
+		
+		System.out.println(" ----- ");
+		System.out.println();
+		System.out.println("Sending with OSCORE...");
+		System.out.println();
+		System.out.println(" ----- ");
+		System.out.println();
+		
+		
+		Request request = Request.newGet();
+		request.setDestinationContext(proxy);
+		request.setProxyUri(uriServer + uriServerPath);
+		request.getOptions().setOscore(new byte[0]);
+		
+		CoapResponse resp = client.advanced(request);
+		printResponse(resp);
+
+		//Request request;
+		//CoapResponse resp;
+
+		System.out.println();
+		System.out.println(" ----- ");
+		System.out.println();
+		System.out.println("Sending with instructions...");
+		System.out.println();
+		System.out.println(" ----- ");
+		System.out.println();
+
+		
+		request = new Request(Code.GET);
+		request.setDestinationContext(proxy);
+		request.setProxyUri(uriServer + uriServerPath);
+		request.getOptions().setOscore(instructions);
+		
+		 resp = client.advanced(request);
+		printResponse(resp);
+
+		client.shutdown();
 	}
 		
+	private static void sendWithProxyScheme() throws ConnectorException, IOException {
+		byte[] oscoreopt = CBORObject.FromObject(new byte[0]).EncodeToBytes();
+		byte[] index = CBORObject.FromObject(2).EncodeToBytes();
+		
+		byte[] instructions = OptionEncoder.combine(oscoreopt, index);
+		
+		for (int i = 0; i < rids.length; i++) {
+			instructions = OptionEncoder.combine(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));
+		}
+		
+		CoapEndpoint.Builder builder = CoapEndpoint.builder();
+		//.setConfiguration(outgoingConfig);
+		builder.setCoapStackFactory(new OSCoreCoapStackFactory());//
+		builder.setCustomCoapStackArgument(db);//
+		builder.setPort(5686);
 
+
+		CoapEndpoint clientEndpoint = builder.build();
+
+		CoapClient client = new CoapClient();
+		client.setEndpoint(clientEndpoint);
+		client.setURI(uriServer + uriServerPath);
+
+		//CoapClient client = new CoapClient(uriServer + uriServerPath);
+
+		AddressEndpointContext proxy = new AddressEndpointContext("localhost", 5685);
+		
+		System.out.println(" ----- ");
+		System.out.println();
+		System.out.println("Sending with OSCORE...");
+		System.out.println();
+		System.out.println(" ----- ");
+		System.out.println();
+		
+		Request request = Request.newGet();
+		request.setDestinationContext(proxy);
+		request.setProxyScheme("coap");
+		request.getOptions().setOscore(new byte[0]);
+		
+		CoapResponse resp = client.advanced(request);
+		printResponse(resp);
+
+		//Request request;
+		//CoapResponse resp;
+
+		System.out.println();
+		System.out.println(" ----- ");
+		System.out.println();
+		System.out.println("Sending with instructions...");
+		System.out.println();
+		System.out.println(" ----- ");
+		System.out.println();
+
+		
+		request = new Request(Code.GET);
+		request.setDestinationContext(proxy);
+		request.setProxyScheme("coap");
+		request.getOptions().setOscore(instructions);
+		
+		 resp = client.advanced(request);
+		printResponse(resp);
+
+		client.shutdown();
+	}
+
+	private static void sendVanilla() throws IOException, ConnectorException {
+		CoapClient c = new CoapClient(uriServer + uriServerPath);
+		// send without OSCORE
+		SendGet(c);
+		try { Thread.sleep(10); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+
+		// Send with OSCORE
+		SendGet(c, new byte[0]);
+		try { Thread.sleep(100); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+		
+		
+		System.out.println("\nSending with proxy");
+		
+		// send without OSCORE through proxy
+		SendGet(c, uriProxy + uriProxyPath);
+		try { Thread.sleep(100); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+		
+		// Send with OSCORE through proxy
+		SendGet(c, uriProxy + uriProxyPath, new byte[0]);
+		try { Thread.sleep(100); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+		
+		System.out.println("\nSending ending");
+		
+		c.shutdown();
+	}
 	private static void SendGet(CoapClient c) throws IOException, ConnectorException {
 		Request r = new Request(Code.GET);
 		CoapResponse resp = c.advanced(r);

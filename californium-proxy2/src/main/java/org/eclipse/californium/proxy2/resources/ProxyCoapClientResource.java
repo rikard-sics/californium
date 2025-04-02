@@ -76,6 +76,11 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 
 	@Override
 	public void handleRequest(final Exchange exchange) {
+
+		System.out.println("The Client resource that is handling this request is: " + this.getName());
+		System.out.println("Using destination schemes: " + this.getDestinationSchemes());
+		System.out.println("Parent is: " + this.getParent());
+
 		Request incomingRequest = exchange.getRequest();
 		LOGGER.debug("ProxyCoapClientResource forwards {}", incomingRequest);
 		System.out.println("Recieved forwarding Request with " + incomingRequest.getToken());
@@ -85,7 +90,14 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 			InetSocketAddress exposedInterface = translator.getExposedInterface(incomingRequest);
 			URI destination = translator.getDestinationURI(incomingRequest, exposedInterface);
 			Request outgoingRequest = translator.getRequest(destination, incomingRequest);
+			System.out.println(incomingRequest.getSourceContext().entries());
+			//temp fix, should do better
+			outgoingRequest.setSourceContext(incomingRequest.getSourceContext());
+			
+			System.out.println("incoming Request was: " + incomingRequest);
 
+			System.out.println("outgoing Request is:  " + outgoingRequest);
+			System.out.println();
 			// execute the request
 			if (outgoingRequest.getDestinationContext() == null) {
 				exchange.sendResponse(new Response(ResponseCode.INTERNAL_SERVER_ERROR));

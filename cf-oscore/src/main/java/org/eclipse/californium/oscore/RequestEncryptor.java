@@ -26,6 +26,7 @@ import com.upokecenter.cbor.CBORObject;
 
 import java.util.Objects;
 
+import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.coap.MessageObserver;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
 import org.eclipse.californium.core.coap.OptionSet;
@@ -61,7 +62,7 @@ public class RequestEncryptor extends Encryptor {
 		
 		boolean instructionsExists = Objects.nonNull(instructions);
 		
-		
+		System.out.println("in request encryptor");
 		OSCoreCtx ctx = db.getContext(request, true);
 
 		EndpointContext srcCtx = request.getSourceContext();
@@ -70,13 +71,23 @@ public class RequestEncryptor extends Encryptor {
 		// what do when src endpoint is aware we are a reverse proxy?
 		if (instructionsExists && (int) instructions[1].ToObject(int.class) != 2) {
 			System.out.println("adding from instructions");
+			System.out.println(Hex.encodeHexString(oldOscoreOption));
+			System.out.println(Hex.encodeHexString(request.getOptions().getOscore()));
+			System.out.println(Hex.encodeHexString(instructions[0].ToObject(byte[].class)));
+			
 			request.getOptions().setOscore(instructions[0].ToObject(byte[].class));
 		}
 		else if (isProxy && oldOscoreOption != null) {
+			System.out.println(Hex.encodeHexString(oldOscoreOption));
+			System.out.println(Hex.encodeHexString(request.getOptions().getOscore()));
 			System.out.println("adding from is proxy old option");
 			request.getOptions().setOscore(oldOscoreOption);
 		}
 		else {
+			System.out.println(Hex.encodeHexString(oldOscoreOption));
+			if (request.getOptions().getOscore() != null) {
+				System.out.println(Hex.encodeHexString(request.getOptions().getOscore()));
+			}
 			System.out.println("removing");
 			request.getOptions().removeOscore();
 		}
