@@ -85,11 +85,9 @@ public class SimpleProxyClient {
 		byte[] index = CBORObject.FromObject(2).EncodeToBytes();
 		
 		byte[] instructions = Bytes.concatenate(oscoreopt, index);
-		//byte[] instructions = OptionEncoder.combine(oscoreopt, index);
 		
 		for (int i = 0; i < rids.length; i++) {
 			instructions = Bytes.concatenate(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));
-			//instructions = OptionEncoder.combine(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));
 		}
 		
 		
@@ -154,11 +152,9 @@ public class SimpleProxyClient {
 		byte[] index = CBORObject.FromObject(2).EncodeToBytes();
 		
 		byte[] instructions = Bytes.concatenate(oscoreopt, index);
-		//byte[] instructions = OptionEncoder.combine(oscoreopt, index);
 		
 		for (int i = 0; i < rids.length; i++) {
 			instructions = Bytes.concatenate(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));
-			//instructions = OptionEncoder.combine(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));		
 		}
 		
 		CoapEndpoint.Builder builder = CoapEndpoint.builder();
