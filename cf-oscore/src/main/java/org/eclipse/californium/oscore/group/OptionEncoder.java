@@ -206,7 +206,6 @@ public class OptionEncoder {
 		byte[] result = new byte[0];
 		for (CBORObject object : CBORSequence) {
 			result = Bytes.concatenate(result, object.EncodeToBytes());
-			//result = OptionEncoder.combine(result, object.EncodeToBytes());
 		}
 		
 		return result;
