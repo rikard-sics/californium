@@ -167,17 +167,49 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					}
 				}
 
-				//byte[] goodCBORObject = { (byte)0x83,(byte) 0x18,(byte) 0x7B,(byte) 0x18,(byte) 0x21,(byte) 0x04 };
-				//byte[] malformedCBORObject = { (byte)0x83,(byte) 0x18,(byte) 0x7B,(byte) 0x18,(byte) 0x21 };
-
-				byte[] OscoreOption = request.getOptions().getOscore();
-				CBORObject[] instructions = OptionEncoder.decodeCBORSequence(OscoreOption);
-
 				final OSCoreCtx ctx = ctxDb.getContext(request, false);
 
 				if (ctx == null) {
-					LOGGER.error(ErrorDescriptions.CTX_NULL);
-					throw new OSException(ErrorDescriptions.CTX_NULL);
+					//this might create trouble with context rederivation if the context is removed or something 
+					//perhaps during the rederivation
+					Object forwardProxyFlag = request.getSourceContext().entries().get(OSCoreEndpointContextInfo.FORWARD_PROXY_FLAG);
+					if (forwardProxyFlag != null && (boolean) forwardProxyFlag) {
+						// if we are a proxy but do not have a security context with the next endpoint we forward the request
+						
+						request.addMessageObserver(0, new MessageObserverAdapter() {
+
+							//this isn't called until it is ready to send, i.e. super.sendRequest
+							//only creates the Token and associates it null
+							@Override
+							public void onReadyToSend() {
+								Token token = request.getToken();
+
+								// add at head of message observers to update
+								// the token of the original request first,
+								// before calling other message observers!
+								if (request.getToken() == null) {
+									request.setToken(token);
+								}
+
+								if (!request.hasMID() && request.hasMID()) {
+									request.setMID(request.getMID());
+								}
+
+								ctxDb.addForwarded(token);
+								
+
+								System.out.println("SENT FORWARDED REQUEST WITH: " + token.toString());
+							}
+						});
+						
+						LOGGER.trace("Request: {}", exchange.getRequest());
+						super.sendRequest(exchange, request);
+						return;
+					}
+					else {
+						LOGGER.error(ErrorDescriptions.CTX_NULL);
+						throw new OSException(ErrorDescriptions.CTX_NULL);
+					}
 				}
 
 				// Initiate context re-derivation procedure if flag is set
@@ -191,6 +223,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				 * endpoint context that will be created after the request is sent.
 				 */
 				OSCoreEndpointContextInfo.sendingRequest(ctx, exchange);
+
+				byte[] OscoreOption = request.getOptions().getOscore();
+				CBORObject[] instructions = OptionEncoder.decodeCBORSequence(OscoreOption);
 
 				//encryption here
 				final Request preparedRequest = prepareSend(ctxDb, request);
@@ -617,22 +652,22 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				byte[] oscoreopt = CBORObject.FromObject(new byte[0]).EncodeToBytes();
 				byte[] index = CBORObject.FromObject(2).EncodeToBytes();  
 				
-				byte[] instructions = OptionEncoder.combine(oscoreopt, index);
-				
+				byte[] instructions = Bytes.concatenate(oscoreopt, index);
+		
 				
 				OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(requestOscoreOption);
 				byte[] rid = optionDecoder.getKid();
 				byte[] IDContext = optionDecoder.getIdContext();
 				int requestSequenceNr = optionDecoder.getSequenceNumber();
 				
-				instructions = OptionEncoder.combine(instructions, OptionEncoder.set(rid, IDContext, requestSequenceNr));
+				instructions = Bytes.concatenate(instructions, OptionEncoder.set(rid, IDContext, requestSequenceNr));
 				
 				optionDecoder = new OscoreOptionDecoder(cryptographicContextID);
 				rid = optionDecoder.getKid();
 				IDContext = optionDecoder.getIdContext();
 				requestSequenceNr = optionDecoder.getSequenceNumber();
 				
-				instructions = OptionEncoder.combine(instructions, OptionEncoder.set(rid, IDContext, requestSequenceNr));
+				instructions = Bytes.concatenate(instructions, OptionEncoder.set(rid, IDContext, requestSequenceNr));
 				exchange.setCryptographicContextID(instructions);
 			}
 			else {
@@ -658,14 +693,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	public void receiveResponse(Exchange exchange, Response response) {
 		System.out.println("RECEIVE RESPONSE IN OBJECTSECURITYLAYER");
 		System.out.println("Received response: " + response);
-/*
-		System.out.println();
-		System.out.println(exchange.getEndpointContext().entries());
-		System.out.println(response.getSourceContext().entries());
-		System.out.println(exchange.getRequest().getSourceContext().entries());
-		System.out.println(exchange.getResponse());
-		System.out.println();
-*/
 		
 		Request request = exchange.getCurrentRequest();
 		if (request == null) {
@@ -704,6 +731,15 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				return;
 			}
 
+			ctxDb.size();
+			if (ctxDb.hasBeenForwarded(response.getToken())) {
+				//the request was not protected by us, but forwarded with a pre-existing encryption, so we simply forward it back
+				System.out.println("Has been forwarded");
+				
+				super.receiveResponse(exchange, response);
+				return;
+			}
+			
 			//If response is protected with OSCORE parse it first with prepareReceive
 			if (isProtected(response)) {
 				int requestSequenceNumber = -1;
@@ -789,13 +825,27 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				}
 			}
 		}
+		System.out.println(exchange.getCryptographicContextID() != null );
+		System.out.println(ctxDb.getInstructions(response.getToken()) != null);
+		System.out.println( OptionEncoder.decodeCBORSequence(response.getOptions().getOscore()) != null);
+		System.out.println(ctxDb.getContextByToken(response.getToken()) == null);
 		return exchange.getCryptographicContextID() != null 
 				|| ctxDb.getInstructions(response.getToken()) != null
-				|| OptionEncoder.decodeCBORSequence(response.getOptions().getOscore()) != null;
+				|| OptionEncoder.decodeCBORSequence(response.getOptions().getOscore()) != null
+				|| ctxDb.getContextByToken(response.getToken()) == null;
 	}
 
-	private static boolean shouldProtectRequest(Request request) {
+	private boolean shouldProtectRequest(Request request) {
 		OptionSet options = request.getOptions();
+		
+		if (options.hasOscore()) {
+			try {
+				OSCoreCtx ctx = ctxDb.getContext(request, false);
+			} catch (OSException e) {
+				// no context was found for the destination
+			}
+			
+		}
 		return options.hasOscore();
 
 	}

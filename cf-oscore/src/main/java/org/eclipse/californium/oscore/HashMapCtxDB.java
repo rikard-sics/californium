@@ -63,8 +63,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	private HashMap<Token, OSCoreCtx> tokenMap;
 	private HashMap<String, OSCoreCtx> uriMap;
 	private HashMap<Token, CBORObject[]> instructionMap;
-
-
+    private ArrayList<Token> forwardedWithoutProtection;
 	private ArrayList<Token> allTokens;
 	
 	
@@ -77,6 +76,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		this.contextMap = new HashMap<>();
 		this.uriMap = new HashMap<>();
 		this.instructionMap = new HashMap<>();
+		this.forwardedWithoutProtection = new ArrayList<Token>();
 		this.allTokens = new ArrayList<Token>();
 	}
 
@@ -85,7 +85,28 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		System.out.println("Context map is size: " + contextMap.size());
 		System.out.println("Token map is size;   " + tokenMap.size());
 		System.out.println("instruction map is size: " + instructionMap.size());
+		System.out.println("forwarded array list is size: " + forwardedWithoutProtection.size());
 		
+	}
+	
+	@Override
+	public synchronized void addForwarded(Token token) {
+		if (token != null) {
+			if (!tokenExist(token)) {
+				allTokens.add(token);
+			}
+			forwardedWithoutProtection.add(token);	
+		}
+	}
+	
+	@Override
+	public synchronized boolean hasBeenForwarded(Token token) {
+		if (token != null) {
+			return forwardedWithoutProtection.contains(token);
+		} else {
+			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
+			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
+		}
 	}
 	
 	@Override
@@ -96,7 +117,6 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 			}
 			instructionMap.put(token, instructions);	
 		}
-		
 	}
 
 	/**
@@ -120,6 +140,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	@Override
 	public synchronized OSCoreCtx getContext(Request request, boolean overwrite) throws OSException {
 		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(request.getOptions().getOscore());
+		
 		if (!(Objects.nonNull(instructions))) { 
 			System.out.println("no instructions");
 			String uri; 
@@ -251,7 +272,9 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 			}
 			tokenMap.put(token, ctx);
 		}
-		addContext(ctx);
+		if (ctx != null) {
+			addContext(ctx);
+		}
 	}
 
 	@Override

@@ -14,6 +14,7 @@ import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.AddressEndpointContext;
 import org.eclipse.californium.elements.exception.ConnectorException;
+import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.OptionEncoder;
 
 import com.upokecenter.cbor.CBORObject;
@@ -83,10 +84,12 @@ public class SimpleProxyClient {
 		byte[] oscoreopt = CBORObject.FromObject(new byte[0]).EncodeToBytes();
 		byte[] index = CBORObject.FromObject(2).EncodeToBytes();
 		
-		byte[] instructions = OptionEncoder.combine(oscoreopt, index);
+		byte[] instructions = Bytes.concatenate(oscoreopt, index);
+		//byte[] instructions = OptionEncoder.combine(oscoreopt, index);
 		
 		for (int i = 0; i < rids.length; i++) {
-			instructions = OptionEncoder.combine(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));
+			instructions = Bytes.concatenate(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));
+			//instructions = OptionEncoder.combine(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));
 		}
 		
 		
@@ -150,10 +153,12 @@ public class SimpleProxyClient {
 		byte[] oscoreopt = CBORObject.FromObject(new byte[0]).EncodeToBytes();
 		byte[] index = CBORObject.FromObject(2).EncodeToBytes();
 		
-		byte[] instructions = OptionEncoder.combine(oscoreopt, index);
+		byte[] instructions = Bytes.concatenate(oscoreopt, index);
+		//byte[] instructions = OptionEncoder.combine(oscoreopt, index);
 		
 		for (int i = 0; i < rids.length; i++) {
-			instructions = OptionEncoder.combine(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));
+			instructions = Bytes.concatenate(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));
+			//instructions = OptionEncoder.combine(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));		
 		}
 		
 		CoapEndpoint.Builder builder = CoapEndpoint.builder();

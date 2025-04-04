@@ -18,6 +18,7 @@ package org.eclipse.californium.oscore.group;
 
 import org.eclipse.californium.core.coap.Option;
 import org.eclipse.californium.core.coap.OptionSet;
+import org.eclipse.californium.elements.util.Bytes;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
@@ -204,22 +205,10 @@ public class OptionEncoder {
 	public static byte[] encodeSequence(CBORObject[] CBORSequence) {
 		byte[] result = new byte[0];
 		for (CBORObject object : CBORSequence) {
-			result = OptionEncoder.combine(result, object.EncodeToBytes());
+			result = Bytes.concatenate(result, object.EncodeToBytes());
+			//result = OptionEncoder.combine(result, object.EncodeToBytes());
 		}
 		
-		return result;
-	}
-	
-	/**
-	 * Appends the append byte array to the src byte array
-	 * @param src byte array to be appended
-	 * @param append byte array to append
-	 * @return src byte array appended with append byte array
-	 */
-	public static byte[] combine(byte[] src, byte[] append) {
-		byte[] result = new byte[src.length + append.length];
-		System.arraycopy(src, 0, result, 0, src.length);
-		System.arraycopy(append, 0, result, src.length, append.length);
 		return result;
 	}
 }

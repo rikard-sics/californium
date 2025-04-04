@@ -138,11 +138,6 @@ public class ResourceAttributesTest {
 	private static class DummyEndpoint implements Endpoint {
 
 		@Override
-		public boolean isForwardProxy() {
-			return false;
-			
-		}
-		@Override
 		public void start() throws IOException {
 		}
 

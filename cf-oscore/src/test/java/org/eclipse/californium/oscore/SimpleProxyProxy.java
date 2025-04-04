@@ -209,9 +209,9 @@ public class SimpleProxyProxy {
 		OSCoreCtx ctxToClient = new OSCoreCtx(master_secret, true, alg, sids[0], rids[0], kdf, 32, master_salt, idcontexts[0], MAX_UNFRAGMENTED_SIZE);
 		db.addContext(uriLocal + ":" + Objects.toString(CoapProxyPort + 1), ctxToClient); 
 
-		OSCoreCtx ctxToServer = new OSCoreCtx(master_secret, true, alg, sids[1], rids[1], kdf, 32, master_salt, idcontexts[1], MAX_UNFRAGMENTED_SIZE);
-		int i = CoapProxyPort - 1;
-		db.addContext(uriLocal /*+ ":" + Objects.toString(i)*/, ctxToServer);
+		//OSCoreCtx ctxToServer = new OSCoreCtx(master_secret, true, alg, sids[1], rids[1], kdf, 32, master_salt, idcontexts[1], MAX_UNFRAGMENTED_SIZE);
+		//int i = CoapProxyPort - 1;
+		//db.addContext(uriLocal /*+ ":" + Objects.toString(i)*/, ctxToServer);
 
 		Configuration outgoingConfig = new Configuration(config);
 
@@ -229,8 +229,7 @@ public class SimpleProxyProxy {
 			statsResource = new StatsResource(cacheResource);
 		}
 		ProxyCoapResource coap2coap = new ProxyCoapClientResource(COAP2COAP, false, accept, translator, proxyToServerEndpoint);
-		coap2coap.setMaxResourceBodySize(config.get(CoapConfig.MAX_RESOURCE_BODY_SIZE));
-
+		
 		if (cache) {
 			coap2coap.setCache(cacheResource);
 			coap2coap.setStatsResource(statsResource);
@@ -244,9 +243,10 @@ public class SimpleProxyProxy {
 
 		coapProxyServer = new CoapServer(config);
 		coapProxyServer.addEndpoint(clientToProxyEndpoint);
-
+		
 		ForwardProxyMessageDeliverer proxyMessageDeliverer = new ForwardProxyMessageDeliverer(coapProxyServer.getRoot(),
 				translator, config);
+		
 		proxyMessageDeliverer.addProxyCoapResources(coap2coap); 
 		proxyMessageDeliverer.addExposedServiceAddresses(new InetSocketAddress(CoapProxyPort));
 		coapProxyServer.setMessageDeliverer(proxyMessageDeliverer);

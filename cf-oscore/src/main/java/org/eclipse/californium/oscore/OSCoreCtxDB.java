@@ -31,6 +31,18 @@ public interface OSCoreCtxDB {
 	
 	/**
 	 * @param token the token of the request
+	 */
+	public void addForwarded(Token token);
+	
+	/**
+	 * 
+	 * @param token the token of to check
+	 * @return {@code true}, if an association for this token exists,
+	 *         {@code false}, otherwise
+	 */
+	public boolean hasBeenForwarded(Token token);
+	/**
+	 * @param token the token of the request
 	 * @param instructions the instructions
 	 */
 	public void addInstructions(Token token, CBORObject[] instructions);
