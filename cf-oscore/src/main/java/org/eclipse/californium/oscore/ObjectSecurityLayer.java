@@ -802,7 +802,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				System.out.println("oscore option was: " + Hex.encodeHexString(oscoreOption));
 			}
 		}
-		System.out.println("This is always forwarding");
+		System.out.println("always accept forwarding...");
 		return true;
 	}
 	private static boolean shouldProtectResponse(Exchange exchange, OSCoreCtxDB ctxDb) {
@@ -828,11 +828,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		System.out.println(exchange.getCryptographicContextID() != null );
 		System.out.println(ctxDb.getInstructions(response.getToken()) != null);
 		System.out.println( OptionEncoder.decodeCBORSequence(response.getOptions().getOscore()) != null);
-		System.out.println(ctxDb.getContextByToken(response.getToken()) == null);
+		System.out.println(ctxDb.hasBeenForwarded(response.getToken()));
 		return exchange.getCryptographicContextID() != null 
 				|| ctxDb.getInstructions(response.getToken()) != null
 				|| OptionEncoder.decodeCBORSequence(response.getOptions().getOscore()) != null
-				|| ctxDb.getContextByToken(response.getToken()) == null;
+				|| ctxDb.hasBeenForwarded(response.getToken());
 	}
 
 	private boolean shouldProtectRequest(Request request) {

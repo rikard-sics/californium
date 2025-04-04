@@ -209,9 +209,9 @@ public class SimpleProxyProxy {
 		OSCoreCtx ctxToClient = new OSCoreCtx(master_secret, true, alg, sids[0], rids[0], kdf, 32, master_salt, idcontexts[0], MAX_UNFRAGMENTED_SIZE);
 		db.addContext(uriLocal + ":" + Objects.toString(CoapProxyPort + 1), ctxToClient); 
 
-		//OSCoreCtx ctxToServer = new OSCoreCtx(master_secret, true, alg, sids[1], rids[1], kdf, 32, master_salt, idcontexts[1], MAX_UNFRAGMENTED_SIZE);
-		//int i = CoapProxyPort - 1;
-		//db.addContext(uriLocal /*+ ":" + Objects.toString(i)*/, ctxToServer);
+		OSCoreCtx ctxToServer = new OSCoreCtx(master_secret, true, alg, sids[1], rids[1], kdf, 32, master_salt, idcontexts[1], MAX_UNFRAGMENTED_SIZE);
+		int i = CoapProxyPort - 1;
+		db.addContext(uriLocal /*+ ":" + Objects.toString(i)*/, ctxToServer);
 
 		Configuration outgoingConfig = new Configuration(config);
 

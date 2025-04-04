@@ -74,11 +74,11 @@ public class SimpleProxyClient {
 		OSCoreCoapStackFactory.useAsDefault(db);
 		
 		//Scenario 3 cases
-		//sendVanilla();
+		sendVanilla();
 		
 		sendWithProxyScheme();
 		
-		//sendWithProxyURI();
+		sendWithProxyURI();
 	}
 	private static void sendWithProxyURI() throws ConnectorException, IOException {
 		byte[] oscoreopt = CBORObject.FromObject(new byte[0]).EncodeToBytes();
@@ -89,7 +89,6 @@ public class SimpleProxyClient {
 		for (int i = 0; i < rids.length; i++) {
 			instructions = Bytes.concatenate(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));
 		}
-		
 		
 		CoapEndpoint.Builder builder = CoapEndpoint.builder();
 		//.setConfiguration(outgoingConfig);
@@ -144,6 +143,7 @@ public class SimpleProxyClient {
 		 resp = client.advanced(request);
 		printResponse(resp);
 
+		client.getEndpoint().destroy();
 		client.shutdown();
 	}
 		
@@ -209,6 +209,7 @@ public class SimpleProxyClient {
 		 resp = client.advanced(request);
 		printResponse(resp);
 
+		client.getEndpoint().destroy();
 		client.shutdown();
 	}
 
