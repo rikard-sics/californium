@@ -156,11 +156,24 @@ public class RequestEncryptor extends Encryptor {
 				
 		//prepare options here, both E and U
 		OptionSet[] optionsUAndE = OptionJuggle.prepareUandEOptions(options, instructions);
-		// here the E options are set 
+		
+		System.out.println("Eoptions are length: " + optionsUAndE[1]);
+		if (optionsUAndE[1].hasOscore()) {
+			System.out.println("Oscore option is length: " + optionsUAndE[1].getOscore().length);
+			byte b1 = optionsUAndE[1].getOscore()[0];
+			String s1 = String.format("%8s", Integer.toBinaryString(b1 & 0xFF)).replace(' ', '0');
+			System.out.println(s1); 
+		}
+		System.out.println("payload is length: " + request.getPayload().length + " + 1 byte for payload marker");
+		System.out.println("message code is: " + realCode + ", which should be 8 bits long, aka 1 byte");
+		if (optionsUAndE[1].hasOscore()) {
+			System.out.println("Total length is: " + (optionsUAndE[1].getOscore().length + 1 + request.getPayload().length + 1 + 1));
+		}		// here the E options are set 
 		byte[] confidential = OSSerializer.serializeConfidentialData(optionsUAndE[1], request.getPayload(), realCode);
+		System.out.println("Confidential bytes are length: " + confidential.length);
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
 		byte[] cipherText = encryptAndEncode(enc, ctx, request, false, null);
-		
+		System.out.println("Ciphertext is length: " + cipherText.length);
 		// sets correct OSCORE option values here
 		compression(ctx, cipherText, request, false);
 		

@@ -468,6 +468,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	public void receiveRequest(Exchange exchange, Request request) {
 		System.out.println("RECEIVE REQUEST IN OBJECTSECURITYLAYER");
 		System.out.println(request);
+		System.out.println("Owner is: " + exchange.getEndpoint());
+
+		System.out.println("Owner is: " + exchange.getEndpoint().getAddress());
+		System.out.println("Owner is: " + exchange.getEndpoint().getUri());
+
 		boolean performOSCoreCheck = false;
 		OptionSet options = request.getOptions();
 
@@ -493,7 +498,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						}
 
 						System.out.println("destination is:  " + destination.getAuthority().equals(exchange.getEndpoint().getUri().getAuthority()));
-
+						
 						// use destination for this checking, and something else
 						/* does uri port and host identify me?*/
 						// does this work with "unspecified" ipv6 address vs localhost? is unspecified set later?

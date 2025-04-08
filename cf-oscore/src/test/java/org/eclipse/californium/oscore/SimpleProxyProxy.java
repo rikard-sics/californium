@@ -275,6 +275,9 @@ public class SimpleProxyProxy {
 			}
 		});
 		
+		System.out.println(clientToProxyEndpoint);
+		System.out.println(proxyToServerEndpoint);
+		System.out.println(coapProxyServer.getRoot().getURI());
 		coapProxyServer.start();
 
 		System.out.println("CoAP Proxy at: coap://localhost:" + CoapProxyPort + "/coap2coap");
