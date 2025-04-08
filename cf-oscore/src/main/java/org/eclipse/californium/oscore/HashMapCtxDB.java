@@ -65,12 +65,27 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	private HashMap<Token, CBORObject[]> instructionMap;
     private ArrayList<Token> forwardedWithoutProtection;
 	private ArrayList<Token> allTokens;
+	private boolean proxyable;
 	
+	/**
+	 * Create the database, with no proxying allowed
+	 */
+	public HashMapCtxDB() {
+		this(false);
+		/*
+		this.tokenMap = new HashMap<>();
+		this.contextMap = new HashMap<>();
+		this.uriMap = new HashMap<>();
+		this.instructionMap = new HashMap<>();
+		this.forwardedWithoutProtection = new ArrayList<Token>();
+		this.allTokens = new ArrayList<Token>();*/
+	}
 	
 	/**
 	 * Create the database
+	 * @param proxyable This controls whether the server can act as a proxy
 	 */
-	public HashMapCtxDB() {
+	public HashMapCtxDB(boolean proxyable) {
 
 		this.tokenMap = new HashMap<>();
 		this.contextMap = new HashMap<>();
@@ -78,6 +93,12 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		this.instructionMap = new HashMap<>();
 		this.forwardedWithoutProtection = new ArrayList<Token>();
 		this.allTokens = new ArrayList<Token>();
+		this.proxyable = proxyable;
+	}
+	
+	@Override
+	public synchronized boolean getIfProxyable() {
+		return this.proxyable;
 	}
 
 	@Override
@@ -86,7 +107,6 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		System.out.println("Token map is size;   " + tokenMap.size());
 		System.out.println("instruction map is size: " + instructionMap.size());
 		System.out.println("forwarded array list is size: " + forwardedWithoutProtection.size());
-		
 	}
 	
 	@Override

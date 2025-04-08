@@ -65,9 +65,6 @@ public class RequestEncryptor extends Encryptor {
 		System.out.println("in request encryptor");
 		OSCoreCtx ctx = db.getContext(request, true);
 
-		EndpointContext srcCtx = request.getSourceContext();
-		boolean isProxy = (srcCtx != null && srcCtx.entries().get(OSCoreEndpointContextInfo.FORWARD_PROXY_FLAG) != null );
-		
 		// what do when src endpoint is aware we are a reverse proxy?
 		if (instructionsExists && (int) instructions[1].ToObject(int.class) != 2) {
 			System.out.println("adding from instructions");
@@ -77,7 +74,7 @@ public class RequestEncryptor extends Encryptor {
 			
 			request.getOptions().setOscore(instructions[0].ToObject(byte[].class));
 		}
-		else if (isProxy && oldOscoreOption != null) {
+		else if (db.getIfProxyable() && oldOscoreOption != null) {
 			System.out.println(Hex.encodeHexString(oldOscoreOption));
 			System.out.println(Hex.encodeHexString(request.getOptions().getOscore()));
 			System.out.println("adding from is proxy old option");

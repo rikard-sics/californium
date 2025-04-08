@@ -173,7 +173,7 @@ public class SimpleProxyProxy {
 	private ClientEndpoints proxyToServerEndpoint;
 	private CacheResource cache;
 	
-	private final static HashMapCtxDB db = new HashMapCtxDB();
+	private final static HashMapCtxDB db = new HashMapCtxDB(true);
 	private final static String uriLocal = "coap://localhost";
 	private final static int CoapProxyPort = 5685;
 
@@ -261,20 +261,6 @@ public class SimpleProxyProxy {
 		CoapResource targets = new CoapResource("targets");
 		coapProxyServer.add(targets);
 
-		
-		clientToProxyEndpoint.addInterceptor(new MessageInterceptorAdapter() {
-			@Override
-			public void receiveRequest(Request request) {
-				System.out.println(request.getSourceContext().entries());
-				Attributes attributes = new Attributes();
-				attributes.add(OSCoreEndpointContextInfo.FORWARD_PROXY_FLAG, true);
-				MapBasedEndpointContext newEndpointContext = MapBasedEndpointContext.addEntries(request.getSourceContext(), attributes);
-				request.setSourceContext(newEndpointContext);
-				System.out.println(request.getSourceContext().entries());
-				System.out.println();
-			}
-		});
-		
 		System.out.println(clientToProxyEndpoint);
 		System.out.println(proxyToServerEndpoint);
 		System.out.println(coapProxyServer.getRoot().getURI());

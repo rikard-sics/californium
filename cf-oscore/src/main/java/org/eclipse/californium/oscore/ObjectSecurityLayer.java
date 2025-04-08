@@ -172,8 +172,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				if (ctx == null) {
 					//this might create trouble with context rederivation if the context is removed or something 
 					//perhaps during the rederivation
-					Object forwardProxyFlag = request.getSourceContext().entries().get(OSCoreEndpointContextInfo.FORWARD_PROXY_FLAG);
-					if (forwardProxyFlag != null && (boolean) forwardProxyFlag) {
+					
+					if (ctxDb.getIfProxyable()) {
 						// if we are a proxy but do not have a security context with the next endpoint we forward the request
 						
 						request.addMessageObserver(0, new MessageObserverAdapter() {
@@ -480,8 +480,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 			if (OptionJuggle.hasProxyUriOrCriOptions(options) || OptionJuggle.hasSchemeAndUri(options)) {
 
-				Object forwardProxyFlag = request.getSourceContext().entries().get(OSCoreEndpointContextInfo.FORWARD_PROXY_FLAG);
-				if (forwardProxyFlag != null && (boolean) forwardProxyFlag) {
+				if (ctxDb.getIfProxyable()) {
 					if (isAcceptableToForward(request)) {
 
 						//consume proxy related options.
@@ -528,9 +527,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				}
 			}
 			else {
-				Object forwardProxyFlag = request.getSourceContext().entries().get(OSCoreEndpointContextInfo.FORWARD_PROXY_FLAG);
+				
 				/*do Uri path, host or/and port identfify me as a reverse proxy*/
-				if (forwardProxyFlag != null && !(boolean) forwardProxyFlag && identifiesMe(request)) {
+				if (ctxDb.getIfProxyable() && identifiesMe(request)) {
 					if( false /*isAcceptableToForward()*/ ){
 						/* do consumption of proxy related options (as a reverse proxy) */
 						// forward the request

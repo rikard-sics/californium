@@ -67,9 +67,6 @@ public class OSCoreEndpointContextInfo {
 	public final static Definition<String> OSCORE_URI = new Definition<>(PREFIX + "OSCORE_URI", String.class,
 			MapBasedEndpointContext.ATTRIBUTE_DEFINITIONS);
 
-	public final static Definition<Boolean> FORWARD_PROXY_FLAG = new Definition<>(PREFIX + "FORWARD_PROXY_FLAG", Boolean.class,
-			MapBasedEndpointContext.ATTRIBUTE_DEFINITIONS);
-	
 	/**
 	 * Sets information in a destination endpoint context for outgoing requests.
 	 *

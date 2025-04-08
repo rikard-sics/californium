@@ -130,8 +130,7 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 				
 				OSCoreCtx ctx = ctxDb.getContext(uri);
 				if (ctx == null) {
-					Object forwardProxyFlag = request.getSourceContext().entries().get(OSCoreEndpointContextInfo.FORWARD_PROXY_FLAG);
-					if (forwardProxyFlag != null && (boolean) forwardProxyFlag) {
+					if (ctxDb.getIfProxyable()) {
 						// if we are a proxy but do not have a security context with the next endpoint we forward the request
 						LOGGER.trace("Request: {}", exchange.getRequest());
 						super.sendRequest(exchange, request);

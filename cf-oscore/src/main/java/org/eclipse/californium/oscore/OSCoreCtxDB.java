@@ -30,6 +30,12 @@ import com.upokecenter.cbor.CBORObject;
 public interface OSCoreCtxDB {
 	
 	/**
+	 * 
+	 * @return the value of the proxyable flag
+	 */
+	public boolean getIfProxyable();
+	
+	/**
 	 * @param token the token of the request
 	 */
 	public void addForwarded(Token token);
