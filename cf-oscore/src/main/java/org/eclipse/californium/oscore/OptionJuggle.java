@@ -211,6 +211,8 @@ public class OptionJuggle {
 				new OptionSet()
 		};
 		
+		System.out.println("Initial set of options for preparation are: " + options);
+		
 		if (options.hasProxyUri()) {
 			options = handleProxyUri(options.getProxyUri(), options);
 		}

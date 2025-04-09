@@ -95,7 +95,31 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		this.allTokens = new ArrayList<Token>();
 		this.proxyable = proxyable;
 	}
-	
+
+	@Override
+	public synchronized void updateInstructions(Token token, CBORObject[] instructions) {
+		if (token != null) {
+			if (instructions != null) {
+				instructionMap.replace(token, instructions);
+			}
+			else {
+				LOGGER.error("Instruction is null");
+				throw new NullPointerException("Instruction is null");
+			}
+		} else {
+			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
+			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
+		}
+	}
+	@Override
+	public synchronized void removeInstructions(Token token) {
+		if (token != null) {
+			instructionMap.remove(token);
+		} else {
+			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
+			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
+		}
+	}
 	@Override
 	public synchronized boolean getIfProxyable() {
 		return this.proxyable;
@@ -462,6 +486,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	public synchronized void removeToken(Token token) {
 		tokenMap.remove(token);
 		instructionMap.remove(token); //maybe
+		forwardedWithoutProtection.remove(token); // might not work, curse Bytes
 	}
 
 	/**

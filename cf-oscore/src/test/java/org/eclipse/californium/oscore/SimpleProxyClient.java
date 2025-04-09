@@ -74,11 +74,11 @@ public class SimpleProxyClient {
 		OSCoreCoapStackFactory.useAsDefault(db);
 		
 		//Scenario 3 cases
-		//sendVanilla();
+		sendVanilla();
 		
 		sendWithProxyScheme();
 		
-		//sendWithProxyURI();
+		sendWithProxyURI();
 	}
 	private static void sendWithProxyURI() throws ConnectorException, IOException {
 		byte[] oscoreopt = CBORObject.FromObject(new byte[0]).EncodeToBytes();
@@ -119,6 +119,7 @@ public class SimpleProxyClient {
 		request.setDestinationContext(proxy);
 		request.setProxyUri(uriServer + uriServerPath);
 		request.getOptions().setOscore(new byte[0]);
+		
 		
 		CoapResponse resp = client.advanced(request);
 		printResponse(resp);

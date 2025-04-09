@@ -31,6 +31,18 @@ public interface OSCoreCtxDB {
 	
 	/**
 	 * 
+	 * @param token 
+	 * @param instructions
+	 */
+	public void updateInstructions(Token token, CBORObject[] instructions);
+
+	/**
+	 * 
+	 * @param token
+	 */
+	public void removeInstructions(Token token);
+	/**
+	 * 
 	 * @return the value of the proxyable flag
 	 */
 	public boolean getIfProxyable();

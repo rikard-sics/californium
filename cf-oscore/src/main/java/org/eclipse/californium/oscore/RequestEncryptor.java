@@ -60,76 +60,41 @@ public class RequestEncryptor extends Encryptor {
 		byte[] oldOscoreOption = request.getOptions().getOscore(); // can be null
 		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(oldOscoreOption);
 		
-		boolean instructionsExists = Objects.nonNull(instructions);
-		
 		System.out.println("in request encryptor");
 		OSCoreCtx ctx = db.getContext(request, true);
 
+		OptionSet options = request.getOptions();
+		
 		// what do when src endpoint is aware we are a reverse proxy?
+		boolean instructionsExists = Objects.nonNull(instructions);
 		if (instructionsExists && (int) instructions[1].ToObject(int.class) != 2) {
 			System.out.println("adding from instructions");
 			System.out.println(Hex.encodeHexString(oldOscoreOption));
-			System.out.println(Hex.encodeHexString(request.getOptions().getOscore()));
+			System.out.println(Hex.encodeHexString(options.getOscore()));
 			System.out.println(Hex.encodeHexString(instructions[0].ToObject(byte[].class)));
-			
-			request.getOptions().setOscore(instructions[0].ToObject(byte[].class));
+
+			options.setOscore(instructions[0].ToObject(byte[].class));
 		}
 		else if (db.getIfProxyable() && oldOscoreOption != null) {
 			System.out.println(Hex.encodeHexString(oldOscoreOption));
-			System.out.println(Hex.encodeHexString(request.getOptions().getOscore()));
+			System.out.println(Hex.encodeHexString(options.getOscore()));
 			System.out.println("adding from is proxy old option");
-			request.getOptions().setOscore(oldOscoreOption);
+			options.setOscore(oldOscoreOption);
 		}
 		else {
-			System.out.println(Hex.encodeHexString(oldOscoreOption));
-			if (request.getOptions().getOscore() != null) {
-				System.out.println(Hex.encodeHexString(request.getOptions().getOscore()));
+			if (oldOscoreOption != null) {
+				System.out.println(Hex.encodeHexString(oldOscoreOption));
+			}
+			if (options.getOscore() != null) {
+				System.out.println(Hex.encodeHexString(options.getOscore()));
 			}
 			System.out.println("removing");
-			request.getOptions().removeOscore();
+			options.removeOscore();
 		}
 		
-		System.out.println("request options are: " + request.getOptions());
+		System.out.println("request options are: " + options);
 		System.out.println("source context is: " + request.getSourceContext());
 
-/*
-		
-		if (srcCtx != null && srcCtx.entries().get(OSCoreEndpointContextInfo.FORWARD_PROXY_FLAG) != null ) {
-			if (instructionsExists) { 
-				System.out.println("instructions exist");
-				if ((int) instructions[1].ToObject(int.class) != 2) {
-					// set inner oscore option
-					request.getOptions().setOscore(instructions[0].ToObject(byte[].class));
-				}
-				else {
-					// do nothing and keep the old value
-				}
-				// this should be extended if proxy and wants to encrypt more, so it includes initial messages outermost
-				// oscore option as the inner oscore option initially 
-			}
-		}
-		
-		
-		else {
-			*/
-			/*
-			try {// should have another check to see if proxy 
-				// because a client who only encrypts once without instructions  
-				// but includes a valid oscore option as the oscore option 
-				// will set it to be included as inner although it shouldn't
-				// perhaps another parameter? 
-				
-				//check if valid oscore option exists in options already
-				OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(options.getOscore());
-				System.out.println("Valid oscore option");
-				System.out.println(Hex.encodeHexString(options.getOscore()));
-				result[1].setOscore(options.getOscore());
-			}
-			catch (Exception e) {
-				System.out.println("Invalid oscore option");
-			}*/
-		//}
-		
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CTX_NULL);
 			throw new OSException(ErrorDescriptions.CTX_NULL);
@@ -146,10 +111,8 @@ public class RequestEncryptor extends Encryptor {
 		int realCode = request.getCode().value;
 		request = OptionJuggle.setFakeCodeRequest(request);
 
-		OptionSet options = request.getOptions();
-
-		//remove from options, since it is handled either through instructions or compression
-		options.removeObserve();
+		// remove from options, since it is handled either through instructions or compression
+		//options.removeObserve();
 				
 		//prepare options here, both E and U
 		OptionSet[] optionsUAndE = OptionJuggle.prepareUandEOptions(options, instructions);

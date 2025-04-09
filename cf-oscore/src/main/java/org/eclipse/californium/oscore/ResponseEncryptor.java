@@ -24,6 +24,8 @@ import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
+import java.util.Objects;
+
 import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Response;
@@ -61,11 +63,10 @@ public class ResponseEncryptor extends Encryptor {
 	 * @throws OSException when encryption fails
 	 */
 	public static Response encrypt(OSCoreCtxDB db, Response response, OSCoreCtx ctx, boolean newPartialIV,
-			boolean outerBlockwise, int requestSequenceNr) throws OSException {
+			boolean outerBlockwise, int requestSequenceNr, CBORObject[] instructions) throws OSException {
 
-		byte[] encodedInstructions = response.getOptions().getOscore(); // can be null
-		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(encodedInstructions);
-
+		byte[] oldOscoreOption = response.getOptions().getOscore(); // can be null
+		
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CTX_NULL);
 			throw new OSException(ErrorDescriptions.CTX_NULL);
@@ -97,35 +98,34 @@ public class ResponseEncryptor extends Encryptor {
 			block1Option = options.getBlock1();
 			options.removeBlock1();
 		}
-		
-		if (encodedInstructions != null) {
-			System.out.println("encoded instructions are: " + Hex.encodeHexString(encodedInstructions));
-			if (instructions != null) {
-				System.out.println("there are cbor instructions");
-				// use them (might need to add signal for encryption unless it is expected that the application does that)
-			}
-			else {
-				System.out.println("there are no cbor instructions, add our own to trick optionjuggler");
-				// create cbor instructions to signal that it should encode oscore layer
-				CBORObject[] CBORSequence = new CBORObject[2];
-				CBORSequence[0] = CBORObject.FromObject(options.getOscore());
-				CBORSequence[1] = CBORObject.FromObject(0); //just has to be not 2 (i think)
-				
-				instructions = CBORSequence;
-				/*
-				 if (instructionsExists) { 
-					if ((int) instructions[1].ToObject(int.class) != 2) {
-						// create oscore option
-						result[1].setOscore(instructions[0].ToObject(byte[].class));
-						//options.removeOscore();
-					}
-				}
-				 */
-			}
+
+		// what do when src endpoint is aware we are a reverse proxy?
+		boolean instructionsExists = Objects.nonNull(instructions);
+		if (instructionsExists && (int) instructions[1].ToObject(int.class) != 2) {
+			System.out.println("adding from instructions");
+			System.out.println(Hex.encodeHexString(oldOscoreOption));
+			System.out.println(Hex.encodeHexString(options.getOscore()));
+			System.out.println(Hex.encodeHexString(instructions[0].ToObject(byte[].class)));
+
+			options.setOscore(instructions[0].ToObject(byte[].class));
+		}
+		else if (db.getIfProxyable() && oldOscoreOption != null) {
+			System.out.println(Hex.encodeHexString(oldOscoreOption));
+			System.out.println(Hex.encodeHexString(options.getOscore()));
+			System.out.println("adding from is proxy old option");
+			options.setOscore(oldOscoreOption);
 		}
 		else {
-			System.out.println("encoded instructions was null");
+			if (oldOscoreOption != null) {
+				System.out.println(Hex.encodeHexString(oldOscoreOption));
+			}
+			if (options.getOscore() != null) {
+				System.out.println(Hex.encodeHexString(options.getOscore()));
+			}
+			System.out.println("removing");
+			options.removeOscore();
 		}
+
 		OptionSet[] optionsUAndE = OptionJuggle.prepareUandEOptions(options, instructions);
 		System.out.println("options to be encrypted: " + optionsUAndE[1]);
 		byte[] confidential = OSSerializer.serializeConfidentialData(optionsUAndE[1], response.getPayload(), realCode);

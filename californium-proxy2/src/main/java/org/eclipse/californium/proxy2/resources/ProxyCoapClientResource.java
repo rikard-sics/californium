@@ -80,7 +80,6 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 		System.out.println("The Client resource that is handling this request is: " + this.getName());
 		System.out.println("Using destination schemes: " + this.getDestinationSchemes());
 		System.out.println("Parent is: " + this.getParent());
-
 		Request incomingRequest = exchange.getRequest();
 		LOGGER.debug("ProxyCoapClientResource forwards {}", incomingRequest);
 		System.out.println("Recieved forwarding Request with " + incomingRequest.getToken());
