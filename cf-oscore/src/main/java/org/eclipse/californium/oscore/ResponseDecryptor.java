@@ -178,10 +178,12 @@ public class ResponseDecryptor extends Decryptor {
 		else {
 			System.out.println("Message does not have inner oscore without instructions");
 			System.out.println("Which is fine");
+			uOptions.setOscore(new byte[0]); // trick receive response into thinking we are done (should do in a better way)
 		}
 		
 		eOptions = OptionJuggle.merge(eOptions, uOptions);
 		
+		System.out.println("after decryptions, set " + eOptions + " as options on response");
 		response.setOptions(eOptions);
 
 		//Remove token after response is received, unless it has Observe

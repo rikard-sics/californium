@@ -205,14 +205,33 @@ public class OptionJuggle {
 		return ret;
 	}
 
+	//OptionNumberRegistry
+	public static boolean processClassEAndUOption(Option option, OptionSet[] result ) {
+		switch (option.getNumber()) {
+		case OptionNumberRegistry.OBSERVE:
+			result[1].addOption(option);
+			result[0].addOption(option);
+		case OptionNumberRegistry.MAX_AGE:
+		case OptionNumberRegistry.BLOCK2:
+		case OptionNumberRegistry.BLOCK1:
+		case OptionNumberRegistry.SIZE2:
+		case OptionNumberRegistry.SIZE1:
+		case OptionNumberRegistry.NO_RESPONSE:
+			return true;
+		default:
+			break;
+		}
+		return false;
+	}
+
 	public static OptionSet[] prepareUandEOptions(OptionSet options, CBORObject[] instructions) {
 		OptionSet[] result = {
 				new OptionSet(),
 				new OptionSet()
 		};
-		
+
 		System.out.println("Initial set of options for preparation are: " + options);
-		
+
 		if (options.hasProxyUri()) {
 			options = handleProxyUri(options.getProxyUri(), options);
 		}
@@ -223,14 +242,16 @@ public class OptionJuggle {
 			result[1].setOscore(options.getOscore());
 			options.removeOscore();
 		}
-		
+
 
 		for (Option o : options.asSortedList()) {
-			if (processOptionAsE(o, options, instructions)) {
-				result[1].addOption(o);
-			}
-			else {
-				result[0].addOption(o);
+			if (!processClassEAndUOption(o, result)) {
+				if (processOptionAsE(o, options, instructions)) {
+					result[1].addOption(o);
+				}
+				else {
+					result[0].addOption(o);
+				}
 			}
 		}
 		System.out.println("U Options are --> " + result[0]);
@@ -472,8 +493,6 @@ public class OptionJuggle {
 	private static boolean processNeedBeforeDecryption(Option option, OptionSet options) {
 
 		switch (option.getNumber()) {
-		case OptionNumberRegistry.OSCORE:
-			return false;
 		default:
 			return processIsOptionURIHostOrURIPort(option, options);
 		}
