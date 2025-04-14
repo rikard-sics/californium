@@ -136,9 +136,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	 * 
 	 * @throws OSException error while decrypting response
 	 */
-	public static Response prepareReceive(OSCoreCtxDB ctxDb, Response response, int requestSequenceNr)
+	public static Response prepareReceive(OSCoreCtxDB ctxDb, Response response, int requestSequenceNr, OSCoreCtx ctx)
 			throws OSException {
-		return ResponseDecryptor.decrypt(ctxDb, response, requestSequenceNr);
+		return ResponseDecryptor.decrypt(ctxDb, response, requestSequenceNr, ctx);
 	}
 
 
@@ -349,7 +349,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		/* If the request contained the Observe option always add a partial IV to the response.
 		 * A partial IV will also be added if the responsesIncludePartialIV flag is set in the context. */
 		boolean addPartialIV;
-
+		
 		/*
 		 * If the original request used outer block-wise options so should the
 		 * response. (They are not encrypted but external unprotected options.)
@@ -404,13 +404,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					System.out.println(instructionsRemaining);
 					instructionsRemaining = (int) instructions[1].ToObject(int.class) >= 2;
 					System.out.println(instructionsRemaining);
-
-					
-					
-					//gotta update the ctxDb with new index value
-					
-					
-					// if not last , we encrypt, then send back
 				}
 				else {
 					// Parse the OSCORE option from the corresponding request using the cryptographic context
@@ -441,7 +434,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				
 				if (instructionsRemaining) {
 					System.out.println("calling again");
-					ctxDb.updateInstructions(token, instructions);
 					sendResponse(exchange, response);
 					return;
 				}
@@ -675,11 +667,13 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				// and remove from cryptographiccontextid
 				exchange.setCryptographicContextID(null);
+				
+				// and add to ctxDb
+				ctxDb.addInstructions(request.getToken(), instructions);
 			}
 			// else if already exists in ctxDb, retrieve from there
 			else if (cryptographicContextID == null && ctxDb.tokenExist(request.getToken())) {
 				instructions = ctxDb.getInstructions(request.getToken());
-				ctxDb.removeInstructions(request.getToken());
 			}
 			
 			if (instructions != null) {
@@ -699,8 +693,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				for (CBORObject obj : instructions) {
 					System.out.println(obj);
 				}
-				// add new instructions to ctxDb
-				ctxDb.addInstructions(request.getToken(), instructions);
+
 
 			}
 			else {
@@ -734,6 +727,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			LOGGER.error("No request tied to this response");
 			return;
 		}
+		
+		
 
 		try {
 			//Printing of status information.
@@ -777,21 +772,75 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			
 			//If response is protected with OSCORE parse it first with prepareReceive
 			if (isProtected(response)) {
-				int requestSequenceNumber = -1;
+				OSCoreCtx ctx = null;
+				int requestSequenceNumber;
+				int index = 0;
+				Token token = response.getToken();
+
+				if (token == null) {
+					LOGGER.error(ErrorDescriptions.TOKEN_NULL);
+					throw new OSException(ErrorDescriptions.TOKEN_NULL);		
+				}
+				
 				byte[] cryptographicContextID = exchange.getCryptographicContextID();
 
 				if (cryptographicContextID != null) {
 					OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
 					requestSequenceNumber = optionDecoder.getSequenceNumber();
 				}
+				else {
+					//get from instructions
+					CBORObject[] instructions = ctxDb.getInstructions(token);
+					
+					// get index for current instruction
+					index = instructions[1].ToObject(int.class);
 
-				response = prepareReceive(ctxDb, response, requestSequenceNumber);
+					// get instruction
+					CBORObject instruction = instructions[index];
 
-				if (!(Hex.encodeHexString(response.getOptions().getOscore()).equals(""))) {
+					for (CBORObject obj : instructions) {
+						System.out.println(obj);
+					}
+					
+					byte[] RID       = instruction.get(3).ToObject(byte[].class);
+					byte[] IDCONTEXT = instruction.get(5).ToObject(byte[].class);
+
+					ctx = ctxDb.getContext(RID, IDCONTEXT);
+
+					requestSequenceNumber = instruction.get(6).ToObject(int.class);
+
+					instructions[1] = CBORObject.FromObject(--index);
+				}
+
+				// need to handle the case where any oscore layer is missing
+				response = prepareReceive(ctxDb, response, requestSequenceNumber, ctx);
+
+
+				// if we are proxy, continue decrypting until instructions say stop 
+				if (ctxDb.getIfProxyable() && response.getOptions().hasOscore()) {
+					if (index >= 2) {
+						System.out.println("calling again in receive response");
+						receiveResponse(exchange, response);
+						return;
+					}
+				}
+				// if we are client, continue decrypting until all layers are stripped
+				else if (response.getOptions().hasOscore()) {
+					System.out.println("calling again in receive response");
 					receiveResponse(exchange, response);
 					return;
 				}
-
+				
+				
+				// check index if we have more to decrypt
+				//if (cryptographicContextID == null && index >= 2) {
+				//	System.out.println("calling again in receive response");
+				//	receiveResponse(exchange, response);
+				//	return;
+				//}
+				
+				// does this need an oscore option for other layers above?
+				// could add, if we save it after isProtected
 			}
 		} catch (OSException e) {
 			LOGGER.error("Error while receiving OSCore response: {}", e.getMessage());
@@ -802,11 +851,18 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			return;
 		}
 
-		// Remove token if this is an incoming response to an Observe
-		// cancellation request
-		if (exchange.getRequest().isObserveCancel()) {
+		
+		//Remove token after response is received, unless it has Observe
+		//If it has Observe it will be removed after cancellation elsewhere
+		if (response.getOptions().hasObserve() == false
+				|| exchange.getRequest().isObserveCancel()) {
 			ctxDb.removeToken(response.getToken());
 		}
+		// Remove token if this is an incoming response to an Observe
+		// cancellation request
+		//if (exchange.getRequest().isObserveCancel()) {
+		//	ctxDb.removeToken(response.getToken());
+		//}
 
 		super.receiveResponse(exchange, response);
 	}
@@ -862,11 +918,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		}
 		System.out.println(exchange.getCryptographicContextID() != null );
 		System.out.println(ctxDb.getInstructions(response.getToken()) != null);
-		System.out.println( OptionEncoder.decodeCBORSequence(response.getOptions().getOscore()) != null);
+		//System.out.println( OptionEncoder.decodeCBORSequence(response.getOptions().getOscore()) != null);
 		System.out.println(ctxDb.hasBeenForwarded(response.getToken()));
 		return exchange.getCryptographicContextID() != null 
 				|| ctxDb.getInstructions(response.getToken()) != null
-				|| OptionEncoder.decodeCBORSequence(response.getOptions().getOscore()) != null
+			//	|| OptionEncoder.decodeCBORSequence(response.getOptions().getOscore()) != null
 				|| ctxDb.hasBeenForwarded(response.getToken());
 	}
 

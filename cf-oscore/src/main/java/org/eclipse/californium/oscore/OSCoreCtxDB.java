@@ -34,7 +34,7 @@ public interface OSCoreCtxDB {
 	 * @param token 
 	 * @param instructions
 	 */
-	public void updateInstructions(Token token, CBORObject[] instructions);
+	//public void updateInstructions(Token token, CBORObject[] instructions);
 
 	/**
 	 * 

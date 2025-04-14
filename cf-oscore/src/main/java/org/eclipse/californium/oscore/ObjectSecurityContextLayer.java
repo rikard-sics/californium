@@ -266,7 +266,7 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 					int requestSequenceNumber = optionDecoder.getSequenceNumber();
 					
 					response = ObjectSecurityLayer.prepareReceive(ctxDb, response,
-							requestSequenceNumber);
+							requestSequenceNumber, null);
 				}
 			} catch (OSException e) {
 				LOGGER.error("Error while receiving OSCore response: {}", e.getMessage());

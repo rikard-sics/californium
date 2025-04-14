@@ -95,7 +95,7 @@ public class OSCoreTest {
 			ObjectSecurityLayer.prepareReceive(dbServer, request, serverCtx);
 			Response response = sendResponse("it is thursday, citizen", serverCtx, token);
 			dbServerToClient(token, seq);
-			ObjectSecurityLayer.prepareReceive(dbClient, response, seq);
+			ObjectSecurityLayer.prepareReceive(dbClient, response, seq, null);
 		} catch (OSException e) {
 			e.printStackTrace();
 		}
@@ -340,7 +340,7 @@ public class OSCoreTest {
 
 			dbServerToClient(tokReq1, sentSeq);
 
-			ObjectSecurityLayer.prepareReceive(dbClient, response1, sentSeq);
+			ObjectSecurityLayer.prepareReceive(dbClient, response1, sentSeq, null);
 			assertTrue("seq no:s incorrect", assertCtxState(clientCtx, 2, 0));
 
 		} catch (OSException e) {
@@ -441,8 +441,8 @@ public class OSCoreTest {
 		try {
 			dbClient.addContext(t1, clientCtx);
 			dbClient.getContext("coap://localhost:5683").setSenderSeq(0);
-			ObjectSecurityLayer.prepareReceive(dbClient, response1, 0);
-			ObjectSecurityLayer.prepareReceive(dbClient, response2, 0);
+			ObjectSecurityLayer.prepareReceive(dbClient, response1, 0, null);
+			ObjectSecurityLayer.prepareReceive(dbClient, response2, 0, null);
 			fail("invalid token not detected!");
 		} catch (OSException e) {
 			assertEquals(ErrorDescriptions.TOKEN_INVALID, e.getMessage());

@@ -56,23 +56,47 @@ public class ResponseDecryptor extends Decryptor {
 	 * @param response the response
 	 * @param requestSequenceNr sequence number (Partial IV) from the request
 	 *            (if encrypting a response)
+	 * @param ctx the context from instructions, if any
 	 * 
 	 * @return the decrypted response
 	 * 
 	 * @throws OSException when decryption fails
 	 * 
 	 */
-	public static Response decrypt(OSCoreCtxDB db, Response response, int requestSequenceNr) throws OSException {
-		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(response.getOptions().getOscore());
+	public static Response decrypt(OSCoreCtxDB db, Response response, int requestSequenceNr, OSCoreCtx ctx) throws OSException {
+		//CBORObject[] instructions = OptionEncoder.decodeCBORSequence(response.getOptions().getOscore());
 		discardEOptions(response);
 
 		byte[] protectedData = response.getPayload();
 		Encrypt0Message enc = null;
 		Token token = response.getToken();
-		OSCoreCtx ctx = null;
+		boolean receivedWithInstructions = false;
 		OptionSet uOptions = response.getOptions();
-		int index = 0;
 
+		if (token == null) {
+			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
+			throw new OSException(ErrorDescriptions.TOKEN_NULL);		
+		}
+		
+		if (ctx == null) {
+			// ctx was not retrieved via instructions, try to retrieve by Token
+			ctx = db.getContextByToken(token);
+		}
+		else {
+			// ctx was retrieved via instructions
+			receivedWithInstructions = true;
+		}
+		
+		if (ctx != null) {
+			enc = decompression(protectedData, response);
+
+		}
+		else {
+			LOGGER.error(ErrorDescriptions.TOKEN_INVALID);
+			throw new OSException(ErrorDescriptions.TOKEN_INVALID);
+		}
+		
+		/*		
 		if (token != null) {
 			// if request sequence nr is -1, it means it should be with instructions
 			if (requestSequenceNr != -1) {
@@ -121,7 +145,7 @@ public class ResponseDecryptor extends Decryptor {
 		} else {
 			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
 			throw new OSException(ErrorDescriptions.TOKEN_NULL);
-		}
+		}*/
 
 		// Retrieve Context ID (kid context)
 		CBORObject kidContext = enc.findAttribute(CBORObject.FromObject(10));
@@ -160,25 +184,28 @@ public class ResponseDecryptor extends Decryptor {
 
 		OptionSet eOptions = response.getOptions();
 		
-		if (eOptions.hasOscore() && (index > 1)) {
+		if (eOptions.hasOscore() && receivedWithInstructions) {
 			// The message contains an inner OSCore option and it should
 			System.out.println("Message has inner oscore and it should");
 		}
-		else if (!(eOptions.hasOscore()) && (index > 1)) {
+		else if (!(eOptions.hasOscore()) && receivedWithInstructions) {
 			// Message does not contain inner OSCore option but it should
 			System.out.println("message does not contain inner oscore but it should");
-			// check if is error message?
-			index = 0;
-			uOptions.setOscore(new byte[0]);
+			//remove outer oscore option to stop decrypting more
+			uOptions.removeOscore();
+			
 		}
-		else if (eOptions.hasOscore() && (index == 0)) {
+		else if (eOptions.hasOscore() && !receivedWithInstructions) {
 			// Message has inner oscore without instructions
 			System.out.println("Message has inner oscore without instructions");
+			System.out.println("fine if we are proxy who forwards?"); // or reverse where client knows the server we stand in for
+			System.out.println("maybe do throw error?");
 		}
 		else {
 			System.out.println("Message does not have inner oscore without instructions");
 			System.out.println("Which is fine");
-			uOptions.setOscore(new byte[0]); // trick receive response into thinking we are done (should do in a better way)
+			//remove outer oscore option to stop decrypting more
+			uOptions.removeOscore();
 		}
 		
 		eOptions = OptionJuggle.merge(eOptions, uOptions);
@@ -186,18 +213,8 @@ public class ResponseDecryptor extends Decryptor {
 		System.out.println("after decryptions, set " + eOptions + " as options on response");
 		response.setOptions(eOptions);
 
-		//Remove token after response is received, unless it has Observe
-		//If it has Observe it will be removed after cancellation elsewhere
-		if (response.getOptions().hasObserve() == false) {
-			db.removeToken(token);
-		}
-
 		//Set information about the OSCORE context used in the endpoint context of this response
 		OSCoreEndpointContextInfo.receivingResponse(ctx, response);
-
-		if (index > 1) {
-			response.getOptions().setOscore(OptionEncoder.encodeSequence(instructions));
-		}
 
 		return response;
 	}

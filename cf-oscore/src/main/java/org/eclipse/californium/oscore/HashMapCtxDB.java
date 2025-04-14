@@ -96,7 +96,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		this.proxyable = proxyable;
 	}
 
-	@Override
+	/*@Override
 	public synchronized void updateInstructions(Token token, CBORObject[] instructions) {
 		if (token != null) {
 			if (instructions != null) {
@@ -110,7 +110,8 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
 			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
 		}
-	}
+	}*/
+	
 	@Override
 	public synchronized void removeInstructions(Token token) {
 		if (token != null) {
@@ -156,10 +157,23 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	@Override
 	public synchronized void addInstructions(Token token, CBORObject[] instructions) {
 		if (token != null) {
-			if (!tokenExist(token)) {
-				allTokens.add(token);
+			if (instructions != null) {
+				if (instructionMap.containsKey(token)) {
+					System.out.println("double adding instructions to db");
+					System.out.println("hmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm");
+				}
+				if (!tokenExist(token)) {
+					allTokens.add(token);
+				}
+				instructionMap.put(token, instructions);
 			}
-			instructionMap.put(token, instructions);	
+			else {
+				LOGGER.error("Instruction is null");
+				throw new NullPointerException("Instruction is null");
+			}
+		} else {
+			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
+			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
 		}
 	}
 
