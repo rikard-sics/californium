@@ -111,8 +111,9 @@ public class RequestEncryptor extends Encryptor {
 		int realCode = request.getCode().value;
 		request = OptionJuggle.setFakeCodeRequest(request);
 
-		// remove from options, since it is handled either through instructions or compression
-		//options.removeObserve();
+
+		OptionSet EOptions = OptionJuggle.filterOptions(options);
+		System.out.println("E OPTIONS ARE: " EOptions);
 				
 		//prepare options here, both E and U
 		OptionSet[] optionsUAndE = OptionJuggle.prepareUandEOptions(options, instructions);

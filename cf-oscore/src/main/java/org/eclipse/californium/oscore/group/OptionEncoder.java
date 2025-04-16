@@ -169,6 +169,20 @@ public class OptionEncoder {
 	}
 	
 	/**
+	 * 
+	 */
+	public static void createPreAndPostEncryptionSet() {
+		// this is to be appended to the header (for each instruction)
+		
+		// create two arrays or maps to contain pre-and post-encryption set
+		
+		// loop through list of options filling pre-encryption set with option number + answers to promotion questions
+		// outer only options
+		
+		// post-encryption set contains option number and value to add to outer after layer has encrypted
+	}
+	
+	/**
 	 * Decodes and returns a CBOR sequence from a provided byte array
 	 * @param sequenceBytes the byte array containing a CBOR sequence 
 	 * @return the CBOR sequence, or null if the byte array is null or it is an invalid CBOR sequence

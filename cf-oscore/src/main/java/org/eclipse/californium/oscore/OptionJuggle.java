@@ -148,6 +148,15 @@ public class OptionJuggle {
 		}
 		else return false;
 	}
+	
+	public static OptionSet filterOptions(OptionSet options) {
+		for (Option o : options.asSortedList()) {
+			case: 
+		}
+		
+		return options;
+	}
+	
 	/**
 	 * Prepare a set or original CoAP options for unprotected use with OSCore.
 	 * 
@@ -236,8 +245,11 @@ public class OptionJuggle {
 			options = handleProxyUri(options.getProxyUri(), options);
 		}
 
-		System.out.println("hello from prepareUandE");
-		System.out.println("options.hasOscore(): " + options.hasOscore());
+		//System.out.println("hello from prepareUandE");
+		//System.out.println("options.hasOscore(): " + options.hasOscore());
+		
+		// an oscore option in the juggler is meant to be an inner oscore option
+		// the outer oscore option is handled during the compression of the COSE object
 		if (options.hasOscore()) {
 			result[1].setOscore(options.getOscore());
 			options.removeOscore();
@@ -245,6 +257,8 @@ public class OptionJuggle {
 
 
 		for (Option o : options.asSortedList()) {
+			// Options that are both class U and E options need special handling, 
+			// if the option is not a special option, handle "normally"
 			if (!processClassEAndUOption(o, result)) {
 				if (processOptionAsE(o, options, instructions)) {
 					result[1].addOption(o);

@@ -63,28 +63,43 @@ public class ResponseDecryptor extends Decryptor {
 	 * @throws OSException when decryption fails
 	 * 
 	 */
-	public static Response decrypt(OSCoreCtxDB db, Response response, int requestSequenceNr, OSCoreCtx ctx) throws OSException {
-		//CBORObject[] instructions = OptionEncoder.decodeCBORSequence(response.getOptions().getOscore());
+	public static Response decrypt(OSCoreCtxDB db, Response response, int requestSequenceNr, CBORObject[] instructions) throws OSException {
 		discardEOptions(response);
 
+		OSCoreCtx ctx;
 		byte[] protectedData = response.getPayload();
 		Encrypt0Message enc = null;
 		Token token = response.getToken();
-		boolean receivedWithInstructions = false;
+		boolean shouldHaveInnerOscoreOption = false;
 		OptionSet uOptions = response.getOptions();
+		int index = 0;
 
 		if (token == null) {
 			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
 			throw new OSException(ErrorDescriptions.TOKEN_NULL);		
 		}
 		
-		if (ctx == null) {
-			// ctx was not retrieved via instructions, try to retrieve by Token
-			ctx = db.getContextByToken(token);
+		if (Objects.nonNull(instructions)) {
+			index = instructions[1].ToObject(int.class);
+			
+			// get instruction
+			CBORObject instruction = instructions[index];
+
+			for (CBORObject obj : instructions) {
+				System.out.println(obj);
+			}
+			
+			byte[] RID       = instruction.get(3).ToObject(byte[].class);
+			byte[] IDCONTEXT = instruction.get(5).ToObject(byte[].class);
+
+			ctx = db.getContext(RID, IDCONTEXT);
+
+			if (index > 2) {
+				shouldHaveInnerOscoreOption = true;
+			}
 		}
 		else {
-			// ctx was retrieved via instructions
-			receivedWithInstructions = true;
+			ctx = db.getContextByToken(token);
 		}
 		
 		if (ctx != null) {
@@ -96,57 +111,6 @@ public class ResponseDecryptor extends Decryptor {
 			throw new OSException(ErrorDescriptions.TOKEN_INVALID);
 		}
 		
-		/*		
-		if (token != null) {
-			// if request sequence nr is -1, it means it should be with instructions
-			if (requestSequenceNr != -1) {
-				ctx = db.getContextByToken(token);
-			}
-			else {
-				// check response oscore option if it has instructions
-				if (instructions == null) {
-					// first time, get instructions from hashmap using token
-					instructions = db.getInstructions(token);
-				}
-				
-				if (instructions != null) {
-					// get index for current instruction
-					index = instructions[1].ToObject(int.class);
-
-					// get instruction
-					CBORObject instruction = instructions[index];
-
-					for (CBORObject obj : instructions) {
-						System.out.println(obj);
-					}
-					
-					byte[] RID       = instruction.get(3).ToObject(byte[].class);
-					byte[] IDCONTEXT = instruction.get(5).ToObject(byte[].class);
-
-					ctx = db.getContext(RID, IDCONTEXT);
-
-					requestSequenceNr = instruction.get(6).ToObject(int.class);
-
-					instructions[1] = CBORObject.FromObject(--index);
-					
-					// response.getOptions().setOscore(instructions[0].ToObject(byte[].class));
-					response.getOptions().setOscore(new byte[0]);
-					
-
-				}
-			}
-			
-			if (ctx == null) {
-				LOGGER.error(ErrorDescriptions.TOKEN_INVALID);
-				throw new OSException(ErrorDescriptions.TOKEN_INVALID);
-			}
-
-			enc = decompression(protectedData, response);
-		} else {
-			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
-			throw new OSException(ErrorDescriptions.TOKEN_NULL);
-		}*/
-
 		// Retrieve Context ID (kid context)
 		CBORObject kidContext = enc.findAttribute(CBORObject.FromObject(10));
 		byte[] contextID = null;
@@ -184,22 +148,28 @@ public class ResponseDecryptor extends Decryptor {
 
 		OptionSet eOptions = response.getOptions();
 		
-		if (eOptions.hasOscore() && receivedWithInstructions) {
+		if (eOptions.hasOscore() && shouldHaveInnerOscoreOption) {
 			// The message contains an inner OSCore option and it should
 			System.out.println("Message has inner oscore and it should");
 		}
-		else if (!(eOptions.hasOscore()) && receivedWithInstructions) {
+		else if (!(eOptions.hasOscore()) && shouldHaveInnerOscoreOption) {
 			// Message does not contain inner OSCore option but it should
 			System.out.println("message does not contain inner oscore but it should");
 			//remove outer oscore option to stop decrypting more
 			uOptions.removeOscore();
 			
 		}
-		else if (eOptions.hasOscore() && !receivedWithInstructions) {
+		else if (eOptions.hasOscore() && !shouldHaveInnerOscoreOption) {
 			// Message has inner oscore without instructions
 			System.out.println("Message has inner oscore without instructions");
-			System.out.println("fine if we are proxy who forwards?"); // or reverse where client knows the server we stand in for
-			System.out.println("maybe do throw error?");
+			
+			if (db.getIfProxyable()) {
+				System.out.println("fine if we are proxy who forwards?"); // or reverse where client knows the server we stand in for			
+			}
+			else {
+				LOGGER.warn("Maybe do throw error?");
+				//System.out.println("WARNING maybe do throw error?");
+			}
 		}
 		else {
 			System.out.println("Message does not have inner oscore without instructions");

@@ -109,7 +109,7 @@ public class ResponseEncryptor extends Encryptor {
 
 			options.setOscore(instructions[0].ToObject(byte[].class));
 		}
-		else if (db.getIfProxyable() && oldOscoreOption != null) {
+		else if (db != null && db.getIfProxyable() && oldOscoreOption != null) {
 			System.out.println(Hex.encodeHexString(oldOscoreOption));
 			System.out.println(Hex.encodeHexString(options.getOscore()));
 			System.out.println("adding from is proxy old option");
@@ -128,11 +128,16 @@ public class ResponseEncryptor extends Encryptor {
 
 		OptionSet[] optionsUAndE = OptionJuggle.prepareUandEOptions(options, instructions);
 		System.out.println("options to be encrypted: " + optionsUAndE[1]);
+		System.out.println("raw payload size is: " + response.getPayload().length);
+		System.out.println("code is size: 1");
 		byte[] confidential = OSSerializer.serializeConfidentialData(optionsUAndE[1], response.getPayload(), realCode);
-
+		System.out.println("Confidential data is size: " + confidential.length);
+		
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
 		byte[] cipherText = encryptAndEncode(enc, ctx, response, newPartialIV, requestSequenceNr);
 
+		System.out.println("ciphertext should be " + (confidential.length + (ctx.getAlg().getTagSize() / Byte.SIZE)));
+		System.out.println("ciphertext is size: " + cipherText.length);
 		compression(ctx, cipherText, response, newPartialIV);
 
 

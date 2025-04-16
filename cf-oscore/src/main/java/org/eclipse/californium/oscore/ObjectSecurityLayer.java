@@ -136,9 +136,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	 * 
 	 * @throws OSException error while decrypting response
 	 */
-	public static Response prepareReceive(OSCoreCtxDB ctxDb, Response response, int requestSequenceNr, OSCoreCtx ctx)
+	public static Response prepareReceive(OSCoreCtxDB ctxDb, Response response, int requestSequenceNr, CBORObject[] instructions)
 			throws OSException {
-		return ResponseDecryptor.decrypt(ctxDb, response, requestSequenceNr, ctx);
+		return ResponseDecryptor.decrypt(ctxDb, response, requestSequenceNr, instructions);
 	}
 
 
@@ -772,7 +772,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			
 			//If response is protected with OSCORE parse it first with prepareReceive
 			if (isProtected(response)) {
-				OSCoreCtx ctx = null;
+				byte[] OSCoreOption = response.getOptions().getOscore();
 				int requestSequenceNumber;
 				int index = 0;
 				Token token = response.getToken();
@@ -783,37 +783,33 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				}
 				
 				byte[] cryptographicContextID = exchange.getCryptographicContextID();
-
+				CBORObject[] instructions = null;
+				
 				if (cryptographicContextID != null) {
 					OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
 					requestSequenceNumber = optionDecoder.getSequenceNumber();
 				}
 				else {
-					//get from instructions
-					CBORObject[] instructions = ctxDb.getInstructions(token);
-					
-					// get index for current instruction
-					index = instructions[1].ToObject(int.class);
+					instructions = ctxDb.getInstructions(token);
 
-					// get instruction
-					CBORObject instruction = instructions[index];
-
-					for (CBORObject obj : instructions) {
-						System.out.println(obj);
+					if (Objects.isNull(instructions)) {
+						LOGGER.error(ErrorDescriptions.TOKEN_INVALID);
+						throw new OSException(ErrorDescriptions.TOKEN_INVALID);
 					}
 					
-					byte[] RID       = instruction.get(3).ToObject(byte[].class);
-					byte[] IDCONTEXT = instruction.get(5).ToObject(byte[].class);
+					index = instructions[1].ToObject(int.class);
 
-					ctx = ctxDb.getContext(RID, IDCONTEXT);
+					CBORObject instruction = instructions[index];
 
 					requestSequenceNumber = instruction.get(6).ToObject(int.class);
-
-					instructions[1] = CBORObject.FromObject(--index);
 				}
 
 				// need to handle the case where any oscore layer is missing
-				response = prepareReceive(ctxDb, response, requestSequenceNumber, ctx);
+				response = prepareReceive(ctxDb, response, requestSequenceNumber, instructions);
+				
+				if (Objects.nonNull(instructions)) {
+					instructions[1] = CBORObject.FromObject(--index);
+				}
 
 
 				// if we are proxy, continue decrypting until instructions say stop 
@@ -841,6 +837,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				
 				// does this need an oscore option for other layers above?
 				// could add, if we save it after isProtected
+				response.getOptions().setOscore(OSCoreOption);
 			}
 		} catch (OSException e) {
 			LOGGER.error("Error while receiving OSCore response: {}", e.getMessage());

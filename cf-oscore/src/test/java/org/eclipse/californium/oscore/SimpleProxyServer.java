@@ -79,6 +79,7 @@ public class SimpleProxyServer {
 				System.out.println("Accessing hello resource");
 				Response r = new Response(ResponseCode.CONTENT);
 				r.setPayload("Hello Resource");
+				//r.getOptions().setMaxAge(4);
 				exchange.respond(r);
 			}
 		};
@@ -99,6 +100,7 @@ public class SimpleProxyServer {
 						System.out.println(obj);
 					}
 				}
+				//r.getOptions().setMaxAge(4);
 				exchange.respond(r);
 				counter.incrementAndGet();
 				/*if (counter.get() == 2) {

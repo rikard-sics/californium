@@ -158,6 +158,18 @@ public class SimpleProxyClient {
 			instructions = Bytes.concatenate(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));
 		}
 		
+		
+		
+		//-----------------------------------------------------
+	/*	byte[] oscoreopt = CBORObject.FromObject(new byte[0]).EncodeToBytes();
+		byte[] index = CBORObject.FromObject(2).EncodeToBytes();
+		
+		byte[] instructions = Bytes.concatenate(oscoreopt, index);
+		
+		for (int i = 0; i < rids.length; i++) {
+			instructions = Bytes.concatenate(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));
+		}*/
+		
 		CoapEndpoint.Builder builder = CoapEndpoint.builder();
 		//.setConfiguration(outgoingConfig);
 		builder.setCoapStackFactory(new OSCoreCoapStackFactory());//
