@@ -151,7 +151,7 @@ public class OptionJuggle {
 	
 	public static OptionSet filterOptions(OptionSet options) {
 		for (Option o : options.asSortedList()) {
-			case: 
+		//	case: 
 		}
 		
 		return options;

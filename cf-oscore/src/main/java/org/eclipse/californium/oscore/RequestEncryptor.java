@@ -113,7 +113,7 @@ public class RequestEncryptor extends Encryptor {
 
 
 		OptionSet EOptions = OptionJuggle.filterOptions(options);
-		System.out.println("E OPTIONS ARE: " EOptions);
+		System.out.println("E OPTIONS ARE: " + EOptions);
 				
 		//prepare options here, both E and U
 		OptionSet[] optionsUAndE = OptionJuggle.prepareUandEOptions(options, instructions);
