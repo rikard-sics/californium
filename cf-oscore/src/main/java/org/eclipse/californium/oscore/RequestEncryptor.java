@@ -89,7 +89,7 @@ public class RequestEncryptor extends Encryptor {
 				System.out.println(Hex.encodeHexString(options.getOscore()));
 			}
 			System.out.println("removing");
-			options.removeOscore();
+			//options.removeOscore();
 		}
 		
 		System.out.println("request options are: " + options);
@@ -112,12 +112,18 @@ public class RequestEncryptor extends Encryptor {
 		request = OptionJuggle.setFakeCodeRequest(request);
 
 
-		OptionSet EOptions = OptionJuggle.filterOptions(options);
-		System.out.println("E OPTIONS ARE: " + EOptions);
+		OptionSet[] optionsUAndE = OptionJuggle.filterOptions(options);
+		System.out.println("U OPTIONS ARE: " + optionsUAndE[0]);
+		System.out.println("E OPTIONS ARE: " + optionsUAndE[1]);
+
+		if (instructionsExists /**/ || true) {
+			OptionSet promotedOptions = OptionJuggle.promotion(optionsUAndE[0], instructions);
+			System.out.println("U options:            " + optionsUAndE[0]);
+			System.out.println("Promoted options are: " + promotedOptions);
+			optionsUAndE[1] = OptionJuggle.merge(optionsUAndE[1], promotedOptions);	
+
+		}
 				
-		//prepare options here, both E and U
-		OptionSet[] optionsUAndE = OptionJuggle.prepareUandEOptions(options, instructions);
-		
 		System.out.println("Eoptions are length: " + optionsUAndE[1]);
 		if (optionsUAndE[1].hasOscore()) {
 			System.out.println("Oscore option is length: " + optionsUAndE[1].getOscore().length);

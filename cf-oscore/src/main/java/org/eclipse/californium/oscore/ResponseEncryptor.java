@@ -66,6 +66,7 @@ public class ResponseEncryptor extends Encryptor {
 			boolean outerBlockwise, int requestSequenceNr, CBORObject[] instructions) throws OSException {
 
 		byte[] oldOscoreOption = response.getOptions().getOscore(); // can be null
+		boolean instructionsExists = Objects.nonNull(instructions);
 		
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CTX_NULL);
@@ -99,6 +100,7 @@ public class ResponseEncryptor extends Encryptor {
 			options.removeBlock1();
 		}
 
+		/*
 		// what do when src endpoint is aware we are a reverse proxy?
 		boolean instructionsExists = Objects.nonNull(instructions);
 		if (instructionsExists && (int) instructions[1].ToObject(int.class) != 2) {
@@ -124,9 +126,17 @@ public class ResponseEncryptor extends Encryptor {
 			}
 			System.out.println("removing");
 			options.removeOscore();
-		}
+		}*/
 
-		OptionSet[] optionsUAndE = OptionJuggle.prepareUandEOptions(options, instructions);
+		OptionSet[] optionsUAndE = OptionJuggle.filterOptions(options);
+		System.out.println("U OPTIONS ARE: " + optionsUAndE[0]);
+		System.out.println("E OPTIONS ARE: " + optionsUAndE[1]);
+
+		if (instructionsExists /**/ || true) {
+			OptionSet promotedOptions = OptionJuggle.promotion(optionsUAndE[0], instructions);
+			optionsUAndE[1] = OptionJuggle.merge(optionsUAndE[1], promotedOptions);	
+
+		}
 		System.out.println("options to be encrypted: " + optionsUAndE[1]);
 		System.out.println("raw payload size is: " + response.getPayload().length);
 		System.out.println("code is size: 1");

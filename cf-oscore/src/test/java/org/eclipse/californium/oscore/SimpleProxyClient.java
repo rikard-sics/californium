@@ -60,9 +60,46 @@ public class SimpleProxyClient {
 			};
 	
 	private final static int[][] optionSets = {
-		{}, 
-		{OptionNumberRegistry.URI_HOST, OptionNumberRegistry.URI_PORT, OptionNumberRegistry.URI_PATH, OptionNumberRegistry.PROXY_SCHEME, OptionNumberRegistry.PROXY_URI}
+		{OptionNumberRegistry.OSCORE}, 
+		{OptionNumberRegistry.PROXY_URI}
 	};
+	//OSCORE OPTION
+	// we do not want the oscore option to be inner for first layer of encryption
+	private final static boolean[] OSCOREAnswer1 = {true, false, false, false, false}; //inner oscore option
+	
+	//PROXY-URI OPTION
+	//private final static boolean[] ProxyURIAnswer1 = {true, true, false, false, false};
+	private final static boolean[] ProxyURIAnswer2 = {true, true, true, true, false};
+	
+	private final static boolean[][][] answerSets = {
+			{OSCOREAnswer1},
+			{ProxyURIAnswer2}
+	};
+	
+	//0 did i add the option
+	//1 is x a consumer of the option
+	//2 is x the immediate consumer of the option
+	//3 is x my next hop OR is next hop not the immediate consumer of the option
+	//4 does x need option before decrypting, or in order to decrypt	
+	
+	//excluded options are not supposed to be promoted
+	
+	
+	
+	//URI-PORT OPTION
+//	private final static boolean[] URIPORTAnswer1 = {true, true, false, true, false};
+	private final static boolean[] URIPORTAnswer2 = {true, true, true, true, false};
+
+	//URI-HOST OPTION
+	//private final static boolean[] URIHostAnswer1 = URIPORTAnswer1;
+	private final static boolean[] URIHostAnswer2 = URIPORTAnswer2;
+	
+	
+
+	//PROXY-SCHEME OPTION
+	//private final static boolean[] ProxySchemeAnswer1 = ProxyURIAnswer1;
+	private final static boolean[] ProxySchemeAnswer2 = ProxyURIAnswer2;
+	
 	
 	public static void main(String[] args) throws OSException, ConnectorException, IOException {
 		OSCoreCtx ctxserver = new OSCoreCtx(master_secret, true, alg, sids[0], rids[0], kdf, 32, master_salt, idcontexts[0], MAX_UNFRAGMENTED_SIZE);
@@ -76,9 +113,9 @@ public class SimpleProxyClient {
 		//Scenario 3 cases
 		//sendVanilla();
 		
-		sendWithProxyScheme();
+		//sendWithProxyScheme();
 		
-		//sendWithProxyURI();
+		sendWithProxyURI();
 	}
 	private static void sendWithProxyURI() throws ConnectorException, IOException {
 		byte[] oscoreopt = CBORObject.FromObject(new byte[0]).EncodeToBytes();
@@ -87,7 +124,7 @@ public class SimpleProxyClient {
 		byte[] instructions = Bytes.concatenate(oscoreopt, index);
 		
 		for (int i = 0; i < rids.length; i++) {
-			instructions = Bytes.concatenate(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));
+			instructions = Bytes.concatenate(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i], answerSets[i]));
 		}
 		
 		CoapEndpoint.Builder builder = CoapEndpoint.builder();
@@ -121,11 +158,11 @@ public class SimpleProxyClient {
 		request.getOptions().setOscore(new byte[0]);
 		
 		
-		CoapResponse resp = client.advanced(request);
+		/*CoapResponse resp = client.advanced(request);
 		printResponse(resp);
-
+*/
 		//Request request;
-		//CoapResponse resp;
+		CoapResponse resp;
 
 		System.out.println();
 		System.out.println(" ----- ");
@@ -155,7 +192,7 @@ public class SimpleProxyClient {
 		byte[] instructions = Bytes.concatenate(oscoreopt, index);
 		
 		for (int i = 0; i < rids.length; i++) {
-			instructions = Bytes.concatenate(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));
+			//instructions = Bytes.concatenate(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));
 		}
 		
 		

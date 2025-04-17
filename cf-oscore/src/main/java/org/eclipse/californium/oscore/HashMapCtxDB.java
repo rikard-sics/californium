@@ -219,16 +219,16 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 			// Retrieve and set real OSCORE option value
 			byte[] OSCOREOptionValue = instructions[0].ToObject(byte[].class);
 			System.out.println("in overwrite: " + OSCOREOptionValue.length);
-			if (OSCOREOptionValue.length != 0) {
+			//if (OSCOREOptionValue.length != 0) {
 				System.out.println("setting oscore to previous value");
 				request.getOptions().setOscore(OSCOREOptionValue);
-			}
+			/*}
 			else {
 				System.out.println("removing oscore");
 				System.out.println(Hex.encodeHexString(OSCOREOptionValue));
 				System.out.println(Hex.encodeHexString(request.getOptions().getOscore()));
 				request.getOptions().removeOscore();
-			}
+			}*/
 		}
 		
 		

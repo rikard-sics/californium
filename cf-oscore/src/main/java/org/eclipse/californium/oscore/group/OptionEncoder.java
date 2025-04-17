@@ -75,61 +75,68 @@ public class OptionEncoder {
 	public static byte[] set(boolean pairwiseMode, String contextUri) {
 		return set(pairwiseMode, contextUri, null);
 	}
-	
+
 	/**
 	 * here be Javadoc
 	 * @param endpoints ordered array of endpoints
 	 */
 	public static byte[] set(byte[] rid, byte[] idcontext) {
-		
+
 		CBORObject option = CBORObject.NewMap();
 		//option.Add(2, contextUri);
 		option.Add(3, rid);
-		
+
 		option.Add(5, idcontext);
 
 		return option.EncodeToBytes();
 	}
-	
+
 	/**
 	 * here be Javadoc
 	 * @param endpoints ordered array of endpoints
 	 */
-	public static byte[] set(byte[] rid, byte[] idcontext, int[] options) {
-		
+	public static byte[] set(byte[] rid, byte[] idcontext, int[] options, boolean[][] answers) {
+
+		if (options.length != answers.length) {
+			throw new RuntimeException("Unequal amount of options: " + options.length + " and answers: " + answers.length);
+		}
 		CBORObject option = CBORObject.NewMap();
 		//option.Add(2, contextUri);
 		option.Add(3, rid);
-		
+
 		option.Add(5, idcontext);
-		
-		// calculate delta later as optimization
-		CBORObject optionsHolder = CBORObject.NewArray();
-		for (int opt : options) {
+
+		CBORObject optionsHolder = CBORObject.NewMap();
+		int index = 0;
+		for (int o : options) {
+			if (answers[index].length != 5) {
+				throw new RuntimeException("bad answer array, length should be 5");
+			}
+			optionsHolder.Add(o,answers[index]);
+			index++;
 			
-			optionsHolder.Add(opt);
 		}
+
+
 		option.Add(6, optionsHolder);
 		return option.EncodeToBytes();
 	}
-	
-	/**
-	 * here be Javadoc
-	 * @param endpoints ordered array of endpoints
-	 */
+
+
 	public static byte[] set(byte[] rid, byte[] idcontext, int requestSequenceNumber) {
-		
+
 		CBORObject option = CBORObject.NewMap();
 		//option.Add(2, contextUri);
 		option.Add(3, rid);
-		
+
 		option.Add(5, idcontext);
-		
-		
+
+
 		option.Add(6, requestSequenceNumber);
+
 		return option.EncodeToBytes();
 	}
-	
+
 
 	/**
 	 * Get the pairwise mode boolean value from the option.
@@ -167,23 +174,25 @@ public class OptionEncoder {
 		CBORObject option = CBORObject.DecodeFromBytes(optionBytes);
 		return option.get(3).GetByteString();
 	}
-	
+
 	/**
 	 * 
 	 */
 	public static void createPreAndPostEncryptionSet() {
 		// this is to be appended to the header (for each instruction)
-		
+
 		// create two arrays or maps to contain pre-and post-encryption set
-		
+
 		// loop through list of options filling pre-encryption set with option number + answers to promotion questions
 		// outer only options
-		
+
 		// post-encryption set contains option number and value to add to outer after layer has encrypted
 	}
-	
+
 	/**
 	 * Decodes and returns a CBOR sequence from a provided byte array
+	 * this function only ensures that the headers exist and the first instruction is a map
+	 * but not if all instructions are maps
 	 * @param sequenceBytes the byte array containing a CBOR sequence 
 	 * @return the CBOR sequence, or null if the byte array is null or it is an invalid CBOR sequence
 	 */
@@ -210,7 +219,30 @@ public class OptionEncoder {
 			return null;
 		}
 	}
-	
+
+	public static boolean[] extractPromotionAnswers(int optionNumber, CBORObject instruction) {
+
+		if (instruction == null) return null;
+
+		try {
+			//the instruction is a map
+			CBORObject preSet = instruction.get(6);
+
+			if (preSet == null) return null;
+
+			CBORObject booleanArray = preSet.get(optionNumber);
+
+			if (booleanArray == null) return null;
+			
+			return booleanArray.ToObject(boolean[].class);
+
+		} catch (Exception e) {
+			System.out.println(e.getLocalizedMessage());
+			// TODO: handle exception
+			return null;
+		}
+	}
+
 	/**
 	 * Encodes a CBOR sequence into a byte array
 	 * @param instructions CBOR sequence to be encoded
@@ -221,7 +253,7 @@ public class OptionEncoder {
 		for (CBORObject object : CBORSequence) {
 			result = Bytes.concatenate(result, object.EncodeToBytes());
 		}
-		
+
 		return result;
 	}
 }
