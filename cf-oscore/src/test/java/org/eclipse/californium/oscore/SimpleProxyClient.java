@@ -59,10 +59,15 @@ public class SimpleProxyClient {
 			new byte[] { 0x02 }
 			};
 	
-	private final static int[][] optionSets = {
+	private final static int[][] optionSetsURI = {
 		{OptionNumberRegistry.OSCORE}, 
 		{OptionNumberRegistry.PROXY_URI}
 	};
+	
+	private final static int[][] optionSetsScheme = {
+			{OptionNumberRegistry.OSCORE}, 
+			{OptionNumberRegistry.URI_PORT, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.PROXY_SCHEME}
+		};
 	//OSCORE OPTION
 	// we do not want the oscore option to be inner for first layer of encryption
 	private final static boolean[] OSCOREAnswer1 = {true, false, false, false, false}; //inner oscore option
@@ -71,9 +76,26 @@ public class SimpleProxyClient {
 	//private final static boolean[] ProxyURIAnswer1 = {true, true, false, false, false};
 	private final static boolean[] ProxyURIAnswer2 = {true, true, true, true, false};
 	
-	private final static boolean[][][] answerSets = {
+	//URI-PORT OPTION
+	//private final static boolean[] URIPORTAnswer1 = {true, true, false, true, false};
+	private final static boolean[] URIPORTAnswer2 = {true, true, true, true, false};
+
+	//URI-HOST OPTION
+	//private final static boolean[] URIHostAnswer1 = URIPORTAnswer1;
+	private final static boolean[] URIHostAnswer2 = {true, true, true, true, false};
+
+	//PROXY-SCHEME OPTION
+	//private final static boolean[] ProxySchemeAnswer1 = ProxyURIAnswer1;
+	private final static boolean[] ProxySchemeAnswer2 = {true, true, true, true, false};
+	
+	private final static boolean[][][] answerSetsURI = {
 			{OSCOREAnswer1},
 			{ProxyURIAnswer2}
+	};
+	
+	private final static boolean[][][] answerSetsScheme = {
+			{OSCOREAnswer1},
+			{URIPORTAnswer2, URIHostAnswer2, ProxySchemeAnswer2}
 	};
 	
 	//0 did i add the option
@@ -84,21 +106,8 @@ public class SimpleProxyClient {
 	
 	//excluded options are not supposed to be promoted
 	
+		
 	
-	
-	//URI-PORT OPTION
-//	private final static boolean[] URIPORTAnswer1 = {true, true, false, true, false};
-	private final static boolean[] URIPORTAnswer2 = {true, true, true, true, false};
-
-	//URI-HOST OPTION
-	//private final static boolean[] URIHostAnswer1 = URIPORTAnswer1;
-	private final static boolean[] URIHostAnswer2 = URIPORTAnswer2;
-	
-	
-
-	//PROXY-SCHEME OPTION
-	//private final static boolean[] ProxySchemeAnswer1 = ProxyURIAnswer1;
-	private final static boolean[] ProxySchemeAnswer2 = ProxyURIAnswer2;
 	
 	
 	public static void main(String[] args) throws OSException, ConnectorException, IOException {
@@ -124,7 +133,7 @@ public class SimpleProxyClient {
 		byte[] instructions = Bytes.concatenate(oscoreopt, index);
 		
 		for (int i = 0; i < rids.length; i++) {
-			instructions = Bytes.concatenate(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i], answerSets[i]));
+			instructions = Bytes.concatenate(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSetsURI[i], answerSetsURI[i]));
 		}
 		
 		CoapEndpoint.Builder builder = CoapEndpoint.builder();
@@ -158,11 +167,11 @@ public class SimpleProxyClient {
 		request.getOptions().setOscore(new byte[0]);
 		
 		
-		/*CoapResponse resp = client.advanced(request);
+		CoapResponse resp = client.advanced(request);
 		printResponse(resp);
-*/
+
 		//Request request;
-		CoapResponse resp;
+		//CoapResponse resp;
 
 		System.out.println();
 		System.out.println(" ----- ");
@@ -192,22 +201,10 @@ public class SimpleProxyClient {
 		byte[] instructions = Bytes.concatenate(oscoreopt, index);
 		
 		for (int i = 0; i < rids.length; i++) {
-			//instructions = Bytes.concatenate(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));
+			instructions = Bytes.concatenate(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSetsScheme[i], answerSetsScheme[i]));
 		}
 		
-		
-		
-		//-----------------------------------------------------
-	/*	byte[] oscoreopt = CBORObject.FromObject(new byte[0]).EncodeToBytes();
-		byte[] index = CBORObject.FromObject(2).EncodeToBytes();
-		
-		byte[] instructions = Bytes.concatenate(oscoreopt, index);
-		
-		for (int i = 0; i < rids.length; i++) {
-			instructions = Bytes.concatenate(instructions, OptionEncoder.set(rids[i], idcontexts[i], optionSets[i]));
-		}*/
-		
-		CoapEndpoint.Builder builder = CoapEndpoint.builder();
+				CoapEndpoint.Builder builder = CoapEndpoint.builder();
 		//.setConfiguration(outgoingConfig);
 		builder.setCoapStackFactory(new OSCoreCoapStackFactory());//
 		builder.setCustomCoapStackArgument(db);//

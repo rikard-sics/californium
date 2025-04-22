@@ -123,14 +123,12 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 					LOGGER.error(ErrorDescriptions.URI_NULL);
 					throw new OSException(ErrorDescriptions.URI_NULL);
 				}
-
-				System.out.println("is in object security context layer");
-				ctxDb.size();
-				System.out.println(uri);
 				
 				OSCoreCtx ctx = ctxDb.getContext(uri);
 				if (ctx == null) {
+					System.out.println("context was null");
 					if (ctxDb.getIfProxyable()) {
+						System.out.println("but we are a proxy");
 						// if we are a proxy but do not have a security context with the next endpoint we forward the request
 						LOGGER.trace("Request: {}", exchange.getRequest());
 						super.sendRequest(exchange, request);

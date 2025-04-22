@@ -145,7 +145,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	@Override
 	public void sendRequest(final Exchange exchange, final Request request) {
 		Request req = request;
-		
+		System.out.println("SEND REQUEST IN OBJECTSECURITYLAYER");
+		System.out.println("request is: " + request);
+		System.out.println(shouldProtectRequest(request));
 		if (shouldProtectRequest(request)) {
 			try {
 				// Handle outgoing requests for more data from a responder that
@@ -172,10 +174,12 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				if (ctx == null) {
 					//this might create trouble with context rederivation if the context is removed or something 
 					//perhaps during the rederivation
-					
+					System.out.println("The context was null");
+
 					if (ctxDb.getIfProxyable()) {
 						// if we are a proxy but do not have a security context with the next endpoint we forward the request
-						
+						System.out.println("we are proxy");
+
 						request.addMessageObserver(0, new MessageObserverAdapter() {
 
 							//this isn't called until it is ready to send, i.e. super.sendRequest
@@ -238,6 +242,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				boolean instructionsRemaining = true;
 
 				if (instructionsExists) {
+					System.out.println("There are instructions");
+
 					int index = instructions[1].ToObject(int.class);
 
 					// are there still instructions left?
@@ -253,7 +259,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 						//should this be the partial IV?
 						int requestSequenceNr = new OscoreOptionDecoder(preparedRequest.getOptions().getOscore()).getSequenceNumber();
-						instructions[index].set(6, CBORObject.FromObject(requestSequenceNr));
+						instructions[index].set(7, CBORObject.FromObject(requestSequenceNr));
 
 						//update instructions and set into oscore option
 						byte[] updatedOSCOREOption = OptionEncoder.encodeSequence(instructions);
@@ -264,7 +270,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					}
 					else {
 						int requestSequenceNr = new OscoreOptionDecoder(preparedRequest.getOptions().getOscore()).getSequenceNumber();
-						instructions[index].set(6, CBORObject.FromObject(requestSequenceNr));
+						instructions[index].set(7, CBORObject.FromObject(requestSequenceNr));
 					}
 				}
 
@@ -377,12 +383,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 								
 				boolean instructionsExists = Objects.nonNull(instructions);
 				boolean instructionsRemaining = false;
-				byte[] oscoreOption = null;
-				boolean sendAgain = false;
 				int requestSequenceNumber = -1;
+				int index = -1;
 				
 				if (instructionsExists) { 
-					int index = instructions[1].ToObject(int.class);
+					index = instructions[1].ToObject(int.class);
 
 					// get instruction
 					CBORObject instruction = instructions[index];
@@ -396,13 +401,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 					ctx = ctxDb.getContext(RID, IDCONTEXT);
 
-					requestSequenceNumber = instruction.get(6).ToObject(int.class);
-
-					instructions[1] = CBORObject.FromObject(--index);
+					requestSequenceNumber = instruction.get(7).ToObject(int.class);
 					
-					instructionsRemaining = (int) instructions[1].ToObject(int.class) != 2;
-					System.out.println(instructionsRemaining);
-					instructionsRemaining = (int) instructions[1].ToObject(int.class) >= 2;
+					instructionsRemaining = (int) instructions[1].ToObject(int.class) > 2;
 					System.out.println(instructionsRemaining);
 				}
 				else {
@@ -414,7 +415,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				System.out.println(ctx != null && ctx.getResponsesIncludePartialIV());
 				System.out.println(exchange.getRequest().getOptions().hasObserve());
-				System.out.println("current request for response is: " + exchange.getRequest());
 				addPartialIV = (ctx != null && ctx.getResponsesIncludePartialIV()) || exchange.getRequest().getOptions().hasObserve();
 				
 				
@@ -434,6 +434,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				
 				if (instructionsRemaining) {
 					System.out.println("calling again");
+					instructions[1] = CBORObject.FromObject(--index);
 					sendResponse(exchange, response);
 					return;
 				}
@@ -801,7 +802,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 					CBORObject instruction = instructions[index];
 
-					requestSequenceNumber = instruction.get(6).ToObject(int.class);
+					requestSequenceNumber = instruction.get(7).ToObject(int.class);
 				}
 
 				// need to handle the case where any oscore layer is missing

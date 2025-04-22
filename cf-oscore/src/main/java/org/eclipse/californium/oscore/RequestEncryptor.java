@@ -65,8 +65,8 @@ public class RequestEncryptor extends Encryptor {
 
 		OptionSet options = request.getOptions();
 		
-		// what do when src endpoint is aware we are a reverse proxy?
 		boolean instructionsExists = Objects.nonNull(instructions);
+		/*
 		if (instructionsExists && (int) instructions[1].ToObject(int.class) != 2) {
 			System.out.println("adding from instructions");
 			System.out.println(Hex.encodeHexString(oldOscoreOption));
@@ -89,8 +89,8 @@ public class RequestEncryptor extends Encryptor {
 				System.out.println(Hex.encodeHexString(options.getOscore()));
 			}
 			System.out.println("removing");
-			//options.removeOscore();
-		}
+			options.removeOscore();
+		}*/
 		
 		System.out.println("request options are: " + options);
 		System.out.println("source context is: " + request.getSourceContext());
@@ -116,21 +116,15 @@ public class RequestEncryptor extends Encryptor {
 		System.out.println("U OPTIONS ARE: " + optionsUAndE[0]);
 		System.out.println("E OPTIONS ARE: " + optionsUAndE[1]);
 
-		if (instructionsExists /**/ || true) {
-			OptionSet promotedOptions = OptionJuggle.promotion(optionsUAndE[0], instructions);
+		//if (instructionsExists) {
+			OptionSet promotedOptions = OptionJuggle.promotion(optionsUAndE[0], instructions, true);
 			System.out.println("U options:            " + optionsUAndE[0]);
 			System.out.println("Promoted options are: " + promotedOptions);
 			optionsUAndE[1] = OptionJuggle.merge(optionsUAndE[1], promotedOptions);	
-
-		}
+		//}
 				
 		System.out.println("Eoptions are length: " + optionsUAndE[1]);
-		if (optionsUAndE[1].hasOscore()) {
-			System.out.println("Oscore option is length: " + optionsUAndE[1].getOscore().length);
-			byte b1 = optionsUAndE[1].getOscore()[0];
-			String s1 = String.format("%8s", Integer.toBinaryString(b1 & 0xFF)).replace(' ', '0');
-			System.out.println(s1); 
-		}
+		
 		System.out.println("payload is length: " + request.getPayload().length + " + 1 byte for payload marker");
 		System.out.println("message code is: " + realCode + ", which should be 8 bits long, aka 1 byte");
 		if (optionsUAndE[1].hasOscore()) {
@@ -149,7 +143,6 @@ public class RequestEncryptor extends Encryptor {
 		// here the U options are set
 		request.setOptions(optionsUAndE[0]);
 		request.getOptions().setOscore(oscoreOption);
-		//request.setOptions(OptionJuggle.prepareUoptions(request.getOptions()));
 		
 		ctx.increaseSenderSeq();
 

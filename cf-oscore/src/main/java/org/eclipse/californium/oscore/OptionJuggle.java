@@ -106,7 +106,7 @@ public class OptionJuggle {
 		else return false;
 	}
 
-	public static OptionSet promotion(OptionSet options, CBORObject[] instructions) {
+	public static OptionSet promotion(OptionSet options, CBORObject[] instructions, boolean request) {
 		OptionSet result = new OptionSet();
 		boolean includes = false;
 		if (options.hasProxyScheme() /* || options.hasProxySchemeNumber()*/) {
@@ -115,9 +115,15 @@ public class OptionJuggle {
 		boolean instructionsExists = Objects.nonNull(instructions);
 		CBORObject instruction = null;
 		int index = -1;
+		
+		int firstInstructionsIndex;
 		if (instructionsExists) { 
 			index = instructions[1].ToObject(int.class);
 			instruction = instructions[index];
+			firstInstructionsIndex = request ? 2 : instructions.length - 1;
+		}
+		else {
+			firstInstructionsIndex = 2;
 		}
 
 		for (Option o : options.asSortedList()) {
@@ -142,11 +148,11 @@ public class OptionJuggle {
 					}
 					else {
 						System.out.println("There was no promotion answers for option: " + o);
-						if (o.getNumber() == OptionNumberRegistry.OSCORE && index != 2) {
+						System.out.println("index is: " + index);
+						if (o.getNumber() == OptionNumberRegistry.OSCORE && index != firstInstructionsIndex) {
 							System.out.println("instruction does exist for layer but not for OSCORE option");
 							System.out.println("we encrypt it as standard, unless it is the first instruction");
-							result.addOption(o);
-							options.removeOscore();
+							promoted = true;
 						}
 					}
 
@@ -178,18 +184,10 @@ public class OptionJuggle {
 					// keep as is if not promoted
 
 				}
-				
-
-				// no instruction case
-				else if (o.getNumber() == OptionNumberRegistry.OSCORE) {
-					System.out.println("instruction does not exist for layer");
-					System.out.println("but is OSCORE option");
-					result.addOption(o);
-					options.removeOscore();
-				} else {
+				else {
+					// if no instructions, the default is to not encrypt the option
 					System.out.println("instruction does not exist for layer");
 				}
-				// if no instructions, the default is to not encrypt the option
 
 			default:
 				/* do nothing for Class U and E options*/

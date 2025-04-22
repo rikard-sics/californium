@@ -96,10 +96,6 @@ public class OptionEncoder {
 	 * @param endpoints ordered array of endpoints
 	 */
 	public static byte[] set(byte[] rid, byte[] idcontext, int[] options, boolean[][] answers) {
-
-		if (options.length != answers.length) {
-			throw new RuntimeException("Unequal amount of options: " + options.length + " and answers: " + answers.length);
-		}
 		CBORObject option = CBORObject.NewMap();
 		//option.Add(2, contextUri);
 		option.Add(3, rid);
@@ -107,6 +103,11 @@ public class OptionEncoder {
 		option.Add(5, idcontext);
 
 		CBORObject optionsHolder = CBORObject.NewMap();
+		
+		if (options.length != answers.length) {
+			throw new RuntimeException("Unequal amount of options: " + options.length + " and answers: " + answers.length);
+		}
+
 		int index = 0;
 		for (int o : options) {
 			if (answers[index].length != 5) {
@@ -132,11 +133,43 @@ public class OptionEncoder {
 		option.Add(5, idcontext);
 
 
-		option.Add(6, requestSequenceNumber);
+		option.Add(7, requestSequenceNumber);
 
 		return option.EncodeToBytes();
 	}
 
+	/**
+	 * here be Javadoc
+	 * @param endpoints ordered array of endpoints
+	 */
+	public static byte[] set(byte[] rid, byte[] idcontext, int[] options, boolean[][] answers, int requestSequenceNumber) {
+		CBORObject option = CBORObject.NewMap();
+		//option.Add(2, contextUri);
+		option.Add(3, rid);
+
+		option.Add(5, idcontext);
+
+		CBORObject optionsHolder = CBORObject.NewMap();
+		
+		if (options.length != answers.length) {
+			throw new RuntimeException("Unequal amount of options: " + options.length + " and answers: " + answers.length);
+		}
+
+		int index = 0;
+		for (int o : options) {
+			if (answers[index].length != 5) {
+				throw new RuntimeException("bad answer array, length should be 5");
+			}
+			optionsHolder.Add(o,answers[index]);
+			index++;
+			
+		}
+
+		option.Add(6, optionsHolder);
+		
+		option.Add(7, requestSequenceNumber);
+		return option.EncodeToBytes();
+	}
 
 	/**
 	 * Get the pairwise mode boolean value from the option.
