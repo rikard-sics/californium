@@ -211,7 +211,7 @@ public class SimpleProxyProxy {
 
 		OSCoreCtx ctxToServer = new OSCoreCtx(master_secret, true, alg, sids[1], rids[1], kdf, 32, master_salt, idcontexts[1], MAX_UNFRAGMENTED_SIZE);
 		int i = CoapProxyPort - 1;
-		//db.addContext(uriLocal /*+ ":" + Objects.toString(i)*/, ctxToServer);
+		db.addContext(uriLocal /*+ ":" + Objects.toString(i)*/, ctxToServer);
 
 		Configuration outgoingConfig = new Configuration(config);
 
@@ -228,7 +228,7 @@ public class SimpleProxyProxy {
 			cacheResource = new ProxyCacheResource(config, true);
 			statsResource = new StatsResource(cacheResource);
 		}
-		ProxyCoapResource coap2coap = new OSCoreProxyCoapClientResource(COAP2COAP, false, accept, translator, db, proxyToServerEndpoint);
+		ProxyCoapResource coap2coap = new ProxyCoapClientResource(COAP2COAP, false, accept, translator, proxyToServerEndpoint);
 		
 		if (cache) {
 			coap2coap.setCache(cacheResource);

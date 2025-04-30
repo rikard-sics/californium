@@ -16,6 +16,8 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore.group;
 
+import java.util.ArrayList;
+
 import org.eclipse.californium.core.coap.Option;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.elements.util.Bytes;
@@ -138,6 +140,50 @@ public class OptionEncoder {
 		return option.EncodeToBytes();
 	}
 
+	/**
+	 * here be Javadoc
+	 * @param endpoints ordered array of endpoints
+	 */
+	public static byte[] set(byte[] rid, byte[] idcontext, int[] optionsPreSet, boolean[][] answers, int[] optionsPostSet, CBORObject[] values) {
+		CBORObject option = CBORObject.NewMap();
+		//option.Add(2, contextUri);
+		option.Add(3, rid);
+
+		option.Add(5, idcontext);
+
+		CBORObject optionsPreSetHolder = CBORObject.NewMap();
+		
+		if (optionsPreSet.length != answers.length) {
+			throw new RuntimeException("Unequal amount of options: " + optionsPreSet.length + " and answers: " + answers.length);
+		}
+
+		int index = 0;
+		for (int o : optionsPreSet) {
+			if (answers[index].length != 5) {
+				throw new RuntimeException("bad answer array, length should be 5");
+			}
+			optionsPreSetHolder.Add(o,answers[index]);
+			index++;
+			
+		}
+
+		option.Add(6, optionsPreSetHolder);
+		
+		CBORObject optionsPostSetHolder = CBORObject.NewMap();
+		if (optionsPostSet.length != values.length) {
+			//might become more complicated with blockwise, but it's a problem for later
+			throw new RuntimeException("Unequal amount of options: " + optionsPostSet.length + " and values: " + values.length);
+		}
+		
+		index = 0;
+		for (int o : optionsPostSet) {
+			optionsPostSetHolder.Add(o, values[index]);
+			index++;
+		}
+		
+		option.Add(7, optionsPostSetHolder);
+		return option.EncodeToBytes();
+	}
 	/**
 	 * here be Javadoc
 	 * @param endpoints ordered array of endpoints

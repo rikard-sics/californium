@@ -133,7 +133,7 @@ public class ResponseEncryptor extends Encryptor {
 		System.out.println("E OPTIONS ARE: " + optionsUAndE[1]);
 
 		//if (instructionsExists ) {
-			OptionSet promotedOptions = OptionJuggle.promotion(optionsUAndE[0], instructions, false);
+			OptionSet promotedOptions = OptionJuggle.promotion(optionsUAndE[0], instructions, false, db);
 			optionsUAndE[1] = OptionJuggle.merge(optionsUAndE[1], promotedOptions);	
 		//}
 		
@@ -154,7 +154,7 @@ public class ResponseEncryptor extends Encryptor {
 		byte[] oscoreOption = response.getOptions().getOscore();
 
 		// here the U options are prepared
-		response.setOptions(optionsUAndE[0]);
+		response.setOptions(OptionJuggle.postInstruction(optionsUAndE[0], instructions));
 		response.getOptions().setOscore(oscoreOption);
 		/*
 		options = response.getOptions();

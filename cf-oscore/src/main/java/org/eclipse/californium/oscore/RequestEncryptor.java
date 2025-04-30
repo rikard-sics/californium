@@ -55,10 +55,10 @@ public class RequestEncryptor extends Encryptor {
 	 * @throws OSException if encryption fails
 	 *
 	 */
-	public static Request encrypt(OSCoreCtxDB db, Request request) throws OSException {
+	public static Request encrypt(OSCoreCtxDB db, Request request, CBORObject[] instructions) throws OSException {
 
-		byte[] oldOscoreOption = request.getOptions().getOscore(); // can be null
-		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(oldOscoreOption);
+		//byte[] oldOscoreOption = request.getOptions().getOscore(); // can be null
+		//CBORObject[] instructions = OptionEncoder.decodeCBORSequence(oldOscoreOption);
 		
 		System.out.println("in request encryptor");
 		OSCoreCtx ctx = db.getContext(request, true);
@@ -111,18 +111,23 @@ public class RequestEncryptor extends Encryptor {
 		int realCode = request.getCode().value;
 		request = OptionJuggle.setFakeCodeRequest(request);
 
-
+		OptionJuggle.handleProxyURIInstruction(options, instructions);
+		
 		OptionSet[] optionsUAndE = OptionJuggle.filterOptions(options);
 		System.out.println("U OPTIONS ARE: " + optionsUAndE[0]);
 		System.out.println("E OPTIONS ARE: " + optionsUAndE[1]);
 
-		//if (instructionsExists) {
-			OptionSet promotedOptions = OptionJuggle.promotion(optionsUAndE[0], instructions, true);
-			System.out.println("U options:            " + optionsUAndE[0]);
-			System.out.println("Promoted options are: " + promotedOptions);
-			optionsUAndE[1] = OptionJuggle.merge(optionsUAndE[1], promotedOptions);	
-		//}
+		
+		OptionSet promotedOptions = OptionJuggle.promotion(optionsUAndE[0], instructions, true, db);
+		System.out.println("U options:            " + optionsUAndE[0]);
+		System.out.println("Promoted options are: " + promotedOptions);
+		
+
+
+		optionsUAndE[1] = OptionJuggle.merge(optionsUAndE[1], promotedOptions);	
+		
 				
+			
 		System.out.println("Eoptions are length: " + optionsUAndE[1]);
 		
 		System.out.println("payload is length: " + request.getPayload().length + " + 1 byte for payload marker");
@@ -141,9 +146,11 @@ public class RequestEncryptor extends Encryptor {
 		byte[] oscoreOption = request.getOptions().getOscore();
 
 		// here the U options are set
-		request.setOptions(optionsUAndE[0]);
+
+		request.setOptions(OptionJuggle.postInstruction(optionsUAndE[0], instructions));
+
 		request.getOptions().setOscore(oscoreOption);
-		
+
 		ctx.increaseSenderSeq();
 
 		return request;

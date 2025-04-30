@@ -85,8 +85,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	 * 
 	 * @throws OSException error while encrypting request
 	 */
-	public static Request prepareSend(OSCoreCtxDB ctxDb, Request message) throws OSException {
-		return RequestEncryptor.encrypt(ctxDb, message);
+	public static Request prepareSend(OSCoreCtxDB ctxDb, Request message, CBORObject[] instructions) throws OSException {
+		return RequestEncryptor.encrypt(ctxDb, message, instructions);
 	}
 
 	/**
@@ -232,8 +232,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				CBORObject[] instructions = OptionEncoder.decodeCBORSequence(OscoreOption);
 
 				//encryption here
-				final Request preparedRequest = prepareSend(ctxDb, request);
-				
+				final Request preparedRequest = prepareSend(ctxDb, request, instructions);
+
 				System.out.println("request after prepare send is: " + request);
 				System.out.println("prepared request is:           " + preparedRequest);
 

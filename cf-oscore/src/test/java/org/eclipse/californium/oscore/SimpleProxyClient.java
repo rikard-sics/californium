@@ -3,6 +3,7 @@
 package org.eclipse.californium.oscore;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResponse;
@@ -60,13 +61,13 @@ public class SimpleProxyClient {
 			};
 	
 	private final static int[][] optionSetsURI = {
-		{OptionNumberRegistry.OSCORE}, 
+		{}, 
 		{OptionNumberRegistry.PROXY_URI}
 	};
 	
 	private final static int[][] optionSetsScheme = {
-			{OptionNumberRegistry.OSCORE}, 
-			{OptionNumberRegistry.URI_PORT, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.PROXY_SCHEME}
+			{}, 
+			{OptionNumberRegistry.URI_PORT, OptionNumberRegistry.URI_HOST}
 		};
 	//OSCORE OPTION
 	// we do not want the oscore option to be inner for first layer of encryption
@@ -89,13 +90,13 @@ public class SimpleProxyClient {
 	private final static boolean[] ProxySchemeAnswer2 = {true, true, true, true, false};
 	
 	private final static boolean[][][] answerSetsURI = {
-			{OSCOREAnswer1},
+			{},
 			{ProxyURIAnswer2}
 	};
 	
 	private final static boolean[][][] answerSetsScheme = {
-			{OSCOREAnswer1},
-			{URIPORTAnswer2, URIHostAnswer2, ProxySchemeAnswer2}
+			{},
+			{URIPORTAnswer2, URIHostAnswer2}
 	};
 	
 	//0 did i add the option
@@ -106,8 +107,24 @@ public class SimpleProxyClient {
 	
 	//excluded options are not supposed to be promoted
 	
+	private final static CBORObject[][] postValuesUri =  {
+			{CBORObject.FromObject(uriServer + uriServerPath)},
+			{}
+	};
+
+	private final static CBORObject[][] postValuesScheme =  {
+			{CBORObject.FromObject("coap")},
+			{}
+	};
+	private final static int[][] optionSetsPostUri = {
+			{OptionNumberRegistry.PROXY_URI}, 
+			{}
+		};
 		
-	
+	private final static int[][] optionSetsPostScheme = {
+			{OptionNumberRegistry.PROXY_SCHEME}, 
+			{}
+		};
 	
 	
 	public static void main(String[] args) throws OSException, ConnectorException, IOException {
@@ -120,11 +137,98 @@ public class SimpleProxyClient {
 		OSCoreCoapStackFactory.useAsDefault(db);
 		
 		//Scenario 3 cases
-		//sendVanilla();
+		sendVanilla();
 		
-		//sendWithProxyScheme();
+		sendWithProxyScheme();
 		
 		sendWithProxyURI();
+		
+		sendWithPostURIAndScheme();
+	}
+	private static void sendWithPostURIAndScheme() throws ConnectorException, IOException {
+
+		byte[] oscoreoptUri = CBORObject.FromObject(new byte[0]).EncodeToBytes();
+		byte[] indexUri = CBORObject.FromObject(2).EncodeToBytes();
+		
+		byte[] instructionsUri = Bytes.concatenate(oscoreoptUri, indexUri);
+		
+		for (int i = 0; i < rids.length; i++) {
+			instructionsUri = Bytes.concatenate(instructionsUri, OptionEncoder.set(rids[i], idcontexts[i], optionSetsURI[i], answerSetsURI[i], optionSetsPostUri[i], postValuesUri[i]));
+		}
+
+
+		byte[] oscoreoptScheme = CBORObject.FromObject(new byte[0]).EncodeToBytes();
+		byte[] indexScheme = CBORObject.FromObject(2).EncodeToBytes();
+		
+		byte[] instructionsScheme = Bytes.concatenate(oscoreoptScheme, indexScheme);
+		
+		for (int i = 0; i < rids.length; i++) {
+			instructionsScheme = Bytes.concatenate(instructionsScheme, OptionEncoder.set(rids[i], idcontexts[i], optionSetsScheme[i], answerSetsScheme[i], optionSetsPostScheme[i], postValuesScheme[i]));
+		}
+		CoapEndpoint.Builder builder = CoapEndpoint.builder();
+		//.setConfiguration(outgoingConfig);
+		builder.setCoapStackFactory(new OSCoreCoapStackFactory());//
+		builder.setCustomCoapStackArgument(db);//
+		builder.setPort(5686);
+
+
+		CoapEndpoint clientEndpoint = builder.build();
+
+		CoapClient client = new CoapClient();
+		client.setEndpoint(clientEndpoint);
+		client.setURI(uriServer);
+
+		//CoapClient client = new CoapClient(uriServer + uriServerPath);
+
+		AddressEndpointContext proxy = new AddressEndpointContext("localhost", 5685);
+		
+		Request request;
+		CoapResponse resp;
+		
+		System.out.println();
+		System.out.println(" ----- ");
+		System.out.println();
+		System.out.println("Sending with instructions... Proxy-URI");
+		System.out.println();
+		System.out.println(" ----- ");
+		System.out.println();
+
+		
+		request = new Request(Code.GET);
+		request.setDestinationContext(proxy);
+		request.getOptions().setOscore(instructionsUri);
+		
+		System.out.println(request.getOptions().hasUriPath());
+		resp = client.advanced(request);
+		printResponse(resp);
+
+
+		 client = new CoapClient();
+		client.useProxy();
+		client.setEndpoint(clientEndpoint);
+		client.setURI(uriServer + uriServerPath);
+
+		System.out.println();
+		System.out.println(" ----- ");
+		System.out.println();
+		System.out.println("Sending with instructions... Proxy-Scheme");
+		System.out.println();
+		System.out.println(" ----- ");
+		System.out.println();
+
+		
+		request = new Request(Code.GET);
+		request.setDestinationContext(proxy);
+
+		request.getOptions().setOscore(instructionsScheme);
+				
+		resp = client.advanced(request);
+		printResponse(resp);
+		
+		client.getEndpoint().destroy();
+		client.shutdown();
+		
+		
 	}
 	private static void sendWithProxyURI() throws ConnectorException, IOException {
 		byte[] oscoreopt = CBORObject.FromObject(new byte[0]).EncodeToBytes();

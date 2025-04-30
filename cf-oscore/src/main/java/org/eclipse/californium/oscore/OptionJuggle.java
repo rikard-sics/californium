@@ -20,6 +20,7 @@
 package org.eclipse.californium.oscore;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -33,6 +34,9 @@ import org.eclipse.californium.core.coap.OptionNumberRegistry;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
+import org.eclipse.californium.core.coap.option.BaseOptionDefinition;
+import org.eclipse.californium.core.coap.option.BlockOption;
+import org.eclipse.californium.core.coap.option.StandardOptionRegistry;
 import org.eclipse.californium.core.coap.option.StringOption;
 import org.eclipse.californium.elements.EndpointContext;
 import org.eclipse.californium.oscore.group.OptionEncoder;
@@ -40,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
+import com.upokecenter.cbor.CBORType;
 
 /**
  * 
@@ -106,7 +111,213 @@ public class OptionJuggle {
 		else return false;
 	}
 
-	public static OptionSet promotion(OptionSet options, CBORObject[] instructions, boolean request) {
+	public static void addToPreEncryptionSet(int index, CBORObject[] instructions, int optionNumber) {
+		// is it there a next instruction?
+		System.out.println("index + 1 = " + (index + 1 ));
+		System.out.println(instructions.length);
+		System.out.println((index + 1) < (instructions.length));
+		if ((index + 1) < (instructions.length) /* header*/) {
+
+			CBORObject nextInstruction = instructions[index + 1];
+
+			CBORObject preSet = nextInstruction.get(6);
+			System.out.println(preSet);
+
+			if (preSet != null) {
+				if (preSet.get(optionNumber) != null) {
+					throw new RuntimeException("Pre-set instruction already has this option: " + optionNumber);
+				}
+				else {
+					boolean[] answer = {false, true, true, true, true};
+					preSet.Add(optionNumber,answer);	
+				}
+			}
+		}
+	}
+	
+	public static OptionSet postInstruction(OptionSet uOptions, CBORObject[] instructions) {
+		boolean instructionsExists = Objects.nonNull(instructions);
+		
+		if (!instructionsExists) return uOptions;
+		
+		CBORObject instruction = null;
+		int index = -1;
+
+		if (instructionsExists) { 
+			index = instructions[1].ToObject(int.class);
+			instruction = instructions[index];
+		}
+
+		CBORObject postSet = instruction.get(7);
+
+		if (postSet == null) return uOptions;
+		
+		if (postSet.size() == 0) return uOptions;
+		System.out.println(postSet);
+
+		Collection<CBORObject> collection = postSet.getKeys();
+
+		for (CBORObject object : collection) {
+			int optionNumber = object.ToObject(int.class);
+			// get encoded value(s)
+			CBORObject values = postSet.get(optionNumber);
+
+			switch (optionNumber) {
+			case OptionNumberRegistry.URI_HOST:
+				// check if it already exists as a uOption
+				if (uOptions.hasUriHost()) {
+					// if it does, runtimeException
+					throw new RuntimeException("Option to be added already exists as an option in the message!");
+				}
+				
+				// put in variable
+				String uriHost = values.ToObject(String.class);
+
+				// if outer only, add to pre encryption set (if it exists) 
+				addToPreEncryptionSet(index, instructions, optionNumber);
+
+				// set post instruction
+				uOptions.setUriHost(uriHost);
+
+				break;
+			case OptionNumberRegistry.OBSERVE:
+				// check if it already exists as a uOption
+				if (uOptions.hasObserve()) {
+					// if it does, runtimeException
+					throw new RuntimeException("Option to be added already exists as an option in the message!");
+				}
+
+				// put in variable
+				int sequenceNumber = values.ToObject(int.class);
+
+				// set post instruction
+				uOptions.setObserve(sequenceNumber);
+
+				break;
+			case OptionNumberRegistry.URI_PORT:
+				// check if it already exists as a uOption
+				if (uOptions.hasUriPort()) {
+					// if it does, runtimeException
+					throw new RuntimeException("Option to be added already exists as an option in the message!");
+				}
+
+				// put in variable
+				int port = values.ToObject(int.class);
+
+				// if outer only, add to pre encryption set (if it exists) 
+				addToPreEncryptionSet(index, instructions, optionNumber);
+
+				// set post instruction
+				uOptions.setUriPort(port);
+				
+				break;
+			case OptionNumberRegistry.OSCORE:
+				throw new IllegalArgumentException("OSCORE is not allowed as an option in the post-set!");
+				
+			case OptionNumberRegistry.MAX_AGE:
+				// check if it already exists as a uOption
+				if (uOptions.hasMaxAge()) {
+					// if it does, runtimeException
+					throw new RuntimeException("Option to be added already exists as an option in the message!");
+				}
+
+				// put in variable
+				long age = values.ToObject(long.class);
+
+				// set post instruction
+				uOptions.setMaxAge(age);
+				break;
+			case OptionNumberRegistry.BLOCK2:
+				throw new IllegalArgumentException("Option not yet implemented");
+				//break;
+			case OptionNumberRegistry.BLOCK1:
+				throw new IllegalArgumentException("Option not yet implemented");
+				//break;
+			case OptionNumberRegistry.SIZE2:
+				throw new IllegalArgumentException("Option not yet implemented");
+				//break;
+			case OptionNumberRegistry.SIZE1:
+				throw new IllegalArgumentException("Option not yet implemented");
+				//break;
+			case OptionNumberRegistry.PROXY_URI:
+				// check if it already exists as a uOption
+				System.out.println("Proxy uri is handled before encryption, before filtering too");
+				/*
+				if (uOptions.hasProxyUri()) {
+					// if it does, runtimeException
+					throw new RuntimeException("Option to be added already exists as an option in the message!");
+				}
+
+				// put in variable
+				String proxyUri = values.ToObject(String.class);
+
+				// ok lets go
+				Option option = StandardOptionRegistry.PROXY_URI.create(proxyUri);
+				
+				OptionSet proxyURIOptions = handleProxyURI(option);
+				
+				if (proxyURIOptions.getURIPathCount() == 0 ) {
+					if ((index + 1) == (instructions.length - 2) ) {
+						throw new RuntimeException("Tried to add URI Path option through proxy URI option on the last layer of encryption");
+					}
+					uOptions.setUriPath(proxyURIOptions.getUriPathString());
+				}
+				if (proxyURIOptions.getURIQueryCount() == 0) {
+					if ((index + 1) == (instructions.length - 2) ) {
+						throw new RuntimeException("Tried to add URI Query option through proxy URI option on the last layer of encryption");
+					}
+					uOptions.setUriQuery(proxyURIOptions.getUriQueryString());
+				}
+				
+				// if outer only, add to pre encryption set (if it exists) 
+				addToPreEncryptionSet(index, instructions, optionNumber);
+				
+				// set post instruction
+				uOptions.setProxyUri(proxyURIOptions.getProxyUri());
+				
+				//handle proxy uri and split it?*/
+				
+				break;
+			case OptionNumberRegistry.PROXY_SCHEME:
+				// check if it already exists as a uOption
+				if (uOptions.hasProxyScheme()) {
+					// if it does, runtimeException
+					throw new RuntimeException("Option to be added already exists as an option in the message!");
+				}
+
+				// put in variable
+				String proxyScheme = values.ToObject(String.class);
+
+				// if outer only, add to pre encryption set (if it exists) 
+				addToPreEncryptionSet(index, instructions, optionNumber);
+
+				// set post instruction
+				uOptions.setProxyScheme(proxyScheme);
+				
+				break;
+
+			case OptionNumberRegistry.NO_RESPONSE:
+				// check if it already exists as a uOption
+				if (uOptions.hasNoResponse()) {
+					// if it does, runtimeException
+					throw new RuntimeException("Option to be added already exists as an option in the message!");
+				}
+				
+				// put in variable
+				int noResponse = values.ToObject(int.class);
+
+				// set post instruction
+				uOptions.setNoResponse(noResponse);
+				break;
+			default:
+				throw new IllegalArgumentException("Option is not class U");
+			}
+		}
+
+		return uOptions;
+
+	}
+	public static OptionSet promotion(OptionSet options, CBORObject[] instructions, boolean request, OSCoreCtxDB db) {
 		OptionSet result = new OptionSet();
 		boolean includes = false;
 		if (options.hasProxyScheme() /* || options.hasProxySchemeNumber()*/) {
@@ -115,7 +326,7 @@ public class OptionJuggle {
 		boolean instructionsExists = Objects.nonNull(instructions);
 		CBORObject instruction = null;
 		int index = -1;
-		
+
 		int firstInstructionsIndex;
 		if (instructionsExists) { 
 			index = instructions[1].ToObject(int.class);
@@ -131,14 +342,26 @@ public class OptionJuggle {
 			System.out.println("Processing option: " + o);
 			switch (o.getNumber()) {
 			/* Class U ONLY options */
+			case OptionNumberRegistry.OSCORE:
+			
+			// no instructions and am proxy
+			if (!instructionsExists && db.getIfProxyable()) {
+				// for now, just assume we are forwarding the request
+				// currently don't possess request specific forwarding information
+				result.addOption(o);
+				options.removeOscore();
+				break;
+			}
+			// if instructions exist use them, and if not a proxy use default behavior
+			
 			case OptionNumberRegistry.URI_HOST:
 			case OptionNumberRegistry.URI_PORT:
-			case OptionNumberRegistry.OSCORE:
 			case OptionNumberRegistry.PROXY_SCHEME:
 			case OptionNumberRegistry.PROXY_URI:
 				// Does it have instructions?
 				if (instructionsExists)  {
 					System.out.println("instruction exists for layer");
+					System.out.println("instruction is - " + instruction);
 					boolean[] promotionAnswers = OptionEncoder.extractPromotionAnswers(o.getNumber(), instruction);
 
 					boolean promoted = false;
@@ -194,6 +417,7 @@ public class OptionJuggle {
 				break;
 			}
 		}
+		
 		return result;
 	}
 
@@ -220,48 +444,19 @@ public class OptionJuggle {
 				result[0].addOption(o);
 				break;
 			case OptionNumberRegistry.PROXY_URI:
+				
+				OptionSet proxyURIOptions = handleProxyURI(o);
 				// create Uri-Path and Uri-Query and add to Class E options
 				// add proxy-uri to Class U options
-				String EProxyUri = ((StringOption)o).getStringValue();
-				String UProxyUri = EProxyUri;
-
-				EProxyUri = EProxyUri.replace("coap://", "");
-				EProxyUri = EProxyUri.replace("coaps://", "");
-
-				int i = EProxyUri.indexOf('/');
-				boolean hasPathOrQuery = false;
-				if (i >= 0) {
-					hasPathOrQuery = true;
-
-					UProxyUri = EProxyUri.substring(0, i);
-					EProxyUri = EProxyUri.substring(i + 1, EProxyUri.length());
-				} 
-				if (!UProxyUri.contains("coap://") && !UProxyUri.contains("coaps://")) {
-					UProxyUri = "coap://" + UProxyUri;
+				if (proxyURIOptions.hasUriPath()) {
+					result[1].setUriPath(proxyURIOptions.getUriPathString());
 				}
-				result[0].setProxyUri(UProxyUri);
-
-				if (!hasPathOrQuery) {
-					break;
+				if (proxyURIOptions.hasOption(StandardOptionRegistry.URI_QUERY)) { //quite bad since not O(1), but wont be called too often
+					result[1].setUriQuery(proxyURIOptions.getUriQueryString());
 				}
-
-				i = EProxyUri.indexOf("?");
-				String uriPath = EProxyUri;
-				String uriQuery = null;
-				if (i >= 0) {
-					uriPath = EProxyUri.substring(0, i);
-					uriQuery = EProxyUri.substring(i + 1, EProxyUri.length());
-				}
-
-				if (uriPath != null) {
-					result[1].setUriPath(uriPath);
-				}
-
-				if (uriQuery != null) {
-					String[] uriQueries = uriQuery.split("&");
-					for (int idx = 0; idx < uriQueries.length; idx++) {
-						result[1].setUriQuery(uriQueries[idx]);
-					}
+				if (proxyURIOptions.hasProxyUri()) {
+					
+					result[0].setProxyUri(proxyURIOptions.getProxyUri());
 				}
 				break;
 				/* Class U and E options */
@@ -276,6 +471,104 @@ public class OptionJuggle {
 		return result;
 	}
 
+	public static OptionSet handleProxyURIInstruction(OptionSet options, CBORObject[] instructions) {
+		if (Objects.nonNull(instructions)) {
+			int index = instructions[1].ToObject(int.class);
+			CBORObject instruction = instructions[index];
+			
+			CBORObject postSet = instruction.get(7);
+
+			if (postSet == null) return options;
+			
+			if (postSet.size() == 0) return options;
+			
+			CBORObject value = postSet.get(StandardOptionRegistry.PROXY_URI.getNumber());
+			
+			if (value == null) return options;
+			
+			String proxyUri = value.ToObject(String.class);
+
+			// ok lets go
+			Option option = StandardOptionRegistry.PROXY_URI.create(proxyUri);
+			
+			OptionSet proxyURIOptions = handleProxyURI(option);
+			System.out.println("in handle proxy uri: " + options);
+			System.out.println(options.hasUriPath());
+			
+			// create Uri-Path and Uri-Query and add to Class E options
+			// add proxy-uri to Class U options
+
+			if ((proxyURIOptions.getURIPathCount() == 0) && proxyURIOptions.hasUriPath()) {
+				throw new RuntimeException("Tried to add Uri-Path option through Proxy-Uri, but it already exists as an option in the message!");
+			}
+			else if (proxyURIOptions.hasUriPath()) {
+				options.setUriPath(proxyURIOptions.getUriPathString());
+			}
+			
+			if ((proxyURIOptions.getURIQueryCount() == 0) && proxyURIOptions.hasOption(StandardOptionRegistry.URI_QUERY)) {
+				throw new RuntimeException("Tried to add Uri-Query option through Proxy-Uri, but it already exists as an option in the message!");
+			}
+			else if (proxyURIOptions.hasOption(StandardOptionRegistry.URI_QUERY)) { //quite bad since not O(1), but wont be called too often
+				options.setUriQuery(proxyURIOptions.getUriQueryString());
+			}
+			if (options.hasProxyUri() && proxyURIOptions.hasProxyUri()) {
+				throw new RuntimeException("Option to be added already exists as an option in the message!");
+			}
+			else if (proxyURIOptions.hasProxyUri()) {
+				options.setProxyUri(proxyURIOptions.getProxyUri());
+			}
+
+		}
+		
+		return options;
+	}
+
+	
+	public static OptionSet handleProxyURI(Option option) {
+		OptionSet result = new OptionSet();
+		String EProxyUri = ((StringOption)option).getStringValue();
+		String UProxyUri = EProxyUri;
+
+		EProxyUri = EProxyUri.replace("coap://", "");
+		EProxyUri = EProxyUri.replace("coaps://", "");
+
+		int i = EProxyUri.indexOf('/');
+		boolean hasPathOrQuery = false;
+		if (i >= 0) {
+			hasPathOrQuery = true;
+
+			UProxyUri = EProxyUri.substring(0, i);
+			EProxyUri = EProxyUri.substring(i + 1, EProxyUri.length());
+		} 
+		if (!UProxyUri.contains("coap://") && !UProxyUri.contains("coaps://")) {
+			UProxyUri = "coap://" + UProxyUri;
+		}
+		result.setProxyUri(UProxyUri);
+
+		if (!hasPathOrQuery) {
+			return result;
+		}
+
+		i = EProxyUri.indexOf("?");
+		String uriPath = EProxyUri;
+		String uriQuery = null;
+		if (i >= 0) {
+			uriPath = EProxyUri.substring(0, i);
+			uriQuery = EProxyUri.substring(i + 1, EProxyUri.length());
+		}
+
+		if (uriPath != null) {
+			result.setUriPath(uriPath);
+		}
+
+		if (uriQuery != null) {
+			String[] uriQueries = uriQuery.split("&");
+			for (int idx = 0; idx < uriQueries.length; idx++) {
+				result.setUriQuery(uriQueries[idx]);
+			}
+		}
+		return result;
+	}
 	/**
 	 * Prepare a set or original CoAP options for unprotected use with OSCore.
 	 * 
