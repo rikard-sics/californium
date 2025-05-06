@@ -27,6 +27,7 @@ import java.net.URI;
 import java.util.Date;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.californium.TestTools;
@@ -37,6 +38,7 @@ import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.CoAP.Type;
+import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
@@ -47,14 +49,24 @@ import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.core.config.CoapConfig.TrackerMode;
 import org.eclipse.californium.core.network.CoapEndpoint;
+import org.eclipse.californium.core.network.CoapStackFactory;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.KeyToken;
+import org.eclipse.californium.core.network.Outbox;
 import org.eclipse.californium.core.network.interceptors.MessageInterceptorAdapter;
+import org.eclipse.californium.core.network.stack.BaseCoapStack;
+import org.eclipse.californium.core.network.stack.BlockwiseLayer;
+import org.eclipse.californium.core.network.stack.CoapStack;
+import org.eclipse.californium.core.network.stack.CongestionControlLayer;
+import org.eclipse.californium.core.network.stack.ExchangeCleanupLayer;
+import org.eclipse.californium.core.network.stack.Layer;
+import org.eclipse.californium.core.network.stack.ObserveLayer;
 import org.eclipse.californium.core.server.MessageDeliverer;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.Definition;
 import org.eclipse.californium.elements.EndpointContext;
+import org.eclipse.californium.elements.EndpointContextMatcher;
 import org.eclipse.californium.elements.MapBasedEndpointContext;
 import org.eclipse.californium.elements.MapBasedEndpointContext.Attributes;
 import org.eclipse.californium.elements.config.Configuration;
@@ -215,10 +227,11 @@ public class SimpleProxyProxy {
 
 		Configuration outgoingConfig = new Configuration(config);
 
+		
 		outgoingConfig.set(CoapConfig.MID_TRACKER, TrackerMode.NULL);
 		CoapEndpoint.Builder builder = CoapEndpoint.builder()
 				.setConfiguration(outgoingConfig);
-		builder.setCoapStackFactory(new OSCoreCoapStackFactory());//
+		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
 		builder.setCustomCoapStackArgument(db);//
 		proxyToServerEndpoint = new ClientSingleEndpoint(builder.build());
 		
@@ -261,6 +274,7 @@ public class SimpleProxyProxy {
 		CoapResource targets = new CoapResource("targets");
 		coapProxyServer.add(targets);
 
+		
 		System.out.println(clientToProxyEndpoint);
 		System.out.println(proxyToServerEndpoint);
 		System.out.println(coapProxyServer.getRoot().getURI());
@@ -308,5 +322,34 @@ public class SimpleProxyProxy {
 		}
 
 	}
+	public class OSCoreUdpStackWithoutObserveLayer extends BaseCoapStack {
+		
+		/**
+		 * Creates a new OSCORE-enabled stack using UDP as the transport.
+		 * 
+		 * @param tag logging tag
+		 * @param config The configuration values to use.
+		 * @param matchingStrategy endpoint context matcher to relate responses with
+		 *            requests
+		 * @param outbox The adapter for submitting outbound messages to the
+		 *            transport.
+		 * @param ctxDb context DB.
+		 * @since 3.1
+		 */
+		public OSCoreUdpStackWithoutObserveLayer(String tag, Configuration config, EndpointContextMatcher matchingStrategy, Outbox outbox, OSCoreCtxDB ctxDb) {
+			super(outbox);
+
+			Layer layers[] = new Layer[] {
+					new ObjectSecurityContextLayer(ctxDb),
+					new ExchangeCleanupLayer(config),
+					new ObserveLayer(config),
+					new BlockwiseLayer(tag, false, config, matchingStrategy),
+					new ObjectSecurityLayer(ctxDb),
+					CongestionControlLayer.newImplementation(tag, config)};
+			setLayers(layers);
+		}
+	}
 }
+
+
 

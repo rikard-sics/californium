@@ -3,10 +3,14 @@
 package org.eclipse.californium.oscore;
 
 import java.util.Objects;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.server.resources.CoapExchange;
@@ -21,6 +25,7 @@ import com.upokecenter.cbor.CBORObject;
  *
  */
 public class SimpleProxyServer {
+	private static Timer timer;
 
 	private final static HashMapCtxDB db = new HashMapCtxDB();
 	private final static String uriLocal = "coap://localhost";
@@ -79,7 +84,7 @@ public class SimpleProxyServer {
 				System.out.println("Accessing hello resource");
 				Response r = new Response(ResponseCode.CONTENT);
 				r.setPayload("Hello Resource");
-				//r.getOptions().setMaxAge(4);
+				r.getOptions().setMaxAge(4);
 				exchange.respond(r);
 			}
 		};
@@ -100,7 +105,7 @@ public class SimpleProxyServer {
 						System.out.println(obj);
 					}
 				}
-				//r.getOptions().setMaxAge(4);
+				r.getOptions().setMaxAge(4);
 				exchange.respond(r);
 				counter.incrementAndGet();
 				/*if (counter.get() == 2) {
@@ -109,7 +114,55 @@ public class SimpleProxyServer {
 
 			}
 		};
+		
+		/**
+		 * The resource for testing Observe support 
+		 * 
+		 * Responds with "one" for the first request and "two" for later updates.
+		 *
+		 */
+		class ObserveResource extends CoapResource {
+			
+			public String value = "one";
+			private boolean firstRequestReceived = false;
 
+			public ObserveResource(String name, boolean visible) {
+				super(name, visible);
+				
+				this.setObservable(true); 
+				this.setObserveType(Type.NON);
+				this.getAttributes().setObservable();
+				
+				timer.schedule(new UpdateTask(), 0, 750);
+			}
+
+			@Override
+			public void handleGET(CoapExchange exchange) {
+				firstRequestReceived  = true;
+
+				exchange.respond(value);
+			}
+			
+			//Update the resource value when timer triggers (if 1st request is received)
+			class UpdateTask extends TimerTask {
+				@Override
+				public void run() {
+					if(firstRequestReceived) {
+						value = "two";
+						changed(); // notify all observers
+					}
+				}
+			}
+		}
+		timer = new Timer();
+		//observe2 resource for OSCORE Observe tests
+		ObserveResource oscore_observe2 = new ObserveResource("observe2", true);
+		
+		hello.add(oscore_observe2);
+		
+		ObserveResource observe3 = new ObserveResource("observe3", true);
+		server.add(observe3);
+		
 		server.add(hello.add(hello1));
 		server.start();
 	}

@@ -240,42 +240,7 @@ public class OptionJuggle {
 				throw new IllegalArgumentException("Option not yet implemented");
 				//break;
 			case OptionNumberRegistry.PROXY_URI:
-				// check if it already exists as a uOption
 				System.out.println("Proxy uri is handled before encryption, before filtering too");
-				/*
-				if (uOptions.hasProxyUri()) {
-					// if it does, runtimeException
-					throw new RuntimeException("Option to be added already exists as an option in the message!");
-				}
-
-				// put in variable
-				String proxyUri = values.ToObject(String.class);
-
-				// ok lets go
-				Option option = StandardOptionRegistry.PROXY_URI.create(proxyUri);
-				
-				OptionSet proxyURIOptions = handleProxyURI(option);
-				
-				if (proxyURIOptions.getURIPathCount() == 0 ) {
-					if ((index + 1) == (instructions.length - 2) ) {
-						throw new RuntimeException("Tried to add URI Path option through proxy URI option on the last layer of encryption");
-					}
-					uOptions.setUriPath(proxyURIOptions.getUriPathString());
-				}
-				if (proxyURIOptions.getURIQueryCount() == 0) {
-					if ((index + 1) == (instructions.length - 2) ) {
-						throw new RuntimeException("Tried to add URI Query option through proxy URI option on the last layer of encryption");
-					}
-					uOptions.setUriQuery(proxyURIOptions.getUriQueryString());
-				}
-				
-				// if outer only, add to pre encryption set (if it exists) 
-				addToPreEncryptionSet(index, instructions, optionNumber);
-				
-				// set post instruction
-				uOptions.setProxyUri(proxyURIOptions.getProxyUri());
-				
-				//handle proxy uri and split it?*/
 				
 				break;
 			case OptionNumberRegistry.PROXY_SCHEME:
@@ -326,33 +291,45 @@ public class OptionJuggle {
 		boolean instructionsExists = Objects.nonNull(instructions);
 		CBORObject instruction = null;
 		int index = -1;
-
+		
+		int toTouch = 0;
+		int timesTouched = 0;
+		
 		int firstInstructionsIndex;
 		if (instructionsExists) { 
 			index = instructions[1].ToObject(int.class);
 			instruction = instructions[index];
+			
+			CBORObject preSet = instruction.get(6);
+			if (preSet != null) {
+				toTouch = instruction.get(6).size();
+			}
 			firstInstructionsIndex = request ? 2 : instructions.length - 1;
 		}
 		else {
 			firstInstructionsIndex = 2;
 		}
 
+		
+		
+		
+		
 		for (Option o : options.asSortedList()) {
 
 			System.out.println("Processing option: " + o);
 			switch (o.getNumber()) {
 			/* Class U ONLY options */
 			case OptionNumberRegistry.OSCORE:
-			
-			// no instructions and am proxy
+
+			// no instructions and is a proxy
 			if (!instructionsExists && db.getIfProxyable()) {
 				// for now, just assume we are forwarding the request
 				// currently don't possess request specific forwarding information
+				// to separate forwarded and original requests
 				result.addOption(o);
 				options.removeOscore();
 				break;
 			}
-			// if instructions exist use them, and if not a proxy use default behavior
 			
 			case OptionNumberRegistry.URI_HOST:
 			case OptionNumberRegistry.URI_PORT:
@@ -368,6 +345,7 @@ public class OptionJuggle {
 					if (promotionAnswers != null) {
 						System.out.println("There existed promotion answers for option: " + o);
 						promoted = processPromotion(o, promotionAnswers, includes);
+						timesTouched++;
 					}
 					else {
 						System.out.println("There was no promotion answers for option: " + o);
@@ -418,6 +396,14 @@ public class OptionJuggle {
 			}
 		}
 		
+		if (toTouch > timesTouched) {
+			throw new RuntimeException("Not all pre set instructions were used");
+		}
+		else if (toTouch < timesTouched) {
+			throw new RuntimeException("There are pre set instructions that are unused");
+			//because the option for the instruction is not present
+		}
+		
 		return result;
 	}
 
@@ -461,8 +447,14 @@ public class OptionJuggle {
 				break;
 				/* Class U and E options */
 			case OptionNumberRegistry.OBSERVE:
-			case OptionNumberRegistry.MAX_AGE:
 				result[0].addOption(o);
+				result[1].addOption(o);
+				break;
+			case OptionNumberRegistry.MAX_AGE:
+				// create outer max age option that is 0, and keep inner the same
+				result[0].addOption(StandardOptionRegistry.MAX_AGE.create(0));
+				result[1].addOption(o);
+				break;
 				/* Class E options*/
 			default: 
 				result[1].addOption(o);
@@ -488,7 +480,6 @@ public class OptionJuggle {
 			
 			String proxyUri = value.ToObject(String.class);
 
-			// ok lets go
 			Option option = StandardOptionRegistry.PROXY_URI.create(proxyUri);
 			
 			OptionSet proxyURIOptions = handleProxyURI(option);

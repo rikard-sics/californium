@@ -183,6 +183,12 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	@Override
 	public synchronized CBORObject[] getInstructions(Token token) {
 		if (token != null) {
+			System.out.println("token was not null");
+			Object[] tokenArray =  instructionMap.keySet().toArray();
+			if (tokenArray.length > 0) {
+				System.out.println("first in keyset: " + tokenArray[0]);
+			}
+			System.out.println("token: " + token);
 			return instructionMap.get(token);
 		} else {
 			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
@@ -412,6 +418,16 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	public synchronized boolean tokenExist(Token token) {
 		if (token != null) {
 			return allTokens.contains(token);
+		} else {
+			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
+			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
+		}
+	}
+	
+	@Override
+	public synchronized boolean instructionsExistForToken(Token token) {
+		if (token != null) {
+			return instructionMap.containsKey(token);
 		} else {
 			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
 			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);

@@ -135,7 +135,7 @@ public class OptionEncoder {
 		option.Add(5, idcontext);
 
 
-		option.Add(7, requestSequenceNumber);
+		option.Add(8, requestSequenceNumber);
 
 		return option.EncodeToBytes();
 	}
@@ -213,7 +213,7 @@ public class OptionEncoder {
 
 		option.Add(6, optionsHolder);
 		
-		option.Add(7, requestSequenceNumber);
+		option.Add(8, requestSequenceNumber);
 		return option.EncodeToBytes();
 	}
 

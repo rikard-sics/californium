@@ -147,6 +147,8 @@ public interface OSCoreCtxDB {
 	 */
 	public boolean tokenExist(Token token);
 
+	public boolean instructionsExistForToken(Token token);
+	
 	/**
 	 * purge all contexts
 	 */
@@ -158,4 +160,5 @@ public interface OSCoreCtxDB {
 	 * @param token token to be removed
 	 */
 	public void removeToken(Token token);
+
 }
