@@ -144,8 +144,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	@Override
 	public void sendRequest(final Exchange exchange, final Request request) {
-		
 		Request req = request;
+
 		System.out.println("SEND REQUEST IN OBJECTSECURITYLAYER");
 		System.out.println("request is: " + request);
 		System.out.println(shouldProtectRequest(request));
@@ -169,39 +169,41 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						return; 
 					}
 				}
-				
+
 				byte[] OscoreOption = request.getOptions().getOscore();
 				CBORObject[] instructions = OptionEncoder.decodeCBORSequence(OscoreOption);
-				
+
 				// are there instructions?
 				boolean instructionsExists = Objects.nonNull(instructions);
-				
+
 				if (instructionsExists) {
 					int index = instructions[1].ToObject(int.class);
-					
+
 					// is this the last instruction?
 					boolean lastInstruction = index == (instructions.length - 1);
-					
+
 					CBORObject requestSequenceNumber = instructions[index].get(8);
-					
+
 					if (lastInstruction && requestSequenceNumber != null) {
 						// remove request sequence number of last instruction
 						instructions[index].RemoveAt(8);
-						
+
 						// reset index
 						instructions[1] = CBORObject.FromObject(2);
 					}
-						
+
 				}
+
+
 				final OSCoreCtx ctx = ctxDb.getContext(request, false);
 
 				if (ctx == null) {
 					//this might create trouble with context rederivation if the context is removed or something 
 					//perhaps during the rederivation
-					System.out.println("The context was null");
 
 					if (ctxDb.getIfProxyable()) {
 						// if we are a proxy but do not have a security context with the next endpoint we forward the request
+						System.out.println("The context was null");
 						System.out.println("we are proxy");
 
 						request.addMessageObserver(0, new MessageObserverAdapter() {
@@ -252,106 +254,101 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				 */
 				OSCoreEndpointContextInfo.sendingRequest(ctx, exchange);
 
-				
-
-				//encryption here
-				final Request preparedRequest = prepareSend(ctxDb, request, instructions);
-
-				System.out.println("request after prepare send is: " + request);
-				System.out.println("prepared request is:           " + preparedRequest);
-
-				
-				boolean instructionsRemaining = true;
+				Request preparedRequest = request;
 
 				if (instructionsExists) {
-					System.out.println("There are instructions");
 
-					int index = instructions[1].ToObject(int.class);
+					int startIndex = instructions[1].ToObject(int.class);
+					if ( 2 != startIndex ) {
+						throw new RuntimeException("start index is not correct in instructions");
+					}
 
-					// are there still instructions left?
-					instructionsRemaining = index != (instructions.length - 1);
+					// This loops until all instructions have been used
+					for (int i = startIndex; i < instructions.length; i++) {
+						//encryption
+						preparedRequest = prepareSend(ctxDb, preparedRequest, instructions);
 
-					if (instructionsRemaining) {
-						// increment index
-						instructions[1] = CBORObject.FromObject(index + 1);
-
-						// set correct latest oscore option value
-						byte[] latestOSCOREOptionValue = preparedRequest.getOptions().getOscore();
-						instructions[0] = CBORObject.FromObject(latestOSCOREOptionValue);
-
-						//should this be the partial IV?
+						// set request sequence number in instructions for decryption
 						int requestSequenceNr = new OscoreOptionDecoder(preparedRequest.getOptions().getOscore()).getSequenceNumber();
-						instructions[index].set(8, CBORObject.FromObject(requestSequenceNr));
+						instructions[i].set(8, CBORObject.FromObject(requestSequenceNr));
 
-						//update instructions and set into oscore option
-						byte[] updatedOSCOREOption = OptionEncoder.encodeSequence(instructions);
-						preparedRequest.getOptions().setOscore(updatedOSCOREOption);
+						// this sets the correct values for the next layer of encryption in the instructions
+						if (i < (instructions.length - 1)) {
+							// increment index in instructions
+							instructions[1] = CBORObject.FromObject(i + 1);
 
-						// apply OSCORE layer again
-						sendRequest(exchange, preparedRequest);
-					}
-					else {
-						int requestSequenceNr = new OscoreOptionDecoder(preparedRequest.getOptions().getOscore()).getSequenceNumber();
-						instructions[index].set(8, CBORObject.FromObject(requestSequenceNr));
-					}
-				}
+							// set correct latest oscore option value in instructions for the next encryption
+							byte[] latestOSCOREOptionValue = preparedRequest.getOptions().getOscore();
+							instructions[0] = CBORObject.FromObject(latestOSCOREOptionValue);
 
-				if (!instructionsExists || (instructionsExists && !instructionsRemaining)) {
+							//update instructions and set into oscore option for the next encryption
+							byte[] updatedOSCOREOption = OptionEncoder.encodeSequence(instructions);
+							preparedRequest.getOptions().setOscore(updatedOSCOREOption);
 
-					final CBORObject[] finalInstructions = instructions;
-
-					System.out.println("in request send, after encryption");
-					final OSCoreCtx finalCtx = ctxDb.getContext(request, true);
-
-					if (outgoingExceedsMaxUnfragSize(preparedRequest, false, ctx.getMaxUnfragmentedSize())) {
-						throw new IllegalStateException("outgoing request is exceeding the MAX_UNFRAGMENTED_SIZE!");
-					}
-
-					preparedRequest.addMessageObserver(0, new MessageObserverAdapter() {
-
-						//this isn't called until it is ready to send, i.e. super.sendRequest
-						//only creates the Token and associates it with the ctx
-						@Override
-						public void onReadyToSend() {
-							Token token = preparedRequest.getToken();
-
-							// add at head of message observers to update
-							// the token of the original request first,
-							// before calling other message observers!
-							if (request.getToken() == null) {
-								request.setToken(token);
-							}
-
-							if (!request.hasMID() && preparedRequest.hasMID()) {
-								request.setMID(preparedRequest.getMID());
-							}
-
-							if (Objects.nonNull(finalInstructions)) {
-								ctxDb.addInstructions(token, finalInstructions);
-							}
-							else {
-								ctxDb.addContext(token, finalCtx);
-							}
-
-							System.out.println("SENT REQUEST WITH: " + token.toString());
+							// apply OSCORE layer again
 						}
-					});
-
-					req = preparedRequest;
-
-					if (!(Objects.nonNull(finalInstructions))) {
-						exchange.setCryptographicContextID(req.getOptions().getOscore());
-						System.out.println("sending request with cryptographic context id = " + Hex.encodeHexString(req.getOptions().getOscore()));
 					}
-					else {
-						System.out.println("sending with no cryptographic context set");
-					}
-					LOGGER.trace("Request: {}", exchange.getRequest());
-
-					System.out.println("Sending request: " + req);
-					super.sendRequest(exchange, req);
-
 				}
+				else {
+					// no instructions, just encrypt the message once
+					preparedRequest = prepareSend(ctxDb, request, instructions);
+				}
+
+				final Request finalPreparedRequest = preparedRequest;
+
+				// used and set on message observer when sending with instructions
+				final CBORObject[] finalInstructions = instructions;
+
+				// used and set on message observer when sending without instructions
+				final OSCoreCtx finalCtx = ctxDb.getContext(request, true);
+
+				if (outgoingExceedsMaxUnfragSize(finalPreparedRequest, false, ctx.getMaxUnfragmentedSize())) {
+					throw new IllegalStateException("outgoing request is exceeding the MAX_UNFRAGMENTED_SIZE!");
+				}
+
+				finalPreparedRequest.addMessageObserver(0, new MessageObserverAdapter() {
+
+					//this isn't called until it is ready to send, i.e. super.sendRequest
+					//only creates the Token and associates it with the ctx
+					@Override
+					public void onReadyToSend() {
+						Token token = finalPreparedRequest.getToken();
+
+						// add at head of message observers to update
+						// the token of the original request first,
+						// before calling other message observers!
+						if (request.getToken() == null) {
+							request.setToken(token);
+						}
+
+						if (!request.hasMID() && finalPreparedRequest.hasMID()) {
+							request.setMID(finalPreparedRequest.getMID());
+						}
+
+						if (Objects.nonNull(finalInstructions)) {
+							ctxDb.addInstructions(token, finalInstructions);
+						}
+						else {
+							ctxDb.addContext(token, finalCtx);
+						}
+
+						System.out.println("SENT REQUEST WITH: " + token.toString());
+						System.out.println("SENT REQUEST WITH: MID=" + request.getMID());
+
+					}
+				});
+
+				req = finalPreparedRequest;
+
+				// sets the cryptographic context id on the exchange if there were no instructions
+				if (!(Objects.nonNull(finalInstructions))) {
+					exchange.setCryptographicContextID(req.getOptions().getOscore());
+				}
+
+				LOGGER.trace("Request: {}", exchange.getRequest());
+
+				System.out.println("Sending request: " + req);
+				super.sendRequest(exchange, req);
 
 			} catch (OSException e) {
 				LOGGER.error("Error sending request: {}", e.getMessage());
@@ -377,7 +374,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		// AAAAAAAAH
 		// Update instruction to be original after having sent the request
 		// because subsequent requests will need the original to send correctly
-		
+
 		/* If the request contained the Observe option always add a partial IV to the response.
 		 * A partial IV will also be added if the responsesIncludePartialIV flag is set in the context. */
 		boolean addPartialIV;
@@ -397,15 +394,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 			try {
 				// Retrieve the context
-				System.out.println("----------------------");
-				ctxDb.size();
 				Token token = exchange.getCurrentRequest().getToken();
 				OSCoreCtx ctx = ctxDb.getContextByToken(token);
 
-
-
 				CBORObject[] instructions = ctxDb.getInstructions(token);
-
 
 				boolean instructionsExists = Objects.nonNull(instructions);
 				boolean instructionsRemaining = false;
@@ -417,10 +409,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 					// get instruction
 					CBORObject instruction = instructions[index];
-
-					for (CBORObject obj : instructions) {
-						System.out.println(obj);
-					}
 
 					byte[] RID       = instruction.get(3).ToObject(byte[].class);
 					byte[] IDCONTEXT = instruction.get(5).ToObject(byte[].class);
@@ -434,16 +422,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				}
 				else {
 					// Parse the OSCORE option from the corresponding request using the cryptographic context
-					System.out.println("Parsing from cryptographic context id");
 					OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
 					requestSequenceNumber = optionDecoder.getSequenceNumber();
 				}
 
-				System.out.println(ctx != null && ctx.getResponsesIncludePartialIV());
-				System.out.println(exchange.getRequest().getOptions().hasObserve());
 				addPartialIV = (ctx != null && ctx.getResponsesIncludePartialIV()) || exchange.getRequest().getOptions().hasObserve();
-
-
 
 				Response preparedResponse = prepareSend(ctxDb, response, ctx, addPartialIV, outerBlockwise,
 						requestSequenceNumber, instructions);
@@ -467,6 +450,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				else {
 					if (instructionsExists) {
 						// reset instruction index
+						System.out.println("Resetting index");
 						instructions[1] = CBORObject.FromObject(instructions.length - 1);
 					}
 					System.out.println("NOT calling again");
@@ -497,11 +481,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	public void receiveRequest(Exchange exchange, Request request) {
 		System.out.println("RECEIVE REQUEST IN OBJECTSECURITYLAYER");
 		System.out.println(request);
-		System.out.println("Owner is: " + exchange.getEndpoint());
-
-		System.out.println("Owner is: " + exchange.getEndpoint().getAddress());
-		System.out.println("Owner is: " + exchange.getEndpoint().getUri());
-
+		
 		boolean performOSCoreCheck = false;
 		OptionSet options = request.getOptions();
 
@@ -520,12 +500,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 							destination = translator.getDestinationURI(request, exposedInterface);
 
 						} catch (Exception e) {
-							System.out.println("error in translateion");
 							System.out.println(e.getMessage());
 							exchange.sendResponse(new Response(ResponseCode.INTERNAL_SERVER_ERROR)); // eller nåt
 						}
-
-						System.out.println("destination is:  " + destination.getAuthority().equals(exchange.getEndpoint().getUri().getAuthority()));
 
 						// use destination for this checking, and something else
 						/* does uri port and host identify me?*/
@@ -578,9 +555,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		}
 
 		if (performOSCoreCheck) {
-			// compare oscore option value (assume is whatever) with old value, if idcontext is the same we send up.
+
 			boolean lastOscoreLayer = false;
-			if (request.getOptions().hasOscore() && Hex.encodeHexString(request.getOptions().getOscore()).equals("01")) {
+			if (request.getOptions().hasOscore() && Arrays.equals(request.getOptions().getOscore(), new byte[] {0x01})) {
+				//&& Hex.encodeHexString(request.getOptions().getOscore()).equals("01")) {
 				lastOscoreLayer = true;
 			}
 
@@ -599,6 +577,34 @@ public class ObjectSecurityLayer extends AbstractLayer {
 							OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(request.getOptions().getOscore());
 							byte[] rid = optionDecoder.getKid();
 							byte[] IDContext = optionDecoder.getIdContext();
+
+							// if this ctx has been used to decrypt before, forget the instructions.
+							CBORObject[] instructions = ctxDb.getInstructions(request.getToken());
+							boolean instructionsExists = Objects.nonNull(instructions);
+							if (instructionsExists) {
+								for (int i = 2; i < instructions.length; i++) {
+									byte[] ridInstruction = instructions[i].get(3).ToObject(byte[].class);
+									CBORObject IDContextCBOR = instructions[i].get(5);
+									byte[] IDContextInstruction = null;
+									if (IDContextCBOR != null) {
+										IDContextInstruction = IDContextCBOR.ToObject(byte[].class);
+									}
+
+									boolean hasBeenUsedBefore = false;
+									if (IDContextInstruction != null) {
+										hasBeenUsedBefore = Arrays.equals(rid, ridInstruction) 
+												&& Arrays.equals(IDContext, IDContextInstruction);
+									}
+									else {
+										hasBeenUsedBefore = Arrays.equals(rid, ridInstruction);
+									}
+
+									if (hasBeenUsedBefore) {
+										System.out.println("Instruction has been previously used, so it is removed");
+										ctxDb.removeInstructions(request.getToken());
+									}
+								}
+							}
 
 							ctx = ctxDb.getContext(rid, IDContext);
 						} catch (CoapOSException e) {
@@ -623,9 +629,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				// is there an application yes
 				if (/* hasApplication() */ true) {
 					System.out.println("Sending to Application");
-
-					// check cryptographic context id?
-
 					super.receiveRequest(exchange, request);
 				}
 				else {
@@ -665,17 +668,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 			System.out.println("prepared request is: " + request);
 			// this could be better
-			if (Hex.encodeHexString(request.getOptions().getOscore()).equals(Hex.encodeHexString(requestOscoreOption))) {
+			if (Arrays.equals(request.getOptions().getOscore(), requestOscoreOption)) {
 				//request.getOptions().removeOscore();
 				request.getOptions().setOscore(new byte[] {0x01});
 			}			
-
-			try {
-				System.out.println("cryptographic context id:" + Hex.encodeHexString(exchange.getCryptographicContextID())); 
-			}
-			catch (Exception e) {
-
-			}
 
 			// maybe breaks
 			byte[] cryptographicContextID = exchange.getCryptographicContextID();
@@ -683,7 +679,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			CBORObject[] instructions = null;
 			// if previous was first, create header
 			if (cryptographicContextID != null && cryptographicContextID != requestOscoreOption) {
-				System.out.println("we in request decrypt 2nd layer?");
 				instructions = new CBORObject[4];
 
 				instructions[0] = CBORObject.FromObject(new byte[0]);
@@ -708,7 +703,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			}
 
 			if (instructions != null) {
-				System.out.println("instructions");
 
 				//increment index
 				int index = instructions[1].ToObject(int.class);
@@ -720,15 +714,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				byte[] IDContext = optionDecoder.getIdContext();
 				int requestSequenceNr = optionDecoder.getSequenceNumber();
 				instructions[instructions.length - 1] =  CBORObject.DecodeFromBytes(OptionEncoder.set(rid, IDContext, requestSequenceNr));
-
-				for (CBORObject obj : instructions) {
-					System.out.println(obj);
-				}
-
-
 			}
 			else {
-				System.out.println("no instructions");
 				exchange.setCryptographicContextID(requestOscoreOption);
 			}
 
@@ -752,6 +739,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	public void receiveResponse(Exchange exchange, Response response) {
 		System.out.println("RECEIVE RESPONSE IN OBJECTSECURITYLAYER");
 		System.out.println("Received response: " + response);
+		System.out.println("For request:       " + exchange.getCurrentRequest());
 
 		Request request = exchange.getCurrentRequest();
 		if (request == null) {
@@ -817,13 +805,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				CBORObject[] instructions = null;
 
 				if (cryptographicContextID != null) {
-					System.out.println("1");
-					System.out.println(Hex.encodeHexString(cryptographicContextID));
 					OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
 					requestSequenceNumber = optionDecoder.getSequenceNumber();
 				}
 				else {
-					System.out.println("2");
 					instructions = ctxDb.getInstructions(token);
 
 					if (Objects.isNull(instructions)) {
@@ -839,9 +824,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				}
 
 				// need to handle the case where any oscore layer is missing
-				if (instructions == null) {
-					System.out.println("instructions are null before prepare receive");
-				}
 				response = prepareReceive(ctxDb, response, requestSequenceNumber, instructions);
 
 				if (Objects.nonNull(instructions)) {
@@ -893,10 +875,16 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			System.out.println("Removing token");
 			ctxDb.removeToken(response.getToken());
 		}
+		else {
+			System.out.println("Not removing token, ");
+			System.out.println("resetting index");
+			CBORObject[] instructions = ctxDb.getInstructions(response.getToken());
+			// this is to reset the instruction index when receiving multiple responses (as may happen when observe is used)
+			if (Objects.nonNull(instructions)) {
+				instructions[1] = CBORObject.FromObject(instructions.length - 1);
+			}
+		}
 
-		//System.out.println(exchange.getCurrentRequest().getMessageObservers());
-
-		
 		// Remove token if this is an incoming response to an Observe
 		// cancellation request
 		//if (exchange.getRequest().isObserveCancel()) {
@@ -916,11 +904,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	}
 	private boolean isAcceptableToForward(Request request) {
 		byte[] oscoreOption = request.getOptions().getOscore();
-
+		/*
 		try {
 			OscoreOptionDecoder oscoreOptionDecoder = new OscoreOptionDecoder(oscoreOption);
 			// do some list or array, in ctxDB? (add flag for who can forward and who is forwardeable to?)
-			System.out.println("Kid is: " + Hex.encodeHexString(oscoreOptionDecoder.getKid()));
 			if (oscoreOptionDecoder.getKid().equals(new byte[] {0x01} )) {
 				System.out.println("forwarding: 0x01");
 				return true;
@@ -931,8 +918,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			if (oscoreOption != null) {
 				System.out.println("oscore option was: " + Hex.encodeHexString(oscoreOption));
 			}
-		}
-		System.out.println("always accept forwarding...");
+		}*/
 		return true;
 	}
 	private static boolean shouldProtectResponse(Exchange exchange, OSCoreCtxDB ctxDb) {
@@ -959,13 +945,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				}
 			}
 		}
-		System.out.println(exchange.getCryptographicContextID() != null );
-		System.out.println(ctxDb.getInstructions(response.getToken()) != null);
-		//System.out.println( OptionEncoder.decodeCBORSequence(response.getOptions().getOscore()) != null);
-		System.out.println(ctxDb.hasBeenForwarded(response.getToken()));
+
 		return exchange.getCryptographicContextID() != null 
 				|| ctxDb.getInstructions(response.getToken()) != null
-				//	|| OptionEncoder.decodeCBORSequence(response.getOptions().getOscore()) != null
 				|| ctxDb.hasBeenForwarded(response.getToken());
 	}
 

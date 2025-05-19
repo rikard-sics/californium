@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.Message;
@@ -35,7 +34,6 @@ import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.option.BaseOptionDefinition;
-import org.eclipse.californium.core.coap.option.BlockOption;
 import org.eclipse.californium.core.coap.option.StandardOptionRegistry;
 import org.eclipse.californium.core.coap.option.StringOption;
 import org.eclipse.californium.elements.EndpointContext;
@@ -44,7 +42,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
-import com.upokecenter.cbor.CBORType;
 
 /**
  * 
@@ -113,9 +110,6 @@ public class OptionJuggle {
 
 	public static void addToPreEncryptionSet(int index, CBORObject[] instructions, int optionNumber) {
 		// is it there a next instruction?
-		System.out.println("index + 1 = " + (index + 1 ));
-		System.out.println(instructions.length);
-		System.out.println((index + 1) < (instructions.length));
 		if ((index + 1) < (instructions.length) /* header*/) {
 
 			CBORObject nextInstruction = instructions[index + 1];
@@ -316,7 +310,6 @@ public class OptionJuggle {
 		
 		for (Option o : options.asSortedList()) {
 
-			System.out.println("Processing option: " + o);
 			switch (o.getNumber()) {
 			/* Class U ONLY options */
 			case OptionNumberRegistry.OSCORE:
@@ -337,8 +330,6 @@ public class OptionJuggle {
 			case OptionNumberRegistry.PROXY_URI:
 				// Does it have instructions?
 				if (instructionsExists)  {
-					System.out.println("instruction exists for layer");
-					System.out.println("instruction is - " + instruction);
 					boolean[] promotionAnswers = OptionEncoder.extractPromotionAnswers(o.getNumber(), instruction);
 
 					boolean promoted = false;
@@ -349,10 +340,7 @@ public class OptionJuggle {
 					}
 					else {
 						System.out.println("There was no promotion answers for option: " + o);
-						System.out.println("index is: " + index);
 						if (o.getNumber() == OptionNumberRegistry.OSCORE && index != firstInstructionsIndex) {
-							System.out.println("instruction does exist for layer but not for OSCORE option");
-							System.out.println("we encrypt it as standard, unless it is the first instruction");
 							promoted = true;
 						}
 					}
@@ -387,7 +375,6 @@ public class OptionJuggle {
 				}
 				else {
 					// if no instructions, the default is to not encrypt the option
-					System.out.println("instruction does not exist for layer");
 				}
 
 			default:
@@ -483,8 +470,6 @@ public class OptionJuggle {
 			Option option = StandardOptionRegistry.PROXY_URI.create(proxyUri);
 			
 			OptionSet proxyURIOptions = handleProxyURI(option);
-			System.out.println("in handle proxy uri: " + options);
-			System.out.println(options.hasUriPath());
 			
 			// create Uri-Path and Uri-Query and add to Class E options
 			// add proxy-uri to Class U options
@@ -870,7 +855,6 @@ public class OptionJuggle {
 
 		for (Option tmp : uOptions.asSortedList()) {
 			if (Collections.binarySearch(e, tmp) < 0) {
-				System.out.println("merging E option: " + e + " with U option: " + tmp);
 				eOptions.addOption(tmp);
 			}
 		}

@@ -61,14 +61,7 @@ public class RequestDecryptor extends Decryptor {
 	 * @throws CoapOSException if decryption fails
 	 */
 	public static Request decrypt(OSCoreCtxDB db, Request request, OSCoreCtx ctx) throws CoapOSException {
-
-		System.out.println(request.getOptions());
-
 		discardEOptions(request);
-		
-		System.out.println(request.getOptions());
-		
-		System.out.println("source context is: " + request.getSourceContext());
 
 		byte[] protectedData = request.getPayload();
 		Encrypt0Message enc;
@@ -144,22 +137,13 @@ public class RequestDecryptor extends Decryptor {
 		
 		// We need the kid value on layer level
 		request.getOptions().setOscore(rid);
-		
 
 		// Associate the Token with the context used
 		db.addContext(request.getToken(), ctx);
 
-		if (request.getSourceContext() != null) {
-			System.out.println(request.getSourceContext().entries());
-		}
-		
 		//Set information about the OSCORE context used in the endpoint context of this request
 		OSCoreEndpointContextInfo.receivingRequest(ctx, request);
 
-		if (request.getSourceContext() != null) {
-			System.out.println(request.getSourceContext().entries());
-		}
-		
 		request.getOptions().setOscore(oscoreOption);
 
 		return OptionJuggle.setRealCodeRequest(request, ctx.getCoAPCode());

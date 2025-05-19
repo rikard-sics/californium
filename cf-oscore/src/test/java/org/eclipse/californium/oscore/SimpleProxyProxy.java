@@ -225,14 +225,14 @@ public class SimpleProxyProxy {
 		int i = CoapProxyPort - 1;
 		db.addContext(uriLocal /*+ ":" + Objects.toString(i)*/, ctxToServer);
 
+		OSCoreCoapStackFactory.useAsDefault(db);
 		Configuration outgoingConfig = new Configuration(config);
-
 		
 		outgoingConfig.set(CoapConfig.MID_TRACKER, TrackerMode.NULL);
 		CoapEndpoint.Builder builder = CoapEndpoint.builder()
 				.setConfiguration(outgoingConfig);
-		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
-		builder.setCustomCoapStackArgument(db);//
+		// builder.setCoapStackFactory(new OSCoreCoapStackFactory());
+		// builder.setCustomCoapStackArgument(db);//
 		proxyToServerEndpoint = new ClientSingleEndpoint(builder.build());
 		
 		ProxyCacheResource cacheResource = null;
@@ -249,8 +249,8 @@ public class SimpleProxyProxy {
 		}
 		
 		builder = CoapEndpoint.builder();
-		builder.setCoapStackFactory(new OSCoreCoapStackFactory());
-		builder.setCustomCoapStackArgument(db);
+		// builder.setCoapStackFactory(new OSCoreCoapStackFactory());
+		// builder.setCustomCoapStackArgument(db);
 		builder.setPort(CoapProxyPort);
 		CoapEndpoint clientToProxyEndpoint = builder.build();
 

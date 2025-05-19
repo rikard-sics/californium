@@ -183,12 +183,6 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	@Override
 	public synchronized CBORObject[] getInstructions(Token token) {
 		if (token != null) {
-			System.out.println("token was not null");
-			Object[] tokenArray =  instructionMap.keySet().toArray();
-			if (tokenArray.length > 0) {
-				System.out.println("first in keyset: " + tokenArray[0]);
-			}
-			System.out.println("token: " + token);
 			return instructionMap.get(token);
 		} else {
 			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
@@ -206,7 +200,6 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(request.getOptions().getOscore());
 		
 		if (!(Objects.nonNull(instructions))) { 
-			System.out.println("no instructions");
 			String uri; 
 			if (request.getOptions().hasProxyUri()) {
 				uri = request.getOptions().getProxyUri();
@@ -224,17 +217,9 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		if (overwrite) {
 			// Retrieve and set real OSCORE option value
 			byte[] OSCOREOptionValue = instructions[0].ToObject(byte[].class);
-			System.out.println("in overwrite: " + OSCOREOptionValue.length);
-			//if (OSCOREOptionValue.length != 0) {
-				System.out.println("setting oscore to previous value");
-				request.getOptions().setOscore(OSCOREOptionValue);
-			/*}
-			else {
-				System.out.println("removing oscore");
-				System.out.println(Hex.encodeHexString(OSCOREOptionValue));
-				System.out.println(Hex.encodeHexString(request.getOptions().getOscore()));
-				request.getOptions().removeOscore();
-			}*/
+
+			request.getOptions().setOscore(OSCOREOptionValue);
+
 		}
 		
 		
@@ -319,8 +304,6 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	@Override
 	public synchronized OSCoreCtx getContext(String uri) throws OSException {
 		if (uri != null) {
-			System.out.println(normalizeServerUri(uri));
-			System.out.println(uriMap.toString());
 			return uriMap.get(normalizeServerUri(uri));
 		} else {
 			LOGGER.error(ErrorDescriptions.STRING_NULL);
@@ -381,7 +364,6 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 
 	@Override
 	public synchronized void removeContext(OSCoreCtx ctx) {
-		System.out.println("removing context");
 		if (ctx != null) {
 
 			ByteId rid = new ByteId(ctx.getRecipientId());

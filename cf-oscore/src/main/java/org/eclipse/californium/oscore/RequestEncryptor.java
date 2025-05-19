@@ -60,7 +60,6 @@ public class RequestEncryptor extends Encryptor {
 		//byte[] oldOscoreOption = request.getOptions().getOscore(); // can be null
 		//CBORObject[] instructions = OptionEncoder.decodeCBORSequence(oldOscoreOption);
 		
-		System.out.println("in request encryptor");
 		OSCoreCtx ctx = db.getContext(request, true);
 
 		OptionSet options = request.getOptions();
@@ -91,9 +90,6 @@ public class RequestEncryptor extends Encryptor {
 			System.out.println("removing");
 			options.removeOscore();
 		}*/
-		
-		System.out.println("request options are: " + options);
-		System.out.println("source context is: " + request.getSourceContext());
 
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CTX_NULL);
@@ -115,40 +111,25 @@ public class RequestEncryptor extends Encryptor {
 		
 		OptionSet[] optionsUAndE = OptionJuggle.filterOptions(options);
 		System.out.println("U OPTIONS ARE: " + optionsUAndE[0]);
-		System.out.println("E OPTIONS ARE: " + optionsUAndE[1]);
-
 		
 		OptionSet promotedOptions = OptionJuggle.promotion(optionsUAndE[0], instructions, true, db);
-		System.out.println("U options:            " + optionsUAndE[0]);
-		System.out.println("Promoted options are: " + promotedOptions);
 		
-
-
 		optionsUAndE[1] = OptionJuggle.merge(optionsUAndE[1], promotedOptions);	
-		
-				
-			
-		System.out.println("Eoptions are length: " + optionsUAndE[1]);
-		
-		System.out.println("payload is length: " + request.getPayload().length + " + 1 byte for payload marker");
-		System.out.println("message code is: " + realCode + ", which should be 8 bits long, aka 1 byte");
-		if (optionsUAndE[1].hasOscore()) {
-			System.out.println("Total length is: " + (optionsUAndE[1].getOscore().length + 1 + request.getPayload().length + 1 + 1));
-		}		// here the E options are set 
+
+		System.out.println("E OPTIONS ARE: " + optionsUAndE[1]);
+
+		// here the E options are set 
 		byte[] confidential = OSSerializer.serializeConfidentialData(optionsUAndE[1], request.getPayload(), realCode);
-		System.out.println("Confidential bytes are length: " + confidential.length);
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
 		byte[] cipherText = encryptAndEncode(enc, ctx, request, false, null);
-		System.out.println("Ciphertext is length: " + cipherText.length);
+
 		// sets correct OSCORE option values here
 		compression(ctx, cipherText, request, false);
 		
 		byte[] oscoreOption = request.getOptions().getOscore();
 
 		// here the U options are set
-
 		request.setOptions(OptionJuggle.postInstruction(optionsUAndE[0], instructions));
-
 		request.getOptions().setOscore(oscoreOption);
 
 		ctx.increaseSenderSeq();

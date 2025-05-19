@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapObserveRelation;
 import org.eclipse.californium.core.CoapResponse;
@@ -165,10 +166,10 @@ public class SimpleProxyClient {
 
 		sendWithPostURIAndScheme();
 
-		//sendWithObserve();
+		sendWithObserve();
 	}
 
-	/*
+	
 	private static void sendWithObserve() throws ConnectorException, IOException, InterruptedException {
 		// Handler for Observe responses
 		class ObserveHandler extends CountingCoapHandler {
@@ -176,7 +177,8 @@ public class SimpleProxyClient {
 			// Triggered when a Observe response is received
 			@Override
 			protected void assertLoad(CoapResponse response) {
-
+				Thread.dumpStack();
+				System.out.println("In Observe handler");
 				String content = response.getResponseText();
 				System.out.println("NOTIFICATION: " + content);
 
@@ -205,8 +207,8 @@ public class SimpleProxyClient {
 
 		CoapEndpoint.Builder builder = CoapEndpoint.builder();
 		//.setConfiguration(outgoingConfig);
-		//builder.setCoapStackFactory(new OSCoreCoapStackFactory());//
-		//builder.setCustomCoapStackArgument(db);//
+		// builder.setCoapStackFactory(new OSCoreCoapStackFactory());//
+		// builder.setCustomCoapStackArgument(db);//
 		builder.setPort(5686);
 
 
@@ -233,9 +235,11 @@ public class SimpleProxyClient {
 
 		request = new Request(Code.GET);
 		request.setDestinationContext(proxy);
-		//request.getOptions().setOscore(instructionsUri);
+		//request.getOptions().setOscore(instructionsUri); //  instructionsUri new byte[0]
+		
 		request.setObserve();
 		
+		request.getOptions().setOscore(new byte[0]);
 		request.getOptions().setProxyUri(uriServer + uriServerPathTestObserve); //////////////
 
 
@@ -249,21 +253,26 @@ public class SimpleProxyClient {
 		Token token = request.getToken();
 		
 		//Now cancel the Observe and wait for the final response
+		
 		request = new Request(Code.GET);
 		request.setDestinationContext(proxy);
-		//request.getOptions().setOscore(instructionsUri);
+		//request.getOptions().setOscore(instructionsUri); // instructionsUri new byte[0]
 		request.getOptions().setObserve(1); //Deregister Observe
 		request.setToken(token);
-		
+
+		request.getOptions().setOscore(new byte[0]);
 		request.getOptions().setProxyUri(uriServer + uriServerPathTestObserve); //////////////
 
-		request.send();
+		System.out.println(request);
+		//request.send();
+		CoapResponse ackResponse = client.advanced(request);
+		System.out.println("Response on cancel is type: " + ackResponse.advanced().getType());
 
 		
 		Response response = request.waitForResponse(1000);
-		System.out.println(relation.getCurrent().getResponseText());
 		printResponse(response);
-	}*/
+		System.out.println("done");
+	}
 	
 	private static void sendWithPostURIAndScheme() throws ConnectorException, IOException {
 

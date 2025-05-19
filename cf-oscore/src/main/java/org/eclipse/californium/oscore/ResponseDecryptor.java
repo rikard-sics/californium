@@ -85,10 +85,6 @@ public class ResponseDecryptor extends Decryptor {
 			// get instruction
 			CBORObject instruction = instructions[index];
 
-			for (CBORObject obj : instructions) {
-				System.out.println(obj);
-			}
-			
 			byte[] RID       = instruction.get(3).ToObject(byte[].class);
 			byte[] IDCONTEXT = instruction.get(5).ToObject(byte[].class);
 

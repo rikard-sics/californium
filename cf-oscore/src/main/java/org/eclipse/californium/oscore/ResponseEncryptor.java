@@ -130,24 +130,18 @@ public class ResponseEncryptor extends Encryptor {
 
 		OptionSet[] optionsUAndE = OptionJuggle.filterOptions(options);
 		System.out.println("U OPTIONS ARE: " + optionsUAndE[0]);
-		System.out.println("E OPTIONS ARE: " + optionsUAndE[1]);
 
 		//if (instructionsExists ) {
 			OptionSet promotedOptions = OptionJuggle.promotion(optionsUAndE[0], instructions, false, db);
 			optionsUAndE[1] = OptionJuggle.merge(optionsUAndE[1], promotedOptions);	
 		//}
 		
-		System.out.println("options to be encrypted: " + optionsUAndE[1]);
-		System.out.println("raw payload size is: " + response.getPayload().length);
-		System.out.println("code is size: 1");
+		System.out.println("E OPTIONS ARE: " + optionsUAndE[1]);
 		byte[] confidential = OSSerializer.serializeConfidentialData(optionsUAndE[1], response.getPayload(), realCode);
-		System.out.println("Confidential data is size: " + confidential.length);
 		
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
 		byte[] cipherText = encryptAndEncode(enc, ctx, response, newPartialIV, requestSequenceNr);
 
-		System.out.println("ciphertext should be " + (confidential.length + (ctx.getAlg().getTagSize() / Byte.SIZE)));
-		System.out.println("ciphertext is size: " + cipherText.length);
 		compression(ctx, cipherText, response, newPartialIV);
 
 

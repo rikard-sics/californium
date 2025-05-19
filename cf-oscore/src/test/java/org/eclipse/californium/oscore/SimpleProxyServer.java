@@ -70,10 +70,7 @@ public class SimpleProxyServer {
 		OSCoreCoapStackFactory.useAsDefault(db);
 
 		db.size();
-		//OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, new byte[] { 0x01 }, MAX_UNFRAGMENTED_SIZE);
-		//db.addContext(uriLocal, ctx);
 
-		//OSCoreCoapStackFactory.useAsDefault(db);
 
 		final CoapServer server = new CoapServer(5683);
 
@@ -139,7 +136,10 @@ public class SimpleProxyServer {
 			@Override
 			public void handleGET(CoapExchange exchange) {
 				firstRequestReceived  = true;
-
+				System.out.println(getObserverCount());
+				System.out.println("----");
+				System.out.println("in handle get");
+				System.out.println("----");
 				exchange.respond(value);
 			}
 			

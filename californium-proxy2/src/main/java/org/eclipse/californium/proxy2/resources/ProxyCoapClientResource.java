@@ -16,6 +16,9 @@
 
 package org.eclipse.californium.proxy2.resources;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Collections;
@@ -23,12 +26,22 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.core.CoapClient;
+import org.eclipse.californium.core.CoapObserveRelation;
+import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
+import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.core.network.Exchange;
+import org.eclipse.californium.core.observe.ObserveManager;
+import org.eclipse.californium.core.observe.ObserveRelation;
+import org.eclipse.californium.core.server.resources.ObservableResource;
+import org.eclipse.californium.core.test.CountingCoapHandler;
+import org.eclipse.californium.elements.EndpointContext;
 import org.eclipse.californium.proxy2.ClientEndpoints;
 import org.eclipse.californium.proxy2.Coap2CoapTranslator;
 import org.eclipse.californium.proxy2.CoapUriTranslator;
@@ -48,6 +61,12 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 	 * Maps scheme to client endpoints.
 	 */
 	private Map<String, ClientEndpoints> mapSchemeToEndpoints = new HashMap<>();
+
+	private static Map<Token, Exchange> mapTokenToExchange = new HashMap<>();
+
+	private static Map<Token, CoapObserveRelation> mapTokenToRelation = new HashMap<>();
+	
+	private static Map<Token, CoapClient> mapTokenToClient = new HashMap<>();
 	/**
 	 * Coap2Coap translator.
 	 */
@@ -91,8 +110,8 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 			Request outgoingRequest = translator.getRequest(destination, incomingRequest);
 			System.out.println(incomingRequest.getSourceContext().entries());
 			//temp fix, should do better
-			outgoingRequest.setSourceContext(incomingRequest.getSourceContext());
-			
+			//outgoingRequest.setSourceContext(incomingRequest.getSourceContext());
+
 			System.out.println("incoming Request was: " + incomingRequest);
 
 			System.out.println("outgoing Request is:  " + outgoingRequest);
@@ -121,10 +140,97 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 			if (accept) {
 				exchange.sendAccept();
 			}
-			outgoingRequest.addMessageObserver(
-					new ProxySendResponseMessageObserver(translator, exchange, cacheKey, cache, this));
 			ClientEndpoints endpoints = mapSchemeToEndpoints.get(outgoingRequest.getScheme());
-			endpoints.sendRequest(outgoingRequest);
+
+			// this message is going to be forwarded and it wants to establish a observe.
+			// this is necessary to keep the exchange alive and be able to forward multiple
+			// responses to the client
+			if (outgoingRequest.isObserve()) {
+
+				CoapClient client = new CoapClient(outgoingRequest.getURI());
+
+				class ObserveHandler extends CountingCoapHandler {
+
+					// Triggered when a Observe response is received
+					@Override
+					protected void assertLoad(CoapResponse incomingResponse) {
+
+						System.out.println("incoming response is: " + incomingResponse);
+
+						String content = incomingResponse.getResponseText();
+						System.out.println("NOTIFICATION: " + content);
+						System.out.println("NOTIFICATION: " + incomingResponse.getPayloadSize());
+
+						Response response = translator.getResponse(incomingResponse.advanced());
+						exchange.sendResponse(response);
+
+					}
+				}
+				ObserveHandler handler = new ObserveHandler();
+
+				CoapObserveRelation relation = client.observe(outgoingRequest, handler);
+				// ObserveManager manager, ObservableResource resource, Exchange exchange
+				System.out.println("incoming token is: " + incomingRequest.getToken());
+
+				// it might be uneccessary to store the exchange.
+				mapTokenToExchange.put(incomingRequest.getToken(), exchange);
+				mapTokenToRelation.put(incomingRequest.getToken(), relation);
+				mapTokenToClient.put(incomingRequest.getToken(), client);
+
+				ObserveRelation observeRelation =  new ObserveRelation(new ObserveManager(null), this, exchange);
+				exchange.setRelation(observeRelation);
+			}
+			else if (outgoingRequest.isObserveCancel()) {
+
+				Exchange originalExchange = mapTokenToExchange.get(incomingRequest.getToken());
+				CoapObserveRelation relation = mapTokenToRelation.get(incomingRequest.getToken());
+				CoapClient client = mapTokenToClient.get(incomingRequest.getToken());
+
+				System.out.println("Cancelling request in main body");
+
+				// cancel observe
+				//relation.matchRequest(incomingRequest);
+				outgoingRequest.setToken(relation.getCurrentResponse().getToken());
+				Request originalRequest = originalExchange.getCurrentRequest();
+				System.out.println("original request was: " + originalRequest);
+				System.out.println("new request is:       " + outgoingRequest);
+
+				if (outgoingRequest.isConfirmable()) {
+					outgoingRequest.addMessageObserver(
+							new ProxySendResponseMessageObserver(translator, exchange, cacheKey, cache, this));
+				}
+				else {
+					// perhaps keep alive so as to make it possible to forward RST to server
+					mapTokenToRelation.remove(incomingRequest.getToken());
+					if (originalExchange.getRelation() != null) {
+						System.out.println("relation printing");
+						System.out.println(originalExchange.getRelation());
+						originalExchange.getRelation().cancel();
+					}
+					client.shutdown();
+				}
+				
+				//endpoints.sendRequest(outgoingRequest);
+				//originalExchange.getEndpoint().sendRequest(outgoingRequest);
+				// forward observe cancel message to server
+				client.advanced(outgoingRequest);
+				
+				// aaaaaah, i wanted this to work :(
+				//relation.proactiveCancel();					
+
+
+				//originalExchange.getRelation();
+				//relation.proactiveCancel();
+
+
+
+			}
+			else {
+				outgoingRequest.addMessageObserver(
+						new ProxySendResponseMessageObserver(translator, exchange, cacheKey, cache, this));
+				endpoints.sendRequest(outgoingRequest);
+			}
+
 		} catch (TranslationException e) {
 			LOGGER.debug("Proxy-uri option malformed: {}", e.getMessage());
 			Response response = new Response(Coap2CoapTranslator.STATUS_FIELD_MALFORMED);
@@ -177,9 +283,26 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 				cache.cacheResponse(cacheKey, incomingResponse);
 			}
 			ProxyCoapClientResource.LOGGER.debug("ProxyCoapClientResource received {}", incomingResponse);
-		
+
+			// This is only called when a request was of type CON 
+			// used to not forget the information necessary for the ACK to be forwarded
+			// if not an ACK, don't forget but forward the message
+			// if a RST is received the server should forget the observe and forward the RST to server.
+			// should maybe be check if it has an observe relation using the token.
+			if (incomingExchange.getRequest().getOptions().hasObserve()) {
+				Exchange originalExchange = mapTokenToExchange.get(incomingExchange.getRequest().getToken());
+				if (originalExchange.getRelation() != null) {
+					System.out.println("relation printing");
+					System.out.println(originalExchange.getRelation());
+					originalExchange.getRelation().cancel();
+				}
+				mapTokenToRelation.remove(incomingExchange.getRequest().getToken());
+				CoapClient client = mapTokenToClient.get(incomingExchange.getRequest().getToken());
+				client.shutdown();
+			}
+
 			incomingExchange.sendResponse(translator.getResponse(incomingResponse));
-			
+
 		}
 
 		@Override
