@@ -49,6 +49,7 @@ import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider
 import org.eclipse.californium.elements.config.Configuration.ModuleDefinitionsProvider;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ContextRederivation.PHASE;
+import org.eclipse.californium.oscore.group.InstructionIDRegistry;
 import org.eclipse.californium.oscore.group.OptionEncoder;
 import org.eclipse.californium.proxy2.Coap2CoapTranslator;
 import org.eclipse.californium.proxy2.TranslationException;
@@ -177,19 +178,19 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				boolean instructionsExists = Objects.nonNull(instructions);
 
 				if (instructionsExists) {
-					int index = instructions[1].ToObject(int.class);
+					int index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
 
 					// is this the last instruction?
 					boolean lastInstruction = index == (instructions.length - 1);
 
-					CBORObject requestSequenceNumber = instructions[index].get(8);
+					CBORObject requestSequenceNumber = instructions[index].get(InstructionIDRegistry.RequestSequenceNumber);
 
 					if (lastInstruction && requestSequenceNumber != null) {
 						// remove request sequence number of last instruction
-						instructions[index].RemoveAt(8);
+						instructions[index].RemoveAt(InstructionIDRegistry.RequestSequenceNumber);
 
 						// reset index
-						instructions[1] = CBORObject.FromObject(2);
+						instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(InstructionIDRegistry.StartIndex);
 					}
 
 				}
@@ -258,28 +259,28 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				if (instructionsExists) {
 
-					int startIndex = instructions[1].ToObject(int.class);
-					if ( 2 != startIndex ) {
+					int index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
+					if (InstructionIDRegistry.StartIndex != index ) {
 						throw new RuntimeException("start index is not correct in instructions");
 					}
 
 					// This loops until all instructions have been used
-					for (int i = startIndex; i < instructions.length; i++) {
+					for (int i = InstructionIDRegistry.StartIndex; i < instructions.length; i++) {
 						//encryption
 						preparedRequest = prepareSend(ctxDb, preparedRequest, instructions);
 
 						// set request sequence number in instructions for decryption
 						int requestSequenceNr = new OscoreOptionDecoder(preparedRequest.getOptions().getOscore()).getSequenceNumber();
-						instructions[i].set(8, CBORObject.FromObject(requestSequenceNr));
+						instructions[i].set(InstructionIDRegistry.RequestSequenceNumber, CBORObject.FromObject(requestSequenceNr));
 
 						// this sets the correct values for the next layer of encryption in the instructions
 						if (i < (instructions.length - 1)) {
 							// increment index in instructions
-							instructions[1] = CBORObject.FromObject(i + 1);
+							instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(i + 1);
 
 							// set correct latest oscore option value in instructions for the next encryption
 							byte[] latestOSCOREOptionValue = preparedRequest.getOptions().getOscore();
-							instructions[0] = CBORObject.FromObject(latestOSCOREOptionValue);
+							instructions[InstructionIDRegistry.Header.OscoreOptionValue] = CBORObject.FromObject(latestOSCOREOptionValue);
 
 							//update instructions and set into oscore option for the next encryption
 							byte[] updatedOSCOREOption = OptionEncoder.encodeSequence(instructions);
@@ -405,19 +406,20 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				int index = -1;
 
 				if (instructionsExists) { 
-					index = instructions[1].ToObject(int.class);
+					index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
 
 					// get instruction
 					CBORObject instruction = instructions[index];
 
-					byte[] RID       = instruction.get(3).ToObject(byte[].class);
-					byte[] IDCONTEXT = instruction.get(5).ToObject(byte[].class);
+					byte[] RID       = instruction.get(InstructionIDRegistry.KID).ToObject(byte[].class);
+					byte[] IDCONTEXT = instruction.get(InstructionIDRegistry.IDContext).ToObject(byte[].class);
 
 					ctx = ctxDb.getContext(RID, IDCONTEXT);
 
-					requestSequenceNumber = instruction.get(8).ToObject(int.class);
+					requestSequenceNumber = instruction.get(InstructionIDRegistry.RequestSequenceNumber).ToObject(int.class);
 
-					instructionsRemaining = (int) instructions[1].ToObject(int.class) > 2;
+					instructionsRemaining = (int) instructions[InstructionIDRegistry.Header.Index].ToObject(int.class) 
+							> InstructionIDRegistry.StartIndex;
 					System.out.println(instructionsRemaining);
 				}
 				else {
@@ -443,7 +445,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				if (instructionsRemaining) {
 					System.out.println("calling again");
-					instructions[1] = CBORObject.FromObject(--index);
+					instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(--index);
 					sendResponse(exchange, response);
 					return;
 				}
@@ -451,7 +453,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					if (instructionsExists) {
 						// reset instruction index
 						System.out.println("Resetting index");
-						instructions[1] = CBORObject.FromObject(instructions.length - 1);
+						instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(instructions.length - 1);
 					}
 					System.out.println("NOT calling again");
 				}
@@ -583,8 +585,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 							boolean instructionsExists = Objects.nonNull(instructions);
 							if (instructionsExists) {
 								for (int i = 2; i < instructions.length; i++) {
-									byte[] ridInstruction = instructions[i].get(3).ToObject(byte[].class);
-									CBORObject IDContextCBOR = instructions[i].get(5);
+									byte[] ridInstruction = instructions[i].get(InstructionIDRegistry.KID).ToObject(byte[].class);
+									CBORObject IDContextCBOR = instructions[i].get(InstructionIDRegistry.IDContext);
 									byte[] IDContextInstruction = null;
 									if (IDContextCBOR != null) {
 										IDContextInstruction = IDContextCBOR.ToObject(byte[].class);
@@ -681,8 +683,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			if (cryptographicContextID != null && cryptographicContextID != requestOscoreOption) {
 				instructions = new CBORObject[4];
 
-				instructions[0] = CBORObject.FromObject(new byte[0]);
-				instructions[1] = CBORObject.FromObject(2);
+				instructions[InstructionIDRegistry.Header.OscoreOptionValue] = CBORObject.FromObject(new byte[0]);
+				instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(InstructionIDRegistry.StartIndex);
 
 				// and add previous layer
 				OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(cryptographicContextID);
@@ -705,8 +707,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			if (instructions != null) {
 
 				//increment index
-				int index = instructions[1].ToObject(int.class);
-				instructions[1] = CBORObject.FromObject(index + 1);
+				int index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
+				instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(index + 1);
 
 				// append current layer to instructions
 				OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(requestOscoreOption);
@@ -816,24 +818,24 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						throw new OSException(ErrorDescriptions.TOKEN_INVALID);
 					}
 
-					index = instructions[1].ToObject(int.class);
+					index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
 
 					CBORObject instruction = instructions[index];
 
-					requestSequenceNumber = instruction.get(8).ToObject(int.class);
+					requestSequenceNumber = instruction.get(InstructionIDRegistry.RequestSequenceNumber).ToObject(int.class);
 				}
 
 				// need to handle the case where any oscore layer is missing
 				response = prepareReceive(ctxDb, response, requestSequenceNumber, instructions);
 
 				if (Objects.nonNull(instructions)) {
-					instructions[1] = CBORObject.FromObject(--index);
+					instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(--index);
 				}
 
 
 				// if we are proxy, continue decrypting until instructions say stop 
 				if (ctxDb.getIfProxyable() && response.getOptions().hasOscore()) {
-					if (index >= 2) {
+					if (index >= InstructionIDRegistry.StartIndex) {
 						System.out.println("calling again in receive response");
 						receiveResponse(exchange, response);
 						return;
@@ -881,7 +883,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			CBORObject[] instructions = ctxDb.getInstructions(response.getToken());
 			// this is to reset the instruction index when receiving multiple responses (as may happen when observe is used)
 			if (Objects.nonNull(instructions)) {
-				instructions[1] = CBORObject.FromObject(instructions.length - 1);
+				instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(instructions.length - 1);
 			}
 		}
 

@@ -59,9 +59,9 @@ public class OptionEncoder {
 	 */
 	public static byte[] set(boolean pairwiseMode, String contextUri, byte[] rid) {
 		CBORObject option = CBORObject.NewMap();
-		option.Add(1, pairwiseMode);
-		option.Add(2, contextUri);
-		option.Add(3, rid);
+		option.Add(InstructionIDRegistry.PairwiseMode, pairwiseMode);
+		option.Add(InstructionIDRegistry.ContextUri, contextUri);
+		option.Add(InstructionIDRegistry.KID, rid);
 
 		return option.EncodeToBytes();
 	}
@@ -86,9 +86,9 @@ public class OptionEncoder {
 
 		CBORObject option = CBORObject.NewMap();
 		//option.Add(2, contextUri);
-		option.Add(3, rid);
+		option.Add(InstructionIDRegistry.KID, rid);
 
-		option.Add(5, idcontext);
+		option.Add(InstructionIDRegistry.IDContext, idcontext);
 
 		return option.EncodeToBytes();
 	}
@@ -100,9 +100,9 @@ public class OptionEncoder {
 	public static byte[] set(byte[] rid, byte[] idcontext, int[] options, boolean[][] answers) {
 		CBORObject option = CBORObject.NewMap();
 		//option.Add(2, contextUri);
-		option.Add(3, rid);
+		option.Add(InstructionIDRegistry.KID, rid);
 
-		option.Add(5, idcontext);
+		option.Add(InstructionIDRegistry.IDContext, idcontext);
 
 		CBORObject optionsHolder = CBORObject.NewMap();
 		
@@ -121,7 +121,7 @@ public class OptionEncoder {
 		}
 
 
-		option.Add(6, optionsHolder);
+		option.Add(InstructionIDRegistry.PreSet, optionsHolder);
 		return option.EncodeToBytes();
 	}
 
@@ -130,12 +130,12 @@ public class OptionEncoder {
 
 		CBORObject option = CBORObject.NewMap();
 		//option.Add(2, contextUri);
-		option.Add(3, rid);
+		option.Add(InstructionIDRegistry.KID, rid);
 
-		option.Add(5, idcontext);
+		option.Add(InstructionIDRegistry.IDContext, idcontext);
 
 
-		option.Add(8, requestSequenceNumber);
+		option.Add(InstructionIDRegistry.RequestSequenceNumber, requestSequenceNumber);
 
 		return option.EncodeToBytes();
 	}
@@ -147,9 +147,9 @@ public class OptionEncoder {
 	public static byte[] set(byte[] rid, byte[] idcontext, int[] optionsPreSet, boolean[][] answers, int[] optionsPostSet, CBORObject[] values) {
 		CBORObject option = CBORObject.NewMap();
 		//option.Add(2, contextUri);
-		option.Add(3, rid);
+		option.Add(InstructionIDRegistry.KID, rid);
 
-		option.Add(5, idcontext);
+		option.Add(InstructionIDRegistry.IDContext, idcontext);
 
 		CBORObject optionsPreSetHolder = CBORObject.NewMap();
 		
@@ -167,7 +167,7 @@ public class OptionEncoder {
 			
 		}
 
-		option.Add(6, optionsPreSetHolder);
+		option.Add(InstructionIDRegistry.PreSet, optionsPreSetHolder);
 		
 		CBORObject optionsPostSetHolder = CBORObject.NewMap();
 		if (optionsPostSet.length != values.length) {
@@ -181,7 +181,7 @@ public class OptionEncoder {
 			index++;
 		}
 		
-		option.Add(7, optionsPostSetHolder);
+		option.Add(InstructionIDRegistry.PostSet, optionsPostSetHolder);
 		return option.EncodeToBytes();
 	}
 	/**
@@ -191,9 +191,9 @@ public class OptionEncoder {
 	public static byte[] set(byte[] rid, byte[] idcontext, int[] options, boolean[][] answers, int requestSequenceNumber) {
 		CBORObject option = CBORObject.NewMap();
 		//option.Add(2, contextUri);
-		option.Add(3, rid);
+		option.Add(InstructionIDRegistry.KID, rid);
 
-		option.Add(5, idcontext);
+		option.Add(InstructionIDRegistry.IDContext, idcontext);
 
 		CBORObject optionsHolder = CBORObject.NewMap();
 		
@@ -211,9 +211,9 @@ public class OptionEncoder {
 			
 		}
 
-		option.Add(6, optionsHolder);
+		option.Add(InstructionIDRegistry.PreSet, optionsHolder);
 		
-		option.Add(8, requestSequenceNumber);
+		option.Add(InstructionIDRegistry.RequestSequenceNumber, requestSequenceNumber);
 		return option.EncodeToBytes();
 	}
 
@@ -229,7 +229,7 @@ public class OptionEncoder {
 		}
 
 		CBORObject option = CBORObject.DecodeFromBytes(optionBytes);
-		return option.get(1).AsBoolean();
+		return option.get(InstructionIDRegistry.PairwiseMode).AsBoolean();
 	}
 
 	/**
@@ -240,7 +240,7 @@ public class OptionEncoder {
 	 */
 	public static String getContextUri(byte[] optionBytes) {
 		CBORObject option = CBORObject.DecodeFromBytes(optionBytes);
-		return option.get(2).AsString();
+		return option.get(InstructionIDRegistry.ContextUri).AsString();
 	}
 
 	/**
@@ -251,7 +251,7 @@ public class OptionEncoder {
 	 */
 	public static byte[] getRID(byte[] optionBytes) {
 		CBORObject option = CBORObject.DecodeFromBytes(optionBytes);
-		return option.get(3).GetByteString();
+		return option.get(InstructionIDRegistry.KID).GetByteString();
 	}
 
 	/**
@@ -271,7 +271,7 @@ public class OptionEncoder {
 			if (decodedSequence.length < 2 ) {
 				return null;
 			}
-			if (decodedSequence[1].isNumber() && (decodedSequence[2].getType() == CBORType.Map)) {
+			if (decodedSequence[0].getType() == CBORType.ByteString  && decodedSequence[1].isNumber() && (decodedSequence[2].getType() == CBORType.Map)) {
 				return decodedSequence;
 			}
 			else return null;

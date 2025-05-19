@@ -37,6 +37,7 @@ import org.eclipse.californium.core.coap.option.BaseOptionDefinition;
 import org.eclipse.californium.core.coap.option.StandardOptionRegistry;
 import org.eclipse.californium.core.coap.option.StringOption;
 import org.eclipse.californium.elements.EndpointContext;
+import org.eclipse.californium.oscore.group.InstructionIDRegistry;
 import org.eclipse.californium.oscore.group.OptionEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,7 +115,7 @@ public class OptionJuggle {
 
 			CBORObject nextInstruction = instructions[index + 1];
 
-			CBORObject preSet = nextInstruction.get(6);
+			CBORObject preSet = nextInstruction.get(InstructionIDRegistry.PreSet);
 			System.out.println(preSet);
 
 			if (preSet != null) {
@@ -142,7 +143,7 @@ public class OptionJuggle {
 			instruction = instructions[index];
 		}
 
-		CBORObject postSet = instruction.get(7);
+		CBORObject postSet = instruction.get(InstructionIDRegistry.PostSet);
 
 		if (postSet == null) return uOptions;
 		
@@ -291,17 +292,18 @@ public class OptionJuggle {
 		
 		int firstInstructionsIndex;
 		if (instructionsExists) { 
-			index = instructions[1].ToObject(int.class);
+			index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
 			instruction = instructions[index];
 			
-			CBORObject preSet = instruction.get(6);
+			CBORObject preSet = instruction.get(InstructionIDRegistry.PreSet);
 			if (preSet != null) {
-				toTouch = instruction.get(6).size();
+				toTouch = instruction.get(InstructionIDRegistry.PreSet).size();
 			}
-			firstInstructionsIndex = request ? 2 : instructions.length - 1;
+			firstInstructionsIndex = request ? InstructionIDRegistry.StartIndex : instructions.length - 1;
 		}
 		else {
-			firstInstructionsIndex = 2;
+			// should this not just return
+			firstInstructionsIndex = InstructionIDRegistry.StartIndex;
 		}
 
 		

@@ -42,6 +42,7 @@ import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.oscore.group.InstructionIDRegistry;
 import org.eclipse.californium.oscore.group.OptionEncoder;
 
 
@@ -216,7 +217,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 
 		if (overwrite) {
 			// Retrieve and set real OSCORE option value
-			byte[] OSCOREOptionValue = instructions[0].ToObject(byte[].class);
+			byte[] OSCOREOptionValue = instructions[InstructionIDRegistry.Header.OscoreOptionValue].ToObject(byte[].class);
 
 			request.getOptions().setOscore(OSCOREOptionValue);
 
@@ -224,13 +225,13 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		
 		
 		// get index for current instruction
-		int index = instructions[1].ToObject(int.class);
+		int index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
 		
 		// get instruction
 		CBORObject instruction = instructions[index];
 
-		byte[] RID       = instruction.get(3).ToObject(byte[].class);
-		byte[] IDCONTEXT = instruction.get(5).ToObject(byte[].class);
+		byte[] RID       = instruction.get(InstructionIDRegistry.KID).ToObject(byte[].class);
+		byte[] IDCONTEXT = instruction.get(InstructionIDRegistry.IDContext).ToObject(byte[].class);
 		
 		return getContext(RID, IDCONTEXT);
 	}

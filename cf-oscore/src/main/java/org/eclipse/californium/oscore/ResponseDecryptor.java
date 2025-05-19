@@ -35,6 +35,7 @@ import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.core.network.serialization.UdpDataParser;
 import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.elements.util.DatagramReader;
+import org.eclipse.californium.oscore.group.InstructionIDRegistry;
 import org.eclipse.californium.oscore.group.OptionEncoder;
 
 /**
@@ -80,17 +81,17 @@ public class ResponseDecryptor extends Decryptor {
 		}
 		
 		if (Objects.nonNull(instructions)) {
-			index = instructions[1].ToObject(int.class);
+			index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
 			
 			// get instruction
 			CBORObject instruction = instructions[index];
 
-			byte[] RID       = instruction.get(3).ToObject(byte[].class);
-			byte[] IDCONTEXT = instruction.get(5).ToObject(byte[].class);
+			byte[] RID       = instruction.get(InstructionIDRegistry.KID).ToObject(byte[].class);
+			byte[] IDCONTEXT = instruction.get(InstructionIDRegistry.IDContext).ToObject(byte[].class);
 
 			ctx = db.getContext(RID, IDCONTEXT);
 
-			if (index > 2) {
+			if (index > InstructionIDRegistry.StartIndex) {
 				shouldHaveInnerOscoreOption = true;
 			}
 		}
