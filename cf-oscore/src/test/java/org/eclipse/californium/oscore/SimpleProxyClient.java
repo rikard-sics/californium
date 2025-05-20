@@ -81,7 +81,7 @@ public class SimpleProxyClient {
 
 	private final static int[][] optionSetsScheme = {
 			{}, 
-			{OptionNumberRegistry.URI_PORT, OptionNumberRegistry.URI_HOST}
+			{OptionNumberRegistry.URI_PORT, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.PROXY_SCHEME}
 	};
 	//OSCORE OPTION
 	// we do not want the oscore option to be inner for first layer of encryption
@@ -110,7 +110,7 @@ public class SimpleProxyClient {
 
 	private final static boolean[][][] answerSetsScheme = {
 			{},
-			{URIPORTAnswer2, URIHostAnswer2}
+			{URIPORTAnswer2, URIHostAnswer2, ProxySchemeAnswer2}
 	};
 
 	//0 did i add the option
@@ -160,13 +160,13 @@ public class SimpleProxyClient {
 		//Scenario 3 cases
 		sendVanilla();
 
-		sendWithProxyScheme();
+		//sendWithProxyScheme();
 
-		sendWithProxyURI();
+		//sendWithProxyURI();
 
-		sendWithPostURIAndScheme();
+		//sendWithPostURIAndScheme();
 
-		sendWithObserve();
+		//sendWithObserve();
 	}
 
 	
@@ -177,7 +177,7 @@ public class SimpleProxyClient {
 			// Triggered when a Observe response is received
 			@Override
 			protected void assertLoad(CoapResponse response) {
-				Thread.dumpStack();
+
 				System.out.println("In Observe handler");
 				String content = response.getResponseText();
 				System.out.println("NOTIFICATION: " + content);
@@ -494,6 +494,7 @@ public class SimpleProxyClient {
 
 	private static void sendVanilla() throws IOException, ConnectorException {
 		CoapClient c = new CoapClient(uriServer + uriServerPath);
+		c.setTimeout((long) 10000);
 		// send without OSCORE
 		SendGet(c);
 		try { Thread.sleep(10); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }

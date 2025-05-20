@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 import org.apache.hc.client5.http.utils.Hex;
@@ -33,6 +34,7 @@ import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.elements.EndpointContext;
+import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.OptionEncoder;
 
 /**
@@ -56,40 +58,13 @@ public class RequestEncryptor extends Encryptor {
 	 *
 	 */
 	public static Request encrypt(OSCoreCtxDB db, Request request, CBORObject[] instructions) throws OSException {
-
-		//byte[] oldOscoreOption = request.getOptions().getOscore(); // can be null
-		//CBORObject[] instructions = OptionEncoder.decodeCBORSequence(oldOscoreOption);
-		
-		OSCoreCtx ctx = db.getContext(request, true);
+		OSCoreCtx ctx = db.getContext(request, instructions);
 
 		OptionSet options = request.getOptions();
 		
-		boolean instructionsExists = Objects.nonNull(instructions);
-		/*
-		if (instructionsExists && (int) instructions[1].ToObject(int.class) != 2) {
-			System.out.println("adding from instructions");
-			System.out.println(Hex.encodeHexString(oldOscoreOption));
-			System.out.println(Hex.encodeHexString(options.getOscore()));
-			System.out.println(Hex.encodeHexString(instructions[0].ToObject(byte[].class)));
-
-			options.setOscore(instructions[0].ToObject(byte[].class));
-		}
-		else if (db.getIfProxyable() && oldOscoreOption != null) {
-			System.out.println(Hex.encodeHexString(oldOscoreOption));
-			System.out.println(Hex.encodeHexString(options.getOscore()));
-			System.out.println("adding from is proxy old option");
-			options.setOscore(oldOscoreOption);
-		}
-		else {
-			if (oldOscoreOption != null) {
-				System.out.println(Hex.encodeHexString(oldOscoreOption));
-			}
-			if (options.getOscore() != null) {
-				System.out.println(Hex.encodeHexString(options.getOscore()));
-			}
-			System.out.println("removing");
+		if (Arrays.equals(options.getOscore(), Bytes.EMPTY)) {
 			options.removeOscore();
-		}*/
+		}
 
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CTX_NULL);
@@ -107,6 +82,7 @@ public class RequestEncryptor extends Encryptor {
 		int realCode = request.getCode().value;
 		request = OptionJuggle.setFakeCodeRequest(request);
 
+		// This decomposes the Proxy-URI option in the post set
 		OptionJuggle.handleProxyURIInstruction(options, instructions);
 		
 		OptionSet[] optionsUAndE = OptionJuggle.filterOptions(options);
@@ -117,6 +93,8 @@ public class RequestEncryptor extends Encryptor {
 		optionsUAndE[1] = OptionJuggle.merge(optionsUAndE[1], promotedOptions);	
 
 		System.out.println("E OPTIONS ARE: " + optionsUAndE[1]);
+		
+		System.err.println("encrypting with key: " + ctx.getSenderKey());
 
 		// here the E options are set 
 		byte[] confidential = OSSerializer.serializeConfidentialData(optionsUAndE[1], request.getPayload(), realCode);

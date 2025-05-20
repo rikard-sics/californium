@@ -80,6 +80,7 @@ public class RequestDecryptor extends Decryptor {
 		}
 		byte[] rid = kid.GetByteString();
 
+		db.size();
 		// Retrieve Context ID (kid context)
 		CBORObject kidContext = enc.findAttribute(CBORObject.FromObject(10));
 		byte[] contextID = null;

@@ -69,9 +69,6 @@ public class SimpleProxyServer {
 
 		OSCoreCoapStackFactory.useAsDefault(db);
 
-		db.size();
-
-
 		final CoapServer server = new CoapServer(5683);
 
 		OSCoreResource hello = new OSCoreResource("hello", true) {
@@ -103,7 +100,9 @@ public class SimpleProxyServer {
 					}
 				}
 				r.getOptions().setMaxAge(4);
-				exchange.respond(r);
+				System.err.println("black hole");
+				
+				//exchange.respond(r);
 				counter.incrementAndGet();
 				/*if (counter.get() == 2) {
 					server.destroy();

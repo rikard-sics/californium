@@ -196,17 +196,14 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				}
 
 
-				final OSCoreCtx ctx = ctxDb.getContext(request, false);
+				final OSCoreCtx ctx = ctxDb.getContext(request, instructions);
 
 				if (ctx == null) {
-					//this might create trouble with context rederivation if the context is removed or something 
-					//perhaps during the rederivation
+					try {
+						// check to see if the OSCORE option is a compressed COSE_Encrypt0 object
+						new OscoreOptionDecoder(request.getOptions().getOscore());
 
-					if (ctxDb.getIfProxyable()) {
-						// if we are a proxy but do not have a security context with the next endpoint we forward the request
-						System.out.println("The context was null");
-						System.out.println("we are proxy");
-
+						// there was a compressed COSE_Encrypt0 object in the OSCORE option in the request.
 						request.addMessageObserver(0, new MessageObserverAdapter() {
 
 							//this isn't called until it is ready to send, i.e. super.sendRequest
@@ -228,7 +225,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 								ctxDb.addForwarded(token);
 
-
 								System.out.println("SENT FORWARDED REQUEST WITH: " + token.toString());
 							}
 						});
@@ -236,24 +232,19 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						LOGGER.trace("Request: {}", exchange.getRequest());
 						super.sendRequest(exchange, request);
 						return;
-					}
-					else {
+					} catch (CoapOSException e) {
+						// there was not a compressed COSE_Encrypt0 object in the OSCORE option in the request.
 						LOGGER.error(ErrorDescriptions.CTX_NULL);
 						throw new OSException(ErrorDescriptions.CTX_NULL);
 					}
 				}
 
+				//this might need to put before every retrieval of ctx? (so in RequestEncryptor after getting the ctx)
+				
 				// Initiate context re-derivation procedure if flag is set
 				if (ctx.getContextRederivationPhase() == PHASE.CLIENT_INITIATE) {
 					throw new IllegalStateException("must be handled in ObjectSecurityContextLayer!");
 				}
-
-				/*
-				 * Sets an operator on the exchange. This operator will in
-				 * turn set information about the OSCORE context used in the
-				 * endpoint context that will be created after the request is sent.
-				 */
-				OSCoreEndpointContextInfo.sendingRequest(ctx, exchange);
 
 				Request preparedRequest = request;
 
@@ -264,8 +255,18 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						throw new RuntimeException("start index is not correct in instructions");
 					}
 
+					// initial for forwarding with valid first oscore option that is not empty
+
+					// // set correct oscore option value in request for the first encryption
+					// byte[] oscoreOption = instructions[InstructionIDRegistry.Header.OscoreOptionValue].ToObject(byte[].class);
+					// preparedRequest.getOptions().setOscore(oscoreOption);
+
 					// This loops until all instructions have been used
 					for (int i = InstructionIDRegistry.StartIndex; i < instructions.length; i++) {
+						// set correct oscore option value in request for the first encryption
+						byte[] oscoreOption = instructions[InstructionIDRegistry.Header.OscoreOptionValue].ToObject(byte[].class);
+						preparedRequest.getOptions().setOscore(oscoreOption);
+						
 						//encryption
 						preparedRequest = prepareSend(ctxDb, preparedRequest, instructions);
 
@@ -283,14 +284,22 @@ public class ObjectSecurityLayer extends AbstractLayer {
 							instructions[InstructionIDRegistry.Header.OscoreOptionValue] = CBORObject.FromObject(latestOSCOREOptionValue);
 
 							//update instructions and set into oscore option for the next encryption
-							byte[] updatedOSCOREOption = OptionEncoder.encodeSequence(instructions);
-							preparedRequest.getOptions().setOscore(updatedOSCOREOption);
+							//byte[] updatedOSCOREOption = OptionEncoder.encodeSequence(instructions);
+							//preparedRequest.getOptions().setOscore(updatedOSCOREOption);
 
 							// apply OSCORE layer again
+							// this.sendRequest(exchange, preparedRequest);
 						}
 					}
 				}
 				else {
+					/*
+					 * Sets an operator on the exchange. This operator will in
+					 * turn set information about the OSCORE context used in the
+					 * endpoint context that will be created after the request is sent.
+					 */
+					OSCoreEndpointContextInfo.sendingRequest(ctx, exchange);
+					
 					// no instructions, just encrypt the message once
 					preparedRequest = prepareSend(ctxDb, request, instructions);
 				}
@@ -301,8 +310,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				final CBORObject[] finalInstructions = instructions;
 
 				// used and set on message observer when sending without instructions
-				final OSCoreCtx finalCtx = ctxDb.getContext(request, true);
+				final OSCoreCtx finalCtx = ctxDb.getContext(request, instructions);
 
+				// this should be checked every layer since it might differ for different endpoints
 				if (outgoingExceedsMaxUnfragSize(finalPreparedRequest, false, ctx.getMaxUnfragmentedSize())) {
 					throw new IllegalStateException("outgoing request is exceeding the MAX_UNFRAGMENTED_SIZE!");
 				}
@@ -361,7 +371,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		}
 		else {
 			LOGGER.trace("Request: {}", exchange.getRequest());
-
 			super.sendRequest(exchange, req);
 		}
 	}
@@ -420,7 +429,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 					instructionsRemaining = (int) instructions[InstructionIDRegistry.Header.Index].ToObject(int.class) 
 							> InstructionIDRegistry.StartIndex;
-					System.out.println(instructionsRemaining);
+							System.out.println(instructionsRemaining);
 				}
 				else {
 					// Parse the OSCORE option from the corresponding request using the cryptographic context
@@ -483,7 +492,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	public void receiveRequest(Exchange exchange, Request request) {
 		System.out.println("RECEIVE REQUEST IN OBJECTSECURITYLAYER");
 		System.out.println(request);
-		
+
 		boolean performOSCoreCheck = false;
 		OptionSet options = request.getOptions();
 
@@ -607,6 +616,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 									}
 								}
 							}
+
+							System.out.println(Hex.encodeHexString(rid));
 
 							ctx = ctxDb.getContext(rid, IDContext);
 						} catch (CoapOSException e) {
@@ -953,18 +964,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				|| ctxDb.hasBeenForwarded(response.getToken());
 	}
 
-	private boolean shouldProtectRequest(Request request) {
-		OptionSet options = request.getOptions();
-
-		if (options.hasOscore()) {
-			try {
-				OSCoreCtx ctx = ctxDb.getContext(request, false);
-			} catch (OSException e) {
-				// no context was found for the destination
-			}
-
-		}
-		return options.hasOscore();
+	private boolean shouldProtectRequest(Request request) {		
+		return request.getOptions().hasOscore();
 
 	}
 

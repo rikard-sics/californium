@@ -197,9 +197,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	 * context using the URI or ProxyUri
 	 */
 	@Override
-	public synchronized OSCoreCtx getContext(Request request, boolean overwrite) throws OSException {
-		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(request.getOptions().getOscore());
-		
+	public synchronized OSCoreCtx getContext(Request request, CBORObject[] instructions) throws OSException {
 		if (!(Objects.nonNull(instructions))) { 
 			String uri; 
 			if (request.getOptions().hasProxyUri()) {
@@ -215,15 +213,10 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 			return getContext(uri);
 		}
 
-		if (overwrite) {
-			// Retrieve and set real OSCORE option value
-			byte[] OSCOREOptionValue = instructions[InstructionIDRegistry.Header.OscoreOptionValue].ToObject(byte[].class);
+		// Retrieve and set real OSCORE option value
+		//byte[] OSCOREOptionValue = instructions[InstructionIDRegistry.Header.OscoreOptionValue].ToObject(byte[].class);
+		//request.getOptions().setOscore(OSCOREOptionValue);
 
-			request.getOptions().setOscore(OSCOREOptionValue);
-
-		}
-		
-		
 		// get index for current instruction
 		int index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
 		
