@@ -251,9 +251,12 @@ public class SimpleProxyProxy {
 		builder = CoapEndpoint.builder();
 		// builder.setCoapStackFactory(new OSCoreCoapStackFactory());
 		// builder.setCustomCoapStackArgument(db);
-		builder.setPort(CoapProxyPort);
+		//builder.setPort(CoapProxyPort);
+		builder.setInetSocketAddress(new InetSocketAddress("localhost", CoapProxyPort));
 		CoapEndpoint clientToProxyEndpoint = builder.build();
 
+		System.out.println(clientToProxyEndpoint.getAddress().isUnresolved());
+		
 		coapProxyServer = new CoapServer(config);
 		coapProxyServer.addEndpoint(clientToProxyEndpoint);
 		
@@ -261,7 +264,7 @@ public class SimpleProxyProxy {
 				translator, config);
 		
 		proxyMessageDeliverer.addProxyCoapResources(coap2coap); 
-		proxyMessageDeliverer.addExposedServiceAddresses(new InetSocketAddress(CoapProxyPort));
+		proxyMessageDeliverer.addExposedServiceAddresses(new InetSocketAddress("localhost", CoapProxyPort));
 		coapProxyServer.setMessageDeliverer(proxyMessageDeliverer);
 
 		coapProxyServer.add(coap2coap);
@@ -298,7 +301,6 @@ public class SimpleProxyProxy {
 			}
 		}
 	}
-	
 
 	public Coap2CoapTranslator translator = new Coap2CoapTranslator(); 
 	

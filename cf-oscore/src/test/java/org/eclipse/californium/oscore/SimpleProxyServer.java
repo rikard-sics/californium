@@ -100,9 +100,9 @@ public class SimpleProxyServer {
 					}
 				}
 				r.getOptions().setMaxAge(4);
-				System.err.println("black hole");
+				//System.err.println("black hole");
 				
-				//exchange.respond(r);
+				exchange.respond(r);
 				counter.incrementAndGet();
 				/*if (counter.get() == 2) {
 					server.destroy();

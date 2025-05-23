@@ -114,28 +114,30 @@ public class RequestDecryptor extends Decryptor {
 			LOGGER.error(ErrorDescriptions.DECRYPTION_FAILED);
 			throw new CoapOSException(ErrorDescriptions.DECRYPTION_FAILED, ResponseCode.BAD_REQUEST);
 		}
-		
+
 		//Check if parsing of request plaintext succeeds
 		try {
 			DatagramReader reader = new DatagramReader(new ByteArrayInputStream(plaintext));
 			ctx.setCoAPCode(Code.valueOf(reader.read(CoAP.MessageFormat.CODE_BITS)));
 			// resets option so eOptions gets priority during parse
-			
+
 			request.setOptions(EMPTY);
 			new UdpDataParser().parseOptionsAndPayload(reader, request);
-			
+
 		} catch (Exception e) {
 			LOGGER.error(ErrorDescriptions.DECRYPTION_FAILED);
 			throw new CoapOSException(ErrorDescriptions.DECRYPTION_FAILED, ResponseCode.BAD_REQUEST);
 		}
 
 		OptionSet eOptions = request.getOptions();
+		System.out.println("eOptions" + eOptions);
+		System.out.println("uOptions" + uOptions);
 		eOptions = OptionJuggle.merge(eOptions, uOptions);	
 		request.setOptions(eOptions);
+		System.out.println("on request" +request.getOptions());
 
-		
 		byte[] oscoreOption = request.getOptions().getOscore();
-		
+
 		// We need the kid value on layer level
 		request.getOptions().setOscore(rid);
 
@@ -146,6 +148,7 @@ public class RequestDecryptor extends Decryptor {
 		OSCoreEndpointContextInfo.receivingRequest(ctx, request);
 
 		request.getOptions().setOscore(oscoreOption);
+		System.out.println("after set oscore" + request.getOptions());
 
 		return OptionJuggle.setRealCodeRequest(request, ctx.getCoAPCode());
 	}

@@ -160,16 +160,16 @@ public class SimpleProxyClient {
 		//Scenario 3 cases
 		sendVanilla();
 
-		//sendWithProxyScheme();
+		sendWithProxyScheme();
 
-		//sendWithProxyURI();
+		sendWithProxyURI();
 
-		//sendWithPostURIAndScheme();
+		sendWithPostURIAndScheme();
 
-		//sendWithObserve();
+		sendWithObserve();
 	}
 
-	
+
 	private static void sendWithObserve() throws ConnectorException, IOException, InterruptedException {
 		// Handler for Observe responses
 		class ObserveHandler extends CountingCoapHandler {
@@ -224,23 +224,22 @@ public class SimpleProxyClient {
 
 		Request request;
 		CoapResponse resp;
-		
+
 		System.out.println();
 		System.out.println(" ----- ");
 		System.out.println();
-		System.out.println("Sending with instructions... Observe");
+		System.out.println("Sending without instructions... Observe");
 		System.out.println();
 		System.out.println(" ----- ");
 		System.out.println();
 
 		request = new Request(Code.GET);
 		request.setDestinationContext(proxy);
-		//request.getOptions().setOscore(instructionsUri); //  instructionsUri new byte[0]
-		
+
 		request.setObserve();
-		
+
 		request.getOptions().setOscore(new byte[0]);
-		request.getOptions().setProxyUri(uriServer + uriServerPathTestObserve); //////////////
+		request.getOptions().setProxyUri(uriServer + uriServerPathTestObserve); 
 
 
 		ObserveHandler handler = new ObserveHandler();
@@ -249,31 +248,74 @@ public class SimpleProxyClient {
 
 		//Wait until 2 messages have been received
 		assertTrue(handler.waitOnLoadCalls(2, 5000, TimeUnit.MILLISECONDS));
-		
+
 		Token token = request.getToken();
-		
+
 		//Now cancel the Observe and wait for the final response
-		
+
 		request = new Request(Code.GET);
 		request.setDestinationContext(proxy);
-		//request.getOptions().setOscore(instructionsUri); // instructionsUri new byte[0]
 		request.getOptions().setObserve(1); //Deregister Observe
 		request.setToken(token);
 
 		request.getOptions().setOscore(new byte[0]);
-		request.getOptions().setProxyUri(uriServer + uriServerPathTestObserve); //////////////
+		request.getOptions().setProxyUri(uriServer + uriServerPathTestObserve); 
 
 		System.out.println(request);
-		//request.send();
 		CoapResponse ackResponse = client.advanced(request);
 		System.out.println("Response on cancel is type: " + ackResponse.advanced().getType());
 
+		System.out.println();
+		System.out.println(" ----- ");
+		System.out.println();
+		System.out.println("Sending with instructions... Observe");
+		System.out.println();
+		System.out.println(" ----- ");
+		System.out.println();
+
+		request = null;
+		clientEndpoint.clear();
+		//clientEndpoint = builder.build();
+		client.shutdown();
 		
-		Response response = request.waitForResponse(1000);
-		printResponse(response);
+		client = new CoapClient();
+		client.setEndpoint(clientEndpoint);
+		client.setURI(uriServer);
+		
+		request = new Request(Code.GET);
+		request.setDestinationContext(proxy);
+		request.getOptions().setOscore(instructionsUri); 
+		request.setObserve();
+
+		handler = null;
+		handler = new ObserveHandler();
+
+		relation = null;
+		relation = client.observe(request, handler);
+
+		//Wait until 2 messages have been received
+		assertTrue(handler.waitOnLoadCalls(2, 5000, TimeUnit.MILLISECONDS));
+
+		token = null;
+		token = request.getToken();
+
+		//Now cancel the Observe and wait for the final response
+
+		request = new Request(Code.GET);
+		request.setDestinationContext(proxy);
+		request.getOptions().setOscore(instructionsUri); 
+		request.getOptions().setObserve(1); //Deregister Observe
+		request.setToken(token);
+
+
+		System.out.println(request);
+		ackResponse = client.advanced(request);
+		System.out.println("Response on cancel is type: " + ackResponse.advanced().getType());
+
+
 		System.out.println("done");
 	}
-	
+
 	private static void sendWithPostURIAndScheme() throws ConnectorException, IOException {
 
 		byte[] oscoreoptUri = CBORObject.FromObject(new byte[0]).EncodeToBytes();

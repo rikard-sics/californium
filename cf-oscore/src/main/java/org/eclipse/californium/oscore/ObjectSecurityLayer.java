@@ -38,21 +38,14 @@ import java.util.Objects;
 
 import javax.lang.model.util.Elements;
 
-import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
-import org.eclipse.californium.elements.Definition;
-import org.eclipse.californium.elements.Definitions;
-import org.eclipse.californium.elements.MapBasedEndpointContext;
-import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
-import org.eclipse.californium.elements.config.Configuration.ModuleDefinitionsProvider;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ContextRederivation.PHASE;
 import org.eclipse.californium.oscore.group.InstructionIDRegistry;
 import org.eclipse.californium.oscore.group.OptionEncoder;
 import org.eclipse.californium.proxy2.Coap2CoapTranslator;
-import org.eclipse.californium.proxy2.TranslationException;
 
 
 /**
@@ -86,8 +79,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	 * 
 	 * @throws OSException error while encrypting request
 	 */
-	public static Request prepareSend(OSCoreCtxDB ctxDb, Request message, CBORObject[] instructions) throws OSException {
-		return RequestEncryptor.encrypt(ctxDb, message, instructions);
+	public static Request prepareSend(OSCoreCtxDB ctxDb, OSCoreCtx ctx, Request message, CBORObject[] instructions) throws OSException {
+		return RequestEncryptor.encrypt(ctxDb, ctx, message, instructions);
 	}
 
 	/**
@@ -192,13 +185,12 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						// reset index
 						instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(InstructionIDRegistry.StartIndex);
 					}
-
 				}
 
 
-				final OSCoreCtx ctx = ctxDb.getContext(request, instructions);
+				OSCoreCtx ctx = ctxDb.getContext(request, instructions);
 
-				if (ctx == null) {
+				if (ctx == null && !instructionsExists) {
 					try {
 						// check to see if the OSCORE option is a compressed COSE_Encrypt0 object
 						new OscoreOptionDecoder(request.getOptions().getOscore());
@@ -238,15 +230,20 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						throw new OSException(ErrorDescriptions.CTX_NULL);
 					}
 				}
+				else if (ctx == null) {
+					LOGGER.error(ErrorDescriptions.CTX_NULL);
+					throw new OSException(ErrorDescriptions.CTX_NULL);
+				}
 
 				//this might need to put before every retrieval of ctx? (so in RequestEncryptor after getting the ctx)
-				
+
 				// Initiate context re-derivation procedure if flag is set
 				if (ctx.getContextRederivationPhase() == PHASE.CLIENT_INITIATE) {
 					throw new IllegalStateException("must be handled in ObjectSecurityContextLayer!");
 				}
 
 				Request preparedRequest = request;
+
 
 				if (instructionsExists) {
 
@@ -256,39 +253,33 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					}
 
 					// initial for forwarding with valid first oscore option that is not empty
+					// set correct oscore option value in request for the first encryption
+					byte[] oscoreOption = instructions[InstructionIDRegistry.Header.OscoreOptionValue].ToObject(byte[].class);
+					preparedRequest.getOptions().setOscore(oscoreOption);
 
-					// // set correct oscore option value in request for the first encryption
-					// byte[] oscoreOption = instructions[InstructionIDRegistry.Header.OscoreOptionValue].ToObject(byte[].class);
-					// preparedRequest.getOptions().setOscore(oscoreOption);
+					boolean instructionsRemaining;
 
 					// This loops until all instructions have been used
 					for (int i = InstructionIDRegistry.StartIndex; i < instructions.length; i++) {
-						// set correct oscore option value in request for the first encryption
-						byte[] oscoreOption = instructions[InstructionIDRegistry.Header.OscoreOptionValue].ToObject(byte[].class);
-						preparedRequest.getOptions().setOscore(oscoreOption);
-						
+
 						//encryption
-						preparedRequest = prepareSend(ctxDb, preparedRequest, instructions);
+						ctx = ctxDb.getContext(request, instructions);
+
+						preparedRequest = prepareSend(ctxDb, ctx, preparedRequest, instructions);
+
+						if (outgoingExceedsMaxUnfragSize(request, false, ctx.getMaxUnfragmentedSize())) {
+							throw new IllegalStateException("outgoing request is exceeding the MAX_UNFRAGMENTED_SIZE!");
+						}
 
 						// set request sequence number in instructions for decryption
 						int requestSequenceNr = new OscoreOptionDecoder(preparedRequest.getOptions().getOscore()).getSequenceNumber();
 						instructions[i].set(InstructionIDRegistry.RequestSequenceNumber, CBORObject.FromObject(requestSequenceNr));
 
-						// this sets the correct values for the next layer of encryption in the instructions
-						if (i < (instructions.length - 1)) {
+						instructionsRemaining = i < (instructions.length - 1);
+						// check if there is a next layer of encryption in the instructions
+						if (instructionsRemaining) {
 							// increment index in instructions
 							instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(i + 1);
-
-							// set correct latest oscore option value in instructions for the next encryption
-							byte[] latestOSCOREOptionValue = preparedRequest.getOptions().getOscore();
-							instructions[InstructionIDRegistry.Header.OscoreOptionValue] = CBORObject.FromObject(latestOSCOREOptionValue);
-
-							//update instructions and set into oscore option for the next encryption
-							//byte[] updatedOSCOREOption = OptionEncoder.encodeSequence(instructions);
-							//preparedRequest.getOptions().setOscore(updatedOSCOREOption);
-
-							// apply OSCORE layer again
-							// this.sendRequest(exchange, preparedRequest);
 						}
 					}
 				}
@@ -299,23 +290,22 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					 * endpoint context that will be created after the request is sent.
 					 */
 					OSCoreEndpointContextInfo.sendingRequest(ctx, exchange);
-					
+
 					// no instructions, just encrypt the message once
-					preparedRequest = prepareSend(ctxDb, request, instructions);
+					preparedRequest = prepareSend(ctxDb, ctx, request, instructions);
+
+					if (outgoingExceedsMaxUnfragSize(preparedRequest, false, ctx.getMaxUnfragmentedSize())) {
+						throw new IllegalStateException("outgoing request is exceeding the MAX_UNFRAGMENTED_SIZE!");
+					}
 				}
 
 				final Request finalPreparedRequest = preparedRequest;
 
 				// used and set on message observer when sending with instructions
-				final CBORObject[] finalInstructions = instructions;
+				final CBORObject[] finalInstructions = instructionsExists ? instructions : null;
 
 				// used and set on message observer when sending without instructions
-				final OSCoreCtx finalCtx = ctxDb.getContext(request, instructions);
-
-				// this should be checked every layer since it might differ for different endpoints
-				if (outgoingExceedsMaxUnfragSize(finalPreparedRequest, false, ctx.getMaxUnfragmentedSize())) {
-					throw new IllegalStateException("outgoing request is exceeding the MAX_UNFRAGMENTED_SIZE!");
-				}
+				final OSCoreCtx finalCtx             = instructionsExists ? null : ctxDb.getContext(request, instructions);				
 
 				finalPreparedRequest.addMessageObserver(0, new MessageObserverAdapter() {
 
@@ -381,10 +371,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		System.out.println("init response is: " + response);
 		System.out.println("request is:  " + exchange.getRequest());
 
-		// AAAAAAAAH
-		// Update instruction to be original after having sent the request
-		// because subsequent requests will need the original to send correctly
-
 		/* If the request contained the Observe option always add a partial IV to the response.
 		 * A partial IV will also be added if the responsesIncludePartialIV flag is set in the context. */
 		boolean addPartialIV;
@@ -403,70 +389,96 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					&& exchange.getCurrentRequest().getOptions().getOscore().length != 0;
 
 			try {
-				// Retrieve the context
 				Token token = exchange.getCurrentRequest().getToken();
-				OSCoreCtx ctx = ctxDb.getContextByToken(token);
+				OSCoreCtx ctx; 
 
 				CBORObject[] instructions = ctxDb.getInstructions(token);
-
 				boolean instructionsExists = Objects.nonNull(instructions);
-				boolean instructionsRemaining = false;
-				int requestSequenceNumber = -1;
-				int index = -1;
 
-				if (instructionsExists) { 
-					index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
+				int requestSequenceNumber;
 
-					// get instruction
-					CBORObject instruction = instructions[index];
+				Response preparedResponse = response;
 
-					byte[] RID       = instruction.get(InstructionIDRegistry.KID).ToObject(byte[].class);
-					byte[] IDCONTEXT = instruction.get(InstructionIDRegistry.IDContext).ToObject(byte[].class);
+				// Retrieve the context
+				if (instructionsExists) {
 
-					ctx = ctxDb.getContext(RID, IDCONTEXT);
+					int index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
+					if (instructions.length -1 != index ) {
+						throw new RuntimeException("start index is not correct in instructions");
+					}
 
-					requestSequenceNumber = instruction.get(InstructionIDRegistry.RequestSequenceNumber).ToObject(int.class);
+					boolean instructionsRemaining;
 
-					instructionsRemaining = (int) instructions[InstructionIDRegistry.Header.Index].ToObject(int.class) 
-							> InstructionIDRegistry.StartIndex;
-							System.out.println(instructionsRemaining);
+					// This loops until all instructions have been used
+					for (int i = instructions.length - 1; (InstructionIDRegistry.StartIndex - 1) < i; i--) {
+						System.err.println("preparedResponse is:" + preparedResponse);
+						System.out.println(i);
+						// retrieve context
+						CBORObject instruction = instructions[index];
+
+						byte[] RID       = instruction.get(InstructionIDRegistry.KID).ToObject(byte[].class);
+						byte[] IDCONTEXT = instruction.get(InstructionIDRegistry.IDContext).ToObject(byte[].class);
+
+						ctx = ctxDb.getContext(RID, IDCONTEXT);
+
+						//retrieve request sequence number
+						requestSequenceNumber = instruction.get(InstructionIDRegistry.RequestSequenceNumber).ToObject(int.class);
+
+						// should response include the partial IV?
+						addPartialIV = (ctx != null && ctx.getResponsesIncludePartialIV()) || exchange.getRequest().getOptions().hasObserve();
+
+						// encrypt
+						System.out.println("encrypting using instructions");
+						preparedResponse = prepareSend(ctxDb, preparedResponse, ctx, addPartialIV, outerBlockwise,
+								requestSequenceNumber, instructions);
+
+						if (outgoingExceedsMaxUnfragSize(preparedResponse, outerBlockwise, ctx.getMaxUnfragmentedSize())) {
+							Response error = new Response(ResponseCode.INTERNAL_SERVER_ERROR, true);
+							error.setDestinationContext(exchange.getCurrentRequest().getSourceContext());
+							super.sendResponse(exchange, error);
+							throw new IllegalStateException("outgoing response is exceeding the MAX_UNFRAGMENTED_SIZE!");
+						}
+
+						instructionsRemaining = (int) instructions[InstructionIDRegistry.Header.Index].ToObject(int.class) 
+								> InstructionIDRegistry.StartIndex;
+								// check if there is a next layer of encryption in the instructions
+								if (instructionsRemaining) {
+									// decrement index in instructions
+									instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(--index);
+								}
+					}
 				}
 				else {
-					// Parse the OSCORE option from the corresponding request using the cryptographic context
+					// retrieve context 
+					ctx = ctxDb.getContextByToken(token);
+
+					//retrieve request sequence number
 					OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
 					requestSequenceNumber = optionDecoder.getSequenceNumber();
-				}
 
-				addPartialIV = (ctx != null && ctx.getResponsesIncludePartialIV()) || exchange.getRequest().getOptions().hasObserve();
+					// should response include the partial IV?
+					addPartialIV = (ctx != null && ctx.getResponsesIncludePartialIV()) || exchange.getRequest().getOptions().hasObserve();
 
-				Response preparedResponse = prepareSend(ctxDb, response, ctx, addPartialIV, outerBlockwise,
-						requestSequenceNumber, instructions);
+					// encrypt
+					preparedResponse = prepareSend(ctxDb, response, ctx, addPartialIV, outerBlockwise,
+							requestSequenceNumber, instructions);
 
-				if (outgoingExceedsMaxUnfragSize(preparedResponse, outerBlockwise, ctx.getMaxUnfragmentedSize())) {
-					Response error = new Response(ResponseCode.INTERNAL_SERVER_ERROR, true);
-					error.setDestinationContext(exchange.getCurrentRequest().getSourceContext());
-					super.sendResponse(exchange, error);
-					throw new IllegalStateException("outgoing response is exceeding the MAX_UNFRAGMENTED_SIZE!");
+					if (outgoingExceedsMaxUnfragSize(preparedResponse, outerBlockwise, ctx.getMaxUnfragmentedSize())) {
+						Response error = new Response(ResponseCode.INTERNAL_SERVER_ERROR, true);
+						error.setDestinationContext(exchange.getCurrentRequest().getSourceContext());
+						super.sendResponse(exchange, error);
+						throw new IllegalStateException("outgoing response is exceeding the MAX_UNFRAGMENTED_SIZE!");
+					}
 				}
 
 				response = preparedResponse;
 				exchange.setResponse(response);
 
-				if (instructionsRemaining) {
-					System.out.println("calling again");
-					instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(--index);
-					sendResponse(exchange, response);
-					return;
+				if (instructionsExists) {
+					// reset instruction index
+					System.out.println("Resetting index");
+					instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(instructions.length - 1);
 				}
-				else {
-					if (instructionsExists) {
-						// reset instruction index
-						System.out.println("Resetting index");
-						instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(instructions.length - 1);
-					}
-					System.out.println("NOT calling again");
-				}
-
 			} catch (OSException e) {
 				LOGGER.error("Error sending response: {}", e.getMessage());
 				return;
@@ -493,207 +505,242 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		System.out.println("RECEIVE REQUEST IN OBJECTSECURITYLAYER");
 		System.out.println(request);
 
-		boolean performOSCoreCheck = false;
-		OptionSet options = request.getOptions();
+		// removes any previous instructions that were built while decrypting the request, 
+		// in case the request is encrypted differently from the first time.
+		ctxDb.removeInstructions(request.getToken());
 
-		if (OptionJuggle.hasProxyRelatedOptions(options)) {
+		boolean initialRequestHadOscore = request.getOptions().hasOscore();
 
-			if (OptionJuggle.hasProxyUriOrCriOptions(options) || OptionJuggle.hasSchemeAndUri(options)) {
+		Message result = request;
 
-				if (ctxDb.getIfProxyable()) {
-					if (isAcceptableToForward(request)) {
+		while (true) {
+			boolean hadProxyOption = result.getOptions().hasProxyUri() || result.getOptions().hasProxyScheme(); 
 
-						//consume proxy related options.
-						Coap2CoapTranslator translator = new Coap2CoapTranslator();
-						URI destination = null;
-						try {
-							InetSocketAddress exposedInterface = translator.getExposedInterface(request);
-							destination = translator.getDestinationURI(request, exposedInterface);
+			result = processIfHasProxyRelatedOptions(exchange, (Request) result);
 
-						} catch (Exception e) {
-							System.out.println(e.getMessage());
-							exchange.sendResponse(new Response(ResponseCode.INTERNAL_SERVER_ERROR)); // eller nåt
-						}
+			if (result == null) { // error occured, and is handled in processRequestDecryption
+				break;
+			}
+			boolean isRequest = result instanceof Request;
 
-						// use destination for this checking, and something else
-						/* does uri port and host identify me?*/
-						// does this work with "unspecified" ipv6 address vs localhost? is unspecified set later?
-						if (destination.getAuthority().equals(exchange.getEndpoint().getUri().getAuthority())) {
-							// do consumption of proxy related options (using coap translator)
-							Request newRequest = null;
-							try {
-								newRequest = translator.getRequest(destination, request);
-							} catch (TranslationException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-								exchange.sendResponse(new Response(ResponseCode.BAD_OPTION)); // correct error?
-							}	
-							receiveRequest(exchange, newRequest);
-						}
-						else {
-							//no, we forward
-							super.receiveRequest(exchange, request);
-						}
+			// if had proxy uri, but is removed, we receive ourselves
+			// if had proxy uri and is kept, we forward
+			if (isRequest) {
+				// dont think this will work if client think it sends to proxy and server but 
+				// only sends to server (who is the proxy too) and so it will be 
+				// decrypt, proxy-uri, exit
+				// instead of
+				// decrypt, proxy-uri, decrypt, exit
+
+				// want to exit when the request does not have oscore (it is fully decrypted) 
+				// or if it had a proxy option (it is to be forwarded or received)
+				if (!result.getOptions().hasOscore() || hadProxyOption) {
+					if (initialRequestHadOscore && !result.getOptions().hasOscore()) {
+						result.getOptions().setOscore(Bytes.EMPTY);
 					}
-					else {
-						exchange.sendResponse(new Response(ResponseCode.UNAUTHORIZED));
-					}
-				}
-				else {
-					exchange.sendResponse(new Response(ResponseCode.PROXY_NOT_SUPPORTED));
+
+					super.receiveRequest(exchange, (Request) result);
+					break;
+
 				}
 			}
 			else {
-
-				/*do Uri path, host or/and port identfify me as a reverse proxy*/
-				if (ctxDb.getIfProxyable() && identifiesMe(request)) {
-					if( false /*isAcceptableToForward()*/ ){
-						/* do consumption of proxy related options (as a reverse proxy) */
-						// forward the request
-						super.receiveRequest(exchange, request);
-					}
-					else {
-						exchange.sendResponse(new Response(ResponseCode.UNAUTHORIZED));
-					}
-				}
-				else {
-					performOSCoreCheck = true;
-				}
+				// error receiving the request, message is error response
+				exchange.sendResponse((Response) result);
+				break;
 			}
 		}
-		else { 
-			performOSCoreCheck = true; 
-		}
-
-		if (performOSCoreCheck) {
-
-			boolean lastOscoreLayer = false;
-			if (request.getOptions().hasOscore() && Arrays.equals(request.getOptions().getOscore(), new byte[] {0x01})) {
-				//&& Hex.encodeHexString(request.getOptions().getOscore()).equals("01")) {
-				lastOscoreLayer = true;
-			}
-
-			if (isProtected(request) && !lastOscoreLayer) {
-				if (options.hasUriPath()) {
-					exchange.sendResponse((Response) new Response(ResponseCode.BAD_REQUEST).setPayload("Uri path present"));
-				}
-				else {
-					if (/*isAcceptableToDecrypt()*/ true) {
-
-						OSCoreCtx ctx = null;
-
-						try {
-							// Retrieve the OSCORE context associated with this RID and ID
-							// Context
-							OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(request.getOptions().getOscore());
-							byte[] rid = optionDecoder.getKid();
-							byte[] IDContext = optionDecoder.getIdContext();
-
-							// if this ctx has been used to decrypt before, forget the instructions.
-							CBORObject[] instructions = ctxDb.getInstructions(request.getToken());
-							boolean instructionsExists = Objects.nonNull(instructions);
-							if (instructionsExists) {
-								for (int i = 2; i < instructions.length; i++) {
-									byte[] ridInstruction = instructions[i].get(InstructionIDRegistry.KID).ToObject(byte[].class);
-									CBORObject IDContextCBOR = instructions[i].get(InstructionIDRegistry.IDContext);
-									byte[] IDContextInstruction = null;
-									if (IDContextCBOR != null) {
-										IDContextInstruction = IDContextCBOR.ToObject(byte[].class);
-									}
-
-									boolean hasBeenUsedBefore = false;
-									if (IDContextInstruction != null) {
-										hasBeenUsedBefore = Arrays.equals(rid, ridInstruction) 
-												&& Arrays.equals(IDContext, IDContextInstruction);
-									}
-									else {
-										hasBeenUsedBefore = Arrays.equals(rid, ridInstruction);
-									}
-
-									if (hasBeenUsedBefore) {
-										System.out.println("Instruction has been previously used, so it is removed");
-										ctxDb.removeInstructions(request.getToken());
-									}
-								}
-							}
-
-							System.out.println(Hex.encodeHexString(rid));
-
-							ctx = ctxDb.getContext(rid, IDContext);
-						} catch (CoapOSException e) {
-							LOGGER.error("Error while receiving OSCore request: {}", e.getMessage());
-							Response error;
-							error = CoapOSExceptionHandler.manageError(e, request);
-							if (error != null) {
-								super.sendResponse(exchange, error);
-							}
-						}						
-						Request decryptedRequest = requestDecryption(exchange, request, ctx);
-						if (decryptedRequest != null) {
-							receiveRequest(exchange, decryptedRequest);
-						}
-					}
-					else {
-						exchange.sendResponse(new Response(ResponseCode.UNAUTHORIZED));
-					}
-				}
-			}
-			else {
-				// is there an application yes
-				if (/* hasApplication() */ true) {
-					System.out.println("Sending to Application");
-					super.receiveRequest(exchange, request);
-				}
-				else {
-					exchange.sendResponse(new Response(ResponseCode.BAD_REQUEST));
-				}
-			}
-		}
-		// We need the kid value on layer level
-		// request.getOptions().setOscore(rid);
-		// then send to upper layer.
-
-		//super.receiveRequest(exchange, request);
 	}
 
-	public Request requestDecryption(Exchange exchange, Request request, OSCoreCtx ctx) {
+	private Message processIfHasProxyRelatedOptions(Exchange exchange, Request request) { 
+		if (OptionJuggle.hasProxyRelatedOptions(request.getOptions())) {
+			return processIfForwardOrReverse(exchange, request);
+		}
+		else {
+			return processHasOscoreOption(exchange, request);
+		}
+	}
+	public Message processIfForwardOrReverse(Exchange exchange, Request request) {
+		if (OptionJuggle.hasProxyUriOrCriOptions(request.getOptions()) || OptionJuggle.hasProxySchemeAndUri(request.getOptions())) {
+			return processIsForwardProxy(exchange, request);
+		}
+		else {
+			return processIsReverseProxy(exchange, request);
+		}
+	}
 
+	public Message processIsForwardProxy(Exchange exchange, Request request) {
+		if (ctxDb.getIfProxyable()) {
+			return processIsAcceptableToForward(exchange, request);
+		}
+		else {
+			return new Response(ResponseCode.PROXY_NOT_SUPPORTED);
+		}
+	}
+
+	private Message processIsAcceptableToForward(Exchange exchange, Request request){
+		if (isAcceptableToForward(request)) {
+			return consumeProxyRelatedOptions(exchange, request, true);
+		}
+		else {
+			return new Response(ResponseCode.UNAUTHORIZED);
+
+		}
+	}
+
+	private Message processIsReverseProxy(Exchange exchange, Request request) {
+		/*do Uri path, host or/and port identfify me as a reverse proxy*/
+		if (identifiesMe(request)) {
+			if(isAcceptableToForward(request)){
+				return consumeProxyRelatedOptions(exchange,request, false);	
+			}
+			else {
+				return new Response(ResponseCode.UNAUTHORIZED);
+			}
+		}
+		else {
+			return processHasOscoreOption(exchange, request);
+		}
+	}
+
+	private Message consumeProxyRelatedOptions(Exchange exchange, Request request, boolean shouldProcess){
+		//consume proxy related options.
+		System.out.println("in consume" + request);
+		Coap2CoapTranslator translator = new Coap2CoapTranslator();
+		URI destination = null;
+		try {
+			InetSocketAddress exposedInterface = translator.getExposedInterface(request);
+			destination = translator.getDestinationURI(request, exposedInterface);
+
+			if (shouldProcess) {
+				/* does uri port and host identify me?*/
+				// does this work with "unspecified" ipv6 address vs localhost? is unspecified set later?
+				URI alias1 = new URI("coap", null, "localhost", 5683, null, null, null);
+				URI alias2 = new URI("coap", null, "127.0.0.1", 5683, null, null, null);
+
+				// for alias alias : aliases
+				// destination.getauthorut.eq alias
+				if (destination.getAuthority().equals(exchange.getEndpoint().getUri().getAuthority())
+						|| destination.getAuthority().equals(exchange.getEndpoint().getUri().getAuthority())
+						|| destination.getAuthority().equals(exchange.getEndpoint().getUri().getAuthority())) {
+					// do consumption of proxy related options (using coap translator)
+					// it identifies us so we remove proxy-* option
+					if (request.getOptions().hasProxyUri()) request.getOptions().removeProxyUri();
+					if (request.getOptions().hasProxyScheme()) request.getOptions().removeProxyScheme();
+					System.err.println("AAAAAAAAAAAAAA");
+					return request;
+				}
+				else {
+					// forward request
+					System.out.println("forward, and process = false");
+					return request;
+				}
+			}
+			else {
+				//forward request
+				System.out.println("forward, without process");
+				return request;
+			}
+
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+			return new Response(ResponseCode.INTERNAL_SERVER_ERROR); // eller nåt
+		}
+
+
+	}
+
+	private Message processHasOscoreOption(Exchange exchange, Request request) {
+		if (request.getOptions().hasOscore() ) {//&& !Arrays.equals(request.getOptions().getOscore(), new byte[] {(byte) 0xFF})) {
+			return processHasURIPathOption(exchange, request);
+		}
+		else {
+			return processIsThereAnApplication(exchange, request);
+		}
+	}
+
+	private Message processHasURIPathOption(Exchange exchange, Request request){
+		if (request.getOptions().hasUriPath()) {
+			return (Response) new Response(ResponseCode.BAD_REQUEST).setPayload("Uri path present");
+		}
+		else {
+			return processIsAcceptableToDecrypt(exchange, request);
+		}
+	}
+
+	private Message processIsAcceptableToDecrypt(Exchange exchange, Request request){
+		if (isAcceptableToDecrypt(request)) {
+			return processRequestDecryption(exchange, request);
+		}
+		else {
+			return new Response(ResponseCode.UNAUTHORIZED);
+		}
+	}
+
+	private Message processIsThereAnApplication(Exchange exchange, Request request){
+		if (/* hasApplication() */ true) {
+			System.out.println("Sending to Application, i hope");
+
+			return request;
+		}
+		else {
+			return new Response(ResponseCode.BAD_REQUEST);
+		}
+	}
+
+	private Message processRequestDecryption(Exchange exchange, Request request) {
+		OSCoreCtx ctx = null;
+
+		try {
+			// Retrieve the OSCORE context associated with this RID and ID
+			// Context
+			OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(request.getOptions().getOscore());
+			byte[] rid = optionDecoder.getKid();
+			byte[] IDContext = optionDecoder.getIdContext();
+
+			ctx = ctxDb.getContext(rid, IDContext);
+		} catch (CoapOSException e) {
+			LOGGER.error("Error while receiving OSCore request: {}", e.getMessage());
+			Response error;
+			error = CoapOSExceptionHandler.manageError(e, request);
+			if (error != null) {
+				return error;
+			}
+			return null;
+		}		
 
 		// For OSCORE-protected requests with the outer block1-option let
 		// them pass through to be re-assembled by the block-wise layer
 		if (request.getOptions().hasBlock1()) {
-
 			if (request.getMaxResourceBodySize() == 0) {
 				int maxPayloadSize = getIncomingMaxUnfragSize(request, ctx);
 				request.setMaxResourceBodySize(maxPayloadSize);
 			}
-
-			super.receiveRequest(exchange, request);
-			return null;
+		
+			return request;
 		}
 
 		byte[] requestOscoreOption;
 		try {
+			// save outer OSCORE option
 			requestOscoreOption = request.getOptions().getOscore();
 
-
+			// decrypt
 			request = prepareReceive(ctxDb, request, ctx);
 
-			System.out.println("prepared request is: " + request);
-			// this could be better
+			// if the outer OSCORE option is the same as the OSCORE option after decryption, we have decrypted as much as we should
 			if (Arrays.equals(request.getOptions().getOscore(), requestOscoreOption)) {
-				//request.getOptions().removeOscore();
-				request.getOptions().setOscore(new byte[] {0x01});
-			}			
+				request.getOptions().removeOscore();
+			}
 
-			// maybe breaks
 			byte[] cryptographicContextID = exchange.getCryptographicContextID();
 
 			CBORObject[] instructions = null;
-			// if previous was first, create header
+			// if previous decryption was the first decryption for the request
 			if (cryptographicContextID != null && cryptographicContextID != requestOscoreOption) {
 				instructions = new CBORObject[4];
 
+				// create header
 				instructions[InstructionIDRegistry.Header.OscoreOptionValue] = CBORObject.FromObject(new byte[0]);
 				instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(InstructionIDRegistry.StartIndex);
 
@@ -704,10 +751,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				int requestSequenceNr = optionDecoder.getSequenceNumber();
 				instructions[2] =  CBORObject.DecodeFromBytes(OptionEncoder.set(rid, IDContext, requestSequenceNr));
 
-				// and remove from cryptographiccontextid
+				// and remove from cryptographic context id
 				exchange.setCryptographicContextID(null);
 
-				// and add to ctxDb
+				// and add initial instruction to ctxDb
 				ctxDb.addInstructions(request.getToken(), instructions);
 			}
 			// else if already exists in ctxDb, retrieve from there
@@ -739,11 +786,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			Response error;
 			error = CoapOSExceptionHandler.manageError(e, request);
 			if (error != null) {
-				super.sendResponse(exchange, error);
+				return error;
 			}
 			return null;
 		}
-		//exchange.setCryptographicContextID(requestOscoreOption);
 	}
 
 
@@ -793,7 +839,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				return;
 			}
 
-			ctxDb.size();
 			if (ctxDb.hasBeenForwarded(response.getToken())) {
 				//the request was not protected by us, but forwarded with a pre-existing encryption, so we simply forward it back
 				System.out.println("Has been forwarded");
@@ -802,11 +847,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				return;
 			}
 
-			//If response is protected with OSCORE parse it first with prepareReceive
 			if (isProtected(response)) {
-				byte[] OSCoreOption = response.getOptions().getOscore();
-				int requestSequenceNumber;
-				int index = 0;
+
 				Token token = response.getToken();
 
 				if (token == null) {
@@ -814,62 +856,56 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					throw new OSException(ErrorDescriptions.TOKEN_NULL);		
 				}
 
-				byte[] cryptographicContextID = exchange.getCryptographicContextID();
-				CBORObject[] instructions = null;
+				int requestSequenceNumber;
 
-				if (cryptographicContextID != null) {
-					OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
-					requestSequenceNumber = optionDecoder.getSequenceNumber();
+				CBORObject[] instructions = ctxDb.getInstructions(token);
+				boolean instructionsExists = Objects.nonNull(instructions);
+
+				if (instructionsExists) {
+					int maxDepth = instructions.length - 2; // # of instructions - # of headers
+					int depth = 0;
+					int index;
+
+					while (response.getOptions().hasOscore()) {
+
+						// want to decrypt.
+						index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
+
+						CBORObject instruction = instructions[index];
+
+						requestSequenceNumber = instruction.get(InstructionIDRegistry.RequestSequenceNumber).ToObject(int.class);
+
+						response = prepareReceive(ctxDb, response, requestSequenceNumber, instructions);
+
+						depth++;
+
+						if (depth == maxDepth && response.getOptions().hasOscore()) {
+							LOGGER.warn("ooh");
+							return; // stop processing
+						}
+
+						instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(--index);
+					}
+
+					if (depth != maxDepth) {
+						LOGGER.info("Received response was not encrypted as many times as the sent request was");
+					}
+
+					// this is to reset the instruction index when receiving multiple responses (as may happen when observe is used)
+					if (Objects.nonNull(instructions)) {
+						instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(instructions.length - 1);
+					}
 				}
 				else {
-					instructions = ctxDb.getInstructions(token);
+					OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
+					requestSequenceNumber = optionDecoder.getSequenceNumber();
 
-					if (Objects.isNull(instructions)) {
-						LOGGER.error(ErrorDescriptions.TOKEN_INVALID);
-						throw new OSException(ErrorDescriptions.TOKEN_INVALID);
-					}
+					response = prepareReceive(ctxDb, response, requestSequenceNumber, instructions);
 
-					index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
-
-					CBORObject instruction = instructions[index];
-
-					requestSequenceNumber = instruction.get(InstructionIDRegistry.RequestSequenceNumber).ToObject(int.class);
-				}
-
-				// need to handle the case where any oscore layer is missing
-				response = prepareReceive(ctxDb, response, requestSequenceNumber, instructions);
-
-				if (Objects.nonNull(instructions)) {
-					instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(--index);
-				}
-
-
-				// if we are proxy, continue decrypting until instructions say stop 
-				if (ctxDb.getIfProxyable() && response.getOptions().hasOscore()) {
-					if (index >= InstructionIDRegistry.StartIndex) {
-						System.out.println("calling again in receive response");
-						receiveResponse(exchange, response);
-						return;
+					if (response.getOptions().hasOscore() && !ctxDb.getIfProxyable()) {
+						return; // stop processing
 					}
 				}
-				// if we are client, continue decrypting until all layers are stripped
-				else if (response.getOptions().hasOscore()) {
-					System.out.println("calling again in receive response");
-					receiveResponse(exchange, response);
-					return;
-				}
-
-
-				// check index if we have more to decrypt
-				//if (cryptographicContextID == null && index >= 2) {
-				//	System.out.println("calling again in receive response");
-				//	receiveResponse(exchange, response);
-				//	return;
-				//}
-
-				// does this need an oscore option for other layers above?
-				// could add, if we save it after isProtected
-				response.getOptions().setOscore(OSCoreOption);
 			}
 		} catch (OSException e) {
 			LOGGER.error("Error while receiving OSCore response: {}", e.getMessage());
@@ -881,28 +917,15 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		}
 
 
-		//Remove token after response is received, unless it has Observe
-		//If it has Observe it will be removed after cancellation elsewhere
+		// Remove token after response is received, unless it has Observe
+		// Remove token if this is an incoming response to an Observe
+		// cancellation request
 		if (response.getOptions().hasObserve() == false
 				|| exchange.getRequest().isObserveCancel()) {
 			System.out.println("Removing token");
 			ctxDb.removeToken(response.getToken());
 		}
-		else {
-			System.out.println("Not removing token, ");
-			System.out.println("resetting index");
-			CBORObject[] instructions = ctxDb.getInstructions(response.getToken());
-			// this is to reset the instruction index when receiving multiple responses (as may happen when observe is used)
-			if (Objects.nonNull(instructions)) {
-				instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(instructions.length - 1);
-			}
-		}
 
-		// Remove token if this is an incoming response to an Observe
-		// cancellation request
-		//if (exchange.getRequest().isObserveCancel()) {
-		//	ctxDb.removeToken(response.getToken());
-		//}
 
 		super.receiveResponse(exchange, response);
 	}
@@ -917,21 +940,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	}
 	private boolean isAcceptableToForward(Request request) {
 		byte[] oscoreOption = request.getOptions().getOscore();
-		/*
-		try {
-			OscoreOptionDecoder oscoreOptionDecoder = new OscoreOptionDecoder(oscoreOption);
-			// do some list or array, in ctxDB? (add flag for who can forward and who is forwardeable to?)
-			if (oscoreOptionDecoder.getKid().equals(new byte[] {0x01} )) {
-				System.out.println("forwarding: 0x01");
-				return true;
-			}
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			System.out.println("invalid oscore option decoder");
-			if (oscoreOption != null) {
-				System.out.println("oscore option was: " + Hex.encodeHexString(oscoreOption));
-			}
-		}*/
+
+		return true;
+	}
+	private boolean isAcceptableToDecrypt(Request request) {
+
 		return true;
 	}
 	private static boolean shouldProtectResponse(Exchange exchange, OSCoreCtxDB ctxDb) {

@@ -57,11 +57,9 @@ public class RequestEncryptor extends Encryptor {
 	 * @throws OSException if encryption fails
 	 *
 	 */
-	public static Request encrypt(OSCoreCtxDB db, Request request, CBORObject[] instructions) throws OSException {
-		OSCoreCtx ctx = db.getContext(request, instructions);
-
+	public static Request encrypt(OSCoreCtxDB db, OSCoreCtx ctx, Request request, CBORObject[] instructions) throws OSException {
 		OptionSet options = request.getOptions();
-		
+
 		if (Arrays.equals(options.getOscore(), Bytes.EMPTY)) {
 			options.removeOscore();
 		}
@@ -84,16 +82,16 @@ public class RequestEncryptor extends Encryptor {
 
 		// This decomposes the Proxy-URI option in the post set
 		OptionJuggle.handleProxyURIInstruction(options, instructions);
-		
+
 		OptionSet[] optionsUAndE = OptionJuggle.filterOptions(options);
 		System.out.println("U OPTIONS ARE: " + optionsUAndE[0]);
-		
-		OptionSet promotedOptions = OptionJuggle.promotion(optionsUAndE[0], instructions, true, db);
-		
+
+		OptionSet promotedOptions = OptionJuggle.promotion(optionsUAndE[0], instructions);
+
 		optionsUAndE[1] = OptionJuggle.merge(optionsUAndE[1], promotedOptions);	
 
 		System.out.println("E OPTIONS ARE: " + optionsUAndE[1]);
-		
+
 		System.err.println("encrypting with key: " + ctx.getSenderKey());
 
 		// here the E options are set 
@@ -103,7 +101,7 @@ public class RequestEncryptor extends Encryptor {
 
 		// sets correct OSCORE option values here
 		compression(ctx, cipherText, request, false);
-		
+
 		byte[] oscoreOption = request.getOptions().getOscore();
 
 		// here the U options are set

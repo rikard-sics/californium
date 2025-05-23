@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 import org.apache.hc.client5.http.utils.Hex;
@@ -65,9 +66,6 @@ public class ResponseEncryptor extends Encryptor {
 	public static Response encrypt(OSCoreCtxDB db, Response response, OSCoreCtx ctx, boolean newPartialIV,
 			boolean outerBlockwise, int requestSequenceNr, CBORObject[] instructions) throws OSException {
 
-		byte[] oldOscoreOption = response.getOptions().getOscore(); // can be null
-		boolean instructionsExists = Objects.nonNull(instructions);
-		
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CTX_NULL);
 			throw new OSException(ErrorDescriptions.CTX_NULL);
@@ -92,7 +90,7 @@ public class ResponseEncryptor extends Encryptor {
 		response = OptionJuggle.setFakeCodeResponse(response);
 
 		OptionSet options = response.getOptions();
-
+		System.out.println("options on response are: " + options);
 		// Save block1 option in the case of outer block-wise to re-add later
 		BlockOption block1Option = null;
 		if (outerBlockwise) {
@@ -100,60 +98,28 @@ public class ResponseEncryptor extends Encryptor {
 			options.removeBlock1();
 		}
 
-		/*
-		// what do when src endpoint is aware we are a reverse proxy?
-		boolean instructionsExists = Objects.nonNull(instructions);
-		if (instructionsExists && (int) instructions[1].ToObject(int.class) != 2) {
-			System.out.println("adding from instructions");
-			System.out.println(Hex.encodeHexString(oldOscoreOption));
-			System.out.println(Hex.encodeHexString(options.getOscore()));
-			System.out.println(Hex.encodeHexString(instructions[0].ToObject(byte[].class)));
-
-			options.setOscore(instructions[0].ToObject(byte[].class));
-		}
-		else if (db != null && db.getIfProxyable() && oldOscoreOption != null) {
-			System.out.println(Hex.encodeHexString(oldOscoreOption));
-			System.out.println(Hex.encodeHexString(options.getOscore()));
-			System.out.println("adding from is proxy old option");
-			options.setOscore(oldOscoreOption);
-		}
-		else {
-			if (oldOscoreOption != null) {
-				System.out.println(Hex.encodeHexString(oldOscoreOption));
-			}
-			if (options.getOscore() != null) {
-				System.out.println(Hex.encodeHexString(options.getOscore()));
-			}
-			System.out.println("removing");
-			options.removeOscore();
-		}*/
-
 		OptionSet[] optionsUAndE = OptionJuggle.filterOptions(options);
 		System.out.println("U OPTIONS ARE: " + optionsUAndE[0]);
 
-		//if (instructionsExists ) {
-			OptionSet promotedOptions = OptionJuggle.promotion(optionsUAndE[0], instructions, false, db);
-			optionsUAndE[1] = OptionJuggle.merge(optionsUAndE[1], promotedOptions);	
-		//}
-		
+		OptionSet promotedOptions = OptionJuggle.promotion(optionsUAndE[0], instructions);
+		optionsUAndE[1] = OptionJuggle.merge(optionsUAndE[1], promotedOptions);	
+
 		System.out.println("E OPTIONS ARE: " + optionsUAndE[1]);
 		byte[] confidential = OSSerializer.serializeConfidentialData(optionsUAndE[1], response.getPayload(), realCode);
-		
+
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
 		byte[] cipherText = encryptAndEncode(enc, ctx, response, newPartialIV, requestSequenceNr);
 
 		compression(ctx, cipherText, response, newPartialIV);
 
-
 		byte[] oscoreOption = response.getOptions().getOscore();
+		System.out.println("oscore option is: " + Hex.encodeHexString(oscoreOption));
 
 		// here the U options are prepared
 		response.setOptions(OptionJuggle.postInstruction(optionsUAndE[0], instructions));
 		response.getOptions().setOscore(oscoreOption);
-		/*
-		options = response.getOptions();
-		response.setOptions(OptionJuggle.prepareUoptions(options));
-		 */
+
+		System.out.println("response options are: " + response.getOptions());
 		if (outerBlockwise) {
 			response.setOptions(response.getOptions().setBlock1(block1Option));
 		}

@@ -79,9 +79,10 @@ public class OptionJuggle {
 	}
 
 	public static boolean hasProxyRelatedOptions(OptionSet options) {
-		if (options.hasProxyScheme() 
+		if (hasProxySchemeAndUri(options) 
 				|| options.hasProxyUri()
-				/*|| options.hasProxyCri()*/) {
+				/*|| options.hasProxyCri()*/
+				|| hasUriPathHostPort(options)) {
 			return true;
 		}
 		else return false;
@@ -94,7 +95,7 @@ public class OptionJuggle {
 		else return false;
 	}
 
-	public static boolean hasSchemeAndUri(OptionSet options) {
+	public static boolean hasProxySchemeAndUri(OptionSet options) {
 		if ((options.hasProxyScheme() /* || options.hasProxySchemeNumber()*/) && 
 				(options.hasUriHost() || options.hasUriPort())) {
 			return true;
@@ -256,7 +257,7 @@ public class OptionJuggle {
 		return uOptions;
 
 	}
-	public static OptionSet promotion(OptionSet options, CBORObject[] instructions, boolean request, OSCoreCtxDB db) {
+	public static OptionSet promotion(OptionSet options, CBORObject[] instructions) {
 		OptionSet result = new OptionSet();
 		boolean includes = false;
 		if (options.hasProxyScheme() /* || options.hasProxySchemeNumber()*/) {

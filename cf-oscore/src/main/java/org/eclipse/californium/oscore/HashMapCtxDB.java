@@ -64,10 +64,11 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	private HashMap<Token, OSCoreCtx> tokenMap;
 	private HashMap<String, OSCoreCtx> uriMap;
 	private HashMap<Token, CBORObject[]> instructionMap;
-    private ArrayList<Token> forwardedWithoutProtection;
+	private ArrayList<Token> forwardedWithoutProtection;
+	private ArrayList<Token> forwardedWithProtection;
 	private ArrayList<Token> allTokens;
 	private boolean proxyable;
-	
+
 	/**
 	 * Create the database, with no proxying allowed
 	 */
@@ -81,7 +82,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		this.forwardedWithoutProtection = new ArrayList<Token>();
 		this.allTokens = new ArrayList<Token>();*/
 	}
-	
+
 	/**
 	 * Create the database
 	 * @param proxyable This controls whether the server can act as a proxy
@@ -93,26 +94,11 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		this.uriMap = new HashMap<>();
 		this.instructionMap = new HashMap<>();
 		this.forwardedWithoutProtection = new ArrayList<Token>();
+		this.forwardedWithProtection = new ArrayList<Token>();
 		this.allTokens = new ArrayList<Token>();
 		this.proxyable = proxyable;
 	}
 
-	/*@Override
-	public synchronized void updateInstructions(Token token, CBORObject[] instructions) {
-		if (token != null) {
-			if (instructions != null) {
-				instructionMap.replace(token, instructions);
-			}
-			else {
-				LOGGER.error("Instruction is null");
-				throw new NullPointerException("Instruction is null");
-			}
-		} else {
-			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
-			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
-		}
-	}*/
-	
 	@Override
 	public synchronized void removeInstructions(Token token) {
 		if (token != null) {
@@ -134,7 +120,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		System.out.println("instruction map is size: " + instructionMap.size());
 		System.out.println("forwarded array list is size: " + forwardedWithoutProtection.size());
 	}
-	
+
 	@Override
 	public synchronized void addForwarded(Token token) {
 		if (token != null) {
@@ -144,7 +130,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 			forwardedWithoutProtection.add(token);	
 		}
 	}
-	
+
 	@Override
 	public synchronized boolean hasBeenForwarded(Token token) {
 		if (token != null) {
@@ -154,18 +140,15 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
 		}
 	}
-	
+
 	@Override
 	public synchronized void addInstructions(Token token, CBORObject[] instructions) {
 		if (token != null) {
 			if (instructions != null) {
-				if (instructionMap.containsKey(token)) {
-					System.out.println("double adding instructions to db");
-					System.out.println("hmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm");
-				}
 				if (!tokenExist(token)) {
 					allTokens.add(token);
 				}
+
 				instructionMap.put(token, instructions);
 			}
 			else {
@@ -205,7 +188,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 			} else {
 				uri = request.getURI();
 			}
-			
+
 			if (uri == null) {
 				LOGGER.error(ErrorDescriptions.URI_NULL);
 				throw new OSException(ErrorDescriptions.URI_NULL);
@@ -213,22 +196,18 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 			return getContext(uri);
 		}
 
-		// Retrieve and set real OSCORE option value
-		//byte[] OSCOREOptionValue = instructions[InstructionIDRegistry.Header.OscoreOptionValue].ToObject(byte[].class);
-		//request.getOptions().setOscore(OSCOREOptionValue);
-
 		// get index for current instruction
 		int index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
-		
+
 		// get instruction
 		CBORObject instruction = instructions[index];
 
 		byte[] RID       = instruction.get(InstructionIDRegistry.KID).ToObject(byte[].class);
 		byte[] IDCONTEXT = instruction.get(InstructionIDRegistry.IDContext).ToObject(byte[].class);
-		
+
 		return getContext(RID, IDCONTEXT);
 	}
-	
+
 	/**
 	 * Retrieve context using RID and ID Context. If the provided ID Context is
 	 * null a result will be returned if there is only one unique context for
@@ -331,7 +310,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	@Override
 	public synchronized void addContext(OSCoreCtx ctx) {
 		if (ctx != null) {
-			
+
 			ByteId rid = new ByteId(ctx.getRecipientId());
 			HashMap<ByteId, OSCoreCtx> ridMap = contextMap.get(rid);
 
@@ -399,7 +378,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
 		}
 	}
-	
+
 	@Override
 	public synchronized boolean instructionsExistForToken(Token token) {
 		if (token != null) {
