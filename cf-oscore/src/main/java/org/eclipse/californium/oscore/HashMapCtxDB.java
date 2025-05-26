@@ -114,11 +114,8 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	}
 
 	@Override
-	public synchronized void size() {
-		System.out.println("Context map is size: " + contextMap.size());
-		System.out.println("Token map is size;   " + tokenMap.size());
-		System.out.println("instruction map is size: " + instructionMap.size());
-		System.out.println("forwarded array list is size: " + forwardedWithoutProtection.size());
+	public synchronized int size() {
+		return contextMap.size();
 	}
 
 	@Override

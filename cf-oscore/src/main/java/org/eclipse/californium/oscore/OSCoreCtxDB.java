@@ -66,7 +66,7 @@ public interface OSCoreCtxDB {
 	public void addInstructions(Token token, CBORObject[] instructions);
 
 	// remove later
-	public void size();
+	public int size();
 	/**
 	 * 
 	 * @param token the token associated with the instructions

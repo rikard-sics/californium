@@ -257,6 +257,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					byte[] oscoreOption = instructions[InstructionIDRegistry.Header.OscoreOptionValue].ToObject(byte[].class);
 					preparedRequest.getOptions().setOscore(oscoreOption);
 
+					int maxDepth = ctxDb.size();
+					int depth = 0;
 					boolean instructionsRemaining;
 
 					// This loops until all instructions have been used
@@ -280,6 +282,12 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						if (instructionsRemaining) {
 							// increment index in instructions
 							instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(i + 1);
+							depth++;
+							if (depth == maxDepth) {
+								LOGGER.warn("ooh");
+								throw new RuntimeException("EEP");
+								//return null; // stop processing
+							}
 						}
 					}
 				}
@@ -406,7 +414,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					if (instructions.length -1 != index ) {
 						throw new RuntimeException("start index is not correct in instructions");
 					}
-
+					int maxDepth = index;
+					int depth = 0;
 					boolean instructionsRemaining;
 
 					// This loops until all instructions have been used
@@ -441,11 +450,17 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 						instructionsRemaining = (int) instructions[InstructionIDRegistry.Header.Index].ToObject(int.class) 
 								> InstructionIDRegistry.StartIndex;
-								// check if there is a next layer of encryption in the instructions
-								if (instructionsRemaining) {
-									// decrement index in instructions
-									instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(--index);
-								}
+						// check if there is a next layer of encryption in the instructions
+						if (instructionsRemaining) {
+							// decrement index in instructions
+							instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(--index);
+							depth++;
+							if (depth == maxDepth) {
+								LOGGER.warn("ooh");
+								throw new RuntimeException("EEP");
+								//return null; // stop processing
+							}
+						}
 					}
 				}
 				else {
@@ -534,6 +549,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				// want to exit when the request does not have oscore (it is fully decrypted) 
 				// or if it had a proxy option (it is to be forwarded or received)
+
+				// might work, since proxy-uri option is consumed here when the authority is equal
+				// if (!result.getOptions().hasOscore() || ( hadProxyOption && result.getOption().hasProxyOption())) {
+
 				if (!result.getOptions().hasOscore() || hadProxyOption) {
 					if (initialRequestHadOscore && !result.getOptions().hasOscore()) {
 						result.getOptions().setOscore(Bytes.EMPTY);
@@ -543,6 +562,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					break;
 
 				}
+
 			}
 			else {
 				// error receiving the request, message is error response
@@ -716,8 +736,29 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				int maxPayloadSize = getIncomingMaxUnfragSize(request, ctx);
 				request.setMaxResourceBodySize(maxPayloadSize);
 			}
-		
+
 			return request;
+		}
+
+		int maxDepth = ctxDb.size();
+		int depth;
+		// not decrypted yet
+		if (exchange.getCryptographicContextID() == null && ctxDb.getInstructions(request.getToken()) == null) {
+			depth = 0;
+			// decrypted once
+		} else if (exchange.getCryptographicContextID() != null) {
+			depth = 1;
+		}
+		// amount of times decrypted is known from size of instruction.
+		else {
+			CBORObject[] instructions = ctxDb.getInstructions(request.getToken());
+			depth = instructions.length - 2; // # of instructions - # of headers
+		}
+
+		if (depth == maxDepth) {
+			LOGGER.warn("ooh");
+			throw new RuntimeException("EEP");
+			//return null; // stop processing
 		}
 
 		byte[] requestOscoreOption;
@@ -881,7 +922,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 						if (depth == maxDepth && response.getOptions().hasOscore()) {
 							LOGGER.warn("ooh");
-							return; // stop processing
+							throw new RuntimeException("EEP");
+							// return; // stop processing
 						}
 
 						instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(--index);
@@ -889,6 +931,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 					if (depth != maxDepth) {
 						LOGGER.info("Received response was not encrypted as many times as the sent request was");
+						System.out.println("Received response was not encrypted as many times as the sent request was");
 					}
 
 					// this is to reset the instruction index when receiving multiple responses (as may happen when observe is used)
@@ -903,7 +946,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					response = prepareReceive(ctxDb, response, requestSequenceNumber, instructions);
 
 					if (response.getOptions().hasOscore() && !ctxDb.getIfProxyable()) {
-						return; // stop processing
+						LOGGER.warn("ooh");
+						throw new RuntimeException("EEP");
+						//return; // stop processing
 					}
 				}
 			}
