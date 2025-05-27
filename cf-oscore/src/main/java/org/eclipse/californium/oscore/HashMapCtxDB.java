@@ -68,12 +68,13 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	private ArrayList<Token> forwardedWithProtection;
 	private ArrayList<Token> allTokens;
 	private boolean proxyable;
+	private int layerLimit;
 
 	/**
 	 * Create the database, with no proxying allowed
 	 */
 	public HashMapCtxDB() {
-		this(false);
+		this(false, 1);
 		/*
 		this.tokenMap = new HashMap<>();
 		this.contextMap = new HashMap<>();
@@ -88,6 +89,18 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	 * @param proxyable This controls whether the server can act as a proxy
 	 */
 	public HashMapCtxDB(boolean proxyable) {
+		this(proxyable, 1);
+	}
+	
+	public HashMapCtxDB(int layerLimit) {
+		this(false, layerLimit);
+	}
+	
+	/**
+	 * Create the database
+	 * @param proxyable This controls whether the server can act as a proxy
+	 */
+	public HashMapCtxDB(boolean proxyable, int layerLimit) {
 
 		this.tokenMap = new HashMap<>();
 		this.contextMap = new HashMap<>();
@@ -97,6 +110,8 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		this.forwardedWithProtection = new ArrayList<Token>();
 		this.allTokens = new ArrayList<Token>();
 		this.proxyable = proxyable;
+		this.layerLimit = layerLimit;
+
 	}
 
 	@Override
@@ -114,8 +129,8 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	}
 
 	@Override
-	public synchronized int size() {
-		return contextMap.size();
+	public synchronized int getLayerLimit() {
+		return this.layerLimit;
 	}
 
 	@Override

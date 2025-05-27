@@ -253,8 +253,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					byte[] oscoreOption = instructions[InstructionIDRegistry.Header.OscoreOptionValue].ToObject(byte[].class);
 					preparedRequest.getOptions().setOscore(oscoreOption);
 
-					int maxDepth = ctxDb.size();
-					int depth = 0;
+					if (instructions.length - 2 > ctxDb.getLayerLimit()) {
+						throw new RuntimeException("there are more layers than allowed on the request");
+					}
+
 					boolean instructionsRemaining;
 
 					// This loops until all instructions have been used
@@ -278,12 +280,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						if (instructionsRemaining) {
 							// increment index in instructions
 							instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(i + 1);
-							depth++;
-							if (depth == maxDepth) {
-								LOGGER.warn("ooh");
-								throw new RuntimeException("EEP");
-								//return null; // stop processing
-							}
 						}
 					}
 				}
@@ -399,12 +395,16 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				// Retrieve the context
 				if (instructionsExists) {
 
+					
 					int index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
 					if (instructions.length -1 != index ) {
 						throw new RuntimeException("start index is not correct in instructions");
 					}
-					int maxDepth = index;
-					int depth = 0;
+					
+					if (instructions.length - 2 > ctxDb.getLayerLimit()) {
+						throw new RuntimeException("there are more layers than allowed on the response");
+					}
+					
 					boolean instructionsRemaining;
 
 					// This loops until all instructions have been used
@@ -441,12 +441,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						if (instructionsRemaining) {
 							// decrement index in instructions
 							instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(--index);
-							depth++;
-							if (depth == maxDepth) {
-								LOGGER.warn("ooh");
-								throw new RuntimeException("EEP");
-								//return null; // stop processing
-							}
 						}
 					}
 				}
@@ -717,25 +711,24 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			return request;
 		}
 
-		int maxDepth = ctxDb.size();
-		int depth;
+		int layerLimit = ctxDb.getLayerLimit();
+		int layer;
 		// not decrypted yet
 		if (exchange.getCryptographicContextID() == null && ctxDb.getInstructions(request.getToken()) == null) {
-			depth = 0;
+			layer = 0;
 			// decrypted once
 		} else if (exchange.getCryptographicContextID() != null) {
-			depth = 1;
+			layer = 1;
 		}
 		// amount of times decrypted is known from size of instruction.
 		else {
 			CBORObject[] instructions = ctxDb.getInstructions(request.getToken());
-			depth = instructions.length - 2; // # of instructions - # of headers
+			layer = instructions.length - 2; // # of instructions - # of headers
 		}
 
-		if (depth == maxDepth) {
-			LOGGER.warn("ooh");
-			throw new RuntimeException("EEP");
-			//return null; // stop processing
+		if (layer == layerLimit) {
+			LOGGER.debug("max layer reached when decrypting a request");
+			return new Response(ResponseCode.UNAUTHORIZED); // stop processing
 		}
 
 		byte[] requestOscoreOption;
@@ -867,8 +860,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				boolean instructionsExists = Objects.nonNull(instructions);
 
 				if (instructionsExists) {
-					int maxDepth = instructions.length - 2; // # of instructions - # of headers
-					int depth = 0;
+					int layerLimit = instructions.length - 2; // # of instructions - # of headers
+					int layer = 0;
 					int index;
 
 					while (response.getOptions().hasOscore()) {
@@ -882,18 +875,17 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 						response = prepareReceive(ctxDb, response, requestSequenceNumber, instructions);
 
-						depth++;
+						layer++;
 
-						if (depth == maxDepth && response.getOptions().hasOscore()) {
-							LOGGER.warn("ooh");
-							throw new RuntimeException("EEP");
-							// return; // stop processing
+						if (layer == layerLimit && response.getOptions().hasOscore()) {
+							LOGGER.warn("max layer reached when decrypting a response");
+							return; // stop processing
 						}
 
 						instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(--index);
 					}
 
-					if (depth != maxDepth) {
+					if (layer < layerLimit) {
 						LOGGER.info("Received response was not encrypted as many times as the sent request was");
 					}
 
@@ -909,9 +901,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					response = prepareReceive(ctxDb, response, requestSequenceNumber, instructions);
 
 					if (response.getOptions().hasOscore() && !ctxDb.getIfProxyable()) {
-						LOGGER.warn("ooh");
-						throw new RuntimeException("EEP");
-						//return; // stop processing
+						LOGGER.warn("max layer reached when decrypting a response");
+						return; // stop processing
 					}
 				}
 			}

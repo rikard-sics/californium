@@ -128,7 +128,6 @@ public class OptionJuggle {
 		if (postSet == null) return uOptions;
 
 		if (postSet.size() == 0) return uOptions;
-		System.out.println(postSet);
 
 		Collection<CBORObject> collection = postSet.getKeys();
 
@@ -215,7 +214,6 @@ public class OptionJuggle {
 				throw new IllegalArgumentException("Option not yet implemented");
 				//break;
 			case OptionNumberRegistry.PROXY_URI:
-				System.out.println("Proxy uri is handled before encryption, before filtering too");
 
 				break;
 			case OptionNumberRegistry.PROXY_SCHEME:
@@ -299,14 +297,12 @@ public class OptionJuggle {
 
 					boolean promoted = false;
 					if (promotionAnswers != null) {
-						System.out.println("There existed promotion answers for option: " + o);
 						promoted = processPromotion(o, promotionAnswers, includes);
 						timesTouched++;
 					}
 
 
 					if (promoted) {
-						System.out.println(o + " was promoted");
 						result.addOption(o);
 						switch (o.getNumber()) {
 						case OptionNumberRegistry.URI_HOST:
@@ -323,9 +319,6 @@ public class OptionJuggle {
 							break;
 						}
 						break;
-					}
-					else {
-						System.out.println(o + " was not promoted");
 					}
 					// keep as is if not promoted
 

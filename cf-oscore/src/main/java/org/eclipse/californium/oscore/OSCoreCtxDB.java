@@ -65,8 +65,12 @@ public interface OSCoreCtxDB {
 	 */
 	public void addInstructions(Token token, CBORObject[] instructions);
 
-	// remove later
-	public int size();
+	/**
+	 * 
+	 * @return 
+	 */
+	public int getLayerLimit();
+	
 	/**
 	 * 
 	 * @param token the token associated with the instructions

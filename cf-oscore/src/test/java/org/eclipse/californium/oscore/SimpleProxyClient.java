@@ -40,7 +40,7 @@ import com.upokecenter.cbor.CBORObject;
 public class SimpleProxyClient {
 
 
-	private final static HashMapCtxDB db = new HashMapCtxDB();
+	private final static HashMapCtxDB db = new HashMapCtxDB(2);
 	private final static String uriServerPathObserve = "/hello/observe2";
 	private final static String uriServerPathTestObserve = "/observe3";
 	private final static String uriServer = "coap://localhost";
@@ -177,10 +177,6 @@ public class SimpleProxyClient {
 			// Triggered when a Observe response is received
 			@Override
 			protected void assertLoad(CoapResponse response) {
-
-				System.out.println("In Observe handler");
-				String content = response.getResponseText();
-				System.out.println("NOTIFICATION: " + content);
 
 				// Check the incoming responses
 				assertEquals(ResponseCode.CONTENT, response.getCode());
@@ -600,7 +596,6 @@ public class SimpleProxyClient {
 
 	private static void printResponse(CoapResponse resp) {
 		if (resp != null) {
-			System.out.println("Printing response with:  Token=" + resp.advanced().getTokenString());
 			System.out.println("RESPONSE CODE: " + resp.getCode().name() + " " + resp.getCode());
 			if (resp.getPayload() != null) {
 				System.out.print("RESPONSE PAYLOAD: ");
@@ -618,7 +613,6 @@ public class SimpleProxyClient {
 
 	private static void printResponse(Response resp) {
 		if (resp != null) {
-			System.out.println("Printing response with:  Token=" + resp.getTokenString());
 			System.out.println("RESPONSE CODE: " + resp.getCode().name() + " " + resp.getCode());
 			if (resp.getPayload() != null) {
 				System.out.print("RESPONSE PAYLOAD: ");

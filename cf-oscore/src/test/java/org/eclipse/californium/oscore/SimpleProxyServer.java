@@ -27,7 +27,7 @@ import com.upokecenter.cbor.CBORObject;
 public class SimpleProxyServer {
 	private static Timer timer;
 
-	private final static HashMapCtxDB db = new HashMapCtxDB();
+	private final static HashMapCtxDB db = new HashMapCtxDB(2);
 	private final static String uriLocal = "coap://localhost";
 	private final static int CoapProxyPort = 5685;
 
