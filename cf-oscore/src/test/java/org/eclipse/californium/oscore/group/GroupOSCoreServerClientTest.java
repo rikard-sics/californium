@@ -51,7 +51,7 @@ import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.EndpointContext;
 import org.eclipse.californium.elements.MapBasedEndpointContext;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
-import org.eclipse.californium.elements.util.Base64;
+
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
@@ -160,7 +160,7 @@ public class GroupOSCoreServerClientTest {
 	 */
 	@Before
 	public void init() throws IOException {
-		gmPublicKey = Base64.decode(gmPublicKeyString);
+		gmPublicKey = StringUtil.base64ToByteArray(gmPublicKeyString);
 		EndpointManager.clear();
 	}
 
@@ -388,7 +388,7 @@ public class GroupOSCoreServerClientTest {
 		request2.setToken(secondToken);
 		request2.getOptions().setOscore(Bytes.EMPTY);
 
-		OneKey clientPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(clientKeyString))).PublicKey();
+		OneKey clientPublicKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(clientKeyString))).PublicKey();
 		commonCtx.addPublicKeyForRID(new byte[] { 0x25 }, clientPublicKey);
 
 		response = client.advanced(request2);
@@ -445,7 +445,7 @@ public class GroupOSCoreServerClientTest {
 		// Send a request first adding the public key of the server to
 		// the client group context.
 
-		OneKey serverPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(serverKeyString))).PublicKey();
+		OneKey serverPublicKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(serverKeyString))).PublicKey();
 		commonCtx.addPublicKeyForRID(new byte[] { 0x77 }, serverPublicKey);
 
 		// create request
@@ -535,7 +535,7 @@ public class GroupOSCoreServerClientTest {
 				context_id);
 		GroupCtx commonCtx = clientRecipientCtx2.commonCtx;
 		byte[] rid1 = new byte[] { 0x77 };
-		OneKey serverPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(serverKeyString))).PublicKey();
+		OneKey serverPublicKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(serverKeyString))).PublicKey();
 		commonCtx.addRecipientCtx(rid1, REPLAY_WINDOW, serverPublicKey);
 		dbClient.addContext(uri, commonCtx);
 
@@ -766,7 +766,7 @@ public class GroupOSCoreServerClientTest {
 		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
 				gmPublicKey);
 
-		OneKey clientFullKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
+		OneKey clientFullKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(clientKeyString)));
 		commonCtx.addSenderCtx(sid, clientFullKey);
 
 		commonCtx.addRecipientCtx(rid2, REPLAY_WINDOW, null);
@@ -796,10 +796,10 @@ public class GroupOSCoreServerClientTest {
 		GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, algCountersign,
 				gmPublicKey);
 
-		OneKey serverFullKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
+		OneKey serverFullKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(serverKeyString)));
 		commonCtx.addSenderCtx(sid, serverFullKey);
 
-		OneKey clientPublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(clientKeyString))).PublicKey();
+		OneKey clientPublicKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(clientKeyString))).PublicKey();
 		commonCtx.addRecipientCtx(rid, REPLAY_WINDOW, clientPublicKey);
 
 		commonCtx.setResponsesIncludePartialIV(responsePartialIV);

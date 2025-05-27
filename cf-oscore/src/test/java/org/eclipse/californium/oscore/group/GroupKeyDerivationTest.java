@@ -36,7 +36,7 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
-import org.eclipse.californium.elements.util.Base64;
+
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
@@ -123,9 +123,9 @@ public class GroupKeyDerivationTest {
 		Provider EdDSA = new EdDSASecurityProvider();
 		Security.insertProviderAt(EdDSA, 1);
 
-		OneKey senderKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(senderFullKeyEddsa)));
-		OneKey recipient1Key = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(recipient1PublicKeyEddsa)));
-		OneKey recipient2Key = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(recipient2PublicKeyEddsa)));
+		OneKey senderKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(senderFullKeyEddsa)));
+		OneKey recipient1Key = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(recipient1PublicKeyEddsa)));
+		OneKey recipient2Key = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(recipient2PublicKeyEddsa)));
 
 		// Check the properties of the decoded keys
 
@@ -153,9 +153,9 @@ public class GroupKeyDerivationTest {
 	@Test
 	public void testECDSA256Keys() throws Exception {
 
-		OneKey senderKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(senderFullKeyEcdsa256)));
-		OneKey recipient1Key = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(recipient1PublicKeyEcdsa256)));
-		OneKey recipient2Key = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(recipient2PublicKeyEcdsa256)));
+		OneKey senderKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(senderFullKeyEcdsa256)));
+		OneKey recipient1Key = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(recipient1PublicKeyEcdsa256)));
+		OneKey recipient2Key = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(recipient2PublicKeyEcdsa256)));
 
 		// Check the properties of the decoded keys
 
@@ -343,18 +343,18 @@ public class GroupKeyDerivationTest {
 	@BeforeClass
 	public static void deriveContexts() throws OSException, CoseException, IOException {
 
-		gmPublicKey = Base64.decode(gmPublicKeyString);
+		gmPublicKey = StringUtil.base64ToByteArray(gmPublicKeyString);
 
 		// Create context using ECDSA_256
 
 		GroupCtx groupCtxEcdsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.ECDSA_256,
 				gmPublicKey);
 
-		OneKey senderFullKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(senderFullKeyEcdsa256)));
+		OneKey senderFullKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(senderFullKeyEcdsa256)));
 		groupCtxEcdsa.addSenderCtx(sid, senderFullKey);
 
-		OneKey recipient1PublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(recipient1PublicKeyEcdsa256)));
-		OneKey recipient2PublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(recipient2PublicKeyEcdsa256)));
+		OneKey recipient1PublicKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(recipient1PublicKeyEcdsa256)));
+		OneKey recipient2PublicKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(recipient2PublicKeyEcdsa256)));
 		groupCtxEcdsa.addRecipientCtx(rid1, REPLAY_WINDOW, recipient1PublicKey);
 		groupCtxEcdsa.addRecipientCtx(rid2, REPLAY_WINDOW, recipient2PublicKey);
 
@@ -378,11 +378,11 @@ public class GroupKeyDerivationTest {
 		GroupCtx groupCtxEddsa = new GroupCtx(master_secret, master_salt, alg, kdf, context_id, AlgorithmID.EDDSA,
 				gmPublicKey);
 
-		senderFullKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(senderFullKeyEddsa)));
+		senderFullKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(senderFullKeyEddsa)));
 		groupCtxEddsa.addSenderCtx(sid, senderFullKey);
 
-		recipient1PublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(recipient1PublicKeyEddsa)));
-		recipient2PublicKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(recipient2PublicKeyEddsa)));
+		recipient1PublicKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(recipient1PublicKeyEddsa)));
+		recipient2PublicKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(recipient2PublicKeyEddsa)));
 		groupCtxEddsa.addRecipientCtx(rid1, REPLAY_WINDOW, recipient1PublicKey);
 		groupCtxEddsa.addRecipientCtx(rid2, REPLAY_WINDOW, recipient2PublicKey);
 
