@@ -50,7 +50,7 @@ import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.EndpointContext;
 import org.eclipse.californium.elements.MapBasedEndpointContext;
 import org.eclipse.californium.elements.rule.TestNameLoggerRule;
-import org.eclipse.californium.elements.util.Base64;
+
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
@@ -163,7 +163,7 @@ public class CountersignAlgorithmsTest {
 	 */
 	@Before
 	public void init() throws IOException {
-		gmPublicKey = Base64.decode(gmPublicKeyString);
+		gmPublicKey = StringUtil.base64ToByteArray(gmPublicKeyString);
 		EndpointManager.clear();
 	}
 
@@ -189,8 +189,8 @@ public class CountersignAlgorithmsTest {
 		String serverKeyString = serverKeyEcdsa256;
 		String clientKeyString = clientKeyEcdsa256;
 
-		OneKey serverKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
-		OneKey clientKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
+		OneKey serverKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(serverKeyString)));
+		OneKey clientKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(clientKeyString)));
 
 		// Check the properties of the decoded keys
 
@@ -221,8 +221,8 @@ public class CountersignAlgorithmsTest {
 		String serverKeyString = clientKeyEcdsa384;
 		String clientKeyString = serverKeyEcdsa384;
 
-		OneKey serverKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
-		OneKey clientKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
+		OneKey serverKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(serverKeyString)));
+		OneKey clientKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(clientKeyString)));
 
 		// Check the properties of the decoded keys
 
@@ -253,8 +253,8 @@ public class CountersignAlgorithmsTest {
 		String serverKeyString = clientKeyEcdsa512;
 		String clientKeyString = serverKeyEcdsa512;
 
-		OneKey serverKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
-		OneKey clientKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
+		OneKey serverKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(serverKeyString)));
+		OneKey clientKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(clientKeyString)));
 
 		// Check the properties of the decoded keys
 
@@ -287,8 +287,8 @@ public class CountersignAlgorithmsTest {
 		String serverKeyString = clientKeyEddsa;
 		String clientKeyString = serverKeyEddsa;
 
-		OneKey serverKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(serverKeyString)));
-		OneKey clientKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(clientKeyString)));
+		OneKey serverKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(serverKeyString)));
+		OneKey clientKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(clientKeyString)));
 
 		// Check the properties of the decoded keys
 
