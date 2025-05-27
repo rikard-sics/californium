@@ -35,8 +35,9 @@ import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
-import org.eclipse.californium.elements.util.Base64;
+
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 import org.eclipse.californium.oscore.OSException;
@@ -175,9 +176,9 @@ public class MulticastObserveClient {
 			Security.insertProviderAt(EdDSA, 1);
 
 			// Add private & public keys for sender & receiver(s)
-			sid_private_key = new OneKey(CBORObject.DecodeFromBytes(Base64.decode((sid_private_key_string))));
-			rid1_public_key = new OneKey(CBORObject.DecodeFromBytes(Base64.decode((rid1_public_key_string))));
-			rid2_public_key = new OneKey(CBORObject.DecodeFromBytes(Base64.decode((rid2_public_key_string))));
+			sid_private_key = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray((sid_private_key_string))));
+			rid1_public_key = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray((rid1_public_key_string))));
+			rid2_public_key = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray((rid2_public_key_string))));
 
 			GroupCtx commonCtx = new GroupCtx(master_secret, master_salt, alg, kdf, group_identifier, algCountersign,
 					null);

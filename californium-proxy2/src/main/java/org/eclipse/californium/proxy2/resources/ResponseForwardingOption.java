@@ -6,8 +6,12 @@ import java.net.UnknownHostException;
 
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Option;
+import org.eclipse.californium.core.coap.option.OptionDefinition;
+import org.eclipse.californium.elements.util.DatagramWriter;
 
 import com.upokecenter.cbor.CBORObject;
+
+//FIXME
 
 public class ResponseForwardingOption extends Option {
 
@@ -17,8 +21,14 @@ public class ResponseForwardingOption extends Option {
 
 	public static int NUMBER = 96;
 
+	protected ResponseForwardingOption(OptionDefinition definition) {
+		super(definition);
+		// TODO Auto-generated constructor stub
+	}
+
 	public ResponseForwardingOption(int number) {
-		super(number);
+		// FIXME
+		super(null);
 	}
 
 	public int getTpId() {
@@ -49,7 +59,6 @@ public class ResponseForwardingOption extends Option {
 		this.srvPort = CBORObject.Null;
 	}
 
-	@Override
 	public byte[] getValue() {
 		CBORObject arrayOut = CBORObject.NewArray();
 		arrayOut.Add(tpId);
@@ -63,7 +72,6 @@ public class ResponseForwardingOption extends Option {
 		return arrayOut.EncodeToBytes();
 	}
 
-	@Override
 	public void setValue(byte[] value) {
 		CBORObject arrayIn = CBORObject.DecodeFromBytes(value);
 		
@@ -83,6 +91,24 @@ public class ResponseForwardingOption extends Option {
 		} else {
 			setSrvPort(CoAP.DEFAULT_COAP_PORT);
 		}
+	}
+
+	@Override
+	public int getLength() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public void writeTo(DatagramWriter writer) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public String toValueString() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

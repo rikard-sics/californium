@@ -47,7 +47,6 @@ import com.upokecenter.cbor.CBORType;
 import net.i2p.crypto.eddsa.Utils;
 import java.util.ArrayList;
 import java.util.List;
-import org.eclipse.californium.elements.util.StandardCharsets;
 
 /**
  * The Message class provides a common class that all of the COSE message classes

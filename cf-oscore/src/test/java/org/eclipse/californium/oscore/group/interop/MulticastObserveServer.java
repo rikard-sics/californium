@@ -42,7 +42,7 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.UDPConnector;
 import org.eclipse.californium.elements.UdpMulticastConnector;
-import org.eclipse.californium.elements.util.Base64;
+
 import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
@@ -138,8 +138,8 @@ public class MulticastObserveServer {
 			Security.insertProviderAt(EdDSA, 1);
 
 			// Set sender & receiver keys for countersignatures
-			sid_private_key = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(sid_private_key_string)));
-			rid1_public_key = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(rid1_public_key_string)));
+			sid_private_key = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(sid_private_key_string)));
+			rid1_public_key = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(rid1_public_key_string)));
 
 			// Check command line arguments (flag to use different sid and sid
 			// key)
@@ -147,7 +147,7 @@ public class MulticastObserveServer {
 				System.out.println("Starting with alternative sid 0x77.");
 				sid = new byte[] { 0x77 };
 				sid_private_key_string = "pQMnAQEgBiFYIBBbjGqMiAGb8MNUWSk0EwuqgAc5nMKsO+hFiEYT1bouI1gge/Yvdn7Rz0xgkR/En9/Mub1HzH6fr0HLZjadXIUIsjk=";
-				sid_private_key = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(sid_private_key_string)));
+				sid_private_key = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(sid_private_key_string)));
 			} else {
 				System.out.println("Starting with sid 0x52.");
 			}
