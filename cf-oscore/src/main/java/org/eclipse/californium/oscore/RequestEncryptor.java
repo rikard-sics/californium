@@ -84,15 +84,10 @@ public class RequestEncryptor extends Encryptor {
 		OptionJuggle.handleProxyURIInstruction(options, instructions);
 
 		OptionSet[] optionsUAndE = OptionJuggle.filterOptions(options);
-		System.out.println("U OPTIONS ARE: " + optionsUAndE[0]);
 
 		OptionSet promotedOptions = OptionJuggle.promotion(optionsUAndE[0], instructions);
 
 		optionsUAndE[1] = OptionJuggle.merge(optionsUAndE[1], promotedOptions);	
-
-		System.out.println("E OPTIONS ARE: " + optionsUAndE[1]);
-
-		System.err.println("encrypting with key: " + ctx.getSenderKey());
 
 		// here the E options are set 
 		byte[] confidential = OSSerializer.serializeConfidentialData(optionsUAndE[1], request.getPayload(), realCode);

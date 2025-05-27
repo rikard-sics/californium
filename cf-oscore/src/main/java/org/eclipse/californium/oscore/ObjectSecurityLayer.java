@@ -140,9 +140,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	public void sendRequest(final Exchange exchange, final Request request) {
 		Request req = request;
 
-		System.out.println("SEND REQUEST IN OBJECTSECURITYLAYER");
-		System.out.println("request is: " + request);
-		System.out.println(shouldProtectRequest(request));
 		if (shouldProtectRequest(request)) {
 			try {
 				// Handle outgoing requests for more data from a responder that
@@ -217,7 +214,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 								ctxDb.addForwarded(token);
 
-								System.out.println("SENT FORWARDED REQUEST WITH: " + token.toString());
 							}
 						});
 
@@ -340,10 +336,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						else {
 							ctxDb.addContext(token, finalCtx);
 						}
-
-						System.out.println("SENT REQUEST WITH: " + token.toString());
-						System.out.println("SENT REQUEST WITH: MID=" + request.getMID());
-
 					}
 				});
 
@@ -356,7 +348,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				LOGGER.trace("Request: {}", exchange.getRequest());
 
-				System.out.println("Sending request: " + req);
 				super.sendRequest(exchange, req);
 
 			} catch (OSException e) {
@@ -375,9 +366,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	@Override
 	public void sendResponse(Exchange exchange, Response response) {
-		System.out.println("SEND RESPONSE IN OBJECTSECURITYLAYER");
-		System.out.println("init response is: " + response);
-		System.out.println("request is:  " + exchange.getRequest());
+
 
 		/* If the request contained the Observe option always add a partial IV to the response.
 		 * A partial IV will also be added if the responsesIncludePartialIV flag is set in the context. */
@@ -420,8 +409,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 					// This loops until all instructions have been used
 					for (int i = instructions.length - 1; (InstructionIDRegistry.StartIndex - 1) < i; i--) {
-						System.err.println("preparedResponse is:" + preparedResponse);
-						System.out.println(i);
+
 						// retrieve context
 						CBORObject instruction = instructions[index];
 
@@ -437,7 +425,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						addPartialIV = (ctx != null && ctx.getResponsesIncludePartialIV()) || exchange.getRequest().getOptions().hasObserve();
 
 						// encrypt
-						System.out.println("encrypting using instructions");
 						preparedResponse = prepareSend(ctxDb, preparedResponse, ctx, addPartialIV, outerBlockwise,
 								requestSequenceNumber, instructions);
 
@@ -491,7 +478,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				if (instructionsExists) {
 					// reset instruction index
-					System.out.println("Resetting index");
 					instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(instructions.length - 1);
 				}
 			} catch (OSException e) {
@@ -506,7 +492,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			ctxDb.removeToken(exchange.getCurrentRequest().getToken());
 		}
 
-		System.out.println("Sending response: " + response);
 		super.sendResponse(exchange, response);
 	}
 
@@ -517,8 +502,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	@Override
 	public void receiveRequest(Exchange exchange, Request request) {
-		System.out.println("RECEIVE REQUEST IN OBJECTSECURITYLAYER");
-		System.out.println(request);
 
 		// removes any previous instructions that were built while decrypting the request, 
 		// in case the request is encrypted differently from the first time.
@@ -625,7 +608,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	private Message consumeProxyRelatedOptions(Exchange exchange, Request request, boolean shouldProcess){
 		//consume proxy related options.
-		System.out.println("in consume" + request);
 		Coap2CoapTranslator translator = new Coap2CoapTranslator();
 		URI destination = null;
 		try {
@@ -647,23 +629,19 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					// it identifies us so we remove proxy-* option
 					if (request.getOptions().hasProxyUri()) request.getOptions().removeProxyUri();
 					if (request.getOptions().hasProxyScheme()) request.getOptions().removeProxyScheme();
-					System.err.println("AAAAAAAAAAAAAA");
 					return request;
 				}
 				else {
 					// forward request
-					System.out.println("forward, and process = false");
 					return request;
 				}
 			}
 			else {
 				//forward request
-				System.out.println("forward, without process");
 				return request;
 			}
 
 		} catch (Exception e) {
-			System.out.println(e.getMessage());
 			return new Response(ResponseCode.INTERNAL_SERVER_ERROR); // eller nåt
 		}
 
@@ -699,7 +677,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	private Message processIsThereAnApplication(Exchange exchange, Request request){
 		if (/* hasApplication() */ true) {
-			System.out.println("Sending to Application, i hope");
 
 			return request;
 		}
@@ -837,9 +814,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	//Always accepts unprotected responses, which is needed for reception of error messages
 	@Override
 	public void receiveResponse(Exchange exchange, Response response) {
-		System.out.println("RECEIVE RESPONSE IN OBJECTSECURITYLAYER");
-		System.out.println("Received response: " + response);
-		System.out.println("For request:       " + exchange.getCurrentRequest());
 
 		Request request = exchange.getCurrentRequest();
 		if (request == null) {
@@ -847,23 +821,15 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			return;
 		}
 
-
-
 		try {
 			//Printing of status information.
 			//Warns when expecting OSCORE response but unprotected response is received
 			boolean expectProtectedResponse = responseShouldBeProtected(exchange, response);
 			if (!isProtected(response) && expectProtectedResponse) {
-				System.out.println("Incoming response is NOT OSCORE protected but is expected to be!");
-
 				LOGGER.info("Incoming response is NOT OSCORE protected but is expected to be!");
 			} else if (isProtected(response) && expectProtectedResponse) {
-				System.out.println("Incoming response is OSCORE protected");
-
 				LOGGER.debug("Incoming response is OSCORE protected");
 			} else if (isProtected(response)) {
-				System.out.println("Incoming response is OSCORE protected but it should not be");
-
 				LOGGER.warn("Incoming response is OSCORE protected but it should not be");
 			}
 
@@ -882,8 +848,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 			if (ctxDb.hasBeenForwarded(response.getToken())) {
 				//the request was not protected by us, but forwarded with a pre-existing encryption, so we simply forward it back
-				System.out.println("Has been forwarded");
-
 				super.receiveResponse(exchange, response);
 				return;
 			}
@@ -931,7 +895,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 					if (depth != maxDepth) {
 						LOGGER.info("Received response was not encrypted as many times as the sent request was");
-						System.out.println("Received response was not encrypted as many times as the sent request was");
 					}
 
 					// this is to reset the instruction index when receiving multiple responses (as may happen when observe is used)
@@ -967,7 +930,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		// cancellation request
 		if (response.getOptions().hasObserve() == false
 				|| exchange.getRequest().isObserveCancel()) {
-			System.out.println("Removing token");
 			ctxDb.removeToken(response.getToken());
 		}
 

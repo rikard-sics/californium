@@ -277,7 +277,6 @@ public class ForwardProxyMessageDeliverer extends ServerMessageDeliverer {
 	 */
 	@Override
 	protected Resource findResource(Exchange exchange) throws DelivererException {
-		System.out.println("in find resource");
 		Resource resource = null;
 		Request request = exchange.getRequest();
 		OptionSet options = request.getOptions();
@@ -327,7 +326,6 @@ public class ForwardProxyMessageDeliverer extends ServerMessageDeliverer {
 					scheme = scheme.toLowerCase();
 					resource = scheme2resource.get(scheme);
 					if (resource == null) {
-						System.out.println("in find resource, resource was null");
 						throw new DelivererException(ResponseCode.PROXY_NOT_SUPPORTED, scheme + " not supported!", true);
 					}
 					if (options.getUriHost() == null) {
@@ -346,17 +344,13 @@ public class ForwardProxyMessageDeliverer extends ServerMessageDeliverer {
 					local = true;
 				}
 			} catch (TranslationException e) {
-				System.out.println("in find resource, bad proxy request");
 				LOGGER.debug("Bad proxy request", e);
 			}
 		}
 		if (resource == null && local && getRootResource() != null) {
 			// try to find local resource
-			System.out.println("in find local resource");
 			resource = super.findResource(exchange);
 		}
-		System.out.println("in find resource, returning resource");
-		System.out.println(resource);
 		return resource;
 	}
 

@@ -73,7 +73,6 @@ public abstract class Decryptor {
 	 */
 	protected static byte[] decryptAndDecode(Encrypt0Message enc, Message message, OSCoreCtx ctx, Integer seqByToken)
 			throws OSException {
-		System.out.println("Decrypting...");
 		int seq = -2;
 		boolean isRequest = message instanceof Request;
 		byte[] nonce = null;

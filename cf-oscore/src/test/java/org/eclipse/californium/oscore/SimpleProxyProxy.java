@@ -254,8 +254,6 @@ public class SimpleProxyProxy {
 		//builder.setPort(CoapProxyPort);
 		builder.setInetSocketAddress(new InetSocketAddress("localhost", CoapProxyPort));
 		CoapEndpoint clientToProxyEndpoint = builder.build();
-
-		System.out.println(clientToProxyEndpoint.getAddress().isUnresolved());
 		
 		coapProxyServer = new CoapServer(config);
 		coapProxyServer.addEndpoint(clientToProxyEndpoint);
@@ -277,13 +275,9 @@ public class SimpleProxyProxy {
 		CoapResource targets = new CoapResource("targets");
 		coapProxyServer.add(targets);
 
-		
-		System.out.println(clientToProxyEndpoint);
-		System.out.println(proxyToServerEndpoint);
-		System.out.println(coapProxyServer.getRoot().getURI());
 		coapProxyServer.start();
 
-		System.out.println("CoAP Proxy at: coap://localhost:" + CoapProxyPort + "/coap2coap");
+		//System.out.println("CoAP Proxy at: coap://localhost:" + CoapProxyPort + "/coap2coap");
 		this.cache = cacheResource;
 		// receiving on any address => enable LocalAddressResolver
 		proxyMessageDeliverer.startLocalAddressResolver();

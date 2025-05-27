@@ -87,23 +87,13 @@ public class SimpleProxyServer {
 
 			@Override
 			public void handleGET(CoapExchange exchange) {
-				System.out.println("Accessing hello/1 resource");
+				//System.out.println("Accessing hello/1 resource");
 				Response r = new Response(ResponseCode.CONTENT);
 				r.setPayload("Hello World!");
-				System.out.println("Recieved GET with " + exchange.advanced().getRequest().getToken());
-				System.out.println(exchange.advanced().getCryptographicContextID());
-				CBORObject[] instructions = OptionEncoder.decodeCBORSequence(exchange.advanced().getCryptographicContextID());
-				System.out.println();
-				if (instructions != null) {
-					for (CBORObject obj : instructions) {
-						System.out.println(obj);
-					}
-				}
-				r.getOptions().setMaxAge(4);
-				//System.err.println("black hole");
-				
+				//System.out.println("Recieved GET with " + exchange.advanced().getRequest().getToken());
+				//r.getOptions().setMaxAge(4);
 				exchange.respond(r);
-				counter.incrementAndGet();
+				//counter.incrementAndGet();
 				/*if (counter.get() == 2) {
 					server.destroy();
 				}*/

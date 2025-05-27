@@ -95,27 +95,15 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 
 	@Override
 	public void handleRequest(final Exchange exchange) {
-
-		System.out.println("The Client resource that is handling this request is: " + this.getName());
-		System.out.println("Using destination schemes: " + this.getDestinationSchemes());
-		System.out.println("Parent is: " + this.getParent());
 		Request incomingRequest = exchange.getRequest();
 		LOGGER.debug("ProxyCoapClientResource forwards {}", incomingRequest);
-		System.out.println("Recieved forwarding Request with " + incomingRequest.getToken());
 
 		try {
 			// create the new request from the original
 			InetSocketAddress exposedInterface = translator.getExposedInterface(incomingRequest);
 			URI destination = translator.getDestinationURI(incomingRequest, exposedInterface);
 			Request outgoingRequest = translator.getRequest(destination, incomingRequest);
-			System.out.println(incomingRequest.getSourceContext().entries());
-			//temp fix, should do better
-			//outgoingRequest.setSourceContext(incomingRequest.getSourceContext());
 
-			System.out.println("incoming Request was: " + incomingRequest);
-
-			System.out.println("outgoing Request is:  " + outgoingRequest);
-			System.out.println();
 			// execute the request
 			if (outgoingRequest.getDestinationContext() == null) {
 				exchange.sendResponse(new Response(ResponseCode.INTERNAL_SERVER_ERROR));
@@ -154,23 +142,13 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 					// Triggered when a Observe response is received
 					@Override
 					protected void assertLoad(CoapResponse incomingResponse) {
-
-						System.out.println("incoming response is: " + incomingResponse);
-
-						String content = incomingResponse.getResponseText();
-						System.out.println("NOTIFICATION: " + content);
-						System.out.println("NOTIFICATION: " + incomingResponse.getPayloadSize());
-
 						Response response = translator.getResponse(incomingResponse.advanced());
 						exchange.sendResponse(response);
-
 					}
 				}
 				ObserveHandler handler = new ObserveHandler();
 
 				CoapObserveRelation relation = client.observe(outgoingRequest, handler);
-				// ObserveManager manager, ObservableResource resource, Exchange exchange
-				System.out.println("incoming token is: " + incomingRequest.getToken());
 
 				// it might be uneccessary to store the exchange.
 				mapTokenToExchange.put(incomingRequest.getToken(), exchange);
@@ -186,14 +164,9 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 				CoapObserveRelation relation = mapTokenToRelation.get(incomingRequest.getToken());
 				CoapClient client = mapTokenToClient.get(incomingRequest.getToken());
 
-				System.out.println("Cancelling request in main body");
-
 				// cancel observe
 				//relation.matchRequest(incomingRequest);
 				outgoingRequest.setToken(relation.getCurrentResponse().getToken());
-				Request originalRequest = originalExchange.getCurrentRequest();
-				System.out.println("original request was: " + originalRequest);
-				System.out.println("new request is:       " + outgoingRequest);
 
 				if (outgoingRequest.isConfirmable()) {
 					outgoingRequest.addMessageObserver(
@@ -203,8 +176,6 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 					// perhaps keep alive so as to make it possible to forward RST to server
 					mapTokenToRelation.remove(incomingRequest.getToken());
 					if (originalExchange.getRelation() != null) {
-						System.out.println("relation printing");
-						System.out.println(originalExchange.getRelation());
 						originalExchange.getRelation().cancel();
 					}
 					client.shutdown();
@@ -271,7 +242,6 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 
 		@Override
 		public void onResponse(Response incomingResponse) {
-			System.out.println("Received forwarding Response with " + incomingResponse.getToken());
 			int size = incomingResponse.getPayloadSize();
 			if (!baseResource.checkMaxResourceBodySize(size)) {
 				incomingResponse = new Response(ResponseCode.BAD_GATEWAY);
@@ -288,12 +258,11 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 			// used to not forget the information necessary for the ACK to be forwarded
 			// if not an ACK, don't forget but forward the message
 			// if a RST is received the server should forget the observe and forward the RST to server.
+			// or RST reply when client resends message
 			// should maybe be check if it has an observe relation using the token.
 			if (incomingExchange.getRequest().getOptions().hasObserve()) {
 				Exchange originalExchange = mapTokenToExchange.get(incomingExchange.getRequest().getToken());
 				if (originalExchange.getRelation() != null) {
-					System.out.println("relation printing");
-					System.out.println(originalExchange.getRelation());
 					originalExchange.getRelation().cancel();
 				}
 				mapTokenToRelation.remove(incomingExchange.getRequest().getToken());

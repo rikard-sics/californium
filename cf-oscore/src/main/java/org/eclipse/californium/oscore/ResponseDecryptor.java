@@ -147,17 +147,14 @@ public class ResponseDecryptor extends Decryptor {
 
 		if (eOptions.hasOscore() && shouldHaveInnerOscoreOption) {
 			// The message contains an inner OSCore option and it should
-			System.out.println("Message has inner OSCORE option and it should");
 			LOGGER.debug("Message has inner oscore and it should");
 		}
 		else if (!(eOptions.hasOscore()) && shouldHaveInnerOscoreOption) {
 			LOGGER.info("Message does not contain inner OSCORE option but it should");
-			System.out.println("Message does not contain inner OSCORE option but it should");
 			//remove outer OSCORE option to not decrypt more
 			uOptions.removeOscore();
 		}
 		else if (eOptions.hasOscore() && !shouldHaveInnerOscoreOption) {
-			System.out.println("Message has inner OSCORE option but it should not have");
 			if (db.getIfProxyable()) {
 				LOGGER.debug("Message has inner OSCORE option and it should not have, but we are a proxy");
 			}
@@ -166,8 +163,6 @@ public class ResponseDecryptor extends Decryptor {
 			}
 		}
 		else {
-			System.out.println("Message does not contain inner oscore without instructions");
-			System.out.println("Which is fine");
 			LOGGER.debug("Message does not contain inner oscore and it should not have");
 			//remove outer OSCORE option to not decrypt more
 			uOptions.removeOscore();
@@ -175,7 +170,6 @@ public class ResponseDecryptor extends Decryptor {
 
 		eOptions = OptionJuggle.merge(eOptions, uOptions);
 
-		System.out.println("after decryptions, set " + eOptions + " as options on response");
 		response.setOptions(eOptions);
 
 		//Set information about the OSCORE context used in the endpoint context of this response

@@ -130,11 +130,9 @@ public class RequestDecryptor extends Decryptor {
 		}
 
 		OptionSet eOptions = request.getOptions();
-		System.out.println("eOptions" + eOptions);
-		System.out.println("uOptions" + uOptions);
+
 		eOptions = OptionJuggle.merge(eOptions, uOptions);	
 		request.setOptions(eOptions);
-		System.out.println("on request" +request.getOptions());
 
 		byte[] oscoreOption = request.getOptions().getOscore();
 
@@ -148,7 +146,6 @@ public class RequestDecryptor extends Decryptor {
 		OSCoreEndpointContextInfo.receivingRequest(ctx, request);
 
 		request.getOptions().setOscore(oscoreOption);
-		System.out.println("after set oscore" + request.getOptions());
 
 		return OptionJuggle.setRealCodeRequest(request, ctx.getCoAPCode());
 	}

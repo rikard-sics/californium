@@ -90,7 +90,7 @@ public class ResponseEncryptor extends Encryptor {
 		response = OptionJuggle.setFakeCodeResponse(response);
 
 		OptionSet options = response.getOptions();
-		System.out.println("options on response are: " + options);
+
 		// Save block1 option in the case of outer block-wise to re-add later
 		BlockOption block1Option = null;
 		if (outerBlockwise) {
@@ -99,12 +99,10 @@ public class ResponseEncryptor extends Encryptor {
 		}
 
 		OptionSet[] optionsUAndE = OptionJuggle.filterOptions(options);
-		System.out.println("U OPTIONS ARE: " + optionsUAndE[0]);
 
 		OptionSet promotedOptions = OptionJuggle.promotion(optionsUAndE[0], instructions);
 		optionsUAndE[1] = OptionJuggle.merge(optionsUAndE[1], promotedOptions);	
 
-		System.out.println("E OPTIONS ARE: " + optionsUAndE[1]);
 		byte[] confidential = OSSerializer.serializeConfidentialData(optionsUAndE[1], response.getPayload(), realCode);
 
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
@@ -113,13 +111,11 @@ public class ResponseEncryptor extends Encryptor {
 		compression(ctx, cipherText, response, newPartialIV);
 
 		byte[] oscoreOption = response.getOptions().getOscore();
-		System.out.println("oscore option is: " + Hex.encodeHexString(oscoreOption));
 
 		// here the U options are prepared
 		response.setOptions(OptionJuggle.postInstruction(optionsUAndE[0], instructions));
 		response.getOptions().setOscore(oscoreOption);
 
-		System.out.println("response options are: " + response.getOptions());
 		if (outerBlockwise) {
 			response.setOptions(response.getOptions().setBlock1(block1Option));
 		}
