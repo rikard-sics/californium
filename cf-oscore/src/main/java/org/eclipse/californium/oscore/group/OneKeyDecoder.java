@@ -20,7 +20,7 @@ import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
-import org.eclipse.californium.elements.util.Base64;
+
 import org.eclipse.californium.elements.util.StringUtil;
 
 import com.upokecenter.cbor.CBORObject;
@@ -78,7 +78,7 @@ public class OneKeyDecoder {
 
 				// Convert to base64
 				byte[] array = StringUtil.hex2ByteArray(arrayString);
-				String arrayBase64 = Base64.encodeBytes(array);
+				String arrayBase64 = StringUtil.byteArrayToBase64(array);
 
 				// Change it to base64url encoding
 				arrayBase64 = arrayBase64.replace("+", "-");
@@ -188,7 +188,7 @@ public class OneKeyDecoder {
 
 		OneKey key = parseDiagnostic(keyString);
 		byte[] keyObjectBytes = key.EncodeToBytes();
-		String base64Encoded = Base64.encodeBytes(keyObjectBytes);
+		String base64Encoded = StringUtil.byteArrayToBase64(keyObjectBytes);
 
 		return base64Encoded;
 	}

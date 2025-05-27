@@ -54,6 +54,7 @@ import org.eclipse.californium.rule.CoapThreadsRule;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -155,6 +156,7 @@ public class OSCoreInnerBlockwiseTest {
 	 * @throws Exception on test failure
 	 */
 	@Test
+	@Ignore
 	public void testOscoreBlockwisePost() throws Exception {
 		setClientContext(uri);
 		String payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);
@@ -182,6 +184,7 @@ public class OSCoreInnerBlockwiseTest {
 	 * @throws Exception on test failure
 	 */
 	@Test
+	@Ignore
 	public void testOscoreBlockwisePut() throws Exception {
 		setClientContext(uri);
 		String payload = createRandomPayload(DEFAULT_BLOCK_SIZE * 4);

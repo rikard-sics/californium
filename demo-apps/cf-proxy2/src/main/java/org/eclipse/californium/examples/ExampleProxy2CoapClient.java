@@ -163,8 +163,11 @@ public class ExampleProxy2CoapClient {
 
 			// https://datatracker.ietf.org/doc/html/draft-tiloca-core-groupcomm-proxy-07#section-3
 			ResponseForwardingOption responseForwarding = new ResponseForwardingOption(ResponseForwardingOption.NUMBER);
-			responseForwarding
-					.setValue(response.getOptions().getOthers(ResponseForwardingOption.NUMBER).get(0).getValue());
+
+			// FIXME
+			// responseForwarding
+			// .setValue(response.getOptions().getOthers(ResponseForwardingOption.NUMBER).get(0).getValue());
+
 			System.out.println("Response-Forwarding: " + "tp_id: " + responseForwarding.getTpId() + ", srv_host: "
 					+ responseForwarding.getSrvHost() + ", srv_port: " + responseForwarding.getSrvPort());
 
@@ -477,8 +480,11 @@ public class ExampleProxy2CoapClient {
 
 			// https://datatracker.ietf.org/doc/html/draft-tiloca-core-groupcomm-proxy-07#section-3
 			ResponseForwardingOption responseForwarding = new ResponseForwardingOption(ResponseForwardingOption.NUMBER);
-			responseForwarding
-					.setValue(response.getOptions().getOthers(ResponseForwardingOption.NUMBER).get(0).getValue());
+
+			// FIXME
+			// responseForwarding
+			// .setValue(response.getOptions().getOthers(ResponseForwardingOption.NUMBER).get(0).getValue());
+
 			System.out.println("Response-Forwarding: " + "tp_id: " + responseForwarding.getTpId() + ", srv_host: "
 					+ responseForwarding.getSrvHost() + ", srv_port: " + responseForwarding.getSrvPort());
 
