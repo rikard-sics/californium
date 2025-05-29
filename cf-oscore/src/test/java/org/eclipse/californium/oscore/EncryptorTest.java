@@ -27,6 +27,8 @@ import org.eclipse.californium.cose.AlgorithmID;
 import org.junit.After;
 import org.junit.Test;
 
+import com.upokecenter.cbor.CBORObject;
+
 /**
  * Tests the encryption of request and response messages.
  * Uses test vectors from the OSCORE draft for comparison.
@@ -77,7 +79,7 @@ public class EncryptorTest {
 		//Encrypt the request message
 		HashMapCtxDB db = new HashMapCtxDB();
 		db.addContext(r.getURI(), ctx);
-		Request encrypted = RequestEncryptor.encrypt(db, r);
+		Request encrypted = RequestEncryptor.encrypt(db, ctx, r, null);
 		
 		//Check the OSCORE option value
 		byte[] predictedOSCoreOption = { 0x09, 0x14, 0x00 };

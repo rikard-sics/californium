@@ -40,10 +40,13 @@
  ******************************************************************************/
 package org.eclipse.californium.cose;
 
-import java.nio.charset.StandardCharsets;
-
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * The Message class provides a common class that all of the COSE message classes
@@ -120,14 +123,17 @@ public abstract class Message extends Attribute {
 		
             case Encrypt:
             case MAC: 
-            case MAC0:                
-            case Sign1:
+            case MAC0:
             case Sign:
             	throw new CoseException("Message format not supported by this library");
 		
             case Encrypt0: 
 		        msg = new Encrypt0Message();
 		        break;
+		        
+            case Sign1:
+                msg = new Sign1Message();
+                break;
                 
             default:
                 throw new CoseException("Message is not recognized as a COSE security Object");
@@ -218,6 +224,55 @@ public abstract class Message extends Attribute {
      * @param strData string to set as the content
      */
     public void SetContent(String strData) {
-        rgbContent = strData.getBytes(StandardCharsets.UTF_8);
+		rgbContent = strData.getBytes(StandardCharsets.UTF_8);
     }
+
+	List<CounterSign> counterSignList = new ArrayList<CounterSign>();
+	CounterSign1 counterSign1;
+
+	public void addCountersignature(CounterSign countersignature) {
+		counterSignList.add(countersignature);
+	}
+
+	public List<CounterSign> getCountersignerList() {
+		return counterSignList;
+	}
+
+	public CounterSign1 getCountersign1() {
+		return counterSign1;
+	}
+
+	public void setCountersign1(CounterSign1 value) {
+		counterSign1 = value;
+	}
+
+	protected void ProcessCounterSignatures() throws CoseException {
+		if (!counterSignList.isEmpty()) {
+			if (counterSignList.size() == 1) {
+				counterSignList.get(0).sign(rgbProtected, rgbContent);
+				addAttribute(HeaderKeys.CounterSignature, counterSignList.get(0).EncodeToCBORObject(),
+						Attribute.UNPROTECTED);
+			} else {
+				CBORObject list = CBORObject.NewArray();
+				for (CounterSign sig : counterSignList) {
+					sig.sign(rgbProtected, rgbContent);
+					list.Add(sig.EncodeToCBORObject());
+				}
+				addAttribute(HeaderKeys.CounterSignature, list, Attribute.UNPROTECTED);
+			}
+		}
+
+		if (counterSign1 != null) {
+			counterSign1.sign(rgbProtected, rgbContent);
+			addAttribute(HeaderKeys.CounterSignature0, counterSign1.EncodeToCBORObject(), Attribute.UNPROTECTED);
+		}
+	}
+
+	public boolean validate(CounterSign1 countersignature) throws CoseException {
+		return countersignature.validate(rgbProtected, rgbContent);
+	}
+
+	public boolean validate(CounterSign countersignature) throws CoseException {
+		return countersignature.validate(rgbProtected, rgbContent);
+	}
 }

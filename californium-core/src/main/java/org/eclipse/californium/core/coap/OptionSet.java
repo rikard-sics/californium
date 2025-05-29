@@ -39,6 +39,7 @@ import org.eclipse.californium.core.coap.option.OptionDefinition;
 import org.eclipse.californium.core.coap.option.OptionNumber;
 import org.eclipse.californium.core.coap.option.StandardOptionRegistry;
 import org.eclipse.californium.core.coap.option.StringOption;
+import org.eclipse.californium.elements.util.Bytes;
 
 /**
  * {@code OptionSet} is a collection of all options of a request or a response.
@@ -91,6 +92,7 @@ public final class OptionSet {
 	private IntegerOption observe;
 	private OpaqueOption oscore;
 	private NoResponseOption no_response;
+	private EmptyOption edhoc; // EDHOC
 
 	// Arbitrary options
 	private List<Option> others;
@@ -124,6 +126,7 @@ public final class OptionSet {
 		observe = null;
 		oscore = null;
 		no_response = null;
+		edhoc = null; // EDHOC
 
 		others = null; // new LinkedList<>();
 	}
@@ -161,6 +164,7 @@ public final class OptionSet {
 		observe = origin.observe;
 		oscore = origin.oscore;
 		no_response = origin.no_response;
+		edhoc = origin.edhoc;  // EDHOC
 		others = copyList(origin.others);
 	}
 
@@ -190,6 +194,7 @@ public final class OptionSet {
 		observe = null;
 		oscore = null;
 		no_response = null;
+		edhoc = null; // EDHOC
 		clear(others);
 	}
 
@@ -1710,6 +1715,33 @@ public final class OptionSet {
 		this.no_response = null;
 		return this;
 	}
+	
+	// EDHOC
+	/**
+	 * Checks if the EDHOC option is present.
+	 * 
+	 * @return {@code true}, if present
+	 */
+	public boolean hasEdhoc() {
+		return edhoc != null;
+	}
+
+	// EDHOC
+	/**
+	 * Sets or unsets the EDHOC option.
+	 * 
+	 * @param present the presence of the option
+	 * @return this OptionSet for a fluent API.
+	 */
+	public OptionSet setEdhoc() {
+		edhoc = StandardOptionRegistry.EDHOC.create();
+		return this;
+	}
+
+	public OptionSet removeEdhoc() {
+		this.edhoc = null;
+		return this;
+	}
 
 	/**
 	 * Checks, if an arbitrary option is present.
@@ -1866,6 +1898,10 @@ public final class OptionSet {
 			options.add(size1);
 		if (hasNoResponse())
 			options.add(no_response);
+			
+		// EDHOC
+		if (hasEdhoc())
+			options.add(edhoc);
 
 		List<Option> others = this.others;
 		if (others != null) {
@@ -1991,6 +2027,9 @@ public final class OptionSet {
 			break;
 		case OptionNumberRegistry.NO_RESPONSE:
 			no_response = (NoResponseOption) option;
+			break;
+		case OptionNumberRegistry.EDHOC: // EDHOC
+			edhoc = (EmptyOption) option;
 			break;
 		default:
 			addOrdered(getOthersInternal(), option);

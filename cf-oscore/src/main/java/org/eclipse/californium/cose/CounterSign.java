@@ -1,6 +1,6 @@
 /*******************************************************************************
 
- * Original from https://github.com/cose-wg/COSE-JAVA Commit 1a20373
+ * Original from https://github.com/cose-wg/COSE-JAVA Commit f972b11
  *
  * Copyright (c) 2016, Jim Schaad
  * All rights reserved.
@@ -40,38 +40,60 @@ import com.upokecenter.cbor.CBORObject;
  *
  * @author jimsch
  */
-public enum HeaderKeys {
-    Algorithm(1),
-    CONTENT_TYPE(3),
-    KID(4),
-    IV(5),
-    CriticalHeaders(2),
-    CounterSignature(7),
-    PARTIAL_IV(6),
-    CounterSignature0(9),    
+public class CounterSign extends Signer {
     
-    ECDH_EPK(-1),
-    ECDH_SPK(-2),
-    ECDH_SKID(-3),
+    public CounterSign() {
+        contextString = "CounterSignature";
+    }
+    
+    public CounterSign(byte[] rgb) throws CoseException {
+        contextString = "CounterSignature";
+        DecodeFromBytes(rgb);
+    }
+    
+    public CounterSign(CBORObject cbor) throws CoseException {
+        DecodeFromCBORObject(cbor);
+        contextString = "CounterSignature";
+    }
+    
+    public void DecodeFromBytes(byte[] rgb) throws CoseException
+    {
+        CBORObject obj = CBORObject.DecodeFromBytes(rgb);
+        
+        DecodeFromCBORObject(obj);
+    }
+    
+    public byte[] EncodeToBytes() throws CoseException {
+        return EncodeToCBORObject().EncodeToBytes();
+    }
+    
+    public void Sign(Message message) throws CoseException {
+        byte[] rgbBodyProtect;
+        if (message.objProtected.size() > 0) rgbBodyProtect = message.objProtected.EncodeToBytes();
+        else rgbBodyProtect = new byte[0];
+        
+        sign(rgbBodyProtect, message.rgbContent);        
+    }
+    
+    public boolean Validate(Message message) throws CoseException {
+        byte[] rgbBodyProtect;
+        if (message.objProtected.size() > 0) rgbBodyProtect = message.objProtected.EncodeToBytes();
+        else rgbBodyProtect = new byte[0];
+        
+        return validate(rgbBodyProtect, message.rgbContent);
+    }
 
-    HKDF_Salt(-20),
-    HKDF_Context_PartyU_ID(-21),
-    HKDF_Context_PartyU_nonce(-22),
-    HKDF_Context_PartyU_Other(-23),
-    HKDF_Context_PartyV_ID(-24),
-    HKDF_Context_PartyV_nonce(-25),
-    HKDF_Context_PartyV_Other(-26),
-    HKDF_SuppPub_Other(-999),
-    HKDF_SuppPriv_Other(-998)
-    ;
-    
-    private CBORObject value;
-    
-    HeaderKeys(int val) {
-        this.value = CBORObject.FromObject(val);
-    }
-    
-    public CBORObject AsCBOR() {
-        return value;
-    }
+	@SuppressWarnings("unused")
+	private Message m_msgToSign;
+	@SuppressWarnings("unused")
+	private Signer m_signerToSign;
+
+	public void setObject(Message msg) {
+		m_msgToSign = msg;
+	}
+
+	public void setObject(Signer signer) {
+		m_signerToSign = signer;
+	}
+
 }

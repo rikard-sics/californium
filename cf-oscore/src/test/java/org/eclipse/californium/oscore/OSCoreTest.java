@@ -44,6 +44,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.upokecenter.cbor.CBORObject;
+
 /**
  * Tests various functionality of OSCORE message handling
  * and generation of cryptographic material.
@@ -249,7 +251,7 @@ public class OSCoreTest {
 	public void testEncryptedNoOptionsNoPayload() {
 		Request request = Request.newGet().setURI("coap://localhost:5683");
 		try {
-			ObjectSecurityLayer.prepareSend(dbClient, request);
+			ObjectSecurityLayer.prepareSend(dbClient, clientCtx, request, null);
 		} catch (OSException e) {
 			e.printStackTrace();
 			assertTrue(false);
@@ -269,7 +271,7 @@ public class OSCoreTest {
 		request.getOptions().addOption(StandardOptionRegistry.OSCORE.create(Bytes.EMPTY));
 		assertEquals(2, request.getOptions().getLocationPathCount());
 		try {
-			request = ObjectSecurityLayer.prepareSend(dbClient, request);
+			request = ObjectSecurityLayer.prepareSend(dbClient, clientCtx, request, null);
 		} catch (OSException e) {
 			e.printStackTrace();
 			assertTrue(false);
@@ -293,7 +295,7 @@ public class OSCoreTest {
 		request.setPayload("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
 		assertTrue("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA".equals(request.getPayloadString()));
 		try {
-			request = ObjectSecurityLayer.prepareSend(dbClient, request);
+			request = ObjectSecurityLayer.prepareSend(dbClient, clientCtx, request, null);
 		} catch (OSException e) {
 			e.printStackTrace();
 			assertTrue(false);
@@ -403,9 +405,9 @@ public class OSCoreTest {
 		request2.setToken(t2);
 		try {
 			// sending seq 0
-			request = ObjectSecurityLayer.prepareSend(dbClient, request);
+			request = ObjectSecurityLayer.prepareSend(dbClient, clientCtx, request, null);
 			dbClient.getContext("coap://localhost:5683").setSenderSeq(0);
-			request2 = ObjectSecurityLayer.prepareSend(dbClient, request2);
+			request2 = ObjectSecurityLayer.prepareSend(dbClient, clientCtx, request2, null);
 		} catch (OSException e) {
 			e.printStackTrace();
 			fail();
@@ -507,7 +509,7 @@ public class OSCoreTest {
 		request.setToken(token);
 		db.addContext(token, ctx);
 		request.getOptions().addOption(StandardOptionRegistry.OSCORE.create(Bytes.EMPTY));
-		return ObjectSecurityLayer.prepareSend(db, request);
+		return ObjectSecurityLayer.prepareSend(db, ctx, request, null);
 	}
 
 	private boolean assertCtxState(OSCoreCtx ctx, int send, int receive) {

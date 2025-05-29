@@ -1,6 +1,6 @@
 /*******************************************************************************
 
- * Original from https://github.com/cose-wg/COSE-JAVA Commit 1a20373
+ * Original from https://github.com/cose-wg/COSE-JAVA Commit f972b11
  *
  * Copyright (c) 2016, Jim Schaad
  * All rights reserved.
@@ -35,43 +35,60 @@
 package org.eclipse.californium.cose;
 
 import com.upokecenter.cbor.CBORObject;
+import com.upokecenter.cbor.CBORType;
 
 /**
  *
- * @author jimsch
+ * @author Jim
  */
-public enum HeaderKeys {
-    Algorithm(1),
-    CONTENT_TYPE(3),
-    KID(4),
-    IV(5),
-    CriticalHeaders(2),
-    CounterSignature(7),
-    PARTIAL_IV(6),
-    CounterSignature0(9),    
-    
-    ECDH_EPK(-1),
-    ECDH_SPK(-2),
-    ECDH_SKID(-3),
-
-    HKDF_Salt(-20),
-    HKDF_Context_PartyU_ID(-21),
-    HKDF_Context_PartyU_nonce(-22),
-    HKDF_Context_PartyU_Other(-23),
-    HKDF_Context_PartyV_ID(-24),
-    HKDF_Context_PartyV_nonce(-25),
-    HKDF_Context_PartyV_Other(-26),
-    HKDF_SuppPub_Other(-999),
-    HKDF_SuppPriv_Other(-998)
-    ;
-    
-    private CBORObject value;
-    
-    HeaderKeys(int val) {
-        this.value = CBORObject.FromObject(val);
+public class CounterSign1 extends Signer {
+    public CounterSign1()
+    {
+        contextString = "CounterSignature0";
     }
     
-    public CBORObject AsCBOR() {
-        return value;
+    public CounterSign1(byte[] rgb) {
+        contextString = "CounterSignature0";
+        rgbSignature = rgb;
+        rgbProtected = new byte[0];
     }
+    
+    public CounterSign1(OneKey key) {
+        super(key);
+        contextString = "CounterSignature0";
+    }
+    
+	@SuppressWarnings("unused")
+	private Message m_msgToSign;
+	@SuppressWarnings("unused")
+	private Signer m_signerToSign;
+    
+    public void setObject(Message msg)
+    {
+        m_msgToSign = msg;
+    }
+    
+    public void setObject(Signer signer)
+    {
+        m_signerToSign = signer;
+    }
+    
+    @Override
+    public void DecodeFromCBORObject(CBORObject cbor) throws CoseException {
+        if (cbor.getType() != CBORType.ByteString) {
+            throw new CoseException("Invalid format for Countersignature0");
+        }
+        
+        rgbSignature = cbor.GetByteString();
+        rgbProtected = new byte[0];
+    }
+    
+    public CBORObject EncodeToCBORObject() throws CoseException {
+        if (!objProtected.getValues().isEmpty() || !objUnprotected.getValues().isEmpty()) {
+            throw new CoseException("CoutnerSign1 object cannot have protected or unprotected attributes");
+        }
+        
+        return CBORObject.FromObject(rgbSignature);
+    }
+            
 }

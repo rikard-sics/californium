@@ -1,6 +1,6 @@
 /*******************************************************************************
 
- * Original from https://github.com/cose-wg/COSE-JAVA Commit 1a20373
+ * Original from https://github.com/cose-wg/COSE-JAVA Commit f972b11
  *
  * Copyright (c) 2016, Jim Schaad
  * All rights reserved.
@@ -40,38 +40,43 @@ import com.upokecenter.cbor.CBORObject;
  *
  * @author jimsch
  */
-public enum HeaderKeys {
-    Algorithm(1),
-    CONTENT_TYPE(3),
-    KID(4),
-    IV(5),
-    CriticalHeaders(2),
-    CounterSignature(7),
-    PARTIAL_IV(6),
-    CounterSignature0(9),    
+public enum KeyKeys {
+    KeyType(1),
+    Algorithm(3),
+    KeyId(2),
+    Key_Ops(4),
+    Base_IV(5),
+    Octet_K(-1),
+    EC2_Curve(-1),
+    EC2_X(-2),
+    EC2_Y(-3),
+    EC2_D(-4),
+    OKP_Curve(-1),
+    OKP_X(-2),
+    OKP_D(-4),
+            ;
     
-    ECDH_EPK(-1),
-    ECDH_SPK(-2),
-    ECDH_SKID(-3),
-
-    HKDF_Salt(-20),
-    HKDF_Context_PartyU_ID(-21),
-    HKDF_Context_PartyU_nonce(-22),
-    HKDF_Context_PartyU_Other(-23),
-    HKDF_Context_PartyV_ID(-24),
-    HKDF_Context_PartyV_nonce(-25),
-    HKDF_Context_PartyV_Other(-26),
-    HKDF_SuppPub_Other(-999),
-    HKDF_SuppPriv_Other(-998)
-    ;
+    private final CBORObject value;
     
-    private CBORObject value;
+    public final static CBORObject KeyType_OKP = CBORObject.FromObject(1);
+    public final static CBORObject KeyType_EC2 = CBORObject.FromObject(2);
+    public final static CBORObject KeyType_Octet =  CBORObject.FromObject(4);
     
-    HeaderKeys(int val) {
+    public final static CBORObject EC2_P256 = CBORObject.FromObject(1);
+    public final static CBORObject EC2_P384 = CBORObject.FromObject(2);
+    public final static CBORObject EC2_P521 = CBORObject.FromObject(3);
+    
+    public final static CBORObject OKP_X25519 = CBORObject.FromObject(4);
+    public final static CBORObject OKP_X448 = CBORObject.FromObject(5);
+    public final static CBORObject OKP_Ed25519 = CBORObject.FromObject(6);
+    public final static CBORObject OKP_Ed448 = CBORObject.FromObject(7);
+    
+    KeyKeys(int val) {
         this.value = CBORObject.FromObject(val);
     }
     
     public CBORObject AsCBOR() {
         return value;
     }
+    
 }

@@ -40,7 +40,6 @@ import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.observe.ObserveManager;
 import org.eclipse.californium.core.observe.ObserveRelation;
 import org.eclipse.californium.core.server.resources.ObservableResource;
-import org.eclipse.californium.core.test.CountingCoapHandler;
 import org.eclipse.californium.elements.EndpointContext;
 import org.eclipse.californium.proxy2.ClientEndpoints;
 import org.eclipse.californium.proxy2.Coap2CoapTranslator;
@@ -137,22 +136,8 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 
 				CoapClient client = new CoapClient(outgoingRequest.getURI());
 
-				class ObserveHandler extends CountingCoapHandler {
-
-					// Triggered when a Observe response is received
-					@Override
-					protected void assertLoad(CoapResponse incomingResponse) {
-						Response response = translator.getResponse(incomingResponse.advanced());
-						exchange.sendResponse(response);
-					}
-				}
-				ObserveHandler handler = new ObserveHandler();
-
-				CoapObserveRelation relation = client.observe(outgoingRequest, handler);
-
 				// it might be uneccessary to store the exchange.
 				mapTokenToExchange.put(incomingRequest.getToken(), exchange);
-				mapTokenToRelation.put(incomingRequest.getToken(), relation);
 				mapTokenToClient.put(incomingRequest.getToken(), client);
 
 				ObserveRelation observeRelation =  new ObserveRelation(new ObserveManager(null), this, exchange);
