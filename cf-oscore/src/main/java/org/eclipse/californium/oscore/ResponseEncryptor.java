@@ -24,17 +24,12 @@ import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
-import java.util.Arrays;
-import java.util.Objects;
-
-import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.option.BlockOption;
 import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.elements.util.Bytes;
-import org.eclipse.californium.oscore.group.OptionEncoder;
 
 /**
  * 

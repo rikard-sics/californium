@@ -36,14 +36,12 @@ import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
-import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.InstructionIDRegistry;
-import org.eclipse.californium.oscore.group.OptionEncoder;
 
 
 /**
@@ -71,37 +69,38 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	private int layerLimit;
 
 	/**
-	 * Create the database, with no proxying allowed
+	 * Create the database, with no proxying allowed nor layered encryption
 	 */
 	public HashMapCtxDB() {
 		this(false, 1);
-		/*
-		this.tokenMap = new HashMap<>();
-		this.contextMap = new HashMap<>();
-		this.uriMap = new HashMap<>();
-		this.instructionMap = new HashMap<>();
-		this.forwardedWithoutProtection = new ArrayList<Token>();
-		this.allTokens = new ArrayList<Token>();*/
 	}
 
 	/**
-	 * Create the database
+	 * Create the database, with no layered encryption
 	 * @param proxyable This controls whether the server can act as a proxy
 	 */
 	public HashMapCtxDB(boolean proxyable) {
 		this(proxyable, 1);
 	}
 	
+	/**
+	 * create the database, with no proxying allowed
+	 * @param layerLimit
+	 */
 	public HashMapCtxDB(int layerLimit) {
 		this(false, layerLimit);
 	}
 	
 	/**
-	 * Create the database
+	 * create the database
 	 * @param proxyable This controls whether the server can act as a proxy
+	 * @param layerLimit This controls whether the server can act as a proxy
 	 */
 	public HashMapCtxDB(boolean proxyable, int layerLimit) {
-
+		if (layerLimit < 0) {
+			throw new RuntimeException("layerLimit must be a positive integer");
+		}
+		
 		this.tokenMap = new HashMap<>();
 		this.contextMap = new HashMap<>();
 		this.uriMap = new HashMap<>();
@@ -111,7 +110,6 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		this.allTokens = new ArrayList<Token>();
 		this.proxyable = proxyable;
 		this.layerLimit = layerLimit;
-
 	}
 
 	@Override
@@ -482,8 +480,8 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	@Override
 	public synchronized void removeToken(Token token) {
 		tokenMap.remove(token);
-		instructionMap.remove(token); //maybe
-		forwardedWithoutProtection.remove(token); // might not work, curse Bytes
+		instructionMap.remove(token);
+		forwardedWithoutProtection.remove(token);
 	}
 
 	/**

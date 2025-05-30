@@ -214,6 +214,7 @@ public abstract class DataParser {
 		int currentOptionNumber = 0;
 		byte nextByte = 0;
 		OptionSet optionSet = message.getOptions();
+
 		while (reader.bytesAvailable()) {
 			nextByte = reader.readNextByte();
 			if (nextByte == PAYLOAD_MARKER) {

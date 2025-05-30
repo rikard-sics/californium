@@ -112,7 +112,6 @@ public abstract class Message {
 		FULL
 	}
 
-	
 	/** The Constant NONE in case no MID has been set. */
 	public static final int NONE = -1;
 	/**

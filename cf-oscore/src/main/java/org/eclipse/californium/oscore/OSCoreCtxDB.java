@@ -28,13 +28,6 @@ import com.upokecenter.cbor.CBORObject;
  *
  */
 public interface OSCoreCtxDB {
-	
-	/**
-	 * 
-	 * @param token 
-	 * @param instructions
-	 */
-	//public void updateInstructions(Token token, CBORObject[] instructions);
 
 	/**
 	 * 
@@ -109,7 +102,7 @@ public interface OSCoreCtxDB {
 	 * @return the OSCore context
 	 */
 	public OSCoreCtx getContextByToken(Token token);
-	
+
 	/**
 	 * @param token the token of the request
 	 * @param ctx the OSCore context

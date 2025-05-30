@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
-import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Response;
@@ -36,7 +35,6 @@ import org.eclipse.californium.core.network.serialization.UdpDataParser;
 import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.elements.util.DatagramReader;
 import org.eclipse.californium.oscore.group.InstructionIDRegistry;
-import org.eclipse.californium.oscore.group.OptionEncoder;
 
 /**
  * 
@@ -66,7 +64,6 @@ public class ResponseDecryptor extends Decryptor {
 	 */
 	public static Response decrypt(OSCoreCtxDB db, Response response, int requestSequenceNr, CBORObject[] instructions) throws OSException {
 		discardEOptions(response);
-
 
 		byte[] protectedData = response.getPayload();
 		Encrypt0Message enc = null;
@@ -135,7 +132,6 @@ public class ResponseDecryptor extends Decryptor {
 
 			// resets option so eOptions gets priority during parse
 			response.setOptions(EMPTY);
-
 			new UdpDataParser().parseOptionsAndPayload(reader, response);
 		} catch (Exception e) {
 			LOGGER.error(ErrorDescriptions.DECRYPTION_FAILED);
@@ -146,7 +142,6 @@ public class ResponseDecryptor extends Decryptor {
 		OptionSet eOptions = response.getOptions();
 
 		if (eOptions.hasOscore() && shouldHaveInnerOscoreOption) {
-			// The message contains an inner OSCore option and it should
 			LOGGER.debug("Message has inner oscore and it should");
 		}
 		else if (!(eOptions.hasOscore()) && shouldHaveInnerOscoreOption) {

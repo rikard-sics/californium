@@ -90,7 +90,6 @@ public class Coap2CoapTranslator extends CoapUriTranslator {
 		outgoingRequest.setURI(destination);
 
 		LOGGER.debug("Incoming request translated correctly");
-		
 		return outgoingRequest;
 	}
 

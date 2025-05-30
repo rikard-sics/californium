@@ -652,7 +652,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	}
 
 	private Message processHasURIPathOption(Exchange exchange, Request request){
-		if (request.getOptions().hasUriPath()) {
+		if (request.getOptions().getURIPathCount() == 0) {
 			return (Response) new Response(ResponseCode.BAD_REQUEST).setPayload("Uri path present");
 		}
 		else {
@@ -728,7 +728,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 		if (layer == layerLimit) {
 			LOGGER.debug("max layer reached when decrypting a request");
-			return new Response(ResponseCode.UNAUTHORIZED); // stop processing
+			return new Response(ResponseCode.UNAUTHORIZED); 
 		}
 
 		byte[] requestOscoreOption;

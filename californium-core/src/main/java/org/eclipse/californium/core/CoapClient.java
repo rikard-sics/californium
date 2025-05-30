@@ -1703,7 +1703,6 @@ public class CoapClient {
 		if (proxyScheme != null && !request.hasProxyURI()) {
 			request.setProxyScheme(proxyScheme);
 		}
-
 		return request;
 	}
 

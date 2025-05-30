@@ -16,9 +16,6 @@
 
 package org.eclipse.californium.proxy2.resources;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Collections;
@@ -26,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapObserveRelation;
@@ -39,9 +35,7 @@ import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.observe.ObserveManager;
 import org.eclipse.californium.core.observe.ObserveRelation;
-import org.eclipse.californium.core.server.resources.ObservableResource;
 import org.eclipse.californium.core.test.CountingCoapHandler;
-import org.eclipse.californium.elements.EndpointContext;
 import org.eclipse.californium.proxy2.ClientEndpoints;
 import org.eclipse.californium.proxy2.Coap2CoapTranslator;
 import org.eclipse.californium.proxy2.CoapUriTranslator;
@@ -164,8 +158,6 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 				CoapObserveRelation relation = mapTokenToRelation.get(incomingRequest.getToken());
 				CoapClient client = mapTokenToClient.get(incomingRequest.getToken());
 
-				// cancel observe
-				//relation.matchRequest(incomingRequest);
 				outgoingRequest.setToken(relation.getCurrentResponse().getToken());
 
 				if (outgoingRequest.isConfirmable()) {
@@ -181,22 +173,10 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 					client.shutdown();
 				}
 				
-				//endpoints.sendRequest(outgoingRequest);
-				//originalExchange.getEndpoint().sendRequest(outgoingRequest);
-				// forward observe cancel message to server
 				client.advanced(outgoingRequest);
-				
-				// aaaaaah, i wanted this to work :(
-				//relation.proactiveCancel();					
-
-
-				//originalExchange.getRelation();
-				//relation.proactiveCancel();
-
-
-
 			}
 			else {
+				// non-observe request
 				outgoingRequest.addMessageObserver(
 						new ProxySendResponseMessageObserver(translator, exchange, cacheKey, cache, this));
 				endpoints.sendRequest(outgoingRequest);
@@ -271,7 +251,6 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 			}
 
 			incomingExchange.sendResponse(translator.getResponse(incomingResponse));
-
 		}
 
 		@Override

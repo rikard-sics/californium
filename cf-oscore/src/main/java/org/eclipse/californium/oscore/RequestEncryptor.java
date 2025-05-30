@@ -25,17 +25,11 @@ import org.slf4j.LoggerFactory;
 import com.upokecenter.cbor.CBORObject;
 
 import java.util.Arrays;
-import java.util.Objects;
 
-import org.apache.hc.client5.http.utils.Hex;
-import org.eclipse.californium.core.coap.MessageObserver;
-import org.eclipse.californium.core.coap.MessageObserverAdapter;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.cose.Encrypt0Message;
-import org.eclipse.californium.elements.EndpointContext;
 import org.eclipse.californium.elements.util.Bytes;
-import org.eclipse.californium.oscore.group.OptionEncoder;
 
 /**
  * 

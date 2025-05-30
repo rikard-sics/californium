@@ -22,7 +22,7 @@ package org.eclipse.californium.oscore;
 import java.io.ByteArrayOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.hc.client5.http.utils.Hex;
+
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
@@ -66,7 +66,6 @@ public abstract class Encryptor {
 	protected static byte[] encryptAndEncode(Encrypt0Message enc, OSCoreCtx ctx, Message message, boolean newPartialIV,
 			Integer requestSequenceNr)
 			throws OSException {
-
 		boolean isRequest = message instanceof Request;
 
 		try {
@@ -96,7 +95,6 @@ public abstract class Encryptor {
 							ctx.getIVLength());
 				}
 
-				
 				aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), requestSequenceNr, ctx.getRecipientId(),
 						message.getOptions());
 			}
@@ -159,6 +157,7 @@ public abstract class Encryptor {
 		if (cipherText != null) {
 			message.setPayload(cipherText);
 		}
+
 		return bRes.toByteArray();
 	}
 
@@ -171,7 +170,6 @@ public abstract class Encryptor {
 	public static byte[] encodeOSCoreRequest(OSCoreCtx ctx) {
 
 		OscoreOptionEncoder optionEncoder = new OscoreOptionEncoder();
-
 		if (ctx.getIncludeContextId()) {
 			optionEncoder.setIdContext(ctx.getMessageIdContext());
 		}
@@ -192,7 +190,6 @@ public abstract class Encryptor {
 	public static byte[] encodeOSCoreResponse(OSCoreCtx ctx, final boolean newPartialIV) {
 
 		OscoreOptionEncoder optionEncoder = new OscoreOptionEncoder();
-		
 		if (ctx.getIncludeContextId()) {
 			optionEncoder.setIdContext(ctx.getMessageIdContext());
 		}

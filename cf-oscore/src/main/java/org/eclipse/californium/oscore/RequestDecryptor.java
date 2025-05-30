@@ -28,7 +28,6 @@ import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.network.serialization.UdpDataParser;
 import org.eclipse.californium.cose.Encrypt0Message;
-import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
@@ -61,6 +60,7 @@ public class RequestDecryptor extends Decryptor {
 	 * @throws CoapOSException if decryption fails
 	 */
 	public static Request decrypt(OSCoreCtxDB db, Request request, OSCoreCtx ctx) throws CoapOSException {
+
 		discardEOptions(request);
 
 		byte[] protectedData = request.getPayload();
@@ -119,7 +119,6 @@ public class RequestDecryptor extends Decryptor {
 			DatagramReader reader = new DatagramReader(new ByteArrayInputStream(plaintext));
 			ctx.setCoAPCode(Code.valueOf(reader.read(CoAP.MessageFormat.CODE_BITS)));
 			// resets option so eOptions gets priority during parse
-
 			request.setOptions(EMPTY);
 			new UdpDataParser().parseOptionsAndPayload(reader, request);
 

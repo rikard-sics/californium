@@ -283,6 +283,7 @@ public class ForwardProxyMessageDeliverer extends ServerMessageDeliverer {
 		boolean proxyOption = options.hasProxyUri() || options.hasProxyScheme();
 		boolean hostOption = options.hasUriHost() || options.hasUriPort();
 		boolean local = true;
+
 		if (hostOption && !exposedServices.isEmpty()) {
 			// check, if proxy is final destination.
 			Integer port = options.getUriPort();
@@ -319,6 +320,7 @@ public class ForwardProxyMessageDeliverer extends ServerMessageDeliverer {
 				}
 			}
 		}
+
 		if (proxyOption || hostOption) {
 			try {
 				String scheme = translator.getDestinationScheme(request);

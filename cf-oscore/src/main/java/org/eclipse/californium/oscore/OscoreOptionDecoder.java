@@ -17,7 +17,6 @@
 package org.eclipse.californium.oscore;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.elements.util.DatagramReader;
@@ -150,7 +149,6 @@ public class OscoreOptionDecoder {
 		this.partialIV = partialIV;
 		this.kid = kid;
 		this.idContext = kidContext;
-
 	}
 
 	/**
