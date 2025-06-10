@@ -79,6 +79,35 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	 * 
 	 * @throws OSException error while encrypting request
 	 */
+	public static Request prepareSend(OSCoreCtxDB ctxDb, Request message) throws OSException {
+		final String uri;
+		if (message.getOptions().hasProxyUri()) {
+			uri = message.getOptions().getProxyUri();
+		} else {
+			uri = message.getURI();
+		}
+
+		if (uri == null) {
+			LOGGER.error(ErrorDescriptions.URI_NULL);
+			throw new OSException(ErrorDescriptions.URI_NULL);
+		}
+
+		OSCoreCtx ctx = ctxDb.getContext(uri);
+		return prepareSend(ctxDb, ctx, message, null);
+	}
+
+	/**
+	 * Encrypt an outgoing request using the OSCore context.
+	 * 
+	 * @param message the message
+	 * @param ctx the OSCore context
+	 * @param ctxDb the context database used
+	 * @param instructions instructions to provide additional information for encryption
+	 * 
+	 * @return the encrypted message
+	 * 
+	 * @throws OSException error while encrypting request
+	 */
 	public static Request prepareSend(OSCoreCtxDB ctxDb, OSCoreCtx ctx, Request message, CBORObject[] instructions) throws OSException {
 		return RequestEncryptor.encrypt(ctxDb, ctx, message, instructions);
 	}
@@ -93,6 +122,27 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	 * @param outerBlockwise whether the block-wise options should be encrypted
 	 * @param requestSequenceNr sequence number (Partial IV) from the request
 	 *            (if encrypting a response)
+	 * 
+	 * @return the encrypted message
+	 * 
+	 * @throws OSException error while encrypting response
+	 */
+	public static Response prepareSend(OSCoreCtxDB ctxDb, Response message, OSCoreCtx ctx, final boolean newPartialIV,
+			boolean outerBlockwise, int requestSequenceNr) throws OSException {
+		return prepareSend(ctxDb, message, ctx, newPartialIV, outerBlockwise, requestSequenceNr, null);
+	}
+
+	/**
+	 * Encrypt an outgoing response using the OSCore context.
+	 * 
+	 * @param ctxDb the OSCore context DB
+	 * @param message the message
+	 * @param ctx the OSCore context
+	 * @param newPartialIV whether to use a new partial IV or not
+	 * @param outerBlockwise whether the block-wise options should be encrypted
+	 * @param requestSequenceNr sequence number (Partial IV) from the request
+	 *            (if encrypting a response)
+	 * @param instructions instructions to provide additional information for encryption
 	 * 
 	 * @return the encrypted message
 	 * 
@@ -125,6 +175,24 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	 * @param response the incoming request
 	 * @param requestSequenceNr sequence number (Partial IV) from the request
 	 *            (if decrypting a response)
+	 * 
+	 * @return the decrypted and verified response
+	 * 
+	 * @throws OSException error while decrypting response
+	 */
+	public static Response prepareReceive(OSCoreCtxDB ctxDb, Response response, int requestSequenceNr)
+			throws OSException {
+		return prepareReceive(ctxDb, response, requestSequenceNr, null);
+	}
+
+	/**
+	 * Decrypt an incoming response using the right OSCore context
+	 *
+	 * @param ctxDb the context database used
+	 * @param response the incoming request
+	 * @param requestSequenceNr sequence number (Partial IV) from the request
+	 *            (if decrypting a response)
+	 * @param instructions instructions to provide additional information for encryption
 	 * 
 	 * @return the decrypted and verified response
 	 * 
@@ -240,7 +308,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				Request preparedRequest = request;
 
-
 				if (instructionsExists) {
 
 					int index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
@@ -292,7 +359,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					OSCoreEndpointContextInfo.sendingRequest(ctx, exchange);
 
 					// no instructions, just encrypt the message once
-					preparedRequest = prepareSend(ctxDb, ctx, request, instructions);
+					preparedRequest = prepareSend(ctxDb, ctx, request, null);
 
 					if (outgoingExceedsMaxUnfragSize(preparedRequest, false, ctx.getMaxUnfragmentedSize())) {
 						throw new IllegalStateException("outgoing request is exceeding the MAX_UNFRAGMENTED_SIZE!");
@@ -363,7 +430,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	@Override
 	public void sendResponse(Exchange exchange, Response response) {
 
-
 		/* If the request contained the Observe option always add a partial IV to the response.
 		 * A partial IV will also be added if the responsesIncludePartialIV flag is set in the context. */
 		boolean addPartialIV;
@@ -395,16 +461,16 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				// Retrieve the context
 				if (instructionsExists) {
 
-					
+
 					int index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
 					if (instructions.length -1 != index ) {
 						throw new RuntimeException("start index is not correct in instructions");
 					}
-					
+
 					if (instructions.length - 2 > ctxDb.getLayerLimit()) {
 						throw new RuntimeException("there are more layers than allowed on the response");
 					}
-					
+
 					boolean instructionsRemaining;
 
 					// This loops until all instructions have been used
@@ -437,11 +503,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 						instructionsRemaining = (int) instructions[InstructionIDRegistry.Header.Index].ToObject(int.class) 
 								> InstructionIDRegistry.StartIndex;
-						// check if there is a next layer of encryption in the instructions
-						if (instructionsRemaining) {
-							// decrement index in instructions
-							instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(--index);
-						}
+								// check if there is a next layer of encryption in the instructions
+								if (instructionsRemaining) {
+									// decrement index in instructions
+									instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(--index);
+								}
 					}
 				}
 				else {
@@ -501,9 +567,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		// in case the request is encrypted differently from the first time.
 		ctxDb.removeInstructions(request.getToken());
 
-		boolean initialRequestHadOscore = request.getOptions().hasOscore();
+		byte[] initialRequestHadOscore = request.getOptions().getOscore();
 
 		Message result = request;
+
 
 		while (true) {
 			boolean hadProxyOption = result.getOptions().hasProxyUri() || result.getOptions().hasProxyScheme(); 
@@ -518,21 +585,15 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			// if had proxy uri, but is removed, we receive ourselves
 			// if had proxy uri and is kept, we forward
 			if (isRequest) {
-				// dont think this will work if client think it sends to proxy and server but 
-				// only sends to server (who is the proxy too) and so it will be 
-				// decrypt, proxy-uri, exit
-				// instead of
-				// decrypt, proxy-uri, decrypt, exit
-
-				// want to exit when the request does not have oscore (it is fully decrypted) 
-				// or if it had a proxy option (it is to be forwarded or received)
-
-				// might work, since proxy-uri option is consumed here when the authority is equal
-				// if (!result.getOptions().hasOscore() || ( hadProxyOption && result.getOption().hasProxyOption())) {
-
-				if (!result.getOptions().hasOscore() || hadProxyOption) {
-					if (initialRequestHadOscore && !result.getOptions().hasOscore()) {
-						result.getOptions().setOscore(Bytes.EMPTY);
+				if (!result.getOptions().hasOscore() 
+						|| ( hadProxyOption && (result.getOptions().hasProxyUri() || result.getOptions().hasProxyScheme()))) {
+					if (initialRequestHadOscore != null && !result.getOptions().hasOscore()) {
+						// We need the kid value on layer level 
+						try {
+							result.getOptions().setOscore(new OscoreOptionDecoder(initialRequestHadOscore).getKid());
+						} catch (CoapOSException e) {
+							throw new RuntimeException(e.getLocalizedMessage());
+						}
 					}
 
 					super.receiveRequest(exchange, (Request) result);
@@ -652,7 +713,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	}
 
 	private Message processHasURIPathOption(Exchange exchange, Request request){
-		if (request.getOptions().getURIPathCount() == 0) {
+		if (request.getOptions().getURIPathCount() > 0) {
 			return (Response) new Response(ResponseCode.BAD_REQUEST).setPayload("Uri path present");
 		}
 		else {
@@ -671,7 +732,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	private Message processIsThereAnApplication(Exchange exchange, Request request){
 		if (/* hasApplication() */ true) {
-
 			return request;
 		}
 		else {
@@ -807,7 +867,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	//Always accepts unprotected responses, which is needed for reception of error messages
 	@Override
 	public void receiveResponse(Exchange exchange, Response response) {
-
 		Request request = exchange.getCurrentRequest();
 		if (request == null) {
 			LOGGER.error("No request tied to this response");
@@ -855,6 +914,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				}
 
 				int requestSequenceNumber;
+				byte[] oscoreOption;
 
 				CBORObject[] instructions = ctxDb.getInstructions(token);
 				boolean instructionsExists = Objects.nonNull(instructions);
@@ -864,6 +924,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					int layer = 0;
 					int index;
 
+					oscoreOption = null;
+
 					while (response.getOptions().hasOscore()) {
 
 						// want to decrypt.
@@ -872,6 +934,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						CBORObject instruction = instructions[index];
 
 						requestSequenceNumber = instruction.get(InstructionIDRegistry.RequestSequenceNumber).ToObject(int.class);
+
+						oscoreOption = response.getOptions().getOscore();
 
 						response = prepareReceive(ctxDb, response, requestSequenceNumber, instructions);
 
@@ -893,10 +957,16 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					if (Objects.nonNull(instructions)) {
 						instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(instructions.length - 1);
 					}
+
+					if (oscoreOption != null) {
+						response.getOptions().setOscore(oscoreOption);
+					}
 				}
 				else {
 					OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
 					requestSequenceNumber = optionDecoder.getSequenceNumber();
+
+					oscoreOption = response.getOptions().getOscore();
 
 					response = prepareReceive(ctxDb, response, requestSequenceNumber, instructions);
 
@@ -904,6 +974,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						LOGGER.warn("max layer reached when decrypting a response");
 						return; // stop processing
 					}
+					response.getOptions().setOscore(oscoreOption);
 				}
 			}
 		} catch (OSException e) {
@@ -916,14 +987,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		}
 
 
-		// Remove token after response is received, unless it has Observe
 		// Remove token if this is an incoming response to an Observe
 		// cancellation request
-		if (response.getOptions().hasObserve() == false
-				|| exchange.getRequest().isObserveCancel()) {
+		if (exchange.getRequest().isObserveCancel()) {
 			ctxDb.removeToken(response.getToken());
 		}
-
 
 		super.receiveResponse(exchange, response);
 	}

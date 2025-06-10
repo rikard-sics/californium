@@ -55,7 +55,23 @@ public class ResponseDecryptor extends Decryptor {
 	 * @param response the response
 	 * @param requestSequenceNr sequence number (Partial IV) from the request
 	 *            (if encrypting a response)
-	 * @param ctx the context from instructions, if any
+	 * 
+	 * @return the decrypted response
+	 * 
+	 * @throws OSException when decryption fails
+	 * 
+	 */
+	public static Response decrypt(OSCoreCtxDB db, Response response, int requestSequenceNr) throws OSException {
+		return decrypt(db, response, requestSequenceNr, null);
+	}
+	/**
+	 * Decrypt the response.
+	 *
+	 * @param db the context database used
+	 * @param response the response
+	 * @param requestSequenceNr sequence number (Partial IV) from the request
+	 *            (if encrypting a response)
+	 * @param instructions instructions to provide additional information for encryption
 	 * 
 	 * @return the decrypted response
 	 * 
@@ -140,7 +156,6 @@ public class ResponseDecryptor extends Decryptor {
 
 
 		OptionSet eOptions = response.getOptions();
-
 		if (eOptions.hasOscore() && shouldHaveInnerOscoreOption) {
 			LOGGER.debug("Message has inner oscore and it should");
 		}
@@ -166,7 +181,11 @@ public class ResponseDecryptor extends Decryptor {
 		eOptions = OptionJuggle.merge(eOptions, uOptions);
 
 		response.setOptions(eOptions);
-
+		
+		// Remove token after response is received, unless it has Observe
+		if (response.getOptions().hasObserve() == false) {
+			db.removeToken(token);
+		}
 		//Set information about the OSCORE context used in the endpoint context of this response
 		OSCoreEndpointContextInfo.receivingResponse(ctx, response);
 

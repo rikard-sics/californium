@@ -26,10 +26,15 @@ import com.upokecenter.cbor.CBORObject;
 
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Response;
+
+import java.util.Arrays;
+import java.util.Objects;
+
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.option.BlockOption;
 import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.oscore.group.InstructionIDRegistry;
 
 /**
  * 
@@ -42,7 +47,6 @@ public class ResponseEncryptor extends Encryptor {
 	 * The logger
 	 */
 	private static final Logger LOGGER = LoggerFactory.getLogger(ResponseEncryptor.class);
-
 	/**
 	 * @param db the context DB
 	 * @param response the response
@@ -59,6 +63,27 @@ public class ResponseEncryptor extends Encryptor {
 	 * @throws OSException when encryption fails
 	 */
 	public static Response encrypt(OSCoreCtxDB db, Response response, OSCoreCtx ctx, boolean newPartialIV,
+			boolean outerBlockwise, int requestSequenceNr) throws OSException {
+		return encrypt(db, response, ctx, newPartialIV, outerBlockwise, requestSequenceNr, null);
+	}
+	
+	/**
+	 * @param db the context DB
+	 * @param response the response
+	 * @param ctx the OSCore context
+	 * @param newPartialIV boolean to indicate whether to use a new partial IV
+	 *            or not
+	 * @param outerBlockwise boolean to indicate whether the block-wise options
+	 *            should be encrypted or not
+	 * @param requestSequenceNr sequence number (Partial IV) from the request
+	 *            (if encrypting a response)
+	 * @param instructions instructions to provide additional information for encryption
+	 * 
+	 * @return the response with the encrypted OSCore option
+	 * 
+	 * @throws OSException when encryption fails
+	 */
+	public static Response encrypt(OSCoreCtxDB db, Response response, OSCoreCtx ctx, boolean newPartialIV,
 			boolean outerBlockwise, int requestSequenceNr, CBORObject[] instructions) throws OSException {
 
 		if (ctx == null) {
@@ -66,6 +91,22 @@ public class ResponseEncryptor extends Encryptor {
 			throw new OSException(ErrorDescriptions.CTX_NULL);
 		}
 
+		// temp fix for test 
+		// wont work for proxy who wants to send response as a server and who sets the oscore option itself
+		// a better fix would be to maybe keep as is unless
+		// we have instructions in which we use those and ignore/remove first oscore option	
+		// but that only solves for when we have instructions
+		// without instructions, we would need more finegrained control over when we proxy message and when we dont
+		// maybe through specififying the context to use and if that is a "proxy" context
+		// or use forwardedWithProtection for this?
+		if (Objects.nonNull(instructions)) {
+			if ((int) instructions[InstructionIDRegistry.Header.Index].ToObject(int.class) == instructions.length - 1) {
+				response.getOptions().removeOscore();
+			}
+		}
+		else if (Arrays.equals(response.getOptions().getOscore(),Bytes.EMPTY) && !(db != null && db.getIfProxyable())) {
+			response.getOptions().removeOscore();
+		}
 		// Perform context re-derivation procedure if ongoing
 		try {
 			ctx = ContextRederivation.outgoingResponse(db, ctx);
@@ -95,7 +136,7 @@ public class ResponseEncryptor extends Encryptor {
 
 		OptionSet[] optionsUAndE = OptionJuggle.filterOptions(options);
 
-		OptionSet promotedOptions = OptionJuggle.promotion(optionsUAndE[0], instructions);
+		OptionSet promotedOptions = OptionJuggle.promotion(optionsUAndE[0], true, instructions);
 		optionsUAndE[1] = OptionJuggle.merge(optionsUAndE[1], promotedOptions);	
 
 		byte[] confidential = OSSerializer.serializeConfidentialData(optionsUAndE[1], response.getPayload(), realCode);

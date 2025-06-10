@@ -131,7 +131,7 @@ public class DecryptorTest {
 		db.addContext(r.getToken(), ctx);
 		
 		//Decrypt the response message
-		Response decrypted = ResponseDecryptor.decrypt(db, r, seq, null);
+		Response decrypted = ResponseDecryptor.decrypt(db, r, seq);
 		decrypted.getOptions().removeOscore();
 		
 		//Check the decrypted response payload

@@ -123,7 +123,7 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 					LOGGER.error(ErrorDescriptions.URI_NULL);
 					throw new OSException(ErrorDescriptions.URI_NULL);
 				}
-				
+
 				OSCoreCtx ctx = ctxDb.getContext(uri);
 				if (ctx == null) {
 					if (ctxDb.getIfProxyable()) {
@@ -261,7 +261,7 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 					int requestSequenceNumber = optionDecoder.getSequenceNumber();
 					
 					response = ObjectSecurityLayer.prepareReceive(ctxDb, response,
-							requestSequenceNumber, null);
+							requestSequenceNumber);
 				}
 			} catch (OSException e) {
 				LOGGER.error("Error while receiving OSCore response: {}", e.getMessage());

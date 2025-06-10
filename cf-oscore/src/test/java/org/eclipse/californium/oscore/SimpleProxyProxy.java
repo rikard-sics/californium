@@ -186,7 +186,7 @@ public class SimpleProxyProxy {
 	private CacheResource cache;
 	
 	private final static HashMapCtxDB db = new HashMapCtxDB(true);
-	private final static String uriLocal = "coap://localhost";
+	private final static String uriLocal = "coap://127.0.0.1";
 	private final static int CoapProxyPort = 5685;
 
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
@@ -317,33 +317,6 @@ public class SimpleProxyProxy {
 					MediaTypeRegistry.TEXT_PLAIN);
 		}
 
-	}
-	public class OSCoreUdpStackWithoutObserveLayer extends BaseCoapStack {
-		
-		/**
-		 * Creates a new OSCORE-enabled stack using UDP as the transport.
-		 * 
-		 * @param tag logging tag
-		 * @param config The configuration values to use.
-		 * @param matchingStrategy endpoint context matcher to relate responses with
-		 *            requests
-		 * @param outbox The adapter for submitting outbound messages to the
-		 *            transport.
-		 * @param ctxDb context DB.
-		 * @since 3.1
-		 */
-		public OSCoreUdpStackWithoutObserveLayer(String tag, Configuration config, EndpointContextMatcher matchingStrategy, Outbox outbox, OSCoreCtxDB ctxDb) {
-			super(outbox);
-
-			Layer layers[] = new Layer[] {
-					new ObjectSecurityContextLayer(ctxDb),
-					new ExchangeCleanupLayer(config),
-					new ObserveLayer(config),
-					new BlockwiseLayer(tag, false, config, matchingStrategy),
-					new ObjectSecurityLayer(ctxDb),
-					CongestionControlLayer.newImplementation(tag, config)};
-			setLayers(layers);
-		}
 	}
 }
 

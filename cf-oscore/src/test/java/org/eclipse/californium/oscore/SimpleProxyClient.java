@@ -622,6 +622,7 @@ public class SimpleProxyClient {
 				System.out.println();
 			}
 			System.out.println("RESPONSE TEXT: " + resp.getPayloadString());
+			System.out.println("OSCORE OPTION PRESENT = " + resp.getOptions().hasOscore());
 		} 
 		else {
 			System.out.println("RESPONSE IS NULL");

@@ -20,6 +20,7 @@
 package org.eclipse.californium.oscore;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -34,9 +35,11 @@ import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.option.BaseOptionDefinition;
+import org.eclipse.californium.core.coap.option.OpaqueOption;
 import org.eclipse.californium.core.coap.option.StandardOptionRegistry;
 import org.eclipse.californium.core.coap.option.StringOption;
 import org.eclipse.californium.elements.EndpointContext;
+import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.InstructionIDRegistry;
 import org.eclipse.californium.oscore.group.OptionEncoder;
 import org.slf4j.Logger;
@@ -104,7 +107,7 @@ public class OptionJuggle {
 	}
 
 	public static boolean hasUriPathHostPort(OptionSet options) {
-		if (options.hasUriHost() || options.hasUriPort() || options.hasUriPath()) {
+		if (options.hasUriHost() || options.hasUriPort() || options.getURIPathCount() > 0) {
 			return true;
 		}
 		else return false;
@@ -255,7 +258,7 @@ public class OptionJuggle {
 		return uOptions;
 
 	}
-	public static OptionSet promotion(OptionSet options, CBORObject[] instructions) {
+	public static OptionSet promotion(OptionSet options, boolean isResponse, CBORObject[] instructions) {
 		OptionSet result = new OptionSet();
 		boolean includes = false;
 		if (options.hasProxyScheme() /* || options.hasProxySchemeNumber()*/) {
@@ -283,10 +286,12 @@ public class OptionJuggle {
 			switch (o.getNumber()) {
 			/* Class U ONLY options */
 			case OptionNumberRegistry.OSCORE:
-				// Always encrypt the OSCORE option if it is present
-				result.addOption(o);
-				options.removeOscore();
-				break;
+				// Always encrypt the OSCORE option if it is present and not empty
+				if (!Arrays.equals(((OpaqueOption) o).getValue(), Bytes.EMPTY) || isResponse) {
+					result.addOption(o);
+					options.removeOscore();
+					break;
+				}
 			case OptionNumberRegistry.URI_HOST:
 			case OptionNumberRegistry.URI_PORT:
 			case OptionNumberRegistry.PROXY_SCHEME:
@@ -359,9 +364,14 @@ public class OptionJuggle {
 
 			switch (o.getNumber()) {
 			/* Class U ONLY options*/
+			case OptionNumberRegistry.OSCORE:
+				if (!Arrays.equals(((OpaqueOption) o).getValue(), Bytes.EMPTY)) {
+					result[1].addOption(o);
+					break;
+				}
+
 			case OptionNumberRegistry.URI_HOST:
 			case OptionNumberRegistry.URI_PORT:
-			case OptionNumberRegistry.OSCORE:
 			case OptionNumberRegistry.PROXY_SCHEME:
 				// do not encrypt
 				result[0].addOption(o);
@@ -371,14 +381,13 @@ public class OptionJuggle {
 				OptionSet proxyURIOptions = handleProxyURI(o);
 				// create Uri-Path and Uri-Query and add to Class E options
 				// add proxy-uri to Class U options
-				if (proxyURIOptions.hasUriPath()) {
+				if (proxyURIOptions.getURIPathCount() > 0) {
 					result[1].setUriPath(proxyURIOptions.getUriPathString());
 				}
-				if (proxyURIOptions.hasOption(StandardOptionRegistry.URI_QUERY)) { //quite bad since not O(1), but wont be called too often
+				if (proxyURIOptions.getURIQueryCount() > 0) {
 					result[1].setUriQuery(proxyURIOptions.getUriQueryString());
 				}
 				if (proxyURIOptions.hasProxyUri()) {
-
 					result[0].setProxyUri(proxyURIOptions.getProxyUri());
 				}
 				break;
@@ -424,31 +433,29 @@ public class OptionJuggle {
 			// create Uri-Path and Uri-Query and add to Class E options
 			// add proxy-uri to Class U options
 
-			if ((proxyURIOptions.getURIPathCount() == 0) && proxyURIOptions.hasUriPath()) {
+			if (proxyURIOptions.getURIPathCount() > 0 && options.getURIPathCount() > 0) {
 				throw new RuntimeException("Tried to add Uri-Path option through Proxy-Uri, but it already exists as an option in the message!");
 			}
-			else if (proxyURIOptions.hasUriPath()) {
+			else if (proxyURIOptions.getURIPathCount() > 0) {
 				options.setUriPath(proxyURIOptions.getUriPathString());
 			}
 
-			if ((proxyURIOptions.getURIQueryCount() == 0) && proxyURIOptions.hasOption(StandardOptionRegistry.URI_QUERY)) {
+			if (proxyURIOptions.getURIQueryCount() > 0 && options.getURIQueryCount() > 0) {
 				throw new RuntimeException("Tried to add Uri-Query option through Proxy-Uri, but it already exists as an option in the message!");
 			}
-			else if (proxyURIOptions.hasOption(StandardOptionRegistry.URI_QUERY)) { //quite bad since not O(1), but wont be called too often
+			else if (proxyURIOptions.getURIQueryCount() > 0) { //quite bad since not O(1), but wont be called too often
 				options.setUriQuery(proxyURIOptions.getUriQueryString());
 			}
+
 			if (options.hasProxyUri() && proxyURIOptions.hasProxyUri()) {
 				throw new RuntimeException("Option to be added already exists as an option in the message!");
 			}
 			else if (proxyURIOptions.hasProxyUri()) {
 				options.setProxyUri(proxyURIOptions.getProxyUri());
 			}
-
 		}
-
 		return options;
 	}
-
 
 	public static OptionSet handleProxyURI(Option option) {
 		OptionSet result = new OptionSet();
