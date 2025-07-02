@@ -139,7 +139,34 @@ public class OptionEncoder {
 
 		return option.EncodeToBytes();
 	}
+	/**
+	 * here be Javadoc
+	 * @param endpoints ordered array of endpoints
+	 */
+	public static byte[] set(byte[] rid, byte[] idcontext, int[] optionsPostSet, CBORObject[] values) {
+		CBORObject option = CBORObject.NewMap();
+		//option.Add(2, contextUri);
+		option.Add(InstructionIDRegistry.KID, rid);
 
+		option.Add(InstructionIDRegistry.IDContext, idcontext);
+
+		int index = 0;
+		
+		CBORObject optionsPostSetHolder = CBORObject.NewMap();
+		if (optionsPostSet.length != values.length) {
+			//might become more complicated with blockwise, but it's a problem for later
+			throw new RuntimeException("Unequal amount of options: " + optionsPostSet.length + " and values: " + values.length);
+		}
+		
+		index = 0;
+		for (int o : optionsPostSet) {
+			optionsPostSetHolder.Add(o, values[index]);
+			index++;
+		}
+		
+		option.Add(InstructionIDRegistry.PostSet, optionsPostSetHolder);
+		return option.EncodeToBytes();
+	}
 	/**
 	 * here be Javadoc
 	 * @param endpoints ordered array of endpoints
@@ -182,6 +209,36 @@ public class OptionEncoder {
 		}
 		
 		option.Add(InstructionIDRegistry.PostSet, optionsPostSetHolder);
+		return option.EncodeToBytes();
+	}
+	/**
+	 * here be Javadoc
+	 * @param endpoints ordered array of endpoints
+	 */
+	public static byte[] set(byte[] rid, byte[] idcontext,  int[] optionsPostSet, CBORObject[] values, int requestSequenceNumber) {
+		CBORObject option = CBORObject.NewMap();
+		//option.Add(2, contextUri);
+		option.Add(InstructionIDRegistry.KID, rid);
+
+		option.Add(InstructionIDRegistry.IDContext, idcontext);
+
+		CBORObject optionsHolder = CBORObject.NewMap();
+		
+		
+		CBORObject optionsPostSetHolder = CBORObject.NewMap();
+		if (optionsPostSet.length != values.length) {
+			//might become more complicated with blockwise, but it's a problem for later
+			throw new RuntimeException("Unequal amount of options: " + optionsPostSet.length + " and values: " + values.length);
+		}
+		
+		int index = 0;
+		for (int o : optionsPostSet) {
+			optionsPostSetHolder.Add(o, values[index]);
+			index++;
+		}
+		
+		option.Add(InstructionIDRegistry.PostSet, optionsPostSetHolder);
+		option.Add(InstructionIDRegistry.RequestSequenceNumber, requestSequenceNumber);
 		return option.EncodeToBytes();
 	}
 	/**
@@ -275,12 +332,7 @@ public class OptionEncoder {
 				return decodedSequence;
 			}
 			else return null;
-		} catch (com.upokecenter.cbor.CBORException e) {
-			System.out.println("Decode CBORSequence Threw error: " + e.getLocalizedMessage());
-			return null;
-		}
-		catch (java.lang.ArrayIndexOutOfBoundsException e) {
-			System.out.println("Decode CBORSequence Threw error: " + e.getLocalizedMessage());
+		} catch (Exception e) {
 			return null;
 		}
 	}

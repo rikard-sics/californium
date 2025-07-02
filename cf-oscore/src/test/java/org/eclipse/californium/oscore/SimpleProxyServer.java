@@ -11,10 +11,12 @@ import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.CoAP.Type;
+import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.OptionEncoder;
 
 import com.upokecenter.cbor.CBORObject;
@@ -28,6 +30,8 @@ public class SimpleProxyServer {
 	private static Timer timer;
 
 	private final static HashMapCtxDB db = new HashMapCtxDB(2);
+	private final static String proxyIP = "169.254.106.132"; //"127.0.0.1"; //
+	private final static String clientIP = "169.254.106.130"; //"127.0.0.1"; //
 	private final static String uriLocal = "coap://localhost";
 	private final static int CoapProxyPort = 5685;
 
@@ -61,11 +65,11 @@ public class SimpleProxyServer {
 
 	public static void main(String[] args) throws OSException {
 		OSCoreCtx ctxclient = new OSCoreCtx(master_secret, true, alg, sids[0], rids[0], kdf, 32, master_salt, idcontexts[0], MAX_UNFRAGMENTED_SIZE);
-		db.addContext(uriLocal + ":" + Objects.toString(CoapProxyPort + 1), ctxclient);
+		db.addContext("coap://" + clientIP + ":" + Objects.toString(CoapProxyPort + 1), ctxclient);
 
 		OSCoreCtx ctxproxy = new OSCoreCtx(master_secret, true, alg, sids[1], rids[1], kdf, 32, master_salt, idcontexts[1], MAX_UNFRAGMENTED_SIZE);
 		int i = CoapProxyPort - 1;
-		db.addContext(uriLocal + ":" + Objects.toString(i), ctxproxy);
+		db.addContext("coap://" + proxyIP + ":" + Objects.toString(i), ctxproxy);
 
 		OSCoreCoapStackFactory.useAsDefault(db);
 
@@ -75,7 +79,6 @@ public class SimpleProxyServer {
 
 			@Override
 			public void handleGET(CoapExchange exchange) {
-				System.out.println("Accessing hello resource");
 				Response r = new Response(ResponseCode.CONTENT);
 				r.setPayload("Hello Resource");
 				r.getOptions().setMaxAge(4);
@@ -100,7 +103,7 @@ public class SimpleProxyServer {
 
 			}
 		};
-		
+
 		/**
 		 * The resource for testing Observe support 
 		 * 
@@ -108,30 +111,65 @@ public class SimpleProxyServer {
 		 *
 		 */
 		class ObserveResource extends CoapResource {
-			
+
 			public String value = "one";
 			private boolean firstRequestReceived = false;
 
 			public ObserveResource(String name, boolean visible) {
 				super(name, visible);
-				
+
 				this.setObservable(true); 
 				this.setObserveType(Type.NON);
 				this.getAttributes().setObservable();
-				
+
 				timer.schedule(new UpdateTask(), 0, 750);
 			}
 
 			@Override
 			public void handleGET(CoapExchange exchange) {
-				firstRequestReceived  = true;
-				System.out.println(getObserverCount());
-				System.out.println("----");
-				System.out.println("in handle get");
-				System.out.println("----");
-				exchange.respond(value);
+				Response response = new Response(ResponseCode.CONTENT);
+				response.setPayload(value);
+				response.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
+
+				if (exchange.advanced().getRequest().isObserveCancel()) {
+					value = "one";
+					firstRequestReceived  = false;
+				}
+				else {
+					firstRequestReceived  = true;
+				}
+
+				CBORObject[] obj = db.getInstructions(exchange.advanced().getRequest().getToken());
+				if (Objects.nonNull(obj)) {
+					if (obj[3].get(7) == null) {
+						CBORObject optionsPostSetHolder = CBORObject.NewMap();
+						optionsPostSetHolder.Add(14, 0);
+						obj[3].Add(7, optionsPostSetHolder);
+					}
+				}
+				else if (exchange.getRequestOptions().hasOscore()) {
+
+					byte[] oscoreoptScheme = CBORObject.FromObject(new byte[0]).EncodeToBytes();
+					byte[] indexScheme = CBORObject.FromObject(2).EncodeToBytes();
+
+					byte[] instructionsScheme = Bytes.concatenate(oscoreoptScheme, indexScheme);
+					
+					int[] optionSetsPostScheme = {14};
+					CBORObject[] postValuesScheme = {CBORObject.FromObject(0)};
+					instructionsScheme = Bytes.concatenate(instructionsScheme, OptionEncoder.set(rids[0], idcontexts[0], optionSetsPostScheme, postValuesScheme, db.getContextByToken(exchange.advanced().getRequest().getToken()).getSenderSeq()));
+					
+					db.removeToken(exchange.advanced().getRequest().getToken());
+					db.addInstructions(exchange.advanced().getRequest().getToken(),OptionEncoder.decodeCBORSequence(instructionsScheme));
+
+				}
+				//System.out.println("response is: " + response);
+
+				//if (exchange.advanced().getRequest().getOptions().hasOscore()) {
+				//	response.getOptions().setMaxAge(30);
+				//}
+				exchange.respond(response);
 			}
-			
+
 			//Update the resource value when timer triggers (if 1st request is received)
 			class UpdateTask extends TimerTask {
 				@Override
@@ -145,13 +183,13 @@ public class SimpleProxyServer {
 		}
 		timer = new Timer();
 		//observe2 resource for OSCORE Observe tests
-		ObserveResource oscore_observe2 = new ObserveResource("observe2", true);
-		
+		ObserveResource oscore_observe2 = new ObserveResource("2", true);
+
 		hello.add(oscore_observe2);
-		
+
 		ObserveResource observe3 = new ObserveResource("observe3", true);
 		server.add(observe3);
-		
+
 		server.add(hello.add(hello1));
 		server.start();
 	}

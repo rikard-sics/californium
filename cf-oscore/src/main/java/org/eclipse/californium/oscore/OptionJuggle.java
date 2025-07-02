@@ -135,6 +135,7 @@ public class OptionJuggle {
 		Collection<CBORObject> collection = postSet.getKeys();
 
 		for (CBORObject key : collection) {
+
 			int optionNumber = key.ToObject(int.class);
 			// get encoded value(s)
 			CBORObject values = postSet.get(optionNumber);
@@ -165,7 +166,7 @@ public class OptionJuggle {
 				}
 
 				// put in variable
-				int sequenceNumber = values.ToObject(int.class);
+				int sequenceNumber = values.ToObject(int.class);	
 
 				// set post instruction
 				uOptions.setObserve(sequenceNumber);
@@ -192,6 +193,7 @@ public class OptionJuggle {
 				throw new IllegalArgumentException("OSCORE is not allowed as an option in the post-set!");
 
 			case OptionNumberRegistry.MAX_AGE:
+
 				// check if it already exists as a uOption
 				if (uOptions.hasMaxAge()) {
 					// if it does, runtimeException
@@ -205,15 +207,19 @@ public class OptionJuggle {
 				uOptions.setMaxAge(age);
 				break;
 			case OptionNumberRegistry.BLOCK2:
+				// TODO: implement
 				throw new IllegalArgumentException("Option not yet implemented");
 				//break;
 			case OptionNumberRegistry.BLOCK1:
+				// TODO: implement
 				throw new IllegalArgumentException("Option not yet implemented");
 				//break;
 			case OptionNumberRegistry.SIZE2:
+				// TODO: implement
 				throw new IllegalArgumentException("Option not yet implemented");
 				//break;
 			case OptionNumberRegistry.SIZE1:
+				// TODO: implement
 				throw new IllegalArgumentException("Option not yet implemented");
 				//break;
 			case OptionNumberRegistry.PROXY_URI:
@@ -251,7 +257,7 @@ public class OptionJuggle {
 				uOptions.setNoResponse(noResponse);
 				break;
 			default:
-				throw new IllegalArgumentException("Option is not class U");
+				throw new IllegalArgumentException("Option is not class U or unrecognized");
 			}
 		}
 
@@ -261,15 +267,15 @@ public class OptionJuggle {
 	public static OptionSet promotion(OptionSet options, boolean isResponse, CBORObject[] instructions) {
 		OptionSet result = new OptionSet();
 		boolean includes = false;
-		if (options.hasProxyScheme() /* || options.hasProxySchemeNumber()*/) {
-			includes = true;
-		}
 		boolean instructionsExists = Objects.nonNull(instructions);
 		CBORObject instruction = null;
 		int index = -1;
-
 		int toTouch = 0;
 		int timesTouched = 0;
+		
+		if (options.hasProxyScheme() /* || options.hasProxySchemeNumber()*/) {
+			includes = true;
+		}
 
 		if (instructionsExists) { 
 			index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
@@ -286,7 +292,7 @@ public class OptionJuggle {
 			switch (o.getNumber()) {
 			/* Class U ONLY options */
 			case OptionNumberRegistry.OSCORE:
-				// Always encrypt the OSCORE option if it is present and not empty
+				// Always encrypt the OSCORE option if it is not empty or the message is a response
 				if (!Arrays.equals(((OpaqueOption) o).getValue(), Bytes.EMPTY) || isResponse) {
 					result.addOption(o);
 					options.removeOscore();
@@ -306,7 +312,6 @@ public class OptionJuggle {
 						timesTouched++;
 					}
 
-
 					if (promoted) {
 						result.addOption(o);
 						switch (o.getNumber()) {
@@ -325,15 +330,18 @@ public class OptionJuggle {
 						}
 						break;
 					}
-					// keep as is if not promoted
-
+					// keep as is if not promoted, i.e. Class U
 				}
 				else {
-					// if no instructions, the default is to not encrypt the option
+					// if no instructions, the default is to keep the option as Class U
 				}
 
 			default:
-				/* do nothing for options that are both Class U and E */
+				/* 
+				 * do nothing for options that are both Class U and E 
+				 * these are already handled in filterOptions
+				 * perhaps use this as a way to have inner only max-age and observe?
+				 */
 				break;
 			}
 		}
@@ -343,7 +351,7 @@ public class OptionJuggle {
 		}
 		else if (toTouch < timesTouched) {
 			throw new RuntimeException("There are pre set instructions that are unused");
-			//because the option for the instruction is not present
+			// likely because the option for the instruction is not present
 		}
 
 		return result;
@@ -405,7 +413,7 @@ public class OptionJuggle {
 			default: 
 				result[1].addOption(o);
 			}
-		} 
+		}
 		return result;
 	}
 
@@ -416,9 +424,7 @@ public class OptionJuggle {
 
 			CBORObject postSet = instruction.get(InstructionIDRegistry.PostSet);
 
-			if (postSet == null) return options;
-
-			if (postSet.size() == 0) return options;
+			if (postSet != null && postSet.size() != 0) return options;
 
 			CBORObject value = postSet.get(StandardOptionRegistry.PROXY_URI.getNumber());
 
@@ -443,7 +449,7 @@ public class OptionJuggle {
 			if (proxyURIOptions.getURIQueryCount() > 0 && options.getURIQueryCount() > 0) {
 				throw new RuntimeException("Tried to add Uri-Query option through Proxy-Uri, but it already exists as an option in the message!");
 			}
-			else if (proxyURIOptions.getURIQueryCount() > 0) { //quite bad since not O(1), but wont be called too often
+			else if (proxyURIOptions.getURIQueryCount() > 0) { 
 				options.setUriQuery(proxyURIOptions.getUriQueryString());
 			}
 

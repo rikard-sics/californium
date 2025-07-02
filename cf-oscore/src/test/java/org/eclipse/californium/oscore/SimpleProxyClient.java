@@ -43,9 +43,9 @@ public class SimpleProxyClient {
 	private final static HashMapCtxDB db = new HashMapCtxDB(2);
 	private final static String uriServerPathObserve = "/hello/observe2";
 	private final static String uriServerPathTestObserve = "/observe3";
-	private final static String uriServer = "coap://localhost";
+	private final static String uriServer = "coap://127.0.0.1";
 	private final static String uriServerPath = "/hello/1";
-	private final static String uriProxy = "coap://localhost:5685";
+	private final static String uriProxy = "coap://127.0.0.1:5685";
 	private final static String uriProxyPath = "/coap-to-coap";
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
 	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;

@@ -186,6 +186,10 @@ public class SimpleProxyProxy {
 	private CacheResource cache;
 	
 	private final static HashMapCtxDB db = new HashMapCtxDB(true);
+	private final static String serverIP = "169.254.154.184"; //"127.0.0.1"; //
+	private final static String proxyIP =  "169.254.106.132"; //"127.0.0.1"; //
+	private final static String clientIP = "169.254.106.130"; //"127.0.0.1"; //
+
 	private final static String uriLocal = "coap://127.0.0.1";
 	private final static int CoapProxyPort = 5685;
 
@@ -219,11 +223,10 @@ public class SimpleProxyProxy {
 
 	public SimpleProxyProxy(Configuration config, boolean accept, boolean cache) throws IOException, OSException {
 		OSCoreCtx ctxToClient = new OSCoreCtx(master_secret, true, alg, sids[0], rids[0], kdf, 32, master_salt, idcontexts[0], MAX_UNFRAGMENTED_SIZE);
-		db.addContext(uriLocal + ":" + Objects.toString(CoapProxyPort + 1), ctxToClient); 
+		db.addContext("coap://" + clientIP + ":" + Objects.toString(CoapProxyPort + 1), ctxToClient); 
 
 		OSCoreCtx ctxToServer = new OSCoreCtx(master_secret, true, alg, sids[1], rids[1], kdf, 32, master_salt, idcontexts[1], MAX_UNFRAGMENTED_SIZE);
-		int i = CoapProxyPort - 1;
-		db.addContext(uriLocal /*+ ":" + Objects.toString(i)*/, ctxToServer);
+		db.addContext("coap://" + serverIP /*+ ":" + Objects.toString(i)*/, ctxToServer);
 
 		OSCoreCoapStackFactory.useAsDefault(db);
 		Configuration outgoingConfig = new Configuration(config);
@@ -252,7 +255,7 @@ public class SimpleProxyProxy {
 		// builder.setCoapStackFactory(new OSCoreCoapStackFactory());
 		// builder.setCustomCoapStackArgument(db);
 		//builder.setPort(CoapProxyPort);
-		builder.setInetSocketAddress(new InetSocketAddress("localhost", CoapProxyPort));
+		builder.setInetSocketAddress(new InetSocketAddress(proxyIP, CoapProxyPort));
 		CoapEndpoint clientToProxyEndpoint = builder.build();
 		
 		coapProxyServer = new CoapServer(config);

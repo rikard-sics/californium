@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.CoapClient;
+import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapObserveRelation;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
@@ -35,7 +36,6 @@ import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.observe.ObserveManager;
 import org.eclipse.californium.core.observe.ObserveRelation;
-import org.eclipse.californium.core.test.CountingCoapHandler;
 import org.eclipse.californium.proxy2.ClientEndpoints;
 import org.eclipse.californium.proxy2.Coap2CoapTranslator;
 import org.eclipse.californium.proxy2.CoapUriTranslator;
@@ -55,6 +55,8 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 	 * Maps scheme to client endpoints.
 	 */
 	private Map<String, ClientEndpoints> mapSchemeToEndpoints = new HashMap<>();
+
+	private static Map<Token, Request> mapTokenToRequest = new HashMap<>();
 
 	private static Map<Token, Exchange> mapTokenToExchange = new HashMap<>();
 
@@ -131,13 +133,20 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 
 				CoapClient client = new CoapClient(outgoingRequest.getURI());
 
-				class ObserveHandler extends CountingCoapHandler {
+				class ObserveHandler implements CoapHandler {
+
+					@Override
+					public void onError() {
+						//destroy observation?
+						System.out.println("error");
+					}
 
 					// Triggered when a Observe response is received
 					@Override
-					protected void assertLoad(CoapResponse incomingResponse) {
+					public void onLoad(CoapResponse incomingResponse) {
 						Response response = translator.getResponse(incomingResponse.advanced());
 						exchange.sendResponse(response);
+						
 					}
 				}
 				ObserveHandler handler = new ObserveHandler();
@@ -145,6 +154,8 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 				CoapObserveRelation relation = client.observe(outgoingRequest, handler);
 
 				// it might be uneccessary to store the exchange.
+				mapTokenToRequest.put(incomingRequest.getToken(), outgoingRequest);
+
 				mapTokenToExchange.put(incomingRequest.getToken(), exchange);
 				mapTokenToRelation.put(incomingRequest.getToken(), relation);
 				mapTokenToClient.put(incomingRequest.getToken(), client);
@@ -170,6 +181,7 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 					if (originalExchange.getRelation() != null) {
 						originalExchange.getRelation().cancel();
 					}
+					mapTokenToRequest.get(incomingRequest.getToken()).setCanceled(true);
 					client.shutdown();
 				}
 				
@@ -247,6 +259,8 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 				}
 				mapTokenToRelation.remove(incomingExchange.getRequest().getToken());
 				CoapClient client = mapTokenToClient.get(incomingExchange.getRequest().getToken());
+				mapTokenToRequest.get(incomingExchange.getRequest().getToken()).setCanceled(true);
+				System.out.println("cancelled");
 				client.shutdown();
 			}
 

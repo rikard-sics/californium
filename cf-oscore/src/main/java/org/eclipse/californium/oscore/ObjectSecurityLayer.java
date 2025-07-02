@@ -38,6 +38,7 @@ import java.util.Objects;
 
 import javax.lang.model.util.Elements;
 
+import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
@@ -235,24 +236,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				// are there instructions?
 				boolean instructionsExists = Objects.nonNull(instructions);
 
-				if (instructionsExists) {
-					int index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
-
-					// is this the last instruction?
-					boolean lastInstruction = index == (instructions.length - 1);
-
-					CBORObject requestSequenceNumber = instructions[index].get(InstructionIDRegistry.RequestSequenceNumber);
-
-					if (lastInstruction && requestSequenceNumber != null) {
-						// remove request sequence number of last instruction
-						instructions[index].RemoveAt(InstructionIDRegistry.RequestSequenceNumber);
-
-						// reset index
-						instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(InstructionIDRegistry.StartIndex);
-					}
-				}
-
-
 				OSCoreCtx ctx = ctxDb.getContext(request, instructions);
 
 				if (ctx == null && !instructionsExists) {
@@ -298,8 +281,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					LOGGER.error(ErrorDescriptions.CTX_NULL);
 					throw new OSException(ErrorDescriptions.CTX_NULL);
 				}
-
-				//this might need to put before every retrieval of ctx? (so in RequestEncryptor after getting the ctx)
 
 				// Initiate context re-derivation procedure if flag is set
 				if (ctx.getContextRederivationPhase() == PHASE.CLIENT_INITIATE) {
@@ -440,6 +421,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		 */
 		boolean outerBlockwise;
 		if (shouldProtectResponse(exchange, ctxDb)) {
+
 			// If the current block-request still has a non-empty OSCORE option it
 			// means it was not unprotected by OSCORE as and individual request.
 			// Rather it was not processed by OSCORE until after being re-assembled
@@ -547,7 +529,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		}
 
 		// Remove token after response is transmitted, unless ongoing Observe.
-		// Takes token from corresponding request
 		if (response.getOptions().hasObserve() == false || exchange.getRequest().isObserveCancel()) {
 			ctxDb.removeToken(exchange.getCurrentRequest().getToken());
 		}
@@ -564,20 +545,20 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	public void receiveRequest(Exchange exchange, Request request) {
 
 		// removes any previous instructions that were built while decrypting the request, 
-		// in case the request is encrypted differently from the first time.
+		// because there is no guarantee the request is encrypted the same way as the first time.
 		ctxDb.removeInstructions(request.getToken());
 
 		byte[] initialRequestHadOscore = request.getOptions().getOscore();
 
 		Message result = request;
 
-
 		while (true) {
 			boolean hadProxyOption = result.getOptions().hasProxyUri() || result.getOptions().hasProxyScheme(); 
 
 			result = processIfHasProxyRelatedOptions(exchange, (Request) result);
 
-			if (result == null) { // error occured, and is handled in processRequestDecryption
+			// error occured, and is handled in processRequestDecryption
+			if (result == null) { 
 				break;
 			}
 			boolean isRequest = result instanceof Request;
@@ -586,7 +567,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			// if had proxy uri and is kept, we forward
 			if (isRequest) {
 				if (!result.getOptions().hasOscore() 
-						|| ( hadProxyOption && (result.getOptions().hasProxyUri() || result.getOptions().hasProxyScheme()))) {
+						|| ( hadProxyOption && (result.getOptions().hasProxyUri() || result.getOptions().hasProxyScheme()))
+						|| ( result.getOptions().hasBlock1())) {
 					if (initialRequestHadOscore != null && !result.getOptions().hasOscore()) {
 						// We need the kid value on layer level 
 						try {
@@ -598,9 +580,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 					super.receiveRequest(exchange, (Request) result);
 					break;
-
 				}
-
 			}
 			else {
 				// error receiving the request, message is error response
@@ -662,7 +642,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	}
 
 	private Message consumeProxyRelatedOptions(Exchange exchange, Request request, boolean shouldProcess){
-		//consume proxy related options.
 		Coap2CoapTranslator translator = new Coap2CoapTranslator();
 		URI destination = null;
 		try {
@@ -671,7 +650,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 			if (shouldProcess) {
 				/* does uri port and host identify me?*/
-				// does this work with "unspecified" ipv6 address vs localhost? is unspecified set later?
 				URI alias1 = new URI("coap", null, "localhost", 5683, null, null, null);
 				URI alias2 = new URI("coap", null, "127.0.0.1", 5683, null, null, null);
 
@@ -697,14 +675,14 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			}
 
 		} catch (Exception e) {
-			return new Response(ResponseCode.INTERNAL_SERVER_ERROR); // eller nåt
+			return new Response(ResponseCode.INTERNAL_SERVER_ERROR);
 		}
 
 
 	}
 
 	private Message processHasOscoreOption(Exchange exchange, Request request) {
-		if (request.getOptions().hasOscore() ) {//&& !Arrays.equals(request.getOptions().getOscore(), new byte[] {(byte) 0xFF})) {
+		if (request.getOptions().hasOscore() ) {
 			return processHasURIPathOption(exchange, request);
 		}
 		else {
@@ -863,11 +841,12 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		}
 	}
 
-
 	//Always accepts unprotected responses, which is needed for reception of error messages
 	@Override
 	public void receiveResponse(Exchange exchange, Response response) {
+
 		Request request = exchange.getCurrentRequest();
+
 		if (request == null) {
 			LOGGER.error("No request tied to this response");
 			return;
@@ -899,7 +878,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			}
 
 			if (ctxDb.hasBeenForwarded(response.getToken())) {
-				//the request was not protected by us, but forwarded with a pre-existing encryption, so we simply forward it back
+				/* 
+				 * the request was not protected by us, but forwarded with 
+				 * pre-existing OSCORE layer(s), so OSCORE processing
+				 * is skipped and the response is forwarded 
+				 */
 				super.receiveResponse(exchange, response);
 				return;
 			}
@@ -928,9 +911,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 					while (response.getOptions().hasOscore()) {
 
-						// want to decrypt.
 						index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
-
 						CBORObject instruction = instructions[index];
 
 						requestSequenceNumber = instruction.get(InstructionIDRegistry.RequestSequenceNumber).ToObject(int.class);
@@ -986,7 +967,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			return;
 		}
 
-
 		// Remove token if this is an incoming response to an Observe
 		// cancellation request
 		if (exchange.getRequest().isObserveCancel()) {
@@ -1001,18 +981,24 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		super.receiveEmptyMessage(exchange, message);
 	}
 
+	// TODO: implement
 	private boolean identifiesMe(Request request) {
 		return false;
 	}
+
+	// TODO: implement
 	private boolean isAcceptableToForward(Request request) {
 		byte[] oscoreOption = request.getOptions().getOscore();
 
 		return true;
 	}
+
+	// TODO: implement
 	private boolean isAcceptableToDecrypt(Request request) {
 
 		return true;
 	}
+
 	private static boolean shouldProtectResponse(Exchange exchange, OSCoreCtxDB ctxDb) {
 		return exchange.getCryptographicContextID() != null 
 				|| ctxDb.getInstructions(exchange.getCurrentRequest().getToken()) != null;
@@ -1023,7 +1009,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		Request request = exchange.getCurrentRequest();
 		OptionSet options = request.getOptions();
 
-		// maybe this needs changing
 		if (exchange.getCryptographicContextID() == null) {
 			if (response.getOptions().hasObserve() && request.getOptions().hasObserve()) {
 				// Since the exchange object has been re-created the
