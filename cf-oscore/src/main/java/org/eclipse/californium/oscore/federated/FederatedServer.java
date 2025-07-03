@@ -218,6 +218,7 @@ public class FederatedServer {
 	private static DataSetIterator IterLoad;
 	private static DataSetIterator trainIter;
 	private static DataSetIterator testIter;
+	private static boolean serverIsInitialized = false;
 
 	private static int latestVersionNumber = -1;
 
@@ -625,6 +626,7 @@ public class FederatedServer {
 		if (initFlag == true) {
 			model = new MultiLayerNetwork(conf);
 			model.init();
+			serverIsInitialized = true;
 			DebugOut.println(model.summary());
 		} else {
 			DebugOut.println("Update Local model...");
@@ -728,7 +730,13 @@ public class FederatedServer {
 			// Train
 			if (modelReq.length == 0) {
 				initFlag = true;
-				DebugOut.println("Model with size 0 received!");
+				DebugOut.println("Model with size 0 received! Initializing model.");
+			} else {
+				if (serverIsInitialized == false) {
+					initFlag = true;
+					DebugOut.println(
+							"Model with size non-zero size received! Initializing model (must have missed the message with empty payload)");
+				}
 			}
 
 			boolean processRequestModel;
