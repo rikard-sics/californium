@@ -34,11 +34,9 @@ import org.eclipse.californium.core.coap.OptionNumberRegistry;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
-import org.eclipse.californium.core.coap.option.BaseOptionDefinition;
 import org.eclipse.californium.core.coap.option.OpaqueOption;
 import org.eclipse.californium.core.coap.option.StandardOptionRegistry;
 import org.eclipse.californium.core.coap.option.StringOption;
-import org.eclipse.californium.elements.EndpointContext;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.group.InstructionIDRegistry;
 import org.eclipse.californium.oscore.group.OptionEncoder;
@@ -292,8 +290,12 @@ public class OptionJuggle {
 			switch (o.getNumber()) {
 			/* Class U ONLY options */
 			case OptionNumberRegistry.OSCORE:
-				// Always encrypt the OSCORE option if it is not empty or the message is a response
-				if (!Arrays.equals(((OpaqueOption) o).getValue(), Bytes.EMPTY) || isResponse) {
+				/* 
+				 * Always promote the OSCORE option if it is a response
+				 * the logic for when not to encrypt a response is in 
+				 * the ObjectSecurityLayer, before calling prepareResponse
+				 */
+				if (isResponse || !Arrays.equals(((OpaqueOption) o).getValue(), Bytes.EMPTY)) {
 					result.addOption(o);
 					options.removeOscore();
 					break;
@@ -373,11 +375,6 @@ public class OptionJuggle {
 			switch (o.getNumber()) {
 			/* Class U ONLY options*/
 			case OptionNumberRegistry.OSCORE:
-				if (!Arrays.equals(((OpaqueOption) o).getValue(), Bytes.EMPTY)) {
-					result[1].addOption(o);
-					break;
-				}
-
 			case OptionNumberRegistry.URI_HOST:
 			case OptionNumberRegistry.URI_PORT:
 			case OptionNumberRegistry.PROXY_SCHEME:
@@ -424,7 +421,7 @@ public class OptionJuggle {
 
 			CBORObject postSet = instruction.get(InstructionIDRegistry.PostSet);
 
-			if (postSet != null && postSet.size() != 0) return options;
+			if (postSet == null || postSet.size() == 0) return options;
 
 			CBORObject value = postSet.get(StandardOptionRegistry.PROXY_URI.getNumber());
 

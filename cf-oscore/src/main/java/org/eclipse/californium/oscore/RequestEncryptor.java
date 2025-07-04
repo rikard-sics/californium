@@ -24,12 +24,9 @@ import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
-import java.util.Arrays;
-
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.cose.Encrypt0Message;
-import org.eclipse.californium.elements.util.Bytes;
 
 /**
  * 
@@ -110,7 +107,6 @@ public class RequestEncryptor extends Encryptor {
 		byte[] confidential = OSSerializer.serializeConfidentialData(optionsUAndE[1], request.getPayload(), realCode);
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
 		byte[] cipherText = encryptAndEncode(enc, ctx, request, false, null);
-
 		// sets correct OSCORE option values here
 		compression(ctx, cipherText, request, false);
 

@@ -36,9 +36,6 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Objects;
 
-import javax.lang.model.util.Elements;
-
-import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
@@ -472,6 +469,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						// should response include the partial IV?
 						addPartialIV = (ctx != null && ctx.getResponsesIncludePartialIV()) || exchange.getRequest().getOptions().hasObserve();
 
+						// should there be an inner OSCORE option?
+						if (ctxDb != null && !ctxDb.hasBeenForwarded(token)) {
+							response.getOptions().removeOscore();
+						}
+
 						// encrypt
 						preparedResponse = prepareSend(ctxDb, preparedResponse, ctx, addPartialIV, outerBlockwise,
 								requestSequenceNumber, instructions);
@@ -502,6 +504,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 					// should response include the partial IV?
 					addPartialIV = (ctx != null && ctx.getResponsesIncludePartialIV()) || exchange.getRequest().getOptions().hasObserve();
+
+					// should there be an inner OSCORE option?
+					if (ctxDb != null && !ctxDb.hasBeenForwarded(token)) {
+						response.getOptions().removeOscore();
+					}
 
 					// encrypt
 					preparedResponse = prepareSend(ctxDb, response, ctx, addPartialIV, outerBlockwise,
@@ -569,13 +576,13 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				if (!result.getOptions().hasOscore() 
 						|| ( hadProxyOption && (result.getOptions().hasProxyUri() || result.getOptions().hasProxyScheme()))
 						|| ( result.getOptions().hasBlock1())) {
+
 					if (initialRequestHadOscore != null && !result.getOptions().hasOscore()) {
-						// We need the kid value on layer level 
-						try {
-							result.getOptions().setOscore(new OscoreOptionDecoder(initialRequestHadOscore).getKid());
-						} catch (CoapOSException e) {
-							throw new RuntimeException(e.getLocalizedMessage());
-						}
+						result.getOptions().setOscore(Bytes.EMPTY);
+					}
+
+					if (result.getOptions().hasProxyUri() || result.getOptions().hasProxyScheme()) {
+						ctxDb.addForwarded(request.getToken());
 					}
 
 					super.receiveRequest(exchange, (Request) result);

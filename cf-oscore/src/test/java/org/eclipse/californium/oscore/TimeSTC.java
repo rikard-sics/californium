@@ -2,12 +2,13 @@
 
 package org.eclipse.californium.oscore;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.californium.core.CoapClient;
@@ -15,13 +16,10 @@ import org.eclipse.californium.core.CoapObserveRelation;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
-import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.test.CountingCoapHandler;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.OptionNumberRegistry;
-import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
-import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.AddressEndpointContext;
@@ -38,16 +36,16 @@ import com.upokecenter.cbor.CBORObject;
  */
 public class TimeSTC {
 
-
 	private final static HashMapCtxDB db = new HashMapCtxDB(2);
-	private final static String serverIP = "169.254.154.184"; //"127.0.0.1"; //
-	private final static String uriServerPathObserve = "/hello/2";
-	private final static String uriServerPathTestObserve = "/observe3";
+	private final static String serverIP = "127.0.0.1"; //"169.254.154.184"; //
 	private final static String uriServer = "coap://" + serverIP + ":5683";
 	private final static String uriServerPath = "/hello/1";
-	private final static String proxyIP = "169.254.106.132"; //"127.0.0.1"; //
+	private final static String uriServerPathObserve = "/hello/2";
+
+	private final static String proxyIP = "127.0.0.1"; // "169.254.106.132"; //
 	private final static String uriProxy = "coap://" + proxyIP + ":5685";
-	private final static String uriProxyPath = ""; //"/coap-to-coap";
+	private final static String uriProxyPath = "";
+	
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
 	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
 
@@ -56,8 +54,6 @@ public class TimeSTC {
 			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
 	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
 			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
-	//private final static byte[] sid = new byte[0];
-	//private final static byte[] rid = new byte[] { 0x01 };
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 
 	private final static byte[][] sids = {
@@ -75,71 +71,50 @@ public class TimeSTC {
 			new byte[] { 0x02 }
 	};
 
+	/*------------------------------PROXY-Uri OPTION------------------------------*/
+
 	private final static int[][] optionSetsURI = {
 			{}, 
 			{OptionNumberRegistry.PROXY_URI}
 	};
 
-	private final static int[][] optionSetsScheme = {
-			{}, 
-			{OptionNumberRegistry.URI_PORT, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.PROXY_SCHEME}
-	};
-	//OSCORE OPTION
-	// we do not want the oscore option to be inner for first layer of encryption
-	private final static boolean[] OSCOREAnswer1 = {true, false, false, false, false}; //inner oscore option
-
-	//PROXY-URI OPTION
-	//private final static boolean[] ProxyURIAnswer1 = {true, true, false, false, false};
-	private final static boolean[] ProxyURIAnswer2 = {true, true, true, true, false};
-
-	//URI-PORT OPTION
-	//private final static boolean[] URIPORTAnswer1 = {true, true, false, true, false};
-	private final static boolean[] URIPORTAnswer2 = {true, true, true, true, false};
-
-	//URI-HOST OPTION
-	//private final static boolean[] URIHostAnswer1 = URIPORTAnswer1;
-	private final static boolean[] URIHostAnswer2 = {true, true, true, true, false};
-
-	//PROXY-SCHEME OPTION
-	//private final static boolean[] ProxySchemeAnswer1 = ProxyURIAnswer1;
-	private final static boolean[] ProxySchemeAnswer2 = {true, true, true, true, false};
+	private final static boolean[] ProxyURIAnswer = {true, true, true, true, false};
 
 	private final static boolean[][][] answerSetsURI = {
 			{},
-			{ProxyURIAnswer2}
+			{ProxyURIAnswer}
 	};
 
-	private final static boolean[][][] answerSetsScheme = {
-			{},
-			{URIPORTAnswer2, URIHostAnswer2, ProxySchemeAnswer2}
-	};
-
-	//0 did i add the option
-	//1 is x a consumer of the option
-	//2 is x the immediate consumer of the option
-	//3 is x my next hop OR is next hop not the immediate consumer of the option
-	//4 does x need option before decrypting, or in order to decrypt	
-
-	//excluded options are not supposed to be promoted
-
-	private final static CBORObject[][] postValuesUriObserve =  {
-			{CBORObject.FromObject(uriServer + uriServerPathObserve)},
-			{}
-	};
 	private final static CBORObject[][] postValuesUri =  {
 			{CBORObject.FromObject(uriServer + uriServerPath)},
 			{}
 	};
-	private final static CBORObject[][] postValuesScheme =  {
-			{CBORObject.FromObject("coap"), CBORObject.FromObject(serverIP),CBORObject.FromObject(5683)},
-			{}
-	};
-	private final static int[][] optionSetsPostUriObserve = {
-			{OptionNumberRegistry.PROXY_URI}, 
-			{}
-	};
+
 	private final static int[][] optionSetsPostUri = {
 			{OptionNumberRegistry.PROXY_URI}, 
+			{}
+	};
+
+	/*-----------------------------PROXY-Scheme OPTION----------------------------*/
+
+	private final static int[][] optionSetsScheme = {
+			{}, 
+			{OptionNumberRegistry.URI_PORT, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.PROXY_SCHEME}
+	};
+
+	private final static boolean[] URIPORTAnswer = {true, true, true, true, false};
+
+	private final static boolean[] URIHostAnswer = {true, true, true, true, false};
+
+	private final static boolean[] ProxySchemeAnswer = {true, true, true, true, false};
+
+	private final static boolean[][][] answerSetsScheme = {
+			{},
+			{URIPORTAnswer, URIHostAnswer, ProxySchemeAnswer}
+	};
+
+	private final static CBORObject[][] postValuesScheme =  {
+			{CBORObject.FromObject("coap"), CBORObject.FromObject(serverIP),CBORObject.FromObject(5683)},
 			{}
 	};
 
@@ -162,21 +137,29 @@ public class TimeSTC {
 
 		CoapResponse response;
 
+		response = OSCOREUri(clientToServer);
+		assertTrue(response.getOptions().hasOscore());
+		assertEquals(response.getResponseText(), "Hello World!");
+		assertEquals(response.getCode(), ResponseCode.CONTENT);
+        
+		response = OSCOREScheme(clientToServer);
+		assertTrue(response.getOptions().hasOscore());
+		assertEquals(response.getResponseText(), "Hello World!");
+		assertEquals(response.getCode(), ResponseCode.CONTENT);
+        
+		response = PostURISend(clientToServer);
+		assertTrue(response.getOptions().hasOscore());
+		assertEquals(response.getResponseText(), "Hello World!");
+		assertEquals(response.getCode(), ResponseCode.CONTENT);
+        
 		response = PostSchemeSend(clientToServer);
-		//Thread.sleep(500);
-		
-		long a = System.nanoTime();
-		long b = System.nanoTime();
-		long callTime = b-a;
+		assertTrue(response.getOptions().hasOscore());
+		assertEquals(response.getResponseText(), "Hello World!");
+		assertEquals(response.getCode(), ResponseCode.CONTENT);
 
-		int timesToMeasure = 20;
-		for (int i = 0; i< timesToMeasure; i++) {
-			//Thread.sleep(500);
-			long start = System.nanoTime();
-			response = PostSchemeSend(clientToServer);
-			long end = System.nanoTime();
-			System.out.println("RTT: " + (end - start - callTime));
-		}
+
+		response = PostObserveSend(clientToServer);
+
 		System.out.println("Finished");
 	}
 	public static CoapResponse Uri(CoapClient c) throws ConnectorException, IOException {

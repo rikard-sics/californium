@@ -186,9 +186,9 @@ public class SimpleProxyProxy {
 	private CacheResource cache;
 	
 	private final static HashMapCtxDB db = new HashMapCtxDB(true);
-	private final static String serverIP = "169.254.154.184"; //"127.0.0.1"; //
-	private final static String proxyIP =  "169.254.106.132"; //"127.0.0.1"; //
-	private final static String clientIP = "169.254.106.130"; //"127.0.0.1"; //
+	private final static String serverIP = "127.0.0.1"; // "169.254.154.184"; 
+	private final static String proxyIP =  "127.0.0.1"; // "169.254.106.132";
+	private final static String clientIP = "127.0.0.1"; // "169.254.106.130";
 
 	private final static String uriLocal = "coap://127.0.0.1";
 	private final static int CoapProxyPort = 5685;

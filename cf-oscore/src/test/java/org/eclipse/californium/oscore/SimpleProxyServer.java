@@ -30,8 +30,8 @@ public class SimpleProxyServer {
 	private static Timer timer;
 
 	private final static HashMapCtxDB db = new HashMapCtxDB(2);
-	private final static String proxyIP = "169.254.106.132"; //"127.0.0.1"; //
-	private final static String clientIP = "169.254.106.130"; //"127.0.0.1"; //
+	private final static String proxyIP = "127.0.0.1"; // "169.254.106.132"; 
+	private final static String clientIP = "127.0.0.1"; // "169.254.106.130"; 
 	private final static String uriLocal = "coap://localhost";
 	private final static int CoapProxyPort = 5685;
 
@@ -93,13 +93,7 @@ public class SimpleProxyServer {
 				//System.out.println("Accessing hello/1 resource");
 				Response r = new Response(ResponseCode.CONTENT);
 				r.setPayload("Hello World!");
-				//System.out.println("Recieved GET with " + exchange.advanced().getRequest().getToken());
-				//r.getOptions().setMaxAge(4);
 				exchange.respond(r);
-				//counter.incrementAndGet();
-				/*if (counter.get() == 2) {
-					server.destroy();
-				}*/
 
 			}
 		};
@@ -141,28 +135,36 @@ public class SimpleProxyServer {
 
 				CBORObject[] obj = db.getInstructions(exchange.advanced().getRequest().getToken());
 				if (Objects.nonNull(obj)) {
-					if (obj[3].get(7) == null) {
+					if (obj.length > 3 && obj[3].get(7) == null) {
 						CBORObject optionsPostSetHolder = CBORObject.NewMap();
 						optionsPostSetHolder.Add(14, 0);
 						obj[3].Add(7, optionsPostSetHolder);
 					}
 				}
-				else if (exchange.getRequestOptions().hasOscore()) {
+				else if (!Objects.nonNull(obj) && exchange.getRequestOptions().hasOscore()) {
 
 					byte[] oscoreoptScheme = CBORObject.FromObject(new byte[0]).EncodeToBytes();
 					byte[] indexScheme = CBORObject.FromObject(2).EncodeToBytes();
 
 					byte[] instructionsScheme = Bytes.concatenate(oscoreoptScheme, indexScheme);
-					
+
 					int[] optionSetsPostScheme = {14};
 					CBORObject[] postValuesScheme = {CBORObject.FromObject(0)};
-					instructionsScheme = Bytes.concatenate(instructionsScheme, OptionEncoder.set(rids[0], idcontexts[0], optionSetsPostScheme, postValuesScheme, db.getContextByToken(exchange.advanced().getRequest().getToken()).getSenderSeq()));
-					
+
+					OscoreOptionDecoder optionDecoder = null;
+					try {
+						optionDecoder = new OscoreOptionDecoder(exchange.advanced().getCryptographicContextID());
+					} catch (CoapOSException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					int requestSequenceNumber = optionDecoder.getSequenceNumber();
+					instructionsScheme = Bytes.concatenate(instructionsScheme, OptionEncoder.set(rids[0], idcontexts[0], optionSetsPostScheme, postValuesScheme, requestSequenceNumber));
+
 					db.removeToken(exchange.advanced().getRequest().getToken());
 					db.addInstructions(exchange.advanced().getRequest().getToken(),OptionEncoder.decodeCBORSequence(instructionsScheme));
 
 				}
-				//System.out.println("response is: " + response);
 
 				//if (exchange.advanced().getRequest().getOptions().hasOscore()) {
 				//	response.getOptions().setMaxAge(30);

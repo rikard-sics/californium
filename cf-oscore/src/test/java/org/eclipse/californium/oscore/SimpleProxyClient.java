@@ -122,7 +122,7 @@ public class SimpleProxyClient {
 	//excluded options are not supposed to be promoted
 
 	private final static CBORObject[][] postValuesUriObserve =  {
-			{CBORObject.FromObject(uriServer + uriServerPathObserve)},
+			{CBORObject.FromObject(uriServer + uriServerPathTestObserve)},
 			{}
 	};
 	private final static CBORObject[][] postValuesUri =  {
@@ -257,7 +257,6 @@ public class SimpleProxyClient {
 		request.getOptions().setOscore(new byte[0]);
 		request.getOptions().setProxyUri(uriServer + uriServerPathTestObserve); 
 
-		System.out.println(request);
 		CoapResponse ackResponse = client.advanced(request);
 		System.out.println("Response on cancel is type: " + ackResponse.advanced().getType());
 
@@ -296,7 +295,6 @@ public class SimpleProxyClient {
 		token = request.getToken();
 
 		//Now cancel the Observe and wait for the final response
-
 		request = new Request(Code.GET);
 		request.setDestinationContext(proxy);
 		request.getOptions().setOscore(instructionsUri); 
@@ -304,7 +302,6 @@ public class SimpleProxyClient {
 		request.setToken(token);
 
 
-		System.out.println(request);
 		ackResponse = client.advanced(request);
 		System.out.println("Response on cancel is type: " + ackResponse.advanced().getType());
 
@@ -385,7 +382,10 @@ public class SimpleProxyClient {
 
 		request = new Request(Code.GET);
 		request.setDestinationContext(proxy);
-
+		request.getOptions().setUriHost("127.0.0.1");
+		request.getOptions().setUriPort(5683);
+		request.getOptions().setUriPath(uriServerPath);
+		request.setUriIsApplied();
 		request.getOptions().setOscore(instructionsScheme);
 
 		resp = client.advanced(request);
@@ -521,8 +521,13 @@ public class SimpleProxyClient {
 		request = new Request(Code.GET);
 		request.setDestinationContext(proxy);
 		request.setProxyScheme("coap");
+		request.getOptions().setUriHost("127.0.0.1");
+		request.getOptions().setUriPort(5683);
+		request.getOptions().setUriPath(uriServerPath);
+		request.setUriIsApplied();
 		request.getOptions().setOscore(instructions);
 
+		System.out.println(request);
 		resp = client.advanced(request);
 		printResponse(resp);
 

@@ -62,8 +62,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	private HashMap<Token, OSCoreCtx> tokenMap;
 	private HashMap<String, OSCoreCtx> uriMap;
 	private HashMap<Token, CBORObject[]> instructionMap;
-	private ArrayList<Token> forwardedWithoutProtection;
-	private ArrayList<Token> forwardedWithProtection;
+	private ArrayList<Token> unprotectedProxyMessages;
 	private ArrayList<Token> allTokens;
 	private boolean proxyable;
 	private int layerLimit;
@@ -82,15 +81,17 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	public HashMapCtxDB(boolean proxyable) {
 		this(proxyable, 1);
 	}
-	
+
 	/**
 	 * create the database, with no proxying allowed
-	 * @param layerLimit
+	 * @param layerLimit defines a maximum amount of times 
+	 * OSCORE protection can be applied or stripped
+	 * on a single message
 	 */
 	public HashMapCtxDB(int layerLimit) {
 		this(false, layerLimit);
 	}
-	
+
 	/**
 	 * create the database
 	 * @param proxyable This controls whether the server can act as a proxy
@@ -100,13 +101,12 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		if (layerLimit < 0) {
 			throw new RuntimeException("layerLimit must be a positive integer");
 		}
-		
+
 		this.tokenMap = new HashMap<>();
 		this.contextMap = new HashMap<>();
 		this.uriMap = new HashMap<>();
 		this.instructionMap = new HashMap<>();
-		this.forwardedWithoutProtection = new ArrayList<Token>();
-		this.forwardedWithProtection = new ArrayList<Token>();
+		this.unprotectedProxyMessages = new ArrayList<Token>();
 		this.allTokens = new ArrayList<Token>();
 		this.proxyable = proxyable;
 		this.layerLimit = layerLimit;
@@ -137,14 +137,14 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 			if (!tokenExist(token)) {
 				allTokens.add(token);
 			}
-			forwardedWithoutProtection.add(token);	
+			unprotectedProxyMessages.add(token);	
 		}
 	}
 
 	@Override
 	public synchronized boolean hasBeenForwarded(Token token) {
 		if (token != null) {
-			return forwardedWithoutProtection.contains(token);
+			return unprotectedProxyMessages.contains(token);
 		} else {
 			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
 			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
@@ -481,7 +481,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	public synchronized void removeToken(Token token) {
 		tokenMap.remove(token);
 		instructionMap.remove(token);
-		forwardedWithoutProtection.remove(token);
+		unprotectedProxyMessages.remove(token);
 	}
 
 	/**
