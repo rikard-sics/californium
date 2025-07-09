@@ -149,9 +149,6 @@ public class OptionJuggle {
 				// put in variable
 				String uriHost = values.ToObject(String.class);
 
-				// if outer only, add to pre encryption set (if it exists) 
-				//addToPreEncryptionSet(index, instructions, optionNumber);
-
 				// set post instruction
 				uOptions.setUriHost(uriHost);
 
@@ -179,9 +176,6 @@ public class OptionJuggle {
 
 				// put in variable
 				int port = values.ToObject(int.class);
-
-				// if outer only, add to pre encryption set (if it exists) 
-				//addToPreEncryptionSet(index, instructions, optionNumber);
 
 				// set post instruction
 				uOptions.setUriPort(port);
@@ -232,9 +226,6 @@ public class OptionJuggle {
 
 				// put in variable
 				String proxyScheme = values.ToObject(String.class);
-
-				// if outer only, add to pre encryption set (if it exists) 
-				//addToPreEncryptionSet(index, instructions, optionNumber);
 
 				// set post instruction
 				uOptions.setProxyScheme(proxyScheme);
