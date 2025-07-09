@@ -126,13 +126,20 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 
 				OSCoreCtx ctx = ctxDb.getContext(uri);
 				if (ctx == null) {
-					LOGGER.error(ErrorDescriptions.CTX_NULL);
-					throw new OSException(ErrorDescriptions.CTX_NULL);
+					if (ctxDb.getIfProxyable()) {
+						// if we are a proxy but do not have a security context with the next endpoint we forward the request
+						LOGGER.trace("Request: {}", exchange.getRequest());
+						super.sendRequest(exchange, request);
+						return;
+					}
+					else {
+						LOGGER.error(ErrorDescriptions.CTX_NULL);
+						throw new OSException(ErrorDescriptions.CTX_NULL);
+					}
 				}
 
 				// Initiate context re-derivation procedure if flag is set
 				if (ctx.getContextRederivationPhase() == PHASE.CLIENT_INITIATE) {
-					System.out.println("awoo1");
 					ContextRederivation.setLostContext(ctxDb, uri);
 					// send dummy request before to rederive the new context
 					// and then send the original request using this new context

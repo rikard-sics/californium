@@ -18,7 +18,9 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
+import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Token;
+import com.upokecenter.cbor.CBORObject;
 
 /**
  * 
@@ -28,11 +30,56 @@ import org.eclipse.californium.core.coap.Token;
 public interface OSCoreCtxDB {
 
 	/**
-	 * @param cid the context identifier
-	 * @return the OSCore context
+	 * 
+	 * @param token
 	 */
-	public OSCoreCtx getContext(byte[] cid);
+	public void removeInstructions(Token token);
+	/**
+	 * 
+	 * @return the value of the proxyable flag
+	 */
+	public boolean getIfProxyable();
+	
+	/**
+	 * @param token the token of the request
+	 */
+	public void addForwarded(Token token);
+	
+	/**
+	 * 
+	 * @param token the token of to check
+	 * @return {@code true}, if an association for this token exists,
+	 *         {@code false}, otherwise
+	 */
+	public boolean hasBeenForwarded(Token token);
+	/**
+	 * @param token the token of the request
+	 * @param instructions the instructions
+	 */
+	public void addInstructions(Token token, CBORObject[] instructions);
 
+	/**
+	 * 
+	 * @return 
+	 */
+	public int getLayerLimit();
+	
+	/**
+	 * 
+	 * @param token the token associated with the instructions
+	 * @return the instructions
+	 */
+	public CBORObject[] getInstructions(Token token);
+
+	/**
+	 * Retrieve a context also using the ID Context
+	 * 
+	 * @param request the request
+	 * @return the OSCore context
+	 * @throws OSException when retrieving URI from request and finds none
+	 */
+	public OSCoreCtx getContext(Request request, CBORObject[] instructions) throws OSException;
+	
 	/**
 	 * Retrieve a context also using the ID Context
 	 * 
@@ -43,6 +90,12 @@ public interface OSCoreCtxDB {
 	 *             matching contexts are found
 	 */
 	public OSCoreCtx getContext(byte[] cid, byte[] IDContext) throws CoapOSException;
+	
+	/**
+	 * @param cid the context identifier
+	 * @return the OSCore context
+	 */
+	public OSCoreCtx getContext(byte[] cid);
 
 	/**
 	 * @param token the token of the request
@@ -91,6 +144,8 @@ public interface OSCoreCtxDB {
 	 */
 	public boolean tokenExist(Token token);
 
+	public boolean instructionsExistForToken(Token token);
+	
 	/**
 	 * purge all contexts
 	 */
@@ -102,4 +157,5 @@ public interface OSCoreCtxDB {
 	 * @param token token to be removed
 	 */
 	public void removeToken(Token token);
+
 }

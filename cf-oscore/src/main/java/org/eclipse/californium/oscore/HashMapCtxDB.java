@@ -27,15 +27,22 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.upokecenter.cbor.CBORObject;
+
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.oscore.group.InstructionIDRegistry;
+
 
 /**
  * 
@@ -54,18 +61,161 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 
 	private HashMap<Token, OSCoreCtx> tokenMap;
 	private HashMap<String, OSCoreCtx> uriMap;
-
+	private HashMap<Token, CBORObject[]> instructionMap;
+	private ArrayList<Token> unprotectedProxyMessages;
 	private ArrayList<Token> allTokens;
+	private boolean proxyable;
+	private int layerLimit;
 
 	/**
-	 * Create the database
+	 * Create the database, with no proxying allowed nor layered encryption
 	 */
 	public HashMapCtxDB() {
+		this(false, 1);
+	}
+
+	/**
+	 * Create the database, with no layered encryption
+	 * @param proxyable This controls whether the server can act as a proxy
+	 */
+	public HashMapCtxDB(boolean proxyable) {
+		this(proxyable, 1);
+	}
+
+	/**
+	 * create the database, with no proxying allowed
+	 * @param layerLimit defines a maximum amount of times 
+	 * OSCORE protection can be applied or stripped
+	 * on a single message
+	 */
+	public HashMapCtxDB(int layerLimit) {
+		this(false, layerLimit);
+	}
+
+	/**
+	 * create the database
+	 * @param proxyable This controls whether the server can act as a proxy
+	 * @param layerLimit This controls whether the server can act as a proxy
+	 */
+	public HashMapCtxDB(boolean proxyable, int layerLimit) {
+		if (layerLimit < 0) {
+			throw new RuntimeException("layerLimit must be a positive integer");
+		}
 
 		this.tokenMap = new HashMap<>();
 		this.contextMap = new HashMap<>();
 		this.uriMap = new HashMap<>();
+		this.instructionMap = new HashMap<>();
+		this.unprotectedProxyMessages = new ArrayList<Token>();
 		this.allTokens = new ArrayList<Token>();
+		this.proxyable = proxyable;
+		this.layerLimit = layerLimit;
+	}
+
+	@Override
+	public synchronized void removeInstructions(Token token) {
+		if (token != null) {
+			instructionMap.remove(token);
+		} else {
+			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
+			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
+		}
+	}
+	@Override
+	public synchronized boolean getIfProxyable() {
+		return this.proxyable;
+	}
+
+	@Override
+	public synchronized int getLayerLimit() {
+		return this.layerLimit;
+	}
+
+	@Override
+	public synchronized void addForwarded(Token token) {
+		if (token != null) {
+			if (!tokenExist(token)) {
+				allTokens.add(token);
+			}
+			unprotectedProxyMessages.add(token);	
+		}
+	}
+
+	@Override
+	public synchronized boolean hasBeenForwarded(Token token) {
+		if (token != null) {
+			return unprotectedProxyMessages.contains(token);
+		} else {
+			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
+			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
+		}
+	}
+
+	@Override
+	public synchronized void addInstructions(Token token, CBORObject[] instructions) {
+		if (token != null) {
+			if (instructions != null) {
+				if (!tokenExist(token)) {
+					allTokens.add(token);
+				}
+
+				instructionMap.put(token, instructions);
+			}
+			else {
+				LOGGER.error("Instruction is null");
+				throw new NullPointerException("Instruction is null");
+			}
+		} else {
+			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
+			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
+		}
+	}
+
+	/**
+	 * 
+	 */
+	@Override
+	public synchronized CBORObject[] getInstructions(Token token) {
+		if (token != null) {
+			return instructionMap.get(token);
+		} else {
+			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
+			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
+		}
+	}
+	/**
+	 * Retrieve context using a request. If the provided request has 
+	 * instructions in the OSCORE option, the context will be returned
+	 * from the current instruction, otherwise it will return the 
+	 * context using the URI or ProxyUri
+	 */
+	@Override
+	public synchronized OSCoreCtx getContext(Request request, CBORObject[] instructions) throws OSException {
+		if (!(Objects.nonNull(instructions))) { 
+			String uri; 
+			if (request.getOptions().hasProxyUri()) {
+				uri = request.getOptions().getProxyUri();
+			} else {
+				uri = request.getURI();
+			}
+
+			if (uri == null) {
+				LOGGER.error(ErrorDescriptions.URI_NULL);
+				throw new OSException(ErrorDescriptions.URI_NULL);
+			}
+			return getContext(uri);
+		}
+
+		// get index for current instruction
+		int index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
+
+		// get instruction
+		CBORObject instruction = instructions[index];
+
+		byte[] RID       = instruction.get(InstructionIDRegistry.KID).ToObject(byte[].class);
+		byte[] IDCONTEXT = instruction.get(InstructionIDRegistry.IDContext).ToObject(byte[].class);
+
+		return getContext(RID, IDCONTEXT);
 	}
 
 	/**
@@ -152,7 +302,9 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 			}
 			tokenMap.put(token, ctx);
 		}
-		addContext(ctx);
+		if (ctx != null) {
+			addContext(ctx);
+		}
 	}
 
 	@Override
@@ -168,7 +320,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	@Override
 	public synchronized void addContext(OSCoreCtx ctx) {
 		if (ctx != null) {
-			
+
 			ByteId rid = new ByteId(ctx.getRecipientId());
 			HashMap<ByteId, OSCoreCtx> ridMap = contextMap.get(rid);
 
@@ -231,6 +383,16 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	public synchronized boolean tokenExist(Token token) {
 		if (token != null) {
 			return allTokens.contains(token);
+		} else {
+			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
+			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
+		}
+	}
+
+	@Override
+	public synchronized boolean instructionsExistForToken(Token token) {
+		if (token != null) {
+			return instructionMap.containsKey(token);
 		} else {
 			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
 			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
@@ -318,6 +480,8 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	@Override
 	public synchronized void removeToken(Token token) {
 		tokenMap.remove(token);
+		instructionMap.remove(token);
+		unprotectedProxyMessages.remove(token);
 	}
 
 	/**
@@ -327,6 +491,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	public synchronized void purge() {
 		contextMap.clear();
 		tokenMap.clear();
+		instructionMap.clear();
 		uriMap.clear();
 		allTokens = new ArrayList<Token>();
 	}

@@ -21,6 +21,9 @@ package org.eclipse.californium.oscore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.upokecenter.cbor.CBORObject;
+
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.cose.Encrypt0Message;
@@ -46,14 +49,34 @@ public class RequestEncryptor extends Encryptor {
 	 *
 	 */
 	public static Request encrypt(OSCoreCtxDB db, Request request) throws OSException {
-
 		final String uri;
 		if (request.getOptions().hasProxyUri()) {
 			uri = request.getOptions().getProxyUri();
 		} else {
 			uri = request.getURI();
 		}
+
+		if (uri == null) {
+			LOGGER.error(ErrorDescriptions.URI_NULL);
+			throw new OSException(ErrorDescriptions.URI_NULL);
+		}
+		
 		OSCoreCtx ctx = db.getContext(uri);
+		return encrypt(db, ctx, request, null);
+	}
+	
+	/**
+	 * @param request the request
+	 * @param db the context database used
+	 * @param ctx the OSCore context
+	 * @param instructions instructions to provide additional information for encryption
+	 * 
+	 * @return the request with the OSCore option
+	 * @throws OSException if encryption fails
+	 *
+	 */
+	public static Request encrypt(OSCoreCtxDB db, OSCoreCtx ctx, Request request, CBORObject[] instructions) throws OSException {
+		OptionSet options = request.getOptions();
 
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CTX_NULL);
@@ -71,15 +94,30 @@ public class RequestEncryptor extends Encryptor {
 		int realCode = request.getCode().value;
 		request = OptionJuggle.setFakeCodeRequest(request);
 
-		OptionSet options = request.getOptions();
-		byte[] confidential = OSSerializer.serializeConfidentialData(options, request.getPayload(), realCode);
+		// This decomposes the Proxy-URI option in the post set
+		OptionJuggle.handleProxyURIInstruction(options, instructions);
+
+		OptionSet[] optionsUAndE = OptionJuggle.filterOptions(options);
+
+		OptionSet promotedOptions = OptionJuggle.promotion(optionsUAndE[0], false, instructions);
+
+		optionsUAndE[1] = OptionJuggle.merge(optionsUAndE[1], promotedOptions);	
+
+		// here the E options are set 
+		byte[] confidential = OSSerializer.serializeConfidentialData(optionsUAndE[1], request.getPayload(), realCode);
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
 		byte[] cipherText = encryptAndEncode(enc, ctx, request, false, null);
+		// sets correct OSCORE option values here
 		compression(ctx, cipherText, request, false);
 
-		request.setOptions(OptionJuggle.prepareUoptions(request.getOptions()));
+		byte[] oscoreOption = request.getOptions().getOscore();
+
+		// here the U options are set
+		request.setOptions(OptionJuggle.postInstruction(optionsUAndE[0], instructions));
+		request.getOptions().setOscore(oscoreOption);
 
 		ctx.increaseSenderSeq();
+
 		return request;
 	}
 

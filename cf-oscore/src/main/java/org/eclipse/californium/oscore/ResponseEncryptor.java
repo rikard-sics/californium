@@ -21,8 +21,12 @@ package org.eclipse.californium.oscore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.upokecenter.cbor.CBORObject;
+
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Response;
+
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.option.BlockOption;
 import org.eclipse.californium.cose.Encrypt0Message;
@@ -39,7 +43,6 @@ public class ResponseEncryptor extends Encryptor {
 	 * The logger
 	 */
 	private static final Logger LOGGER = LoggerFactory.getLogger(ResponseEncryptor.class);
-
 	/**
 	 * @param db the context DB
 	 * @param response the response
@@ -57,6 +60,28 @@ public class ResponseEncryptor extends Encryptor {
 	 */
 	public static Response encrypt(OSCoreCtxDB db, Response response, OSCoreCtx ctx, boolean newPartialIV,
 			boolean outerBlockwise, int requestSequenceNr) throws OSException {
+		return encrypt(db, response, ctx, newPartialIV, outerBlockwise, requestSequenceNr, null);
+	}
+	
+	/**
+	 * @param db the context DB
+	 * @param response the response
+	 * @param ctx the OSCore context
+	 * @param newPartialIV boolean to indicate whether to use a new partial IV
+	 *            or not
+	 * @param outerBlockwise boolean to indicate whether the block-wise options
+	 *            should be encrypted or not
+	 * @param requestSequenceNr sequence number (Partial IV) from the request
+	 *            (if encrypting a response)
+	 * @param instructions instructions to provide additional information for encryption
+	 * 
+	 * @return the response with the encrypted OSCore option
+	 * 
+	 * @throws OSException when encryption fails
+	 */
+	public static Response encrypt(OSCoreCtxDB db, Response response, OSCoreCtx ctx, boolean newPartialIV,
+			boolean outerBlockwise, int requestSequenceNr, CBORObject[] instructions) throws OSException {
+
 		if (ctx == null) {
 			LOGGER.error(ErrorDescriptions.CTX_NULL);
 			throw new OSException(ErrorDescriptions.CTX_NULL);
@@ -89,13 +114,23 @@ public class ResponseEncryptor extends Encryptor {
 			options.removeBlock1();
 		}
 
-		byte[] confidential = OSSerializer.serializeConfidentialData(options, response.getPayload(), realCode);
+		OptionSet[] optionsUAndE = OptionJuggle.filterOptions(options);
+
+		OptionSet promotedOptions = OptionJuggle.promotion(optionsUAndE[0], true, instructions);
+		optionsUAndE[1] = OptionJuggle.merge(optionsUAndE[1], promotedOptions);	
+
+		byte[] confidential = OSSerializer.serializeConfidentialData(optionsUAndE[1], response.getPayload(), realCode);
+
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
 		byte[] cipherText = encryptAndEncode(enc, ctx, response, newPartialIV, requestSequenceNr);
+
 		compression(ctx, cipherText, response, newPartialIV);
 
-		options = response.getOptions();
-		response.setOptions(OptionJuggle.prepareUoptions(options));
+		byte[] oscoreOption = response.getOptions().getOscore();
+
+		// here the U options are prepared
+		response.setOptions(OptionJuggle.postInstruction(optionsUAndE[0], instructions));
+		response.getOptions().setOscore(oscoreOption);
 
 		if (outerBlockwise) {
 			response.setOptions(response.getOptions().setBlock1(block1Option));
@@ -105,7 +140,7 @@ public class ResponseEncryptor extends Encryptor {
 		if (newPartialIV) {
 			ctx.increaseSenderSeq();
 		}
-		
+
 		return response;
 	}
 }

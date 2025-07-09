@@ -20,8 +20,11 @@
 package org.eclipse.californium.oscore;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
@@ -31,9 +34,16 @@ import org.eclipse.californium.core.coap.OptionNumberRegistry;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
+import org.eclipse.californium.core.coap.option.OpaqueOption;
+import org.eclipse.californium.core.coap.option.StandardOptionRegistry;
 import org.eclipse.californium.core.coap.option.StringOption;
+import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.oscore.group.InstructionIDRegistry;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.upokecenter.cbor.CBORObject;
 
 /**
  * 
@@ -46,7 +56,7 @@ public class OptionJuggle {
 	 * The logger
 	 */
 	private static final Logger LOGGER = LoggerFactory.getLogger(OptionJuggle.class);
-	
+
 	private static List<Integer> allEOptions = populateAllEOptions();
 
 	private static List<Integer> populateAllEOptions() {
@@ -69,6 +79,423 @@ public class OptionJuggle {
 		return allEOptions;
 	}
 
+	public static boolean hasProxyRelatedOptions(OptionSet options) {
+		if (hasProxySchemeAndUri(options) 
+				|| options.hasProxyUri()
+				/*|| options.hasProxyCri()*/
+				|| hasUriPathHostPort(options)) {
+			return true;
+		}
+		else return false;
+	}
+
+	public static boolean hasProxyUriOrCriOptions(OptionSet options) {
+		if (options.hasProxyUri() /*|| options.hasProxyCri()*/) {
+			return true;
+		}
+		else return false;
+	}
+
+	public static boolean hasProxySchemeAndUri(OptionSet options) {
+		if ((options.hasProxyScheme() /* || options.hasProxySchemeNumber()*/) && 
+				(options.hasUriHost() || options.hasUriPort())) {
+			return true;
+		}
+		else return false;
+	}
+
+	public static boolean hasUriPathHostPort(OptionSet options) {
+		if (options.hasUriHost() || options.hasUriPort() || options.getURIPathCount() > 0) {
+			return true;
+		}
+		else return false;
+	}
+
+	public static OptionSet postInstruction(OptionSet uOptions, CBORObject[] instructions) {
+		boolean instructionsExists = Objects.nonNull(instructions);
+
+		if (!instructionsExists) return uOptions;
+
+		CBORObject instruction = null;
+		int index = -1;
+
+		if (instructionsExists) { 
+			index = instructions[1].ToObject(int.class);
+			instruction = instructions[index];
+		}
+
+		CBORObject postSet = instruction.get(InstructionIDRegistry.PostSet);
+
+		if (postSet == null) return uOptions;
+
+		if (postSet.size() == 0) return uOptions;
+
+		Collection<CBORObject> collection = postSet.getKeys();
+
+		for (CBORObject key : collection) {
+
+			int optionNumber = key.ToObject(int.class);
+			// get encoded value(s)
+			CBORObject values = postSet.get(optionNumber);
+
+			switch (optionNumber) {
+			case OptionNumberRegistry.URI_HOST:
+				// check if it already exists as a uOption
+				if (uOptions.hasUriHost()) {
+					// if it does, runtimeException
+					throw new RuntimeException("Option to be added already exists as an option in the message!");
+				}
+
+				// put in variable
+				String uriHost = values.ToObject(String.class);
+
+				// set post instruction
+				uOptions.setUriHost(uriHost);
+
+				break;
+			case OptionNumberRegistry.OBSERVE:
+				// check if it already exists as a uOption
+				if (uOptions.hasObserve()) {
+					// if it does, runtimeException
+					throw new RuntimeException("Option to be added already exists as an option in the message!");
+				}
+
+				// put in variable
+				int sequenceNumber = values.ToObject(int.class);	
+
+				// set post instruction
+				uOptions.setObserve(sequenceNumber);
+
+				break;
+			case OptionNumberRegistry.URI_PORT:
+				// check if it already exists as a uOption
+				if (uOptions.hasUriPort()) {
+					// if it does, runtimeException
+					throw new RuntimeException("Option to be added already exists as an option in the message!");
+				}
+
+				// put in variable
+				int port = values.ToObject(int.class);
+
+				// set post instruction
+				uOptions.setUriPort(port);
+
+				break;
+			case OptionNumberRegistry.OSCORE:
+				throw new IllegalArgumentException("OSCORE is not allowed as an option in the post-set!");
+
+			case OptionNumberRegistry.MAX_AGE:
+
+				// check if it already exists as a uOption
+				if (uOptions.hasMaxAge()) {
+					// if it does, runtimeException
+					throw new RuntimeException("Option to be added already exists as an option in the message!");
+				}
+
+				// put in variable
+				long age = values.ToObject(long.class);
+
+				// set post instruction
+				uOptions.setMaxAge(age);
+				break;
+			case OptionNumberRegistry.BLOCK2:
+				// TODO: implement
+				throw new IllegalArgumentException("Option not yet implemented");
+				//break;
+			case OptionNumberRegistry.BLOCK1:
+				// TODO: implement
+				throw new IllegalArgumentException("Option not yet implemented");
+				//break;
+			case OptionNumberRegistry.SIZE2:
+				// TODO: implement
+				throw new IllegalArgumentException("Option not yet implemented");
+				//break;
+			case OptionNumberRegistry.SIZE1:
+				// TODO: implement
+				throw new IllegalArgumentException("Option not yet implemented");
+				//break;
+			case OptionNumberRegistry.PROXY_URI:
+
+				break;
+			case OptionNumberRegistry.PROXY_SCHEME:
+				// check if it already exists as a uOption
+				if (uOptions.hasProxyScheme()) {
+					// if it does, runtimeException
+					throw new RuntimeException("Option to be added already exists as an option in the message!");
+				}
+
+				// put in variable
+				String proxyScheme = values.ToObject(String.class);
+
+				// set post instruction
+				uOptions.setProxyScheme(proxyScheme);
+
+				break;
+
+			case OptionNumberRegistry.NO_RESPONSE:
+				// check if it already exists as a uOption
+				if (uOptions.hasNoResponse()) {
+					// if it does, runtimeException
+					throw new RuntimeException("Option to be added already exists as an option in the message!");
+				}
+
+				// put in variable
+				int noResponse = values.ToObject(int.class);
+
+				// set post instruction
+				uOptions.setNoResponse(noResponse);
+				break;
+			default:
+				throw new IllegalArgumentException("Option is not class U or unrecognized");
+			}
+		}
+
+		return uOptions;
+
+	}
+	public static OptionSet promotion(OptionSet options, boolean isResponse, CBORObject[] instructions) {
+		OptionSet result = new OptionSet();
+		boolean includes = false;
+		boolean instructionsExists = Objects.nonNull(instructions);
+		CBORObject instruction = null;
+		int index = -1;
+		int toTouch = 0;
+		int timesTouched = 0;
+		
+		if (options.hasProxyScheme() /* || options.hasProxySchemeNumber()*/) {
+			includes = true;
+		}
+
+		if (instructionsExists) { 
+			index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
+			instruction = instructions[index];
+
+			CBORObject preSet = instruction.get(InstructionIDRegistry.PreSet);
+			if (preSet != null) {
+				toTouch = instruction.get(InstructionIDRegistry.PreSet).size();
+			}
+		}
+
+		for (Option o : options.asSortedList()) {
+
+			switch (o.getNumber()) {
+			/* Class U ONLY options */
+			case OptionNumberRegistry.OSCORE:
+				/* 
+				 * Always promote the OSCORE option if it is a response
+				 * the logic for when not to encrypt a response is in 
+				 * the ObjectSecurityLayer, before calling prepareResponse
+				 */
+				if (isResponse || !Arrays.equals(((OpaqueOption) o).getValue(), Bytes.EMPTY)) {
+					result.addOption(o);
+					options.removeOscore();
+					break;
+				}
+			case OptionNumberRegistry.URI_HOST:
+			case OptionNumberRegistry.URI_PORT:
+			case OptionNumberRegistry.PROXY_SCHEME:
+			case OptionNumberRegistry.PROXY_URI:
+				// Does it have instructions?
+				if (instructionsExists)  {
+					boolean[] promotionAnswers = OptionEncoder.extractPromotionAnswers(o.getNumber(), instruction);
+
+					boolean promoted = false;
+					if (promotionAnswers != null) {
+						promoted = processPromotion(o, promotionAnswers, includes);
+						timesTouched++;
+					}
+
+					if (promoted) {
+						result.addOption(o);
+						switch (o.getNumber()) {
+						case OptionNumberRegistry.URI_HOST:
+							options.removeUriHost();
+							break;
+						case OptionNumberRegistry.URI_PORT:
+							options.removeUriPort();
+							break;
+						case OptionNumberRegistry.PROXY_SCHEME:
+							options.removeProxyScheme();
+							break;
+						case OptionNumberRegistry.PROXY_URI:
+							options.removeProxyUri();
+							break;
+						}
+						break;
+					}
+					// keep as is if not promoted, i.e. Class U
+				}
+				else {
+					// if no instructions, the default is to keep the option as Class U
+				}
+
+			default:
+				/* 
+				 * do nothing for options that are both Class U and E 
+				 * these are already handled in filterOptions
+				 * perhaps use this as a way to have inner only max-age and observe?
+				 */
+				break;
+			}
+		}
+
+		if (toTouch > timesTouched) {
+			throw new RuntimeException("Not all pre set instructions were used");
+		}
+		else if (toTouch < timesTouched) {
+			throw new RuntimeException("There are pre set instructions that are unused");
+			// likely because the option for the instruction is not present
+		}
+
+		return result;
+	}
+
+	/**
+	 * Filters all options into Class U and/or E
+	 * @param options set of options to be filtered
+	 * @return 
+	 */
+	public static OptionSet[] filterOptions(OptionSet options) {
+		OptionSet[] result = {
+				new OptionSet(), // Class U options
+				new OptionSet()  // Class E options
+		};
+
+		for (Option o : options.asSortedList()) {
+
+			switch (o.getNumber()) {
+			/* Class U ONLY options*/
+			case OptionNumberRegistry.OSCORE:
+			case OptionNumberRegistry.URI_HOST:
+			case OptionNumberRegistry.URI_PORT:
+			case OptionNumberRegistry.PROXY_SCHEME:
+				// do not encrypt
+				result[0].addOption(o);
+				break;
+			case OptionNumberRegistry.PROXY_URI:
+
+				OptionSet proxyURIOptions = handleProxyURI(o);
+				// create Uri-Path and Uri-Query and add to Class E options
+				// add proxy-uri to Class U options
+				if (proxyURIOptions.getURIPathCount() > 0) {
+					result[1].setUriPath(proxyURIOptions.getUriPathString());
+				}
+				if (proxyURIOptions.getURIQueryCount() > 0) {
+					result[1].setUriQuery(proxyURIOptions.getUriQueryString());
+				}
+				if (proxyURIOptions.hasProxyUri()) {
+					result[0].setProxyUri(proxyURIOptions.getProxyUri());
+				}
+				break;
+				/* Class U and E options */
+			case OptionNumberRegistry.OBSERVE:
+				result[0].addOption(o);
+				result[1].addOption(o);
+				break;
+			case OptionNumberRegistry.MAX_AGE:
+				// create outer max age option that is 0, and keep inner the same
+				result[0].addOption(StandardOptionRegistry.MAX_AGE.create(0));
+				result[1].addOption(o);
+				break;
+				/* Class E options*/
+			default: 
+				result[1].addOption(o);
+			}
+		}
+		return result;
+	}
+
+	public static OptionSet handleProxyURIInstruction(OptionSet options, CBORObject[] instructions) {
+		if (Objects.nonNull(instructions)) {
+			int index = instructions[1].ToObject(int.class);
+			CBORObject instruction = instructions[index];
+
+			CBORObject postSet = instruction.get(InstructionIDRegistry.PostSet);
+
+			if (postSet == null || postSet.size() == 0) return options;
+
+			CBORObject value = postSet.get(StandardOptionRegistry.PROXY_URI.getNumber());
+
+			if (value == null) return options;
+
+			String proxyUri = value.ToObject(String.class);
+
+			Option option = StandardOptionRegistry.PROXY_URI.create(proxyUri);
+
+			OptionSet proxyURIOptions = handleProxyURI(option);
+
+			// create Uri-Path and Uri-Query and add to Class E options
+			// add proxy-uri to Class U options
+
+			if (proxyURIOptions.getURIPathCount() > 0 && options.getURIPathCount() > 0) {
+				throw new RuntimeException("Tried to add Uri-Path option through Proxy-Uri, but it already exists as an option in the message!");
+			}
+			else if (proxyURIOptions.getURIPathCount() > 0) {
+				options.setUriPath(proxyURIOptions.getUriPathString());
+			}
+
+			if (proxyURIOptions.getURIQueryCount() > 0 && options.getURIQueryCount() > 0) {
+				throw new RuntimeException("Tried to add Uri-Query option through Proxy-Uri, but it already exists as an option in the message!");
+			}
+			else if (proxyURIOptions.getURIQueryCount() > 0) { 
+				options.setUriQuery(proxyURIOptions.getUriQueryString());
+			}
+
+			if (options.hasProxyUri() && proxyURIOptions.hasProxyUri()) {
+				throw new RuntimeException("Option to be added already exists as an option in the message!");
+			}
+			else if (proxyURIOptions.hasProxyUri()) {
+				options.setProxyUri(proxyURIOptions.getProxyUri());
+			}
+		}
+		return options;
+	}
+
+	public static OptionSet handleProxyURI(Option option) {
+		OptionSet result = new OptionSet();
+		String EProxyUri = ((StringOption)option).getStringValue();
+		String UProxyUri = EProxyUri;
+
+		EProxyUri = EProxyUri.replace("coap://", "");
+		EProxyUri = EProxyUri.replace("coaps://", "");
+
+		int i = EProxyUri.indexOf('/');
+		boolean hasPathOrQuery = false;
+		if (i >= 0) {
+			hasPathOrQuery = true;
+
+			UProxyUri = EProxyUri.substring(0, i);
+			EProxyUri = EProxyUri.substring(i + 1, EProxyUri.length());
+		} 
+		if (!UProxyUri.contains("coap://") && !UProxyUri.contains("coaps://")) {
+			UProxyUri = "coap://" + UProxyUri;
+		}
+		result.setProxyUri(UProxyUri);
+
+		if (!hasPathOrQuery) {
+			return result;
+		}
+
+		i = EProxyUri.indexOf("?");
+		String uriPath = EProxyUri;
+		String uriQuery = null;
+		if (i >= 0) {
+			uriPath = EProxyUri.substring(0, i);
+			uriQuery = EProxyUri.substring(i + 1, EProxyUri.length());
+		}
+
+		if (uriPath != null) {
+			result.setUriPath(uriPath);
+		}
+
+		if (uriQuery != null) {
+			String[] uriQueries = uriQuery.split("&");
+			for (int idx = 0; idx < uriQueries.length; idx++) {
+				result.setUriQuery(uriQueries[idx]);
+			}
+		}
+		return result;
+	}
 	/**
 	 * Prepare a set or original CoAP options for unprotected use with OSCore.
 	 * 
@@ -76,6 +503,7 @@ public class OptionJuggle {
 	 * 
 	 * @return the OSCore-U option set
 	 */
+	// needed for tests
 	public static OptionSet prepareUoptions(OptionSet options) {
 		boolean hasProxyUri = options.hasProxyUri();
 		boolean hasUriHost = options.hasUriHost();
@@ -83,7 +511,6 @@ public class OptionJuggle {
 		boolean hasProxyScheme = options.hasProxyScheme();
 		boolean hasMaxAge = options.hasMaxAge();
 		boolean hasObserve = options.hasObserve();
-		// hmmm, has OSCORE?
 
 		OptionSet ret = new OptionSet();
 
@@ -127,6 +554,7 @@ public class OptionJuggle {
 		return ret;
 	}
 
+
 	/**
 	 * Prepare a set or original CoAP options for encryption with OSCore.
 	 * 
@@ -134,12 +562,14 @@ public class OptionJuggle {
 	 * 
 	 * @return the option to be encrypted
 	 */
+	// needed for tests
 	public static OptionSet prepareEoptions(OptionSet options) {
 		OptionSet ret = new OptionSet();
 
-		for (Option o : options.asSortedList()) {
-			switch (o.getNumber()) {
 
+		for (Option o : options.asSortedList()) {
+
+			switch (o.getNumber()) {
 			case OptionNumberRegistry.URI_HOST:
 			case OptionNumberRegistry.URI_PORT:
 			case OptionNumberRegistry.PROXY_SCHEME:
@@ -178,8 +608,11 @@ public class OptionJuggle {
 				break;
 			default: // default is encrypt
 				ret.addOption(o);
+
 			}
+
 		}
+
 		return ret;
 	}
 
@@ -192,13 +625,81 @@ public class OptionJuggle {
 	public static OptionSet discardEOptions(OptionSet optionSet) {
 		LOGGER.trace("Removing inner only E options from the outer options");
 		OptionSet result = new OptionSet();
-		
+
 		for (Option opt : optionSet.asSortedList()) {
 			if (!allEOptions.contains(opt.getNumber())) {
 				result.addOption(opt);
 			}
 		}
 		return result;
+	}
+
+	private static boolean processPromotion(Option option, boolean[] answers, boolean includes) {
+		// did I add OPT to M?
+		if (answers[0]) { 
+			// is x a consumer of opt?
+			return processIsXConsumer(option, answers, includes);
+		}
+		else return processIsXNextHopOrNotImmediateNextConsumer(option, answers, includes);
+	}
+
+	private static boolean processIsXConsumer(Option option, boolean[] answers, boolean includes) {
+		// is x a consumer of opt?
+		if (answers[1]) {
+			return processIsXNextImmediateNextConsumer(option, answers, includes);
+		}
+		else {
+			return processIsXNextHopOrNotImmediateNextConsumer(option, answers, includes);
+		}
+	}
+	private static boolean processIsXNextHopOrNotImmediateNextConsumer(Option option, boolean[] answers, boolean includes) {
+		// is x my next hop OR is next hop not the immediate consumer of the option
+		if (answers[3]) {
+			return processIsOptionURIHostOrURIPort(option, answers, includes);
+		}
+		else return false;
+	}
+
+
+
+	private static boolean processIsXNextImmediateNextConsumer(Option option, boolean[] answers, boolean includes) {
+		// is x the immediate consumer of the option
+		if (answers[2]) { 
+			return processXNeedBeforeDecryption(option, answers, includes);
+		}
+		else return false;
+
+
+	}
+
+	private static boolean processXNeedBeforeDecryption(Option option, boolean[] answers, boolean includes) {
+
+		if (answers[4]) {
+			return false;
+		}
+		else {
+			return processIsOptionURIHostOrURIPort(option, answers, includes);
+		}
+	}
+
+	private static boolean processIsOptionURIHostOrURIPort(Option option, boolean[] answers, boolean includes) {
+
+		switch (option.getNumber()) {
+		case OptionNumberRegistry.URI_HOST:
+		case OptionNumberRegistry.URI_PORT:
+			return processMIncludeProxySchemeOrProxySchemeNumber(option, answers, includes);
+		default:
+			return true;
+		}
+	}
+
+	private static boolean processMIncludeProxySchemeOrProxySchemeNumber(Option option, boolean[] answers, boolean includes) {
+		if (includes) {
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 
 	/**
@@ -291,7 +792,7 @@ public class OptionJuggle {
 		newMessage.setDuplicate(oldMessage.isDuplicate());
 		newMessage.setNanoTimestamp(oldMessage.getNanoTimestamp());
 	}
-	
+
 	/**
 	 * Merges two optionSets and returns the merge. Priority is eOptions
 	 * 
