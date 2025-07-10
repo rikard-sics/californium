@@ -111,6 +111,11 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		this.proxyable = proxyable;
 		this.layerLimit = layerLimit;
 	}
+	
+	@Override
+	public synchronized void size() {
+		System.out.println("contextmap is size: " + this.contextMap.size());
+	}
 
 	@Override
 	public synchronized void removeInstructions(Token token) {

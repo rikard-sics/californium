@@ -41,8 +41,7 @@
 		<dependency> <!-- Rikard: Added this dependency -->
 	            <groupId>net.i2p.crypto</groupId>
 	            <artifactId>eddsa</artifactId>
-	            <version>0.2.0</version>
-	            <type>jar</type>
+	            <version>${eddsa.version}</version>
         </dependency>
 		<dependency> <!-- Rikard: Added this dependency (Curve25519) -->
 	            <groupId>org.bouncycastle</groupId>

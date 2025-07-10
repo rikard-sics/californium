@@ -157,5 +157,8 @@ public interface OSCoreCtxDB {
 	 * @param token token to be removed
 	 */
 	public void removeToken(Token token);
+	
+	// REMOVE
+	void size();
 
 }

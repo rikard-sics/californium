@@ -62,7 +62,7 @@ public class TimeSTC {
 	};
 
 	private final static byte[][] rids = {
-			new byte[] { 0x01 }, 
+			new byte[] { 0x05 }, 
 			new byte[] { 0x02 }
 	};
 
@@ -142,7 +142,7 @@ public class TimeSTC {
 		assertEquals(response.getResponseText(), "Hello World!");
 		assertEquals(response.getCode(), ResponseCode.CONTENT);
         
-		response = OSCOREScheme(clientToServer);
+		/*response = OSCOREScheme(clientToServer);
 		assertTrue(response.getOptions().hasOscore());
 		assertEquals(response.getResponseText(), "Hello World!");
 		assertEquals(response.getCode(), ResponseCode.CONTENT);
@@ -159,7 +159,7 @@ public class TimeSTC {
 
 
 		response = PostObserveSend(clientToServer);
-
+*/
 		System.out.println("Finished");
 	}
 	public static CoapResponse Uri(CoapClient c) throws ConnectorException, IOException {

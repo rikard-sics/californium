@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
@@ -135,8 +136,18 @@ public abstract class Decryptor {
 			nonce = ctx.getNonceHandover();
 		}
 
+		System.out.println("Decrypting incoming " + message.getClass().getSimpleName());
+		System.out.println("PartialIV " + Utils.toHexString(partialIV));
+		System.out.println("Nonce " + Utils.toHexString(nonce));
+		System.out.println("Common IV " + Utils.toHexString(ctx.getCommonIV()));
+		// + import 
+
 		byte[] plaintext = null;
 		byte[] key = ctx.getRecipientKey();
+
+		System.out.println("AAD " + Utils.toHexString(aad));
+		System.out.println("Recipient Key " + Utils.toHexString(ctx.getRecipientKey()));
+		System.out.println("Key used " + Utils.toHexString(key));
 
 		enc.setExternal(aad);
 			

@@ -22,7 +22,7 @@ package org.eclipse.californium.oscore;
 import java.io.ByteArrayOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.OptionSet;
@@ -98,7 +98,16 @@ public abstract class Encryptor {
 				aad = OSSerializer.serializeAAD(CoAP.VERSION, ctx.getAlg(), requestSequenceNr, ctx.getRecipientId(),
 						message.getOptions());
 			}
-
+			System.out.println("Encrypting outgoing " + message.getClass().getSimpleName());
+			System.out.println("Plaintext " + Utils.toHexString(enc.GetContent()));
+			System.out.println("PartialIV " + Utils.toHexString(partialIV));
+			System.out.println("Nonce " + Utils.toHexString(nonce));
+			System.out.println("Common IV " + Utils.toHexString(ctx.getCommonIV()));
+			// + import
+			System.out.println("AAD " + Utils.toHexString(aad));
+			System.out.println("Sender Key " + Utils.toHexString(ctx.getSenderKey()));
+			System.out.println("Key used " + Utils.toHexString(key));
+			
 			if (ctx.getContextRederivationPhase() == PHASE.SERVER_PHASE_2 && ctx.getNonceHandover() != null) {
 				nonce = ctx.getNonceHandover();
 			} else if (ctx.getContextRederivationPhase() == PHASE.CLIENT_PHASE_1

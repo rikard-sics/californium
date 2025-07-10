@@ -48,7 +48,7 @@ public class SimpleProxyServer {
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 
 	private final static byte[][] sids = {
-			new byte[] { 0x01 }, 
+			new byte[] { 0x05 }, 
 			new byte[] { 0x03 }
 	};
 

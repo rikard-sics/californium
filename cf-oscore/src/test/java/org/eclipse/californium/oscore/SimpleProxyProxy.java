@@ -226,7 +226,7 @@ public class SimpleProxyProxy {
 		db.addContext("coap://" + clientIP + ":" + Objects.toString(CoapProxyPort + 1), ctxToClient); 
 
 		OSCoreCtx ctxToServer = new OSCoreCtx(master_secret, true, alg, sids[1], rids[1], kdf, 32, master_salt, idcontexts[1], MAX_UNFRAGMENTED_SIZE);
-		db.addContext("coap://" + serverIP /*+ ":" + Objects.toString(i)*/, ctxToServer);
+		//db.addContext("coap://" + serverIP /*+ ":" + Objects.toString(i)*/, ctxToServer);
 
 		OSCoreCoapStackFactory.useAsDefault(db);
 		Configuration outgoingConfig = new Configuration(config);

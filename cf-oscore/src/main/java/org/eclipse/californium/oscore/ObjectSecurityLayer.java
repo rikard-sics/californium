@@ -205,6 +205,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	@Override
 	public void sendRequest(final Exchange exchange, final Request request) {
 		Request req = request;
+		ctxDb.size();
 
 		if (shouldProtectRequest(request)) {
 			try {
@@ -551,6 +552,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	@Override
 	public void receiveRequest(Exchange exchange, Request request) {
 
+		System.out.println("received request: " + request);
 		// removes any previous instructions that were built while decrypting the request, 
 		// because there is no guarantee the request is encrypted the same way as the first time.
 		ctxDb.removeInstructions(request.getToken());
@@ -781,6 +783,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			// save outer OSCORE option
 			requestOscoreOption = request.getOptions().getOscore();
 
+			ctxDb.size();
 			// decrypt
 			request = prepareReceive(ctxDb, request, ctx);
 
