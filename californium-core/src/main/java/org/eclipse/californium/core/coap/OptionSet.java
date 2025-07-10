@@ -90,6 +90,7 @@ public final class OptionSet {
 	private IntegerOption size2;
 	private IntegerOption observe;
 	private OpaqueOption oscore;
+	private EmptyOption edhoc; // EDHOC
 	private NoResponseOption no_response;
 
 	// Arbitrary options
@@ -123,6 +124,7 @@ public final class OptionSet {
 		size2 = null;
 		observe = null;
 		oscore = null;
+		edhoc = null; // EDHOC
 		no_response = null;
 
 		others = null; // new LinkedList<>();
@@ -160,6 +162,7 @@ public final class OptionSet {
 		size2 = origin.size2;
 		observe = origin.observe;
 		oscore = origin.oscore;
+		edhoc = origin.edhoc;  // EDHOC
 		no_response = origin.no_response;
 		others = copyList(origin.others);
 	}
@@ -189,6 +192,7 @@ public final class OptionSet {
 		size2 = null;
 		observe = null;
 		oscore = null;
+		edhoc = null; // EDHOC
 		no_response = null;
 		clear(others);
 	}
@@ -1646,6 +1650,33 @@ public final class OptionSet {
 		return this;
 	}
 
+	// EDHOC
+	/**
+	 * Checks if the EDHOC option is present.
+	 * 
+	 * @return {@code true}, if present
+	 */
+	public boolean hasEdhoc() {
+		return edhoc != null;
+	}
+
+	// EDHOC
+	/**
+	 * Sets or unsets the EDHOC option.
+	 * 
+	 * @param present the presence of the option
+	 * @return this OptionSet for a fluent API.
+	 */
+	public OptionSet setEdhoc() {
+		edhoc = StandardOptionRegistry.EDHOC.create();
+		return this;
+	}
+
+	public OptionSet removeEdhoc() {
+		this.edhoc = null;
+		return this;
+	}
+
 	/**
 	 * Gets the NoResponse option.
 	 * 
@@ -1855,6 +1886,11 @@ public final class OptionSet {
 
 		if (hasSize1())
 			options.add(size1);
+
+		// EDHOC
+		if (hasEdhoc())
+			options.add(edhoc);
+
 		if (hasNoResponse())
 			options.add(no_response);
 
@@ -1979,6 +2015,9 @@ public final class OptionSet {
 			break;
 		case OptionNumberRegistry.OSCORE:
 			oscore = (OpaqueOption) option;
+			break;
+		case OptionNumberRegistry.EDHOC: // EDHOC
+			edhoc = (EmptyOption) option;
 			break;
 		case OptionNumberRegistry.NO_RESPONSE:
 			no_response = (NoResponseOption) option;
