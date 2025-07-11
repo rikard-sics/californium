@@ -552,7 +552,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	@Override
 	public void receiveRequest(Exchange exchange, Request request) {
 
-		System.out.println("received request: " + request);
 		// removes any previous instructions that were built while decrypting the request, 
 		// because there is no guarantee the request is encrypted the same way as the first time.
 		ctxDb.removeInstructions(request.getToken());
