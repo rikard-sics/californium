@@ -35,12 +35,16 @@ import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.CoAP.Type;
+import org.eclipse.californium.core.coap.Option;
+import org.eclipse.californium.core.coap.OptionNumberRegistry;
+import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSException;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
@@ -106,6 +110,41 @@ public class ClientEdhocExecutor {
 												 boolean OSCORE_EDHOC_COMBINED, String edhocCombinedRequestURI,
 												 Code combinedRequestAppCode, Type combinedRequestAppType,
 												 byte[] combinedRequestAppPayload) {
+		return startEdhocExchangeAsInitiator(authenticationMethod, peerSupportedCipherSuites, ownIdCreds, edhocEndpointInfo, OSCORE_EDHOC_COMBINED, 
+				edhocCombinedRequestURI, combinedRequestAppCode, combinedRequestAppType, combinedRequestAppPayload, null, null);
+	}
+	
+	// Extended version, for controlling the use of the EDHOC + OSCORE combined request
+    /**
+     *  Start EDHOC as a CoAP client, i.e., by sending EDHOC message_1 as a CoAP request
+     *
+     * @param authenticationMethod   The authentication method to include in EDHOC message_1
+     * @param peerSupportedCipherSuites   The EDHOC cipher suites supported by the other peer, as far as this peer knows
+     * @param ownIdCreds   Each element is the ID_CRED_X used for an authentication credential associated to this peer
+     * @param edhocEndpointInfo   The set of information for this EDHOC endpoint
+     * @param OSCORE_EDHOC_COMBINED   True if the EDHOC + OSCORE combined request has to be used, or false otherwise
+     * @param edhocCombinedRequestURI   URI of the application resource to target with the EDHOC + OSCORE combined request
+     * @param combinedRequestAppCode   CoAP method to use for the application request sent within
+     * 								   an EDHOC + OSCORE combined request
+     * @param combinedRequestAppType   CoAP message type to use (CON or NON) for the application request
+     *                                 sent within an EDHOC + OSCORE combined request
+     * @param combinedRequestAppPayload   Payload of the application request sent within
+     *                                    an EDHOC + OSCORE combined request. It can be null
+     * @param OscoreOption	the OscoreOption that is used to control the encryption and may be used to control 
+     * 						additional encryptions and options when EDHOC is used through a proxy that is encrypted to (?)
+     * @param options options that are to be used when the client wants to use a proxy between itself and the server
+     * 	uses: proxy-uri or proxy-scheme and uri host, uri port.
+     * @return  The result from this EDHOC execution.
+     *          When EDHOC is used for OSCORE, it is true if EDHOC has completed successfully and the
+     *          OSCORE Security Context has been correctly derived and installed. Otherwise, it is false.
+     *          When EDHOC is not used for OSCORE, it is true if EDHOC has completed successfully. Otherwise, it is false.
+     */
+	public boolean startEdhocExchangeAsInitiator(final int authenticationMethod, List<Integer> peerSupportedCipherSuites,
+			 final Set<CBORObject> ownIdCreds, EdhocEndpointInfo edhocEndpointInfo,
+			 boolean OSCORE_EDHOC_COMBINED, String edhocCombinedRequestURI,
+			 Code combinedRequestAppCode, Type combinedRequestAppType,
+			 byte[] combinedRequestAppPayload, byte[] OscoreOption, OptionSet options) {
+
 
 		HashMap<CBORObject, EdhocSession> edhocSessions = edhocEndpointInfo.getEdhocSessions();
 		Set<CBORObject> usedConnectionIds = edhocEndpointInfo.getUsedConnectionIds();
@@ -114,16 +153,80 @@ public class ClientEdhocExecutor {
 		
 		String edhocURI = edhocEndpointInfo.getUri();
 		AppProfile appProfile = edhocEndpointInfo.getAppProfiles().get(edhocURI);
+		// up is real/actual server uri.
+		// options contain proxy information
 		
+		// // set addressendpointcontext ?
+		
+		// CoapClient targets proxy, add proxy options for every request.
 		URI targetUri = null;
-		try {
-			targetUri = new URI(edhocURI);
-		} catch (URISyntaxException e) {
-			System.err.println("Invalid URI: " + e.getMessage());
-			return false;
+		String ProxyURI = null;
+		String scheme = null;
+		String host = null;
+		int port = -1;
+		if (options != null) {
+			URI temp;
+			try {
+				temp = new URI(edhocURI);
+			} catch (URISyntaxException e) {
+				System.err.println("Invalid URI: " + e.getMessage());
+				return false;
+			}
+			
+			if (options.hasProxyUri()) {
+				try {
+					targetUri = new URI(options.getProxyUri());
+				} catch (URISyntaxException e) {
+					System.err.println("Invalid URI: " + e.getMessage());
+					return false;
+				}
+			}
+			if (options.hasProxyScheme() && options.hasUriHost()) {
+				scheme = options.getProxyScheme();
+				host = options.getUriHost();
+				port = options.hasUriPort() ? options.getUriPort() : 5683;
+
+				
+				String path = temp.getPath();
+				
+				try {
+					targetUri = new URI(scheme, null, host, port, path, null, null);
+				} catch (URISyntaxException e) {
+					System.err.println("Invalid URI: " + e.getMessage());
+					return false;
+				}
+				
+			}
+			// edhocuri no need path.
+			ProxyURI = edhocURI; //.replace(".well-known/edhoc","");
+			System.out.println(edhocURI);
+			System.out.println(ProxyURI);
 		}
+		else {
+			try {
+				targetUri = new URI(edhocURI);
+			} catch (URISyntaxException e) {
+				System.err.println("Invalid URI: " + e.getMessage());
+				return false;
+			}
+		}
+		// if missing uripath
+		/*if (targetUri.getPath().equals("/")) {
+			System.out.println("no path");
+			try {
+				targetUri = new URI(targetUri.getScheme(), null, targetUri.getHost(), targetUri.getPort(), "/.well-known/edhoc", null, null);
+			} catch (URISyntaxException e) {
+				System.err.println("Invalid URI: " + e.getMessage());
+				return false;
+			}
+		}
+		else {
+			System.out.println("path?");
+			System.out.println(targetUri.getPath());
+		}*/
+		System.out.println("target uri is: " + targetUri);
 		CoapClient client = new CoapClient(targetUri);
-		
+
 		/*
 		// Simple sending of a GET request
 		
@@ -238,6 +341,36 @@ public class ClientEdhocExecutor {
 		Request edhocMessageReq = new Request(Code.POST, Type.CON);
 		edhocMessageReq.getOptions().setContentFormat(Constants.APPLICATION_CID_EDHOC_CBOR_SEQ);
 		edhocMessageReq.setPayload(nextPayload);
+
+		if (OscoreOption != null) {
+			edhocMessageReq.getOptions().setOscore(OscoreOption);
+		}
+		if (options != null) {
+			/*for (Option o : options.asSortedList()) {
+				switch (o.getNumber()) {
+				case OptionNumberRegistry.PROXY_URI:
+					edhocMessageReq.getOptions().setProxyUri(options.getProxyUri());
+					break;
+				case OptionNumberRegistry.PROXY_SCHEME:
+					edhocMessageReq.getOptions().setProxyScheme(options.getProxyScheme());
+					break;
+				case OptionNumberRegistry.URI_HOST:
+					edhocMessageReq.getOptions().setUriHost(options.getUriHost());
+					break;
+				case OptionNumberRegistry.URI_PORT:
+					edhocMessageReq.getOptions().setUriPort(options.getUriPort());
+					break;
+				default:
+					// illegal argument?
+					break;
+				}
+			}*/
+			edhocMessageReq.getOptions().setProxyScheme(scheme);
+			edhocMessageReq.getOptions().setUriPort(port);
+
+			//edhocMessageReq.getOptions().setProxyUri(ProxyURI);
+		}
+		System.out.println(edhocMessageReq);
 		
 		System.out.println("Sent EDHOC Message 1\n");
 		
@@ -263,7 +396,7 @@ public class ClientEdhocExecutor {
 		
 		if (edhocMessageResp != null)
 		responsePayload = edhocMessageResp.getPayload();
-		
+		System.out.println(Utils.prettyPrint(edhocMessageResp));
 		if (responsePayload == null) {
 			discontinue = true;
 		}
@@ -474,6 +607,8 @@ public class ClientEdhocExecutor {
 					}
 					edhocMessageReq2.getOptions().setOscore(Bytes.EMPTY);
 					
+					// TODO logic for appending combined with provided oscore option
+					
 					edhocMessageReq2.getOptions().setEdhoc();
 					session.setMessage3(nextPayload);
 					
@@ -561,6 +696,16 @@ public class ClientEdhocExecutor {
 						// The request to send is an EDHOC Error Message
 						edhocMessageReq2.setConfirmable(true);
 						edhocMessageReq2.setURI(targetUri);
+
+						if (OscoreOption != null) {
+							edhocMessageReq2.getOptions().setOscore(OscoreOption);
+						}
+						if (options != null) {
+							edhocMessageReq2.getOptions().setProxyScheme(scheme);
+							edhocMessageReq2.getOptions().setUriPort(port);
+
+						}
+
 						edhocMessageResp2 = client.advanced(edhocMessageReq2);
 						client.shutdown();
 						return false;
@@ -568,6 +713,16 @@ public class ClientEdhocExecutor {
 					// The request to send is EDHOC message_3
 					session.setCurrentStep(Constants.EDHOC_SENT_M3);
 					edhocMessageReq2.getOptions().setContentFormat(Constants.APPLICATION_CID_EDHOC_CBOR_SEQ);
+
+					if (OscoreOption != null) {
+						edhocMessageReq2.getOptions().setOscore(OscoreOption);
+					}
+					if (options != null) {
+						edhocMessageReq2.getOptions().setProxyScheme(scheme);
+						edhocMessageReq2.getOptions().setUriPort(port);
+
+					}
+
 					edhocMessageResp2 = client.advanced(edhocMessageReq2);
 				
 				}
@@ -683,6 +838,15 @@ public class ClientEdhocExecutor {
 						edhocMessageReq3.setPayload(nextMessage);
 						
 						try {
+							if (OscoreOption != null) {
+								edhocMessageReq3.getOptions().setOscore(OscoreOption);
+							}
+							if (options != null) {
+								edhocMessageReq3.getOptions().setProxyScheme(scheme);
+								edhocMessageReq3.getOptions().setUriPort(port);
+
+							}
+
 							edhocMessageResp = client.advanced(edhocMessageReq3);
 						} catch (ConnectorException e) {
 							System.err.println("ConnectorException when sending EDHOC Error Message");

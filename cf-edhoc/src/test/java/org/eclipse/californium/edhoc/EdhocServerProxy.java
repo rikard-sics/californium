@@ -45,6 +45,8 @@ import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
+import org.eclipse.californium.proxy2.ClientEndpoints;
+import org.eclipse.californium.proxy2.ClientSingleEndpoint;
 
 import com.upokecenter.cbor.CBORObject;
 

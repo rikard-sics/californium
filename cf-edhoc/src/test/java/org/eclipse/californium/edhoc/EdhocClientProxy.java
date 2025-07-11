@@ -38,6 +38,8 @@ import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.Type;
+import org.eclipse.californium.core.coap.OptionNumberRegistry;
+import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.elements.AddressEndpointContext;
@@ -47,6 +49,9 @@ import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
+import org.eclipse.californium.oscore.OSCoreCtx;
+import org.eclipse.californium.oscore.OSException;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 
 import com.upokecenter.cbor.CBORObject;
 
@@ -69,7 +74,7 @@ public class EdhocClientProxy {
 	private final static Provider EdDSA = new EdDSASecurityProvider();
 
 	// Set to true if an OSCORE-protected exchange is performed after EDHOC completion
-	private static final boolean POST_EDHOC_EXCHANGE = false;
+	private static final boolean POST_EDHOC_EXCHANGE = true;
 
 	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
 	// Note: the application profile pertaining the EDHOC resource must first indicate support for the combined request 
@@ -159,12 +164,53 @@ public class EdhocClientProxy {
 
 	};
 	
-	// URI of the EDHOC resource
+	// URI of the EDHOC resource on the server
 	private static String edhocURIServer = "coap://localhost/.well-known/edhoc";
 
+	// URI of the EDHOC resource on the proxy
 	private static String edhocURIProxy = "coap://localhost:5685/.well-known/edhoc";
 	
+	private final static CBORObject[] postValuesScheme = {CBORObject.FromObject("coap"), CBORObject.FromObject(5683)};
+
+	private final static int[] optionSetsPostScheme = {OptionNumberRegistry.PROXY_SCHEME, OptionNumberRegistry.URI_PORT};
 	
+	private final static int[] optionSetsScheme = {/*OptionNumberRegistry.URI_PORT,*/ OptionNumberRegistry.URI_HOST, OptionNumberRegistry.PROXY_SCHEME};
+
+	private final static boolean[] URIPORTAnswer = {true, true, true, true, false};
+
+	private final static boolean[] URIHostAnswer = {true, true, true, true, false};
+
+	private final static boolean[] ProxySchemeAnswer = {true, true, true, true, false};
+
+	private final static boolean[][] answerSetsScheme = {/*URIPORTAnswer,*/ URIHostAnswer, ProxySchemeAnswer
+	};
+	
+///////
+	private final static int[][] optionSetsScheme1 = {
+			{}, 
+			{OptionNumberRegistry.URI_PORT, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.PROXY_SCHEME}
+	};
+
+	private final static boolean[] URIPORTAnswer1 = {true, true, true, true, false};
+
+	private final static boolean[] URIHostAnswer1 = {true, true, true, true, false};
+
+	private final static boolean[] ProxySchemeAnswer1 = {true, true, true, true, false};
+
+	private final static boolean[][][] answerSetsScheme1 = {
+			{},
+			{URIPORTAnswer1, URIHostAnswer1, ProxySchemeAnswer1}
+	};
+
+	private final static CBORObject[][] postValuesScheme1 =  {
+			{CBORObject.FromObject("coap"), CBORObject.FromObject("localhost"),CBORObject.FromObject(5683)},
+			{}
+	};
+
+	private final static int[][] optionSetsPostScheme1 = {
+			{OptionNumberRegistry.PROXY_SCHEME, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.URI_PORT}, 
+			{}
+	};
 	// URI of the application resource to target, following an EDHOC execution
 	private static String appRequestURI = "coap://localhost/helloWorld";
 		
@@ -240,6 +286,8 @@ public class EdhocClientProxy {
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		
 		appProfiles.put(edhocURIServer, appProfile);
+		appProfiles.put(edhocURIProxy, appProfile);
+
 		
 		URI uri = null; // URI parameter of the request
 
@@ -282,46 +330,121 @@ public class EdhocClientProxy {
 		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCreds, creds, keyPairs, peerPublicKeys,
 																	peerCredentials, edhocSessions, usedConnectionIds,
 																	supportedCipherSuites, supportedEADs, eadProductionInput,
-																	trustModel, db, edhocURIServer, OSCORE_REPLAY_WINDOW,
+																	trustModel, db, edhocURIProxy, OSCORE_REPLAY_WINDOW,
 																	MAX_UNFRAGMENTED_SIZE, appProfiles);
 		
 		// List of EDHOC cipher suites supported by the other peer, as learned from an
 		// EDHOC error message with ERR_CODE = 1 received as a reply to EDHOC message_1 
-		List<Integer> peerSupportedCipherSuites = new ArrayList<Integer>();
+		List<Integer> peerSupportedCipherSuitesProxy = new ArrayList<Integer>();
 		
 		// Prepare the EDHOC executor and start EDHOC as Initiator
 		ClientEdhocExecutor edhocExecutor = new ClientEdhocExecutor();
-		boolean ret = edhocExecutor.startEdhocExchangeAsInitiator(authenticationMethod, peerSupportedCipherSuites,
+		boolean ret = edhocExecutor.startEdhocExchangeAsInitiator(authenticationMethod, peerSupportedCipherSuitesProxy,
 																  ownIdCreds, edhocEndpointInfo, OSCORE_EDHOC_COMBINED,
 																  edhocCombinedRequestURI, combinedRequestAppCode,
 																  combinedRequestAppType, combinedRequestAppPayload);
+		if (ret == false) {
+			System.err.println("Key establishment through EDHOC has failed");
+			
+			// If the client has received an EDHOC error message with ERR_CODE = 1 as a reply to EDHOC message_1,
+			// then the client can learn the EDHOC cipher suites supported by the server, and start EDHOC again.
+			peerSupportedCipherSuitesProxy = edhocExecutor.getLearnedPeerSupportedCipherSuites();
+			
+			System.exit(-1);
+		}
+		System.out.println("\nEDHOC successfully completed\n");
+
+		//prepare instructions
+		byte[] oscoreoptScheme = CBORObject.FromObject(new byte[0]).EncodeToBytes();
+		byte[] indexScheme = CBORObject.FromObject(2).EncodeToBytes();
+
+		byte[] instruction = Bytes.concatenate(oscoreoptScheme, indexScheme);
+		
+		OSCoreCtx ctx = null;
+		try {
+			ctx = db.getContext(edhocURIProxy);
+			System.out.println("context is: " + ctx);
+		} catch (OSException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		instruction = Bytes.concatenate(instruction, OptionEncoder.set(ctx.getRecipientId(), ctx.getIdContext(), optionSetsScheme ,answerSetsScheme));
+		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(instruction);
+		for (CBORObject in : instructions) {
+			System.out.println(in);
+		}
+		OptionSet options = new OptionSet();
+		options.setProxyScheme("coap");
+		options.setUriHost("localhost");
+		options.setUriPort(5685);
+		
+		// Prepare the set of information for this EDHOC endpoint
+		 edhocEndpointInfo = new EdhocEndpointInfo(idCreds, creds, keyPairs, peerPublicKeys,
+												   peerCredentials, edhocSessions, usedConnectionIds,
+												   supportedCipherSuites, supportedEADs, eadProductionInput,
+												   trustModel, db, edhocURIServer, OSCORE_REPLAY_WINDOW,
+												   MAX_UNFRAGMENTED_SIZE, appProfiles);
+				
+		// List of EDHOC cipher suites supported by the other peer, as learned from an
+		// EDHOC error message with ERR_CODE = 1 received as a reply to EDHOC message_1 
+		List<Integer> peerSupportedCipherSuitesServer = new ArrayList<Integer>();
+		
+		// Prepare the EDHOC executor and start EDHOC as Initiator
+		edhocExecutor = new ClientEdhocExecutor();
+		ret = edhocExecutor.startEdhocExchangeAsInitiator(authenticationMethod, peerSupportedCipherSuitesServer,
+																  ownIdCreds, edhocEndpointInfo, OSCORE_EDHOC_COMBINED,
+																  edhocCombinedRequestURI, combinedRequestAppCode,
+																  combinedRequestAppType, combinedRequestAppPayload,
+																  instruction, options);
 		
 		if (ret == false) {
 			System.err.println("Key establishment through EDHOC has failed");
 			
 			// If the client has received an EDHOC error message with ERR_CODE = 1 as a reply to EDHOC message_1,
 			// then the client can learn the EDHOC cipher suites supported by the server, and start EDHOC again.
-			peerSupportedCipherSuites = edhocExecutor.getLearnedPeerSupportedCipherSuites();
+			peerSupportedCipherSuitesServer = edhocExecutor.getLearnedPeerSupportedCipherSuites();
 			
 			System.exit(-1);
 		}
 		
 		System.out.println("\nEDHOC successfully completed\n");
 		
+		OSCoreCtx ctx2 = null;
+		try {
+			ctx2 = db.getContext("coap://localhost:5683");
+		} catch (OSException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if (ctx2 != null) {
+			System.out.println("not null");
+		}
+		else {
+			System.out.println("null");
+		}
+		
+		OSCoreCtx ctx3 = null;
+		try {
+			ctx3 = db.getContext("coap://localhost:5685");
+		} catch (OSException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if (ctx3 != null) {
+			System.out.println("not null");
+		}
+		else {
+			System.out.println("null");
+		}
+		
 		System.out.println("Sending encrypted to proxy that forwards to server");
 		
-		CoapClient clientToServer = new CoapClient("coap://localhost:5685");
-
-		AddressEndpointContext proxy = new AddressEndpointContext("localhost", 5685);
-
+		CoapClient clientToServer = new CoapClient(edhocURIServer);
 		Request r = new Request(Code.GET);
 		r.getOptions().setOscore(Bytes.EMPTY);
-		r.getOptions().setProxyScheme("coap");
-		r.getOptions().setUriHost("localhost");
-		r.getOptions().setUriPort(5683);
 		r.getOptions().setUriPath("helloWorld");
-		r.setUriIsApplied();
-		r.setDestinationContext(proxy);
+
 		try {
 			CoapResponse response = clientToServer.advanced(r);
 			System.out.println("received payload is: " + Utils.prettyPrint(response));
@@ -329,6 +452,55 @@ public class EdhocClientProxy {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		db.size();
+		clientToServer = new CoapClient(edhocURIProxy);
+		r = new Request(Code.GET);
+		r.getOptions().setOscore(Bytes.EMPTY);
+		
+		try {
+			CoapResponse response = clientToServer.advanced(r);
+			System.out.println("received payload is: " + Utils.prettyPrint(response));
+		} catch (ConnectorException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		System.out.println("starting instructions");
+
+		byte[] oscoreoptScheme2 = CBORObject.FromObject(new byte[0]).EncodeToBytes();
+		byte[] indexScheme2 = CBORObject.FromObject(2).EncodeToBytes();
+
+		byte[] instructionsScheme = Bytes.concatenate(oscoreoptScheme2, indexScheme2);
+		final byte[][] rids = {
+				ctx2.getRecipientId(), 
+				ctx3.getRecipientId()
+		};
+		final byte[][] idcontexts = {
+				null, 
+				null
+		};
+		for (int i = 0; i < rids.length; i++) {
+			instructionsScheme = Bytes.concatenate(instructionsScheme, OptionEncoder.set(rids[i], idcontexts[i], optionSetsScheme1[i], answerSetsScheme1[i], optionSetsPostScheme1[i], postValuesScheme1[i]));
+		}
+		AddressEndpointContext proxy = new AddressEndpointContext("localhost", 5685);
+
+		r = new Request(Code.GET);
+		r.setUriIsApplied();
+		r.setDestinationContext(proxy);
+
+		r.getOptions().setOscore(instructionsScheme);
+		r.getOptions().setUriPath("helloWorld");
+		try {
+			System.out.println("request is: " + r);
+			CoapResponse response = clientToServer.advanced(r);
+			System.out.println("received instrution payload is: " + Utils.prettyPrint(response));
+		} catch (ConnectorException | IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

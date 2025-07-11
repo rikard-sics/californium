@@ -115,6 +115,8 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	@Override
 	public synchronized void size() {
 		System.out.println("contextmap is size: " + this.contextMap.size());
+		System.out.println("urimap is size:     " + this.uriMap.size());
+		System.out.println("tokenmap is size:   " + this.tokenMap.size());
 	}
 
 	@Override
