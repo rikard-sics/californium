@@ -182,9 +182,14 @@ public class EdhocServerProxy extends CoapServer {
 			// create server
 			boolean udp = true;
 
+			CoapEndpoint.Builder builder = CoapEndpoint.builder();
+			builder.setInetSocketAddress(new InetSocketAddress("localhost", 5686));
+			CoapEndpoint serverEndpoint = builder.build();
+			
 			EdhocServerProxy server = new EdhocServerProxy();
 			// add endpoints on all IP addresses
-			server.addEndpoints(udp);
+			//server.addEndpoints(udp);
+			server.addEndpoint(serverEndpoint);
 			server.start();
 						
 		} catch (SocketException e) {

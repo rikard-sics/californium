@@ -45,7 +45,7 @@ public class TimeSTC {
 	private final static String proxyIP = "127.0.0.1"; // "169.254.106.132"; //
 	private final static String uriProxy = "coap://" + proxyIP + ":5685";
 	private final static String uriProxyPath = "";
-	
+
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
 	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
 
@@ -141,17 +141,17 @@ public class TimeSTC {
 		assertTrue(response.getOptions().hasOscore());
 		assertEquals(response.getResponseText(), "Hello World!");
 		assertEquals(response.getCode(), ResponseCode.CONTENT);
-        
-		/*response = OSCOREScheme(clientToServer);
+
+		response = OSCOREScheme(clientToServer);
 		assertTrue(response.getOptions().hasOscore());
 		assertEquals(response.getResponseText(), "Hello World!");
 		assertEquals(response.getCode(), ResponseCode.CONTENT);
-        
+
 		response = PostURISend(clientToServer);
 		assertTrue(response.getOptions().hasOscore());
 		assertEquals(response.getResponseText(), "Hello World!");
 		assertEquals(response.getCode(), ResponseCode.CONTENT);
-        
+
 		response = PostSchemeSend(clientToServer);
 		assertTrue(response.getOptions().hasOscore());
 		assertEquals(response.getResponseText(), "Hello World!");
@@ -159,7 +159,7 @@ public class TimeSTC {
 
 
 		response = PostObserveSend(clientToServer);
-*/
+
 		System.out.println("Finished");
 	}
 	public static CoapResponse Uri(CoapClient c) throws ConnectorException, IOException {

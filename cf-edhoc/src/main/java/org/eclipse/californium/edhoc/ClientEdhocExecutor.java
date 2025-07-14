@@ -35,16 +35,14 @@ import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.CoAP.Type;
-import org.eclipse.californium.core.coap.Option;
-import org.eclipse.californium.core.coap.OptionNumberRegistry;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.AddressEndpointContext;
 import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSException;
-import org.eclipse.californium.oscore.group.OptionEncoder;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
@@ -153,54 +151,57 @@ public class ClientEdhocExecutor {
 		
 		String edhocURI = edhocEndpointInfo.getUri();
 		AppProfile appProfile = edhocEndpointInfo.getAppProfiles().get(edhocURI);
-		// up is real/actual server uri.
-		// options contain proxy information
-		
-		// // set addressendpointcontext ?
-		
-		// CoapClient targets proxy, add proxy options for every request.
+
 		URI targetUri = null;
-		String ProxyURI = null;
 		String scheme = null;
 		String host = null;
 		int port = -1;
+		String path = null;
+		AddressEndpointContext proxy = null;
+
+		// either a Proxy-Uri option is used,
+		// or Proxy-Scheme and other options
+		// to specify the 
 		if (options != null) {
-			URI temp;
 			try {
-				temp = new URI(edhocURI);
+				URI temp = new URI(edhocURI);
+				scheme = temp.getScheme();
+				host = temp.getHost();
+				port = temp.getPort();
+				path = temp.getPath();
 			} catch (URISyntaxException e) {
 				System.err.println("Invalid URI: " + e.getMessage());
 				return false;
 			}
 			
-			if (options.hasProxyUri()) {
+			if (options.hasProxyScheme() && options.hasUriHost()) {
+				String proxiesScheme = options.getProxyScheme();
+				String proxiesHost = options.getUriHost();
+				int proxiesPort = options.hasUriPort() ? options.getUriPort() : 5683;
+				
+				try {
+					targetUri = new URI(proxiesScheme, null, proxiesHost, proxiesPort, null, null, null);
+				} catch (URISyntaxException e) {
+					System.err.println("Invalid URI: " + e.getMessage());
+					return false;
+				}
+				
+				proxy = new AddressEndpointContext(proxiesHost, proxiesPort);
+			}
+			else if (options.hasProxyUri()) {
 				try {
 					targetUri = new URI(options.getProxyUri());
 				} catch (URISyntaxException e) {
 					System.err.println("Invalid URI: " + e.getMessage());
 					return false;
 				}
+				proxy = new AddressEndpointContext(targetUri.getHost(), targetUri.getPort());
 			}
-			if (options.hasProxyScheme() && options.hasUriHost()) {
-				scheme = options.getProxyScheme();
-				host = options.getUriHost();
-				port = options.hasUriPort() ? options.getUriPort() : 5683;
+			else {
+				System.err.println("Invalid options. Must contain either a Proxy-Uri or Proxy-Scheme + other");
+				return false;
+			}
 
-				
-				String path = temp.getPath();
-				
-				try {
-					targetUri = new URI(scheme, null, host, port, path, null, null);
-				} catch (URISyntaxException e) {
-					System.err.println("Invalid URI: " + e.getMessage());
-					return false;
-				}
-				
-			}
-			// edhocuri no need path.
-			ProxyURI = edhocURI; //.replace(".well-known/edhoc","");
-			System.out.println(edhocURI);
-			System.out.println(ProxyURI);
 		}
 		else {
 			try {
@@ -210,21 +211,7 @@ public class ClientEdhocExecutor {
 				return false;
 			}
 		}
-		// if missing uripath
-		/*if (targetUri.getPath().equals("/")) {
-			System.out.println("no path");
-			try {
-				targetUri = new URI(targetUri.getScheme(), null, targetUri.getHost(), targetUri.getPort(), "/.well-known/edhoc", null, null);
-			} catch (URISyntaxException e) {
-				System.err.println("Invalid URI: " + e.getMessage());
-				return false;
-			}
-		}
-		else {
-			System.out.println("path?");
-			System.out.println(targetUri.getPath());
-		}*/
-		System.out.println("target uri is: " + targetUri);
+
 		CoapClient client = new CoapClient(targetUri);
 
 		/*
@@ -346,31 +333,13 @@ public class ClientEdhocExecutor {
 			edhocMessageReq.getOptions().setOscore(OscoreOption);
 		}
 		if (options != null) {
-			/*for (Option o : options.asSortedList()) {
-				switch (o.getNumber()) {
-				case OptionNumberRegistry.PROXY_URI:
-					edhocMessageReq.getOptions().setProxyUri(options.getProxyUri());
-					break;
-				case OptionNumberRegistry.PROXY_SCHEME:
-					edhocMessageReq.getOptions().setProxyScheme(options.getProxyScheme());
-					break;
-				case OptionNumberRegistry.URI_HOST:
-					edhocMessageReq.getOptions().setUriHost(options.getUriHost());
-					break;
-				case OptionNumberRegistry.URI_PORT:
-					edhocMessageReq.getOptions().setUriPort(options.getUriPort());
-					break;
-				default:
-					// illegal argument?
-					break;
-				}
-			}*/
 			edhocMessageReq.getOptions().setProxyScheme(scheme);
 			edhocMessageReq.getOptions().setUriPort(port);
-
-			//edhocMessageReq.getOptions().setProxyUri(ProxyURI);
+			edhocMessageReq.getOptions().setUriHost(host);
+			edhocMessageReq.getOptions().setUriPath(path);
+			edhocMessageReq.setUriIsApplied();
+			edhocMessageReq.setDestinationContext(proxy);
 		}
-		System.out.println(edhocMessageReq);
 		
 		System.out.println("Sent EDHOC Message 1\n");
 		
@@ -703,7 +672,10 @@ public class ClientEdhocExecutor {
 						if (options != null) {
 							edhocMessageReq2.getOptions().setProxyScheme(scheme);
 							edhocMessageReq2.getOptions().setUriPort(port);
-
+							edhocMessageReq2.getOptions().setUriHost(host);
+							edhocMessageReq2.getOptions().setUriPath(path);
+							edhocMessageReq2.setUriIsApplied();
+							edhocMessageReq2.setDestinationContext(proxy);
 						}
 
 						edhocMessageResp2 = client.advanced(edhocMessageReq2);
@@ -720,7 +692,10 @@ public class ClientEdhocExecutor {
 					if (options != null) {
 						edhocMessageReq2.getOptions().setProxyScheme(scheme);
 						edhocMessageReq2.getOptions().setUriPort(port);
-
+						edhocMessageReq2.getOptions().setUriHost(host);
+						edhocMessageReq2.getOptions().setUriPath(path);
+						edhocMessageReq2.setUriIsApplied();
+						edhocMessageReq2.setDestinationContext(proxy);
 					}
 
 					edhocMessageResp2 = client.advanced(edhocMessageReq2);
@@ -844,7 +819,10 @@ public class ClientEdhocExecutor {
 							if (options != null) {
 								edhocMessageReq3.getOptions().setProxyScheme(scheme);
 								edhocMessageReq3.getOptions().setUriPort(port);
-
+								edhocMessageReq3.getOptions().setUriHost(host);
+								edhocMessageReq3.getOptions().setUriPath(path);
+								edhocMessageReq3.setUriIsApplied();
+								edhocMessageReq3.setDestinationContext(proxy);
 							}
 
 							edhocMessageResp = client.advanced(edhocMessageReq3);

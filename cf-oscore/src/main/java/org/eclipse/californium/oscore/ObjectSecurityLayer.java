@@ -205,8 +205,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	@Override
 	public void sendRequest(final Exchange exchange, final Request request) {
 		Request req = request;
-		ctxDb.size();
-		System.out.println("will send: " + request);
 
 		if (shouldProtectRequest(request)) {
 			try {
@@ -311,10 +309,8 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 						//encryption
 						ctx = ctxDb.getContext(request, instructions);
-						System.out.println("ooh: " + ctx.getMaxUnfragmentedSize());
 						preparedRequest = prepareSend(ctxDb, ctx, preparedRequest, instructions);
 
-						System.out.println(ctx.getMaxUnfragmentedSize());
 						if (outgoingExceedsMaxUnfragSize(request, false, ctx.getMaxUnfragmentedSize())) {
 							throw new IllegalStateException("outgoing request is exceeding the MAX_UNFRAGMENTED_SIZE!");
 						}
@@ -410,7 +406,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	@Override
 	public void sendResponse(Exchange exchange, Response response) {
-		System.out.println("will send response: " + response);
+
 		/* If the request contained the Observe option always add a partial IV to the response.
 		 * A partial IV will also be added if the responsesIncludePartialIV flag is set in the context. */
 		boolean addPartialIV;
@@ -553,8 +549,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	@Override
 	public void receiveRequest(Exchange exchange, Request request) {
-
-		System.out.println("recevied request: " + request);
 
 		// removes any previous instructions that were built while decrypting the request, 
 		// because there is no guarantee the request is encrypted the same way as the first time.
@@ -786,7 +780,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			// save outer OSCORE option
 			requestOscoreOption = request.getOptions().getOscore();
 
-			ctxDb.size();
 			// decrypt
 			request = prepareReceive(ctxDb, request, ctx);
 
@@ -842,7 +835,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			}
 
 			exchange.setRequest(request);
-			System.out.println("decrypted : " + request);
 			return request;
 		} catch (CoapOSException e) {
 			LOGGER.error("Error while receiving OSCore request: {}", e.getMessage());
@@ -858,8 +850,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	//Always accepts unprotected responses, which is needed for reception of error messages
 	@Override
 	public void receiveResponse(Exchange exchange, Response response) {
-
-		System.out.println("received response: " + response);
 
 		Request request = exchange.getCurrentRequest();
 

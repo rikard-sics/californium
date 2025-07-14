@@ -100,12 +100,11 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 			if (Arrays.equals(incomingRequest.getOptions().getOscore(), Bytes.EMPTY)) {
 				incomingRequest.getOptions().removeOscore();
 			}
-			System.out.println("incomingRequest: " + incomingRequest);
+
 			// create the new request from the original
 			InetSocketAddress exposedInterface = translator.getExposedInterface(incomingRequest);
 			URI destination = translator.getDestinationURI(incomingRequest, exposedInterface);
 			Request outgoingRequest = translator.getRequest(destination, incomingRequest);
-			System.out.println("outgoingRequest: " + outgoingRequest);
 
 			// execute the request
 			if (outgoingRequest.getDestinationContext() == null) {

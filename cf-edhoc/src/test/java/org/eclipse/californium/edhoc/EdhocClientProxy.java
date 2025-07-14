@@ -74,7 +74,7 @@ public class EdhocClientProxy {
 	private final static Provider EdDSA = new EdDSASecurityProvider();
 
 	// Set to true if an OSCORE-protected exchange is performed after EDHOC completion
-	private static final boolean POST_EDHOC_EXCHANGE = true;
+	private static final boolean POST_EDHOC_EXCHANGE = false;
 
 	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
 	// Note: the application profile pertaining the EDHOC resource must first indicate support for the combined request 
@@ -165,16 +165,12 @@ public class EdhocClientProxy {
 	};
 	
 	// URI of the EDHOC resource on the server
-	private static String edhocURIServer = "coap://localhost/.well-known/edhoc";
+	private static String edhocURIServer = "coap://localhost:5686/.well-known/edhoc";
 
 	// URI of the EDHOC resource on the proxy
 	private static String edhocURIProxy = "coap://localhost:5685/.well-known/edhoc";
-	
-	private final static CBORObject[] postValuesScheme = {CBORObject.FromObject("coap"), CBORObject.FromObject(5683)};
-
-	private final static int[] optionSetsPostScheme = {OptionNumberRegistry.PROXY_SCHEME, OptionNumberRegistry.URI_PORT};
-	
-	private final static int[] optionSetsScheme = {/*OptionNumberRegistry.URI_PORT,*/ OptionNumberRegistry.URI_HOST, OptionNumberRegistry.PROXY_SCHEME};
+		
+	private final static int[] optionSetsScheme = {OptionNumberRegistry.URI_PORT, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.PROXY_SCHEME};
 
 	private final static boolean[] URIPORTAnswer = {true, true, true, true, false};
 
@@ -182,8 +178,7 @@ public class EdhocClientProxy {
 
 	private final static boolean[] ProxySchemeAnswer = {true, true, true, true, false};
 
-	private final static boolean[][] answerSetsScheme = {/*URIPORTAnswer,*/ URIHostAnswer, ProxySchemeAnswer
-	};
+	private final static boolean[][] answerSetsScheme = {URIPORTAnswer, URIHostAnswer, ProxySchemeAnswer};
 	
 ///////
 	private final static int[][] optionSetsScheme1 = {
@@ -203,7 +198,7 @@ public class EdhocClientProxy {
 	};
 
 	private final static CBORObject[][] postValuesScheme1 =  {
-			{CBORObject.FromObject("coap"), CBORObject.FromObject("localhost"),CBORObject.FromObject(5683)},
+			{CBORObject.FromObject("coap"), CBORObject.FromObject("localhost"), CBORObject.FromObject(5686)},
 			{}
 	};
 
@@ -352,7 +347,7 @@ public class EdhocClientProxy {
 			
 			System.exit(-1);
 		}
-		System.out.println("\nEDHOC successfully completed\n");
+		System.out.println("\nEDHOC successfully completed with proxy\n");
 
 		//prepare instructions
 		byte[] oscoreoptScheme = CBORObject.FromObject(new byte[0]).EncodeToBytes();
@@ -365,19 +360,18 @@ public class EdhocClientProxy {
 			ctx = db.getContext(edhocURIProxy);
 			System.out.println("context is: " + ctx);
 		} catch (OSException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.out.println("context could not be retrieved using URI: " + edhocURIProxy);
 		}
-		
+
+		// instruction for encrypting for proxy
 		instruction = Bytes.concatenate(instruction, OptionEncoder.set(ctx.getRecipientId(), ctx.getIdContext(), optionSetsScheme ,answerSetsScheme));
-		CBORObject[] instructions = OptionEncoder.decodeCBORSequence(instruction);
-		for (CBORObject in : instructions) {
-			System.out.println(in);
-		}
+
+		// options used to tell edhocExecutor what proxy-* options to use
 		OptionSet options = new OptionSet();
 		options.setProxyScheme("coap");
 		options.setUriHost("localhost");
 		options.setUriPort(5685);
+
 		
 		// Prepare the set of information for this EDHOC endpoint
 		 edhocEndpointInfo = new EdhocEndpointInfo(idCreds, creds, keyPairs, peerPublicKeys,
@@ -408,39 +402,29 @@ public class EdhocClientProxy {
 			System.exit(-1);
 		}
 		
-		System.out.println("\nEDHOC successfully completed\n");
+		System.out.println("\nEDHOC successfully completed with server\n");
 		
-		OSCoreCtx ctx2 = null;
+		OSCoreCtx contextToServer = null;
 		try {
-			ctx2 = db.getContext("coap://localhost:5683");
+			contextToServer = db.getContext("coap://localhost:5686");
+			System.out.println("contextToServer:" + contextToServer.getRecipientIdString());
 		} catch (OSException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		if (ctx2 != null) {
-			System.out.println("not null");
-		}
-		else {
-			System.out.println("null");
+			System.out.println("context could not be retrieved using URI: coap://localhost:5686");
 		}
 		
-		OSCoreCtx ctx3 = null;
+		OSCoreCtx contextToProxy = null;
 		try {
-			ctx3 = db.getContext("coap://localhost:5685");
+			contextToProxy = db.getContext("coap://localhost:5685");
+			System.out.println("contextToProxy:" + contextToProxy.getRecipientIdString());
 		} catch (OSException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.out.println("context could not be retrieved using URI: coap://localhost:5685");
 		}
-		if (ctx3 != null) {
-			System.out.println("not null");
-		}
-		else {
-			System.out.println("null");
-		}
+
 		
-		System.out.println("Sending encrypted to proxy that forwards to server");
-		
+		System.out.println("Sending encrypted GET to server");
+
 		CoapClient clientToServer = new CoapClient(edhocURIServer);
+
 		Request r = new Request(Code.GET);
 		r.getOptions().setOscore(Bytes.EMPTY);
 		r.getOptions().setUriPath("helloWorld");
@@ -448,38 +432,36 @@ public class EdhocClientProxy {
 		try {
 			CoapResponse response = clientToServer.advanced(r);
 			System.out.println("received payload is: " + Utils.prettyPrint(response));
-		} catch (ConnectorException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (ConnectorException | IOException e) {
+			System.out.println(e.getLocalizedMessage());
 		}
-		db.size();
-		clientToServer = new CoapClient(edhocURIProxy);
+
+		System.out.println("Sending encrypted GET to Proxy");
+
+		CoapClient clientToProxy = new CoapClient(edhocURIProxy);
+
 		r = new Request(Code.GET);
 		r.getOptions().setOscore(Bytes.EMPTY);
 		
 		try {
-			CoapResponse response = clientToServer.advanced(r);
+			CoapResponse response = clientToProxy.advanced(r);
 			System.out.println("received payload is: " + Utils.prettyPrint(response));
-		} catch (ConnectorException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (ConnectorException | IOException e) {
+			System.out.println(e.getLocalizedMessage());
 		}
 		
 		System.out.println("starting instructions");
-
+		
+		CoapClient client1 = new CoapClient("coap://localhost:5685");
+		
 		byte[] oscoreoptScheme2 = CBORObject.FromObject(new byte[0]).EncodeToBytes();
 		byte[] indexScheme2 = CBORObject.FromObject(2).EncodeToBytes();
 
 		byte[] instructionsScheme = Bytes.concatenate(oscoreoptScheme2, indexScheme2);
+		
 		final byte[][] rids = {
-				ctx2.getRecipientId(), 
-				ctx3.getRecipientId()
+				contextToServer.getRecipientId(), 
+				contextToProxy.getRecipientId()
 		};
 		final byte[][] idcontexts = {
 				null, 
@@ -488,21 +470,22 @@ public class EdhocClientProxy {
 		for (int i = 0; i < rids.length; i++) {
 			instructionsScheme = Bytes.concatenate(instructionsScheme, OptionEncoder.set(rids[i], idcontexts[i], optionSetsScheme1[i], answerSetsScheme1[i], optionSetsPostScheme1[i], postValuesScheme1[i]));
 		}
-		AddressEndpointContext proxy = new AddressEndpointContext("localhost", 5685);
 
+		AddressEndpointContext proxy = new AddressEndpointContext("localhost", 5685);
+		
 		r = new Request(Code.GET);
 		r.setUriIsApplied();
 		r.setDestinationContext(proxy);
 
 		r.getOptions().setOscore(instructionsScheme);
 		r.getOptions().setUriPath("helloWorld");
+		
 		try {
 			System.out.println("request is: " + r);
-			CoapResponse response = clientToServer.advanced(r);
+			CoapResponse response = client1.advanced(r);
 			System.out.println("received instrution payload is: " + Utils.prettyPrint(response));
 		} catch (ConnectorException | IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.out.println(e.getLocalizedMessage());
 		}
 		
 		if (OSCORE_EDHOC_COMBINED) {
