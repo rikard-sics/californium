@@ -181,16 +181,8 @@ public class OptionEncoder {
 		CBORObject option = CBORObject.NewMap();
 		int index = 0;
 
-		if (rid != null) {
-			option.Add(InstructionIDRegistry.KID, rid);
-		}
-		else {
-			throw new IllegalArgumentException("Recipient ID is null");
-		}
-
-		if (idcontext != null) {
-			option.Add(InstructionIDRegistry.IDContext, idcontext);
-		}
+		option.Add(InstructionIDRegistry.KID, rid);
+		option.Add(InstructionIDRegistry.IDContext, idcontext);
 
 		if (optionsPreSet != null) {
 			CBORObject optionsPreSetHolder = CBORObject.NewMap();
