@@ -75,198 +75,165 @@ public class OptionEncoder {
 	}
 
 	/**
-	 * here be Javadoc
-	 * @param endpoints ordered array of endpoints
+	 * Set the instruction
+	 * @param rid the RID (KID) of the receiver
+	 * @param idcontext the ID Context of the receiver
+	 * @return the encode option value
 	 */
 	public static byte[] set(byte[] rid, byte[] idcontext) {
-
-		CBORObject option = CBORObject.NewMap();
-		//option.Add(2, contextUri);
-		option.Add(InstructionIDRegistry.KID, rid);
-
-		option.Add(InstructionIDRegistry.IDContext, idcontext);
-
-		return option.EncodeToBytes();
+		return set(rid, idcontext, null, null, null, null, -1);
 	}
 
 	/**
-	 * here be Javadoc
-	 * @param endpoints ordered array of endpoints
+	 * Set the instruction
+	 * @param rid the RID (KID) of the receiver
+	 * @param idcontext the ID Context of the receiver
+	 * @param requestSequenceNumber the request sequence number of message
+	 * @return the encode option value
 	 */
-	public static byte[] set(byte[] rid, byte[] idcontext, int[] options, boolean[][] answers) {
-		CBORObject option = CBORObject.NewMap();
-		//option.Add(2, contextUri);
-		option.Add(InstructionIDRegistry.KID, rid);
-
-		option.Add(InstructionIDRegistry.IDContext, idcontext);
-
-		CBORObject optionsHolder = CBORObject.NewMap();
-		
-		if (options.length != answers.length) {
-			throw new RuntimeException("Unequal amount of options: " + options.length + " and answers: " + answers.length);
-		}
-
-		int index = 0;
-		for (int o : options) {
-			if (answers[index].length != 5) {
-				throw new RuntimeException("bad answer array, length should be 5");
-			}
-			optionsHolder.Add(o,answers[index]);
-			index++;
-			
-		}
-
-
-		option.Add(InstructionIDRegistry.PreSet, optionsHolder);
-		return option.EncodeToBytes();
-	}
-
-
 	public static byte[] set(byte[] rid, byte[] idcontext, int requestSequenceNumber) {
-
-		CBORObject option = CBORObject.NewMap();
-		//option.Add(2, contextUri);
-		option.Add(InstructionIDRegistry.KID, rid);
-
-		option.Add(InstructionIDRegistry.IDContext, idcontext);
-
-
-		option.Add(InstructionIDRegistry.RequestSequenceNumber, requestSequenceNumber);
-
-		return option.EncodeToBytes();
+		return set(rid, idcontext, null, null, null, null, requestSequenceNumber);
 	}
+
 	/**
-	 * here be Javadoc
-	 * @param endpoints ordered array of endpoints
+	 * Set the instruction
+	 * @param rid the RID (KID) of the receiver
+	 * @param idcontext the ID Context of the receiver
+	 * @param optionsPreSet the set of options which have instructions
+	 * 						for if they should be encrypted or not
+	 * @param answers answers for the set of options for if they
+	 * 				  should be encrypted or not
+	 * @return the encode option value
+	 */
+	public static byte[] set(byte[] rid, byte[] idcontext, int[] optionsPreSet, boolean[][] answers) {
+		return set(rid, idcontext, optionsPreSet, answers, null, null, -1);
+	}
+
+	/**
+	 * Set the instruction
+	 * @param rid the RID (KID) of the receiver
+	 * @param idcontext the ID Context of the receiver
+	 * @param optionsPreSet the set of options which have instructions
+	 * 						for if they should be encrypted or not
+	 * @param answers answers for the set of options for if they
+	 * 				  should be encrypted or not
+	 * @param requestSequenceNumber the request sequence number of message
+	 * @return the encode option value
+	 */
+	public static byte[] set(byte[] rid, byte[] idcontext, int[] optionsPreSet, boolean[][] answers, int requestSequenceNumber) {
+		return set(rid, idcontext, optionsPreSet, answers, null, null, requestSequenceNumber);
+	}
+
+	/**
+	 * Set the instruction
+	 * @param rid the RID (KID) of the receiver
+	 * @param idcontext the ID Context of the receiver
+	 * @param optionsPostSet the set of options to add after encryption
+	 * @param values the value of the option to add after encryption
+	 * @return the encode option value
 	 */
 	public static byte[] set(byte[] rid, byte[] idcontext, int[] optionsPostSet, CBORObject[] values) {
-		CBORObject option = CBORObject.NewMap();
-		//option.Add(2, contextUri);
-		option.Add(InstructionIDRegistry.KID, rid);
-
-		option.Add(InstructionIDRegistry.IDContext, idcontext);
-
-		int index = 0;
-		
-		CBORObject optionsPostSetHolder = CBORObject.NewMap();
-		if (optionsPostSet.length != values.length) {
-			//might become more complicated with blockwise, but it's a problem for later
-			throw new RuntimeException("Unequal amount of options: " + optionsPostSet.length + " and values: " + values.length);
-		}
-		
-		index = 0;
-		for (int o : optionsPostSet) {
-			optionsPostSetHolder.Add(o, values[index]);
-			index++;
-		}
-		
-		option.Add(InstructionIDRegistry.PostSet, optionsPostSetHolder);
-		return option.EncodeToBytes();
+		return set(rid, idcontext, null, null, optionsPostSet, values, -1);
 	}
+
 	/**
-	 * here be Javadoc
-	 * @param endpoints ordered array of endpoints
-	 */
-	public static byte[] set(byte[] rid, byte[] idcontext, int[] optionsPreSet, boolean[][] answers, int[] optionsPostSet, CBORObject[] values) {
-		CBORObject option = CBORObject.NewMap();
-		//option.Add(2, contextUri);
-		option.Add(InstructionIDRegistry.KID, rid);
-
-		option.Add(InstructionIDRegistry.IDContext, idcontext);
-
-		CBORObject optionsPreSetHolder = CBORObject.NewMap();
-		
-		if (optionsPreSet.length != answers.length) {
-			throw new RuntimeException("Unequal amount of options: " + optionsPreSet.length + " and answers: " + answers.length);
-		}
-
-		int index = 0;
-		for (int o : optionsPreSet) {
-			if (answers[index].length != 5) {
-				throw new RuntimeException("bad answer array, length should be 5");
-			}
-			optionsPreSetHolder.Add(o,answers[index]);
-			index++;
-			
-		}
-
-		option.Add(InstructionIDRegistry.PreSet, optionsPreSetHolder);
-		
-		CBORObject optionsPostSetHolder = CBORObject.NewMap();
-		if (optionsPostSet.length != values.length) {
-			//might become more complicated with blockwise, but it's a problem for later
-			throw new RuntimeException("Unequal amount of options: " + optionsPostSet.length + " and values: " + values.length);
-		}
-		
-		index = 0;
-		for (int o : optionsPostSet) {
-			optionsPostSetHolder.Add(o, values[index]);
-			index++;
-		}
-		
-		option.Add(InstructionIDRegistry.PostSet, optionsPostSetHolder);
-		return option.EncodeToBytes();
-	}
-	/**
-	 * here be Javadoc
-	 * @param endpoints ordered array of endpoints
+	 * Set the instruction
+	 * @param rid the RID (KID) of the receiver
+	 * @param idcontext the ID Context of the receiver
+	 * @param optionsPostSet the set of options to add after encryption
+	 * @param values the value of the option to add after encryption
+	 * @param requestSequenceNumber the request sequence number of message
+	 * @return the encode option value
 	 */
 	public static byte[] set(byte[] rid, byte[] idcontext,  int[] optionsPostSet, CBORObject[] values, int requestSequenceNumber) {
-		CBORObject option = CBORObject.NewMap();
-		//option.Add(2, contextUri);
-		option.Add(InstructionIDRegistry.KID, rid);
+		return set(rid, idcontext, null, null, optionsPostSet, values, requestSequenceNumber);
+	}
 
-		option.Add(InstructionIDRegistry.IDContext, idcontext);
-
-		CBORObject optionsHolder = CBORObject.NewMap();
-		
-		
-		CBORObject optionsPostSetHolder = CBORObject.NewMap();
-		if (optionsPostSet.length != values.length) {
-			//might become more complicated with blockwise, but it's a problem for later
-			throw new RuntimeException("Unequal amount of options: " + optionsPostSet.length + " and values: " + values.length);
-		}
-		
-		int index = 0;
-		for (int o : optionsPostSet) {
-			optionsPostSetHolder.Add(o, values[index]);
-			index++;
-		}
-		
-		option.Add(InstructionIDRegistry.PostSet, optionsPostSetHolder);
-		option.Add(InstructionIDRegistry.RequestSequenceNumber, requestSequenceNumber);
-		return option.EncodeToBytes();
+	/**
+	 * Set the instruction
+	 * @param rid the RID (KID) of the receiver
+	 * @param idcontext the ID Context of the receiver
+	 * @param optionsPreSet the set of options which have instructions
+	 * 						for if they should be encrypted or not
+	 * @param answers answers for the set of options for if they
+	 * 				  should be encrypted or not
+	 * @param optionsPostSet the set of options to add after encryption
+	 * @param values the value of the option to add after encryption
+	 * @return the encode option value
+	 */
+	public static byte[] set(byte[] rid, byte[] idcontext, int[] optionsPreSet, boolean[][] answers, int[] optionsPostSet, CBORObject[] values) {
+		return set(rid, idcontext, optionsPreSet, answers, optionsPostSet, values, -1);
 	}
 	/**
-	 * here be Javadoc
-	 * @param endpoints ordered array of endpoints
+	 * Set the instruction
+	 * @param rid the RID (KID) of the receiver
+	 * @param idcontext the ID Context of the receiver
+	 * @param optionsPreSet the set of options which have instructions
+	 * 						for if they should be encrypted or not
+	 * @param answers answers for the set of options for if they
+	 * 				  should be encrypted or not
+	 * @param optionsPostSet the set of options to add after encryption
+	 * @param values the value of the option to add after encryption
+	 * @param requestSequenceNumber the request sequence number of message
+	 * @return the encode option value
 	 */
-	public static byte[] set(byte[] rid, byte[] idcontext, int[] options, boolean[][] answers, int requestSequenceNumber) {
+	public static byte[] set(byte[] rid, byte[] idcontext, int[] optionsPreSet, boolean[][] answers, int[] optionsPostSet, CBORObject[] values, int requestSequenceNumber) {
 		CBORObject option = CBORObject.NewMap();
-		//option.Add(2, contextUri);
-		option.Add(InstructionIDRegistry.KID, rid);
-
-		option.Add(InstructionIDRegistry.IDContext, idcontext);
-
-		CBORObject optionsHolder = CBORObject.NewMap();
-		
-		if (options.length != answers.length) {
-			throw new RuntimeException("Unequal amount of options: " + options.length + " and answers: " + answers.length);
-		}
-
 		int index = 0;
-		for (int o : options) {
-			if (answers[index].length != 5) {
-				throw new RuntimeException("bad answer array, length should be 5");
-			}
-			optionsHolder.Add(o,answers[index]);
-			index++;
-			
+
+		if (rid != null) {
+			option.Add(InstructionIDRegistry.KID, rid);
+		}
+		else {
+			throw new IllegalArgumentException("Recipient ID is null");
 		}
 
-		option.Add(InstructionIDRegistry.PreSet, optionsHolder);
-		
-		option.Add(InstructionIDRegistry.RequestSequenceNumber, requestSequenceNumber);
+		if (idcontext != null) {
+			option.Add(InstructionIDRegistry.IDContext, idcontext);
+		}
+
+		if (optionsPreSet != null) {
+			CBORObject optionsPreSetHolder = CBORObject.NewMap();
+			if (optionsPreSet.length != answers.length) {
+				throw new RuntimeException("Unequal amount of options: " + optionsPreSet.length + " and answers: " + answers.length);
+			}
+
+			for (int o : optionsPreSet) {
+				if (answers[index].length != 5) {
+					throw new RuntimeException("bad answer array, length should be 5");
+				}
+				optionsPreSetHolder.Add(o,answers[index]);
+				index++;
+
+			}
+
+			if (index > 0) {
+				option.Add(InstructionIDRegistry.PreSet, optionsPreSetHolder);
+			}
+		}
+
+		if (optionsPostSet != null) {
+			CBORObject optionsPostSetHolder = CBORObject.NewMap();
+			if (optionsPostSet.length != values.length) {
+				//might become more complicated with blockwise, but it's a problem for later
+				throw new RuntimeException("Unequal amount of options: " + optionsPostSet.length + " and values: " + values.length);
+			}
+
+			index = 0;
+			for (int o : optionsPostSet) {
+				optionsPostSetHolder.Add(o, values[index]);
+				index++;
+			}
+
+			if (index > 0) {
+				option.Add(InstructionIDRegistry.PostSet, optionsPostSetHolder);
+			}
+		}
+
+		if (requestSequenceNumber > -1) {
+			option.Add(InstructionIDRegistry.RequestSequenceNumber, requestSequenceNumber);
+		}
+
 		return option.EncodeToBytes();
 	}
 
@@ -346,7 +313,7 @@ public class OptionEncoder {
 			CBORObject booleanArray = preSet.get(optionNumber);
 
 			if (booleanArray == null) return null;
-			
+
 			return booleanArray.ToObject(boolean[].class);
 
 		} catch (Exception e) {
