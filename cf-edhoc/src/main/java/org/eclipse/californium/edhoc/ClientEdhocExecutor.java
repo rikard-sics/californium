@@ -112,7 +112,7 @@ public class ClientEdhocExecutor {
 												 Code combinedRequestAppCode, Type combinedRequestAppType,
 												 byte[] combinedRequestAppPayload) {
 		return startEdhocExchangeAsInitiator(authenticationMethod, peerSupportedCipherSuites, ownIdCreds, edhocEndpointInfo, OSCORE_EDHOC_COMBINED, 
-				edhocCombinedRequestURI, combinedRequestAppCode, combinedRequestAppType, combinedRequestAppPayload, null, null);
+				edhocCombinedRequestURI, combinedRequestAppCode, combinedRequestAppType, combinedRequestAppPayload, null, null, null);
 	}
 	
 	// Extended version, for controlling the use of the EDHOC + OSCORE combined request
@@ -135,6 +135,7 @@ public class ClientEdhocExecutor {
      * 						additional encryptions and options when EDHOC is used through a proxy that is encrypted to (?)
      * @param options options that are to be used when the client wants to use a proxy between itself and the server
      * 	uses: proxy-uri or proxy-scheme and uri host, uri port.
+     * @param instructionForMessage3 
      * @return  The result from this EDHOC execution.
      *          When EDHOC is used for OSCORE, it is true if EDHOC has completed successfully and the
      *          OSCORE Security Context has been correctly derived and installed. Otherwise, it is false.
@@ -144,7 +145,7 @@ public class ClientEdhocExecutor {
 			 final Set<CBORObject> ownIdCreds, EdhocEndpointInfo edhocEndpointInfo,
 			 boolean OSCORE_EDHOC_COMBINED, String edhocCombinedRequestURI,
 			 Code combinedRequestAppCode, Type combinedRequestAppType,
-			 byte[] combinedRequestAppPayload, byte[] OscoreOption, OptionSet options) {
+			 byte[] combinedRequestAppPayload, byte[] OscoreOption, OptionSet options, byte[] instructionForMessage3) {
 
 
 		HashMap<CBORObject, EdhocSession> edhocSessions = edhocEndpointInfo.getEdhocSessions();
@@ -579,28 +580,8 @@ public class ClientEdhocExecutor {
 					}
 
 					if (OscoreOption != null) {
-						CBORObject[] instruction = OptionEncoder.decodeCBORSequence(OscoreOption);
-
-						CBORObject[] newInstruction = new CBORObject[instruction.length + 1];
-						
-						// copy latest oscore value and index
-						newInstruction[0] = instruction[0];
-						newInstruction[1] = instruction[1];
-
-						
-						// prepend instruction to encrypt end to end
-						byte[] instructionToAppend = null;
-						if (options != null) {
-							int[] optionNumbers = {OptionNumberRegistry.PROXY_SCHEME, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.URI_PORT};
-							CBORObject[] postValuesScheme =  {CBORObject.FromObject(scheme), CBORObject.FromObject(host),CBORObject.FromObject(port)};
-							instructionToAppend = OptionEncoder.set(ctx.getRecipientId(), null, optionNumbers, postValuesScheme, true);
-						
-							edhocMessageReq2.getOptions().setUriPath(path);
-							edhocMessageReq2.setUriIsApplied();
-							edhocMessageReq2.setDestinationContext(proxy);
-						}
-						else {
-							System.err.println("Does not contain options to put in Post Set for instruction");
+						if (instructionForMessage3 == null) {
+							System.err.println("Does not contain instruction for encrypting message3");
 							Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
 							if (ctx != null) {
 								edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
@@ -609,17 +590,21 @@ public class ClientEdhocExecutor {
 							return false;
 						}
 						
-						newInstruction[2] = CBORObject.DecodeFromBytes(instructionToAppend);
+						CBORObject[] holder = CBORObject.DecodeSequenceFromBytes(instructionForMessage3);
+						holder[2].Set(InstructionIDRegistry.KID, ctx.getRecipientId());
 						
-						// set all not end-to-end instructions
-						for (int i = 3; i < instruction.length + 1; i++) {
-							newInstruction[i] = instruction[i - 1];
+						for (CBORObject b : holder) {
+							System.out.println(b);
 						}
-
-						edhocMessageReq2.getOptions().setOscore(OptionEncoder.encodeSequence(newInstruction));
+						edhocMessageReq2.getOptions().setOscore(OptionEncoder.encodeSequence(holder));
 					}
 					else {
 						edhocMessageReq2.getOptions().setOscore(Bytes.EMPTY);
+					}
+					if (options != null) {
+						edhocMessageReq2.getOptions().setUriPath(path);
+						edhocMessageReq2.setUriIsApplied();
+						edhocMessageReq2.setDestinationContext(proxy);
 					}
 					
 					edhocMessageReq2.getOptions().setEdhoc();

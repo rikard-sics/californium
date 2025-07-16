@@ -147,13 +147,13 @@ public class EdhocLayer extends AbstractLayer {
 					CBORObject[] instruction = CBORObject.DecodeSequenceFromBytes(cryptoContextId);
 				
 					if (Objects.nonNull(instruction)) {
-						// first instruction, get 
+						// first instruction, get recipient ID
 						recipientId = instruction[2].get(InstructionIDRegistry.KID).ToObject(byte[].class);
 						ctx = ctxDb.getContext(recipientId);
 					}
 				}
 			}
-			
+
 			// Consistency checks
 			if (ctx != null) {
 				// The connection identifier of this peer is its Recipient ID
@@ -221,20 +221,12 @@ public class EdhocLayer extends AbstractLayer {
 						CoapEndpoint endpoint = (CoapEndpoint) exchange.getEndpoint();
 						ObjectSecurityLayer objectSecurityLayer = endpoint.getLayer(ObjectSecurityLayer.class);
 
-						int index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
-
-						// add instruction to encrypt EDHOC option
-						CBORObject PreSet = instructions[index].get(InstructionIDRegistry.PreSet);
-						boolean[] array = {true, true, true, true, false};
-						PreSet.Add(OptionNumberRegistry.EDHOC, array);
-						instructions[index].set(InstructionIDRegistry.PreSet, PreSet);
-	
-		
 						// set oscore option value to latest oscore option value
 						byte[] oscoreOption = request.getOptions().getOscore();
 						instructions[InstructionIDRegistry.Header.OscoreOptionValue] = CBORObject.FromObject(oscoreOption);
 						
 						request.getOptions().setOscore(OptionEncoder.encodeSequence(instructions));
+
 						exchange.setCryptographicContextID(Bytes.EMPTY);
 						objectSecurityLayer.sendRequest(exchange, request);
 						return;

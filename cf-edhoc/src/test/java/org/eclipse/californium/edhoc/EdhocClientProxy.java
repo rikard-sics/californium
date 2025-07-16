@@ -78,7 +78,7 @@ public class EdhocClientProxy {
 
 	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
 	// Note: the application profile pertaining the EDHOC resource must first indicate support for the combined request 
-	private static final boolean OSCORE_EDHOC_COMBINED = true;
+	private static final boolean OSCORE_EDHOC_COMBINED = false;
 	
 	// The authentication method to include in EDHOC message_1 (relevant only when Initiator)
 	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
@@ -207,6 +207,17 @@ public class EdhocClientProxy {
 			{OptionNumberRegistry.PROXY_SCHEME, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.URI_PORT}, 
 			{}
 	};
+	//--------------------------------------//
+	private final static CBORObject[] combinedPostSetValues=  {CBORObject.FromObject("coap"), CBORObject.FromObject("localhost"), CBORObject.FromObject(5686)};
+
+	private final static int[] combinedPostSetOptionNumbers = {OptionNumberRegistry.PROXY_SCHEME, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.URI_PORT};
+
+	private final static int[] combinedOptionSetsScheme = {OptionNumberRegistry.URI_PORT, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.PROXY_SCHEME, OptionNumberRegistry.EDHOC};
+	
+	private final static boolean[] EDHOCAnswer = {true, true, true, true, false};
+
+	private final static boolean[][] combinedAnswerSetsScheme = {URIPORTAnswer, URIHostAnswer, ProxySchemeAnswer, EDHOCAnswer};
+
 	// URI of the application resource to target, following an EDHOC execution
 	private static String appRequestURI = "coap://localhost/helloWorld";
 		
@@ -365,11 +376,17 @@ public class EdhocClientProxy {
 
 		byte[] instruction = Bytes.concatenate(oscoreoptScheme, indexScheme);
 
-		// instruction for encrypting for proxy
+		// instruction for encrypting for proxy (message 1)
 		instruction = Bytes.concatenate(instruction, OptionEncoder.set(ctx.getRecipientId(), ctx.getIdContext(), optionSetsScheme ,answerSetsScheme));
 		
-
-		// options used to tell edhocExecutor what proxy-* options to use
+		byte[] instructionForMessage3 = Bytes.concatenate(oscoreoptScheme, indexScheme);
+		
+		//instruction for encrypting for proxy and server (message 3)
+		// only for combined requests
+		instructionForMessage3 = Bytes.concatenate(instructionForMessage3, OptionEncoder.set(null, null, combinedPostSetOptionNumbers, combinedPostSetValues, true));
+		instructionForMessage3 = Bytes.concatenate(instructionForMessage3, OptionEncoder.set(ctx.getRecipientId(), ctx.getIdContext(), combinedOptionSetsScheme ,combinedAnswerSetsScheme));
+		
+		// options used to tell edhocExecutor where to proxy to
 		OptionSet options = new OptionSet();
 		options.setProxyScheme("coap");
 		options.setUriHost("localhost");
@@ -393,7 +410,7 @@ public class EdhocClientProxy {
 																  ownIdCreds, edhocEndpointInfo, OSCORE_EDHOC_COMBINED,
 																  edhocURIServer, combinedRequestAppCode,
 																  combinedRequestAppType, combinedRequestAppPayload,
-																  instruction, options);
+																  instruction, options, instructionForMessage3);
 		
 		if (ret == false) {
 			System.err.println("Key establishment through EDHOC has failed");
