@@ -1873,6 +1873,10 @@ public final class OptionSet {
 			options.add(accept);
 		if (location_query_list != null)
 			options.addAll(location_query_list);
+		// EDHOC
+		if (hasEdhoc())
+			options.add(edhoc);
+		
 		if (hasBlock2())
 			options.add(block2);
 		if (hasBlock1())
@@ -1886,10 +1890,6 @@ public final class OptionSet {
 
 		if (hasSize1())
 			options.add(size1);
-
-		// EDHOC
-		if (hasEdhoc())
-			options.add(edhoc);
 
 		if (hasNoResponse())
 			options.add(no_response);

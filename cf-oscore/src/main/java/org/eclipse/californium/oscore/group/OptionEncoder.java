@@ -81,7 +81,7 @@ public class OptionEncoder {
 	 * @return the encode option value
 	 */
 	public static byte[] set(byte[] rid, byte[] idcontext) {
-		return set(rid, idcontext, null, null, null, null, -1);
+		return set(rid, idcontext, null, null, null, null, -1, false);
 	}
 
 	/**
@@ -92,7 +92,7 @@ public class OptionEncoder {
 	 * @return the encode option value
 	 */
 	public static byte[] set(byte[] rid, byte[] idcontext, int requestSequenceNumber) {
-		return set(rid, idcontext, null, null, null, null, requestSequenceNumber);
+		return set(rid, idcontext, null, null, null, null, requestSequenceNumber, false);
 	}
 
 	/**
@@ -106,7 +106,7 @@ public class OptionEncoder {
 	 * @return the encode option value
 	 */
 	public static byte[] set(byte[] rid, byte[] idcontext, int[] optionsPreSet, boolean[][] answers) {
-		return set(rid, idcontext, optionsPreSet, answers, null, null, -1);
+		return set(rid, idcontext, optionsPreSet, answers, null, null, -1, false);
 	}
 
 	/**
@@ -121,7 +121,11 @@ public class OptionEncoder {
 	 * @return the encode option value
 	 */
 	public static byte[] set(byte[] rid, byte[] idcontext, int[] optionsPreSet, boolean[][] answers, int requestSequenceNumber) {
-		return set(rid, idcontext, optionsPreSet, answers, null, null, requestSequenceNumber);
+		return set(rid, idcontext, optionsPreSet, answers, null, null, requestSequenceNumber, false);
+	}
+
+	public static byte[] set(byte[] rid, byte[] idcontext, int[] optionsPreSet, boolean[][] answers, boolean breaker) {
+		return set(rid, idcontext, optionsPreSet, answers, null, null, -1, breaker);
 	}
 
 	/**
@@ -133,7 +137,7 @@ public class OptionEncoder {
 	 * @return the encode option value
 	 */
 	public static byte[] set(byte[] rid, byte[] idcontext, int[] optionsPostSet, CBORObject[] values) {
-		return set(rid, idcontext, null, null, optionsPostSet, values, -1);
+		return set(rid, idcontext, null, null, optionsPostSet, values, -1, false);
 	}
 
 	/**
@@ -146,7 +150,11 @@ public class OptionEncoder {
 	 * @return the encode option value
 	 */
 	public static byte[] set(byte[] rid, byte[] idcontext,  int[] optionsPostSet, CBORObject[] values, int requestSequenceNumber) {
-		return set(rid, idcontext, null, null, optionsPostSet, values, requestSequenceNumber);
+		return set(rid, idcontext, null, null, optionsPostSet, values, requestSequenceNumber, false);
+	}
+	
+	public static byte[] set(byte[] rid, byte[] idcontext,  int[] optionsPostSet, CBORObject[] values, boolean breaker) {
+		return set(rid, idcontext, null, null, optionsPostSet, values, -1, breaker);
 	}
 
 	/**
@@ -162,7 +170,25 @@ public class OptionEncoder {
 	 * @return the encode option value
 	 */
 	public static byte[] set(byte[] rid, byte[] idcontext, int[] optionsPreSet, boolean[][] answers, int[] optionsPostSet, CBORObject[] values) {
-		return set(rid, idcontext, optionsPreSet, answers, optionsPostSet, values, -1);
+		return set(rid, idcontext, optionsPreSet, answers, optionsPostSet, values, -1, false);
+	}
+
+	/**
+	 * Set the instruction
+	 * @param rid the RID (KID) of the receiver
+	 * @param idcontext the ID Context of the receiver
+	 * @param optionsPreSet the set of options which have instructions
+	 * 						for if they should be encrypted or not
+	 * @param answers answers for the set of options for if they
+	 * 				  should be encrypted or not
+	 * @param optionsPostSet the set of options to add after encryption
+	 * @param values the value of the option to add after encryption
+	 * @param requestSequenceNumber the request sequence number of message
+	 * @return the encode option value
+	 */
+	public static byte[] set(byte[] rid, byte[] idcontext, int[] optionsPreSet, boolean[][] answers, int[] optionsPostSet, CBORObject[] values, boolean breaker) {
+		return set(rid, idcontext, optionsPreSet, answers, optionsPostSet, values, -1, breaker);
+
 	}
 	/**
 	 * Set the instruction
@@ -177,7 +203,7 @@ public class OptionEncoder {
 	 * @param requestSequenceNumber the request sequence number of message
 	 * @return the encode option value
 	 */
-	public static byte[] set(byte[] rid, byte[] idcontext, int[] optionsPreSet, boolean[][] answers, int[] optionsPostSet, CBORObject[] values, int requestSequenceNumber) {
+	public static byte[] set(byte[] rid, byte[] idcontext, int[] optionsPreSet, boolean[][] answers, int[] optionsPostSet, CBORObject[] values, int requestSequenceNumber, boolean breaker) {
 		CBORObject option = CBORObject.NewMap();
 		int index = 0;
 
@@ -224,6 +250,10 @@ public class OptionEncoder {
 
 		if (requestSequenceNumber > -1) {
 			option.Add(InstructionIDRegistry.RequestSequenceNumber, requestSequenceNumber);
+		}
+		
+		if (breaker) {
+			option.Add(InstructionIDRegistry.Break, true);
 		}
 
 		return option.EncodeToBytes();

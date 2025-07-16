@@ -78,7 +78,7 @@ public class EdhocClientProxy {
 
 	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
 	// Note: the application profile pertaining the EDHOC resource must first indicate support for the combined request 
-	private static final boolean OSCORE_EDHOC_COMBINED = false;
+	private static final boolean OSCORE_EDHOC_COMBINED = true;
 	
 	// The authentication method to include in EDHOC message_1 (relevant only when Initiator)
 	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
@@ -169,7 +169,8 @@ public class EdhocClientProxy {
 
 	// URI of the EDHOC resource on the proxy
 	private static String edhocURIProxy = "coap://localhost:5685/.well-known/edhoc";
-		
+
+	//--------------------------------------------------------------------------//
 	private final static int[] optionSetsScheme = {OptionNumberRegistry.URI_PORT, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.PROXY_SCHEME};
 
 	private final static boolean[] URIPORTAnswer = {true, true, true, true, false};
@@ -179,8 +180,8 @@ public class EdhocClientProxy {
 	private final static boolean[] ProxySchemeAnswer = {true, true, true, true, false};
 
 	private final static boolean[][] answerSetsScheme = {URIPORTAnswer, URIHostAnswer, ProxySchemeAnswer};
-	
-///////
+
+	//--------------------------------------------------------------------------//
 	private final static int[][] optionSetsScheme1 = {
 			{}, 
 			{OptionNumberRegistry.URI_PORT, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.PROXY_SCHEME}
@@ -336,7 +337,7 @@ public class EdhocClientProxy {
 		ClientEdhocExecutor edhocExecutor = new ClientEdhocExecutor();
 		boolean ret = edhocExecutor.startEdhocExchangeAsInitiator(authenticationMethod, peerSupportedCipherSuitesProxy,
 																  ownIdCreds, edhocEndpointInfo, OSCORE_EDHOC_COMBINED,
-																  edhocCombinedRequestURI, combinedRequestAppCode,
+																  edhocURIProxy, combinedRequestAppCode,
 																  combinedRequestAppType, combinedRequestAppPayload);
 		if (ret == false) {
 			System.err.println("Key establishment through EDHOC has failed");
@@ -348,13 +349,9 @@ public class EdhocClientProxy {
 			System.exit(-1);
 		}
 		System.out.println("\nEDHOC successfully completed with proxy\n");
-
-		//prepare instructions
-		byte[] oscoreoptScheme = CBORObject.FromObject(new byte[0]).EncodeToBytes();
-		byte[] indexScheme = CBORObject.FromObject(2).EncodeToBytes();
-
-		byte[] instruction = Bytes.concatenate(oscoreoptScheme, indexScheme);
+		//System.exit(-1);
 		
+		//prepare instructions
 		OSCoreCtx ctx = null;
 		try {
 			ctx = db.getContext(edhocURIProxy);
@@ -362,9 +359,15 @@ public class EdhocClientProxy {
 		} catch (OSException e) {
 			System.out.println("context could not be retrieved using URI: " + edhocURIProxy);
 		}
+		
+		byte[] oscoreoptScheme = CBORObject.FromObject(new byte[0]).EncodeToBytes();
+		byte[] indexScheme = CBORObject.FromObject(2).EncodeToBytes();
+
+		byte[] instruction = Bytes.concatenate(oscoreoptScheme, indexScheme);
 
 		// instruction for encrypting for proxy
 		instruction = Bytes.concatenate(instruction, OptionEncoder.set(ctx.getRecipientId(), ctx.getIdContext(), optionSetsScheme ,answerSetsScheme));
+		
 
 		// options used to tell edhocExecutor what proxy-* options to use
 		OptionSet options = new OptionSet();
@@ -388,7 +391,7 @@ public class EdhocClientProxy {
 		edhocExecutor = new ClientEdhocExecutor();
 		ret = edhocExecutor.startEdhocExchangeAsInitiator(authenticationMethod, peerSupportedCipherSuitesServer,
 																  ownIdCreds, edhocEndpointInfo, OSCORE_EDHOC_COMBINED,
-																  edhocCombinedRequestURI, combinedRequestAppCode,
+																  edhocURIServer, combinedRequestAppCode,
 																  combinedRequestAppType, combinedRequestAppPayload,
 																  instruction, options);
 		
@@ -403,7 +406,8 @@ public class EdhocClientProxy {
 		}
 		
 		System.out.println("\nEDHOC successfully completed with server\n");
-		
+		//System.exit(-1);
+
 		OSCoreCtx contextToServer = null;
 		try {
 			contextToServer = db.getContext("coap://localhost:5686");
@@ -493,7 +497,7 @@ public class EdhocClientProxy {
 			System.out.println("\nApplication response to the EDHOC+OSCORE combined request:\n\n" +
 							   Utils.prettyPrint(appResponseToCombinedRequest) + "\n");
 		}
-		
+
 		// Send a request protected with the just established Security Context
         if (POST_EDHOC_EXCHANGE && usedForOSCORE == true) {
     		CoapClient client = new CoapClient(appRequestURI);

@@ -133,9 +133,6 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 				byte[] OscoreOption = request.getOptions().getOscore();
 				CBORObject[] instructions = OptionEncoder.decodeCBORSequence(OscoreOption);
 
-				// are there instructions?
-				boolean instructionsExists = Objects.nonNull(instructions);
-
 				OSCoreCtx ctx = ctxDb.getContext(request, instructions);
 
 				if (ctx == null) {

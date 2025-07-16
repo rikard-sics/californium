@@ -28,20 +28,28 @@ import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.HashMap;
 import java.util.Set;
 
 import org.eclipse.californium.core.coap.EmptyMessage;
+import org.eclipse.californium.core.coap.OptionNumberRegistry;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSCoreCtxDB;
 import org.eclipse.californium.oscore.OSException;
+import org.eclipse.californium.oscore.ObjectSecurityLayer;
+import org.eclipse.californium.oscore.group.InstructionIDRegistry;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 
 /**
  * 
@@ -130,66 +138,124 @@ public class EdhocLayer extends AbstractLayer {
 			
 			// Retrieve the Security Context used to protect the request
 			OSCoreCtx ctx = getContextForOutgoing(exchange);
+			byte[] recipientId = null;
 			
-			// The connection identifier of this peer is its Recipient ID
-			byte[] recipientId = ctx.getRecipientId();
-			CBORObject connectionIdentifierInitiatorCbor = CBORObject.FromObject(recipientId);
-			
-			// Retrieve the EDHOC session associated to C_R and storing EDHOC message_3
-			EdhocSession session = this.edhocSessions.get(connectionIdentifierInitiatorCbor);
+			// could not retrieve context using uri, try from possible instruction
+			if (ctx == null) {
+				byte[] cryptoContextId = exchange.getCryptographicContextID();
+				if (cryptoContextId != null) {
+					CBORObject[] instruction = CBORObject.DecodeSequenceFromBytes(cryptoContextId);
+				
+					if (Objects.nonNull(instruction)) {
+						// first instruction, get 
+						recipientId = instruction[2].get(InstructionIDRegistry.KID).ToObject(byte[].class);
+						ctx = ctxDb.getContext(recipientId);
+					}
+				}
+			}
 			
 			// Consistency checks
-			if (session == null) {
-				System.err.println("Unable to retrieve the EDHOC session when sending an EDHOC+OSCORE request\n");
-				return;
-			}
-			
-			byte[] connectionIdentifierInitiator = session.getConnectionId(); 
-			if (!session.isInitiator() ||
-				 session.getCurrentStep() != Constants.EDHOC_SENT_M3 ||		
-				!Arrays.equals(recipientId, connectionIdentifierInitiator)) {
+			if (ctx != null) {
+				// The connection identifier of this peer is its Recipient ID
+				if (recipientId == null) {
+					recipientId = ctx.getRecipientId();
+				}
+				CBORObject connectionIdentifierInitiatorCbor = CBORObject.FromObject(recipientId);
 				
-				System.err.println("Retrieved inconsistent EDHOC session when sending an EDHOC+OSCORE request");
+				// Retrieve the EDHOC session associated to C_R and storing EDHOC message_3
+				EdhocSession session = this.edhocSessions.get(connectionIdentifierInitiatorCbor);
+				
+				// Consistency checks
+				if (session != null) {
+				
+					byte[] connectionIdentifierInitiator = session.getConnectionId(); 
+					if (!session.isInitiator() ||
+						 session.getCurrentStep() != Constants.EDHOC_SENT_M3 ||		
+						!Arrays.equals(recipientId, connectionIdentifierInitiator)) {
+						
+						System.err.println("Retrieved inconsistent EDHOC session when sending an EDHOC+OSCORE request");
+						return;
+					}
+					
+					// Extract EDHOC message_3, from the stored CBOR sequence (C_R, EDHOC message_3)
+					byte[] storedSequence = session.getMessage3();
+					CBORObject[] sequenceElements = CBORObject.DecodeSequenceFromBytes(storedSequence);
+					byte[] edhocMessage3 = sequenceElements[1].EncodeToBytes();
+					
+					// Original OSCORE payload from the request
+					byte[] oldOscorePayload = request.getPayload();
+					
+					if (debugPrint) {
+						Util.nicePrint("EDHOC+OSCORE: EDHOC message_3", edhocMessage3);
+						Util.nicePrint("EDHOC+OSCORE: Old OSCORE payload", oldOscorePayload);
+					}
+					
+					// Build the new OSCORE payload, as composed of two concatenated elements
+					// 1. A CBOR data item, i.e., EDHOC message_3 (of type Byte String)
+					// 2. The original OSCORE payload
+					
+					int newOscorePayloadLength = edhocMessage3.length + oldOscorePayload.length;
+					
+					// Abort if the payload of the EDHOC+OSCORE request exceeds MAX_UNFRAGMENTED_SIZE
+					int maxUnfragmentedSize = ctx.getMaxUnfragmentedSize();
+				    if (newOscorePayloadLength > maxUnfragmentedSize) {
+				        throw new IllegalStateException("The payload of the EDHOC+OSCORE request is exceeding MAX_UNFRAGMENTED_SIZE");
+				    }
+					
+					byte[] newOscorePayload = new byte[newOscorePayloadLength];
+					System.arraycopy(edhocMessage3, 0, newOscorePayload, 0, edhocMessage3.length);
+					System.arraycopy(oldOscorePayload, 0, newOscorePayload, edhocMessage3.length, oldOscorePayload.length);
+					
+					
+					if (debugPrint) {
+						Util.nicePrint("EDHOC+OSCORE: New OSCORE payload", newOscorePayload);
+					}
+					
+					// Set the new OSCORE payload as payload of the EDHOC+OSCORE request
+					request.setPayload(newOscorePayload);
+		
+					byte[] cryptoContextID = exchange.getCryptographicContextID();
+					CBORObject[] instructions = OptionEncoder.decodeCBORSequence(cryptoContextID);
+					
+					if (Objects.nonNull(instructions)) {
+						CoapEndpoint endpoint = (CoapEndpoint) exchange.getEndpoint();
+						ObjectSecurityLayer objectSecurityLayer = endpoint.getLayer(ObjectSecurityLayer.class);
+
+						int index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
+
+						// add instruction to encrypt EDHOC option
+						CBORObject PreSet = instructions[index].get(InstructionIDRegistry.PreSet);
+						boolean[] array = {true, true, true, true, false};
+						PreSet.Add(OptionNumberRegistry.EDHOC, array);
+						instructions[index].set(InstructionIDRegistry.PreSet, PreSet);
+	
+		
+						// set oscore option value to latest oscore option value
+						byte[] oscoreOption = request.getOptions().getOscore();
+						instructions[InstructionIDRegistry.Header.OscoreOptionValue] = CBORObject.FromObject(oscoreOption);
+						
+						request.getOptions().setOscore(OptionEncoder.encodeSequence(instructions));
+						exchange.setCryptographicContextID(Bytes.EMPTY);
+						objectSecurityLayer.sendRequest(exchange, request);
+						return;
+					}
+				}
+				else if (ctxDb.getIfProxyable()) {
+					System.out.println("skipped edhoc layer");
+				}
+				else {
+					System.err.println("Unable to retrieve the EDHOC session when sending an EDHOC+OSCORE request\n");
+					return;
+					
+				}
+			}
+			else if (ctxDb.getIfProxyable()) {
+				System.out.println("skipped edhoc layer");
+			}
+			else {
+				System.err.println("error");
 				return;
 			}
-			
-			// Extract EDHOC message_3, from the stored CBOR sequence (C_R, EDHOC message_3)
-			byte[] storedSequence = session.getMessage3();
-			CBORObject[] sequenceElements = CBORObject.DecodeSequenceFromBytes(storedSequence);
-			byte[] edhocMessage3 = sequenceElements[1].EncodeToBytes();
-			
-			// Original OSCORE payload from the request
-			byte[] oldOscorePayload = request.getPayload();
-			
-			if (debugPrint) {
-				Util.nicePrint("EDHOC+OSCORE: EDHOC message_3", edhocMessage3);
-				Util.nicePrint("EDHOC+OSCORE: Old OSCORE payload", oldOscorePayload);
-			}
-			
-			// Build the new OSCORE payload, as composed of two concatenated elements
-			// 1. A CBOR data item, i.e., EDHOC message_3 (of type Byte String)
-			// 2. The original OSCORE payload
-			
-			int newOscorePayloadLength = edhocMessage3.length + oldOscorePayload.length;
-			
-			// Abort if the payload of the EDHOC+OSCORE request exceeds MAX_UNFRAGMENTED_SIZE
-			int maxUnfragmentedSize = ctx.getMaxUnfragmentedSize();
-		    if (newOscorePayloadLength > maxUnfragmentedSize) {
-		        throw new IllegalStateException("The payload of the EDHOC+OSCORE request is exceeding MAX_UNFRAGMENTED_SIZE");
-		    }
-			
-			byte[] newOscorePayload = new byte[newOscorePayloadLength];
-			System.arraycopy(edhocMessage3, 0, newOscorePayload, 0, edhocMessage3.length);
-			System.arraycopy(oldOscorePayload, 0, newOscorePayload, edhocMessage3.length, oldOscorePayload.length);
-			
-			
-			if (debugPrint) {
-				Util.nicePrint("EDHOC+OSCORE: New OSCORE payload", newOscorePayload);
-			}
-			
-			// Set the new OSCORE payload as payload of the EDHOC+OSCORE request
-			request.setPayload(newOscorePayload);
-			
 		}
 		
 		super.sendRequest(exchange, request);

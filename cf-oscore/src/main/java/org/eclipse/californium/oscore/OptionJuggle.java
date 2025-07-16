@@ -335,7 +335,11 @@ public class OptionJuggle {
 						case OptionNumberRegistry.PROXY_URI:
 							options.removeProxyUri();
 							break;
+						case OptionNumberRegistry.EDHOC:
+							options.removeEdhoc();
+							break;
 						}
+						
 						break;
 					}
 					// keep as is if not promoted, i.e. Class U

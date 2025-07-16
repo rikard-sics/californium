@@ -35,6 +35,7 @@ import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.CoAP.Type;
+import org.eclipse.californium.core.coap.OptionNumberRegistry;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.OneKey;
@@ -43,6 +44,8 @@ import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSException;
+import org.eclipse.californium.oscore.group.InstructionIDRegistry;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
@@ -574,9 +577,50 @@ public class ClientEdhocExecutor {
 					     combinedRequestAppCode == Code.IPATCH) && combinedRequestAppPayload != null) {
 						edhocMessageReq2.setPayload(combinedRequestAppPayload);
 					}
-					edhocMessageReq2.getOptions().setOscore(Bytes.EMPTY);
-					
-					// TODO logic for appending combined with provided oscore option
+
+					if (OscoreOption != null) {
+						CBORObject[] instruction = OptionEncoder.decodeCBORSequence(OscoreOption);
+
+						CBORObject[] newInstruction = new CBORObject[instruction.length + 1];
+						
+						// copy latest oscore value and index
+						newInstruction[0] = instruction[0];
+						newInstruction[1] = instruction[1];
+
+						
+						// prepend instruction to encrypt end to end
+						byte[] instructionToAppend = null;
+						if (options != null) {
+							int[] optionNumbers = {OptionNumberRegistry.PROXY_SCHEME, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.URI_PORT};
+							CBORObject[] postValuesScheme =  {CBORObject.FromObject(scheme), CBORObject.FromObject(host),CBORObject.FromObject(port)};
+							instructionToAppend = OptionEncoder.set(ctx.getRecipientId(), null, optionNumbers, postValuesScheme, true);
+						
+							edhocMessageReq2.getOptions().setUriPath(path);
+							edhocMessageReq2.setUriIsApplied();
+							edhocMessageReq2.setDestinationContext(proxy);
+						}
+						else {
+							System.err.println("Does not contain options to put in Post Set for instruction");
+							Util.purgeSession(session, connectionIdentifier, edhocSessions, usedConnectionIds);
+							if (ctx != null) {
+								edhocEndpointInfo.getOscoreDb().removeContext(ctx); // Delete the previously derived OSCORE Security Context
+							}
+							client.shutdown();
+							return false;
+						}
+						
+						newInstruction[2] = CBORObject.DecodeFromBytes(instructionToAppend);
+						
+						// set all not end-to-end instructions
+						for (int i = 3; i < instruction.length + 1; i++) {
+							newInstruction[i] = instruction[i - 1];
+						}
+
+						edhocMessageReq2.getOptions().setOscore(OptionEncoder.encodeSequence(newInstruction));
+					}
+					else {
+						edhocMessageReq2.getOptions().setOscore(Bytes.EMPTY);
+					}
 					
 					edhocMessageReq2.getOptions().setEdhoc();
 					session.setMessage3(nextPayload);
