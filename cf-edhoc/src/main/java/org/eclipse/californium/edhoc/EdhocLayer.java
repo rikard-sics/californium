@@ -447,7 +447,7 @@ public class EdhocLayer extends AbstractLayer {
 				}			        			        
 				
 				// Remove the EDHOC option
-				request.getOptions().setEdhoc(false);
+				request.getOptions().removeEdhoc();
 				
 				// Perform any follow-up actions based on the processing results of EAD items
 				mySession.getSideProcessor().eadProcessingFollowUp();

@@ -43,7 +43,6 @@ import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCtx;
 import org.eclipse.californium.oscore.OSException;
-import org.eclipse.californium.elements.util.Base64;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -133,7 +132,7 @@ public class UtilTest {
 
 		// Set up needed parameters
 		String keyStringEd25519 = "pQMnAQEgBiFYIDzQyFH694a7CcXQasH9RcqnmwQAy2FIX97dGGGy+bpSI1gg5aAfgdGCH2/2KFsQH5lXtDc8JUn1a+OkF0zOG6lIWXQ=";
-		OneKey keyPair = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(keyStringEd25519)));
+		OneKey keyPair = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(keyStringEd25519)));
 
 		byte[] payloadToSign = new byte[] { (byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0,
 				(byte) 0x5c };
@@ -167,7 +166,7 @@ public class UtilTest {
 
 		// Set up needed parameters
 		String keyStringEcdsa256 = "pgMmAQIgASFYIPWSTdB9SCF/+CGXpy7gty8qipdR30t6HgdFGQo8ViiAIlggXvJCtXVXBJwmjMa4YdRbcdgjpXqM57S2CZENPrUGQnMjWCDXCb+hy1ybUu18KTAJMvjsmXch4W3Hd7Rw7mTF3ocbLQ==";
-		OneKey keyPair = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(keyStringEcdsa256)));
+		OneKey keyPair = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(keyStringEcdsa256)));
 
 		byte[] payloadToSign = new byte[] { (byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0,
 				(byte) 0x5c };
@@ -253,7 +252,7 @@ public class UtilTest {
 
 			AlgorithmID encryptionAlg = algorithms[i];
 
-			int ivLen = EncryptCommon.ivLength(encryptionAlg);
+			int ivLen = EncryptCommon.getIvLength(encryptionAlg);
 			byte[] iv = Bytes.createBytes(rand, ivLen);
 
 			int keyLen = encryptionAlg.getKeySize() / 8;
