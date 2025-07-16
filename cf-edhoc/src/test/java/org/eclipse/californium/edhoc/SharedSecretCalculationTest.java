@@ -33,7 +33,6 @@ import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;
 import org.eclipse.californium.edhoc.SharedSecretCalculation.Tuple;
-import org.eclipse.californium.elements.util.Base64;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -185,7 +184,7 @@ public class SharedSecretCalculationTest {
 
 		// Now build keys and try shared secret calc
 		String keyPairBase64 = "pgMmAQIgASFYIPWSTdB9SCF/+CGXpy7gty8qipdR30t6HgdFGQo8ViiAIlggXvJCtXVXBJwmjMa4YdRbcdgjpXqM57S2CZENPrUGQnMjWCDXCb+hy1ybUu18KTAJMvjsmXch4W3Hd7Rw7mTF3ocbLQ==";
-		OneKey privateKey = new OneKey(CBORObject.DecodeFromBytes(Base64.decode(keyPairBase64)));
+		OneKey privateKey = new OneKey(CBORObject.DecodeFromBytes(StringUtil.base64ToByteArray(keyPairBase64)));
 		OneKey publicFirstY = SharedSecretCalculation.buildEcdsa256OneKey(null, x.toByteArray(), root1.toByteArray());
 		OneKey publicSecondY = SharedSecretCalculation.buildEcdsa256OneKey(null, x.toByteArray(), root2.toByteArray());
 		System.out.println("publicFirstY " + publicFirstY.AsCBOR().toString());
