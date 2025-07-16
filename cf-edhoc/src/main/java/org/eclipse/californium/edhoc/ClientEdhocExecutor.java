@@ -474,7 +474,7 @@ public class ClientEdhocExecutor {
 					}
 					edhocMessageReq2.getOptions().setOscore(Bytes.EMPTY);
 					
-					edhocMessageReq2.getOptions().setEdhoc(true);
+					edhocMessageReq2.getOptions().setEdhoc();
 					session.setMessage3(nextPayload);
 					
 					try {

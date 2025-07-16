@@ -30,6 +30,7 @@ import org.eclipse.californium.core.network.stack.ExchangeCleanupLayer;
 import org.eclipse.californium.core.network.stack.Layer;
 import org.eclipse.californium.core.network.stack.ObserveLayer;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.elements.EndpointContextMatcher;
 import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.oscore.OSCoreCtxDB;
 import org.eclipse.californium.oscore.ObjectSecurityContextLayer;
@@ -56,16 +57,17 @@ public class EdhocStack extends BaseCoapStack {
 	 * @param usedConnectionIds list containing the used EDHOC connection IDs
 	 * @param OSCORE_REPLAY_WINDOW size of the Replay Window to use in an OSCORE Recipient Context
 	 * @param MAX_UNFRAGMENTED_SIZE size of MAX_UNFRAGMENTED_SIZE to use in an OSCORE Security Context
+	 * @param matchingStrategy endpoint context matcher to relate responses with requests
 	 * 
 	 */
 	public EdhocStack(String tag, final Configuration config, final Outbox outbox, final OSCoreCtxDB ctxDb,
 			HashMap<CBORObject, EdhocSession> edhocSessions, HashMap<CBORObject, OneKey> peerPublicKeys,
 			HashMap<CBORObject, CBORObject> peerCredentials, Set<CBORObject> usedConnectionIds,
-			int OSCORE_REPLAY_WINDOW, int MAX_UNFRAGMENTED_SIZE) {
+			int OSCORE_REPLAY_WINDOW, int MAX_UNFRAGMENTED_SIZE, EndpointContextMatcher matchingStrategy) {
 		super(outbox);
 
 		Layer layers[] = new Layer[] { new ObjectSecurityContextLayer(ctxDb), new ExchangeCleanupLayer(config),
-				new ObserveLayer(config), new BlockwiseLayer(tag, false, config),
+				new ObserveLayer(config), new BlockwiseLayer(tag, false, config, matchingStrategy),
 				CongestionControlLayer.newImplementation(tag, config), new ObjectSecurityLayer(ctxDb),
 				new EdhocLayer(ctxDb, edhocSessions, peerPublicKeys, peerCredentials,
 						       usedConnectionIds, OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE) };

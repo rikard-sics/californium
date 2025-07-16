@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.eclipse.californium</groupId>
 		<artifactId>cf-bom</artifactId>
-		<version>3.11.0-SNAPSHOT</version>
+		<version>4.0.0-SNAPSHOT</version>
 		<relativePath>../bom</relativePath>
 	</parent>
 
@@ -38,7 +38,8 @@
         <dependency>
             <groupId>net.i2p.crypto</groupId>
 			<artifactId>eddsa</artifactId>
-			<version>${eddsa.version}</version>
+			<!-- <version>${eddsa.version}</version> -->
+			<version>0.2.0</version>
         </dependency>
         <dependency>
 			<groupId>${project.groupId}</groupId>

@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.network.CoapEndpoint;
-import org.eclipse.californium.core.network.ExtendedCoapStackFactory;
+import org.eclipse.californium.core.network.CoapStackFactory;
 import org.eclipse.californium.core.network.Outbox;
 import org.eclipse.californium.core.network.stack.CoapStack;
 import org.eclipse.californium.cose.OneKey;
@@ -38,7 +38,7 @@ import com.upokecenter.cbor.CBORObject;
  * Coap stack factory creating a {@link EdhocStack} including a
  * {@link ObjectSecurityLayer} and {@link EdhocLayer}.
  */
-public class EdhocCoapStackFactory implements ExtendedCoapStackFactory {
+public class EdhocCoapStackFactory implements CoapStackFactory {
 
 	private static AtomicBoolean init = new AtomicBoolean();
 	private static volatile OSCoreCtxDB defaultCtxDb;
@@ -52,8 +52,8 @@ public class EdhocCoapStackFactory implements ExtendedCoapStackFactory {
 	@Override
 	// TODO: This method may need updating for the custom argument
 	// This is only for when useAsDefault is not used
-	public CoapStack createCoapStack(String protocol, String tag, Configuration config, Outbox outbox,
-			Object customStackArgument) {
+	public CoapStack createCoapStack(String protocol, String tag, Configuration config,
+			EndpointContextMatcher matchingStrategy, Outbox outbox, Object customStackArgument) {
 		if (CoAP.isTcpProtocol(protocol)) {
 			throw new IllegalArgumentException("protocol \"" + protocol + "\" is not supported!");
 		}
@@ -62,7 +62,7 @@ public class EdhocCoapStackFactory implements ExtendedCoapStackFactory {
 			ctxDb = (OSCoreCtxDB) customStackArgument;
 		}
 		return new EdhocStack(tag, config, outbox, ctxDb, edhocSessions, peerPublicKeys, peerCredentials,
-				              usedConnectionIds, OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE);
+				usedConnectionIds, OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE, matchingStrategy);
 	}
 
 	/**
@@ -108,11 +108,4 @@ public class EdhocCoapStackFactory implements ExtendedCoapStackFactory {
 		EdhocCoapStackFactory.MAX_UNFRAGMENTED_SIZE = MAX_UNFRAGMENTED_SIZE;
 	}
 
-	@Override
-	public CoapStack createCoapStack(String protocol, String tag, Configuration config,
-			EndpointContextMatcher matchingStrategy, Outbox outbox, Object customStackArgument) {
-		
-		return createCoapStack(protocol, tag, config, outbox, customStackArgument);
-		
-	}
 }
