@@ -125,7 +125,7 @@ public class OptionJuggle {
 
 		// EDHOC
 		if (hasEdhoc) {
-			ret.setEdhoc(true);
+			ret.setEdhoc();
 		}
 		
 		return ret;
