@@ -391,17 +391,22 @@ public abstract class EncryptCommon extends Message {
 		if (ivLen == -1)
 			throw new CoseException("Unsupported Algorithm Specified");
 
-		// obtain and validate IV
-		CBORObject iv = findAttribute(HeaderKeys.IV);
-		if (iv == null) {
-			throw new CoseException("Missing IV during decryption");
-		}
-		if (iv.getType() != CBORType.ByteString) {
-			throw new CoseException("IV is incorrectly formed");
-		}
-		if (iv.GetByteString().length != ivLen) {
-			throw new CoseException("IV size is incorrect");
-		}
+	    // Create random IV if null
+	    CBORObject iv = findAttribute(HeaderKeys.IV);
+	    if (iv == null) {
+	        byte[] tmp = new byte[ivLen];
+	        random.nextBytes(tmp);
+	        iv = CBORObject.FromObject(tmp);
+	        addAttribute(HeaderKeys.IV, iv, Attribute.UNPROTECTED);
+	    }
+
+	    // obtain and validate IV
+	    if (iv.getType() != CBORType.ByteString) {
+	        throw new CoseException("IV is incorrectly formed");
+	    }
+	    if (iv.GetByteString().length != ivLen) {
+	        throw new CoseException("IV size is incorrect");
+	    }
 	}
 
 	/**
