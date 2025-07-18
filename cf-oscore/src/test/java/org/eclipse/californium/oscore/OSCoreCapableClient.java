@@ -34,7 +34,7 @@ import com.upokecenter.cbor.CBORObject;
  * SimpleProxyClient to display the basic OSCORE mechanics through a proxy
  *
  */
-public class TimeSTC {
+public class OSCoreCapableClient {
 
 	private final static HashMapCtxDB db = new HashMapCtxDB(2);
 	private final static String serverIP = "127.0.0.1"; //"169.254.154.184"; //

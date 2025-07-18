@@ -592,10 +592,7 @@ public class ClientEdhocExecutor {
 						
 						CBORObject[] holder = CBORObject.DecodeSequenceFromBytes(instructionForMessage3);
 						holder[2].Set(InstructionIDRegistry.KID, ctx.getRecipientId());
-						
-						for (CBORObject b : holder) {
-							System.out.println(b);
-						}
+
 						edhocMessageReq2.getOptions().setOscore(OptionEncoder.encodeSequence(holder));
 					}
 					else {

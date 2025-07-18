@@ -128,7 +128,7 @@ import org.eclipse.californium.core.network.interceptors.MessageInterceptor;
  * Proxy: http://lantersoft.ch/robots.txt
  * </pre>
  */
-public class SimpleProxyProxy {
+public class OSCoreCapableProxy {
 
 	private static final Logger STATISTIC_LOGGER = LoggerFactory.getLogger("org.eclipse.californium.proxy.statistics");
 
@@ -221,7 +221,7 @@ public class SimpleProxyProxy {
 			};
 	
 
-	public SimpleProxyProxy(Configuration config, boolean accept, boolean cache) throws IOException, OSException {
+	public OSCoreCapableProxy(Configuration config, boolean accept, boolean cache) throws IOException, OSException {
 		OSCoreCtx ctxToClient = new OSCoreCtx(master_secret, true, alg, sids[0], rids[0], kdf, 32, master_salt, idcontexts[0], MAX_UNFRAGMENTED_SIZE);
 		db.addContext("coap://" + clientIP + ":" + Objects.toString(CoapProxyPort + 1), ctxToClient); 
 
@@ -289,7 +289,7 @@ public class SimpleProxyProxy {
 	
 	public static void main(String args[]) throws IOException, OSException {
 		Configuration proxyConfig = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
-		SimpleProxyProxy proxy = new SimpleProxyProxy(proxyConfig, false, true);
+		OSCoreCapableProxy proxy = new OSCoreCapableProxy(proxyConfig, false, true);
 		for(;;) {
 			try {
 				Thread.sleep(15000);

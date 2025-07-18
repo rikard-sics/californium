@@ -26,7 +26,7 @@ import com.upokecenter.cbor.CBORObject;
  * SimpleProxyServer to display basic OSCORE mechanics through a proxy
  *
  */
-public class SimpleProxyServer {
+public class OSCoreCapableServer {
 	private static Timer timer;
 
 	private final static HashMapCtxDB db = new HashMapCtxDB(2);

@@ -37,7 +37,7 @@ import com.upokecenter.cbor.CBORObject;
  * SimpleProxyClient to display the basic OSCORE mechanics through a proxy
  *
  */
-public class SimpleProxyClient {
+public class OSCoreCapableClientAlternate {
 
 
 	private final static HashMapCtxDB db = new HashMapCtxDB(2);
