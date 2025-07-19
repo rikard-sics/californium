@@ -776,9 +776,11 @@ public class GroupCtx {
 		String digest = null;
 		switch (hkdfAlg) {
 		case HKDF_HMAC_SHA_256:
+		case HMAC_SHA_256:
 			digest = "SHA256";
 			break;
 		case HKDF_HMAC_SHA_512:
+		case HMAC_SHA_512:
 			digest = "SHA512";
 			break;
 		case HKDF_HMAC_AES_128:
