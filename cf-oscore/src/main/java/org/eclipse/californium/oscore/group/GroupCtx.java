@@ -59,6 +59,7 @@ public class GroupCtx {
 	byte[] signatureEncryptionKey;
 	byte[] gmPublicKey;
 	CRED_FORMAT authCredFmt;
+	boolean usePairwiseMode = true;
 
 	public enum CRED_FORMAT {
 		CWT(0), CCS(1), X509(2), C509(3);
@@ -391,13 +392,18 @@ public class GroupCtx {
 	public void addToDb(String uri, HashMapCtxDB db) throws OSException {
 
 		// Add the sender context and derive its pairwise keys
-		senderCtx.derivePairwiseKeys();
+		if (usePairwiseMode) {
+			senderCtx.derivePairwiseKeys();
+		}
 		db.addContext(uri, senderCtx);
 
 		// Add the recipient contexts and derive their pairwise keys
 		for (Entry<ByteId, GroupRecipientCtx> entry : recipientCtxMap.entrySet()) {
 			GroupRecipientCtx recipientCtx = entry.getValue();
-			recipientCtx.derivePairwiseKey();
+
+			if (usePairwiseMode) {
+				recipientCtx.derivePairwiseKey();
+			}
 
 			db.addContext(recipientCtx);
 		}
@@ -674,4 +680,19 @@ public class GroupCtx {
 
 		return derivedCommonIv;
 	}
+
+	/**
+	 * @return the usePairwiseMode
+	 */
+	public boolean isUsePairwiseMode() {
+		return usePairwiseMode;
+	}
+
+	/**
+	 * @param usePairwiseMode the usePairwiseMode to set
+	 */
+	public void setUsePairwiseMode(boolean usePairwiseMode) {
+		this.usePairwiseMode = usePairwiseMode;
+	}
 }
+
