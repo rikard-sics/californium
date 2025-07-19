@@ -47,7 +47,7 @@ public class GroupOscoreCtxTest {
 
 	String uriLocal = "coap://localhost";
 	AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
-	AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
+	AlgorithmID kdf = AlgorithmID.HMAC_SHA_256;
 
 	// Group OSCORE specific values for the countersignature (EdDSA)
 	AlgorithmID algCountersign = AlgorithmID.EDDSA;
@@ -148,7 +148,7 @@ public class GroupOscoreCtxTest {
 	@Test
 	public void testContextDerivationSha512() throws OSException {
 
-		AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_512;
+		AlgorithmID kdf = AlgorithmID.HMAC_SHA_512;
 
 		// Install cryptographic providers
 		Provider EdDSA = new EdDSASecurityProvider();
