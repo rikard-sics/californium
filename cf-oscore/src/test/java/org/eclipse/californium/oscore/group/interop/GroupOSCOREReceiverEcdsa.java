@@ -111,7 +111,7 @@ public class GroupOSCOREReceiverEcdsa {
 	private final static HashMapCtxDB db = new HashMapCtxDB();
 	private final static String uriLocal = "coap://localhost";
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
-	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
+	private final static AlgorithmID kdf = AlgorithmID.HMAC_SHA_256;
 
 	// Group OSCORE specific values for the countersignature (ECDSA P-256)
 	private final static AlgorithmID algCountersign = AlgorithmID.ECDSA_256;

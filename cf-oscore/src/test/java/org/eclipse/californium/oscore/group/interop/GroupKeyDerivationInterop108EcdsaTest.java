@@ -77,7 +77,7 @@ public class GroupKeyDerivationInterop108EcdsaTest {
 
 	// Define AEAD and HKDF algorithms
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
-	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
+	private final static AlgorithmID kdf = AlgorithmID.HMAC_SHA_256;
 
 	// Imagined multicast addresses for recipient groups
 	private static String groupEcdsa = "groupEcdsa";

@@ -84,7 +84,7 @@ public class GroupEncryptorTest {
 	public TestNameLoggerRule name = new TestNameLoggerRule();
 
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
-	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
+	private final static AlgorithmID kdf = AlgorithmID.HMAC_SHA_256;
 	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
 			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
 	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
