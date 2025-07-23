@@ -68,7 +68,7 @@ public class RequestDecryptor extends Decryptor {
 		OptionSet uOptions = request.getOptions();
 		try {
 			if (ctx.isEncryptedPiv()) {
-				PivEncryptor.decryptPiv(request, ctx);
+				PivEncryptor.decryptPiv(request, ctx.getPivEncryptionKey());
 			}
 			enc = decompression(protectedData, request);
 		} catch (OSException e) {

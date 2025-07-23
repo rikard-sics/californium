@@ -16,6 +16,11 @@ import org.slf4j.LoggerFactory;
 public class PivEncryptor {
 
 	/**
+	 * Length of the IV_KEYSTREAM
+	 */
+	private static final int IV_KEYSTREAM_LENGTH = 16;
+
+	/**
 	 * The logger
 	 */
 	private static final Logger LOGGER = LoggerFactory.getLogger(PivEncryptor.class);
@@ -25,10 +30,10 @@ public class PivEncryptor {
 	 * https://datatracker.ietf.org/doc/html/draft-tiloca-core-oscore-piv-enc-00
 	 * 
 	 * @param message the CoAP message
-	 * @param ctx the OSCORE Security Context
+	 * @param pivEncryptionKey the Partial IV encryption key
 	 */
-	static void decryptPiv(Message message, OSCoreCtx ctx) {
-		encryptDecryptPiv(message, ctx);
+	static void decryptPiv(Message message, final byte[] pivEncryptionKey) {
+		encryptDecryptPiv(message, pivEncryptionKey);
 	}
 
 	/**
@@ -36,10 +41,10 @@ public class PivEncryptor {
 	 * https://datatracker.ietf.org/doc/html/draft-tiloca-core-oscore-piv-enc-00
 	 * 
 	 * @param message the CoAP message
-	 * @param ctx the OSCORE Security Context
+	 * @param pivEncryptionKey the Partial IV encryption key
 	 */
-	static void encryptPiv(Message message, OSCoreCtx ctx) {
-		encryptDecryptPiv(message, ctx);
+	static void encryptPiv(Message message, final byte[] pivEncryptionKey) {
+		encryptDecryptPiv(message, pivEncryptionKey);
 	}
 
 	/**
@@ -47,35 +52,38 @@ public class PivEncryptor {
 	 * https://datatracker.ietf.org/doc/html/draft-tiloca-core-oscore-piv-enc-00
 	 * 
 	 * @param message the CoAP message
-	 * @param ctx the OSCORE Security Context
+	 * @param pivEncryptionKey the Partial IV encryption key
 	 */
-	private static void encryptDecryptPiv(Message message, OSCoreCtx ctx) {
+	private static void encryptDecryptPiv(Message message, final byte[] pivEncryptionKey) {
 		OscoreOptionDecoder optionDecoder = null;
 		try {
 			optionDecoder = new OscoreOptionDecoder(message.getOptions().getOscore());
 		} catch (CoapOSException e) {
-			LOGGER.error("Error parsing OSCORE CoAP option for Partial IV decryption.");
+			LOGGER.error("Error parsing OSCORE CoAP option for Partial IV encryption/decryption.");
 			e.printStackTrace();
 		}
 
-		// Prepare the input from the message payload
+		// Do nothing if the OSCORE option does not contain a PIV
+		if (optionDecoder.getPartialIV() == null || optionDecoder.getPartialIV().length == 0) {
+			return;
+		}
+
+		// Prepare the sample and input from the message payload
 		byte[] payload = message.getPayload();
-		int length = Math.min(payload.length, 16);
+		int length = Math.min(payload.length, IV_KEYSTREAM_LENGTH);
 
 		byte[] sample = new byte[length];
 		System.arraycopy(payload, 0, sample, 0, length);
 
-		byte[] input = new byte[16];
-		if (length < 16) {
-			// Left-pad SAMPLE with zeros
-			int padding = 16 - length;
+		byte[] input = new byte[IV_KEYSTREAM_LENGTH];
+		if (length < IV_KEYSTREAM_LENGTH) {
+			int padding = IV_KEYSTREAM_LENGTH - length;
 			System.arraycopy(sample, 0, input, padding, length);
 		} else {
 			input = sample;
 		}
 
 		// Generate the IV_KEYSTREAM
-		byte[] pivEncryptionKey = ctx.getPivEncryptionKey();
 		SecretKeySpec keySpec = new SecretKeySpec(pivEncryptionKey, "AES");
 		byte[] ivKeystream = null;
 		try {
@@ -84,16 +92,17 @@ public class PivEncryptor {
 			ivKeystream = cipher.doFinal(input);
 		} catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException | IllegalBlockSizeException
 				| BadPaddingException e) {
-			LOGGER.error("Error failed to derive the IV_KEYSTREAM for Partial IV decryption.");
+			LOGGER.error("Error failed to derive the IV_KEYSTREAM for Partial IV encryption/decryption.");
 			e.printStackTrace();
 		}
 
-		// Actually decrypt the Partial IV (if present)
+		// Actually encrypt/decrypt the Partial IV
 		byte[] plainPiv = optionDecoder.getPartialIV();
-		if (plainPiv == null || plainPiv.length == 0) {
-			return;
-		}
 		byte[] encryptedPartialIV = new byte[plainPiv.length];
+
+		if (ivKeystream.length < plainPiv.length) {
+			LOGGER.error("Error IV_KEYSTREAM is too short when performing Partial IV encryption/decryption.");
+		}
 
 		for (int i = 0; i < plainPiv.length; i++) {
 			encryptedPartialIV[i] = (byte) (plainPiv[i] ^ ivKeystream[i]);
@@ -106,5 +115,5 @@ public class PivEncryptor {
 		optionEncoder.setPartialIV(encryptedPartialIV);
 		message.getOptions().setOscore(optionEncoder.getBytes());
 	}
-	
+
 }
