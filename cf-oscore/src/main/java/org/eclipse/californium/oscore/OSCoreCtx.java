@@ -746,14 +746,13 @@ public class OSCoreCtx {
 	 * @throws RuntimeException if not this.common_alg has been initiated
 	 */
 	private void setLengths() {
-		piv_encryption_key_length = 16;
-
 		if (common_alg != null) {
 
 			iv_length = EncryptCommon.getIvLength(common_alg);
 			if (iv_length > 0) {
 				id_length = iv_length - 6; // RFC section 5.2
 				key_length = common_alg.getKeySize() / 8;
+				piv_encryption_key_length = key_length;
 
 			} else {
 				LOGGER.error("Requested AEAD algorithm is not supported: {}", common_alg);
