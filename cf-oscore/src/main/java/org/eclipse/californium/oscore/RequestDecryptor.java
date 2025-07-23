@@ -67,6 +67,9 @@ public class RequestDecryptor extends Decryptor {
 		Encrypt0Message enc;
 		OptionSet uOptions = request.getOptions();
 		try {
+			if (ctx.isEncryptedPiv()) {
+				PivEncryptor.decryptPiv(request, ctx);
+			}
 			enc = decompression(protectedData, request);
 		} catch (OSException e) {
 			LOGGER.error(ErrorDescriptions.FAILED_TO_DECODE_COSE);

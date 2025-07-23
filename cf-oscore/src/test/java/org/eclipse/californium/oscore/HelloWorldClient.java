@@ -48,20 +48,30 @@ public class HelloWorldClient {
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 
 	public static void main(String[] args) throws OSException, ConnectorException, IOException {
-		OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, null, MAX_UNFRAGMENTED_SIZE);
+		OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, null,
+				MAX_UNFRAGMENTED_SIZE, true);
 		db.addContext(uriLocal, ctx);
 
 		OSCoreCoapStackFactory.useAsDefault(db);
+		ctx.setSenderSeq(65536);
+
 		CoapClient c = new CoapClient(uriLocal + hello1);
 
-		Request r = new Request(Code.GET);
-		CoapResponse resp = c.advanced(r);
-		printResponse(resp);
+		for (int i = 0; i < 10; i++) {
+			Request r = new Request(Code.GET);
+			r.getOptions().setOscore(new byte[0]);
+			CoapResponse resp = c.advanced(r);
+			printResponse(resp);
+		}
 
-		r = new Request(Code.GET);
-		r.getOptions().setOscore(new byte[0]);
-		resp = c.advanced(r);
-		printResponse(resp);
+		for (int i = 0; i < 10; i++) {
+			Request r = new Request(Code.POST);
+			r.setPayload(Integer.toString(i));
+			r.getOptions().setOscore(new byte[0]);
+			CoapResponse resp = c.advanced(r);
+			printResponse(resp);
+		}
+
 		c.shutdown();
 	}
 

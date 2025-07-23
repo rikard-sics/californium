@@ -88,6 +88,10 @@ public class OSCoreCtx {
 
 	private Code CoAPCode = null;
 
+	private byte[] piv_encryption_key;
+	private int piv_encryption_key_length;
+	private boolean encryptedPiv = false;
+
 	/**
 	 * Include the context id in messages generated using this context. This is
 	 * generally optional and can be controlled by the application.
@@ -212,7 +216,34 @@ public class OSCoreCtx {
 	 * @since 3.0 (added parameter maxUnfragmentedSize)
 	 */
 	public OSCoreCtx(byte[] master_secret, boolean client, AlgorithmID alg, byte[] sender_id, byte[] recipient_id,
-			AlgorithmID kdf, Integer replay_size, byte[] master_salt, byte[] contextId, int maxUnfragmentedSize) throws OSException {
+			AlgorithmID kdf, Integer replay_size, byte[] master_salt, byte[] contextId, int maxUnfragmentedSize)
+			throws OSException {
+		this(master_secret, client, alg, sender_id, recipient_id, kdf, replay_size, master_salt, contextId,
+				maxUnfragmentedSize, false);
+	}
+
+	/**
+	 * Constructor. Generates the context from the base parameters.
+	 * 
+	 * @param master_secret the master secret
+	 * @param alg the encryption algorithm as defined in COSE
+	 * @param client is this originally the client's context
+	 * @param sender_id the sender id or null for default
+	 * @param recipient_id the recipient id or null for default
+	 * @param kdf the COSE algorithm abbreviation of the kdf or null for the
+	 *            default
+	 * @param replay_size the replay window size or null for the default
+	 * @param master_salt the optional master salt, can be null
+	 * @param contextId the context id, can be null
+	 * @param maxUnfragmentedSize maximum unfragmented size
+	 * @param encryptedPiv encrypt the OSCORE Partial IV in the OSCORE option
+	 *
+	 * @throws OSException if the KDF is not supported
+	 * @since 3.0 (added parameter maxUnfragmentedSize)
+	 */
+	public OSCoreCtx(byte[] master_secret, boolean client, AlgorithmID alg, byte[] sender_id, byte[] recipient_id,
+			AlgorithmID kdf, Integer replay_size, byte[] master_salt, byte[] contextId, int maxUnfragmentedSize,
+			boolean encryptedPiv) throws OSException {
 
 		if (alg == null) {
 			this.common_alg = AlgorithmID.AES_CCM_16_64_128;
@@ -224,6 +255,8 @@ public class OSCoreCtx {
 
 		this.sender_seq = 0;
 		this.lowest_recipient_seq = 0;
+
+		this.encryptedPiv = encryptedPiv;
 
 		if (master_secret != null) {
 			this.common_master_secret = master_secret.clone();
@@ -358,6 +391,25 @@ public class OSCoreCtx {
 			String details = e.getMessage();
 			LOGGER.error(details);
 			throw new OSException(details);
+		}
+
+		// Derive PIV encryption key (if encrypting PIVs)
+		if (isEncryptedPiv()) {
+			info = CBORObject.NewArray();
+			info.Add(Bytes.EMPTY);
+			info.Add(this.context_id);
+			info.Add(this.common_alg.AsCBOR());
+			info.Add(CBORObject.FromObject("PIVEKey"));
+			info.Add(this.piv_encryption_key_length);
+
+			try {
+				this.piv_encryption_key = deriveKey(this.common_master_secret, this.common_master_salt,
+						this.piv_encryption_key_length, digest, info.EncodeToBytes());
+			} catch (CoseException e) {
+				String details = e.getMessage();
+				LOGGER.error(details);
+				throw new OSException(details);
+			}
 		}
 
 		// Initialize cipher object
@@ -694,6 +746,8 @@ public class OSCoreCtx {
 	 * @throws RuntimeException if not this.common_alg has been initiated
 	 */
 	private void setLengths() {
+		piv_encryption_key_length = 16;
+
 		if (common_alg != null) {
 
 			iv_length = EncryptCommon.getIvLength(common_alg);
@@ -950,6 +1004,24 @@ public class OSCoreCtx {
 	 */
 	protected byte[] getNonceHandover() {
 		return nonceHandover;
+	}
+
+	/**
+	 * Get the PIV encryption key
+	 * 
+	 * @return the PIV encryption key
+	 */
+	public byte[] getPivEncryptionKey() {
+		return piv_encryption_key;
+	}
+
+	/**
+	 * Get whether PIVs are encrypted or not
+	 * 
+	 * @return the encryptedPiv
+	 */
+	public boolean isEncryptedPiv() {
+		return encryptedPiv;
 	}
 
 }

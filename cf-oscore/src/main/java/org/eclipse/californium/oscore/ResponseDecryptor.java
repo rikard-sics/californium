@@ -74,6 +74,9 @@ public class ResponseDecryptor extends Decryptor {
 				LOGGER.error(ErrorDescriptions.TOKEN_INVALID);
 				throw new OSException(ErrorDescriptions.TOKEN_INVALID);
 			}
+			if (ctx.isEncryptedPiv()) {
+				PivEncryptor.decryptPiv(response, ctx);
+			}
 			enc = decompression(protectedData, response);
 		} else {
 			LOGGER.error(ErrorDescriptions.TOKEN_NULL);

@@ -44,7 +44,8 @@ public class HelloWorldServer {
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 
 	public static void main(String[] args) throws OSException {
-		OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, null, MAX_UNFRAGMENTED_SIZE);
+		OSCoreCtx ctx = new OSCoreCtx(master_secret, false, alg, sid, rid, kdf, 32, master_salt, null,
+				MAX_UNFRAGMENTED_SIZE, true);
 		db.addContext(uriLocal, ctx);
 		OSCoreCoapStackFactory.useAsDefault(db);
 
@@ -69,7 +70,14 @@ public class HelloWorldServer {
 				Response r = new Response(ResponseCode.CONTENT);
 				r.setPayload("Hello World!");
 				exchange.respond(r);
-				server.destroy();
+			}
+
+			@Override
+			public void handlePOST(CoapExchange exchange) {
+				System.out.println("Accessing hello/1 resource");
+				Response r = new Response(ResponseCode.CONTENT);
+				r.setPayload("Hello World!");
+				exchange.respond(r);
 			}
 		};
 
