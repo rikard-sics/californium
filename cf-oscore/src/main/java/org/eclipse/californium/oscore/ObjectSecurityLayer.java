@@ -283,7 +283,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		if (isProtected(request)) {
 
 			OSCoreCtx ctx = null;
-
 			try {
 				// Retrieve the OSCORE context associated with this RID and ID
 				// Context

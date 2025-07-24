@@ -12,7 +12,6 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
