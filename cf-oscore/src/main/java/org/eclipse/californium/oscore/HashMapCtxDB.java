@@ -50,7 +50,7 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	private static final Logger LOGGER = LoggerFactory.getLogger(HashMapCtxDB.class);
 
 	// The outer HashMap has RID as key and the inner ID Context
-	private HashMap<ByteId, HashMap<ByteId, OSCoreCtx>> contextMap;
+	protected HashMap<ByteId, HashMap<ByteId, OSCoreCtx>> contextMap;
 
 	private HashMap<Token, OSCoreCtx> tokenMap;
 	private HashMap<String, OSCoreCtx> uriMap;

@@ -161,6 +161,9 @@ public abstract class Encryptor {
 		if (ctx.isEncryptedPiv()) {
 			PivEncryptor.encryptPiv(message, ctx.getPivEncryptionKey());
 		}
+		if (ctx.isEncryptedKid()) {
+			PivEncryptor.encryptKid(message, ctx.getPivEncryptionKey());
+		}
 
 		return bRes.toByteArray();
 	}

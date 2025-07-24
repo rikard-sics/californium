@@ -74,6 +74,8 @@ public class ResponseDecryptor extends Decryptor {
 				LOGGER.error(ErrorDescriptions.TOKEN_INVALID);
 				throw new OSException(ErrorDescriptions.TOKEN_INVALID);
 			}
+
+			// TODO: Add KID decryption here too?
 			if (ctx.isEncryptedPiv()) {
 				PivEncryptor.decryptPiv(response, ctx.getPivEncryptionKey());
 			}

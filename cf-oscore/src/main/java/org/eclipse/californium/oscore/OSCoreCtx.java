@@ -91,6 +91,7 @@ public class OSCoreCtx {
 	private byte[] piv_encryption_key;
 	private int piv_encryption_key_length;
 	private boolean encryptedPiv = false;
+	private boolean encryptedKid = false;
 
 	/**
 	 * Include the context id in messages generated using this context. This is
@@ -219,7 +220,7 @@ public class OSCoreCtx {
 			AlgorithmID kdf, Integer replay_size, byte[] master_salt, byte[] contextId, int maxUnfragmentedSize)
 			throws OSException {
 		this(master_secret, client, alg, sender_id, recipient_id, kdf, replay_size, master_salt, contextId,
-				maxUnfragmentedSize, false);
+				maxUnfragmentedSize, false, false);
 	}
 
 	/**
@@ -237,13 +238,14 @@ public class OSCoreCtx {
 	 * @param contextId the context id, can be null
 	 * @param maxUnfragmentedSize maximum unfragmented size
 	 * @param encryptedPiv encrypt the OSCORE Partial IV in the OSCORE option
+	 * @param encryptedPiv encrypt the OSCORE KID in the OSCORE option
 	 *
 	 * @throws OSException if the KDF is not supported
 	 * @since 3.0 (added parameter maxUnfragmentedSize)
 	 */
 	public OSCoreCtx(byte[] master_secret, boolean client, AlgorithmID alg, byte[] sender_id, byte[] recipient_id,
 			AlgorithmID kdf, Integer replay_size, byte[] master_salt, byte[] contextId, int maxUnfragmentedSize,
-			boolean encryptedPiv) throws OSException {
+			boolean encryptedPiv, boolean encryptedKid) throws OSException {
 
 		if (alg == null) {
 			this.common_alg = AlgorithmID.AES_CCM_16_64_128;
@@ -257,6 +259,7 @@ public class OSCoreCtx {
 		this.lowest_recipient_seq = 0;
 
 		this.encryptedPiv = encryptedPiv;
+		this.encryptedKid = encryptedKid;
 
 		if (master_secret != null) {
 			this.common_master_secret = master_secret.clone();
@@ -1021,6 +1024,15 @@ public class OSCoreCtx {
 	 */
 	public boolean isEncryptedPiv() {
 		return encryptedPiv;
+	}
+
+	/**
+	 * Get whether KIDs are encrypted or not
+	 * 
+	 * @return the encryptedKid
+	 */
+	public boolean isEncryptedKid() {
+		return encryptedKid;
 	}
 
 }

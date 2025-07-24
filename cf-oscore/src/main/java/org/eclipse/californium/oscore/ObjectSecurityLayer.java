@@ -283,6 +283,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		if (isProtected(request)) {
 
 			OSCoreCtx ctx = null;
+
 			try {
 				// Retrieve the OSCORE context associated with this RID and ID
 				// Context
@@ -299,6 +300,11 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					super.sendResponse(exchange, error);
 				}
 				return;
+			}
+
+			// Attempt to find the OSCORE context when KID encryption is used
+			if (ctx == null) {
+				ctx = PivEncryptor.decryptKidFindContext(request, (HashMapCtxDB) ctxDb);
 			}
 
 			// For OSCORE-protected requests with the outer block1-option let

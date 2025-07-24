@@ -43,13 +43,14 @@ public class HelloWorldClient {
 			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
 	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
 			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
-	private final static byte[] sid = new byte[0];
+	private final static byte[] sid = new byte[] { 0x02 };
 	private final static byte[] rid = new byte[] { 0x01 };
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 
 	public static void main(String[] args) throws OSException, ConnectorException, IOException {
 		OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, kdf, 32, master_salt, null,
-				MAX_UNFRAGMENTED_SIZE, true);
+				MAX_UNFRAGMENTED_SIZE, true, true);
+
 		db.addContext(uriLocal, ctx);
 
 		OSCoreCoapStackFactory.useAsDefault(db);
