@@ -127,7 +127,7 @@ public class PivEncryptor {
 		byte[] input = composeInput(message);
 
 		// Flip last bit in last byte
-		input[input.length - 1] = (byte) (input[input.length - 1] & 0x01);
+		input[input.length - 1] ^= 0x01;
 
 		// Generate the KID_KEYSTREAM
 		byte[] kidKeystream = computeKeystream(input, pivEncryptionKey);
@@ -187,7 +187,7 @@ public class PivEncryptor {
 		byte[] input = composeInput(message);
 
 		// Flip last bit in last byte
-		input[input.length - 1] = (byte) (input[input.length - 1] & 0x01);
+		input[input.length - 1] ^= 0x01;
 
 		// === Loop through all OSCORE contexts and try decryption ===
 		boolean contextFound = false;
