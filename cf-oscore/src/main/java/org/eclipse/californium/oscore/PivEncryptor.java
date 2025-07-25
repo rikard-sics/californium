@@ -242,7 +242,6 @@ public class PivEncryptor {
 			return ctx;
 		}
 
-		System.out.println("No context found!");
 		return null;
 	}
 
