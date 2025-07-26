@@ -28,7 +28,6 @@ import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.Utils;
-import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
@@ -37,7 +36,6 @@ import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.util.Bytes;
-import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 
@@ -48,17 +46,17 @@ import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider
 /**
  * Test sender configured to support multicast requests. Rebased.
  */
-public class GroupOSCORESender {
+public class GroupOSCORESenderCfg {
 
 	/**
 	 * File name for network configuration.
 	 */
 	private static final File CONFIG_FILE = new File("CaliforniumMulticast.properties");
-
 	/**
 	 * Header for network configuration.
 	 */
 	private static final String CONFIG_HEADER = "Californium CoAP Properties file for Multicast Client";
+
 	/**
 	 * Special network configuration defaults handler.
 	 */
@@ -71,95 +69,39 @@ public class GroupOSCORESender {
 
 	};
 
-	/**
-	 * Time to wait for replies to the multicast request
-	 */
-	private static final int HANDLER_TIMEOUT = 2000;
-
-	/**
-	 * Whether to use OSCORE or not.
-	 */
-	static final boolean useOSCORE = true;
-
-	/**
-	 * Multicast address to send to (use the first line to set a custom one).
-	 */
-	// static final InetAddress multicastIP = new
-	// InetSocketAddress("FF01:0:0:0:0:0:0:FD", 0).getAddress();
-	// static final InetAddress multicastIP = new InetSocketAddress("127.0.0.1",
-	// 0).getAddress();
-	static final InetAddress multicastIP = CoAP.MULTICAST_IPV4;
-
-	/**
-	 * Port to send to.
-	 */
-	private static final int destinationPort = CoAP.DEFAULT_COAP_PORT;
-
-	/**
-	 * Resource to perform request against.
-	 */
-	static final String requestResource = "/helloWorld";
-
-	/**
-	 * Payload in request sent (POST)
-	 */
-	static final String requestPayload = "test";
-
-	/**
-	 * ED25519 curve value.
-	 * https://www.iana.org/assignments/cose/cose.xhtml#elliptic-curves
-	 */
-	// static final int ED25519 = KeyKeys.OKP_Ed25519.AsInt32(); //Integer value
-	// 6
-
-	/* --- OSCORE Security Context information (sender) --- */
 	private final static HashMapCtxDB db = new HashMapCtxDB();
-	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
-	private final static AlgorithmID kdf = AlgorithmID.HMAC_SHA_256;
 
-	// Group OSCORE specific values for the countersignature (EdDSA)
-	private final static AlgorithmID algCountersign = AlgorithmID.EDDSA;
+	private static final int HANDLER_TIMEOUT = AppConfigSender.getInt("HANDLER_TIMEOUT");
+	static final boolean useOSCORE = AppConfigSender.getBoolean("useOSCORE");
+	static final InetAddress multicastIP = AppConfigSender.getInetAddress("multicast_ip");
+	private static final int destinationPort = AppConfigSender.getInt("destination_port");
+	static final String requestResource = AppConfigSender.getString("request_resource");
+	static final String requestPayload = AppConfigSender.getString("request_payload");
 
-	// Encryption algorithm for when using Group mode
-	private final static AlgorithmID algGroupEnc = AlgorithmID.AES_CCM_16_64_128;
+	private static final AlgorithmID alg = AppConfigSender.getAlg("alg");
+	private static final AlgorithmID kdf = AppConfigSender.getAlg("kdf");
+	private static final AlgorithmID algCountersign = AppConfigSender.getAlg("algCountersign");
+	private static final AlgorithmID algGroupEnc = AppConfigSender.getAlg("algGroupEnc");
+	private static final AlgorithmID algKeyAgreement = AppConfigSender.getAlg("algKeyAgreement");
 
-	// Algorithm for key agreement
-	private final static AlgorithmID algKeyAgreement = AlgorithmID.ECDH_SS_HKDF_256;
+	private static final byte[] master_secret = AppConfigSender.getHexByteArray("master_secret");
+	private static final byte[] master_salt = AppConfigSender.getHexByteArray("master_salt");
+	private static final int REPLAY_WINDOW = AppConfigSender.getInt("replay_window");
 
-	// test vector OSCORE draft Appendix C.1.1
-	private final static byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
-			0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
-	private final static byte[] master_salt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23,
-			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
+	private static final byte[] gm_public_key_bytes = AppConfigSender.getHexByteArray("gm_public_key");
 
-	private static final int REPLAY_WINDOW = 32;
-
-	private final static byte[] gm_public_key_bytes = StringUtil.hex2ByteArray(
-			"A501781A636F6170733A2F2F6D79736974652E6578616D706C652E636F6D026C67726F75706D616E6167657203781A636F6170733A2F2F646F6D61696E2E6578616D706C652E6F7267041AAB9B154F08A101A4010103272006215820CDE3EFD3BC3F99C9C9EE210415C6CBA55061B5046E963B8A58C9143A61166472");
-
-	private final static byte[] sid = new byte[] { 0x25 };
-	private final static byte[] sid_public_key_bytes = StringUtil.hex2ByteArray(
-			"A501781B636F6170733A2F2F746573746572312E6578616D706C652E636F6D02666D796E616D6503781A636F6170733A2F2F68656C6C6F312E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820069E912B83963ACC5941B63546867DEC106E5B9051F2EE14F3BC5CC961ACD43A");
+	private static final byte[] sid = AppConfigSender.getHexByteArray("sid");
+	private static final byte[] sid_public_key_bytes = AppConfigSender.getHexByteArray("sid_public_key");
+	private static byte[] sid_private_key_bytes = AppConfigSender.getHexByteArray("sid_private_key");
 	private static MultiKey sid_private_key;
-	private static byte[] sid_private_key_bytes = new byte[] { (byte) 0x64, (byte) 0x71, (byte) 0x4D, (byte) 0x41,
-			(byte) 0xA2, (byte) 0x40, (byte) 0xB6, (byte) 0x1D, (byte) 0x8D, (byte) 0x82, (byte) 0x35, (byte) 0x02,
-			(byte) 0x71, (byte) 0x7A, (byte) 0xB0, (byte) 0x88, (byte) 0xC9, (byte) 0xF4, (byte) 0xAF, (byte) 0x6F,
-			(byte) 0xC9, (byte) 0x84, (byte) 0x45, (byte) 0x53, (byte) 0xE4, (byte) 0xAD, (byte) 0x4C, (byte) 0x42,
-			(byte) 0xCC, (byte) 0x73, (byte) 0x52, (byte) 0x39 };
 
-	private final static byte[] rid1 = new byte[] { 0x52 }; // Recipient 1
-	private static byte[] rid1_public_key_bytes = StringUtil.hex2ByteArray(
-			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A401010327200621582077EC358C1D344E41EE0E87B8383D23A2099ACD39BDF989CE45B52E887463389B");
-	private static MultiKey rid1_public_key;
+	private static final byte[] rid0 = AppConfigSender.getHexByteArray("rid0");
+	private static final byte[] rid1 = AppConfigSender.getHexByteArray("rid1");
+	private static final byte[] rid1_public_key_bytes = AppConfigSender.getHexByteArray("rid1_public_key");
+	private static final byte[] rid2 = AppConfigSender.getHexByteArray("rid2");
+	private static final byte[] rid2_public_key_bytes = AppConfigSender.getHexByteArray("rid2_public_key");
 
-	private final static byte[] rid2 = new byte[] { 0x77 }; // Recipient 2
-	private final static byte[] rid2_public_key_bytes = StringUtil.hex2ByteArray(
-			"A501781A636F6170733A2F2F7365727665722E6578616D706C652E636F6D026673656E64657203781A636F6170733A2F2F636C69656E742E6578616D706C652E6F7267041A70004B4F08A101A4010103272006215820105B8C6A8C88019BF0C354592934130BAA8007399CC2AC3BE845884613D5BA2E");
-	private static MultiKey rid2_public_key;
-
-	private final static byte[] rid0 = new byte[] { (byte) 0xCC }; // Dummy
-
-	private final static byte[] group_identifier = new byte[] { 0x44, 0x61, 0x6c }; // GID
+	private static final byte[] group_identifier = AppConfigSender.getHexByteArray("group_identifier");
 
 	/* --- OSCORE Security Context information --- */
 
@@ -188,8 +130,8 @@ public class GroupOSCORESender {
 
 		// Add private & public keys for sender & receiver(s)
 		sid_private_key = new MultiKey(sid_public_key_bytes, sid_private_key_bytes);
-		rid1_public_key = new MultiKey(rid1_public_key_bytes);
-		rid2_public_key = new MultiKey(rid2_public_key_bytes);
+		MultiKey rid1_public_key = new MultiKey(rid1_public_key_bytes);
+		MultiKey rid2_public_key = new MultiKey(rid2_public_key_bytes);
 
 		// If OSCORE is being used set the context information
 		if (useOSCORE) {
