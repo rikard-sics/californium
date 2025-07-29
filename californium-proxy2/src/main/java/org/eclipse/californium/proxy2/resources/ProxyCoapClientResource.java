@@ -18,6 +18,7 @@ package org.eclipse.californium.proxy2.resources;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,6 +37,7 @@ import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.observe.ObserveManager;
 import org.eclipse.californium.core.observe.ObserveRelation;
+import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.proxy2.ClientEndpoints;
 import org.eclipse.californium.proxy2.Coap2CoapTranslator;
 import org.eclipse.californium.proxy2.CoapUriTranslator;
@@ -95,6 +97,10 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 		LOGGER.debug("ProxyCoapClientResource forwards {}", incomingRequest);
 
 		try {
+			if (Arrays.equals(incomingRequest.getOptions().getOscore(), Bytes.EMPTY)) {
+				incomingRequest.getOptions().removeOscore();
+			}
+
 			// create the new request from the original
 			InetSocketAddress exposedInterface = translator.getExposedInterface(incomingRequest);
 			URI destination = translator.getDestinationURI(incomingRequest, exposedInterface);

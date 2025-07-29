@@ -30,7 +30,7 @@ import org.junit.runners.Suite.SuiteClasses;
 		OSSerializerTest.class, OSCoreServerClientTest.class, OSCoreObserveTest.class, EncryptorTest.class,
 		DecryptorTest.class, EndpointContextInfoTest.class, ContextRederivationTest.class,
 		OSCoreInnerBlockwiseTest.class, OSCoreOuterBlockwiseTest.class, OSCoreAlgorithmsTest.class,
-		OscoreOptionTest.class })
+		OscoreOptionTest.class, OptionEncoderTest.class })
 public class AllJUnitTests {
 
 }

@@ -34,7 +34,7 @@ import com.upokecenter.cbor.CBORObject;
  * SimpleProxyClient to display the basic OSCORE mechanics through a proxy
  *
  */
-public class TimeSTC {
+public class OSCoreCapableClient {
 
 	private final static HashMapCtxDB db = new HashMapCtxDB(2);
 	private final static String serverIP = "127.0.0.1"; //"169.254.154.184"; //
@@ -45,7 +45,7 @@ public class TimeSTC {
 	private final static String proxyIP = "127.0.0.1"; // "169.254.106.132"; //
 	private final static String uriProxy = "coap://" + proxyIP + ":5685";
 	private final static String uriProxyPath = "";
-	
+
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
 	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
 
@@ -62,7 +62,7 @@ public class TimeSTC {
 	};
 
 	private final static byte[][] rids = {
-			new byte[] { 0x01 }, 
+			new byte[] { 0x05 }, 
 			new byte[] { 0x02 }
 	};
 
@@ -141,17 +141,17 @@ public class TimeSTC {
 		assertTrue(response.getOptions().hasOscore());
 		assertEquals(response.getResponseText(), "Hello World!");
 		assertEquals(response.getCode(), ResponseCode.CONTENT);
-        
+
 		response = OSCOREScheme(clientToServer);
 		assertTrue(response.getOptions().hasOscore());
 		assertEquals(response.getResponseText(), "Hello World!");
 		assertEquals(response.getCode(), ResponseCode.CONTENT);
-        
+
 		response = PostURISend(clientToServer);
 		assertTrue(response.getOptions().hasOscore());
 		assertEquals(response.getResponseText(), "Hello World!");
 		assertEquals(response.getCode(), ResponseCode.CONTENT);
-        
+
 		response = PostSchemeSend(clientToServer);
 		assertTrue(response.getOptions().hasOscore());
 		assertEquals(response.getResponseText(), "Hello World!");

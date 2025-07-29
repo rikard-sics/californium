@@ -116,6 +116,7 @@ import org.eclipse.californium.core.network.stack.CoapStack;
 import org.eclipse.californium.core.network.stack.CoapTcpStack;
 import org.eclipse.californium.core.network.stack.CoapUdpStack;
 import org.eclipse.californium.core.network.stack.ExchangeCleanupLayer;
+import org.eclipse.californium.core.network.stack.Layer;
 import org.eclipse.californium.core.network.stack.ObserveLayer;
 import org.eclipse.californium.core.network.stack.ReliabilityLayer;
 import org.eclipse.californium.core.observe.InMemoryObservationStore;
@@ -1813,6 +1814,10 @@ public class CoapEndpoint implements Endpoint, Executor {
 			throw new NullPointerException("new coap-stack-factory must not be null!");
 		}
 		defaultCoapStackFactory = newFactory;
+	}
+	
+	public synchronized <T extends Layer> T getLayer(Class<T> layer) {
+		return this.coapstack.getLayer(layer);
 	}
 
 }

@@ -1,8 +1,5 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<project
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
-	xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.eclipse.californium</groupId>
@@ -11,11 +8,11 @@
 		<relativePath>../bom</relativePath>
 	</parent>
 
-	<artifactId>cf-oscore</artifactId>
-	<packaging>bundle</packaging>
+	<artifactId>cf-edhoc</artifactId>
+	<packaging>jar</packaging>
 
-	<name>Cf-OSCORE</name>
-	<description>Californium (Cf) OSCORE, Object Security for Constrained RESTful Environments</description>
+	<name>Cf-EDHOC</name>
+	<description>abc EDHOC abc</description>
 
 	<properties>
 		<revapi.skip>true</revapi.skip>
@@ -30,23 +27,30 @@
 			<groupId>org.eclipse.californium</groupId>
 			<artifactId>californium-core</artifactId>
 		</dependency>
-		<dependency>
+		<dependency> <!-- Rikard: Added this dependency -->
 			<groupId>org.eclipse.californium</groupId>
-			<artifactId>scandium</artifactId>
+			<artifactId>cf-oscore</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>com.upokecenter</groupId>
 			<artifactId>cbor</artifactId>
 		</dependency>
-		<dependency> <!-- Rikard: Added this dependency -->
-	            <groupId>net.i2p.crypto</groupId>
-	            <artifactId>eddsa</artifactId>
-	            <version>${eddsa.version}</version>
+        <dependency>
+            <groupId>net.i2p.crypto</groupId>
+			<artifactId>eddsa</artifactId>
+			<version>${eddsa.version}</version>
         </dependency>
-		<dependency> <!-- Rikard: Added this dependency (Curve25519) -->
-	            <groupId>org.bouncycastle</groupId>
-	            <artifactId>bcpkix-jdk15on</artifactId>
-	            <version>1.67</version>
+        <dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>scandium</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+			<type>test-jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk15on</artifactId>
+            <version>1.67</version>
         </dependency>
 		<!-- test dependencies -->
 		<dependency>
@@ -74,26 +78,6 @@
 					<descriptorRefs>
 						<descriptorRef>enhanced-jar-with-licenses</descriptorRef>
 					</descriptorRefs>
-					<archive>
-						<manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-					</archive>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.felix</groupId>
-				<artifactId>maven-bundle-plugin</artifactId>
-				<extensions>true</extensions>
-				<configuration>
-					<instructions>
-						<Export-Package>
-							org.eclipse.californium.cose,
-							org.eclipse.californium.oscore
-						</Export-Package>
-						<Import-Package>
-							*
-						</Import-Package>
-						<Bundle-SymbolicName>${project.groupId}.oscore</Bundle-SymbolicName>
-					</instructions>
 				</configuration>
 			</plugin>
 		</plugins>

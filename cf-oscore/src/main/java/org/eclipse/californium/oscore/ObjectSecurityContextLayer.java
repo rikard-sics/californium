@@ -20,6 +20,11 @@ package org.eclipse.californium.oscore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.upokecenter.cbor.CBORObject;
+
+import java.util.Objects;
+
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
@@ -31,6 +36,7 @@ import org.eclipse.californium.core.network.Exchange.Origin;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ContextRederivation.PHASE;
+import org.eclipse.californium.oscore.group.OptionEncoder;
 
 /**
  * 
@@ -123,10 +129,14 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 					LOGGER.error(ErrorDescriptions.URI_NULL);
 					throw new OSException(ErrorDescriptions.URI_NULL);
 				}
+				
+				byte[] OscoreOption = request.getOptions().getOscore();
+				CBORObject[] instructions = OptionEncoder.decodeCBORSequence(OscoreOption);
 
-				OSCoreCtx ctx = ctxDb.getContext(uri);
+				OSCoreCtx ctx = ctxDb.getContext(request, instructions);
+
 				if (ctx == null) {
-					if (ctxDb.getIfProxyable()) {
+					if (ctxDb.getIfProxyable() || request.getOptions().getContentFormat() == 65) {
 						// if we are a proxy but do not have a security context with the next endpoint we forward the request
 						LOGGER.trace("Request: {}", exchange.getRequest());
 						super.sendRequest(exchange, request);

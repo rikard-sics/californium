@@ -67,6 +67,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 		this.ctxDb = ctxDb;
 	}
 
+
 	/**
 	 * Encrypt an outgoing request using the OSCore context.
 	 * 
@@ -232,7 +233,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				// are there instructions?
 				boolean instructionsExists = Objects.nonNull(instructions);
-
 				OSCoreCtx ctx = ctxDb.getContext(request, instructions);
 
 				if (ctx == null && !instructionsExists) {
@@ -286,11 +286,13 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				Request preparedRequest = request;
 
+				boolean breaked = false;
 				if (instructionsExists) {
 
 					int index = instructions[InstructionIDRegistry.Header.Index].ToObject(int.class);
 					if (InstructionIDRegistry.StartIndex != index ) {
-						throw new RuntimeException("start index is not correct in instructions");
+						//throw new RuntimeException("start index is not correct in instructions");
+						// this should happen when Edhoc is used
 					}
 
 					// initial for forwarding with valid first oscore option that is not empty
@@ -305,11 +307,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					boolean instructionsRemaining;
 
 					// This loops until all instructions have been used
-					for (int i = InstructionIDRegistry.StartIndex; i < instructions.length; i++) {
+					for (int i = index; i < instructions.length; i++) {
 
 						//encryption
 						ctx = ctxDb.getContext(request, instructions);
-
 						preparedRequest = prepareSend(ctxDb, ctx, preparedRequest, instructions);
 
 						if (outgoingExceedsMaxUnfragSize(request, false, ctx.getMaxUnfragmentedSize())) {
@@ -325,6 +326,12 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						if (instructionsRemaining) {
 							// increment index in instructions
 							instructions[InstructionIDRegistry.Header.Index] = CBORObject.FromObject(i + 1);
+						}
+
+						// more checks to make sure that it actually will return to this layer?
+						if (instructions[i].get(InstructionIDRegistry.Break) != null) {
+							breaked = true;
+							break;
 						}
 					}
 				}
@@ -352,39 +359,47 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				// used and set on message observer when sending without instructions
 				final OSCoreCtx finalCtx             = instructionsExists ? null : ctxDb.getContext(request, instructions);				
 
-				finalPreparedRequest.addMessageObserver(0, new MessageObserverAdapter() {
+				if (!breaked) {
+					finalPreparedRequest.addMessageObserver(0, new MessageObserverAdapter() {
 
-					//this isn't called until it is ready to send, i.e. super.sendRequest
-					//only creates the Token and associates it with the ctx
-					@Override
-					public void onReadyToSend() {
-						Token token = finalPreparedRequest.getToken();
+						//this isn't called until it is ready to send, i.e. super.sendRequest
+						//only creates the Token and associates it with the ctx
+						@Override
+						public void onReadyToSend() {
+							Token token = finalPreparedRequest.getToken();
 
-						// add at head of message observers to update
-						// the token of the original request first,
-						// before calling other message observers!
-						if (request.getToken() == null) {
-							request.setToken(token);
-						}
+							// add at head of message observers to update
+							// the token of the original request first,
+							// before calling other message observers!
+							if (request.getToken() == null) {
+								request.setToken(token);
+							}
 
-						if (!request.hasMID() && finalPreparedRequest.hasMID()) {
-							request.setMID(finalPreparedRequest.getMID());
-						}
+							if (!request.hasMID() && finalPreparedRequest.hasMID()) {
+								request.setMID(finalPreparedRequest.getMID());
+							}
 
-						if (Objects.nonNull(finalInstructions)) {
-							ctxDb.addInstructions(token, finalInstructions);
+							if (Objects.nonNull(finalInstructions)) {
+								ctxDb.addInstructions(token, finalInstructions);
+							}
+							else { 
+								ctxDb.addContext(token, finalCtx);
+							}
 						}
-						else {
-							ctxDb.addContext(token, finalCtx);
-						}
-					}
-				});
+					});
+				}
 
 				req = finalPreparedRequest;
 
 				// sets the cryptographic context id on the exchange if there were no instructions
 				if (!(Objects.nonNull(finalInstructions))) {
 					exchange.setCryptographicContextID(req.getOptions().getOscore());
+				}
+
+				// if there were instructions and not everything was processed, put instructions
+				// in cryptoContextID
+				if (breaked) {
+					exchange.setCryptographicContextID(OptionEncoder.encodeSequence(instructions));
 				}
 
 				LOGGER.trace("Request: {}", exchange.getRequest());

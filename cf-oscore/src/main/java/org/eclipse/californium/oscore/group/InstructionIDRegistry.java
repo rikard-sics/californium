@@ -10,6 +10,7 @@ public final class InstructionIDRegistry {
 	public static final int PreSet = 6;
 	public static final int PostSet = 7;
 	public static final int RequestSequenceNumber = 8;
+	public static final int Break = 9;
 	
 	public final class Header {
 		public static final int OscoreOptionValue = 0;

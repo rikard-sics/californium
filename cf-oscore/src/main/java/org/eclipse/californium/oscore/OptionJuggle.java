@@ -184,6 +184,19 @@ public class OptionJuggle {
 			case OptionNumberRegistry.OSCORE:
 				throw new IllegalArgumentException("OSCORE is not allowed as an option in the post-set!");
 
+			case OptionNumberRegistry.EDHOC:
+				// check if it already exists as a uOption
+				if (uOptions.hasEdhoc()) {
+					// if it does, runtimeException
+					throw new RuntimeException("Option to be added already exists as an option in the message!");
+				}
+
+				// does not care for value
+
+				// set post instruction
+				uOptions.setEdhoc();
+				break;
+
 			case OptionNumberRegistry.MAX_AGE:
 
 				// check if it already exists as a uOption
@@ -295,6 +308,8 @@ public class OptionJuggle {
 			case OptionNumberRegistry.URI_PORT:
 			case OptionNumberRegistry.PROXY_SCHEME:
 			case OptionNumberRegistry.PROXY_URI:
+			case OptionNumberRegistry.EDHOC:
+
 				// Does it have instructions?
 				if (instructionsExists)  {
 					boolean[] promotionAnswers = OptionEncoder.extractPromotionAnswers(o.getNumber(), instruction);
@@ -320,7 +335,11 @@ public class OptionJuggle {
 						case OptionNumberRegistry.PROXY_URI:
 							options.removeProxyUri();
 							break;
+						case OptionNumberRegistry.EDHOC:
+							options.removeEdhoc();
+							break;
 						}
+						
 						break;
 					}
 					// keep as is if not promoted, i.e. Class U
@@ -369,6 +388,8 @@ public class OptionJuggle {
 			case OptionNumberRegistry.URI_HOST:
 			case OptionNumberRegistry.URI_PORT:
 			case OptionNumberRegistry.PROXY_SCHEME:
+			case OptionNumberRegistry.EDHOC:
+
 				// do not encrypt
 				result[0].addOption(o);
 				break;
@@ -503,7 +524,7 @@ public class OptionJuggle {
 	 * 
 	 * @return the OSCore-U option set
 	 */
-	// needed for tests
+	// needed for tests, or need to update OptionJuggleTest
 	public static OptionSet prepareUoptions(OptionSet options) {
 		boolean hasProxyUri = options.hasProxyUri();
 		boolean hasUriHost = options.hasUriHost();
@@ -562,7 +583,7 @@ public class OptionJuggle {
 	 * 
 	 * @return the option to be encrypted
 	 */
-	// needed for tests
+	// needed for tests, or need to update OptionJuggleTest
 	public static OptionSet prepareEoptions(OptionSet options) {
 		OptionSet ret = new OptionSet();
 

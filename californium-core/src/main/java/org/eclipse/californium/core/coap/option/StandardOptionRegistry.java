@@ -174,6 +174,12 @@ public class StandardOptionRegistry extends MapBasedOptionRegistry {
 	public static final OpaqueOption.Definition OSCORE = new OpaqueOption.Definition(OptionNumberRegistry.OSCORE,
 			Names.Object_Security, true, 0, 255);
 	/**
+	 * @see <a href="https://datatracker.ietf.org/doc/html/draft-ietf-core-oscore-edhoc-10#name-coap-option-numbers-registr"
+	 *      target= "_blank">draft-ietf-core-oscore-edhoc 8.1. EDHOC Option Format</a>
+	 */
+	public static final EmptyOption.Definition EDHOC = new EmptyOption.Definition( // EDHOC
+			OptionNumberRegistry.EDHOC, Names.Edhoc);
+	/**
 	 * Not supported for now, only for logging!
 	 * 
 	 * @see <a href="https://www.rfc-editor.org/rfc/rfc9175.html#section-2.2.1"
@@ -204,7 +210,7 @@ public class StandardOptionRegistry extends MapBasedOptionRegistry {
 	private StandardOptionRegistry() {
 		super(IF_MATCH, URI_HOST, ETAG, IF_NONE_MATCH, URI_PORT, LOCATION_PATH, URI_PATH, CONTENT_FORMAT, MAX_AGE,
 				URI_QUERY, ACCEPT, Q_BLOCK_1, LOCATION_QUERY, PROXY_URI, PROXY_SCHEME, SIZE1, OBSERVE, BLOCK1, BLOCK2,
-				SIZE2, Q_BLOCK_2, OSCORE, ECHO, NO_RESPONSE, REQUEST_TAG);
+				SIZE2, Q_BLOCK_2, OSCORE, EDHOC, ECHO, NO_RESPONSE, REQUEST_TAG); // EDHOC
 	}
 
 	/**
