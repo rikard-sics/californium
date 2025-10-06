@@ -103,6 +103,8 @@ public class GroupOSCORESenderCfg {
 
 	private static final byte[] group_identifier = AppConfigSender.getHexByteArray("group_identifier");
 
+	static final boolean pairwiseMode = AppConfigSender.getBoolean("pairwise_mode");
+
 	/* --- OSCORE Security Context information --- */
 
 	/**
@@ -164,20 +166,28 @@ public class GroupOSCORESenderCfg {
 		multicastRequest.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 		multicastRequest.setType(Type.NON);
 		if (useOSCORE) {
-			// For group mode request
-			multicastRequest.getOptions().setOscore(Bytes.EMPTY);
 
-			// For pairwise request:
-			// multicastRequest.getOptions().setOscore(OptionEncoder.set(true,
-			// requestURI, rid1));
+			if (pairwiseMode) {
+				// For pairwise request:
+				multicastRequest.getOptions().setOscore(OptionEncoder.set(true, requestURI, rid1));
+
+			} else {
+				// For group mode request
+				multicastRequest.getOptions().setOscore(Bytes.EMPTY);
+			}
+
 		}
 
 		// Information about the sender
 		System.out.println("==================");
 		System.out.println("*Multicast sender");
 		System.out.println("Uses OSCORE: " + useOSCORE);
-		System.out.println("Request destination: " + requestURI);
-		System.out.println("Request destination port: " + destinationPort);
+		System.out.println("Using pairwise mode: " + pairwiseMode);
+		if (pairwiseMode) {
+			System.out.println("Pairwise mode target: " + requestURI + " " + Utils.toHexString(rid1));
+		} else {
+			System.out.println("Request destination: " + requestURI);
+		}
 		System.out.println("Request method: " + multicastRequest.getCode());
 		System.out.println("Request payload: " + requestPayload);
 		System.out.println("Outgoing port: " + endpoint.getAddress().getPort());
