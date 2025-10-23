@@ -27,6 +27,8 @@ import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
+import net.i2p.crypto.eddsa.Utils;
+
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Response;
@@ -100,6 +102,9 @@ public class ResponseDecryptor extends Decryptor {
 
 				byte[] RID       = instruction.get(InstructionIDRegistry.KID).ToObject(byte[].class);
 				byte[] IDCONTEXT = instruction.get(InstructionIDRegistry.IDContext).ToObject(byte[].class);
+
+				System.out.println("Incoming Response: Removing OSCORE layer for RID: " + Utils.bytesToHex(RID)
+						+ " Token: " + response.getTokenString());
 
 				ctx = db.getContext(RID, IDCONTEXT);
 

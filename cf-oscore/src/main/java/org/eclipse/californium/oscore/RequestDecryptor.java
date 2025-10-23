@@ -36,6 +36,8 @@ import org.eclipse.californium.elements.util.DatagramReader;
 import com.upokecenter.cbor.CBORObject;
 import com.upokecenter.cbor.CBORType;
 
+import net.i2p.crypto.eddsa.Utils;
+
 import org.eclipse.californium.cose.HeaderKeys;
 
 /**
@@ -79,6 +81,9 @@ public class RequestDecryptor extends Decryptor {
 			throw new CoapOSException(ErrorDescriptions.FAILED_TO_DECODE_COSE, ResponseCode.BAD_OPTION);
 		}
 		byte[] rid = kid.GetByteString();
+
+		System.out.println("Incoming Request: Removing OSCORE layer for RID: " + Utils.bytesToHex(rid) + " Token: "
+				+ request.getTokenString());
 
 		// Retrieve Context ID (kid context)
 		CBORObject kidContext = enc.findAttribute(CBORObject.FromObject(10));

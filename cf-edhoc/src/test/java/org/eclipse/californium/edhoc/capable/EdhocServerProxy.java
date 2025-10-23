@@ -47,6 +47,7 @@ import org.eclipse.californium.edhoc.EdhocCoapStackFactory;
 import org.eclipse.californium.edhoc.EdhocEndpointInfo;
 import org.eclipse.californium.edhoc.EdhocResource;
 import org.eclipse.californium.edhoc.EdhocSession;
+import org.eclipse.californium.edhoc.MessageProcessor;
 import org.eclipse.californium.edhoc.SharedSecretCalculation;
 import org.eclipse.californium.edhoc.Util;
 import org.eclipse.californium.elements.config.Configuration;
@@ -150,6 +151,11 @@ public class EdhocServerProxy extends CoapServer {
 	 */
 	public static void main(String[] args) {
 		
+		// Force specific connection IDs
+		CBORObject ridMap = CBORObject.NewMap();
+		ridMap.Add(CBORObject.FromObject(0), CBORObject.FromObject(new byte[] { (byte) 0xEE }));
+		MessageProcessor.forcedCidResponder = ridMap;
+
 		// Insert EdDSA security provider
 		Security.insertProviderAt(EdDSA, 1);
 

@@ -62,17 +62,17 @@ public class OSCoreCapableClient {
 
 	private final static byte[][] sids = {
 			new byte[] { 0x01 }, 
-			new byte[] { 0x02 }
+			new byte[] { (byte) 0xAA }
 	};
 
 	private final static byte[][] rids = {
 			new byte[] { 0x05 }, 
-			new byte[] { 0x02 }
+			new byte[] { (byte) 0xAA }
 	};
 
 	private final static byte[][] idcontexts = {
 			new byte[] { 0x01 }, 
-			new byte[] { 0x02 }
+			new byte[] { (byte) 0xAA }
 	};
 
 	/*------------------------------PROXY-Uri OPTION------------------------------*/

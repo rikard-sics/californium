@@ -64,6 +64,7 @@ import org.eclipse.californium.edhoc.Constants;
 import org.eclipse.californium.edhoc.EdhocCoapStackFactory;
 import org.eclipse.californium.edhoc.EdhocEndpointInfo;
 import org.eclipse.californium.edhoc.EdhocSession;
+import org.eclipse.californium.edhoc.MessageProcessor;
 import org.eclipse.californium.edhoc.SharedSecretCalculation;
 import org.eclipse.californium.edhoc.Util;
 
@@ -266,6 +267,13 @@ public class CypressEdDemoClient {
 	 * 
 	 */
 	public static void main(String args[]) {
+
+		// Force specific connection IDs
+		CBORObject cidMap = CBORObject.NewMap();
+		cidMap.Add(CBORObject.FromObject(0), CBORObject.FromObject(new byte[] { 0x77 }));
+		cidMap.Add(CBORObject.FromObject(1), CBORObject.FromObject(new byte[] { 0x45 }));
+		MessageProcessor.forcedCidInitiator = cidMap;
+
 		String defaultUri = "coap://localhost/helloWorld";
 				
 		Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
@@ -464,34 +472,36 @@ public class CypressEdDemoClient {
 		}
 
 		
-		System.out.println("Sending encrypted GET to server");
-
-		CoapClient clientToServer = new CoapClient(edhocURIServer);
-
-		Request r = new Request(Code.GET);
-		r.getOptions().setOscore(Bytes.EMPTY);
-		r.getOptions().setUriPath("helloWorld");
-
-		try {
-			CoapResponse response = clientToServer.advanced(r);
-			System.out.println("received payload is: " + Utils.prettyPrint(response));
-		} catch (ConnectorException | IOException e) {
-			System.out.println(e.getLocalizedMessage());
-		}
-
-		System.out.println("Sending encrypted GET to Proxy");
-
-		CoapClient clientToProxy = new CoapClient(edhocURIProxy);
-
-		r = new Request(Code.GET);
-		r.getOptions().setOscore(Bytes.EMPTY);
-		
-		try {
-			CoapResponse response = clientToProxy.advanced(r);
-			System.out.println("received payload is: " + Utils.prettyPrint(response));
-		} catch (ConnectorException | IOException e) {
-			System.out.println(e.getLocalizedMessage());
-		}
+		// System.out.println("Sending encrypted GET to server");
+		//
+		// CoapClient clientToServer = new CoapClient(edhocURIServer);
+		//
+		// Request r = new Request(Code.GET);
+		// r.getOptions().setOscore(Bytes.EMPTY);
+		// r.getOptions().setUriPath("helloWorld");
+		//
+		// try {
+		// CoapResponse response = clientToServer.advanced(r);
+		// System.out.println("received payload is: " +
+		// Utils.prettyPrint(response));
+		// } catch (ConnectorException | IOException e) {
+		// System.out.println(e.getLocalizedMessage());
+		// }
+		//
+		// System.out.println("Sending encrypted GET to Proxy");
+		//
+		// CoapClient clientToProxy = new CoapClient(edhocURIProxy);
+		//
+		// r = new Request(Code.GET);
+		// r.getOptions().setOscore(Bytes.EMPTY);
+		//
+		// try {
+		// CoapResponse response = clientToProxy.advanced(r);
+		// System.out.println("received payload is: " +
+		// Utils.prettyPrint(response));
+		// } catch (ConnectorException | IOException e) {
+		// System.out.println(e.getLocalizedMessage());
+		// }
 		
 		System.out.println("starting instructions");
 		
@@ -516,7 +526,7 @@ public class CypressEdDemoClient {
 
 		AddressEndpointContext proxy = new AddressEndpointContext("localhost", 5685);
 		
-		r = new Request(Code.GET);
+		Request r = new Request(Code.GET);
 		r.setUriIsApplied();
 		r.setDestinationContext(proxy);
 

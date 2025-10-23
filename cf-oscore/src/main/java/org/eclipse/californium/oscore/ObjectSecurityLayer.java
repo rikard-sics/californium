@@ -23,6 +23,8 @@ import org.slf4j.LoggerFactory;
 
 import com.upokecenter.cbor.CBORObject;
 
+import net.i2p.crypto.eddsa.Utils;
+
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
@@ -311,6 +313,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 						//encryption
 						ctx = ctxDb.getContext(request, instructions);
+						System.out.println(
+								"Outgoing Request: Applying OSCORE-layer for RID: " + ctx.getRecipientIdString()
+										+ " Token: " + request.getTokenString());
+
 						preparedRequest = prepareSend(ctxDb, ctx, preparedRequest, instructions);
 
 						if (outgoingExceedsMaxUnfragSize(request, false, ctx.getMaxUnfragmentedSize())) {
@@ -333,6 +339,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 							breaked = true;
 							break;
 						}
+
 					}
 				}
 				else {
@@ -476,6 +483,10 @@ public class ObjectSecurityLayer extends AbstractLayer {
 						byte[] RID       = instruction.get(InstructionIDRegistry.KID).ToObject(byte[].class);
 						byte[] IDCONTEXT = instruction.get(InstructionIDRegistry.IDContext).ToObject(byte[].class);
 
+						System.out
+								.println("Outgoing Response: Removing OSCORE layer for RID: " + Utils.bytesToHex(RID)
+										+ " Token: " + response.getTokenString());
+
 						ctx = ctxDb.getContext(RID, IDCONTEXT);
 
 						//retrieve request sequence number
@@ -574,6 +585,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 		Message result = request;
 
+		// Loop for multiple layers
 		while (true) {
 			boolean hadProxyOption = result.getOptions().hasProxyUri() || result.getOptions().hasProxyScheme(); 
 

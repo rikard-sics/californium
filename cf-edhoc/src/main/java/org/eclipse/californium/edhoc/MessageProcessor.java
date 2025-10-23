@@ -42,6 +42,9 @@ public class MessageProcessor {
 	
 	private static final boolean debugPrint = true;
 	
+	public static CBORObject forcedCidResponder = null;
+	public static CBORObject forcedCidInitiator = null;
+
     /**
      *  Determine the type of a received EDHOC message
      *  
@@ -3186,8 +3189,17 @@ public class MessageProcessor {
 		HashMapCtxDB oscoreDB = (appProfile.getUsedForOSCORE() == true) ? db : null;
 		
 		connectionId = Util.getConnectionId(usedConnectionIds, oscoreDB, null);
+
 		// Forced for testing
-		// connectionId = new byte[] {(byte) 0x1c};
+		if (forcedCidInitiator != null) {
+
+			if (forcedCidInitiator.ContainsKey(CBORObject.FromObject(0))) {
+				connectionId = forcedCidInitiator.get(0).GetByteString();
+				forcedCidInitiator.Remove(CBORObject.FromObject(0));
+			} else {
+				connectionId = forcedCidInitiator.get(1).GetByteString();
+			}
+		}
 
         EdhocSession mySession = new EdhocSession(true, true, method, connectionId, keyPairs, idCreds, creds,
         										  supportedCipherSuites, peerSupportedCipherSuites, supportedEADs,
@@ -3263,8 +3275,17 @@ public class MessageProcessor {
 		HashMapCtxDB oscoreDB = (appProfile.getUsedForOSCORE() == true) ? db : null;
 		
 		connectionIdentifierResponder = Util.getConnectionId(usedConnectionIds, oscoreDB, connectionIdentifierInitiator);
+
 		// Forced for testing
-		// connectionIdentifierResponder = new byte[] {(byte) 0x01};
+		if (forcedCidResponder != null) {
+
+			if (forcedCidResponder.ContainsKey(CBORObject.FromObject(0))) {
+				connectionIdentifierResponder = forcedCidResponder.get(0).GetByteString();
+				forcedCidResponder.Remove(CBORObject.FromObject(0));
+			} else {
+				connectionIdentifierResponder = forcedCidResponder.get(1).GetByteString();
+			}
+		}
 		
 		List<Integer> peerSupportedCipherSuites = new ArrayList<Integer>();
 		EdhocSession mySession = new EdhocSession(false, isReq, method, connectionIdentifierResponder, keyPairs,

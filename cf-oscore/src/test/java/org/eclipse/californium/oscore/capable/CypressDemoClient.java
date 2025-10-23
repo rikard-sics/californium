@@ -5,6 +5,7 @@ package org.eclipse.californium.oscore.capable;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import java.io.IOException;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
@@ -23,6 +24,7 @@ import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.AddressEndpointContext;
 import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
 import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
 import org.eclipse.californium.oscore.OSCoreCtx;
@@ -59,11 +61,11 @@ public class CypressDemoClient {
 			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 
-	private final static byte[][] sids = { new byte[] { 0x01 }, new byte[] { 0x02 } };
+	private final static byte[][] sids = { new byte[] { 0x01 }, new byte[] { (byte) 0xAA } };
 
-	private final static byte[][] rids = { new byte[] { 0x05 }, new byte[] { 0x02 } };
+	private final static byte[][] rids = { new byte[] { 0x05 }, new byte[] { (byte) 0xAA } };
 
-	private final static byte[][] idcontexts = { new byte[] { 0x01 }, new byte[] { 0x02 } };
+	private final static byte[][] idcontexts = { new byte[] { 0x01 }, new byte[] { (byte) 0xAA } };
 
 	/*------------------------------PROXY-Uri OPTION------------------------------*/
 
@@ -95,6 +97,8 @@ public class CypressDemoClient {
 
 	private final static int[][] optionSetsPostScheme = {
 			{ OptionNumberRegistry.PROXY_SCHEME, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.URI_PORT }, {} };
+
+	static Random rand = new Random();
 
 	public static void main(String[] args) throws OSException, ConnectorException, IOException, InterruptedException {
 		OSCoreCtx ctxserver = new OSCoreCtx(master_secret, true, alg, sids[0], rids[0], kdf, 32, master_salt,
@@ -168,8 +172,16 @@ public class CypressDemoClient {
 		r.getOptions().setUriHost(serverIP);
 		r.getOptions().setUriPort(5683);
 		r.getOptions().setUriPath(uriServerPath);
+
+		byte[] tokenArray = new byte[4];
+		rand.nextBytes(tokenArray);
+		r.setToken(tokenArray);
+
 		r.setUriIsApplied();
 		r.setDestinationContext(proxy);
+
+		System.out.println(Utils.prettyPrint(r));
+
 		return c.advanced(r);
 	}
 
@@ -201,6 +213,13 @@ public class CypressDemoClient {
 
 		r.getOptions().setOscore(getPostSchemeInstruction());
 		r.getOptions().setUriPath(uriServerPath);
+
+		byte[] tokenArray = new byte[4];
+		rand.nextBytes(tokenArray);
+		r.setToken(tokenArray);
+
+		System.out.println(Utils.prettyPrint(r));
+
 		return c.advanced(r);
 	}
 
