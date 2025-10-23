@@ -404,10 +404,10 @@ public class CypressEdDemoClient {
 		byte[] oscoreoptScheme = CBORObject.FromObject(new byte[0]).EncodeToBytes();
 		byte[] indexScheme = CBORObject.FromObject(2).EncodeToBytes();
 
-		byte[] instruction = Bytes.concatenate(oscoreoptScheme, indexScheme);
+		byte[] instructionForMessage1 = Bytes.concatenate(oscoreoptScheme, indexScheme);
 
 		// instruction for encrypting for proxy (message 1)
-		instruction = Bytes.concatenate(instruction, OptionEncoder.set(ctx.getRecipientId(), ctx.getIdContext(), optionSetsScheme ,answerSetsScheme));
+		instructionForMessage1 = Bytes.concatenate(instructionForMessage1, OptionEncoder.set(ctx.getRecipientId(), ctx.getIdContext(), optionSetsScheme ,answerSetsScheme));
 		
 		byte[] instructionForMessage3 = Bytes.concatenate(oscoreoptScheme, indexScheme);
 		
@@ -417,10 +417,10 @@ public class CypressEdDemoClient {
 		instructionForMessage3 = Bytes.concatenate(instructionForMessage3, OptionEncoder.set(ctx.getRecipientId(), ctx.getIdContext(), combinedOptionSetsScheme ,combinedAnswerSetsScheme));
 		
 		// options used to tell edhocExecutor where to proxy to
-		OptionSet options = new OptionSet();
-		options.setProxyScheme("coap");
-		options.setUriHost("localhost");
-		options.setUriPort(5685);
+		OptionSet edhocMsgOptions = new OptionSet();
+		edhocMsgOptions.setProxyScheme("coap");
+		edhocMsgOptions.setUriHost("localhost");
+		edhocMsgOptions.setUriPort(5685);
 
 		
 		// Prepare the set of information for this EDHOC endpoint
@@ -440,7 +440,7 @@ public class CypressEdDemoClient {
 																  ownIdCreds, edhocEndpointInfo, OSCORE_EDHOC_COMBINED,
 																  edhocURIServer, combinedRequestAppCode,
 																  combinedRequestAppType, combinedRequestAppPayload,
-																  instruction, options, instructionForMessage3);
+																  instructionForMessage1, edhocMsgOptions, instructionForMessage3);
 		
 		if (ret == false) {
 			System.err.println("Key establishment through EDHOC has failed");
