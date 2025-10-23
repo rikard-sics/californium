@@ -1,6 +1,6 @@
 // Lucas
 
-package org.eclipse.californium.oscore;
+package org.eclipse.californium.oscore.capable;
 
 import java.util.Objects;
 import java.util.Timer;
@@ -17,6 +17,13 @@ import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.oscore.CoapOSException;
+import org.eclipse.californium.oscore.HashMapCtxDB;
+import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
+import org.eclipse.californium.oscore.OSCoreCtx;
+import org.eclipse.californium.oscore.OSCoreResource;
+import org.eclipse.californium.oscore.OSException;
+import org.eclipse.californium.oscore.OscoreOptionDecoder;
 import org.eclipse.californium.oscore.group.OptionEncoder;
 
 import com.upokecenter.cbor.CBORObject;
@@ -92,6 +99,7 @@ public class OSCoreCapableServer {
 			public void handleGET(CoapExchange exchange) {
 				//System.out.println("Accessing hello/1 resource");
 				Response r = new Response(ResponseCode.CONTENT);
+				r.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 				r.setPayload("Hello World!");
 				exchange.respond(r);
 

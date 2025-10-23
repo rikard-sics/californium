@@ -17,9 +17,8 @@
  *    Rikard Höglund (RISE)
  *    
  ******************************************************************************/
-package org.eclipse.californium.edhoc;
+package org.eclipse.californium.edhoc.capable;
 
-import java.io.File;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
@@ -32,90 +31,37 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.config.CoapConfig;
-import org.eclipse.californium.core.config.CoapConfig.TrackerMode;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.HeaderKeys;
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.edhoc.AppProfile;
+import org.eclipse.californium.edhoc.Constants;
+import org.eclipse.californium.edhoc.EdhocCoapStackFactory;
+import org.eclipse.californium.edhoc.EdhocEndpointInfo;
+import org.eclipse.californium.edhoc.EdhocResource;
+import org.eclipse.californium.edhoc.EdhocSession;
+import org.eclipse.californium.edhoc.SharedSecretCalculation;
+import org.eclipse.californium.edhoc.Util;
 import org.eclipse.californium.elements.config.Configuration;
-import org.eclipse.californium.elements.config.SystemConfig;
-import org.eclipse.californium.elements.config.TcpConfig;
-import org.eclipse.californium.elements.config.UdpConfig;
-import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
 import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
-import org.eclipse.californium.proxy2.ClientSingleEndpoint;
-import org.eclipse.californium.proxy2.Coap2CoapTranslator;
-import org.eclipse.californium.proxy2.config.Proxy2Config;
-import org.eclipse.californium.proxy2.resources.ForwardProxyMessageDeliverer;
-import org.eclipse.californium.proxy2.resources.ProxyCoapClientResource;
-import org.eclipse.californium.proxy2.resources.ProxyCoapResource;
 import org.eclipse.californium.proxy2.ClientEndpoints;
-
+import org.eclipse.californium.proxy2.ClientSingleEndpoint;
 
 import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
-public class EdhocProxyProxy extends CoapServer {
+public class EdhocServerProxy extends CoapServer {
 
-	// proxy stuff
-	/**
-	 * File name for configuration.
-	 */
-	private static final File CONFIG_FILE = new File("CaliforniumProxy3.properties");
-	/**
-	 * Header for configuration.
-	 */
-	private static final String CONFIG_HEADER = "Californium CoAP Properties file for Example Proxy";
-	/**
-	 * Default maximum resource size.
-	 */
-	private static final int DEFAULT_MAX_RESOURCE_SIZE = 8192;
-	/**
-	 * Default block size.
-	 */
-	private static final int DEFAULT_BLOCK_SIZE = 1024;
-
-	static {
-		CoapConfig.register();
-		UdpConfig.register();
-		TcpConfig.register();
-		Proxy2Config.register();
-	}
-
-	/**
-	 * Special configuration defaults handler.
-	 */
-	private static final DefinitionsProvider DEFAULTS = new DefinitionsProvider() {
-
-		@Override
-		public void applyDefinitions(Configuration config) {
-			config.set(CoapConfig.MAX_ACTIVE_PEERS, 20000);
-			config.set(CoapConfig.MAX_RESOURCE_BODY_SIZE, DEFAULT_MAX_RESOURCE_SIZE);
-			config.set(CoapConfig.MAX_MESSAGE_SIZE, DEFAULT_BLOCK_SIZE);
-			config.set(CoapConfig.PREFERRED_BLOCK_SIZE, DEFAULT_BLOCK_SIZE);
-			config.set(CoapConfig.DEDUPLICATOR, CoapConfig.DEDUPLICATOR_PEERS_MARK_AND_SWEEP);
-			config.set(CoapConfig.MAX_PEER_INACTIVITY_PERIOD, 24, TimeUnit.HOURS);
-			config.set(Proxy2Config.HTTP_CONNECTION_IDLE_TIMEOUT, 10, TimeUnit.SECONDS);
-			config.set(Proxy2Config.HTTP_CONNECT_TIMEOUT, 15, TimeUnit.SECONDS);
-			config.set(Proxy2Config.HTTPS_HANDSHAKE_TIMEOUT, 30, TimeUnit.SECONDS);
-			config.set(UdpConfig.UDP_RECEIVE_BUFFER_SIZE, 8192);
-			config.set(UdpConfig.UDP_SEND_BUFFER_SIZE, 8192);
-			config.set(SystemConfig.HEALTH_STATUS_INTERVAL, 60, TimeUnit.SECONDS);
-		}
-
-	};
-	
-	
 	static {
 	    CoapConfig.register();
 	}
@@ -188,7 +134,7 @@ public class EdhocProxyProxy extends CoapServer {
 	private static HashMap<String, AppProfile> appProfiles = new HashMap<String, AppProfile>();
 	
 	// The database of OSCORE Security Contexts
-	private final static HashMapCtxDB db = new HashMapCtxDB(true);
+	private final static HashMapCtxDB db = new HashMapCtxDB(2);
 	
 	// Lookup identifier to be associated with the OSCORE Security Context
 	private final static String uriLocal = "coap://localhost";
@@ -241,35 +187,17 @@ public class EdhocProxyProxy extends CoapServer {
 		appProfiles.put("/.well-known/edhoc", appProfile);
 		
 		try {
-
 			// create server
-			Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
+			boolean udp = true;
 
-			Configuration outgoingConfig = new Configuration(config);
-
-			outgoingConfig.set(CoapConfig.MID_TRACKER, TrackerMode.NULL);
-			CoapEndpoint.Builder builder = CoapEndpoint.builder()
-					.setConfiguration(outgoingConfig);
-			ClientEndpoints proxyToServerEndpoint = new ClientSingleEndpoint(builder.build());
+			CoapEndpoint.Builder builder = CoapEndpoint.builder();
+			builder.setInetSocketAddress(new InetSocketAddress("localhost", 5686));
+			CoapEndpoint serverEndpoint = builder.build();
 			
-			builder = CoapEndpoint.builder();
-			builder.setInetSocketAddress(new InetSocketAddress("localhost", 5685));
-			CoapEndpoint clientToProxyEndpoint = builder.build();
-			
-			ProxyCoapResource coap2coap = new ProxyCoapClientResource("coap2coap", false, false, translator, proxyToServerEndpoint);
-
-			EdhocProxyProxy server = new EdhocProxyProxy();
-			server.addEndpoint(clientToProxyEndpoint);
-
-			ForwardProxyMessageDeliverer proxyMessageDeliverer = new ForwardProxyMessageDeliverer(server.getRoot(),
-					translator, config);
-			
-			proxyMessageDeliverer.addProxyCoapResources(coap2coap); 
-			proxyMessageDeliverer.addExposedServiceAddresses(new InetSocketAddress("localhost", 5685));
-
-			server.setMessageDeliverer(proxyMessageDeliverer);
-			server.add(coap2coap);
-
+			EdhocServerProxy server = new EdhocServerProxy();
+			// add endpoints on all IP addresses
+			//server.addEndpoints(udp);
+			server.addEndpoint(serverEndpoint);
 			server.start();
 						
 		} catch (SocketException e) {
@@ -290,7 +218,7 @@ public class EdhocProxyProxy extends CoapServer {
 	private void addEndpoints(boolean udp) {
 		Configuration config = Configuration.getStandard();
 		for (InetAddress addr : NetworkInterfacesUtil.getNetworkInterfaces()) {
-			InetSocketAddress bindToAddress = new InetSocketAddress(addr, COAP_PORT+2);
+			InetSocketAddress bindToAddress = new InetSocketAddress(addr, COAP_PORT);
 			if (udp) {
 				CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
 				builder.setInetSocketAddress(bindToAddress);
@@ -304,7 +232,7 @@ public class EdhocProxyProxy extends CoapServer {
 	/*
 	 * Constructor for a new server. Here, the resources of the server are initialized.
 	 */
-	public EdhocProxyProxy() throws SocketException {
+	public EdhocServerProxy() throws SocketException {
 
 		// provide an instance of a Hello-World resource
 		add(new HelloWorldResource());
@@ -383,7 +311,86 @@ public class EdhocProxyProxy extends CoapServer {
 			exchange.respond(".well-known");
 		}
 	}
+	
+	private static void runTests() {
+		// Test a hash computation
+		System.out.println("=======================");
+		System.out.println("Test a hash computation");
+		byte[] inputHash = new byte[] {(byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0, (byte) 0x5c};
+		try {
+			System.out.println("Hash input: " + StringUtil.byteArray2HexString(inputHash));
+			byte[] resultHash = Util.computeHash(inputHash, "SHA-256");
+			System.out.println("Hash output: " + StringUtil.byteArray2HexString(resultHash));
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("Hash algorithm not supported");
+		}
+		System.out.println();
+		
 
+		// Test a signature computation and verification
+		System.out.println("=======================");
+		System.out.println("Test a signature computation and verification");
+		byte[] payloadToSign = new byte[] {(byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0, (byte) 0x5c};
+		byte[] externalData = new byte[] {(byte) 0xef, (byte) 0xde, (byte) 0xac, (byte) 0x75, (byte) 0x0f, (byte) 0xc5};
+		byte[] kid = new byte[] {(byte) 0x01};
+		CBORObject idCredX = CBORObject.NewMap();
+		idCredX.Add(HeaderKeys.KID.AsCBOR(), kid);
+		CBORObject emptyMap = CBORObject.NewMap();
+		
+		byte[] mySignature = null;
+		try {
+			mySignature = Util.computeSignature(idCredX, externalData, payloadToSign,
+												keyPairs.get(Constants.SIGNATURE_KEY).
+												         get(Integer.valueOf(Constants.CURVE_Ed25519)));
+	        System.out.println("Signing completed");
+		} catch (CoseException e) {
+			System.err.println("Error while computing the signature: " +  e.getMessage());
+		}
+		
+		boolean verified = false;
+		try {
+			verified = Util.verifySignature(mySignature, idCredX, externalData, payloadToSign,
+											keyPairs.get(Constants.SIGNATURE_KEY).
+													 get(Integer.valueOf(Constants.CURVE_Ed25519)));
+		} catch (CoseException e) {
+			System.err.println("Error while verifying the signature: " + e.getMessage());
+		}
+		System.out.println("Signature validity: " + verified);
+		System.out.println();
+		
+		
+		// Test an encryption and decryption
+		System.out.println("=======================");
+		System.out.println("Test an encryption and decryption");
+		byte[] payloadToEncrypt = new byte[] {(byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0, (byte) 0x5c};
+		byte[] symmetricKey =  new byte[] {(byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03, (byte) 0x04, (byte) 0x05,
+				                           (byte) 0x06, (byte) 0x07, (byte) 0x08, (byte) 0x09, (byte) 0x10, (byte) 0x11,
+				                           (byte) 0x12, (byte) 0x013, (byte) 0x14, (byte) 0x15};
+		byte[] iv = {(byte) 0xc5, (byte) 0xb7, (byte) 0x17, (byte) 0x0e, (byte) 0x65, (byte) 0xd5, (byte) 0x4f,
+				     (byte) 0x1a, (byte) 0xe0, (byte) 0x5d, (byte) 0x10, (byte) 0xaf, (byte) 0x56,};
+		AlgorithmID encryptionAlg = AlgorithmID.AES_CCM_16_64_128;
+		
+		
+		System.out.println("Plaintext: " + StringUtil.byteArray2HexString(payloadToEncrypt));
+		byte[] myCiphertext = null;
+		try {
+			myCiphertext = Util.encrypt(emptyMap, externalData, payloadToEncrypt, encryptionAlg, iv, symmetricKey);
+			System.out.println("Encryption completed");
+		} catch (CoseException e) {
+			System.err.println("Error while encrypting: " + e.getMessage());
+		}
+		byte[] myPlaintext = null;
+		try {
+			myPlaintext = Util.decrypt(emptyMap, externalData, myCiphertext, encryptionAlg, iv, symmetricKey);
+			System.out.println("Decryption completed");
+		} catch (CoseException e) {
+			System.err.println("Error while encrypting: " + e.getMessage());
+		}
+		System.out.println("Decryption correctness: " + Arrays.equals(payloadToEncrypt, myPlaintext));
+		System.out.println();
+		
+	}
+	
 	private static void setupSupportedCipherSuites() {
 		
 		// Add the supported cipher suites in decreasing order of preference
@@ -1028,5 +1035,5 @@ public class EdhocProxyProxy extends CoapServer {
 		peerCredentials.put(peer1IdCredP256DHx5u, CBORObject.FromObject(peerCred));
 		
 	}
-	public static Coap2CoapTranslator translator = new Coap2CoapTranslator(); 
+
 }

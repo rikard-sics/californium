@@ -17,7 +17,7 @@
  *    Rikard Höglund (RISE)
  *    
  ******************************************************************************/
-package org.eclipse.californium.edhoc;
+package org.eclipse.californium.edhoc.capable;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -30,9 +30,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Scanner;
 import java.util.Set;
 
-import org.apache.hc.client5.http.utils.Hex;
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.Utils;
@@ -58,8 +58,24 @@ import com.upokecenter.cbor.CBORObject;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.edhoc.AppProfile;
+import org.eclipse.californium.edhoc.ClientEdhocExecutor;
+import org.eclipse.californium.edhoc.Constants;
+import org.eclipse.californium.edhoc.EdhocCoapStackFactory;
+import org.eclipse.californium.edhoc.EdhocEndpointInfo;
+import org.eclipse.californium.edhoc.EdhocSession;
+import org.eclipse.californium.edhoc.SharedSecretCalculation;
+import org.eclipse.californium.edhoc.Util;
 
-public class EdhocClientProxy {
+/**
+ * 
+ * Demo client for CYPRESS to show using EDHOC togethe with OSCORE-capable
+ * proxies.
+ * 
+ * Run this client together with EdhocProxyProxy and EdhocServerProxy.
+ * 
+ */
+public class CypressDemoClient {
 
 	static {
 	    CoapConfig.register();
@@ -277,6 +293,12 @@ public class EdhocClientProxy {
 		// Set up the authentication credentials for the other peers
 		setupPeerAuthenticationCredentials();
 		
+		System.out.println("");
+		System.out.println("");
+		System.out.println("Will execute EDHOC between C and P and then between C and S through P");
+		System.out.println("An OSCORE-protected request is then sent, protected C->P and C->S");
+		promptEnterKey();
+
 		// Set the application profile
 		// - Supported authentication methods
 		// - Use of message_4 as expected to be sent by the Responder
@@ -1239,6 +1261,12 @@ public class EdhocClientProxy {
 		peerPublicKeys.put(peer1IdCredP256DHx5u, peer1PublicKeyP256DH);
 		peerCredentials.put(peer1IdCredP256DHx5u, CBORObject.FromObject(peerCred));
 		
+	}
+
+	public static void promptEnterKey() {
+		System.out.println("Press \"ENTER\" to continue...");
+		Scanner scanner = new Scanner(System.in);
+		scanner.nextLine();
 	}
 	
 }
