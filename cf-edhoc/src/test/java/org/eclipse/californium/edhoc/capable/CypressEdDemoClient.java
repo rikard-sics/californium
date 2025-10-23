@@ -75,7 +75,7 @@ import org.eclipse.californium.edhoc.Util;
  * Run this client together with EdhocProxyProxy and EdhocServerProxy.
  * 
  */
-public class CypressDemoClient {
+public class CypressEdDemoClient {
 
 	static {
 	    CoapConfig.register();
