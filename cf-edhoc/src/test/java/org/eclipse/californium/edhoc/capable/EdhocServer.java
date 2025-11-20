@@ -10,105 +10,89 @@
  * and the Eclipse Distribution License is available at
  *    http://www.eclipse.org/org/documents/edl-v10.html.
  *
- * This class is based on org.eclipse.californium.examples.GETClient
+ * This class is based on org.eclipse.californium.examples.HelloWorldServer
  * 
- * Contributors: 
+ * Contributors:
  *    Marco Tiloca (RISE)
  *    Rikard Höglund (RISE)
  *    
  ******************************************************************************/
 package org.eclipse.californium.edhoc.capable;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketException;
+import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.hc.client5.http.utils.Hex;
-import org.eclipse.californium.core.CoapClient;
-import org.eclipse.californium.core.CoapResponse;
-import org.eclipse.californium.core.Utils;
-import org.eclipse.californium.core.coap.CoAP.Code;
-import org.eclipse.californium.core.coap.CoAP.Type;
-import org.eclipse.californium.core.coap.OptionNumberRegistry;
-import org.eclipse.californium.core.coap.OptionSet;
-import org.eclipse.californium.core.coap.Request;
+import org.eclipse.californium.core.CoapResource;
+import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.config.CoapConfig;
-import org.eclipse.californium.elements.AddressEndpointContext;
+import org.eclipse.californium.core.network.CoapEndpoint;
+import org.eclipse.californium.core.server.resources.CoapExchange;
+import org.eclipse.californium.cose.AlgorithmID;
+import org.eclipse.californium.cose.CoseException;
+import org.eclipse.californium.cose.HeaderKeys;
+import org.eclipse.californium.cose.OneKey;
+import org.eclipse.californium.edhoc.AppProfile;
+import org.eclipse.californium.edhoc.Constants;
+import org.eclipse.californium.edhoc.EdhocCoapStackFactory;
+import org.eclipse.californium.edhoc.EdhocEndpointInfo;
+import org.eclipse.californium.edhoc.EdhocResource;
+import org.eclipse.californium.edhoc.EdhocSession;
+import org.eclipse.californium.edhoc.MessageProcessor;
+import org.eclipse.californium.edhoc.SharedSecretCalculation;
+import org.eclipse.californium.edhoc.Util;
 import org.eclipse.californium.elements.config.Configuration;
-import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
-import org.eclipse.californium.elements.exception.ConnectorException;
-import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.oscore.HashMapCtxDB;
-import org.eclipse.californium.oscore.OSCoreCtx;
-import org.eclipse.californium.oscore.OSException;
-import org.eclipse.californium.oscore.group.OptionEncoder;
+import org.eclipse.californium.proxy2.ClientEndpoints;
+import org.eclipse.californium.proxy2.ClientSingleEndpoint;
 
 import com.upokecenter.cbor.CBORObject;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
-import org.eclipse.californium.cose.OneKey;
-import org.eclipse.californium.edhoc.AppProfile;
-import org.eclipse.californium.edhoc.ClientEdhocExecutor;
-import org.eclipse.californium.edhoc.Constants;
-import org.eclipse.californium.edhoc.EdhocCoapStackFactory;
-import org.eclipse.californium.edhoc.EdhocEndpointInfo;
-import org.eclipse.californium.edhoc.EdhocSession;
-import org.eclipse.californium.edhoc.SharedSecretCalculation;
-import org.eclipse.californium.edhoc.Util;
-
-public class EdhocClientProxy {
+public class EdhocServer extends CoapServer {
 
 	static {
 	    CoapConfig.register();
 	}
 	
-	private static final File CONFIG_FILE = new File("Californium.properties");
-	private static final String CONFIG_HEADER = "Californium CoAP Properties file for Fileclient";
-	private static final int DEFAULT_MAX_RESOURCE_SIZE = 2 * 1024 * 1024; // 2 MB
+	private static final int COAP_PORT = Configuration.getStandard().get(CoapConfig.COAP_PORT);
 
-	private static final int DEFAULT_BLOCK_SIZE = 512;
-	
 	private final static Provider EdDSA = new EdDSASecurityProvider();
-
-	// Set to true if an OSCORE-protected exchange is performed after EDHOC completion
-	private static final boolean POST_EDHOC_EXCHANGE = false;
-
-	// Set to true if EDHOC message_3 will be combined with the first OSCORE request
-	// Note: the application profile pertaining the EDHOC resource must first indicate support for the combined request 
-	private static final boolean OSCORE_EDHOC_COMBINED = false;
 	
 	// The authentication method to include in EDHOC message_1 (relevant only when Initiator)
 	private static int authenticationMethod = Constants.EDHOC_AUTH_METHOD_0;
-
+	
     // The type of the authentication credential of this peer (same type for all its credentials)
     // Possible values: CRED_TYPE_CWT ; CRED_TYPE_CCS ; CRED_TYPE_X509
     private static int credType = Constants.CRED_TYPE_X509;
     
-    // The type of the credential identifier of this peer (same type for all its credentials)
-    // This will be the type of ID_CRED_R used in EDHOC message_2 or as ID_CRED_I in EDHOC message_3.
+    // The type of the credential identifier to use as ID_CRED_R in EDHOC message_2 or as ID_CRED_I in EDHOC message_3,
+    // i.e., for this peer to indicate its own authentication credential to the other peer.
     // Possible values: ID_CRED_TYPE_KID ; ID_CRED_TYPE_CWT ; ID_CRED_TYPE_CCS ;
     //                  ID_CRED_TYPE_X5T ; ID_CRED_TYPE_X5U ; ID_CRED_TYPE_X5CHAIN
     private static int idCredType = Constants.ID_CRED_TYPE_X5T;
-
+    
     // The trust model used to validate authentication credentials of other peers
     private static int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
     
-    // Authentication credentials of this peer
+    
+    // Authentication credentials of this peer 
     //
     // At the top level, authentication credentials are sorted by key usage of the authentication keys.
     // The outer map has label SIGNATURE_KEY or ECDH_KEY for distinguishing the two key usages. 
-    //
+    
     // The asymmetric key pairs of this peer (one per supported curve)
 	private static HashMap<Integer, HashMap<Integer, OneKey>> keyPairs = new HashMap<Integer, HashMap<Integer, OneKey>>();
     
@@ -122,7 +106,7 @@ public class EdhocClientProxy {
 	private static Set<CBORObject> ownIdCreds = new HashSet<>();
 	
 	
-    // Authentication credentials of the other peers
+	// Authentication credentials of other peers
 	// 
 	// The map label is a CBOR Map used as ID_CRED_X
 	private static HashMap<CBORObject, OneKey> peerPublicKeys = new HashMap<CBORObject, OneKey>();
@@ -132,7 +116,7 @@ public class EdhocClientProxy {
 	// The map label is a CBOR Map used as ID_CRED_X
 	// The map value is a CBOR Byte String, with value the serialization of CRED_X
 	private static HashMap<CBORObject, CBORObject> peerCredentials = new HashMap<CBORObject, CBORObject>();
-			
+	
 	// Existing EDHOC Sessions, including completed ones
 	// The map label is C_X, i.e. the connection identifier offered to the other peer
 	private static HashMap<CBORObject, EdhocSession> edhocSessions = new HashMap<CBORObject, EdhocSession>();
@@ -143,7 +127,7 @@ public class EdhocClientProxy {
 	
 	// List of supported cipher suites, in decreasing order of preference.
 	private static List<Integer> supportedCipherSuites = new ArrayList<Integer>();
-	
+
 	// Set of supported EAD items, identified by their EAD label
 	private static Set<Integer> supportedEADs = new HashSet<>();
 	
@@ -153,115 +137,24 @@ public class EdhocClientProxy {
 	// The database of OSCORE Security Contexts
 	private final static HashMapCtxDB db = new HashMapCtxDB(2);
 	
+	// Lookup identifier to be associated with the OSCORE Security Context
+	private final static String uriLocal = "coap://localhost";
+	
 	// The size of the Replay Window to use in an OSCORE Recipient Context
 	private static final int OSCORE_REPLAY_WINDOW = 32;
 	
 	// The size to consider for MAX_UNFRAGMENTED SIZE
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
 	
-	private static DefinitionsProvider DEFAULTS = new DefinitionsProvider() {
-
-		@Override
-		public void applyDefinitions(Configuration config) {
-			config.set(CoapConfig.MULTICAST_BASE_MID, 65000);
-			
-			config.set(CoapConfig.MAX_RESOURCE_BODY_SIZE, DEFAULT_MAX_RESOURCE_SIZE);
-			config.set(CoapConfig.MAX_MESSAGE_SIZE, DEFAULT_BLOCK_SIZE);
-			config.set(CoapConfig.PREFERRED_BLOCK_SIZE, DEFAULT_BLOCK_SIZE);
-		}
-
-	};
-	
-	// URI of the EDHOC resource on the server
-	private static String edhocURIServer = "coap://localhost:5686/.well-known/edhoc";
-
-	// URI of the EDHOC resource on the proxy
-	private static String edhocURIProxy = "coap://localhost:5685/.well-known/edhoc";
-
-	//--------------------------------------------------------------------------//
-	private final static int[] optionSetsScheme = {OptionNumberRegistry.URI_PORT, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.PROXY_SCHEME};
-
-	private final static boolean[] URIPORTAnswer = {true, true, true, true, false};
-
-	private final static boolean[] URIHostAnswer = {true, true, true, true, false};
-
-	private final static boolean[] ProxySchemeAnswer = {true, true, true, true, false};
-
-	private final static boolean[][] answerSetsScheme = {URIPORTAnswer, URIHostAnswer, ProxySchemeAnswer};
-
-	//--------------------------------------------------------------------------//
-	private final static int[][] optionSetsScheme1 = {
-			{}, 
-			{OptionNumberRegistry.URI_PORT, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.PROXY_SCHEME}
-	};
-
-	private final static boolean[] URIPORTAnswer1 = {true, true, true, true, false};
-
-	private final static boolean[] URIHostAnswer1 = {true, true, true, true, false};
-
-	private final static boolean[] ProxySchemeAnswer1 = {true, true, true, true, false};
-
-	private final static boolean[][][] answerSetsScheme1 = {
-			{},
-			{URIPORTAnswer1, URIHostAnswer1, ProxySchemeAnswer1}
-	};
-
-	private final static CBORObject[][] postValuesScheme1 =  {
-			{CBORObject.FromObject("coap"), CBORObject.FromObject("localhost"), CBORObject.FromObject(5686)},
-			{}
-	};
-
-	private final static int[][] optionSetsPostScheme1 = {
-			{OptionNumberRegistry.PROXY_SCHEME, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.URI_PORT}, 
-			{}
-	};
-	//--------------------------------------//
-	private final static CBORObject[] combinedPostSetValues=  {CBORObject.FromObject("coap"), CBORObject.FromObject("localhost"), CBORObject.FromObject(5686)};
-
-	private final static int[] combinedPostSetOptionNumbers = {OptionNumberRegistry.PROXY_SCHEME, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.URI_PORT};
-
-	private final static int[] combinedOptionSetsScheme = {OptionNumberRegistry.URI_PORT, OptionNumberRegistry.URI_HOST, OptionNumberRegistry.PROXY_SCHEME, OptionNumberRegistry.EDHOC};
-	
-	private final static boolean[] EDHOCAnswer = {true, true, true, true, false};
-
-	private final static boolean[][] combinedAnswerSetsScheme = {URIPORTAnswer, URIHostAnswer, ProxySchemeAnswer, EDHOCAnswer};
-
-	// URI of the application resource to target, following an EDHOC execution
-	private static String appRequestURI = "coap://localhost/helloWorld";
-		
-	// CoAP method to use for the application request sent after the EDHOC execution
-	private static Code appRequestCode = Code.GET;
-	
-	// CoAP message type to use (CON or NON) for the application request sent after the EDHOC execution
-	private static Type appRequestType = Type.CON;
-	
-	// Payload of the application request sent after the EDHOC execution
-	private static byte[] appRequestPayload = null;
-	
-	
-	// URI of the application resource to target with the EDHOC + OSCORE combined request,
-	// conveying both EDHOC message_3 and the first OSCORE-protected application request
-	private static String edhocCombinedRequestURI = "coap://localhost/helloWorld";
-	
-	// CoAP method to use for the application request sent within an EDHOC + OSCORE combined request
-	private static Code combinedRequestAppCode = Code.GET;
-	
-	// CoAP message type to use (CON or NON) for the application request sent within an EDHOC + OSCORE combined request
-	private static Type combinedRequestAppType = Type.CON;
-	
-	// Payload of the application request sent within an EDHOC + OSCORE combined request. It can be null
-	private static byte[] combinedRequestAppPayload = null;
-	
-	
 	/*
 	 * Application entry point.
-	 * 
 	 */
-	public static void main(String args[]) {
-		String defaultUri = "coap://localhost/helloWorld";
-				
-		Configuration config = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
-		Configuration.setStandard(config);
+	public static void main(String[] args) {
+		
+		// Force specific connection IDs
+		CBORObject ridMap = CBORObject.NewMap();
+		ridMap.Add(CBORObject.FromObject(0), CBORObject.FromObject(new byte[] { (byte) 0xEE }));
+		MessageProcessor.forcedCidResponder = ridMap;
 
 		// Insert EdDSA security provider
 		Security.insertProviderAt(EdDSA, 1);
@@ -270,19 +163,16 @@ public class EdhocClientProxy {
 		EdhocCoapStackFactory.useAsDefault(db, edhocSessions, peerPublicKeys, peerCredentials,
 				                           usedConnectionIds, OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE);
 
-		// Use to dynamically generate a key pair
-		// keyPair = Util.generateKeyPair(keyCurve);
-		
 		// Add the supported cipher suites
 		setupSupportedCipherSuites();
 
-		// Add the supported EAD items
+		// Add the supported cipher suites
 		setupSupportedEADs();
 		
 		// Set up the authentication credentials for this peer and the other peer
 		setupOwnAuthenticationCredentials();
-		
-		// Set up the authentication credentials for the other peers
+
+		// Set up the authentication credentials for the other peers 
 		setupPeerAuthenticationCredentials();
 		
 		// Set the application profile
@@ -300,34 +190,62 @@ public class EdhocClientProxy {
 		boolean supportCombinedRequest = true; // If set to true, it overrides the ID conversion method to CONVERSION_ID_CORE
 		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
 		
-		appProfiles.put(edhocURIServer, appProfile);
-		appProfiles.put(edhocURIProxy, appProfile);
-
+		appProfiles.put("/.well-known/edhoc", appProfile);
 		
-		URI uri = null; // URI parameter of the request
-
-		// input URI from command line arguments
 		try {
-			if (args.length == 0) {
-				uri = new URI(defaultUri);
-			} else {
-				uri = new URI(args[0]);
+			// create server
+			boolean udp = true;
+
+			CoapEndpoint.Builder builder = CoapEndpoint.builder();
+			builder.setInetSocketAddress(new InetSocketAddress("localhost", 5686));
+			CoapEndpoint serverEndpoint = builder.build();
+			
+			EdhocServer server = new EdhocServer();
+			// add endpoints on all IP addresses
+			//server.addEndpoints(udp);
+			server.addEndpoint(serverEndpoint);
+			server.start();
+						
+		} catch (SocketException e) {
+			System.err.println("Failed to initialize server: " + e.getMessage());
+		}
+				
+		// Use to dynamically generate a key pair
+		// keyPair = Util.generateKeyPair(keyCurve);
+		    	
+    	// Uncomment to run tests of different cryptographic operations
+		// runTests();		
+	}
+
+	/**
+	 * Add individual endpoints listening on default CoAP port on all IPv4
+	 * addresses of all network interfaces.
+	 */
+	private void addEndpoints(boolean udp) {
+		Configuration config = Configuration.getStandard();
+		for (InetAddress addr : NetworkInterfacesUtil.getNetworkInterfaces()) {
+			InetSocketAddress bindToAddress = new InetSocketAddress(addr, COAP_PORT);
+			if (udp) {
+				CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
+				builder.setInetSocketAddress(bindToAddress);
+				builder.setConfiguration(config);
+				addEndpoint(builder.build());
 			}
-		} catch (URISyntaxException e) {
-			System.err.println("Invalid URI: " + e.getMessage());
-			System.exit(-1);
+
 		}
-		// helloWorldExchange(args, uri);
+	}
+
+	/*
+	 * Constructor for a new server. Here, the resources of the server are initialized.
+	 */
+	public EdhocServer() throws SocketException {
+
+		// provide an instance of a Hello-World resource
+		add(new HelloWorldResource());
 		
-		
-		// Run EDHOC
-		try {
-			uri = new URI(edhocURIServer);
-		}
-		catch (URISyntaxException e) {
-			System.err.println("Invalid URI: " + e.getMessage());
-			System.exit(-1);
-		}
+		// provide an instance of a .well-known resource
+		CoapResource wellKnownResource = new WellKnown();
+		add(wellKnownResource);
 		
 		// If EAD items have to be produced for outgoing EDHOC messages (irrespective of the consumption of EAD items
 		// in incoming EDHOC message, this data structure specifies instructions on how to produce those.
@@ -341,285 +259,162 @@ public class EdhocClientProxy {
 		// with the map keys from a namespace specific of the ead_label.
 		HashMap<Integer, List<CBORObject>> eadProductionInput = null;
 		
-		// Prepare the set of information for this EDHOC endpoint
+		// prepare the set of information for this EDHOC endpoint
 		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCreds, creds, keyPairs, peerPublicKeys,
 																	peerCredentials, edhocSessions, usedConnectionIds,
 																	supportedCipherSuites, supportedEADs, eadProductionInput,
-																	trustModel, db, edhocURIProxy, OSCORE_REPLAY_WINDOW,
+																	trustModel, db, uriLocal, OSCORE_REPLAY_WINDOW,
 																	MAX_UNFRAGMENTED_SIZE, appProfiles);
 		
-		// List of EDHOC cipher suites supported by the other peer, as learned from an
-		// EDHOC error message with ERR_CODE = 1 received as a reply to EDHOC message_1 
-		List<Integer> peerSupportedCipherSuitesProxy = new ArrayList<Integer>();
+		// provide an instance of a .well-known/edhoc resource
+		CoapResource edhocResource = new EdhocResource("edhoc", edhocEndpointInfo, ownIdCreds);
 		
-		// Prepare the EDHOC executor and start EDHOC as Initiator
-		ClientEdhocExecutor edhocExecutor = new ClientEdhocExecutor();
-		boolean ret = edhocExecutor.startEdhocExchangeAsInitiator(authenticationMethod, peerSupportedCipherSuitesProxy,
-																  ownIdCreds, edhocEndpointInfo, OSCORE_EDHOC_COMBINED,
-																  edhocURIProxy, combinedRequestAppCode,
-																  combinedRequestAppType, combinedRequestAppPayload);
-		if (ret == false) {
-			System.err.println("Key establishment through EDHOC has failed");
-			
-			// If the client has received an EDHOC error message with ERR_CODE = 1 as a reply to EDHOC message_1,
-			// then the client can learn the EDHOC cipher suites supported by the server, and start EDHOC again.
-			peerSupportedCipherSuitesProxy = edhocExecutor.getLearnedPeerSupportedCipherSuites();
-			
-			System.exit(-1);
-		}
-		System.out.println("\nEDHOC successfully completed with proxy\n");
-		//System.exit(-1);
-		
-		//prepare instructions
-		OSCoreCtx ctx = null;
-		try {
-			ctx = db.getContext(edhocURIProxy);
-			System.out.println("context is: " + ctx);
-		} catch (OSException e) {
-			System.out.println("context could not be retrieved using URI: " + edhocURIProxy);
-		}
-		
-		byte[] oscoreoptScheme = CBORObject.FromObject(new byte[0]).EncodeToBytes();
-		byte[] indexScheme = CBORObject.FromObject(2).EncodeToBytes();
+		wellKnownResource.add(edhocResource);
 
-		byte[] instruction = Bytes.concatenate(oscoreoptScheme, indexScheme);
+	}
+		
+	/*
+	 * Definition of the Hello-World Resource
+	 */
+	class HelloWorldResource extends CoapResource {
 
-		// instruction for encrypting for proxy (message 1)
-		instruction = Bytes.concatenate(instruction, OptionEncoder.set(ctx.getRecipientId(), ctx.getIdContext(), optionSetsScheme ,answerSetsScheme));
-		
-		byte[] instructionForMessage3 = Bytes.concatenate(oscoreoptScheme, indexScheme);
-		
-		//instruction for encrypting for proxy and server (message 3)
-		// only for combined requests
-		instructionForMessage3 = Bytes.concatenate(instructionForMessage3, OptionEncoder.set(null, null, combinedPostSetOptionNumbers, combinedPostSetValues, true));
-		instructionForMessage3 = Bytes.concatenate(instructionForMessage3, OptionEncoder.set(ctx.getRecipientId(), ctx.getIdContext(), combinedOptionSetsScheme ,combinedAnswerSetsScheme));
-		
-		// options used to tell edhocExecutor where to proxy to
-		OptionSet options = new OptionSet();
-		options.setProxyScheme("coap");
-		options.setUriHost("localhost");
-		options.setUriPort(5685);
+		public HelloWorldResource() {
 
-		
-		// Prepare the set of information for this EDHOC endpoint
-		 edhocEndpointInfo = new EdhocEndpointInfo(idCreds, creds, keyPairs, peerPublicKeys,
-												   peerCredentials, edhocSessions, usedConnectionIds,
-												   supportedCipherSuites, supportedEADs, eadProductionInput,
-												   trustModel, db, edhocURIServer, OSCORE_REPLAY_WINDOW,
-												   MAX_UNFRAGMENTED_SIZE, appProfiles);
-				
-		// List of EDHOC cipher suites supported by the other peer, as learned from an
-		// EDHOC error message with ERR_CODE = 1 received as a reply to EDHOC message_1 
-		List<Integer> peerSupportedCipherSuitesServer = new ArrayList<Integer>();
-		
-		// Prepare the EDHOC executor and start EDHOC as Initiator
-		edhocExecutor = new ClientEdhocExecutor();
-		ret = edhocExecutor.startEdhocExchangeAsInitiator(authenticationMethod, peerSupportedCipherSuitesServer,
-																  ownIdCreds, edhocEndpointInfo, OSCORE_EDHOC_COMBINED,
-																  edhocURIServer, combinedRequestAppCode,
-																  combinedRequestAppType, combinedRequestAppPayload,
-																  instruction, options, instructionForMessage3);
-		
-		if (ret == false) {
-			System.err.println("Key establishment through EDHOC has failed");
-			
-			// If the client has received an EDHOC error message with ERR_CODE = 1 as a reply to EDHOC message_1,
-			// then the client can learn the EDHOC cipher suites supported by the server, and start EDHOC again.
-			peerSupportedCipherSuitesServer = edhocExecutor.getLearnedPeerSupportedCipherSuites();
-			
-			System.exit(-1);
-		}
-		
-		System.out.println("\nEDHOC successfully completed with server\n");
-		//System.exit(-1);
+			// set resource identifier
+			super("helloWorld");
 
-		OSCoreCtx contextToServer = null;
-		try {
-			contextToServer = db.getContext("coap://localhost:5686");
-			System.out.println("contextToServer:" + contextToServer.getRecipientIdString());
-		} catch (OSException e) {
-			System.out.println("context could not be retrieved using URI: coap://localhost:5686");
-		}
-		
-		OSCoreCtx contextToProxy = null;
-		try {
-			contextToProxy = db.getContext("coap://localhost:5685");
-			System.out.println("contextToProxy:" + contextToProxy.getRecipientIdString());
-		} catch (OSException e) {
-			System.out.println("context could not be retrieved using URI: coap://localhost:5685");
+			// set display name
+			getAttributes().setTitle("Hello-World Resource");
 		}
 
-		
-		System.out.println("Sending encrypted GET to server");
+		@Override
+		public void handleGET(CoapExchange exchange) {
 
-		CoapClient clientToServer = new CoapClient(edhocURIServer);
-
-		Request r = new Request(Code.GET);
-		r.getOptions().setOscore(Bytes.EMPTY);
-		r.getOptions().setUriPath("helloWorld");
-
-		try {
-			CoapResponse response = clientToServer.advanced(r);
-			System.out.println("received payload is: " + Utils.prettyPrint(response));
-		} catch (ConnectorException | IOException e) {
-			System.out.println(e.getLocalizedMessage());
+			// respond to the request
+			exchange.respond("Hello World!");
 		}
-
-		System.out.println("Sending encrypted GET to Proxy");
-
-		CoapClient clientToProxy = new CoapClient(edhocURIProxy);
-
-		r = new Request(Code.GET);
-		r.getOptions().setOscore(Bytes.EMPTY);
-		
-		try {
-			CoapResponse response = clientToProxy.advanced(r);
-			System.out.println("received payload is: " + Utils.prettyPrint(response));
-		} catch (ConnectorException | IOException e) {
-			System.out.println(e.getLocalizedMessage());
-		}
-		
-		System.out.println("starting instructions");
-		
-		CoapClient client1 = new CoapClient("coap://localhost:5685");
-		
-		byte[] oscoreoptScheme2 = CBORObject.FromObject(new byte[0]).EncodeToBytes();
-		byte[] indexScheme2 = CBORObject.FromObject(2).EncodeToBytes();
-
-		byte[] instructionsScheme = Bytes.concatenate(oscoreoptScheme2, indexScheme2);
-		
-		final byte[][] rids = {
-				contextToServer.getRecipientId(), 
-				contextToProxy.getRecipientId()
-		};
-		final byte[][] idcontexts = {
-				null, 
-				null
-		};
-		for (int i = 0; i < rids.length; i++) {
-			instructionsScheme = Bytes.concatenate(instructionsScheme, OptionEncoder.set(rids[i], idcontexts[i], optionSetsScheme1[i], answerSetsScheme1[i], optionSetsPostScheme1[i], postValuesScheme1[i]));
-		}
-
-		AddressEndpointContext proxy = new AddressEndpointContext("localhost", 5685);
-		
-		r = new Request(Code.GET);
-		r.setUriIsApplied();
-		r.setDestinationContext(proxy);
-
-		r.getOptions().setOscore(instructionsScheme);
-		r.getOptions().setUriPath("helloWorld");
-		
-		try {
-			System.out.println("request is: " + r);
-			CoapResponse response = client1.advanced(r);
-			System.out.println("received instrution payload is: " + Utils.prettyPrint(response));
-		} catch (ConnectorException | IOException e) {
-			System.out.println(e.getLocalizedMessage());
-		}
-		
-		if (OSCORE_EDHOC_COMBINED) {
-			CoapResponse appResponseToCombinedRequest = edhocExecutor.getAppResponseToCombinedRequest();
-			System.out.println("\nApplication response to the EDHOC+OSCORE combined request:\n\n" +
-							   Utils.prettyPrint(appResponseToCombinedRequest) + "\n");
-		}
-
-		// Send a request protected with the just established Security Context
-        if (POST_EDHOC_EXCHANGE && usedForOSCORE == true) {
-    		CoapClient client = new CoapClient(appRequestURI);
-			
-			Request protectedRequest = new Request(appRequestCode, appRequestType);
-			if ((appRequestCode == Code.POST || appRequestCode == Code.PUT || appRequestCode == Code.FETCH ||
-				 appRequestCode == Code.PATCH || appRequestCode == Code.IPATCH) && appRequestPayload != null) {
-				protectedRequest.setPayload(appRequestPayload);
-			}
-			protectedRequest.getOptions().setOscore(Bytes.EMPTY);
-			
-			CoapResponse protectedResponse = null;
-			try {
-				protectedResponse = client.advanced(protectedRequest);
-			} catch (ConnectorException e) {
-				System.err.println("ConnectorException when sending a protected request\n");
-				client.shutdown();
-				return;
-			} catch (IOException e) {
-				System.err.println("IOException when sending a protected request\n");
-				client.shutdown();
-				return;
-			}
-			byte[] myPayload = null;
-			
-			if (protectedResponse == null) {
-				System.out.println("No response received.");
-				client.shutdown();
-				return;
-			}
-			
-			else {
-				myPayload = protectedResponse.getPayload();
-				if (myPayload != null) {
-					System.out.println("\n" + Utils.prettyPrint(protectedResponse));
-				}
-			}
-			client.shutdown();
-			return;
-        }
-
 	}
 	
-	private static void helloWorldExchange(final String args[], final URI targetUri) {
-		
-		CoapClient client = new CoapClient(targetUri);
+	/*
+	 * Definition of the .well-known Resource
+	 */
+	class WellKnown extends CoapResource {
 
-		CoapResponse response = null;
+		public WellKnown() {
+
+			// set resource identifier
+			super(".well-known");
+
+			// set display name
+			getAttributes().setTitle(".well-known");
+
+		}
+
+		@Override
+		public void handleGET(CoapExchange exchange) {
+
+			// respond to the request
+			exchange.respond(".well-known");
+		}
+	}
+	
+	private static void runTests() {
+		// Test a hash computation
+		System.out.println("=======================");
+		System.out.println("Test a hash computation");
+		byte[] inputHash = new byte[] {(byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0, (byte) 0x5c};
 		try {
-			response = client.get();
-		} catch (ConnectorException | IOException e) {
-			System.err.println("Got an error: " + e);
+			System.out.println("Hash input: " + StringUtil.byteArray2HexString(inputHash));
+			byte[] resultHash = Util.computeHash(inputHash, "SHA-256");
+			System.out.println("Hash output: " + StringUtil.byteArray2HexString(resultHash));
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("Hash algorithm not supported");
 		}
+		System.out.println();
+		
 
-		if (response != null) {
-
-			System.out.println(response.getCode());
-			System.out.println(response.getOptions());
-			if (args.length > 1) {
-				try (FileOutputStream out = new FileOutputStream(args[1])) {
-					out.write(response.getPayload());
-				} catch (IOException e) {
-					System.err.println("Error while writing the response payload to file: " +  e.getMessage());
-				}
-			} else {
-				System.out.println(response.getResponseText());
-
-				System.out.println(System.lineSeparator() + "ADVANCED" + System.lineSeparator());
-				// access advanced API with access to more details through
-				// .advanced()
-				System.out.println(Utils.prettyPrint(response));
-			}
-		} else {
-			System.out.println("No response received.");
+		// Test a signature computation and verification
+		System.out.println("=======================");
+		System.out.println("Test a signature computation and verification");
+		byte[] payloadToSign = new byte[] {(byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0, (byte) 0x5c};
+		byte[] externalData = new byte[] {(byte) 0xef, (byte) 0xde, (byte) 0xac, (byte) 0x75, (byte) 0x0f, (byte) 0xc5};
+		byte[] kid = new byte[] {(byte) 0x01};
+		CBORObject idCredX = CBORObject.NewMap();
+		idCredX.Add(HeaderKeys.KID.AsCBOR(), kid);
+		CBORObject emptyMap = CBORObject.NewMap();
+		
+		byte[] mySignature = null;
+		try {
+			mySignature = Util.computeSignature(idCredX, externalData, payloadToSign,
+												keyPairs.get(Constants.SIGNATURE_KEY).
+												         get(Integer.valueOf(Constants.CURVE_Ed25519)));
+	        System.out.println("Signing completed");
+		} catch (CoseException e) {
+			System.err.println("Error while computing the signature: " +  e.getMessage());
 		}
-		client.shutdown();
+		
+		boolean verified = false;
+		try {
+			verified = Util.verifySignature(mySignature, idCredX, externalData, payloadToSign,
+											keyPairs.get(Constants.SIGNATURE_KEY).
+													 get(Integer.valueOf(Constants.CURVE_Ed25519)));
+		} catch (CoseException e) {
+			System.err.println("Error while verifying the signature: " + e.getMessage());
+		}
+		System.out.println("Signature validity: " + verified);
+		System.out.println();
+		
+		
+		// Test an encryption and decryption
+		System.out.println("=======================");
+		System.out.println("Test an encryption and decryption");
+		byte[] payloadToEncrypt = new byte[] {(byte) 0xfe, (byte) 0xed, (byte) 0xca, (byte) 0x57, (byte) 0xf0, (byte) 0x5c};
+		byte[] symmetricKey =  new byte[] {(byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03, (byte) 0x04, (byte) 0x05,
+				                           (byte) 0x06, (byte) 0x07, (byte) 0x08, (byte) 0x09, (byte) 0x10, (byte) 0x11,
+				                           (byte) 0x12, (byte) 0x013, (byte) 0x14, (byte) 0x15};
+		byte[] iv = {(byte) 0xc5, (byte) 0xb7, (byte) 0x17, (byte) 0x0e, (byte) 0x65, (byte) 0xd5, (byte) 0x4f,
+				     (byte) 0x1a, (byte) 0xe0, (byte) 0x5d, (byte) 0x10, (byte) 0xaf, (byte) 0x56,};
+		AlgorithmID encryptionAlg = AlgorithmID.AES_CCM_16_64_128;
+		
+		
+		System.out.println("Plaintext: " + StringUtil.byteArray2HexString(payloadToEncrypt));
+		byte[] myCiphertext = null;
+		try {
+			myCiphertext = Util.encrypt(emptyMap, externalData, payloadToEncrypt, encryptionAlg, iv, symmetricKey);
+			System.out.println("Encryption completed");
+		} catch (CoseException e) {
+			System.err.println("Error while encrypting: " + e.getMessage());
+		}
+		byte[] myPlaintext = null;
+		try {
+			myPlaintext = Util.decrypt(emptyMap, externalData, myCiphertext, encryptionAlg, iv, symmetricKey);
+			System.out.println("Decryption completed");
+		} catch (CoseException e) {
+			System.err.println("Error while encrypting: " + e.getMessage());
+		}
+		System.out.println("Decryption correctness: " + Arrays.equals(payloadToEncrypt, myPlaintext));
+		System.out.println();
 		
 	}
-
+	
 	private static void setupSupportedCipherSuites() {
 		
 		// Add the supported cipher suites in decreasing order of preference
-
+		
 		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_0);
 		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_1);
 		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_2);
 		supportedCipherSuites.add(Constants.EDHOC_CIPHER_SUITE_3);
-	
+				
 	}
 	
 	private static void setupSupportedEADs() {
-		
-		// Add the supported EAD items, as per the example line below
-		// supportedEADs.add(Integer.valueOf(1));
-		
+	    
+	    // Add the supported EAD items, as per the example line below
+	    // supportedEADs.add(Integer.valueOf(1));
+	    
 	}
-	
+
 	private static void setupOwnAuthenticationCredentials () {
 		
 		byte[] privateKeyBinary = null;
@@ -654,14 +449,14 @@ public class EdhocClientProxy {
 			CBORObject idCredEd25519 = null;
 			CBORObject ccsObjectEd25519 = null;
 			
-			// If the type of credential identifier is 'kid', use 0x00,
-			// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x00
-			byte[] kidEd25519 = new byte[] {(byte) 0x00};
+			// If the type of credential identifier is 'kid', use 0x07,
+			// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x07
+			byte[] kidEd25519 = new byte[] {(byte) 0x07};
 			
 			// Build the key pair
 			
- 			privateKeyBinary = StringUtil.hex2ByteArray("2ffce7a0b2b825d397d0cb54f746e3da3f27596ee06b5371481dc0e012bc34d7");
-			publicKeyBinary = StringUtil.hex2ByteArray("38e5d54563c2b6a4ba26f3015f61bb706e5c2efdb556d2e1690b97fc3c6de149");
+ 			privateKeyBinary = StringUtil.hex2ByteArray("df69274d713296e246306365372b4683ced5381bfcadcd440a24c391d2fedb94");
+			publicKeyBinary = StringUtil.hex2ByteArray("dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
 			keyPairEd25519 = SharedSecretCalculation.buildEd25519OneKey(privateKeyBinary, publicKeyBinary);
 			
 			// Build CRED
@@ -677,11 +472,11 @@ public class EdhocClientProxy {
 		        
 		        // These serializations have to be prepared manually, in order to ensure that
 		        // the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
-		        credEd25519 = StringUtil.hex2ByteArray("A2026008A101A40101024100200621582038E5D54563C2B6A4BA26F3015F61BB706E5C2EFDB556D2E1690B97FC3C6DE149");
+		        credEd25519 = StringUtil.hex2ByteArray("a2026008a101a401010241072006215820dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
 		        break;
 		    case Constants.CRED_TYPE_X509:
 		        // The x509 certificate of this peer
-		    	serializedCert = StringUtil.hex2ByteArray("5413204c3ebc3428a6cf57e24c9def59651770449bce7ec6561e52433aa55e71f1fa34b22a9ca4a1e12924eae1d1766088098449cb848ffc795f88afc49cbe8afdd1ba009f21675e8f6c77a4a2c30195601f6f0a0852978bd43d28207d44486502ff7bdda6");
+		        serializedCert = StringUtil.hex2ByteArray("c788370016b8965bdb2074bff82e5a20e09bec21f8406e86442b87ec3ff245b70a47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb2");
 		        
 		        // Test with Peter (real DER certificate for the same identity key)
 		        // serializedCert = StringUtil.hex2ByteArray("30820225308201cba003020102020711223344556600300a06082a8648ce3d040302306f310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31153013060355040b0c0c6d616e7566616374757265723115301306035504030c0c6d6173612e73746f6b2e6e6c3020170d3231303230393039333131345a180f39393939313233313233353935395a308190310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31163014060355040b0c0d6d616e75666163747572696e67311c301a06035504030c13757569643a706c656467652e312e322e332e34311730150603550405130e706c656467652e312e322e332e343059301306072a8648ce3d020106082a8648ce3d03010703420004d474715902aa13cd63984076ea4aeb38818f99a80413fcdd9e033c3c50318817eb1cd945afce48b64479441d1095fb0cf5c31774c786d07959935839bb147defa32e302c30090603551d1304023000301f0603551d23041830168014707f9105ed9e1e1c3fe0cf869d810b2d43d10042300a06082a8648ce3d040302034800304502200fdaaaf09f44ccdafa54a467de952c1e90d1a9a8f60b96793bc9497af318671202210086fddeb42703574df21c7c36a66a3807034fa3366a72b812567f0ed0249a2b31");
@@ -710,7 +505,7 @@ public class EdhocClientProxy {
 				idCredEd25519 = Util.buildIdCredX5t(serializedCert);
 				break;
 			case Constants.ID_CRED_TYPE_X5U:
-				idCredEd25519 = Util.buildIdCredX5u("http://example.repo.com/hostA-x509-Ed25519");
+				idCredEd25519 = Util.buildIdCredX5u("http://example.repo.com/hostB-x509-Ed25519");
 				break;
 			}
 			
@@ -733,14 +528,14 @@ public class EdhocClientProxy {
 			CBORObject idCredX25519 = null;
 			CBORObject ccsObjectX25519 = null;
 			
-			// If the type of credential identifier is 'kid', use 0x01,
-			// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x01
-			byte[] kidX25519 = new byte[] {(byte) 0x01};
+			// If the type of credential identifier is 'kid', use 0x08,
+			// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x08
+			byte[] kidX25519 = new byte[] {(byte) 0x08};
 			
 			// Build the key pair
 			
-			privateKeyBinary = StringUtil.hex2ByteArray("2bbea655c23371c329cfbd3b1f02c6c062033837b8b59099a4436f666081b08e");
-			publicKeyBinary = StringUtil.hex2ByteArray("2c440cc121f8d7f24c3b0e41aedafe9caa4f4e7abb835ec30f1de88adb96ff71");
+			privateKeyBinary = StringUtil.hex2ByteArray("bb501aac67b9a95f97e0eded6b82a662934fbbfc7ad1b74c1fcad66a079422d0");
+			publicKeyBinary = StringUtil.hex2ByteArray("a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
 			keyPairX25519 = SharedSecretCalculation.buildCurve25519OneKey(privateKeyBinary, publicKeyBinary);
 			
 			// Build CRED
@@ -756,11 +551,11 @@ public class EdhocClientProxy {
 		        
 		        // These serializations have to be prepared manually, in order to ensure that
 		        // the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
-	            credX25519 = StringUtil.hex2ByteArray("A2026008A101A4010102410120042158202C440CC121F8D7F24C3B0E41AEDAFE9CAA4F4E7ABB835EC30F1DE88ADB96FF71");
+	            credX25519 = StringUtil.hex2ByteArray("a2026008a101a401010241082004215820a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
 		        break;
 		    case Constants.CRED_TYPE_X509:
 		        // The x509 certificate of this peer
-		    	serializedCert = StringUtil.hex2ByteArray("5413204c3ebc3428a6cf57e24c9def59651770449bce7ec6561e52433aa55e71f1fa34b22a9ca4a1e12924eae1d1766088098449cb848ffc795f88afc49cbe8afdd1ba009f21675e8f6c77a4a2c30195601f6f0a0852978bd43d28207d44486502ff7bdda7");
+		        serializedCert = StringUtil.hex2ByteArray("c788370016b8965bdb2074bff82e5a20e09bec21f8406e86442b87ec3ff245b70a47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb3");
 		        
 		        // Test with Peter (real DER certificate for the same identity key)
 		        // serializedCert = StringUtil.hex2ByteArray("30820225308201cba003020102020711223344556600300a06082a8648ce3d040302306f310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31153013060355040b0c0c6d616e7566616374757265723115301306035504030c0c6d6173612e73746f6b2e6e6c3020170d3231303230393039333131345a180f39393939313233313233353935395a308190310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31163014060355040b0c0d6d616e75666163747572696e67311c301a06035504030c13757569643a706c656467652e312e322e332e34311730150603550405130e706c656467652e312e322e332e343059301306072a8648ce3d020106082a8648ce3d03010703420004d474715902aa13cd63984076ea4aeb38818f99a80413fcdd9e033c3c50318817eb1cd945afce48b64479441d1095fb0cf5c31774c786d07959935839bb147defa32e302c30090603551d1304023000301f0603551d23041830168014707f9105ed9e1e1c3fe0cf869d810b2d43d10042300a06082a8648ce3d040302034800304502200fdaaaf09f44ccdafa54a467de952c1e90d1a9a8f60b96793bc9497af318671202210086fddeb42703574df21c7c36a66a3807034fa3366a72b812567f0ed0249a2b31");
@@ -789,10 +584,10 @@ public class EdhocClientProxy {
 				idCredX25519 = Util.buildIdCredX5t(serializedCert);
 				break;
 			case Constants.ID_CRED_TYPE_X5U:
-				idCredX25519 = Util.buildIdCredX5u("http://example.repo.com/hostA-x509-X25519");
+				idCredX25519 = Util.buildIdCredX5u("http://example.repo.com/hostB-x509-X25519");
 				break;
 			}
-
+			
 			// Add the key pair, CRED and ID_CRED to the respective collections
 			keyPairs.get(Integer.valueOf(Constants.ECDH_KEY)).
 					 put(Integer.valueOf(Constants.CURVE_X25519), keyPairX25519);
@@ -800,7 +595,7 @@ public class EdhocClientProxy {
             		 put(Integer.valueOf(Constants.CURVE_X25519), CBORObject.FromObject(credX25519));
 			idCreds.get(Integer.valueOf(Constants.ECDH_KEY)).
             		 put(Integer.valueOf(Constants.CURVE_X25519), idCredX25519);
-			
+						
 		    // Add this ID_CRED to the whole collection of ID_CRED_X for this peer 
 			ownIdCreds.add(idCredX25519);
 			
@@ -818,15 +613,15 @@ public class EdhocClientProxy {
 			CBORObject idCredP256 = null;
 			CBORObject ccsObjectP256 = null;
 			
-			// If the type of credential identifier is 'kid', use 0x02,
-			// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x02
-			byte[] kidP256 = new byte[] {(byte) 0x02};
+			// If the type of credential identifier is 'kid', use 0x09,
+			// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x09
+			byte[] kidP256 = new byte[] {(byte) 0x09};
 			
 			// Build the key pair
 			
-			privateKeyBinary = StringUtil.hex2ByteArray("04f347f2bead699adb247344f347f2bdac93c7f2bead6a9d2a9b24754a1e2b62");
-			publicKeyBinary = StringUtil.hex2ByteArray("cd4177ba62433375ede279b5e18e8b91bc3ed8f1e174474a26fc0edb44ea5373");
-			publicKeyBinaryY = StringUtil.hex2ByteArray("A0391DE29C5C5BADDA610D4E301EAAA18422367722289CD18CBE6624E89B9CFD");
+			privateKeyBinary = StringUtil.hex2ByteArray("ec93c2f8a58f123daa982688e384f54c10c50a1d2c90c00304f648e58f14354c");
+			publicKeyBinary = StringUtil.hex2ByteArray("6f9702a66602d78f5e81bac1e0af01f8b52810c502e87ebb7c926c07426fd02f");
+			publicKeyBinaryY = StringUtil.hex2ByteArray("C8D33274C71C9B3EE57D842BBF2238B8283CB410ECA216FB72A78EA7A870F800");
 			keyPairP256 =  SharedSecretCalculation.buildEcdsa256OneKey(privateKeyBinary, publicKeyBinary, publicKeyBinaryY);
 		
 			// Build CRED
@@ -841,11 +636,11 @@ public class EdhocClientProxy {
 		        
 		        // These serializations have to be prepared manually, in order to ensure that
 		        // the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
-	            credP256 = StringUtil.hex2ByteArray("A2026008A101A501020241022001215820CD4177BA62433375EDE279B5E18E8B91BC3ED8F1E174474A26FC0EDB44EA5373225820A0391DE29C5C5BADDA610D4E301EAAA18422367722289CD18CBE6624E89B9CFD");
+	            credP256 = StringUtil.hex2ByteArray("a2026008a101a5010202410920012158206f9702a66602d78f5e81bac1e0af01f8b52810c502e87ebb7c926c07426fd02f225820c8d33274c71c9b3ee57d842bbf2238b8283cb410eca216fb72a78ea7a870f800");
 		        break;
 		    case Constants.CRED_TYPE_X509:
 		        // The x509 certificate of this peer
-		    	serializedCert = StringUtil.hex2ByteArray("5413204c3ebc3428a6cf57e24c9def59651770449bce7ec6561e52433aa55e71f1fa34b22a9ca4a1e12924eae1d1766088098449cb848ffc795f88afc49cbe8afdd1ba009f21675e8f6c77a4a2c30195601f6f0a0852978bd43d28207d44486502ff7bdda8");
+		        serializedCert = StringUtil.hex2ByteArray("c788370016b8965bdb2074bff82e5a20e09bec21f8406e86442b87ec3ff245b70a47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb4");
 		        
 		        // Test with Peter (real DER certificate for the same identity key)
 		        // serializedCert = StringUtil.hex2ByteArray("30820225308201cba003020102020711223344556600300a06082a8648ce3d040302306f310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31153013060355040b0c0c6d616e7566616374757265723115301306035504030c0c6d6173612e73746f6b2e6e6c3020170d3231303230393039333131345a180f39393939313233313233353935395a308190310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31163014060355040b0c0d6d616e75666163747572696e67311c301a06035504030c13757569643a706c656467652e312e322e332e34311730150603550405130e706c656467652e312e322e332e343059301306072a8648ce3d020106082a8648ce3d03010703420004d474715902aa13cd63984076ea4aeb38818f99a80413fcdd9e033c3c50318817eb1cd945afce48b64479441d1095fb0cf5c31774c786d07959935839bb147defa32e302c30090603551d1304023000301f0603551d23041830168014707f9105ed9e1e1c3fe0cf869d810b2d43d10042300a06082a8648ce3d040302034800304502200fdaaaf09f44ccdafa54a467de952c1e90d1a9a8f60b96793bc9497af318671202210086fddeb42703574df21c7c36a66a3807034fa3366a72b812567f0ed0249a2b31");
@@ -874,7 +669,7 @@ public class EdhocClientProxy {
 				idCredP256 = Util.buildIdCredX5t(serializedCert);
 				break;
 			case Constants.ID_CRED_TYPE_X5U:
-				idCredP256 = Util.buildIdCredX5u("http://example.repo.com/hostA-x509-P256-signing");
+				idCredP256 = Util.buildIdCredX5u("http://example.repo.com/hostB-x509-P256-signing");
 				break;
 			}
 			
@@ -885,10 +680,9 @@ public class EdhocClientProxy {
             		 put(Integer.valueOf(Constants.CURVE_P256), CBORObject.FromObject(credP256));
 			idCreds.get(Integer.valueOf(Constants.SIGNATURE_KEY)).
             		 put(Integer.valueOf(Constants.CURVE_P256), idCredP256);
-						
+			
 		    // Add this ID_CRED to the whole collection of ID_CRED_X for this peer 
 			ownIdCreds.add(idCredP256);
-			
 			
 			
 			// ECDH authentication credential
@@ -898,15 +692,15 @@ public class EdhocClientProxy {
 			CBORObject idCredP256dh = null;
 			CBORObject ccsObjectP256dh = null;
 			
-			// If the type of credential identifier is 'kid', use 0x03,
-			// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x03
-			byte[] kidP256dh = new byte[] {(byte) 0x03};
+			// If the type of credential identifier is 'kid', use 0x0a,
+			// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x0a
+			byte[] kidP256dh = new byte[] {(byte) 0x0a};
 			
 			// Build the key pair
 			
-			privateKeyBinary = StringUtil.hex2ByteArray("fb13adeb6518cee5f88417660841142e830a81fe334380a953406a1305e8706b");
-			publicKeyBinary = StringUtil.hex2ByteArray("ac75e9ece3e50bfc8ed60399889522405c47bf16df96660a41298cb4307f7eb6");
-			publicKeyBinaryY = StringUtil.hex2ByteArray("6e5de611388a4b8a8211334ac7d37ecb52a387d257e6db3c2a93df21ff3affc8");
+			privateKeyBinary = StringUtil.hex2ByteArray("72cc4761dbd4c78f758931aa589d348d1ef874a7e303ede2f140dcf3e6aa4aac");
+			publicKeyBinary = StringUtil.hex2ByteArray("bbc34960526ea4d32e940cad2a234148ddc21791a12afbcbac93622046dd44f0");
+			publicKeyBinaryY = StringUtil.hex2ByteArray("4519e257236b2a0ce2023f0931f1f386ca7afda64fcde0108c224c51eabf6072");
 			keyPairP256dh =  SharedSecretCalculation.buildEcdsa256OneKey(privateKeyBinary, publicKeyBinary, publicKeyBinaryY);
 		
 			// Build CRED
@@ -921,11 +715,11 @@ public class EdhocClientProxy {
 		        
 		        // These serializations have to be prepared manually, in order to ensure that
 		        // the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
-	            credP256dh = StringUtil.hex2ByteArray("A2026008A101A501020241032001215820AC75E9ECE3E50BFC8ED60399889522405C47BF16DF96660A41298CB4307F7EB62258206E5DE611388A4B8A8211334AC7D37ECB52A387D257E6DB3C2A93DF21FF3AFFC8");
+	            credP256dh = StringUtil.hex2ByteArray("A2026008A101A5010202410A2001215820BBC34960526EA4D32E940CAD2A234148DDC21791A12AFBCBAC93622046DD44F02258204519E257236B2A0CE2023F0931F1F386CA7AFDA64FCDE0108C224C51EABF6072");
 		        break;
 		    case Constants.CRED_TYPE_X509:
 		        // The x509 certificate of this peer
-		    	serializedCert = StringUtil.hex2ByteArray("7713204c3ebc3428a6cf57e24c9def59651770449bce7ec6561e52433aa55e71f1fa34b22a9ca4a1e12924eae1d1766088098449cb848ffc795f88afc49cbe8afdd1ba009f21675e8f6c77a4a2c30195601f6f0a0852978bd43d28207d44486502ff7bdda8");
+		    	serializedCert = StringUtil.hex2ByteArray("4488370016b8965bdb2074bff82e5a20e09bec21f8406e86442b87ec3ff245b70a47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb4");
 		        
 		        // Test with Peter (real DER certificate for the same identity key)
 		        // serializedCert = StringUtil.hex2ByteArray("30820225308201cba003020102020711223344556600300a06082a8648ce3d040302306f310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31153013060355040b0c0c6d616e7566616374757265723115301306035504030c0c6d6173612e73746f6b2e6e6c3020170d3231303230393039333131345a180f39393939313233313233353935395a308190310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31163014060355040b0c0d6d616e75666163747572696e67311c301a06035504030c13757569643a706c656467652e312e322e332e34311730150603550405130e706c656467652e312e322e332e343059301306072a8648ce3d020106082a8648ce3d03010703420004d474715902aa13cd63984076ea4aeb38818f99a80413fcdd9e033c3c50318817eb1cd945afce48b64479441d1095fb0cf5c31774c786d07959935839bb147defa32e302c30090603551d1304023000301f0603551d23041830168014707f9105ed9e1e1c3fe0cf869d810b2d43d10042300a06082a8648ce3d040302034800304502200fdaaaf09f44ccdafa54a467de952c1e90d1a9a8f60b96793bc9497af318671202210086fddeb42703574df21c7c36a66a3807034fa3366a72b812567f0ed0249a2b31");
@@ -954,7 +748,7 @@ public class EdhocClientProxy {
 				idCredP256dh = Util.buildIdCredX5t(serializedCert);
 				break;
 			case Constants.ID_CRED_TYPE_X5U:
-				idCredP256dh = Util.buildIdCredX5u("http://example.repo.com/hostA-x509-P256-dh");
+				idCredP256dh = Util.buildIdCredX5u("http://example.repo.com/hostB-x509-P256-dh");
 				break;
 			}
 			
@@ -998,14 +792,14 @@ public class EdhocClientProxy {
 		CBORObject peer1IdCredEd25519x5t = null;
 		CBORObject peer1IdCredEd25519x5u = null;
 	    
-		// If the type of credential identifier is 'kid', use 0x07,
-		// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x07
-		byte[] peer1KidEd25519 = new byte[] {(byte) 0x07};
+		// If the type of credential identifier is 'kid', use 0x00,
+		// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x00
+		byte[] peer1KidEd25519 = new byte[] {(byte) 0x00};
 		
 		
 		// Build the public key
 		
-		peerPublicKeyBinary = StringUtil.hex2ByteArray("dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
+		peerPublicKeyBinary = StringUtil.hex2ByteArray("38e5d54563c2b6a4ba26f3015f61bb706e5c2efdb556d2e1690b97fc3c6de149");
 		peer1PublicKeyEd25519 =  SharedSecretCalculation.buildEd25519OneKey(null, peerPublicKeyBinary);
 		
 		
@@ -1017,7 +811,7 @@ public class EdhocClientProxy {
 		
 		// These serializations have to be prepared manually, in order to ensure that
 		// the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
-		peerCred = StringUtil.hex2ByteArray("a2026008a101a401010241072006215820dbd9dc8cd03fb7c3913511462bb23816477c6bd8d66ef5a1a070ac854ed73fd2");
+		peerCred = StringUtil.hex2ByteArray("A2026008A101A40101024100200621582038E5D54563C2B6A4BA26F3015F61BB706E5C2EFDB556D2E1690B97FC3C6DE149");
  		
 		peer1IdCredEd25519kccs = Util.buildIdCredKccs(peer1CcsObjectEd25519); // ID_CRED as 'kccs'
 		peer1IdCredEd25519kid = Util.buildIdCredKid(peer1KidEd25519); // ID_CRED as 'kid'
@@ -1029,7 +823,7 @@ public class EdhocClientProxy {
 		
 		
 		// Build CRED as an X.509 certificate, and the corresponding ID_CRED as 'x5chain', 'x5t' and 'x5u'
-		peerSerializedCert = StringUtil.hex2ByteArray("c788370016b8965bdb2074bff82e5a20e09bec21f8406e86442b87ec3ff245b70a47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb2");
+		peerSerializedCert = StringUtil.hex2ByteArray("5413204c3ebc3428a6cf57e24c9def59651770449bce7ec6561e52433aa55e71f1fa34b22a9ca4a1e12924eae1d1766088098449cb848ffc795f88afc49cbe8afdd1ba009f21675e8f6c77a4a2c30195601f6f0a0852978bd43d28207d44486502ff7bdda6");
 		
 		// Test with Peter (real DER certificate for the same identity key)
 		// peerSerializedCert = StringUtil.hex2ByteArray("308202763082021ca00302010202144aebaeff99a7ec4c9b398e007e3074d6d24fd779300a06082a8648ce3d0403023073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c301e170d3231303230393039333131345a170d3232303230393039333131345a3073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c3059301306072a8648ce3d020106082a8648ce3d030107034200040d75040e117b0fed769f235a4c831ff3b6699b8e310af28094fe3baea003b5e9772a4def5d8d4ee362e9ae9ef615215d115341f531338e3fa4030b6257b25d66a3818d30818a301d0603551d0e0416041444f3cf92db3cda030a3faf611872b90c601c0f74301f0603551d2304183016801444f3cf92db3cda030a3faf611872b90c601c0f74300f0603551d130101ff040530030101ff30270603551d250420301e06082b0601050507031c06082b0601050507030106082b06010505070302300e0603551d0f0101ff0404030201f6300a06082a8648ce3d0403020348003045022100ee29fb91849d8f0c617de9f817e016b535cac732235eed8a6711e68a3a634d0802205d1750bc02f0f1dde19a7c48d82fb5442c560d13f3d1a7e99546a6c39a28f38b");
@@ -1039,7 +833,7 @@ public class EdhocClientProxy {
 		
 		peer1IdCredEd25519x5chain = Util.buildIdCredX5chain(peerSerializedCert); // ID_CRED as 'x5chain'
 		peer1IdCredEd25519x5t = Util.buildIdCredX5t(peerSerializedCert); // ID_CRED as 'x5t'
-		peer1IdCredEd25519x5u = Util.buildIdCredX5u("http://example.repo.com/hostB-x509-Ed25519"); // ID_CRED as 'x5u'
+		peer1IdCredEd25519x5u = Util.buildIdCredX5u("http://example.repo.com/hostA-x509-Ed25519"); // ID_CRED as 'x5u'
 		
 		peerPublicKeys.put(peer1IdCredEd25519x5chain, peer1PublicKeyEd25519);
 		peerCredentials.put(peer1IdCredEd25519x5chain, CBORObject.FromObject(peerCred));
@@ -1063,13 +857,13 @@ public class EdhocClientProxy {
 		CBORObject peer1IdCredX25519x5t = null;
 		CBORObject peer1IdCredX25519x5u = null;
 	    
-		// If the type of credential identifier is 'kid', use 0x08,
-		// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x08
-		byte[] peer1KidX25519 = new byte[] {(byte) 0x08};
+		// If the type of credential identifier is 'kid', use 0x01,
+		// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x01
+		byte[] peer1KidX25519 = new byte[] {(byte) 0x01};
 		
 		// Build the public key
 		
-		peerPublicKeyBinary = StringUtil.hex2ByteArray("a3ff263595beb377d1a0ce1d04dad2d40966ac6bcb622051b84659184d5d9a32");
+		peerPublicKeyBinary = StringUtil.hex2ByteArray("2c440cc121f8d7f24c3b0e41aedafe9caa4f4e7abb835ec30f1de88adb96ff71");
 		peer1PublicKeyX25519 =  SharedSecretCalculation.buildCurve25519OneKey(null, peerPublicKeyBinary);
 		
 		
@@ -1081,7 +875,7 @@ public class EdhocClientProxy {
 		
 		// These serializations have to be prepared manually, in order to ensure that
 		// the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
-		peerCred = StringUtil.hex2ByteArray("A2026008A101A401010241082004215820A3FF263595BEB377D1A0CE1D04DAD2D40966AC6BCB622051B84659184D5D9A32");
+		peerCred = StringUtil.hex2ByteArray("A2026008A101A4010102410120042158202C440CC121F8D7F24C3B0E41AEDAFE9CAA4F4E7ABB835EC30F1DE88ADB96FF71");
  		
 		peer1IdCredX25519kccs = Util.buildIdCredKccs(peer1CcsObjectX25519); // ID_CRED as 'kccs'
 		peer1IdCredX25519kid = Util.buildIdCredKid(peer1KidX25519); // ID_CRED as 'kid'
@@ -1093,7 +887,7 @@ public class EdhocClientProxy {
 		
 		
 		// Build CRED as an X.509 certificate, and the corresponding ID_CRED as 'x5chain', 'x5t' and 'x5u'
-		peerSerializedCert = StringUtil.hex2ByteArray("c788370016b8965bdb2074bff82e5a20e09bec21f8406e86442b87ec3ff245b70a47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb3");
+		peerSerializedCert = StringUtil.hex2ByteArray("5413204c3ebc3428a6cf57e24c9def59651770449bce7ec6561e52433aa55e71f1fa34b22a9ca4a1e12924eae1d1766088098449cb848ffc795f88afc49cbe8afdd1ba009f21675e8f6c77a4a2c30195601f6f0a0852978bd43d28207d44486502ff7bdda7");
 		
 		// Test with Peter (real DER certificate for the same identity key)
 		// peerSerializedCert = StringUtil.hex2ByteArray("308202763082021ca00302010202144aebaeff99a7ec4c9b398e007e3074d6d24fd779300a06082a8648ce3d0403023073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c301e170d3231303230393039333131345a170d3232303230393039333131345a3073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c3059301306072a8648ce3d020106082a8648ce3d030107034200040d75040e117b0fed769f235a4c831ff3b6699b8e310af28094fe3baea003b5e9772a4def5d8d4ee362e9ae9ef615215d115341f531338e3fa4030b6257b25d66a3818d30818a301d0603551d0e0416041444f3cf92db3cda030a3faf611872b90c601c0f74301f0603551d2304183016801444f3cf92db3cda030a3faf611872b90c601c0f74300f0603551d130101ff040530030101ff30270603551d250420301e06082b0601050507031c06082b0601050507030106082b06010505070302300e0603551d0f0101ff0404030201f6300a06082a8648ce3d0403020348003045022100ee29fb91849d8f0c617de9f817e016b535cac732235eed8a6711e68a3a634d0802205d1750bc02f0f1dde19a7c48d82fb5442c560d13f3d1a7e99546a6c39a28f38b");
@@ -1103,7 +897,7 @@ public class EdhocClientProxy {
 		
 		peer1IdCredX25519x5chain = Util.buildIdCredX5chain(peerSerializedCert); // ID_CRED as 'x5chain'
 		peer1IdCredX25519x5t = Util.buildIdCredX5t(peerSerializedCert); // ID_CRED as 'x5t'
-		peer1IdCredX25519x5u = Util.buildIdCredX5u("http://example.repo.com/hostB-x509-X25519"); // ID_CRED as 'x5u'
+		peer1IdCredX25519x5u = Util.buildIdCredX5u("http://example.repo.com/hostA-x509-X25519"); // ID_CRED as 'x5u'
 		
 		peerPublicKeys.put(peer1IdCredX25519x5chain, peer1PublicKeyX25519);
 		peerCredentials.put(peer1IdCredX25519x5chain, CBORObject.FromObject(peerCred));
@@ -1129,14 +923,15 @@ public class EdhocClientProxy {
 		CBORObject peer1IdCredP256x5t = null;
 		CBORObject peer1IdCredP256x5u = null;
 	    
-		// If the type of credential identifier is 'kid', use 0x09,
-		// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x09
-		byte[] peer1KidP256 = new byte[] {(byte) 0x09};
+		// If the type of credential identifier is 'kid', use 0x02,
+		// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x02
+		byte[] peer1KidP256 = new byte[] {(byte) 0x02};
+		
 		
 		// Build the public key
 		
-		peerPublicKeyBinary = StringUtil.hex2ByteArray("6f9702a66602d78f5e81bac1e0af01f8b52810c502e87ebb7c926c07426fd02f");
-		peerPublicKeyBinaryY = StringUtil.hex2ByteArray("C8D33274C71C9B3EE57D842BBF2238B8283CB410ECA216FB72A78EA7A870F800");
+		peerPublicKeyBinary = StringUtil.hex2ByteArray("cd4177ba62433375ede279b5e18e8b91bc3ed8f1e174474a26fc0edb44ea5373");
+		peerPublicKeyBinaryY = StringUtil.hex2ByteArray("A0391DE29C5C5BADDA610D4E301EAAA18422367722289CD18CBE6624E89B9CFD");
 		peer1PublicKeyP256 =  SharedSecretCalculation.buildEcdsa256OneKey(null, peerPublicKeyBinary, peerPublicKeyBinaryY);
 		
 		
@@ -1148,8 +943,8 @@ public class EdhocClientProxy {
 		
 		// These serializations have to be prepared manually, in order to ensure that
 		// the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
-		peerCred = StringUtil.hex2ByteArray("A2026008A101A5010202410920012158206F9702A66602D78F5E81BAC1E0AF01F8B52810C502E87EBB7C926C07426FD02F225820C8D33274C71C9B3EE57D842BBF2238B8283CB410ECA216FB72A78EA7A870F800");
- 		
+		peerCred = StringUtil.hex2ByteArray("A2026008A101A501020241022001215820CD4177BA62433375EDE279B5E18E8B91BC3ED8F1E174474A26FC0EDB44EA5373225820A0391DE29C5C5BADDA610D4E301EAAA18422367722289CD18CBE6624E89B9CFD");	
+		
 		peer1IdCredP256kccs = Util.buildIdCredKccs(peer1CcsObjectP256); // ID_CRED as 'kccs'
 		peer1IdCredP256kid = Util.buildIdCredKid(peer1KidP256); // ID_CRED as 'kid'
 		
@@ -1160,8 +955,8 @@ public class EdhocClientProxy {
 		
 		
 		// Build CRED as an X.509 certificate, and the corresponding ID_CRED as 'x5chain', 'x5t' and 'x5u'
-		peerSerializedCert = StringUtil.hex2ByteArray("c788370016b8965bdb2074bff82e5a20e09bec21f8406e86442b87ec3ff245b70a47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb4");
-			
+		peerSerializedCert = StringUtil.hex2ByteArray("5413204c3ebc3428a6cf57e24c9def59651770449bce7ec6561e52433aa55e71f1fa34b22a9ca4a1e12924eae1d1766088098449cb848ffc795f88afc49cbe8afdd1ba009f21675e8f6c77a4a2c30195601f6f0a0852978bd43d28207d44486502ff7bdda8");
+		
 		// Test with Peter (real DER certificate for the same identity key)
 		// peerSerializedCert = StringUtil.hex2ByteArray("308202763082021ca00302010202144aebaeff99a7ec4c9b398e007e3074d6d24fd779300a06082a8648ce3d0403023073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c301e170d3231303230393039333131345a170d3232303230393039333131345a3073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c3059301306072a8648ce3d020106082a8648ce3d030107034200040d75040e117b0fed769f235a4c831ff3b6699b8e310af28094fe3baea003b5e9772a4def5d8d4ee362e9ae9ef615215d115341f531338e3fa4030b6257b25d66a3818d30818a301d0603551d0e0416041444f3cf92db3cda030a3faf611872b90c601c0f74301f0603551d2304183016801444f3cf92db3cda030a3faf611872b90c601c0f74300f0603551d130101ff040530030101ff30270603551d250420301e06082b0601050507031c06082b0601050507030106082b06010505070302300e0603551d0f0101ff0404030201f6300a06082a8648ce3d0403020348003045022100ee29fb91849d8f0c617de9f817e016b535cac732235eed8a6711e68a3a634d0802205d1750bc02f0f1dde19a7c48d82fb5442c560d13f3d1a7e99546a6c39a28f38b");
 		
@@ -1170,17 +965,15 @@ public class EdhocClientProxy {
 		
 		peer1IdCredP256x5chain = Util.buildIdCredX5chain(peerSerializedCert); // ID_CRED as 'x5chain'
 		peer1IdCredP256x5t = Util.buildIdCredX5t(peerSerializedCert); // ID_CRED as 'x5t'
-		peer1IdCredP256x5u = Util.buildIdCredX5u("http://example.repo.com/hostB-x509-P256-signing"); // ID_CRED as 'x5u'
+		peer1IdCredP256x5u = Util.buildIdCredX5u("http://example.repo.com/hostA-x509-P256-signing"); // ID_CRED as 'x5u'
 		
 		peerPublicKeys.put(peer1IdCredP256x5chain, peer1PublicKeyP256);
 		peerCredentials.put(peer1IdCredP256x5chain, CBORObject.FromObject(peerCred));
-		
 		peerPublicKeys.put(peer1IdCredP256x5t, peer1PublicKeyP256);
 		peerCredentials.put(peer1IdCredP256x5t, CBORObject.FromObject(peerCred));
-		
 		peerPublicKeys.put(peer1IdCredP256x5u, peer1PublicKeyP256);
 		peerCredentials.put(peer1IdCredP256x5u, CBORObject.FromObject(peerCred));
-		
+
 		
 		
 		// ECDH authentication credential
@@ -1193,15 +986,15 @@ public class EdhocClientProxy {
 		CBORObject peer1IdCredP256DHx5t = null;
 		CBORObject peer1IdCredP256DHx5u = null;
 	    
-		// If the type of credential identifier is 'kid', use 0x0a,
-		// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x0a
-		byte[] peer1KidP256DH = new byte[] {(byte) 0x0a};
-		
+		// If the type of credential identifier is 'kid', use 0x03,
+		// i.e. the serialized ID_CRED_X is 0xa1, 0x04, 0x41, 0x03
+		byte[] peer1KidP256DH = new byte[] {(byte) 0x03};
 		
 		// Build the public key
 		
-		peerPublicKeyBinary = StringUtil.hex2ByteArray("bbc34960526ea4d32e940cad2a234148ddc21791a12afbcbac93622046dd44f0");
-		peerPublicKeyBinaryY = StringUtil.hex2ByteArray("4519e257236b2a0ce2023f0931f1f386ca7afda64fcde0108c224c51eabf6072");
+		peerPublicKeyBinary = StringUtil.hex2ByteArray("ac75e9ece3e50bfc8ed60399889522405c47bf16df96660a41298cb4307f7eb6");
+		peerPublicKeyBinaryY = StringUtil.hex2ByteArray("6e5de611388a4b8a8211334ac7d37ecb52a387d257e6db3c2a93df21ff3affc8");
+		
 		peer1PublicKeyP256DH =  SharedSecretCalculation.buildEcdsa256OneKey(null, peerPublicKeyBinary, peerPublicKeyBinaryY);
 		
 		
@@ -1214,7 +1007,7 @@ public class EdhocClientProxy {
 		
 		// These serializations have to be prepared manually, in order to ensure that
 		// the CBOR map used as CRED has its parameters encoded in bytewise lexicographic order
-		peerCred = StringUtil.hex2ByteArray("A2026008A101A5010202410A2001215820BBC34960526EA4D32E940CAD2A234148DDC21791A12AFBCBAC93622046DD44F02258204519E257236B2A0CE2023F0931F1F386CA7AFDA64FCDE0108C224C51EABF6072");		
+		peerCred = StringUtil.hex2ByteArray("A2026008A101A501020241032001215820AC75E9ECE3E50BFC8ED60399889522405C47BF16DF96660A41298CB4307F7EB62258206E5DE611388A4B8A8211334AC7D37ECB52A387D257E6DB3C2A93DF21FF3AFFC8");
 		
 		peer1IdCredP256DHkccs = Util.buildIdCredKccs(peer1CcsObjectP256DH); // ID_CRED as 'kccs'
 		peer1IdCredP256DHkid = Util.buildIdCredKid(peer1KidP256DH); // ID_CRED as 'kid'
@@ -1226,7 +1019,7 @@ public class EdhocClientProxy {
 		
 		
 		// Build CRED as an X.509 certificate, and the corresponding ID_CRED as 'x5chain', 'x5t' and 'x5u'
-		peerSerializedCert = StringUtil.hex2ByteArray("4488370016b8965bdb2074bff82e5a20e09bec21f8406e86442b87ec3ff245b70a47624dc9cdc6824b2a4c52e95ec9d6b0534b71c2b49e4bf9031500cee6869979c297bb5a8b381e98db714108415e5c50db78974c271579b01633a3ef6271be5c225eb4");
+		peerSerializedCert = StringUtil.hex2ByteArray("7713204c3ebc3428a6cf57e24c9def59651770449bce7ec6561e52433aa55e71f1fa34b22a9ca4a1e12924eae1d1766088098449cb848ffc795f88afc49cbe8afdd1ba009f21675e8f6c77a4a2c30195601f6f0a0852978bd43d28207d44486502ff7bdda8");
 		
 		// Test with Peter (real DER certificate for the same identity key)
 		// peerSerializedCert = StringUtil.hex2ByteArray("308202763082021ca00302010202144aebaeff99a7ec4c9b398e007e3074d6d24fd779300a06082a8648ce3d0403023073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c301e170d3231303230393039333131345a170d3232303230393039333131345a3073310b3009060355040613024e4c310b300906035504080c024e423110300e06035504070c0748656c6d6f6e6431133011060355040a0c0a76616e64657273746f6b31143012060355040b0c0b636f6e73756c74616e6379311a301806035504030c117265676973747261722e73746f6b2e6e6c3059301306072a8648ce3d020106082a8648ce3d030107034200040d75040e117b0fed769f235a4c831ff3b6699b8e310af28094fe3baea003b5e9772a4def5d8d4ee362e9ae9ef615215d115341f531338e3fa4030b6257b25d66a3818d30818a301d0603551d0e0416041444f3cf92db3cda030a3faf611872b90c601c0f74301f0603551d2304183016801444f3cf92db3cda030a3faf611872b90c601c0f74300f0603551d130101ff040530030101ff30270603551d250420301e06082b0601050507031c06082b0601050507030106082b06010505070302300e0603551d0f0101ff0404030201f6300a06082a8648ce3d0403020348003045022100ee29fb91849d8f0c617de9f817e016b535cac732235eed8a6711e68a3a634d0802205d1750bc02f0f1dde19a7c48d82fb5442c560d13f3d1a7e99546a6c39a28f38b");
@@ -1236,7 +1029,7 @@ public class EdhocClientProxy {
 		
 		peer1IdCredP256DHx5chain = Util.buildIdCredX5chain(peerSerializedCert); // ID_CRED as 'x5chain'
 		peer1IdCredP256DHx5t = Util.buildIdCredX5t(peerSerializedCert); // ID_CRED as 'x5t'
-		peer1IdCredP256DHx5u = Util.buildIdCredX5u("http://example.repo.com/hostB-x509-P256-dh"); // ID_CRED as 'x5u'
+		peer1IdCredP256DHx5u = Util.buildIdCredX5u("http://example.repo.com/hostA-x509-P256-dh"); // ID_CRED as 'x5u'
 		
 		peerPublicKeys.put(peer1IdCredP256DHx5chain, peer1PublicKeyP256DH);
 		peerCredentials.put(peer1IdCredP256DHx5chain, CBORObject.FromObject(peerCred));
@@ -1248,5 +1041,5 @@ public class EdhocClientProxy {
 		peerCredentials.put(peer1IdCredP256DHx5u, CBORObject.FromObject(peerCred));
 		
 	}
-	
+
 }

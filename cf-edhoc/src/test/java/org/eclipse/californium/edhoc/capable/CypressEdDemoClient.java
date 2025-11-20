@@ -540,12 +540,6 @@ public class CypressEdDemoClient {
 		} catch (ConnectorException | IOException e) {
 			System.out.println(e.getLocalizedMessage());
 		}
-		
-		if (OSCORE_EDHOC_COMBINED) {
-			CoapResponse appResponseToCombinedRequest = edhocExecutor.getAppResponseToCombinedRequest();
-			System.out.println("\nApplication response to the EDHOC+OSCORE combined request:\n\n" +
-							   Utils.prettyPrint(appResponseToCombinedRequest) + "\n");
-		}
 
 		// Send a request protected with the just established Security Context
         if (POST_EDHOC_EXCHANGE && usedForOSCORE == true) {

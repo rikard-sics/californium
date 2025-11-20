@@ -115,23 +115,27 @@ public class CypressDemoClient {
 
 		CoapResponse response;
 
-		// C->P
-		System.out.println("Will send OSCORE-protected request (protected C->S)");
-		promptEnterKey();
-		response = OSCOREScheme(clientToServer);
-		assertTrue(response.getOptions().hasOscore());
-		assertEquals(response.getResponseText(), "Hello World!");
-		assertEquals(response.getCode(), ResponseCode.CONTENT);
-		System.out.println(Utils.prettyPrint(response));
+		boolean twoLayers = false;
 
-		// C->P, C->S
-		System.out.println("Will send OSCORE-protected request (protected C->P and C->S)");
-		promptEnterKey();
-		response = PostSchemeSend(clientToServer);
-		assertTrue(response.getOptions().hasOscore());
-		assertEquals(response.getResponseText(), "Hello World!");
-		assertEquals(response.getCode(), ResponseCode.CONTENT);
-		System.out.println(Utils.prettyPrint(response));
+		if (twoLayers == false) {
+			// C->S
+			System.out.println("Will send OSCORE-protected request (protected C->S)");
+			promptEnterKey();
+			response = OSCOREScheme(clientToServer);
+			assertTrue(response.getOptions().hasOscore());
+			assertEquals(response.getResponseText(), "Hello World!");
+			assertEquals(response.getCode(), ResponseCode.CONTENT);
+			System.out.println(Utils.prettyPrint(response));
+		} else {
+			// C->P, C->S
+			System.out.println("Will send OSCORE-protected request (protected C->P and C->S)");
+			promptEnterKey();
+			response = PostSchemeSend(clientToServer);
+			assertTrue(response.getOptions().hasOscore());
+			assertEquals(response.getResponseText(), "Hello World!");
+			assertEquals(response.getCode(), ResponseCode.CONTENT);
+			System.out.println(Utils.prettyPrint(response));
+		}
 
 		// response = PostObserveSend(clientToServer);
 
