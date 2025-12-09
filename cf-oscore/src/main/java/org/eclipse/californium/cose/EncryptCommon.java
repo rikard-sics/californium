@@ -47,6 +47,7 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.scandium.dtls.cipher.CCMBlockCipher;
 import org.eclipse.californium.scandium.dtls.cipher.ThreadLocalCipher;
 import org.junit.Assert;
@@ -66,7 +67,7 @@ public abstract class EncryptCommon extends Message {
 	private static final int CHACHA_POLY_IV_LENGTH = 12;
 	private static final int CHACHA_IV_LENGTH = CHACHA_POLY_IV_LENGTH;
 	private final static int AES_CBC_IV_LENGTH = 16;
-	private final static int AES_CTR_IV_LENGTH = 16;
+	private final static int AES_CTR_IV_LENGTH = 12; // +4 0x00 bytes
 
 	private static final String AES_SPEC = "AES";
 	private static final String AES_GCM_SPEC = "AES/GCM/NoPadding";
@@ -454,10 +455,15 @@ public abstract class EncryptCommon extends Message {
 			throw new CoseException("IV size is incorrect");
 		}
 
+		// Build the IV (12 byte nonce from OSCORE concat with 4 byte 0x00)
+		byte[] completeIv = new byte[16];
+		System.arraycopy(iv.GetByteString(), 0, completeIv, 0, iv.GetByteString().length);
+		System.out.println("IV (for AES-CTR): " + Utils.toHexString(completeIv));
+
 		try {
 			Cipher cipher = AES_CTR_CIPHER.currentWithCause();
 			SecretKeySpec keySpec = new SecretKeySpec(rgbKey, AES_SPEC);
-			IvParameterSpec ivSpec = new IvParameterSpec(iv.GetByteString());
+			IvParameterSpec ivSpec = new IvParameterSpec(completeIv);
 			cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
 			rgbContent = cipher.doFinal(getEncryptedContent());
 		} catch (NoSuchAlgorithmException | NoSuchPaddingException ex) {
@@ -490,10 +496,15 @@ public abstract class EncryptCommon extends Message {
 			throw new CoseException("IV size is incorrect.");
 		}
 
+		// Build the IV (12 byte nonce from OSCORE concat with 4 byte 0x00)
+		byte[] completeIv = new byte[16];
+		System.arraycopy(iv.GetByteString(), 0, completeIv, 0, iv.GetByteString().length);
+		System.out.println("IV (for AES-CTR): " + Utils.toHexString(completeIv));
+
 		try {
 			Cipher cipher = AES_CTR_CIPHER.currentWithCause();
 			SecretKeySpec keySpec = new SecretKeySpec(rgbKey, AES_SPEC);
-			IvParameterSpec ivSpec = new IvParameterSpec(iv.GetByteString());
+			IvParameterSpec ivSpec = new IvParameterSpec(completeIv);
 			cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
 			rgbEncrypt = cipher.doFinal(GetContent());
 		} catch (NoSuchAlgorithmException | NoSuchPaddingException ex) {
