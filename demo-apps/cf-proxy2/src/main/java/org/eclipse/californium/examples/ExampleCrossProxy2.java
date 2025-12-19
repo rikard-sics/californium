@@ -222,24 +222,14 @@ public class ExampleCrossProxy2 {
 		// translated coap response back to http client
 		
 		httpServer = ProxyHttpServer.buider()
-<<<<<<< HEAD
-				.setConfiguration(config)
-				.setPort(8080)
-				.setExecutor(executor)
-				.setHttpTranslator(new Http2CoapTranslator())
-				.setLocalCoapDeliverer(local)
-				.setProxyCoapDeliverer(proxyMessageDeliverer)
-				.build();
-=======
 			.setConfiguration(config)
 		//	.setPort(8080) // M.T.
 			.setPort(httpPort) // M.T.
-			.setExecutor(mainExecutor)
+			.setExecutor(executor)
 			.setHttpTranslator(new Http2CoapTranslator())
 			.setLocalCoapDeliverer(local)
 			.setProxyCoapDeliverer(proxyMessageDeliverer)
 			.build();
->>>>>>> e593d579c (Cacheable OSCORE with a CoAP-to-CoAP forward proxy)
 		httpServer.start();
 		System.out.println("** HTTP Local at: http://localhost:" + httpPort + "/local/");
 		System.out.println("** HTTP Proxy at: http://localhost:" + httpPort + "/proxy/");

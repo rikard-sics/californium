@@ -45,7 +45,6 @@ import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.californium.core.network.interceptors.MessageInterceptor;
-import org.eclipse.californium.core.network.interceptors.MessageInterceptorAdapter;
 import org.eclipse.californium.elements.EndpointContext;
 import org.eclipse.californium.elements.UdpEndpointContextMatcher;
 import org.eclipse.californium.elements.category.Medium;

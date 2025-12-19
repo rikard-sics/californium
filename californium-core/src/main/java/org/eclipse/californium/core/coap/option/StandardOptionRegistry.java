@@ -195,7 +195,13 @@ public class StandardOptionRegistry extends MapBasedOptionRegistry {
 	 */
 	public static final OpaqueOption.Definition REQUEST_TAG = new OpaqueOption.Definition(292, "Request-Tag", false, 0,
 			8);
-
+	/**
+	 * @see <a href="https://datatracker.ietf.org/doc/html/draft-ietf-core-cacheable-oscore-00#section-3.3"
+	 *      target= "_blank">draft-ietf-core-cacheable-oscore 3.3. Request-Hash</a>
+	 */
+	public static final OpaqueOption.Definition REQUEST_HASH = new OpaqueOption.Definition(OptionNumberRegistry.REQUEST_HASH,
+			Names.Request_Hash, true, 0, 1034);
+	
 	/**
 	 * Registry with all standard options.
 	 */
@@ -204,7 +210,7 @@ public class StandardOptionRegistry extends MapBasedOptionRegistry {
 	private StandardOptionRegistry() {
 		super(IF_MATCH, URI_HOST, ETAG, IF_NONE_MATCH, URI_PORT, LOCATION_PATH, URI_PATH, CONTENT_FORMAT, MAX_AGE,
 				URI_QUERY, ACCEPT, Q_BLOCK_1, LOCATION_QUERY, PROXY_URI, PROXY_SCHEME, SIZE1, OBSERVE, BLOCK1, BLOCK2,
-				SIZE2, Q_BLOCK_2, OSCORE, ECHO, NO_RESPONSE, REQUEST_TAG);
+				SIZE2, Q_BLOCK_2, OSCORE, ECHO, NO_RESPONSE, REQUEST_TAG, REQUEST_HASH);
 	}
 
 	/**

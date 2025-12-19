@@ -65,12 +65,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.californium.core.CoapExchange;
-import org.eclipse.californium.core.coap.BlockOption;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.option.BlockOption;
 import org.eclipse.californium.core.coap.option.NoResponseOption;
 import org.eclipse.californium.core.config.CoapConfig;
-import org.eclipse.californium.core.CoapExchange;
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.Request;

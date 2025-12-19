@@ -243,21 +243,6 @@ public class ProxyCoapClientResource extends ProxyCoapResource {
 				}
 			}
 
-			// https://datatracker.ietf.org/doc/html/draft-tiloca-core-groupcomm-proxy-07#section-3
-			ResponseForwardingOption responseForwarding = new ResponseForwardingOption(ResponseForwardingOption.NUMBER);
-			responseForwarding.setTpId(1);
-			responseForwarding.setSrvHost(responseSourceHost);
-			if (responseSourcePort != -1 && responseSourcePort != CoAP.DEFAULT_COAP_PORT) {
-				responseForwarding.setSrvPort(responseSourcePort);
-			}
-			if (originalReqDstPort != null && originalReqDstPort == responseSourcePort) {
-				responseForwarding.setSrvPortNull();
-			}
-
-			if (originalReqEndDstMcast) {
-				incomingResponse.getOptions().addOption(responseForwarding);
-			}
-
 			// Build outgoing response with option
 			Response outgoingResponse = translator.getResponse(incomingResponse);
 

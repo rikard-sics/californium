@@ -49,7 +49,6 @@ import org.eclipse.californium.core.coap.ResponseTimeout;
 import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.core.coap.UriQueryParameter;
 import org.eclipse.californium.core.network.Endpoint;
-import org.eclipse.californium.core.observe.NotificationListener;
 import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.elements.config.SystemConfig;
 import org.eclipse.californium.elements.exception.ConnectorException;

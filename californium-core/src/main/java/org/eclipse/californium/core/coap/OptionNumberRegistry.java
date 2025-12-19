@@ -132,7 +132,7 @@ public final class OptionNumberRegistry {
 		INTEGER, STRING, OPAQUE, UNKNOWN, EMPTY
 	}
 
-	 * Checks whether an option is critical.
+	 /* Checks whether an option is critical.
 	 * 
 	 * @param optionNumber
 	 *            The option number to check
