@@ -247,7 +247,11 @@ public class OSCoreAlgorithmsTest {
 	@Test
 	public void testNotSupported() throws Exception {
 		AlgorithmID alg = AlgorithmID.AES_CBC_MAC_256_128;
+<<<<<<< HEAD
 
+=======
+		
+>>>>>>> c22db8f20 (Post-rebase fixes (work-in-progress))
 		exceptionRule.expect(RuntimeException.class);
 		exceptionRule.expectMessage("AEAD algorithm not supported");
 

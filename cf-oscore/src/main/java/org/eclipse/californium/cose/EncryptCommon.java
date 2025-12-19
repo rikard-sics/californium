@@ -724,4 +724,6 @@ public abstract class EncryptCommon extends Message {
 			return -1;
 		}
 	}
+
 }
+

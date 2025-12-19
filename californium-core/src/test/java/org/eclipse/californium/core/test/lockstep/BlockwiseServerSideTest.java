@@ -61,6 +61,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.californium.TestTools;
 import org.eclipse.californium.core.CoapExchange;
+import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.Request;
