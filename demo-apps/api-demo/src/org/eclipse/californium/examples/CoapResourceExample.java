@@ -21,7 +21,7 @@ import static org.eclipse.californium.core.coap.CoAP.ResponseCode.*;
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
-import org.eclipse.californium.core.server.resources.CoapExchange;
+import org.eclipse.californium.core.CoapExchange;
 
 public class CoapResourceExample extends CoapResource {
 
