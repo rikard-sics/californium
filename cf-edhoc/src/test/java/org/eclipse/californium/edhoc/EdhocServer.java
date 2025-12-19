@@ -36,7 +36,7 @@ import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.core.network.CoapEndpoint;
-import org.eclipse.californium.core.server.resources.CoapExchange;
+import org.eclipse.californium.core.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.cose.HeaderKeys;
