@@ -29,6 +29,7 @@ import java.util.Random;
 
 import org.eclipse.californium.TestTools;
 import org.eclipse.californium.core.CoapClient;
+import org.eclipse.californium.core.CoapExchange;
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.CoapServer;
@@ -43,7 +44,6 @@ import org.eclipse.californium.core.network.EndpointManager;
 import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
 import org.eclipse.californium.core.config.CoapConfig;
-import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.KeyKeys;
 import org.eclipse.californium.cose.OneKey;

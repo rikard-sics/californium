@@ -28,7 +28,7 @@ import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.network.CoapEndpoint;
-import org.eclipse.californium.core.server.resources.CoapExchange;
+import org.eclipse.californium.core.CoapExchange;
 
 /**
  * Server for CoAP observations using unicast requests
