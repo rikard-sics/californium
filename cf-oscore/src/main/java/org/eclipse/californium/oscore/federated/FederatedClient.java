@@ -903,7 +903,8 @@ public class FederatedClient {
 			// Add response to list of responses
 			responses.add(response);
 
-			// Stop waiting if all servers have responded
+			// Stop waiting if all servers have responded (or for unicast wait
+			// only for 1 response)
 			if (responses.size() == serverCount || unicastMode) {
 				keepWaiting = false;
 			}
