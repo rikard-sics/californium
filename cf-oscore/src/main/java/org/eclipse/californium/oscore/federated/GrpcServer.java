@@ -431,6 +431,7 @@ public class GrpcServer {
 		DebugOut.println("Model Data Type: " + conf.getDataType());
 		DebugOut.println("==================");
 		DebugOut.println("Server Ready");
+		System.out.println("Server Ready");
 	}
 
 	private static Server startGrpcServerTls(int serverId) throws Exception {

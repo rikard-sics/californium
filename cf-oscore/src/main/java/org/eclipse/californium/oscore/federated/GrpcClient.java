@@ -275,6 +275,10 @@ public class GrpcClient {
 
 			DebugOut.println("=== Communication Epoch: " + i + " ===");
 
+			if (currentEpoch % 25 == 0) {
+				System.out.println("@epoch: " + currentEpoch);
+			}
+
 			float[] modelReq = new float[0];
 
 			byte[] payloadReq;
