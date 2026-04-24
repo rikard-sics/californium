@@ -62,38 +62,14 @@ import org.eclipse.californium.oscore.group.MultiKey;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.californium.core.CoapClient;
-import org.eclipse.californium.core.CoapHandler;
-import org.eclipse.californium.core.CoapResponse;
-import org.eclipse.californium.core.Utils;
-import org.eclipse.californium.core.coap.CoAP;
-import org.eclipse.californium.core.coap.CoAP.Type;
-import org.eclipse.californium.core.coap.Request;
-import org.eclipse.californium.core.config.CoapConfig;
-import org.eclipse.californium.core.network.CoapEndpoint;
-import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
-import org.eclipse.californium.elements.util.Bytes;
-import org.eclipse.californium.oscore.HashMapCtxDB;
-import org.eclipse.californium.oscore.InstallCryptoProviders;
-import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
-import org.eclipse.californium.oscore.Utility;
-import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.paho.mqttv5.client.MqttClient;
 import org.eclipse.paho.mqttv5.client.MqttConnectionOptions;
 import org.eclipse.paho.mqttv5.common.MqttException;
@@ -103,18 +79,16 @@ import com.google.gson.JsonObject;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
-import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
-
 /**
- * Federated learning client application. Publishes responses from the servers to
- * Yggio using MQTT.
+ * Federated learning client application. Publishes responses from the servers
+ * to Yggio using MQTT.
  * 
  * Topics:
  * 
  * yggio/generic/v2/rise-dev-federated/unique/topic/100
  * 
  */
-public class FederatedClient {
+public class YggioFederatedClient {
 
 	/**
 	 * File name for network configuration.
@@ -274,7 +248,7 @@ public class FederatedClient {
 	private static HashMap<String, Boolean> sentInitialRequest = new HashMap<String, Boolean>();
 
 	private static String setClientName = "federated-client";
-	
+
 	/**
 	 * Main method
 	 * 
@@ -285,7 +259,7 @@ public class FederatedClient {
 
 		// Create and connect MQTT client
 		MqttClient mqttClient = createAndConnectClient(setClientName);
-		
+
 		long start = System.nanoTime();
 
 		// Install cryptographic providers
@@ -565,7 +539,7 @@ public class FederatedClient {
 
 				handler.clearResponses();
 				Collections.shuffle(unicastServerIps);
-				
+
 				for (int n = 0; n < unicastServerIps.size(); n++) {
 
 					// Empty payload for servers being contacted first time
@@ -639,14 +613,14 @@ public class FederatedClient {
 				DebugOut.errPrintln("ERROR: No Response from servers.");
 
 			}
-			
+
 			boolean toBeContinued = false;
 			// Ensure to continue if no responses were received this epoch
 			if (responses == null || responses.size() == 0) {
 				toBeContinued = true;
 				didAggregation = false;
 			}
-			
+
 			for (int j = 0; j < responses.size(); j++) {
 				CoapResponse resp = responses.get(j);
 
@@ -745,15 +719,13 @@ public class FederatedClient {
 			long epochTotal = epochEnd - epochStart;
 			epochTimes.add(epochTotal);
 
-
 			// === Publish to Yggio staging ===
 			Thread.sleep(20);
-			String serverName = "testing";
 			String mqttTopic = "yggio/generic/v2/rise-dev-federated/unique/topic/100";
-			
+
 			long totalElapsedNs = System.nanoTime() - start;
 			long totalElapsedMs = TimeUnit.NANOSECONDS.toMillis(totalElapsedNs);
-			
+
 			JsonObject json = new JsonObject();
 			json.addProperty("epochNumber", currentEpoch);
 			json.addProperty("epochTimeMs", TimeUnit.NANOSECONDS.toMillis(epochTotal));
@@ -764,26 +736,25 @@ public class FederatedClient {
 			json.addProperty("totalSentBytes", UDPConnector.getSentPayload());
 			json.addProperty("totalReceivedBytes", UDPConnector.getReceivedPayload());
 			String mqttPayload = json.toString();
-			
-			System.out.println("Attempting to publish information from federated learning client for epoch: " + currentEpoch);
+
+			System.out.println(
+					"Attempting to publish information from federated learning client for epoch: " + currentEpoch);
 			if (!mqttClient.isConnected()) {
-				System.err.println(
-						"[MQTT] Publish FAILED (not connected) ->" + " topic=" + mqttTopic);
+				System.err.println("[MQTT] Publish FAILED (not connected) ->" + " topic=" + mqttTopic);
 			} else {
 				try {
 					MqttMessage msg = new MqttMessage(mqttPayload.getBytes(StandardCharsets.UTF_8));
 					msg.setQos(0);
 					mqttClient.publish(mqttTopic, msg);
 
-					System.out.println("[MQTT] Published for ->" + " topic=" + mqttTopic
-							+ " payload=" + mqttPayload);
+					System.out.println("[MQTT] Published for ->" + " topic=" + mqttTopic + " payload=" + mqttPayload);
 				} catch (MqttException e) {
 					System.err.println("[MQTT] Publish FAILED for" + " topic=" + mqttTopic);
 					e.printStackTrace();
 				}
 			}
 			// === End Publish to Yggio staging ===
-			
+
 		}
 
 		long finish = System.nanoTime();
@@ -928,7 +899,7 @@ public class FederatedClient {
 		public MultiCoapHandler(int serverCount) {
 			this.serverCount = serverCount;
 
-			if(interval1 == 0 || interval2 == 0 || interval3 == 0) {
+			if (interval1 == 0 || interval2 == 0 || interval3 == 0) {
 				DebugOut.errPrintln("error: invalid wait intervals in handler");
 				throw new IllegalArgumentException("Invalid wait intervals in handler");
 			}
@@ -1027,7 +998,6 @@ public class FederatedClient {
 		return sdf.format(cal.getTime());
 	}
 
-
 	/**
 	 * Create MQTT client and connect to Yggio staging
 	 * 
@@ -1096,32 +1066,32 @@ public class FederatedClient {
 		return new String(bytes, StandardCharsets.UTF_8).trim();
 	}
 
-		private static double getAverageRttMsForEpoch(int epoch) {
-			double totalRttMs = 0.0;
-			int validCount = 0;
-		
-			for (long[] rttArray : rtts.values()) {
-				if (epoch < rttArray.length && rttArray[epoch] != -1) {
-					totalRttMs += rttArray[epoch] / 1_000_000.0;
-					validCount++;
-				}
+	private static double getAverageRttMsForEpoch(int epoch) {
+		double totalRttMs = 0.0;
+		int validCount = 0;
+
+		for (long[] rttArray : rtts.values()) {
+			if (epoch < rttArray.length && rttArray[epoch] != -1) {
+				totalRttMs += rttArray[epoch] / 1_000_000.0;
+				validCount++;
 			}
-		
-			return validCount > 0 ? totalRttMs / validCount : -1.0;
 		}
-		
-		private static double getAverageAccuracyForEpoch(int epoch) {
-			double totalAccuracy = 0.0;
-			int validCount = 0;
-		
-			for (float[] accuracyArray : storedAccuracies.values()) {
-				if (epoch < accuracyArray.length && accuracyArray[epoch] != -1) {
-					totalAccuracy += accuracyArray[epoch];
-					validCount++;
-				}
+
+		return validCount > 0 ? totalRttMs / validCount : -1.0;
+	}
+
+	private static double getAverageAccuracyForEpoch(int epoch) {
+		double totalAccuracy = 0.0;
+		int validCount = 0;
+
+		for (float[] accuracyArray : storedAccuracies.values()) {
+			if (epoch < accuracyArray.length && accuracyArray[epoch] != -1) {
+				totalAccuracy += accuracyArray[epoch];
+				validCount++;
 			}
-		
-			return validCount > 0 ? totalAccuracy / validCount : -1.0;
 		}
-	
+
+		return validCount > 0 ? totalAccuracy / validCount : -1.0;
+	}
+
 }

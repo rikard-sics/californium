@@ -18,6 +18,13 @@
 	<name>Cf-OSCORE</name>
 	<description>Californium (Cf) OSCORE, Object Security for Constrained RESTful Environments</description>
 
+	<repositories>
+		<repository> <!-- Rikard: For MQTT library -->
+			<id>Eclipse Paho Repo</id>
+			<url>https://repo.eclipse.org/content/repositories/paho-releases/</url>
+		</repository>
+	</repositories>
+
 	<properties>
 		<revapi.skip>true</revapi.skip>
 	</properties>
@@ -45,10 +52,12 @@
 			this, CuDNN must also be installed -->
 		<!-- See: https://deeplearning4j.konduit.ai/config/backends/config-cudnn#using-deeplearning-4-j-with-cudnn -->
 
-		<repository> <!-- Rikard: For MQTT library -->
-			<id>Eclipse Paho Repo</id>
-			<url>https://repo.eclipse.org/content/repositories/paho-releases/</url>
-		</repository>
+		<dependency> <!-- Rikard: MQTT library -->
+			<groupId>org.eclipse.paho</groupId>
+			<artifactId>org.eclipse.paho.mqttv5.client</artifactId>
+			<!-- <artifactId>org.eclipse.paho.client.mqttv3</artifactId> -->
+			<version>1.2.5</version>
+		</dependency>
 		<dependency> <!-- Rikard: Added for JSON -->
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
