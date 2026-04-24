@@ -425,6 +425,11 @@ public class FederatedClient {
 			long epochStart = System.nanoTime();
 
 			DebugOut.println("=== Communication Epoch: " + i + " ===");
+
+			if (currentEpoch % 25 == 0) {
+				System.out.println("@epoch: " + currentEpoch);
+			}
+
 			Request request = Request.newPost();
 
 			float[] modelReq = new float[0];
