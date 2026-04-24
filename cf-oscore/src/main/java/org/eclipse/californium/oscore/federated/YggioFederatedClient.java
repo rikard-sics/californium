@@ -62,12 +62,58 @@ import org.eclipse.californium.oscore.group.MultiKey;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
+
+import org.eclipse.californium.core.CoapClient;
+import org.eclipse.californium.core.CoapHandler;
+import org.eclipse.californium.core.CoapResponse;
+import org.eclipse.californium.core.Utils;
+import org.eclipse.californium.core.coap.CoAP;
+import org.eclipse.californium.core.coap.CoAP.Type;
+import org.eclipse.californium.core.coap.Request;
+import org.eclipse.californium.core.config.CoapConfig;
+import org.eclipse.californium.core.network.CoapEndpoint;
+import org.eclipse.californium.elements.config.Configuration;
+import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
+import org.eclipse.californium.elements.util.Bytes;
+import org.eclipse.californium.oscore.HashMapCtxDB;
+import org.eclipse.californium.oscore.InstallCryptoProviders;
+import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
+import org.eclipse.californium.oscore.Utility;
+import org.eclipse.californium.oscore.group.GroupCtx;
+import org.eclipse.paho.mqttv5.client.MqttClient;
+import org.eclipse.paho.mqttv5.client.MqttConnectionOptions;
+import org.eclipse.paho.mqttv5.common.MqttException;
+import org.eclipse.paho.mqttv5.common.MqttMessage;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonP
+
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
 
 /**
- * Test sender configured to support multicast requests. Rebased.
+ * Federated learning client application. Publishes responses from the servers to
+ * Yggio using MQTT.
+ * 
+ * Topics:
+ * 
+ * yggio/generic/v2/rise-dev-federated/unique/topic/100
+ * 
  */
 public class FederatedClient {
 
@@ -228,6 +274,8 @@ public class FederatedClient {
 	private static boolean didAggregation = true;
 	private static HashMap<String, Boolean> sentInitialRequest = new HashMap<String, Boolean>();
 
+	private static String setClientName = "federated-client";
+	
 	/**
 	 * Main method
 	 * 
@@ -236,6 +284,9 @@ public class FederatedClient {
 	 */
 	public static void main(String args[]) throws Exception {
 
+		// Create and connect MQTT client
+		MqttClient mqttClient = createAndConnectClient(setClientName);
+		
 		long start = System.nanoTime();
 
 		// Install cryptographic providers
@@ -695,6 +746,39 @@ public class FederatedClient {
 			long epochTotal = epochEnd - epochStart;
 			epochTimes.add(epochTotal);
 
+
+			// === Publish to Yggio staging ===
+			Thread.sleep(200);
+			String serverName = "testing";
+			String mqttTopic = "yggio/generic/v2/rise-dev-federated/unique/topic/100";
+			mqttPayload = "test";
+			// epoch time in seconds or ms?
+			// average rtt
+			// average accuracy
+			// response count
+			// epoch number
+			// tx bytes
+			// rx bytes
+			
+			System.out.println("Attempting to publish response info for: " + serverName);
+			if (!mqttClient.isConnected()) {
+				System.err.println(
+						"[MQTT] Publish FAILED (not connected) -> server=" + serverName + " topic=" + mqttTopic);
+			} else {
+				try {
+					MqttMessage msg = new MqttMessage(mqttPayload.getBytes(StandardCharsets.UTF_8));
+					msg.setQos(0);
+					mqttClient.publish(mqttTopic, msg);
+
+					System.out.println("[MQTT] Published for -> server=" + serverName + " topic=" + mqttTopic
+							+ " payload=" + mqttPayload);
+				} catch (MqttException e) {
+					System.err.println("[MQTT] Publish FAILED for -> server=" + serverName + " topic=" + mqttTopic);
+					e.printStackTrace();
+				}
+			}
+			// === End Publish to Yggio staging ===
+			
 		}
 
 		long finish = System.nanoTime();
@@ -938,4 +1022,73 @@ public class FederatedClient {
 		return sdf.format(cal.getTime());
 	}
 
+
+	/**
+	 * Create MQTT client and connect to Yggio staging
+	 * 
+	 * @param clientName the name of the client
+	 * @return a connected MQTT client
+	 * @throws MqttException on failure
+	 */
+	private static MqttClient createAndConnectClient(String clientName) throws MqttException, IOException {
+		String broker = "tcp://mqtt.staging.yggio.net:1883";
+		String clientId = "coap-bridge-" + clientName.toLowerCase();
+
+		MqttClient client = new MqttClient(broker, clientId);
+
+		MqttConnectionOptions options = new MqttConnectionOptions();
+		options.setUserName("cypress-rise-basic");
+		String password = readPassword("mqttpw.txt");
+		options.setPassword(password.getBytes(StandardCharsets.UTF_8));
+
+		options.setAutomaticReconnect(true); // auto reconnect
+		options.setCleanStart(true);
+
+		client.connect(options);
+
+		// Wait until actually connected (usually immediate, but safe)
+		int retries = 0;
+		while (!client.isConnected()) {
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				throw new MqttException(e);
+			}
+
+			retries++;
+			if (retries > 100) { // 10 seconds
+				throw new MqttException(new Throwable("MQTT connection timeout"));
+			}
+		}
+
+		System.out.println("MQTT connected with clientId: " + clientId);
+
+		return client;
+	}
+
+	/**
+	 * Read the MQTT password from a file
+	 * 
+	 * @param pathStr path to the file
+	 * @return the password
+	 * @throws IOException on failure
+	 */
+	private static String readPassword(String pathStr) throws IOException {
+		Path path = Paths.get(pathStr);
+
+		// Check if file exists
+		if (!Files.exists(path)) {
+			System.err.println("========================================");
+			System.err.println(" ERROR: Password file not found!");
+			System.err.println(" Expected file: " + path.toAbsolutePath());
+			System.err.println(" Working dir : " + System.getProperty("user.dir"));
+			System.err.println("========================================");
+			throw new IOException("Missing password file: " + pathStr);
+		}
+
+		byte[] bytes = Files.readAllBytes(path);
+		return new String(bytes, StandardCharsets.UTF_8).trim();
+	}
+	
 }
