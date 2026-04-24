@@ -121,26 +121,32 @@ public class YggioFederatedClient {
 	};
 
 	/**
+	 * RH: Currently the client reaches iteration 114 before timing out, the
+	 * total number of iterations should be 685. Thus I have increased all
+	 * timeouts. Also I want to cap the CPU usage on the servers.
+	 */
+
+	/**
 	 * Time to wait before checking for the first time if responses from 80% of
 	 * the servers have been received.
 	 */
-	private static int CHECK1_TIMEOUT = 15000;
+	private static int CHECK1_TIMEOUT = 15000 * 20;
 
 	/**
 	 * Time to wait before checking for the second time if responses from 80% of
 	 * the servers have been received.
 	 */
-	private static int CHECK2_TIMEOUT = 22000;
+	private static int CHECK2_TIMEOUT = 22000 * 20;
 
 	/**
 	 * Maximum time to wait for replies to the multicast request
 	 */
-	private static int FINAL_TIMEOUT = 30000;
+	private static int FINAL_TIMEOUT = 30000 * 20;
 
 	/**
 	 * Maximum time to wait for replies when using unicast (one by one)
 	 */
-	private static final int UNICAST_TIMEOUT = 30000;
+	private static final int UNICAST_TIMEOUT = 30000 * 20;
 
 	/**
 	 * Ratio of servers that need to have responded for the client to stop
