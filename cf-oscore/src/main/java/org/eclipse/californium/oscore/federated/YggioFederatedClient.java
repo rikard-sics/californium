@@ -130,23 +130,23 @@ public class YggioFederatedClient {
 	 * Time to wait before checking for the first time if responses from 80% of
 	 * the servers have been received.
 	 */
-	private static int CHECK1_TIMEOUT = 15000 * 20;
+	private static int CHECK1_TIMEOUT = 15000;
 
 	/**
 	 * Time to wait before checking for the second time if responses from 80% of
 	 * the servers have been received.
 	 */
-	private static int CHECK2_TIMEOUT = 22000 * 20;
+	private static int CHECK2_TIMEOUT = 22000;
 
 	/**
 	 * Maximum time to wait for replies to the multicast request
 	 */
-	private static int FINAL_TIMEOUT = 30000 * 20;
+	private static int FINAL_TIMEOUT = 30000;
 
 	/**
 	 * Maximum time to wait for replies when using unicast (one by one)
 	 */
-	private static final int UNICAST_TIMEOUT = 30000 * 20;
+	private static int UNICAST_TIMEOUT = 30000;
 
 	/**
 	 * Ratio of servers that need to have responded for the client to stop
@@ -254,6 +254,7 @@ public class YggioFederatedClient {
 	private static HashMap<String, Boolean> sentInitialRequest = new HashMap<String, Boolean>();
 
 	private static String setClientName = "federated-client";
+	private static double timeoutMultiplier = 1.0;
 
 	/**
 	 * Main method
@@ -307,6 +308,7 @@ public class YggioFederatedClient {
 			MAX_GLOBAL_EPOCHS = Integer.parseInt(cmdArgs.getOrDefault("--max-epochs", "100"));
 			debugPrint = Boolean.parseBoolean(cmdArgs.getOrDefault("--debug", "true"));
 			modelsize = Integer.parseInt(cmdArgs.getOrDefault("--model-size", "-1"));
+			timeoutMultiplier = Double.parseDouble(cmdArgs.getOrDefault("--timeout-multiplier", "1.0"));
 		} catch (Exception e) {
 			printHelp();
 		}
@@ -343,6 +345,12 @@ public class YggioFederatedClient {
 			DebugOut.println();
 			printHelp();
 		}
+
+		// Apply timeout multiplier
+		CHECK1_TIMEOUT *= timeoutMultiplier;
+		CHECK2_TIMEOUT *= timeoutMultiplier;
+		FINAL_TIMEOUT *= timeoutMultiplier;
+		UNICAST_TIMEOUT *= timeoutMultiplier;
 
 		// Parse list of IPs for the servers
 		List<String> unicastServerIps = new ArrayList<String>();
@@ -437,6 +445,10 @@ public class YggioFederatedClient {
 		DebugOut.println("Total server count: " + serverCount);
 		DebugOut.println("Max epochs: " + MAX_GLOBAL_EPOCHS);
 		DebugOut.println("Expected model size: " + modelsize);
+		DebugOut.println("CHECK1_TIMEOUT: " + CHECK1_TIMEOUT / 1000.0 + " s");
+		DebugOut.println("CHECK2_TIMEOUT: " + CHECK2_TIMEOUT / 1000.0 + " s");
+		DebugOut.println("FINAL_TIMEOUT: " + FINAL_TIMEOUT / 1000.0 + " s");
+		DebugOut.println("UNICAST_TIMEOUT: " + UNICAST_TIMEOUT / 1000.0 + " s");
 
 		if (unicastMode) {
 			DebugOut.println("Unicast Server IPs: ");
@@ -993,6 +1005,7 @@ public class YggioFederatedClient {
 		System.out.println("--unicast: Use unicast one-by-one to the servers [Optional. Default: false]");
 		System.out.println("--max-epochs: Stop the training after this many epochs [Optional. Default: 100]");
 		System.out.println("--debug: Enable/disable debug printing [Optional. Default: true]");
+		System.out.println("--timeout-multiplier: Multiplier for client request timeouts. [Optional. Default: 1.0]");
 		System.exit(1);
 	}
 
