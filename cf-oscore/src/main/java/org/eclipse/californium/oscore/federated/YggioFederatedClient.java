@@ -100,7 +100,6 @@ import org.eclipse.paho.mqttv5.common.MqttException;
 import org.eclipse.paho.mqttv5.common.MqttMessage;
 
 import com.google.gson.JsonObject;
-import com.google.gson.JsonP
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
@@ -748,32 +747,38 @@ public class FederatedClient {
 
 
 			// === Publish to Yggio staging ===
-			Thread.sleep(200);
+			Thread.sleep(20);
 			String serverName = "testing";
 			String mqttTopic = "yggio/generic/v2/rise-dev-federated/unique/topic/100";
-			mqttPayload = "test";
-			// epoch time in seconds or ms?
-			// average rtt
-			// average accuracy
-			// response count
-			// epoch number
-			// tx bytes
-			// rx bytes
 			
-			System.out.println("Attempting to publish response info for: " + serverName);
+			long totalElapsedNs = System.nanoTime() - start;
+			long totalElapsedMs = TimeUnit.NANOSECONDS.toMillis(totalElapsedNs);
+			
+			JsonObject json = new JsonObject();
+			json.addProperty("epochNumber", currentEpoch);
+			json.addProperty("epochTimeMs", TimeUnit.NANOSECONDS.toMillis(epochTotal));
+			json.addProperty("totalTimeMs", totalElapsedMs);
+			json.addProperty("averageRttMs", getAverageRttMsForEpoch(currentEpoch));
+			json.addProperty("averageAccuracy", getAverageAccuracyForEpoch(currentEpoch));
+			json.addProperty("responseCount", responses.size());
+			json.addProperty("totalSentBytes", UDPConnector.getSentPayload());
+			json.addProperty("totalReceivedBytes", UDPConnector.getReceivedPayload());
+			String mqttPayload = json.toString();
+			
+			System.out.println("Attempting to publish information from federated learning client for epoch: " + currentEpoch);
 			if (!mqttClient.isConnected()) {
 				System.err.println(
-						"[MQTT] Publish FAILED (not connected) -> server=" + serverName + " topic=" + mqttTopic);
+						"[MQTT] Publish FAILED (not connected) ->" + " topic=" + mqttTopic);
 			} else {
 				try {
 					MqttMessage msg = new MqttMessage(mqttPayload.getBytes(StandardCharsets.UTF_8));
 					msg.setQos(0);
 					mqttClient.publish(mqttTopic, msg);
 
-					System.out.println("[MQTT] Published for -> server=" + serverName + " topic=" + mqttTopic
+					System.out.println("[MQTT] Published for ->" + " topic=" + mqttTopic
 							+ " payload=" + mqttPayload);
 				} catch (MqttException e) {
-					System.err.println("[MQTT] Publish FAILED for -> server=" + serverName + " topic=" + mqttTopic);
+					System.err.println("[MQTT] Publish FAILED for" + " topic=" + mqttTopic);
 					e.printStackTrace();
 				}
 			}
@@ -1090,5 +1095,33 @@ public class FederatedClient {
 		byte[] bytes = Files.readAllBytes(path);
 		return new String(bytes, StandardCharsets.UTF_8).trim();
 	}
+
+		private static double getAverageRttMsForEpoch(int epoch) {
+			double totalRttMs = 0.0;
+			int validCount = 0;
+		
+			for (long[] rttArray : rtts.values()) {
+				if (epoch < rttArray.length && rttArray[epoch] != -1) {
+					totalRttMs += rttArray[epoch] / 1_000_000.0;
+					validCount++;
+				}
+			}
+		
+			return validCount > 0 ? totalRttMs / validCount : -1.0;
+		}
+		
+		private static double getAverageAccuracyForEpoch(int epoch) {
+			double totalAccuracy = 0.0;
+			int validCount = 0;
+		
+			for (float[] accuracyArray : storedAccuracies.values()) {
+				if (epoch < accuracyArray.length && accuracyArray[epoch] != -1) {
+					totalAccuracy += accuracyArray[epoch];
+					validCount++;
+				}
+			}
+		
+			return validCount > 0 ? totalAccuracy / validCount : -1.0;
+		}
 	
 }
