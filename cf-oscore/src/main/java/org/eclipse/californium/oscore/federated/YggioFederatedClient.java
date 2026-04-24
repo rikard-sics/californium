@@ -80,8 +80,8 @@ import com.google.gson.JsonObject;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 /**
- * Federated learning client application. Publishes responses from the servers
- * to Yggio using MQTT.
+ * Federated learning client application. Publishes statistics to Yggio using
+ * MQTT.
  * 
  * Topics:
  * 
