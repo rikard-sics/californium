@@ -61,7 +61,6 @@ import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.MultiKey;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -753,6 +752,10 @@ public class YggioFederatedClient {
 			json.addProperty("responseCount", responses.size());
 			json.addProperty("totalSentBytes", UDPConnector.getSentPayload());
 			json.addProperty("totalReceivedBytes", UDPConnector.getReceivedPayload());
+			json.addProperty("modelSize", modelsize);
+			json.addProperty("maxEpochs", MAX_GLOBAL_EPOCHS);
+			json.addProperty("serverCount", serverCount);
+			addModel0Stats(json, models);
 			String mqttPayload = json.toString();
 
 			System.out.println(
@@ -1111,6 +1114,55 @@ public class YggioFederatedClient {
 		}
 
 		return validCount > 0 ? totalAccuracy / validCount : -1.0;
+	}
+
+	/**
+	 * Add statistics from model with index 0.
+	 * 
+	 * @param json JSON object to add stats to
+	 * @param models array of models
+	 */
+	private static void addModel0Stats(JsonObject json, List<INDArray> models) {
+		if (models == null || models.isEmpty() || models.get(0) == null) {
+			json.addProperty("m0Exists", false);
+			return;
+		}
+
+		INDArray m0 = models.get(0);
+		json.addProperty("m0Exists", true);
+
+		// Basic structure
+		json.addProperty("m0Length", m0.length());
+		json.addProperty("m0Rank", m0.rank());
+
+		// Core distribution stats
+		json.addProperty("m0Mean", m0.meanNumber());
+		json.addProperty("m0Std", m0.stdNumber());
+		json.addProperty("m0Min", m0.minNumber());
+		json.addProperty("m0Max", m0.maxNumber());
+
+		// Magnitude / scale
+		json.addProperty("m0L1", m0.norm1Number());
+		json.addProperty("m0L2", m0.norm2Number());
+		json.addProperty("m0MaxAbs", m0.normmaxNumber());
+
+		// Range
+		double min = m0.minNumber().doubleValue();
+		double max = m0.maxNumber().doubleValue();
+		json.addProperty("m0Min", min);
+		json.addProperty("m0Max", max);
+		json.addProperty("m0Range", max - min);
+
+		// // Sparsity
+		// if (false) {
+		// long zeros = m0.eq(0).sumNumber().longValue();
+		// long nanCount = m0.isNaN().sumNumber().longValue();
+		// long infCount = m0.isInfinite().sumNumber().longValue();
+		//
+		// json.addProperty("m0ZeroFraction", (double) zeros / m0.length());
+		// json.addProperty("m0NanCount", nanCount);
+		// json.addProperty("m0InfCount", infCount);
+		// }
 	}
 
 }
