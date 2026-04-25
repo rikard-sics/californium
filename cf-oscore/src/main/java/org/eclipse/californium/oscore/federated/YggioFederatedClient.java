@@ -763,10 +763,12 @@ public class YggioFederatedClient {
 			json.addProperty("totalTimeSec", totalElapsedMs / 1000.0);
 			// RTT
 			double avgRttMs = getAverageRttMsForEpoch(currentEpoch);
-			json.addProperty("averageRttMs", avgRttMs);
+			json.addProperty("averageRttMs", Math.round(avgRttMs));
 			json.addProperty("averageRttSec", avgRttMs / 1000.0);
 			// other values
-			json.addProperty("averageAccuracy", getAverageAccuracyForEpoch(currentEpoch));
+			double avgAccuracyEpoch = getAverageAccuracyForEpoch(currentEpoch);
+			json.addProperty("averageAccuracy", avgAccuracyEpoch);
+			json.addProperty("averageAccuracyPct", avgAccuracyEpoch * 100.0);
 			json.addProperty("responseCount", responses.size());
 			json.addProperty("totalSentBytes", UDPConnector.getSentPayload());
 			json.addProperty("totalReceivedBytes", UDPConnector.getReceivedPayload());
