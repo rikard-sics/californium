@@ -115,6 +115,15 @@ public class YggioFederatedClient {
 			config.set(CoapConfig.PREFERRED_BLOCK_SIZE, MAX_MSG_SIZE);
 			config.set(CoapConfig.MAX_RESOURCE_BODY_SIZE, MAX_MSG_SIZE);
 			config.set(CoapConfig.MAX_MESSAGE_SIZE, MAX_MSG_SIZE);
+
+			// Set internal Californium timeouts (slow responses from servers)
+			int LONG_TIMEOUT_MINUTES = 60;
+			config.set(CoapConfig.EXCHANGE_LIFETIME, LONG_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+			config.set(CoapConfig.NON_LIFETIME, LONG_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+			config.set(CoapConfig.MAX_SERVER_RESPONSE_DELAY, LONG_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+			config.set(CoapConfig.MAX_PEER_INACTIVITY_PERIOD, LONG_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+			config.set(CoapConfig.MAX_LATENCY, LONG_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+			config.set(CoapConfig.BLOCKWISE_STATUS_LIFETIME, LONG_TIMEOUT_MINUTES, TimeUnit.MINUTES);
 		}
 
 	};
