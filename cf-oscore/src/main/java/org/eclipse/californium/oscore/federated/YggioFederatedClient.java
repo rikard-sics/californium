@@ -754,9 +754,18 @@ public class YggioFederatedClient {
 
 			JsonObject json = new JsonObject();
 			json.addProperty("epochNumber", currentEpoch);
-			json.addProperty("epochTimeMs", TimeUnit.NANOSECONDS.toMillis(epochTotal));
+			// epoch time
+			long epochTimeMs = TimeUnit.NANOSECONDS.toMillis(epochTotal);
+			json.addProperty("epochTimeMs", epochTimeMs);
+			json.addProperty("epochTimeSec", epochTimeMs / 1000.0);
+			// total time
 			json.addProperty("totalTimeMs", totalElapsedMs);
-			json.addProperty("averageRttMs", getAverageRttMsForEpoch(currentEpoch));
+			json.addProperty("totalTimeSec", totalElapsedMs / 1000.0);
+			// RTT
+			double avgRttMs = getAverageRttMsForEpoch(currentEpoch);
+			json.addProperty("averageRttMs", avgRttMs);
+			json.addProperty("averageRttSec", avgRttMs / 1000.0);
+			// other values
 			json.addProperty("averageAccuracy", getAverageAccuracyForEpoch(currentEpoch));
 			json.addProperty("responseCount", responses.size());
 			json.addProperty("totalSentBytes", UDPConnector.getSentPayload());
