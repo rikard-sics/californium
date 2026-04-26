@@ -775,6 +775,7 @@ public class YggioFederatedClient {
 			json.addProperty("modelSize", modelsize);
 			json.addProperty("maxEpochs", MAX_GLOBAL_EPOCHS);
 			json.addProperty("serverCount", serverCount);
+			json.addProperty("finished", stopEarly);
 			addModel0Stats(json, models);
 			String mqttPayload = json.toString();
 
