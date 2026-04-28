@@ -155,6 +155,7 @@ public class GrpcClient {
 		serverCount = -1;
 		boolean useFederatedLearning = true;
 		boolean debugPrint = true;
+		boolean sendMultiKill = false;
 		try {
 			serverCount = Integer.parseInt(cmdArgs.get("--server-count"));
 			useFederatedLearning = Boolean.parseBoolean(cmdArgs.getOrDefault("--federated-learning", "true"));
@@ -165,6 +166,7 @@ public class GrpcClient {
 			debugPrint = Boolean.parseBoolean(cmdArgs.getOrDefault("--debug", "true"));
 			modelsize = Integer.parseInt(cmdArgs.getOrDefault("--model-size", "-1"));
 			serverDataset = cmdArgs.get("--server-data");
+			sendMultiKill = Boolean.parseBoolean(cmdArgs.getOrDefault("--send-multi-kill", "false"));
 		} catch (Exception e) {
 			printHelp();
 		}
@@ -359,7 +361,7 @@ public class GrpcClient {
 
 				responses.clear();
 				Collections.shuffle(unicastServerIps);
-				
+
 				for (int n = 0; n < unicastServerIps.size(); n++) {
 
 					boolean useEmptyPayload = false;
@@ -453,14 +455,14 @@ public class GrpcClient {
 				DebugOut.errPrintln("ERROR: No Response from servers.");
 
 			}
-			
+
 			boolean toBeContinued = false;
 			// Ensure to continue if no responses were received this epoch
 			if (responses == null || responses.size() == 0) {
 				toBeContinued = true;
 				didAggregation = false;
 			}
-			
+
 			for (int j = 0; j < responses.size(); j++) {
 				ContentResponse resp = responses.get(j);
 
@@ -621,7 +623,12 @@ public class GrpcClient {
 		myWriter.close();
 
 		// Kill servers and close client
-		sendServerKillMsg();
+		if (sendMultiKill) {
+			for (int i = 0; i < 30; i++) {
+				sendServerKillMsg();
+				Thread.sleep(500);
+			}
+		}
 		System.exit(0);
 	}
 
@@ -690,6 +697,7 @@ public class GrpcClient {
 		System.out.println("--max-epochs: Stop the training after this many epochs [Optional. Default: 100]");
 		System.out.println("--debug: Enable/disable debug printing [Optional. Default: true]");
 		System.out.println("--server-data: Dataset for this server [IoT, SD, Diabetes] (only for logging)");
+		System.out.println("--send-multi-kill: Send multiple kill messages to the servers [Optional. Default: false]");
 		System.exit(1);
 	}
 
