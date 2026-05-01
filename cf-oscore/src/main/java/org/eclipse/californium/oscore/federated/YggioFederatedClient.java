@@ -61,6 +61,7 @@ import org.eclipse.californium.oscore.group.GroupCtx;
 import org.eclipse.californium.oscore.group.MultiKey;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.api.buffer.DataType;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -1197,14 +1198,19 @@ public class YggioFederatedClient {
 		json.addProperty("m0MaxAbs", m0.normmaxNumber());
 
 		// RMS: scale-normalized L2
-		json.addProperty("m0Rms", l2 / Math.sqrt(m0.length()));
+		double rms = l2 / Math.sqrt(m0.length());
+		json.addProperty("m0Rms", rms);
 
 		// Near-zero fraction
-		double nearZeroFraction = m0.gt(-1e-4).mul(m0.lt(1e-4)).sumNumber().doubleValue() / m0.length();
+		double eps = Math.max(1e-12, 0.01 * rms);
+		json.addProperty("m0NearZeroThreshold", eps);
+		INDArray gt = m0.gt(-eps).castTo(DataType.DOUBLE);
+		INDArray lt = m0.lt(eps).castTo(DataType.DOUBLE);
+		double nearZeroFraction = gt.mul(lt).sumNumber().doubleValue() / m0.length();
 		json.addProperty("m0NearZeroFraction", nearZeroFraction);
 
 		// Positive fraction
-		double positiveFraction = m0.gt(0).sumNumber().doubleValue() / m0.length();
+		double positiveFraction = m0.gt(0).castTo(DataType.DOUBLE).sumNumber().doubleValue() / m0.length();
 		json.addProperty("m0PositiveFraction", positiveFraction);
 
 	}
