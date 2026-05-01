@@ -109,6 +109,10 @@ public class EdhocSession {
 	// EDHOC message_3 , to be used for building an EDHOC+OSCORE request
 	private byte[] message3 = null;
 	
+	// When successfully completing the EDHOC session, this peer can set this flag to true.
+	// In such case, this peer will ignore EDHOC error messages received from then on for this session.
+	private boolean ignoreErrorMessage = false;
+	
 	public EdhocSession(boolean initiator, boolean clientInitiated, int method, byte[] connectionId,
 						HashMap<Integer, HashMap<Integer, OneKey>> keyPairs,
 						HashMap<Integer, HashMap<Integer, CBORObject>> idCreds,
@@ -686,6 +690,20 @@ public class EdhocSession {
 	public void setPlaintext2(byte[] pt) {
 		this.plaintext2 = new byte[pt.length];
 		System.arraycopy(pt, 0, this.plaintext2, 0, pt.length);
+	}
+	
+	/**
+	 * @return  the flag ignoreErrorMessage
+	 */
+	public boolean getIgnoreErrorMessage() {
+		return this.ignoreErrorMessage;
+	}
+	
+	/**
+	 * @param  the boolean value to set for the flag ignoreErrorMessage
+	 */
+	public void setIgnoreErrorMessage(boolean ignoreErrorMessage) {
+		this.ignoreErrorMessage = ignoreErrorMessage;
 	}
 	
 	/**

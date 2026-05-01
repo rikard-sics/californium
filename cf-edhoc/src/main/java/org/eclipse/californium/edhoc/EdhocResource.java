@@ -442,6 +442,9 @@ public class EdhocResource extends CoapResource {
 		        Response myResponse = new Response(ResponseCode.CHANGED);
 		        
 		        if (mySession.getApplicationProfile().getUseMessage4() == false) {
+		        	// Ignore EDHOC error messages received from now on for this EDHOC session 
+		        	mySession.setIgnoreErrorMessage(true);
+		        	
 			        // Just send an empty response back
 		        	
 		        	// Uncomment to have the response as a confirmable Separate Response
@@ -590,7 +593,12 @@ public class EdhocResource extends CoapResource {
 	    		CBORObject connectionIdentifierCbor = CBORObject.FromObject(connectionIdentifier);
 	        	EdhocSession mySession = edhocEndpointInfo.getEdhocSessions().get(connectionIdentifierCbor);
 	    		if (mySession == null) {
-	    			System.err.println("EDHOC session to delete not found");
+	    			System.out.println("EDHOC session to delete not found");
+	    			return;
+	    		}
+	    		
+	    		if (mySession.getIgnoreErrorMessage()) {
+	    			System.out.println("Ignoring the EDHOC error message (received after completing the EDHOC session)\n");
 	    			return;
 	    		}
 	    		
