@@ -647,6 +647,10 @@ public class YggioFederatedClient {
 				didAggregation = false;
 			}
 
+			// Keep track of model received from server with RID 0x00, used for
+			// statistics to Yggio
+			int modelIndexServer00 = -1;
+
 			for (int j = 0; j < responses.size(); j++) {
 				CoapResponse resp = responses.get(j);
 
@@ -722,6 +726,11 @@ public class YggioFederatedClient {
 					DebugOut.println("Received model size: " + model.length());
 					models.add(model);
 					didAggregation = true;
+
+					// Save index for model from server with RID 0x00
+					if (serverRid.equals("00")) {
+						modelIndexServer00 = models.size() - 1;
+					}
 				}
 
 			}
@@ -776,7 +785,7 @@ public class YggioFederatedClient {
 			json.addProperty("maxEpochs", MAX_GLOBAL_EPOCHS);
 			json.addProperty("serverCount", serverCount);
 			json.addProperty("finished", stopEarly);
-			addModel0Stats(json, models);
+			addModel0Stats(json, models, modelIndexServer00);
 			String mqttPayload = json.toString();
 
 			System.out.println(
@@ -1138,18 +1147,21 @@ public class YggioFederatedClient {
 	}
 
 	/**
-	 * Add statistics from model with index 0.
+	 * Add statistics from model with a specific index. The model chosen will be
+	 * the one received from the server with RID 0x00. This is to ensure always
+	 * reporting statistics for the same model.
 	 * 
 	 * @param json JSON object to add stats to
+	 * @param the index of the model to consider
 	 * @param models array of models
 	 */
-	private static void addModel0Stats(JsonObject json, List<INDArray> models) {
-		if (models == null || models.isEmpty() || models.get(0) == null) {
+	private static void addModel0Stats(JsonObject json, List<INDArray> models, int index) {
+		if (index < 0 || index >= models.size()) {
 			json.addProperty("m0Exists", false);
 			return;
 		}
 
-		INDArray m0 = models.get(0);
+		INDArray m0 = models.get(index);
 		json.addProperty("m0Exists", true);
 
 		// Basic structure
