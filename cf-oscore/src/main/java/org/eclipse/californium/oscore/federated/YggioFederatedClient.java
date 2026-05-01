@@ -1162,6 +1162,11 @@ public class YggioFederatedClient {
 		}
 
 		INDArray m0 = models.get(index);
+		if (m0 == null || m0.length() == 0) {
+			json.addProperty("m0Exists", false);
+			return;
+		}
+
 		json.addProperty("m0Exists", true);
 
 		// Basic structure
@@ -1171,31 +1176,30 @@ public class YggioFederatedClient {
 		// Core distribution stats
 		json.addProperty("m0Mean", m0.meanNumber());
 		json.addProperty("m0Std", m0.stdNumber());
-		json.addProperty("m0Min", m0.minNumber());
-		json.addProperty("m0Max", m0.maxNumber());
 
-		// Magnitude / scale
-		json.addProperty("m0L1", m0.norm1Number());
-		json.addProperty("m0L2", m0.norm2Number());
-		json.addProperty("m0MaxAbs", m0.normmaxNumber());
-
-		// Range
 		double min = m0.minNumber().doubleValue();
 		double max = m0.maxNumber().doubleValue();
 		json.addProperty("m0Min", min);
 		json.addProperty("m0Max", max);
 		json.addProperty("m0Range", max - min);
 
-		// // Sparsity
-		// if (false) {
-		// long zeros = m0.eq(0).sumNumber().longValue();
-		// long nanCount = m0.isNaN().sumNumber().longValue();
-		// long infCount = m0.isInfinite().sumNumber().longValue();
-		//
-		// json.addProperty("m0ZeroFraction", (double) zeros / m0.length());
-		// json.addProperty("m0NanCount", nanCount);
-		// json.addProperty("m0InfCount", infCount);
-		// }
+		// Magnitude / scale
+		double l2 = m0.norm2Number().doubleValue();
+		json.addProperty("m0L1", m0.norm1Number());
+		json.addProperty("m0L2", l2);
+		json.addProperty("m0MaxAbs", m0.normmaxNumber());
+
+		// RMS: scale-normalized L2
+		json.addProperty("m0Rms", l2 / Math.sqrt(m0.length()));
+
+		// Near-zero fraction
+		double nearZeroFraction = m0.gt(-1e-4).mul(m0.lt(1e-4)).sumNumber().doubleValue() / m0.length();
+		json.addProperty("m0NearZeroFraction", nearZeroFraction);
+
+		// Positive fraction
+		double positiveFraction = m0.gt(0).sumNumber().doubleValue() / m0.length();
+		json.addProperty("m0PositiveFraction", positiveFraction);
+
 	}
 
 }
