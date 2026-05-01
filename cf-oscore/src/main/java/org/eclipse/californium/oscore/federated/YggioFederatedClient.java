@@ -306,6 +306,7 @@ public class YggioFederatedClient {
 		String multicastStr = null;
 		boolean useFederatedLearning = true;
 		boolean debugPrint = true;
+		int startupWait = 1;
 		try {
 			serverCount = Integer.parseInt(cmdArgs.get("--server-count"));
 			multicastStr = cmdArgs.getOrDefault("--multicast-ip", "ipv4");
@@ -317,6 +318,7 @@ public class YggioFederatedClient {
 			debugPrint = Boolean.parseBoolean(cmdArgs.getOrDefault("--debug", "true"));
 			modelsize = Integer.parseInt(cmdArgs.getOrDefault("--model-size", "-1"));
 			timeoutMultiplier = Double.parseDouble(cmdArgs.getOrDefault("--timeout-multiplier", "1.0"));
+			startupWait = Integer.parseInt(cmdArgs.getOrDefault("--startup-wait", "1"));
 		} catch (Exception e) {
 			printHelp();
 		}
@@ -457,6 +459,7 @@ public class YggioFederatedClient {
 		DebugOut.println("CHECK2_TIMEOUT: " + CHECK2_TIMEOUT / 1000.0 + " s");
 		DebugOut.println("FINAL_TIMEOUT: " + FINAL_TIMEOUT / 1000.0 + " s");
 		DebugOut.println("UNICAST_TIMEOUT: " + UNICAST_TIMEOUT / 1000.0 + " s");
+		DebugOut.println("Startup wait: " + startupWait + " s");
 
 		if (unicastMode) {
 			DebugOut.println("Unicast Server IPs: ");
@@ -465,6 +468,9 @@ public class YggioFederatedClient {
 			}
 		}
 		DebugOut.println("==================");
+		
+		System.out.println("Sleeping for " + startupWait + " seconds before sending first request");
+		Thread.sleep(startupWait * 1000);
 
 		byte[] prevPayloadReq = null;
 
@@ -1039,6 +1045,7 @@ public class YggioFederatedClient {
 		System.out.println("--max-epochs: Stop the training after this many epochs [Optional. Default: 100]");
 		System.out.println("--debug: Enable/disable debug printing [Optional. Default: true]");
 		System.out.println("--timeout-multiplier: Multiplier for client request timeouts. [Optional. Default: 1.0]");
+		System.out.println("--startup-wait: Sleep for sec before sending first request. [Optional. Default: 1]");
 		System.exit(1);
 	}
 
