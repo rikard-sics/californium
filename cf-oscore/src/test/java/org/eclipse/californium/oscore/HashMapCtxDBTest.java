@@ -20,7 +20,6 @@ package org.eclipse.californium.oscore;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.util.ExpectedExceptionWrapper;
 import org.junit.After;
@@ -31,8 +30,6 @@ import org.junit.rules.ExpectedException;
 
 public class HashMapCtxDBTest {
 
-	private final Token token = new Token(new byte[] { 0x09, 0x08, 0x07, 0x06 });
-	private final Token modifiedToken = new Token(new byte[] { 0x08, 0x07, 0x06, 0x05 });
 	private final String uri = "coap/hello/1";
 	private final String modifiedUri = "coap://localhost";
 	private final byte[] master_secret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D,
@@ -64,7 +61,6 @@ public class HashMapCtxDBTest {
 
 		assertNull(db.getContext(rid));
 		assertNull(db.getContext(uri));
-		assertNull(db.getContextByToken(token));
 	}
 
 	@Test
@@ -77,7 +73,6 @@ public class HashMapCtxDBTest {
 		assertEquals(ctx, db.getContext(rid));
 		assertNull(db.getContext(modifiedRid));
 		assertNull(db.getContext(uri));
-		assertNull(db.getContextByToken(token));
 	}
 
 	/**
@@ -96,7 +91,6 @@ public class HashMapCtxDBTest {
 		assertEquals(ctx, db.getContext(rid, ctx.getIdContext()));
 		assertNull(db.getContext(modifiedRid, context_id));
 		assertNull(db.getContext(uri));
-		assertNull(db.getContextByToken(token));
 	}
 
 	/**
@@ -119,7 +113,6 @@ public class HashMapCtxDBTest {
 		assertEquals(ctx2, db.getContext(rid, ctx2.getIdContext()));
 		assertNull(db.getContext(modifiedRid, context_id));
 		assertNull(db.getContext(uri));
-		assertNull(db.getContextByToken(token));
 	}
 
 	/**
@@ -142,7 +135,6 @@ public class HashMapCtxDBTest {
 		assertEquals(ctx, db.getContext(rid, null));
 		assertNull(db.getContext(modifiedRid, context_id));
 		assertNull(db.getContext(uri));
-		assertNull(db.getContextByToken(token));
 	}
 
 	/**
@@ -169,8 +161,6 @@ public class HashMapCtxDBTest {
 		assertNull(db.getContext(rid, null));
 		assertNull(db.getContext(modifiedRid, context_id));
 		assertNull(db.getContext(uri));
-
-		assertNull(db.getContextByToken(token));
 	}
 
 	/**
@@ -209,21 +199,6 @@ public class HashMapCtxDBTest {
 		assertNull(db.getContext(modifiedRid));
 		assertEquals(ctx, db.getContext(uri));
 		assertNull(db.getContext(modifiedUri));
-		assertNull(db.getContextByToken(token));
-	}
-
-	@Test
-	public void testAddGetContextToken() throws OSException {
-		HashMapCtxDB db = new HashMapCtxDB();
-		OSCoreCtx ctx = new OSCoreCtx(master_secret, true, alg, sid, rid, AlgorithmID.HKDF_HMAC_SHA_256, 32, null,
-				null, MAX_UNFRAGMENTED_SIZE);
-		db.addContext(token, ctx);
-
-		assertEquals(ctx, db.getContext(rid));
-		assertNull(db.getContext(modifiedRid));
-		assertNull(db.getContext(uri));
-		assertEquals(ctx, db.getContextByToken(token));
-		assertNull(db.getContextByToken(modifiedToken));
 	}
 
 }

@@ -28,7 +28,6 @@ import com.upokecenter.cbor.CBORObject;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.OptionSet;
 import org.eclipse.californium.core.coap.Response;
-import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.core.network.serialization.UdpDataParser;
 import org.eclipse.californium.cose.Encrypt0Message;
 import org.eclipse.californium.elements.util.DatagramReader;
@@ -50,35 +49,29 @@ public class ResponseDecryptor extends Decryptor {
 	 *
 	 * @param db the context database used
 	 * @param response the response
+	 * @param ctx the OSCORE context to use for decryption
 	 * @param requestSequenceNr sequence number (Partial IV) from the request
 	 *            (if encrypting a response)
-	 * 
+	 *
 	 * @return the decrypted response
-	 * 
+	 *
 	 * @throws OSException when decryption fails
-	 * 
+	 *
 	 */
-	public static Response decrypt(OSCoreCtxDB db, Response response, int requestSequenceNr) throws OSException {
+	public static Response decrypt(OSCoreCtxDB db, Response response, OSCoreCtx ctx, int requestSequenceNr)
+			throws OSException {
 
 		discardEOptions(response);
 
 		byte[] protectedData = response.getPayload();
 		Encrypt0Message enc = null;
-		Token token = response.getToken();
-		OSCoreCtx ctx = null;
 		OptionSet uOptions = response.getOptions();
 
-		if (token != null) {
-			ctx = db.getContextByToken(token);
-			if (ctx == null) {
-				LOGGER.error(ErrorDescriptions.TOKEN_INVALID);
-				throw new OSException(ErrorDescriptions.TOKEN_INVALID);
-			}
-			enc = decompression(protectedData, response);
-		} else {
-			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
-			throw new OSException(ErrorDescriptions.TOKEN_NULL);
+		if (ctx == null) {
+			LOGGER.error(ErrorDescriptions.CTX_NULL);
+			throw new OSException(ErrorDescriptions.CTX_NULL);
 		}
+		enc = decompression(protectedData, response);
 
 		// Retrieve Context ID (kid context)
 		CBORObject kidContext = enc.findAttribute(CBORObject.FromObject(10));
@@ -117,12 +110,6 @@ public class ResponseDecryptor extends Decryptor {
 		OptionSet eOptions = response.getOptions();
 		eOptions = OptionJuggle.merge(eOptions, uOptions);
 		response.setOptions(eOptions);
-
-		//Remove token after response is received, unless it has Observe
-		//If it has Observe it will be removed after cancellation elsewhere
-		if (response.getOptions().hasObserve() == false) {
-			db.removeToken(token);
-		}
 
 		//Set information about the OSCORE context used in the endpoint context of this response
 		OSCoreEndpointContextInfo.receivingResponse(ctx, response);

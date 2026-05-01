@@ -94,8 +94,8 @@ public class OSCoreTest {
 			dbClientToServer();
 			ObjectSecurityLayer.prepareReceive(dbServer, request, serverCtx);
 			Response response = sendResponse("it is thursday, citizen", serverCtx, token);
-			dbServerToClient(token, seq);
-			ObjectSecurityLayer.prepareReceive(dbClient, response, seq);
+			dbServerToClient();
+			ObjectSecurityLayer.prepareReceive(dbClient, response, clientCtx, seq);
 		} catch (OSException e) {
 			e.printStackTrace();
 		}
@@ -338,9 +338,9 @@ public class OSCoreTest {
 			Response response1 = sendResponse("it is thursday, citizen", serverCtx, tokReq1);
 			assertTrue("seq no:s incorrect", assertCtxState(serverCtx, 0, 0));
 
-			dbServerToClient(tokReq1, sentSeq);
+			dbServerToClient();
 
-			ObjectSecurityLayer.prepareReceive(dbClient, response1, sentSeq);
+			ObjectSecurityLayer.prepareReceive(dbClient, response1, clientCtx, sentSeq);
 			assertTrue("seq no:s incorrect", assertCtxState(clientCtx, 2, 0));
 
 		} catch (OSException e) {
@@ -421,32 +421,6 @@ public class OSCoreTest {
 		} catch (OSException e) {
 		}
 
-		// Test receive replay of response
-		setUp();// reset sequence number counters
-		Response response1 = null;
-		Response response2 = null;
-		try {
-			serverCtx.setRecipientSeq(0);
-			response1 = sendResponse("response", serverCtx, t1);
-			response1.setType(CoAP.Type.ACK);
-			response1.setMID(34);
-			serverCtx.setRecipientSeq(0);
-			response2 = sendResponse("response", serverCtx, t1);
-			response2.setType(CoAP.Type.ACK);
-			response2.setMID(34);
-		} catch (OSException e) {
-			e.printStackTrace();
-			fail();
-		}
-		try {
-			dbClient.addContext(t1, clientCtx);
-			dbClient.getContext("coap://localhost:5683").setSenderSeq(0);
-			ObjectSecurityLayer.prepareReceive(dbClient, response1, 0);
-			ObjectSecurityLayer.prepareReceive(dbClient, response2, 0);
-			fail("invalid token not detected!");
-		} catch (OSException e) {
-			assertEquals(ErrorDescriptions.TOKEN_INVALID, e.getMessage());
-		}
 	}
 
 	@Test
@@ -502,10 +476,8 @@ public class OSCoreTest {
 	}
 
 	private Request sendRequest(String uri, OSCoreCtxDB db, Token token) throws OSException {
-		OSCoreCtx ctx = db.getContext(uri);
 		Request request = Request.newPost().setURI(uri);
 		request.setToken(token);
-		db.addContext(token, ctx);
 		request.getOptions().addOption(StandardOptionRegistry.OSCORE.create(Bytes.EMPTY));
 		return ObjectSecurityLayer.prepareSend(db, request);
 	}
@@ -524,10 +496,9 @@ public class OSCoreTest {
 		dbClient.addContext(uriId, serverCtx);
 	}
 
-	private void dbServerToClient(Token token, Integer seq) throws OSException {
+	private void dbServerToClient() throws OSException {
 		dbClient.purge();
 		dbClient.addContext(uriId, clientCtx);
-		dbClient.addContext(token, clientCtx);
 	}
 
 	private Response sendResponse(String responsePayload, OSCoreCtx tid, Token token) throws OSException {

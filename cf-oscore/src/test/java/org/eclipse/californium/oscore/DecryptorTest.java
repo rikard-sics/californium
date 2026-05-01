@@ -126,12 +126,10 @@ public class DecryptorTest {
 			r = (Response)mess;
 		}
 		
-		//Set up some state information simulating the original outgoing request
 		OSCoreCtxDB db = new HashMapCtxDB();
-		db.addContext(r.getToken(), ctx);
-		
+
 		//Decrypt the response message
-		Response decrypted = ResponseDecryptor.decrypt(db, r, seq);
+		Response decrypted = ResponseDecryptor.decrypt(db, r, ctx, seq);
 		decrypted.getOptions().removeOscore();
 		
 		//Check the decrypted response payload

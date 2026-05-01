@@ -133,9 +133,6 @@ public class RequestDecryptor extends Decryptor {
 		// We need the kid value on layer level
 		request.getOptions().setOscore(rid);
 
-		// Associate the Token with the context used
-		db.addContext(request.getToken(), ctx);
-
 		//Set information about the OSCORE context used in the endpoint context of this request
 		OSCoreEndpointContextInfo.receivingRequest(ctx, request);
 

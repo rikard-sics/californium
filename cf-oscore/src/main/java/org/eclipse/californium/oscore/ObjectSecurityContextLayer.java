@@ -88,10 +88,11 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 				return;
 			}
 
-			byte[] requestOscoreOption;
+			// Capture the full OSCORE option before decryption so that
+			// the KID and ID Context are available for response encryption
+			byte[] requestOscoreOption = request.getOptions().getOscore();
 			try {
 				request = RequestDecryptor.decrypt(ctxDb, request, ctx);
-				requestOscoreOption = request.getOptions().getOscore();
 				request.getOptions().setOscore(Bytes.EMPTY);
 				exchange.setRequest(request);
 			} catch (CoapOSException e) {
@@ -234,7 +235,7 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 		// processed by OSCORE in the ObjectSecurityLayer it will happen here.
 		Response rawResponse =  exchange.getCurrentResponse();
 		boolean outerBlockwise = rawResponse != null && rawResponse.getOptions().hasBlock2()
-				&& ctxDb.getContextByToken(rawResponse.getToken()) != null;
+				&& exchange.getOscoreCtx() != null;
 		if (outerBlockwise) {
 
 			LOGGER.debug("Incoming OSCORE response uses outer block-wise");
@@ -251,8 +252,9 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 					// Parse the OSCORE option from the corresponding request
 					OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
 					int requestSequenceNumber = optionDecoder.getSequenceNumber();
-					
-					response = ObjectSecurityLayer.prepareReceive(ctxDb, response,
+					OSCoreCtx ctx = (OSCoreCtx) exchange.getOscoreCtx();
+
+					response = ObjectSecurityLayer.prepareReceive(ctxDb, response, ctx,
 							requestSequenceNumber);
 				}
 			} catch (OSException e) {
@@ -262,12 +264,6 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 					sendEmptyMessage(exchange, error);
 				}
 				return;
-			}
-
-			// Remove token if this is a response to a Observe cancellation
-			// request
-			if (exchange.getRequest().isObserveCancel()) {
-				ctxDb.removeToken(response.getToken());
 			}
 		}
 

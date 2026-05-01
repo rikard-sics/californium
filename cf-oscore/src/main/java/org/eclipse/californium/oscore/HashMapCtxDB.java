@@ -24,7 +24,6 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -34,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
-import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.elements.util.Bytes;
 
 /**
@@ -52,20 +50,15 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	// The outer HashMap has RID as key and the inner ID Context
 	private HashMap<ByteId, HashMap<ByteId, OSCoreCtx>> contextMap;
 
-	private HashMap<Token, OSCoreCtx> tokenMap;
 	private HashMap<String, OSCoreCtx> uriMap;
-
-	private ArrayList<Token> allTokens;
 
 	/**
 	 * Create the database
 	 */
 	public HashMapCtxDB() {
 
-		this.tokenMap = new HashMap<>();
 		this.contextMap = new HashMap<>();
 		this.uriMap = new HashMap<>();
-		this.allTokens = new ArrayList<Token>();
 	}
 
 	/**
@@ -125,16 +118,6 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	}
 
 	@Override
-	public synchronized OSCoreCtx getContextByToken(Token token) {
-		if (token != null) {
-			return tokenMap.get(token);
-		} else {
-			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
-			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
-		}
-	}
-
-	@Override
 	public synchronized OSCoreCtx getContext(String uri) throws OSException {
 		if (uri != null) {
 			return uriMap.get(normalizeServerUri(uri));
@@ -142,17 +125,6 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 			LOGGER.error(ErrorDescriptions.STRING_NULL);
 			throw new NullPointerException(ErrorDescriptions.STRING_NULL);
 		}
-	}
-
-	@Override
-	public synchronized void addContext(Token token, OSCoreCtx ctx) {
-		if (token != null) {
-			if (!tokenExist(token)) {
-				allTokens.add(token);
-			}
-			tokenMap.put(token, ctx);
-		}
-		addContext(ctx);
 	}
 
 	@Override
@@ -224,16 +196,6 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 		} else {
 			LOGGER.error(ErrorDescriptions.CONTEXT_NULL);
 			throw new NullPointerException(ErrorDescriptions.CONTEXT_NULL);
-		}
-	}
-
-	@Override
-	public synchronized boolean tokenExist(Token token) {
-		if (token != null) {
-			return allTokens.contains(token);
-		} else {
-			LOGGER.error(ErrorDescriptions.TOKEN_NULL);
-			throw new NullPointerException(ErrorDescriptions.TOKEN_NULL);
 		}
 	}
 
@@ -311,23 +273,11 @@ public class HashMapCtxDB implements OSCoreCtxDB {
 	}
 
 	/**
-	 * Removes associations for this token, except for the generator
-	 * 
-	 * @param token the token to remove
-	 */
-	@Override
-	public synchronized void removeToken(Token token) {
-		tokenMap.remove(token);
-	}
-
-	/**
 	 * Used mainly for test purpose, to purge the db of all contexts
 	 */
 	@Override
 	public synchronized void purge() {
 		contextMap.clear();
-		tokenMap.clear();
 		uriMap.clear();
-		allTokens = new ArrayList<Token>();
 	}
 }

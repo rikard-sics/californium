@@ -18,7 +18,6 @@
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
-import org.eclipse.californium.core.coap.Token;
 
 /**
  * 
@@ -43,18 +42,6 @@ public interface OSCoreCtxDB {
 	 *             matching contexts are found
 	 */
 	public OSCoreCtx getContext(byte[] cid, byte[] IDContext) throws CoapOSException;
-
-	/**
-	 * @param token the token of the request
-	 * @return the OSCore context
-	 */
-	public OSCoreCtx getContextByToken(Token token);
-
-	/**
-	 * @param token the token of the request
-	 * @param ctx the OSCore context
-	 */
-	public void addContext(Token token, OSCoreCtx ctx);
 
 	/**
 	 * @param uri the uri of the recipient
@@ -85,21 +72,7 @@ public interface OSCoreCtxDB {
 	public OSCoreCtx getContext(String uri) throws OSException;
 
 	/**
-	 * @param token the token
-	 * @return {@code true}, if an association for this token exists,
-	 *         {@code false}, otherwise
-	 */
-	public boolean tokenExist(Token token);
-
-	/**
 	 * purge all contexts
 	 */
 	public void purge();
-
-	/**
-	 * Removes associations for this token, except for the generator
-	 * 
-	 * @param token token to be removed
-	 */
-	public void removeToken(Token token);
 }
