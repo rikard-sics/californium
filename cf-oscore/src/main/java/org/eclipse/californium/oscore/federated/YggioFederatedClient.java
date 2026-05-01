@@ -785,7 +785,7 @@ public class YggioFederatedClient {
 			json.addProperty("maxEpochs", MAX_GLOBAL_EPOCHS);
 			json.addProperty("serverCount", serverCount);
 			json.addProperty("finished", stopEarly);
-			addModel0Stats(json, models, modelIndexServer00);
+			addModelStats(json, models, modelIndexServer00);
 			String mqttPayload = json.toString();
 
 			System.out.println(
@@ -1155,7 +1155,7 @@ public class YggioFederatedClient {
 	 * @param the index of the model to consider
 	 * @param models array of models
 	 */
-	private static void addModel0Stats(JsonObject json, List<INDArray> models, int index) {
+	private static void addModelStats(JsonObject json, List<INDArray> models, int index) {
 		if (index < 0 || index >= models.size()) {
 			json.addProperty("m0Exists", false);
 			return;
