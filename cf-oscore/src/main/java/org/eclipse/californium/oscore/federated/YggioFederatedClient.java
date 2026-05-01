@@ -469,7 +469,7 @@ public class YggioFederatedClient {
 			}
 		}
 		DebugOut.println("==================");
-		
+
 		System.out.println("Sleeping for " + startupWait + " seconds before sending first request");
 		Thread.sleep(startupWait * 1000);
 
@@ -871,9 +871,42 @@ public class YggioFederatedClient {
 			}
 		}
 		myWriter.write(newl);
-
 		myWriter.close();
 
+		// === Cleanup and exit ===
+
+		System.out.println("Cleaning up and shutting down");
+
+		// CoAP cleanup
+		try {
+			client.shutdown();
+		} catch (Exception e) {
+			System.err.println("Failed to cleanly shutdown CoAP client");
+			e.printStackTrace();
+		}
+
+		try {
+			endpoint.destroy();
+		} catch (Exception e) {
+			System.err.println("Failed to cleanly destroy CoAP endpoint");
+			e.printStackTrace();
+		}
+
+		// MQTT cleanup
+		try {
+			if (mqttClient != null) {
+				if (mqttClient.isConnected()) {
+					mqttClient.disconnect(5000);
+				}
+				mqttClient.close();
+			}
+		} catch (Exception e) {
+			System.err.println("Failed to cleanly close MQTT client");
+			e.printStackTrace();
+		}
+
+		System.out.println("Cleanup complete; exiting JVM");
+		System.exit(0);
 	}
 
 	public static INDArray getAverage(List<INDArray> list, int modelsize) {
