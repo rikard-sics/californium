@@ -235,7 +235,7 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 		// processed by OSCORE in the ObjectSecurityLayer it will happen here.
 		Response rawResponse =  exchange.getCurrentResponse();
 		boolean outerBlockwise = rawResponse != null && rawResponse.getOptions().hasBlock2()
-				&& exchange.getOscoreCtx() != null;
+				&& exchange.getCryptographicContextID() != null;
 		if (outerBlockwise) {
 
 			LOGGER.debug("Incoming OSCORE response uses outer block-wise");
@@ -252,7 +252,7 @@ public class ObjectSecurityContextLayer extends AbstractLayer {
 					// Parse the OSCORE option from the corresponding request
 					OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
 					int requestSequenceNumber = optionDecoder.getSequenceNumber();
-					OSCoreCtx ctx = (OSCoreCtx) exchange.getOscoreCtx();
+					OSCoreCtx ctx = ctxDb.getContext(optionDecoder.getKid(), optionDecoder.getIdContext());
 
 					response = ObjectSecurityLayer.prepareReceive(ctxDb, response, ctx,
 							requestSequenceNumber);

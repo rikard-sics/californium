@@ -131,7 +131,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				// not be processed with OSCORE.
 				Response response = exchange.getCurrentResponse();
 				if (request.getOptions().hasBlock2() && response != null) {
-					if (exchange.getOscoreCtx() != null) {
+					if (exchange.getCryptographicContextID() != null) {
 						super.sendRequest(exchange, request);
 						return;
 					}
@@ -174,8 +174,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 					throw new IllegalStateException("outgoing request is exceeding the MAX_UNFRAGMENTED_SIZE!");
 				}
 
-				exchange.setOscoreCtx(finalCtx);
-
 				preparedRequest.addMessageObserver(0, new MessageObserverAdapter() {
 
 					@Override
@@ -196,7 +194,17 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				});
 
 				req = preparedRequest;
-				exchange.setCryptographicContextID(req.getOptions().getOscore());
+
+				// Build the cryptoContextId with the RecipientID as KID
+				// (instead of the SenderID that the outgoing OSCORE option carries),
+				// so that context lookup in receiveResponse uses getContext(rid, IDContext)
+				// the same way sendResponse does on the server.
+				OscoreOptionDecoder outDec = new OscoreOptionDecoder(req.getOptions().getOscore());
+				OscoreOptionEncoder enc = new OscoreOptionEncoder();
+				enc.setPartialIV(outDec.getPartialIV());
+				enc.setKid(finalCtx.getRecipientId());
+				enc.setIdContext(finalCtx.getIdContext());
+				exchange.setCryptographicContextID(enc.getBytes());
 
 			} catch (OSException e) {
 				LOGGER.error("Error sending request: {}", e.getMessage());
@@ -347,13 +355,19 @@ public class ObjectSecurityLayer extends AbstractLayer {
 				LOGGER.warn("Incoming response is OSCORE protected but it should not be");
 			}
 
+			// Decode the stored cryptoContextId to get the request sequence number
+			// and look up the context — KID was stored as RecipientID so
+			// getContext(rid, IDContext) finds the right context.
+			OscoreOptionDecoder ctxIdDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
+			int requestSequenceNumber = ctxIdDecoder.getSequenceNumber();
+			OSCoreCtx ctx = ctxDb.getContext(ctxIdDecoder.getKid(), ctxIdDecoder.getIdContext());
+
 			// For OSCORE-protected response with the outer block2-option let
 			// them pass through to be re-assembled by the block-wise layer
 			if (response.getOptions().hasBlock2()) {
 
 				if (response.getMaxResourceBodySize() == 0) {
-					int maxPayloadSize = getIncomingMaxUnfragSize(response,
-							(OSCoreCtx) exchange.getOscoreCtx());
+					int maxPayloadSize = getIncomingMaxUnfragSize(response, ctx);
 					response.setMaxResourceBodySize(maxPayloadSize);
 				}
 
@@ -363,11 +377,6 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 			//If response is protected with OSCORE parse it first with prepareReceive
 			if (isProtected(response)) {
-				// Parse the OSCORE option from the corresponding request
-				OscoreOptionDecoder optionDecoder = new OscoreOptionDecoder(exchange.getCryptographicContextID());
-				int requestSequenceNumber = optionDecoder.getSequenceNumber();
-				OSCoreCtx ctx = (OSCoreCtx) exchange.getOscoreCtx();
-
 				response = prepareReceive(ctxDb, response, ctx, requestSequenceNumber);
 			}
 		} catch (OSException e) {

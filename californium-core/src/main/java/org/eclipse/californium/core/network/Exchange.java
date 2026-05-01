@@ -362,10 +362,6 @@ public class Exchange {
 	// for request/response mapping of contexts
 	private byte[] cryptoContextId;
 
-	// If object security is used, the OSCORE context for this exchange is
-	// stored here to avoid shared mutable state keyed on the CoAP token
-	private Object oscoreCtx;
-
 	/**
 	 * Creates a new exchange with the specified request and origin.
 	 * 
@@ -1492,26 +1488,6 @@ public class Exchange {
 	 */
 	public byte[] getCryptographicContextID() {
 		return this.cryptoContextId;
-	}
-
-	/**
-	 * Sets the OSCORE context for this exchange.
-	 * Used by OSCORE.
-	 *
-	 * @param ctx the OSCORE context
-	 */
-	public void setOscoreCtx(Object ctx) {
-		this.oscoreCtx = ctx;
-	}
-
-	/**
-	 * Gets the OSCORE context for this exchange.
-	 * Used by OSCORE.
-	 *
-	 * @return the OSCORE context, or {@code null} if not set
-	 */
-	public Object getOscoreCtx() {
-		return this.oscoreCtx;
 	}
 
 	/**
