@@ -593,7 +593,7 @@ public class EdhocResource extends CoapResource {
 	    		CBORObject connectionIdentifierCbor = CBORObject.FromObject(connectionIdentifier);
 	        	EdhocSession mySession = edhocEndpointInfo.getEdhocSessions().get(connectionIdentifierCbor);
 	    		if (mySession == null) {
-	    			System.out.println("EDHOC session to delete not found");
+	    			System.err.println("EDHOC session to delete not found");
 	    			return;
 	    		}
 	    		
