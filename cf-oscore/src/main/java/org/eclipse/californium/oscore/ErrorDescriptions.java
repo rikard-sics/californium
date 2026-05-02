@@ -30,8 +30,6 @@ public final class ErrorDescriptions {
 	public static final String REPLAY_DETECT = "Replay detected";
 	public static final String DECRYPTION_FAILED = "Decryption failed";
 	public static final String MAC_CCM_FAILED = "MAC check in CCM failed";
-	public static final String TOKEN_NULL = "Token is null";
-	public static final String TOKEN_INVALID = "Token is invalid";
 	public static final String SEQ_NBR_INVALID = "Sequence number is invalid";
 	public static final String URI_NULL = "URI is null";
 	public static final String DB_NULL = "DB is null";
