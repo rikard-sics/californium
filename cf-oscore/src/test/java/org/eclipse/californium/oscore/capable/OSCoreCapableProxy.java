@@ -344,37 +344,67 @@ public class OSCoreCapableProxy {
 	    return ip;
 	}
 
-    private static void parseArguments(String[] args) {
-
-        for (String arg : args) {
-
-            if (arg.startsWith("--serverIP=")) {
-                serverIP = arg.substring("--serverIP=".length());
-
-            } else if (arg.startsWith("--proxyIP=")) {
-                proxyIP = arg.substring("--proxyIP=".length());
-
-            } else if (arg.startsWith("--clientIP=")) {
-                clientIP = arg.substring("--clientIP=".length());
-
-            } else if (arg.startsWith("--proxyPort=")) {
-                coapProxyPort =
-                        Integer.parseInt(arg.substring("--proxyPort=".length()));
-
-            } else if (arg.equals("--help")) {
-
-                System.out.println("Usage:");
-                System.out.println("  --serverIP=<ip>");
-                System.out.println("  --proxyIP=<ip>");
-                System.out.println("  --clientIP=<ip>");
-                System.out.println("  --proxyPort=<port>");
-                System.exit(0);
-
-            } else {
-                System.out.println("Unknown argument: " + arg);
-            }
-        }
-    }
+	private static void parseArguments(String[] args) {
+	
+	    for (int i = 0; i < args.length; i++) {
+	
+	        String arg = args[i];
+	
+	        if (arg.equals("--help")) {
+	
+	            System.out.println("Usage:");
+	            System.out.println("  --serverIP <ip>");
+	            System.out.println("  --proxyIP <ip>");
+	            System.out.println("  --clientIP <ip>");
+	            System.out.println("  --proxyPort <port>");
+	            System.exit(0);
+	        }
+	
+	        // Support: --key=value
+	        if (arg.startsWith("--serverIP=")) {
+	            serverIP = arg.substring("--serverIP=".length());
+	
+	        } else if (arg.startsWith("--proxyIP=")) {
+	            proxyIP = arg.substring("--proxyIP=".length());
+	
+	        } else if (arg.startsWith("--clientIP=")) {
+	            clientIP = arg.substring("--clientIP=".length());
+	
+	        } else if (arg.startsWith("--proxyPort=")) {
+	
+	            try {
+	                coapProxyPort =
+	                        Integer.parseInt(arg.substring("--proxyPort=".length()));
+	            } catch (NumberFormatException e) {
+	                System.err.println("Invalid proxy port: " + arg);
+	                System.exit(1);
+	            }
+	
+	        // Support: --key value
+	        } else if (arg.equals("--serverIP") && i + 1 < args.length) {
+	            serverIP = args[++i];
+	
+	        } else if (arg.equals("--proxyIP") && i + 1 < args.length) {
+	            proxyIP = args[++i];
+	
+	        } else if (arg.equals("--clientIP") && i + 1 < args.length) {
+	            clientIP = args[++i];
+	
+	        } else if (arg.equals("--proxyPort") && i + 1 < args.length) {
+	
+	            try {
+	                coapProxyPort = Integer.parseInt(args[++i]);
+	            } catch (NumberFormatException e) {
+	                System.err.println("Invalid proxy port: " + args[i]);
+	                System.exit(1);
+	            }
+	
+	        } else {
+	            System.err.println("Unknown argument: " + arg);
+	            System.exit(1);
+	        }
+	    }
+	}
 	
 }
 
