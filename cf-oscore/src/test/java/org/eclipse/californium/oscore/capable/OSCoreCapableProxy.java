@@ -190,12 +190,10 @@ public class OSCoreCapableProxy {
 	private CacheResource cache;
 	
 	private final static HashMapCtxDB db = new HashMapCtxDB(true);
-	private final static String serverIP = "127.0.0.1"; // "169.254.154.184"; 
-	private final static String proxyIP =  "127.0.0.1"; // "169.254.106.132";
-	private final static String clientIP = "127.0.0.1"; // "169.254.106.130";
-
-	private final static String uriLocal = "coap://127.0.0.1";
-	private final static int CoapProxyPort = 5685;
+	private static String serverIP = "127.0.0.1"; // "169.254.154.184"; 
+	private static String proxyIP =  "127.0.0.1"; // "169.254.106.132";
+	private static String clientIP = "127.0.0.1"; // "169.254.106.130";
+	private static int coapProxyPort = 5685;
 
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
 	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
@@ -226,10 +224,10 @@ public class OSCoreCapableProxy {
 
 	public OSCoreCapableProxy(Configuration config, boolean accept, boolean cache) throws IOException, OSException {
 		OSCoreCtx ctxToClient = new OSCoreCtx(master_secret, true, alg, sids[0], rids[0], kdf, 32, master_salt, idcontexts[0], MAX_UNFRAGMENTED_SIZE);
-		db.addContext("coap://" + clientIP + ":" + Objects.toString(CoapProxyPort + 1), ctxToClient); 
+		db.addContext("coap://" + uriHost(clientIP) + ":" + (coapProxyPort + 1), ctxToClient);
 
 		OSCoreCtx ctxToServer = new OSCoreCtx(master_secret, true, alg, sids[1], rids[1], kdf, 32, master_salt, idcontexts[1], MAX_UNFRAGMENTED_SIZE);
-		//db.addContext("coap://" + serverIP /*+ ":" + Objects.toString(i)*/, ctxToServer);
+		//db.addContext("coap://" + uriHost(serverIP), ctxToServer);
 
 		OSCoreCoapStackFactory.useAsDefault(db);
 		Configuration outgoingConfig = new Configuration(config);
@@ -257,8 +255,8 @@ public class OSCoreCapableProxy {
 		builder = CoapEndpoint.builder();
 		// builder.setCoapStackFactory(new OSCoreCoapStackFactory());
 		// builder.setCustomCoapStackArgument(db);
-		//builder.setPort(CoapProxyPort);
-		builder.setInetSocketAddress(new InetSocketAddress(proxyIP, CoapProxyPort));
+		//builder.setPort(coapProxyPort);
+		builder.setInetSocketAddress(new InetSocketAddress(proxyIP, coapProxyPort));
 		CoapEndpoint clientToProxyEndpoint = builder.build();
 		
 		coapProxyServer = new CoapServer(config);
@@ -268,7 +266,7 @@ public class OSCoreCapableProxy {
 				translator, config);
 		
 		proxyMessageDeliverer.addProxyCoapResources(coap2coap); 
-		proxyMessageDeliverer.addExposedServiceAddresses(new InetSocketAddress("localhost", CoapProxyPort));
+		proxyMessageDeliverer.addExposedServiceAddresses(new InetSocketAddress(proxyIP, coapProxyPort));
 		coapProxyServer.setMessageDeliverer(proxyMessageDeliverer);
 
 		coapProxyServer.add(coap2coap);
@@ -276,14 +274,14 @@ public class OSCoreCapableProxy {
 			coapProxyServer.add(statsResource);
 		}
 		coapProxyServer.add(new SimpleCoapResource("target",
-				"Hi! I am the local coap server on port " + CoapProxyPort + ". Request %d."));
+				"Hi! I am the local coap server on port " + coapProxyPort + ". Request %d."));
 
 		CoapResource targets = new CoapResource("targets");
 		coapProxyServer.add(targets);
 
 		coapProxyServer.start();
 
-		//System.out.println("CoAP Proxy at: coap://localhost:" + CoapProxyPort + "/coap2coap");
+		//System.out.println("CoAP Proxy at: coap://localhost:" + coapProxyPort + "/coap2coap");
 		this.cache = cacheResource;
 		// receiving on any address => enable LocalAddressResolver
 		proxyMessageDeliverer.startLocalAddressResolver();
@@ -291,6 +289,19 @@ public class OSCoreCapableProxy {
 	
 	
 	public static void main(String args[]) throws IOException, OSException {
+
+        // Parse CLI arguments
+        parseArguments(args);
+
+        // Print active configuration
+        System.out.println("=================================");
+        System.out.println("Starting OSCORE Proxy with config:");
+        System.out.println("serverIP      = " + serverIP);
+        System.out.println("proxyIP       = " + proxyIP);
+        System.out.println("clientIP      = " + clientIP);
+        System.out.println("coapProxyPort = " + coapProxyPort);
+        System.out.println("=================================");
+		
 		Configuration proxyConfig = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
 		OSCoreCapableProxy proxy = new OSCoreCapableProxy(proxyConfig, false, true);
 		for(;;) {
@@ -324,6 +335,47 @@ public class OSCoreCapableProxy {
 		}
 
 	}
+
+	// Wrap IPv6 addresses in brackets
+	private static String uriHost(String ip) {
+	    if (ip.contains(":") && !(ip.startsWith("[") && ip.endsWith("]"))) {
+	        return "[" + ip + "]";
+	    }
+	    return ip;
+	}
+
+    private static void parseArguments(String[] args) {
+
+        for (String arg : args) {
+
+            if (arg.startsWith("--serverIP=")) {
+                serverIP = arg.substring("--serverIP=".length());
+
+            } else if (arg.startsWith("--proxyIP=")) {
+                proxyIP = arg.substring("--proxyIP=".length());
+
+            } else if (arg.startsWith("--clientIP=")) {
+                clientIP = arg.substring("--clientIP=".length());
+
+            } else if (arg.startsWith("--proxyPort=")) {
+                coapProxyPort =
+                        Integer.parseInt(arg.substring("--proxyPort=".length()));
+
+            } else if (arg.equals("--help")) {
+
+                System.out.println("Usage:");
+                System.out.println("  --serverIP=<ip>");
+                System.out.println("  --proxyIP=<ip>");
+                System.out.println("  --clientIP=<ip>");
+                System.out.println("  --proxyPort=<port>");
+                System.exit(0);
+
+            } else {
+                System.out.println("Unknown argument: " + arg);
+            }
+        }
+    }
+	
 }
 
 
