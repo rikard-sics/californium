@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018 RISE SICS and others.
+ * Copyright (c) 2023 RISE SICS and others.
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -12,51 +12,61 @@
  * 
  * Contributors:
  *    Tobias Andersson (RISE SICS)
+ *    Rikard Höglund (RISE) rikard.hoglund@ri.se
  *    
  ******************************************************************************/
 package org.eclipse.californium.oscore;
 
-import java.net.InetSocketAddress;
+import java.io.IOException;
+import java.net.URI;
 import java.util.HashMap;
-
-import org.eclipse.californium.core.CoapServer;
+import org.eclipse.californium.core.CoapClient;
+import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.Utils;
-import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.core.coap.CoAP.Code;
+import org.eclipse.californium.core.coap.CoAP.Type;
+import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.config.CoapConfig;
-import org.eclipse.californium.core.coap.CoAP;
-import org.eclipse.californium.core.coap.MediaTypeRegistry;
-import org.eclipse.californium.core.coap.Response;
-import org.eclipse.californium.core.network.CoapEndpoint;
-import org.eclipse.californium.core.network.Endpoint;
-import org.eclipse.californium.core.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.elements.config.Configuration;
+import org.eclipse.californium.elements.exception.ConnectorException;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.elements.util.StringUtil;
+import org.eclipse.californium.oscore.HashMapCtxDB;
+import org.eclipse.californium.oscore.OSCoreCoapStackFactory;
+import org.eclipse.californium.oscore.OSCoreCtx;
+import org.eclipse.californium.oscore.ContextRederivation.PHASE;
 
 /**
  * 
- * HelloWorldServer to display basic OSCORE mechanics
+ * Example OSCORE client using the Californium library.
  *
  */
-public class CommandLineServer {
+public class KudosAppB2Client {
 
 	private final static HashMapCtxDB db = new HashMapCtxDB();
-	private final static String uriLocal = "coap://localhost";
+	private static String defaultUri = "coap://localhost/hello";
+	private static String uri;
+
+	// OSCORE Security Context parameters
 	private final static AlgorithmID alg = AlgorithmID.AES_CCM_16_64_128;
 	private final static AlgorithmID kdf = AlgorithmID.HKDF_HMAC_SHA_256;
 
-	private final static int localPort = CoAP.DEFAULT_COAP_PORT;
+	private static byte[] masterSecret = StringUtil.hex2ByteArray("0102030405060708090A0B0C0D0E0F10");
+	private static byte[] masterSalt = StringUtil.hex2ByteArray("9e7ca92223786340");
 
-	// test vector OSCORE draft Appendix C.1.2
-	private static byte[] masterSecret = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D,
-			0x0E, 0x0F, 0x10 };
-	private static byte[] masterSalt = { (byte) 0x9e, (byte) 0x7c, (byte) 0xa9, (byte) 0x22, (byte) 0x23, (byte) 0x78,
-			(byte) 0x63, (byte) 0x40 };
-	private static byte[] sid = new byte[] { 0x01 };
-	private static byte[] rid = new byte[] { 0x02 };
 	private static byte[] idContext = null;
+	private final static Integer replayWindowSize = 32;
+
+	private static byte[] sid = new byte[] { 0x02 };
+	private static byte[] rid = new byte[] { 0x01 };
 	private final static int MAX_UNFRAGMENTED_SIZE = 4096;
+
+	static String defaultRequestCount = "1";
+	static int requestCount;
+
+	static String defaultInitialSeq = "0";
+	static int initialSeq;
 
 	static String defaultDebugMode = "false";
 	static boolean debugMode;
@@ -73,9 +83,7 @@ public class CommandLineServer {
 	static String defaultNonceLength = "8";
 	static int nonceLength;
 
-	static String listenAddr;
-
-	public static void main(String[] args) throws OSException {
+	public static void main(String[] args) throws InterruptedException, ConnectorException, IOException {
 		CoapConfig.register();
 		Configuration.createStandardWithoutFile();
 
@@ -105,12 +113,14 @@ public class CommandLineServer {
 			sid = StringUtil.hex2ByteArray(cmdArgs.get("--sid"));
 			rid = StringUtil.hex2ByteArray(cmdArgs.get("--rid"));
 			idContext = StringUtil.hex2ByteArray(cmdArgs.get("--idcontext"));
+			uri = cmdArgs.getOrDefault("--uri", defaultUri);
+			requestCount = Integer.parseInt(cmdArgs.getOrDefault("--count", defaultRequestCount));
+			initialSeq = Integer.parseInt(cmdArgs.getOrDefault("--seq", defaultInitialSeq));
 			debugMode = Boolean.parseBoolean(cmdArgs.getOrDefault("--debug", defaultDebugMode));
 			useOscore = Boolean.parseBoolean(cmdArgs.getOrDefault("--oscore", defaultUseOscore));
 			useAppendixB2 = Boolean.parseBoolean(cmdArgs.getOrDefault("--appendixb2", defaultUseAppendixB2));
 			useKudos = Boolean.parseBoolean(cmdArgs.getOrDefault("--kudos", defaultUseKudos));
 			nonceLength = Integer.parseInt(cmdArgs.getOrDefault("--nonce-len", defaultNonceLength));
-			listenAddr = cmdArgs.get("--listen-addr");
 		} catch (Exception e) {
 			printHelp();
 		}
@@ -131,39 +141,41 @@ public class CommandLineServer {
 		System.out.println("Sender ID: " + Utils.toHexString(sid));
 		System.out.println("Recipient ID: " + Utils.toHexString(rid));
 		System.out.println("ID Context: " + Utils.toHexString(idContext));
+		System.out.println("URI: " + uri);
+		System.out.println("Message Count: " + requestCount);
+		System.out.println("Initial Sender Sequence Number: " + initialSeq);
 		System.out.println("Debug Mode: " + debugMode);
 		System.out.println("Use OSCORE: " + useOscore);
 		System.out.println("Use Appendix B.2: " + useAppendixB2);
 		System.out.println("Use KUDOS: " + useKudos);
 		System.out.println("Nonce Length: " + nonceLength);
-		if (listenAddr == null) {
-			System.out.println("Local Address: " + "Default");
-		} else {
-			System.out.println("Local Address: " + listenAddr);
-		}
 		System.out.println("===");
 
 		if (debugMode) {
 			OSCoreCtx.EXTRA_LOGGING = true;
 		}
 
-		// Create OSCORE Security Context
-		OSCoreCtx ctx = new OSCoreCtx(masterSecret, false, alg, sid, rid, kdf, 32, masterSalt, idContext,
-				MAX_UNFRAGMENTED_SIZE);
-		db.addContext(uriLocal, ctx);
-		OSCoreCoapStackFactory.useAsDefault(db);
+		// Create and set OSCORE Security Context
+		OSCoreCtx ctx = null;
+		try {
+			ctx = new OSCoreCtx(masterSecret, true, alg, sid, rid, kdf, replayWindowSize, masterSalt, idContext,
+					MAX_UNFRAGMENTED_SIZE);
+			db.addContext(uri, ctx);
+			ctx.setSenderSeq(initialSeq);
+		} catch (Exception e) {
+			printHelp();
+		}
 
 		if (useAppendixB2) {
 			ctx.setContextRederivationEnabled(true);
+			ctx.setContextRederivationPhase(PHASE.CLIENT_INITIATE);
 		}
 
-		if (useKudos) {
-			ctx.setKudosContextRederivationEnabled(true);
-		}
+		OSCoreCoapStackFactory.useAsDefault(db);
 
-		// Set nonce lengths
 		ContextRederivation.setNonceLength(nonceLength);
 		KudosRederivation.NONCE_LENGTH = nonceLength;
+
 		if (debugMode) {
 			System.out.println("RID: " + Utils.toHexString(rid));
 			System.out.println("SID: " + Utils.toHexString(sid));
@@ -177,98 +189,84 @@ public class CommandLineServer {
 			KudosRederivation.EXTRA_LOGGING = true;
 		}
 
-		CoapServer server = null;
+		CoapClient c = new CoapClient();
 
-		// Use custom listen address or use default
-		if (listenAddr != null) {
-			server = new CoapServer();
-			CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
-			InetSocketAddress localAddr = new InetSocketAddress(listenAddr, localPort);
-			builder.setInetSocketAddress(localAddr);
-			CoapEndpoint endp = builder.build();
-			server.addEndpoint(endp);
-		} else {
-			server = new CoapServer(localPort);
+		// Send dummy request to initialize things now already, and not later
+		// when starting KUDOS or Appendix B.2
+		System.out.println("Sending dummy request to localhost for early initialization");
+		Request req = new Request(Code.GET);
+		req.setURI("coap://127.0.0.1");
+		req.setType(Type.NON);
+		req.send();
+
+		if (useKudos) {
+			ctx.setKudosContextRederivationEnabled(true);
+			System.out.println("[KUDOS] Running KUDOS with server");
+			try {
+				// Set up the client side context to be ready for using KUDOS
+				// (practically derive CTX_1)
+				ctx.setContextRederivationPhase(PHASE.KUDOS_CLIENT_INITIATE);
+				KudosRederivation.initiateRequestKudos(db, uri);
+			} catch (OSException e) {
+				System.err.println("Failed to initiate KUDOS procedure in client");
+				e.printStackTrace();
+			}
+
+			// Now proceed to send a request (which will be KUDOS Request #1)
+			URI newUri = URI.create(uri);
+			int port = newUri.getPort() == -1 ? 5683 : newUri.getPort();
+			String kudosUri = newUri.getScheme() + "://" + newUri.getHost() + ":" + port + "/.well-known/kudos";
+			System.out.println("[KUDOS] Request Target: " + kudosUri);
+
+			req = new Request(Code.GET);
+			req.setURI(kudosUri);
+			if (useOscore) {
+				req.getOptions().setOscore(Bytes.EMPTY);
+			}
+
+			long start = System.nanoTime();
+			CoapResponse resp = c.advanced(req);
+			long time = System.nanoTime() - start;
+
+			System.out.println(Utils.prettyPrint(resp));
+			System.out.println("Payload bytes: " + Utils.toHexString(resp.getPayload()));
+			System.out.println("KUDOS Elapsed time (ms): " + time / 1000.0 / 1000.0);
+			ctx.setKudosContextRederivationEnabled(false);
 		}
 
-		OSCoreResource hello = new OSCoreResource("hello", true) {
+		// Send normal request
+		// If Appendix B.2 is used another request will be sent first
+		for (int i = 0; i < requestCount; i++) {
+			System.out.println();
+			System.out.println("==== Sending request #" + (i + 1) + " ===");
 
-			@Override
-			public void handleGET(CoapExchange exchange) {
-				System.out.println("Accessing hello resource");
-				Response r = new Response(ResponseCode.CONTENT);
-				r.setPayload("Hello Resource");
-				exchange.respond(r);
+			long start = 0;
+			if (i == 0) {
+				start = System.nanoTime();
 			}
 
-			@Override
-			public void handlePOST(CoapExchange exchange) {
-				System.out.println("Accessing hello resource");
-				Response r = new Response(ResponseCode.CONTENT);
-				r.setPayload("Hello Resource");
-				exchange.respond(r);
+			req = new Request(Code.GET);
+			req.setURI(uri);
+			if (useOscore) {
+				req.getOptions().setOscore(Bytes.EMPTY);
 			}
-		};
+			CoapResponse resp = c.advanced(req);
 
-		OSCoreResource hello1 = new OSCoreResource("1", true) {
-
-			@Override
-			public void handleGET(CoapExchange exchange) {
-				System.out.println("Accessing hello/1 resource");
-				Response r = new Response(ResponseCode.CONTENT);
-				r.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
-				r.setPayload("Hello World!");
-				exchange.respond(r);
+			long time = 0;
+			if (i == 0) {
+				time = System.nanoTime() - start;
 			}
 
-			@Override
-			public void handlePOST(CoapExchange exchange) {
-				System.out.println("Accessing hello/1 resource");
-				Response r = new Response(ResponseCode.CONTENT);
-				r.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
-				r.setPayload("Hello World!");
-				exchange.respond(r);
+			System.out.println("Received Response #" + (i + 1));
+			System.out.println(Utils.prettyPrint(resp));
+			System.out.println("Payload bytes: " + Utils.toHexString(resp.getPayload()));
+			if (i == 0) {
+				System.out.println("AppendixB.2 Elapsed time (ms): " + time / 1000.0 / 1000.0);
 			}
-		};
-
-		OSCoreResource well_known_res = new OSCoreResource(".well-known", true) {
-
-		};
-
-		OSCoreResource kudos_res = new OSCoreResource("kudos", true) {
-
-			@Override
-			public void handleGET(CoapExchange exchange) {
-				System.out.println("Accessing kudos resource");
-				Response r = new Response(ResponseCode.CONTENT);
-				r.setPayload("");
-				exchange.respond(r);
-			}
-
-			@Override
-			public void handlePOST(CoapExchange exchange) {
-				System.out.println("Accessing kudos resource");
-				Response r = new Response(ResponseCode.CONTENT);
-				r.setPayload("");
-				exchange.respond(r);
-			}
-		};
-
-		server.add(hello.add(hello1));
-		server.add(well_known_res.add(kudos_res));
-
-		try {
-			server.start();
-		} catch (IllegalStateException e) {
-			System.err.println("Failed to start server endpoint!");
-			System.exit(1);
+			Thread.sleep(1000);
 		}
 
-		Endpoint testEndpoint = server.getEndpoint(localPort);
-		if (testEndpoint.isStarted() == false) {
-			System.err.println("Failed to start server endpoint!");
-			System.exit(1);
-		}
+		c.shutdown();
 	}
 
 	private static void printHelp() {
@@ -278,12 +276,14 @@ public class CommandLineServer {
 		System.out.println("--sid: Sender ID");
 		System.out.println("--rid: Recipient ID");
 		System.out.println("--idcontext: ID Context");
+		System.out.println("--uri: URI / URL of server");
+		System.out.println("--count: Number of messages to send");
+		System.out.println("--seq: OSCORE Sender Sequence Number / Partial IV");
 		System.out.println("--debug: True/False - Enable or disable debug printing");
 		System.out.println("--oscore: True/False - Use OSCORE");
 		System.out.println("--appendixb2: True/False - Initiate the Appendix B.2 procedure");
 		System.out.println("--kudos: True/False - Initiate the KUDOS procedure");
 		System.out.println("--nonce-len: Length of nonces for Appendix B.2 and KUDOS");
-		System.out.println("--listen-addr: Local IP address to listen to");
 		System.exit(1);
 	}
 
