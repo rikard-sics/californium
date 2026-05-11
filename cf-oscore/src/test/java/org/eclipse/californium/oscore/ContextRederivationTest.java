@@ -162,18 +162,19 @@ public class ContextRederivationTest {
 
 		// Length of Context ID in context (R2 || R3)
 		int contextIdLen = currCtx.getIdContext().length;
-		assertEquals(3 * SEGMENT_LENGTH, contextIdLen);
+		assertEquals(2 * SEGMENT_LENGTH, contextIdLen);
 		// Check length of Context ID in the request (R2 || R3)
-		assertEquals(3 * SEGMENT_LENGTH, requestTestObserver.requestIdContext.length);
+		assertEquals(2 * SEGMENT_LENGTH, requestTestObserver.requestIdContext.length);
 
 		// Check R2 value derived by server using its key with received one
 		// The R2 value is composed of S2 || HMAC(K_HMAC, S2).
+		// S2 and HMAC are each HALF_NONCE_LENGTH bytes, so R2 = SEGMENT_LENGTH bytes.
 		OSCoreCtx serverCtx = dbServer.getContext(sid);
 		byte[] srvContextRederivationKey = serverCtx.getContextRederivationKey();
-		byte[] contextS2 = Arrays.copyOfRange(currCtx.getIdContext(), 0, SEGMENT_LENGTH);
-		byte[] hmacOutput = OSCoreCtx.deriveKey(srvContextRederivationKey, srvContextRederivationKey, SEGMENT_LENGTH,
+		byte[] contextS2 = Arrays.copyOfRange(currCtx.getIdContext(), 0, SEGMENT_LENGTH / 2);
+		byte[] hmacOutput = OSCoreCtx.deriveKey(srvContextRederivationKey, srvContextRederivationKey, SEGMENT_LENGTH / 2,
 				"SHA256", contextS2);
-		byte[] messageHmacValue = Arrays.copyOfRange(currCtx.getIdContext(), SEGMENT_LENGTH, SEGMENT_LENGTH * 2);
+		byte[] messageHmacValue = Arrays.copyOfRange(currCtx.getIdContext(), SEGMENT_LENGTH / 2, SEGMENT_LENGTH);
 		assertArrayEquals(hmacOutput, messageHmacValue);
 
 		// Empty OSCORE option in response
@@ -248,26 +249,27 @@ public class ContextRederivationTest {
 
 		// Length of Context ID in context (R2 || ID1)
 		int contextIdLen = currCtx.getIdContext().length;
-		assertEquals(3 * SEGMENT_LENGTH, contextIdLen);
+		assertEquals(2 * SEGMENT_LENGTH, contextIdLen);
 		// Check length of Context ID in the request (ID1)
 		assertEquals(1 * SEGMENT_LENGTH, requestTestObserver.requestIdContext.length);
 
 		// Check R2 value derived by server using its key with received one
 		// The R2 value is composed of S2 || HMAC(K_HMAC, S2).
+		// S2 and HMAC are each HALF_NONCE_LENGTH bytes, so R2 = SEGMENT_LENGTH bytes.
 		OSCoreCtx serverCtx = dbServer.getContext(sid);
 		byte[] srvContextRederivationKey = serverCtx.getContextRederivationKey();
-		byte[] contextS2 = Arrays.copyOfRange(currCtx.getIdContext(), 0, SEGMENT_LENGTH);
-		byte[] hmacOutput = OSCoreCtx.deriveKey(srvContextRederivationKey, srvContextRederivationKey, SEGMENT_LENGTH,
+		byte[] contextS2 = Arrays.copyOfRange(currCtx.getIdContext(), 0, SEGMENT_LENGTH / 2);
+		byte[] hmacOutput = OSCoreCtx.deriveKey(srvContextRederivationKey, srvContextRederivationKey, SEGMENT_LENGTH / 2,
 				"SHA256", contextS2);
-		byte[] messageHmacValue = Arrays.copyOfRange(currCtx.getIdContext(), SEGMENT_LENGTH, SEGMENT_LENGTH * 2);
+		byte[] messageHmacValue = Arrays.copyOfRange(currCtx.getIdContext(), SEGMENT_LENGTH / 2, SEGMENT_LENGTH);
 
 		// Ensure that the ID Context in the OSCORE option in this response
 		// (response #1) is a CBOR byte string
 		byte[] respOscoreOpt = resp.getOptions().getOscore();
 		byte[] respIdContext = Arrays.copyOfRange(respOscoreOpt, 2, respOscoreOpt.length);
 		byte[] respIdContextDecoded = CBORObject.DecodeFromBytes(respIdContext).GetByteString();
-		// Check its length (R2)
-		assertEquals(2 * SEGMENT_LENGTH, respIdContextDecoded.length);
+		// Check its length (R2 = S2 || HMAC = SEGMENT_LENGTH bytes)
+		assertEquals(SEGMENT_LENGTH, respIdContextDecoded.length);
 
 		// The OSCORE option in the response should include the correct R2 value
 		byte[] contextR2 = Bytes.concatenate(contextS2, hmacOutput);
@@ -292,18 +294,19 @@ public class ContextRederivationTest {
 
 		// Length of Context ID in context (R2 || R3)
 		contextIdLen = currCtx.getIdContext().length;
-		assertEquals(3 * SEGMENT_LENGTH, contextIdLen);
+		assertEquals(2 * SEGMENT_LENGTH, contextIdLen);
 		// Check length of Context ID in the request (R2 || R3)
-		assertEquals(3 * SEGMENT_LENGTH, requestTestObserver.requestIdContext.length);
+		assertEquals(2 * SEGMENT_LENGTH, requestTestObserver.requestIdContext.length);
 
 		// Check R2 value derived by server using its key with received one
 		// The R2 value is composed of S2 || HMAC(K_HMAC, S2).
+		// S2 and HMAC are each HALF_NONCE_LENGTH bytes, so R2 = SEGMENT_LENGTH bytes.
 		serverCtx = dbServer.getContext(sid);
 		srvContextRederivationKey = serverCtx.getContextRederivationKey();
-		contextS2 = Arrays.copyOfRange(currCtx.getIdContext(), 0, SEGMENT_LENGTH);
-		hmacOutput = OSCoreCtx.deriveKey(srvContextRederivationKey, srvContextRederivationKey, SEGMENT_LENGTH, "SHA256",
-				contextS2);
-		messageHmacValue = Arrays.copyOfRange(currCtx.getIdContext(), SEGMENT_LENGTH, SEGMENT_LENGTH * 2);
+		contextS2 = Arrays.copyOfRange(currCtx.getIdContext(), 0, SEGMENT_LENGTH / 2);
+		hmacOutput = OSCoreCtx.deriveKey(srvContextRederivationKey, srvContextRederivationKey, SEGMENT_LENGTH / 2,
+				"SHA256", contextS2);
+		messageHmacValue = Arrays.copyOfRange(currCtx.getIdContext(), SEGMENT_LENGTH / 2, SEGMENT_LENGTH);
 		assertArrayEquals(hmacOutput, messageHmacValue);
 
 		// Empty OSCORE option in response

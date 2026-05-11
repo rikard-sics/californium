@@ -204,11 +204,11 @@ public abstract class Encryptor {
 			optionEncoder.setNonce(ctx.getKudosN1());
 		}
 
-		// Handle client side operations for KUDOS (sending of Request #2) by
-		// setting the nonce N1 and N2 in the request (reverse flow)
+		// Handle client side operations for KUDOS (sending of convergent Request)
+		// by setting own nonce N2 and the convergent flag z=1 (reverse flow)
 		if (ctx.getContextRederivationPhase() == ContextRederivation.PHASE.KUDOS_CLIENT_PHASE3) {
-			optionEncoder.setNonce(ctx.getKudosN1());
-			optionEncoder.setOldNonce(ctx.getKudosN2());
+			optionEncoder.setNonce(ctx.getKudosN2());
+			optionEncoder.setZ(1);
 			ctx.setContextRederivationPhase(ContextRederivation.PHASE.INACTIVE);
 		}
 
@@ -234,9 +234,10 @@ public abstract class Encryptor {
 			optionEncoder.setPartialIV(ctx.getSenderSeq());
 		}
 
-		// KUDOS: Place Nonce N2 in the response
+		// KUDOS: convergent response (set nonce N2 and convergent flag z=1)
 		if (ctx.getContextRederivationPhase() == ContextRederivation.PHASE.KUDOS_SERVER_PHASE3) {
 			optionEncoder.setNonce(ctx.getKudosN2());
+			optionEncoder.setZ(1);
 			ctx.setContextRederivationPhase(ContextRederivation.PHASE.INACTIVE);
 		}
 

@@ -77,7 +77,7 @@ public class KudosRederivation {
 
 		printStateLoggingKudos(ctx);
 
-		// Generate a random N1)
+		// Generate a random N1
 		byte[] n1 = Bytes.createBytes(random, NONCE_LENGTH);
 
 		if (EXTRA_LOGGING) {
@@ -85,12 +85,12 @@ public class KudosRederivation {
 			System.out.println("[KUDOS] N1 value: " + Utils.toHexString(n1));
 		}
 
-		// Create new context with the generated Nonce N1
+		// Build CTX_TEMP from x||N1
 		byte x = (byte) (NONCE_LENGTH - 1);
-		byte[] xArray = new byte[] { x };
+		byte[] input1 = buildInput(x, n1);
 
 		// Build new OSCORE Context
-		OSCoreCtx newCtx = updateCtx(xArray, n1, ctx);
+		OSCoreCtx newCtx = updateCtx(input1, new byte[0], ctx);
 
 		// Save the generated N1 value in the new context
 		newCtx.setKudosN1(n1);
@@ -143,8 +143,9 @@ public class KudosRederivation {
 		if (ctx.getContextRederivationPhase() == PHASE.KUDOS_SERVER_PHASE1) {
 			printStateLoggingKudos(ctx);
 
-			// Build new OSCORE Context
-			OSCoreCtx ctxOut = updateCtx(new byte[] { ctx.getKudosX1() }, ctx.getKudosN1(), ctx);
+			// Build CTX_TEMP from client's x1||N1
+			byte[] input1 = buildInput(ctx.getKudosX1(), ctx.getKudosN1());
+			OSCoreCtx ctxOut = updateCtx(input1, new byte[0], ctx);
 
 			ctxOut.setContextRederivationPhase(PHASE.KUDOS_SERVER_PHASE2);
 			ctxOut.setKudosN1(ctx.getKudosN1());
@@ -172,10 +173,11 @@ public class KudosRederivation {
 		}
 
 		// Handle KUDOS context rederivation (server-side reception of
-		// Request #2) in reverse flow
+		// convergent request in reverse flow)
 		if (ctx.getContextRederivationPhase() == PHASE.KUDOS_SERVER_PHASE3) {
 			printStateLoggingKudos(ctx);
 
+			// X1/N1 = server's divergent nonce; X2/N2 = client's convergent nonce
 			byte[] n1 = ctx.getKudosN1();
 			byte x1 = ctx.getKudosX1();
 			byte[] n2 = ctx.getKudosN2();
@@ -189,17 +191,17 @@ public class KudosRederivation {
 				System.out.println("[KUDOS] X2 value: " + x2);
 			}
 
-			byte[] xInput = comb(x1, x2);
-			byte[] nInput = comb(n1, n2);
+			byte[] input1 = buildInput(x1, n1);
+			byte[] input2 = buildInput(x2, n2);
 
 			if (EXTRA_LOGGING) {
-				System.out.println("[KUDOS] X input to updateCtx(): " + Utils.toHexString(xInput));
-				System.out.println("[KUDOS] N input to updateCtx(): " + Utils.toHexString(nInput));
+				System.out.println("[KUDOS] input1 to updateCtx(): " + Utils.toHexString(input1));
+				System.out.println("[KUDOS] input2 to updateCtx(): " + Utils.toHexString(input2));
 			}
 
-			// Generate new OSCORE Context
+			// Generate new OSCORE Context from both parties' contributions
 			OSCoreCtx ctxOld = ctx.getKudosCtxOld();
-			OSCoreCtx newCtx = updateCtx(xInput, nInput, ctxOld);
+			OSCoreCtx newCtx = updateCtx(input1, input2, ctxOld);
 
 			// Save the generated N2 value in the new context
 			newCtx.setKudosN1(n1);
@@ -246,29 +248,28 @@ public class KudosRederivation {
 			// Generate a random N2
 			byte[] n2 = Bytes.createBytes(random, NONCE_LENGTH);
 
+			// x2 is the x byte as transmitted on the wire, z=1 included
+			byte x2 = (byte) ((NONCE_LENGTH - 1) | 0x40);
+
 			if (EXTRA_LOGGING) {
 				System.out.println("[KUDOS] context re-derivation phase: " + ctx.getContextRederivationPhase());
-				System.out.println("[KUDOS] N1 value: " + Utils.toHexString(n1));
-				System.out.println("[KUDOS] X1 value: " + x1);
-				System.out.println("[KUDOS] N2 value: " + Utils.toHexString(n2));
+				System.out.println("[KUDOS] N1 value (server's): " + Utils.toHexString(n1));
+				System.out.println("[KUDOS] X1 value (server's): " + x1);
+				System.out.println("[KUDOS] N2 value (client's): " + Utils.toHexString(n2));
+				System.out.println("[KUDOS] X2 value (client's): " + x2);
 			}
 
-			// Create new context with the generated Nonce N2 and the received
-			// N1
-			byte x2 = (byte) ((NONCE_LENGTH - 1) | 0b01000000);
-
-			byte[] xInput = comb(x1, x2);
-			byte[] nInput = comb(n1, n2);
+			byte[] input1 = buildInput(x1, n1);
+			byte[] input2 = buildInput(x2, n2);
 
 			if (EXTRA_LOGGING) {
-				System.out.println("[KUDOS] X2 value: " + x2);
-				System.out.println("[KUDOS] X input to updateCtx(): " + Utils.toHexString(xInput));
-				System.out.println("[KUDOS] N input to updateCtx(): " + Utils.toHexString(nInput));
+				System.out.println("[KUDOS] input1 to updateCtx(): " + Utils.toHexString(input1));
+				System.out.println("[KUDOS] input2 to updateCtx(): " + Utils.toHexString(input2));
 			}
 
-			// Generate new OSCORE Context
+			// Generate new OSCORE Context from both parties' contributions
 			OSCoreCtx ctxOld = ctx.getKudosCtxOld();
-			OSCoreCtx newCtx = updateCtx(xInput, nInput, ctxOld);
+			OSCoreCtx newCtx = updateCtx(input1, input2, ctxOld);
 
 			// Save the generated N2 value in the new context
 			newCtx.setKudosN1(n1);
@@ -307,12 +308,13 @@ public class KudosRederivation {
 			return ctx;
 		}
 
-		// Handle reverse flow, client reception of Response #1 (reverse flow)
+		// Handle reverse flow: client received server's divergent response
 		if (ctx.getContextRederivationPhase() == ContextRederivation.PHASE.KUDOS_CLIENT_PHASE1) {
 			printStateLoggingKudos(ctx);
 
-			// Build new OSCORE Context
-			OSCoreCtx ctxOut = updateCtx(new byte[] { ctx.getKudosX1() }, ctx.getKudosN1(), ctx);
+			// Build CTX_TEMP from server's x1||N1
+			byte[] input1 = buildInput(ctx.getKudosX1(), ctx.getKudosN1());
+			OSCoreCtx ctxOut = updateCtx(input1, new byte[0], ctx);
 
 			ctxOut.setContextRederivationPhase(PHASE.KUDOS_CLIENT_PHASE2);
 			ctxOut.setKudosN1(ctx.getKudosN1());
@@ -328,10 +330,11 @@ public class KudosRederivation {
 			return ctxOut;
 		}
 
-		// Handle client phase 2 operations
+		// Handle forward flow: client received server's convergent response
 		if (ctx.getContextRederivationPhase() == ContextRederivation.PHASE.KUDOS_CLIENT_PHASE2) {
 			printStateLoggingKudos(ctx);
 
+			// X1/N1 = client's divergent nonce; X2/N2 = server's convergent nonce
 			byte[] n1 = ctx.getKudosN1();
 			byte x1 = ctx.getKudosX1();
 			byte[] n2 = ctx.getKudosN2();
@@ -339,22 +342,23 @@ public class KudosRederivation {
 
 			if (EXTRA_LOGGING) {
 				System.out.println("[KUDOS] context re-derivation phase: " + ctx.getContextRederivationPhase());
-				System.out.println("[KUDOS] N1 value: " + Utils.toHexString(n1));
-				System.out.println("[KUDOS] X1 value: " + x1);
-				System.out.println("[KUDOS] N2 value: " + Utils.toHexString(n2));
+				System.out.println("[KUDOS] N1 value (client's): " + Utils.toHexString(n1));
+				System.out.println("[KUDOS] X1 value (client's): " + x1);
+				System.out.println("[KUDOS] N2 value (server's): " + Utils.toHexString(n2));
+				System.out.println("[KUDOS] X2 value (server's): " + x2);
 			}
 
-			byte[] xInput = comb(x1, x2);
-			byte[] nInput = comb(n1, n2);
+			byte[] input1 = buildInput(x1, n1);
+			byte[] input2 = buildInput(x2, n2);
 
 			if (EXTRA_LOGGING) {
-				System.out.println("[KUDOS] X input to updateCtx(): " + Utils.toHexString(xInput));
-				System.out.println("[KUDOS] N input to updateCtx(): " + Utils.toHexString(nInput));
+				System.out.println("[KUDOS] input1 to updateCtx(): " + Utils.toHexString(input1));
+				System.out.println("[KUDOS] input2 to updateCtx(): " + Utils.toHexString(input2));
 			}
 
-			// Generate new OSCORE Context
+			// Generate new OSCORE Context from both parties' contributions
 			OSCoreCtx ctxOld = ctx.getKudosCtxOld();
-			OSCoreCtx newCtx = updateCtx(xInput, nInput, ctxOld);
+			OSCoreCtx newCtx = updateCtx(input1, input2, ctxOld);
 
 			// Save the generated N2 value in the new context
 			newCtx.setKudosN1(n1);
@@ -393,25 +397,22 @@ public class KudosRederivation {
 			throw new IllegalStateException("[KUDOS] Context re-derivation is not enabled for this context.");
 		}
 
-		// Handle reverse flow (server sending of Response #1)
+		// Handle reverse flow: server sends divergent response with own N1 (z=0)
 		if (ctx.getContextRederivationPhase() == ContextRederivation.PHASE.KUDOS_SERVER_PHASE1) {
 
 			printStateLoggingKudos(ctx);
 
-			// Generate a random N1)
 			byte[] n1 = Bytes.createBytes(random, NONCE_LENGTH);
+			byte x = (byte) (NONCE_LENGTH - 1);
 
 			if (EXTRA_LOGGING) {
 				System.out.println("[KUDOS] context re-derivation phase: " + ctx.getContextRederivationPhase());
-				System.out.println("[KUDOS] N1 value: " + Utils.toHexString(n1));
+				System.out.println("[KUDOS] N1 value (server's): " + Utils.toHexString(n1));
 			}
 
-			// Create new context with the generated Nonce N1
-			byte x = (byte) (NONCE_LENGTH - 1);
-			byte[] xArray = new byte[] { x };
-
-			// Build new OSCORE Context
-			OSCoreCtx newCtx = updateCtx(xArray, n1, ctx);
+			// Build CTX_TEMP from server's x||N1
+			byte[] input1 = buildInput(x, n1);
+			OSCoreCtx newCtx = updateCtx(input1, new byte[0], ctx);
 
 			// Save the generated N1 value in the new context
 			newCtx.setKudosN1(n1);
@@ -424,40 +425,40 @@ public class KudosRederivation {
 			return newCtx;
 		}
 
-		// Check that the server is in the expected phase (for clients)
+		// Only process outgoing responses in PHASE2 (forward flow)
 		if (ctx.getContextRederivationPhase() != ContextRederivation.PHASE.KUDOS_SERVER_PHASE2) {
 			return ctx;
 		}
 
 		printStateLoggingKudos(ctx);
 
+		// X1/N1 = client's divergent nonce (stored when server received Request #1)
 		byte[] n1 = ctx.getKudosN1();
 		byte x1 = ctx.getKudosX1();
 
-		// Generate a random N2
+		// x2 is the x byte as transmitted on the wire, z=1 included
 		byte[] n2 = Bytes.createBytes(random, NONCE_LENGTH);
+		byte x2 = (byte) ((NONCE_LENGTH - 1) | 0x40);
 
 		if (EXTRA_LOGGING) {
 			System.out.println("[KUDOS] context re-derivation phase: " + ctx.getContextRederivationPhase());
-			System.out.println("[KUDOS] N1 value: " + Utils.toHexString(n1));
-			System.out.println("[KUDOS] X1 value: " + x1);
-			System.out.println("[KUDOS] N2 value: " + Utils.toHexString(n2));
+			System.out.println("[KUDOS] N1 value (client's): " + Utils.toHexString(n1));
+			System.out.println("[KUDOS] X1 value (client's): " + x1);
+			System.out.println("[KUDOS] N2 value (server's): " + Utils.toHexString(n2));
+			System.out.println("[KUDOS] X2 value (server's): " + x2);
 		}
 
-		// Create new context with the generated Nonce N2 and the received N1
-		byte x2 = (byte) (NONCE_LENGTH - 1);
-
-		byte[] xInput = comb(x1, x2);
-		byte[] nInput = comb(n1, n2);
+		byte[] input1 = buildInput(x1, n1);
+		byte[] input2 = buildInput(x2, n2);
 
 		if (EXTRA_LOGGING) {
-			System.out.println("[KUDOS] X input to updateCtx(): " + Utils.toHexString(xInput));
-			System.out.println("[KUDOS] N input to updateCtx(): " + Utils.toHexString(nInput));
+			System.out.println("[KUDOS] input1 to updateCtx(): " + Utils.toHexString(input1));
+			System.out.println("[KUDOS] input2 to updateCtx(): " + Utils.toHexString(input2));
 		}
 
-		// Generate new OSCORE Context
+		// Generate new OSCORE Context from both parties' contributions
 		OSCoreCtx ctxOld = ctx.getKudosCtxOld();
-		OSCoreCtx newCtx = updateCtx(xInput, nInput, ctxOld);
+		OSCoreCtx newCtx = updateCtx(input1, input2, ctxOld);
 
 		// Save the generated N2 value in the new context
 		newCtx.setKudosN1(n1);
@@ -477,22 +478,32 @@ public class KudosRederivation {
 	}
 
 	/**
-	 * Implements the KUDOS updateCtx function. See
-	 * https://datatracker.ietf.org/doc/html/draft-ietf-core-oscore-key-update-07#figure-2
-	 * 
-	 * @param x input X parameter
-	 * @param n input N parameter
-	 * @param ctxIn input context
-	 * 
+	 * Implements the KUDOS updateCtx function.
+	 * See https://datatracker.ietf.org/doc/html/draft-ietf-core-oscore-key-update-13
+	 *
+	 * input1 and input2 are built from the 'x' and 'nonce' fields of the OSCORE
+	 * option (i.e. x_byte || nonce_bytes). For divergent messages pass an empty
+	 * array for input2.
+	 *
+	 * @param input1 first input (sender's x||nonce, or responder's for convergent)
+	 * @param input2 second input (other party's x||nonce, or empty for divergent)
+	 * @param ctxIn  input context
 	 * @return new OSCORE context
 	 */
-	static OSCoreCtx updateCtx(byte[] x, byte[] n, OSCoreCtx ctxIn) {
+	static OSCoreCtx updateCtx(byte[] input1, byte[] input2, OSCoreCtx ctxIn) {
 
-		byte[] X_cbor = CBORObject.FromObject(x).EncodeToBytes();
-		byte[] N_cbor = CBORObject.FromObject(n).EncodeToBytes();
-		byte[] X_N = concatenateArrays(X_cbor, N_cbor);
+		byte[] input1_cbor = CBORObject.FromObject(input1).EncodeToBytes();
+		byte[] input2_cbor = CBORObject.FromObject(input2).EncodeToBytes();
 
-		byte[] masterSaltNew = n;
+		// Concatenate CBOR-encoded inputs in lexicographic order
+		byte[] X_N;
+		if (isLexFirst(input1_cbor, input2_cbor)) {
+			X_N = concatenateArrays(input1_cbor, input2_cbor);
+		} else {
+			X_N = concatenateArrays(input2_cbor, input1_cbor);
+		}
+
+		byte[] masterSaltNew = X_N;
 
 		// Generate new Master Secret
 		int oscoreKeyLength = ctxIn.getMasterSecret().length;
@@ -512,7 +523,9 @@ public class KudosRederivation {
 			expandLabel.write(X_N);
 
 			byte[] info = expandLabel.toByteArray();
-			System.out.println("[KUDOS] ExpandLabel: " + Utils.toHexString(info));
+			if (EXTRA_LOGGING) {
+				System.out.println("[KUDOS] ExpandLabel: " + Utils.toHexString(info));
+			}
 
 			masterSecretNew = hkdfExpand(ctxIn.getMasterSecret(), info, oscoreKeyLength);
 
@@ -543,6 +556,27 @@ public class KudosRederivation {
 	}
 
 	/**
+	 * Builds the input to updateCtx() from an x byte and nonce (x_byte || nonce).
+	 */
+	private static byte[] buildInput(byte x, byte[] nonce) {
+		return concatenateArrays(new byte[] { x }, nonce);
+	}
+
+	/**
+	 * Returns true if a should come before b in lexicographic order.
+	 */
+	private static boolean isLexFirst(byte[] a, byte[] b) {
+		int minLen = Math.min(a.length, b.length);
+		for (int i = 0; i < minLen; i++) {
+			int ai = a[i] & 0xFF;
+			int bi = b[i] & 0xFF;
+			if (ai < bi) return true;
+			if (ai > bi) return false;
+		}
+		return a.length <= b.length;
+	}
+
+	/**
 	 * Re-derive a context with the same input parameters except Master Secret
 	 * and Master Salt. Also retain the same context re-derivation key.
 	 * 
@@ -565,38 +599,6 @@ public class KudosRederivation {
 	}
 
 	/**
-	 * Implements the comb function, see
-	 * https://datatracker.ietf.org/doc/html/draft-ietf-core-oscore-key-update-07#section-4.3-20
-	 * 
-	 * @param a the first byte array
-	 * @param b the second byte array
-	 * @return concatenated result after CBOR bstr wrapping
-	 */
-	static byte[] comb(byte[] a, byte[] b) {
-
-		CBORObject aCbor = CBORObject.FromObject(a);
-		CBORObject bCbor = CBORObject.FromObject(b);
-
-		byte[] aCborBytes = aCbor.EncodeToBytes();
-		byte[] bCborBytes = bCbor.EncodeToBytes();
-
-		byte[] out = concatenateArrays(aCborBytes, bCborBytes);
-
-		return out;
-	}
-
-	/**
-	 * Comb method with non-array inputs
-	 * 
-	 * @param x1 byte one
-	 * @param x2 byte two
-	 * @return concatenated result
-	 */
-	private static byte[] comb(byte x1, byte x2) {
-		return comb(new byte[] { x1 }, new byte[] { x2 });
-	}
-
-	/**
 	 * Method for concatenating byte arrays
 	 * 
 	 * @param first the first array
@@ -614,7 +616,7 @@ public class KudosRederivation {
 			e.printStackTrace();
 		}
 
-		byte res[] = outputStream.toByteArray();
+		byte[] res = outputStream.toByteArray();
 		return res;
 	}
 

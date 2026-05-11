@@ -58,11 +58,6 @@ public class OscoreOptionDecoder {
 	private int b;
 	private int p;
 
-	private int y;
-	private int w;
-	private byte[] oldNonce;
-	private int oldNonceLength;
-
 	/**
 	 * Initialize the OSCORE option with a certain array of bytes and decode
 	 * them into the parameters of the option.
@@ -127,11 +122,6 @@ public class OscoreOptionDecoder {
 		int p = 0;
 		int nonceLength = 0;
 
-		int y = 0;
-		int w = 0;
-		int oldNonceLength = 0;
-		byte[] oldNonce = null;
-
 		if (extension != 0) {
 			byte flagByte2 = total[1];
 			d = (flagByte2 & 0x01);
@@ -178,15 +168,6 @@ public class OscoreOptionDecoder {
 				nonce = Arrays.copyOfRange(total, index, index + nonceLength);
 
 				index += nonceLength;
-
-				// Parsing y byte and KUDOS old_nonce
-				if (z != 0) {
-					y = total[index++];
-					w = (y & 0x0F);
-					oldNonceLength = w + 1;
-					oldNonce = Arrays.copyOfRange(total, index, index + oldNonceLength);
-					index += oldNonceLength;
-				}
 			}
 		} catch (Exception e) {
 			LOGGER.error("Failed to parse KUDOS nonce in OSCORE option.");
@@ -221,10 +202,6 @@ public class OscoreOptionDecoder {
 		this.z = z;
 		this.b = b;
 		this.p = p;
-		this.y = y;
-		this.w = w;
-		this.oldNonce = oldNonce;
-		this.oldNonceLength = oldNonceLength;
 		this.partialIV = partialIV;
 		this.kid = kid;
 		this.idContext = kidContext;
@@ -362,48 +339,12 @@ public class OscoreOptionDecoder {
 	}
 
 	/**
-	 * Return z bit (presence of field 'y' and field 'old_nonce')
-	 * 
+	 * Return z bit
+	 *
 	 * @return the z bit value
 	 */
 	public int getZ() {
 		return z;
-	}
-
-	/**
-	 * Return the y byte (contains the length of old_nonce)
-	 * 
-	 * @return the y value
-	 */
-	public byte getY() {
-		return (byte) y;
-	}
-
-	/**
-	 * Return the w value (the length of the old_nonce - 1)
-	 * 
-	 * @return the w value
-	 */
-	public int getW() {
-		return w;
-	}
-
-	/**
-	 * Return the value of oldNonce
-	 * 
-	 * @return the oldNonce value
-	 */
-	public byte[] getOldNonce() {
-		return oldNonce;
-	}
-
-	/**
-	 * Return the length of old_nonce (w + 1)
-	 * 
-	 * @return the oldNonceLength value
-	 */
-	public int getOldNonceLength() {
-		return oldNonceLength;
 	}
 
 }

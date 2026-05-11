@@ -36,7 +36,7 @@ import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.californium.core.network.EndpointManager;
-import org.eclipse.californium.core.server.resources.CoapExchange;
+import org.eclipse.californium.core.CoapExchange;
 import org.eclipse.californium.cose.AlgorithmID;
 import org.eclipse.californium.cose.CoseException;
 import org.eclipse.californium.elements.exception.ConnectorException;
@@ -131,11 +131,6 @@ public class KudosTest {
 		int correctB = 0;
 		int correctZ = 0;
 
-		int correctY = 0;
-		int correctW = 0;
-		byte[] correctOldNonce = null;
-		int correctOldNonceLength = 0;
-
 		OscoreOptionDecoder decoder = new OscoreOptionDecoder(oscoreOption);
 		byte[] idContext = decoder.getIdContext();
 		byte[] kid = decoder.getKid();
@@ -153,11 +148,6 @@ public class KudosTest {
 		int p = decoder.getP();
 		int b = decoder.getB();
 		int z = decoder.getZ();
-
-		int y = decoder.getY();
-		int w = decoder.getW();
-		byte[] oldNonce = decoder.getOldNonce();
-		int oldNonceLength = decoder.getOldNonceLength();
 
 		assertArrayEquals("Decoded ID Context incorrect", correctIdContext, idContext);
 		assertArrayEquals("Decoded KID incorrect", correctKid, kid);
@@ -178,21 +168,17 @@ public class KudosTest {
 		assertEquals("Decoded P value incorrect", correctP, p);
 		assertEquals("Decoded B value incorrect", correctB, b);
 		assertEquals("Decoded Z value incorrect", correctZ, z);
-
-		assertEquals("Decoded Y value incorrect", correctY, y);
-		assertEquals("Decoded W value incorrect", correctW, w);
-		assertEquals("Decoded old_nonce value incorrect", correctOldNonce, oldNonce);
-		assertEquals("Decoded old_nonce length incorrect", correctOldNonceLength, oldNonceLength);
 	}
 
 	/**
 	 * Tests the decoding of the OSCORE option for the parts relevant to KUDOS.
-	 * With old_nonce.
+	 * With z=1 (convergent message flag).
 	 */
 	@Test
 	public void testKudosOscoreOptionDecoding2() throws CoapOSException {
 
-		byte[] oscoreOption = StringUtil.hex2ByteArray("9A0115B3030A0B0C47000102030405060707AABBCCDDEEFF1122AA");
+		// Same as test 1 but with x=0x47 (z=1 convergent flag set)
+		byte[] oscoreOption = StringUtil.hex2ByteArray("9A0115B3030A0B0C470001020304050607AA");
 		byte[] correctKid = new byte[] { (byte) 0xAA };
 		int correctSenderSequenceNumber = 5555;
 		byte[] correctIdContext = new byte[] { (byte) 0x0A, 0x0B, 0x0C };
@@ -202,18 +188,12 @@ public class KudosTest {
 		int correctN = 2;
 
 		int correctM = correctNonce.length - 1;
-		int correctX = 0b01000000 | 7;
+		int correctX = 0x40 | 7; // z=1
 		int correctD = 1;
 
 		int correctP = 0;
 		int correctB = 0;
 		int correctZ = 1;
-
-		int correctY = 7;
-		byte[] correctOldNonce = new byte[] { (byte) 0xAA, (byte) 0xBB, (byte) 0xCC, (byte) 0xDD, (byte) 0xEE,
-				(byte) 0xFF, 0x11, 0x22 };
-		int correctW = correctOldNonce.length - 1;
-		int correctOldNonceLength = 8;
 
 		OscoreOptionDecoder decoder = new OscoreOptionDecoder(oscoreOption);
 		byte[] idContext = decoder.getIdContext();
@@ -232,11 +212,6 @@ public class KudosTest {
 		int p = decoder.getP();
 		int b = decoder.getB();
 		int z = decoder.getZ();
-
-		int y = decoder.getY();
-		int w = decoder.getW();
-		byte[] oldNonce = decoder.getOldNonce();
-		int oldNonceLength = decoder.getOldNonceLength();
 
 		assertArrayEquals("Decoded ID Context incorrect", correctIdContext, idContext);
 		assertArrayEquals("Decoded KID incorrect", correctKid, kid);
@@ -257,11 +232,6 @@ public class KudosTest {
 		assertEquals("Decoded P value incorrect", correctP, p);
 		assertEquals("Decoded B value incorrect", correctB, b);
 		assertEquals("Decoded Z value incorrect", correctZ, z);
-
-		assertEquals("Decoded Y value incorrect", correctY, y);
-		assertEquals("Decoded W value incorrect", correctW, w);
-		assertArrayEquals("Decoded old_nonce value incorrect", correctOldNonce, oldNonce);
-		assertEquals("Decoded old_nonce length incorrect", correctOldNonceLength, oldNonceLength);
 	}
 
 	/**
@@ -290,52 +260,27 @@ public class KudosTest {
 
 	/**
 	 * Tests the encoding of the OSCORE option for the parts relevant to KUDOS.
-	 * Also uses old_nonce
+	 * With z=1 (convergent message flag).
 	 */
 	@Test
 	public void testKudosOscoreOptionEncoding2() throws CoapOSException {
 
-		// Test encoding
-		byte[] correctOption = StringUtil.hex2ByteArray("9A0115B3030A0B0C47000102030405060707AABBCCDDEEFF1122AA");
+		// Same as test 1 but with z=1 set
+		byte[] correctOption = StringUtil.hex2ByteArray("9A0115B3030A0B0C470001020304050607AA");
 		byte[] kid = new byte[] { (byte) 0xAA };
 		int senderSequenceNumber = 5555;
 		byte[] idContext = new byte[] { (byte) 0x0A, 0x0B, 0x0C };
 		byte[] nonce = new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
-		byte[] oldNonce = new byte[] { (byte) 0xAA, (byte) 0xBB, (byte) 0xCC, (byte) 0xDD, (byte) 0xEE, (byte) 0xFF,
-				0x11, 0x22 };
 
 		OscoreOptionEncoder encoder = new OscoreOptionEncoder();
 		encoder.setIdContext(idContext);
 		encoder.setKid(kid);
 		encoder.setPartialIV(senderSequenceNumber);
 		encoder.setNonce(nonce);
-		encoder.setOldNonce(oldNonce);
+		encoder.setZ(1);
 		byte[] encodedOption = encoder.getBytes();
 
 		assertArrayEquals("Encoded option incorrect", correctOption, encodedOption);
-	}
-
-	/**
-	 * Test the KUDOS comb function
-	 * 
-	 */
-	@Test
-	public void testKudosComb() throws CoapOSException {
-
-		byte[] X1 = StringUtil.hex2ByteArray("07");
-		byte[] X2 = StringUtil.hex2ByteArray("07");
-		byte[] N1 = StringUtil.hex2ByteArray("018a278f7faab55a");
-		byte[] N2 = StringUtil.hex2ByteArray("25a8991cd700ac01");
-
-		byte[] correctX = StringUtil.hex2ByteArray("41074107");
-		byte[] correctN = StringUtil.hex2ByteArray("48018a278f7faab55a4825a8991cd700ac01");
-
-		byte[] X = KudosRederivation.comb(X1, X2);
-		byte[] N = KudosRederivation.comb(N1, N2);
-
-		assertArrayEquals("X value incorrect", correctX, X);
-		assertArrayEquals("N value incorrect", correctN, N);
-
 	}
 
 	/**
@@ -389,9 +334,9 @@ public class KudosTest {
 		assertEquals(ContextRederivation.PHASE.INACTIVE, currCtx.getContextRederivationPhase());
 		assertFalse(currCtx.getIncludeContextId());
 
-		// Check contents of OSCORE option
+		// Check contents of OSCORE option (convergent response has z=1)
 		OscoreOptionDecoder decoder = new OscoreOptionDecoder(resp.getOptions().getOscore());
-		assertEquals("Invalid Z bit value", 0, decoder.getZ());
+		assertEquals("Invalid Z bit value", 1, decoder.getZ());
 		assertEquals("Invalid B bit value", 0, decoder.getB());
 		assertEquals("Invalid P bit value", 0, decoder.getP());
 		byte[] nonce = decoder.getNonce();

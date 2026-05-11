@@ -88,10 +88,10 @@ public class ResponseDecryptor extends Decryptor {
 			contextID = kidContext.GetByteString();
 		}
 
-		// Check if KUDOS context re-derivation is ongoing in forward flow and
-		// mark in context
+		// Check if KUDOS context re-derivation is ongoing in forward flow:
+		// convergent response (z=1) received while in KUDOS_CLIENT_PHASE1
 		OscoreOptionDecoder decoder = new OscoreOptionDecoder(response.getOptions().getOscore());
-		if (decoder.getD() != 0 && ctx.getContextRederivationPhase() == ContextRederivation.PHASE.KUDOS_CLIENT_PHASE1) {
+		if (decoder.getZ() != 0 && ctx.getContextRederivationPhase() == ContextRederivation.PHASE.KUDOS_CLIENT_PHASE1) {
 			ctx.setContextRederivationPhase(ContextRederivation.PHASE.KUDOS_CLIENT_PHASE2);
 			ctx.setKudosN2(decoder.getNonce());
 			ctx.setKudosX2(decoder.getX());
@@ -103,9 +103,10 @@ public class ResponseDecryptor extends Decryptor {
 				throw new CoapOSException(ErrorDescriptions.CONTEXT_REGENERATION_FAILED, ResponseCode.BAD_REQUEST);
 			}
 		}
-		// Check if KUDOS context re-derivation is ongoing in reverse flow for
-		// client
-		else if (decoder.getD() != 0 && ctx.getContextRederivationPhase() == ContextRederivation.PHASE.INACTIVE) {
+		// Check if KUDOS context re-derivation is ongoing in reverse flow:
+		// divergent response (d=1, z=0) received while in INACTIVE state
+		else if (decoder.getD() != 0 && decoder.getZ() == 0
+				&& ctx.getContextRederivationPhase() == ContextRederivation.PHASE.INACTIVE) {
 			try {
 				ctx.setContextRederivationPhase(ContextRederivation.PHASE.KUDOS_CLIENT_PHASE1);
 				ctx.setKudosN1(decoder.getNonce());

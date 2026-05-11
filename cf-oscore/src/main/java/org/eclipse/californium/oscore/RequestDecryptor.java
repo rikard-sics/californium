@@ -88,10 +88,10 @@ public class RequestDecryptor extends Decryptor {
 			contextID = kidContext.GetByteString();
 		}
 
-		// Check if KUDOS context re-derivation is ongoing in forward flow and
-		// mark in context if so
+		// Check if KUDOS context re-derivation is ongoing in forward flow:
+		// divergent request (d=1, z=0) received while in INACTIVE state
 		OscoreOptionDecoder decoder = new OscoreOptionDecoder(request.getOptions().getOscore());
-		if (decoder.getD() != 0 && ctx.getKudosContextRederivationEnabled()
+		if (decoder.getD() != 0 && decoder.getZ() == 0 && ctx.getKudosContextRederivationEnabled()
 				&& ctx.getContextRederivationPhase() == PHASE.INACTIVE) {
 			ctx.setContextRederivationPhase(ContextRederivation.PHASE.KUDOS_SERVER_PHASE1);
 			ctx.setKudosN1(decoder.getNonce());
@@ -103,17 +103,18 @@ public class RequestDecryptor extends Decryptor {
 				throw new CoapOSException(ErrorDescriptions.CONTEXT_REGENERATION_FAILED, ResponseCode.BAD_REQUEST);
 			}
 		}
-		// Check if the server is to initiate KUDOS context re-derivation
+		// Check if the server is to initiate KUDOS (KUDOS_SERVER_INITIATE), or
+		// is waiting for a convergent request (KUDOS_SERVER_PHASE2 and z=1)
 		else if (ctx != null
 				&& (ctx.getContextRederivationPhase() == PHASE.KUDOS_SERVER_INITIATE
-				|| ctx.getContextRederivationPhase() == PHASE.KUDOS_SERVER_PHASE2)
+				|| (ctx.getContextRederivationPhase() == PHASE.KUDOS_SERVER_PHASE2 && decoder.getZ() != 0))
 				&& ctx.getKudosContextRederivationEnabled()) {
 
 			if (ctx.getContextRederivationPhase() == PHASE.KUDOS_SERVER_PHASE2) {
+				// Convergent request: extract client's own nonce (N2, X2);
+				// server's N1 and X1 are already stored in the context
 				ctx.setContextRederivationPhase(PHASE.KUDOS_SERVER_PHASE3);
-				ctx.setKudosN1(decoder.getNonce());
-				ctx.setKudosN2(decoder.getOldNonce());
-				ctx.setKudosX1(decoder.getY());
+				ctx.setKudosN2(decoder.getNonce());
 				ctx.setKudosX2(decoder.getX());
 			}
 			try {

@@ -38,10 +38,10 @@ public class OscoreOptionEncoder {
 	private byte[] kid;
 
 	private byte[] nonce;
-	private byte[] oldNonce;
 
 	private int p;
 	private int b;
+	private int z;
 
 	/**
 	 * Retrieve the encoded bytes of the OSCORE option.
@@ -70,7 +70,6 @@ public class OscoreOptionEncoder {
 		boolean hasPartialIV = this.partialIV != null;
 		boolean hasKid = this.kid != null;
 		boolean hasNonce = this.nonce != null;
-		boolean hasOldNonce = this.oldNonce != null;
 
 		// If the Context ID should be included, set its bit
 		if (hasContextID) {
@@ -84,8 +83,8 @@ public class OscoreOptionEncoder {
 
 		// If the KUDOS nonce should be included, set the extension and d bits
 		if (hasNonce) {
-			firstByte = firstByte | 0x80; // Set the extension bit
-			secondByte = secondByte | 0x01; // Set the d bit
+			firstByte = firstByte | 0x80; // extension bit
+			secondByte = secondByte | 0x01; // d bit
 		}
 
 		// If the Partial IV should be included, encode it
@@ -117,33 +116,18 @@ public class OscoreOptionEncoder {
 			}
 		}
 
-		// Encode the x byte, KUDOS nonce and flags if to be included
+		// Encode the x byte and KUDOS nonce
 		if (hasNonce) {
 			int x = nonce.length - 1;
 
 			// Set flags
+			x |= z << 6;
 			x |= b << 5;
 			x |= p << 4;
-
-			if (hasOldNonce) {
-				x |= 1 << 6; // z bit
-			}
 
 			try {
 				bRes.write(x);
 				bRes.write(this.nonce);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-
-		// Encode the y byte and KUDOS old_nonce
-		if (hasOldNonce) {
-			int y = oldNonce.length - 1;
-
-			try {
-				bRes.write(y);
-				bRes.write(this.oldNonce);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -258,27 +242,27 @@ public class OscoreOptionEncoder {
 	}
 
 	/**
-	 * Set the KUDOS old_nonce
-	 * 
-	 * @param oldNonce the KUDOS old_nonce to set
+	 * Set the z bit
+	 *
+	 * @param z the z bit value
 	 */
-	public void setOldNonce(byte[] oldNonce) {
+	public void setZ(int z) {
 		encoded = false;
-		this.oldNonce = oldNonce;
+		this.z = z;
 	}
 
 	/**
-	 * Retrieve the set KUDOS old_nonce
-	 * 
-	 * @return the KUDOS old_nonce
+	 * Return z bit
+	 *
+	 * @return the z bit value
 	 */
-	public byte[] getOldNonce() {
-		return oldNonce;
+	public int getZ() {
+		return z;
 	}
 
 	/**
 	 * Return p bit (No Forward Secrecy)
-	 * 
+	 *
 	 * @return the p bit value
 	 */
 	public int getP() {
