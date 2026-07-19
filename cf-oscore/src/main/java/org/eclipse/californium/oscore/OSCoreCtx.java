@@ -389,6 +389,14 @@ public class OSCoreCtx {
 			throw new OSException(details);
 		}
 
+		if (EXTRA_LOGGING == true) {
+			System.out.println("===");
+			System.out.println("Common IV: " + Utils.toHexString(common_iv));
+			System.out.println("Sender Key: " + Utils.toHexString(sender_key));
+			System.out.println("Recipient Key: " + Utils.toHexString(recipient_key));
+			System.out.println("===");
+		}
+
 		// Initialize cipher object
 		initializeCipher(common_alg);
 

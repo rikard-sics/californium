@@ -153,9 +153,13 @@ public abstract class Decryptor {
 			}
 
 			System.out.println("Master Secret: " + Utils.toHexString(ctx.getMasterSecret()));
-			System.out.println("Recipient Key: " + Utils.toHexString(key));
-			System.out.println("AAD Array: " + Utils.toHexString(aad));
+			System.out.println("Master Salt: " + Utils.toHexString(ctx.getSalt()));
+			System.out.println("Common IV: " + Utils.toHexString(ctx.getCommonIV()));
+			System.out.println("Sender Key: " + Utils.toHexString(ctx.getSenderKey()));
+			System.out.println("Recipient Key: " + Utils.toHexString(ctx.getRecipientKey()));
 			System.out.println("Nonce: " + Utils.toHexString(nonce));
+			System.out.println("AAD Array: " + Utils.toHexString(aad));
+
 			try {
 				System.out.println("Ciphertext: " + Utils.toHexString(enc.getEncryptedContent()));
 			} catch (CoseException e) {

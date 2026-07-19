@@ -70,7 +70,7 @@ public class ResponseEncryptor extends Encryptor {
 		}
 
 		// Check if the server has KUDOS context re-derivation ongoing in
-		// reverse flow
+		// reverse flow. (TODO: Check dead code?)
 		if (ctx.getContextRederivationPhase() == PHASE.KUDOS_SERVER_PHASE1
 				&& ctx.getKudosContextRederivationEnabled()) {
 			ctx = KudosRederivation.outgoingResponse(db, ctx);

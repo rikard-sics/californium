@@ -125,6 +125,8 @@ public abstract class Encryptor {
 				}
 
 				System.out.println("Master Secret: " + Utils.toHexString(ctx.getMasterSecret()));
+				System.out.println("Master Salt: " + Utils.toHexString(ctx.getSalt()));
+				System.out.println("Common IV: " + Utils.toHexString(ctx.getCommonIV()));
 				System.out.println("Sender Key: " + Utils.toHexString(key));
 				System.out.println("AAD Array: " + Utils.toHexString(aad));
 				System.out.println("Nonce: " + Utils.toHexString(nonce));

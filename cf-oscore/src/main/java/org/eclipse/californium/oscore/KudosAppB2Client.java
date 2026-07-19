@@ -180,7 +180,6 @@ public class KudosAppB2Client {
 			System.out.println("RID: " + Utils.toHexString(rid));
 			System.out.println("SID: " + Utils.toHexString(sid));
 			System.out.println("Common IV: " + Utils.toHexString(ctx.getCommonIV()));
-
 			System.out.println("Sender Key: " + Utils.toHexString(ctx.getSenderKey()));
 			System.out.println("Recipient Key: " + Utils.toHexString(ctx.getRecipientKey()));
 			Encryptor.EXTRA_LOGGING = true;

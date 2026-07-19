@@ -514,12 +514,18 @@ public class KudosRederivation {
 
 			// Build the info (ExpandLabel) structure
 			ByteArrayOutputStream expandLabel = new ByteArrayOutputStream();
+
+			// (Key) length
 			byte[] length = ByteBuffer.allocate(2).putShort((short) oscoreKeyLength).array();
 			expandLabel.write(length);
 
+			// Label
 			byte[] labelBytes = ("oscore " + label).getBytes();
+			expandLabel.write((byte) labelBytes.length); // 1-byte length
 			expandLabel.write(labelBytes);
 
+			// X_N
+			expandLabel.write((byte) X_N.length); // 1-byte length
 			expandLabel.write(X_N);
 
 			byte[] info = expandLabel.toByteArray();
