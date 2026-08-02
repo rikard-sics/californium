@@ -73,7 +73,13 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+		List <CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		boolean advertiseAsInitiator = false;
+		boolean advertiseAsResponder = false;
+		boolean askResponderToAdvertise = false;
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, advertiseAsInitiator,
+				                               advertiseAsResponder, askResponderToAdvertise);
 		
 		int method = 0;
 		
@@ -354,7 +360,13 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+		List <CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		boolean advertiseAsInitiator = false;
+		boolean advertiseAsResponder = false;
+		boolean askResponderToAdvertise = false;
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, advertiseAsInitiator,
+				                               advertiseAsResponder, askResponderToAdvertise);
 		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
@@ -536,7 +548,13 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+		List <CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		boolean advertiseAsInitiator = false;
+		boolean advertiseAsResponder = false;
+		boolean askResponderToAdvertise = false;
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, advertiseAsInitiator,
+				                               advertiseAsResponder, askResponderToAdvertise);
 		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
@@ -561,7 +579,7 @@ public class MessageProcessorTest {
 												keyPairs, idCreds, creds, cipherSuites, peerSupportedCipherSuites,
 												supportedEADs, appProfile, trustModel, db);
 
-		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null, appProfile);
 		sideProcessor.setEdhocSession(session);
 		
 		
@@ -616,10 +634,16 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+		List <CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		boolean advertiseAsInitiator = false;
+		boolean advertiseAsResponder = false;
+		boolean askResponderToAdvertise = false;
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, advertiseAsInitiator,
+				                               advertiseAsResponder, askResponderToAdvertise);
 		
 		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
-		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null, appProfile);
 		
 		// Note: the actual EDHOC message 1 starts with 0x00. The byte 0xf5 (CBOR simple value True) is prepended,
 		//       in order to enable the reading of the message as the first one in a new EDHOC session
@@ -758,7 +782,13 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+		List <CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		boolean advertiseAsInitiator = false;
+		boolean advertiseAsResponder = false;
+		boolean askResponderToAdvertise = false;
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, advertiseAsInitiator,
+				                               advertiseAsResponder, askResponderToAdvertise);
 		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
@@ -784,7 +814,7 @@ public class MessageProcessorTest {
 												idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
 												supportedEADs, appProfile, trustModel, db);
 
-		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null, appProfile);
 		sideProcessor.setEdhocSession(session);
 		
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
@@ -899,7 +929,13 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+		List <CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		boolean advertiseAsInitiator = false;
+		boolean advertiseAsResponder = false;
+		boolean askResponderToAdvertise = false;
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, advertiseAsInitiator,
+				                               advertiseAsResponder, askResponderToAdvertise);
 		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
@@ -942,7 +978,7 @@ public class MessageProcessorTest {
 		CBORObject idCred = Util.buildIdCredX5t(serializedCert);
 		ownIdCreds.add(idCred);
 		
-		SideProcessor sideProcessor = new SideProcessor(trustModel, peerPublicKeys, peerCredentials, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, peerPublicKeys, peerCredentials, null, appProfile);
 		sideProcessor.setEdhocSession(session);
 		
 		// Set the ephemeral keys of the initiator, i.e., X and G_X
@@ -1074,7 +1110,13 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+		List <CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		boolean advertiseAsInitiator = false;
+		boolean advertiseAsResponder = false;
+		boolean askResponderToAdvertise = false;
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, advertiseAsInitiator,
+				                               advertiseAsResponder, askResponderToAdvertise);
 		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
@@ -1100,7 +1142,7 @@ public class MessageProcessorTest {
 												idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
 												supportedEADs, appProfile, trustModel, db);
 
-		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null, appProfile);
 		sideProcessor.setEdhocSession(session);
 		
 		// Set the ephemeral keys, i.e., X and G_X for the initiator, as well as G_Y for the Responder
@@ -1278,7 +1320,13 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+		List <CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		boolean advertiseAsInitiator = false;
+		boolean advertiseAsResponder = false;
+		boolean askResponderToAdvertise = false;
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, advertiseAsInitiator,
+				                               advertiseAsResponder, askResponderToAdvertise);
 		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
@@ -1324,7 +1372,7 @@ public class MessageProcessorTest {
 		CBORObject idCred = Util.buildIdCredX5t(serializedCert);
 		ownIdCreds.add(idCred);
 		
-		SideProcessor sideProcessor = new SideProcessor(trustModel, peerPublicKeys, peerCredentials, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, peerPublicKeys, peerCredentials, null, appProfile);
 		sideProcessor.setEdhocSession(session);
 		
 		// Set the ephemeral keys of the responder, i.e., Y and G_Y
@@ -1454,7 +1502,13 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+		List <CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		boolean advertiseAsInitiator = false;
+		boolean advertiseAsResponder = false;
+		boolean askResponderToAdvertise = false;
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, advertiseAsInitiator,
+				                               advertiseAsResponder, askResponderToAdvertise);
 		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
@@ -1480,7 +1534,7 @@ public class MessageProcessorTest {
 												idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
 												supportedEADs, appProfile, trustModel, db);
 
-		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null, appProfile);
 		sideProcessor.setEdhocSession(session);
 		
 		session.setCurrentStep(Constants.EDHOC_AFTER_M3);
@@ -1608,7 +1662,13 @@ public class MessageProcessorTest {
 		boolean useMessage4 = true;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+		List <CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		boolean advertiseAsInitiator = false;
+		boolean advertiseAsResponder = false;
+		boolean askResponderToAdvertise = false;
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, advertiseAsInitiator,
+				                               advertiseAsResponder, askResponderToAdvertise);
 		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
@@ -1651,7 +1711,7 @@ public class MessageProcessorTest {
 		CBORObject idCred = Util.buildIdCredX5t(serializedCert);
 		ownIdCreds.add(idCred);
 		
-		SideProcessor sideProcessor = new SideProcessor(trustModel, peerPublicKeys, peerCredentials, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, peerPublicKeys, peerCredentials, null, appProfile);
 		sideProcessor.setEdhocSession(session);
 		
 		// Set the ephemeral keys of the initiator, i.e., X and G_X
@@ -1743,7 +1803,13 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+		List <CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		boolean advertiseAsInitiator = false;
+		boolean advertiseAsResponder = false;
+		boolean askResponderToAdvertise = false;
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, advertiseAsInitiator,
+				                               advertiseAsResponder, askResponderToAdvertise);
 		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
@@ -1768,7 +1834,7 @@ public class MessageProcessorTest {
 				                                idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
 				                                supportedEADs, appProfile, trustModel, db);
 
-		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null, appProfile);
 		sideProcessor.setEdhocSession(session);
 		
 		// Force a specific ephemeral key
@@ -1819,10 +1885,16 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+		List <CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		boolean advertiseAsInitiator = false;
+		boolean advertiseAsResponder = false;
+		boolean askResponderToAdvertise = false;
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, advertiseAsInitiator,
+				                               advertiseAsResponder, askResponderToAdvertise);
 		
 		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
-		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null, appProfile);
 		
 				
 		// Note: the actual EDHOC message 1 starts with 0x00. The byte 0xf5 (CBOR simple value True) is prepended,
@@ -1923,7 +1995,13 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+		List <CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		boolean advertiseAsInitiator = false;
+		boolean advertiseAsResponder = false;
+		boolean askResponderToAdvertise = false;
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, advertiseAsInitiator,
+				                               advertiseAsResponder, askResponderToAdvertise);
 		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 				
 		// Specify the database of OSCORE Security Contexts
@@ -1949,7 +2027,7 @@ public class MessageProcessorTest {
 												idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
 												supportedEADs, appProfile, trustModel, db);
 
-		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null, appProfile);
 		sideProcessor.setEdhocSession(session);
 		
 		// Set the ephemeral keys, i.e. G_X for the initiator, as well as Y and G_Y for the Responder
@@ -2064,7 +2142,13 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+		List <CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		boolean advertiseAsInitiator = false;
+		boolean advertiseAsResponder = false;
+		boolean askResponderToAdvertise = false;
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, advertiseAsInitiator,
+				                               advertiseAsResponder, askResponderToAdvertise);
 		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
@@ -2111,7 +2195,7 @@ public class MessageProcessorTest {
 		CBORObject idCred = Util.buildIdCredKid(idCredKid);
 		ownIdCreds.add(idCred);
 		
-		SideProcessor sideProcessor = new SideProcessor(trustModel, peerPublicKeys, peerCredentials, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, peerPublicKeys, peerCredentials, null, appProfile);
 		sideProcessor.setEdhocSession(session);
 		
 		// Set the ephemeral keys of the initiator, i.e., X and G_X
@@ -2243,7 +2327,13 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+		List <CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		boolean advertiseAsInitiator = false;
+		boolean advertiseAsResponder = false;
+		boolean askResponderToAdvertise = false;
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, advertiseAsInitiator,
+				                               advertiseAsResponder, askResponderToAdvertise);
 		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 				
 		// Specify the database of OSCORE Security Contexts
@@ -2269,7 +2359,7 @@ public class MessageProcessorTest {
 												idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
 												supportedEADs, appProfile, trustModel, db);
 
-		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null, appProfile);
 		sideProcessor.setEdhocSession(session);
 		
 		// Set the ephemeral keys, i.e., X and G_X for the initiator, as well as G_Y for the Responder
@@ -2452,7 +2542,13 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+		List <CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		boolean advertiseAsInitiator = false;
+		boolean advertiseAsResponder = false;
+		boolean askResponderToAdvertise = false;
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, advertiseAsInitiator,
+				                               advertiseAsResponder, askResponderToAdvertise);
 		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
@@ -2496,7 +2592,7 @@ public class MessageProcessorTest {
 		CBORObject idCred = Util.buildIdCredKid(idCredKid);
 		ownIdCreds.add(idCred);
 		
-		SideProcessor sideProcessor = new SideProcessor(trustModel, peerPublicKeys, peerCredentials, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, peerPublicKeys, peerCredentials, null, appProfile);
 		sideProcessor.setEdhocSession(session);
 		
 		// Set the ephemeral keys of the responder, i.e., Y and G_Y
@@ -2630,7 +2726,13 @@ public class MessageProcessorTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+		List <CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		boolean advertiseAsInitiator = false;
+		boolean advertiseAsResponder = false;
+		boolean askResponderToAdvertise = false;
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, advertiseAsInitiator,
+				                               advertiseAsResponder, askResponderToAdvertise);
 		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
@@ -2656,7 +2758,7 @@ public class MessageProcessorTest {
 												idCreds, creds, supportedCipherSuites, peerSupportedCipherSuites,
 												supportedEADs, appProfile, trustModel, db);
 		
-		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, null, null, null, appProfile);
 		sideProcessor.setEdhocSession(session);
 		
 		session.setCurrentStep(Constants.EDHOC_AFTER_M3);
@@ -2783,7 +2885,13 @@ public class MessageProcessorTest {
 		boolean useMessage4 = true;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+		List <CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		boolean advertiseAsInitiator = false;
+		boolean advertiseAsResponder = false;
+		boolean askResponderToAdvertise = false;
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, advertiseAsInitiator,
+				                               advertiseAsResponder, askResponderToAdvertise);
 		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts
@@ -2830,7 +2938,7 @@ public class MessageProcessorTest {
 		CBORObject idCred = Util.buildIdCredKid(idCredKid);
 		ownIdCreds.add(idCred);
 		
-		SideProcessor sideProcessor = new SideProcessor(trustModel, peerPublicKeys, peerCredentials, null);
+		SideProcessor sideProcessor = new SideProcessor(trustModel, peerPublicKeys, peerCredentials, null, appProfile);
 		sideProcessor.setEdhocSession(session);
 		
 		// Set the ephemeral keys of the initiator, i.e., X and G_X

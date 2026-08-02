@@ -276,7 +276,13 @@ public class EdhocClientTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = true; // If set to true, it overrides the ID conversion method to CONVERSION_ID_CORE
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+		List <CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		boolean advertiseAsInitiator = false;
+		boolean advertiseAsResponder = false;
+		boolean askResponderToAdvertise = false;
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, advertiseAsInitiator,
+				                               advertiseAsResponder, askResponderToAdvertise);
 		
 		appProfiles.put(edhocURI, appProfile);
 		
@@ -445,6 +451,8 @@ public class EdhocClientTest {
 		
 		// Add the supported EAD items, as per the example line below
 		// supportedEADs.add(Integer.valueOf(1));
+
+		supportedEADs.add(Integer.valueOf(Constants.EAD_LABEL_SUPPORTED_EDHOC_APP_PROF));
 		
 	}
 	

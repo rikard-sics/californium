@@ -188,7 +188,8 @@ public class EdhocResource extends CoapResource {
 			SideProcessor sideProcessor = new SideProcessor(edhocEndpointInfo.getTrustModel(),
 															edhocEndpointInfo.getPeerPublicKeys(),
 															edhocEndpointInfo.getPeerCredentials(),
-															edhocEndpointInfo.getEadProductionInput());
+															edhocEndpointInfo.getEadProductionInput(),
+															appProfile);
 			
 			processingResult = MessageProcessor.readMessage1(message, true,
 															 edhocEndpointInfo.getSupportedCipherSuites(),

@@ -53,6 +53,9 @@ public static final int APPLICATION_CID_EDHOC_CBOR_SEQ = 65; // application/cid-
 public static final int COSE_HEADER_PARAM_KID     =  4;
 public static final int COSE_HEADER_PARAM_KCWT    = 13;
 public static final int COSE_HEADER_PARAM_KCCS    = 14;
+public static final int COSE_HEADER_PARAM_C5T     = 22;
+public static final int COSE_HEADER_PARAM_C5U     = 23;
+public static final int COSE_HEADER_PARAM_C5C     = 25;
 public static final int COSE_HEADER_PARAM_X5CHAIN = 33;
 public static final int COSE_HEADER_PARAM_X5T     = 34;
 public static final int COSE_HEADER_PARAM_X5U     = 35;
@@ -154,10 +157,11 @@ public static final int EXPORTER_LABEL_RESERVED             = 23;
  *       AES-CCM-16-64-128, SHA-256
  * 
  */
-public static final int EDHOC_CIPHER_SUITE_0 = 0;
-public static final int EDHOC_CIPHER_SUITE_1 = 1;
-public static final int EDHOC_CIPHER_SUITE_2 = 2;
-public static final int EDHOC_CIPHER_SUITE_3 = 3;
+public static final int EDHOC_CIPHER_SUITE_0  = 0;
+public static final int EDHOC_CIPHER_SUITE_1  = 1;
+public static final int EDHOC_CIPHER_SUITE_2  = 2;
+public static final int EDHOC_CIPHER_SUITE_3  = 3;
+public static final int EDHOC_CIPHER_SUITE_23 = 23; // Reserved
 
 
 /**
@@ -187,11 +191,12 @@ public static final int EDHOC_AUTH_METHOD_RESERVED = 23;
  * 
  * https://www.iana.org/assignments/edhoc/edhoc.xhtml#edhoc-error-codes
  */
-public static final int ERR_CODE_SUCCESS                       = 0;
-public static final int ERR_CODE_UNSPECIFIED_ERROR             = 1;
-public static final int ERR_CODE_WRONG_SELECTED_CIPHER_SUITE   = 2;
-public static final int ERR_CODE_UNKNOWN_CREDENTIAL_REFERENCED = 3;
-public static final int ERR_CODE_RESERVED                      = 23;
+public static final int ERR_CODE_SUCCESS                                  = 0;
+public static final int ERR_CODE_UNSPECIFIED_ERROR                        = 1;
+public static final int ERR_CODE_WRONG_SELECTED_CIPHER_SUITE              = 2;
+public static final int ERR_CODE_UNKNOWN_CREDENTIAL_REFERENCED            = 3;
+public static final int ERR_CODE_UNSPECIFIED_ERROR_AND_SUPPORTED_APP_PROF = 22; // Provisional
+public static final int ERR_CODE_RESERVED                                 = 23;
 
 
 /**
@@ -199,8 +204,9 @@ public static final int ERR_CODE_RESERVED                      = 23;
  * 
  * https://www.iana.org/assignments/edhoc/edhoc.xhtml#edhoc-ead
  */
-public static final int EAD_LABEL_PADDING  = 0;
-public static final int EAD_LABEL_RESERVED = 23;
+public static final int EAD_LABEL_PADDING                  = 0;
+public static final int EAD_LABEL_SUPPORTED_EDHOC_APP_PROF = 22; // Provisional
+public static final int EAD_LABEL_RESERVED                 = 23;
 
 
 /**
@@ -211,6 +217,7 @@ public static final int EAD_LABEL_RESERVED = 23;
 public static final int CRED_TYPE_CWT  = 0; // RPK as a CWT
 public static final int CRED_TYPE_CCS  = 1; // RPK as a CWT Claims Set (CCS)
 public static final int CRED_TYPE_X509 = 2; // X.509 certificate
+public static final int CRED_TYPE_C509 = 3; // C509 certificate
 
 
 /**
@@ -403,5 +410,45 @@ public static final int SIDE_PROCESSOR_INNER_ERROR_RESP_CODE =   1; // Value: th
 
 //Result maps: inner map keys for outer map key 0
 public static final int SIDE_PROCESSOR_INNER_CRED_VALUE = 0;        // Value: the authentication credential of the other peer
+
+//Result maps: inner map keys for the processing results for the EAD item Supported EDHOC application profiles
+public static final int SIDE_PROCESSOR_INNER_SUPPORTED_EDHOC_APP_PROF_VALUE = 0;
+
+//Inner labels for instructions to produce the EAD item Supported EDHOC application profiles
+public static final int EAD_ITEM_INPUT_SUPPORTED_EDHOC_APP_PROF_VALUE = 0;
+
+/**
+ * EDHOC Application Profiles
+ * 
+ */
+public static final int APPLICATION_PROFILE_MINIMAL_CS_2      = 0; // Provisional
+public static final int APPLICATION_PROFILE_MINIMAL_CS_0      = 1; // Provisional
+public static final int APPLICATION_PROFILE_BASIC_CS_2_X509   = 2; // Provisional
+public static final int APPLICATION_PROFILE_BASIC_CS_0_X509   = 3; // Provisional
+public static final int APPLICATION_PROFILE_BASIC_CS_2_C509   = 4; // Provisional
+public static final int APPLICATION_PROFILE_BASIC_CS_0_C509   = 5; // Provisional
+public static final int APPLICATION_PROFILE_INTERMEDIATE_CS_2 = 6; // Provisional
+public static final int APPLICATION_PROFILE_INTERMEDIATE_CS_0 = 7; // Provisional
+public static final int APPLICATION_PROFILE_EXTENSIVE         = 8; // Provisional
+
+/**
+* EDHOC_Information Parameters
+* 
+*/
+public static final int EDHOC_INFORMATION_SESSION_ID       = 0;  // Provisional
+public static final int EDHOC_INFORMATION_METHODS          = 1;  // Provisional
+public static final int EDHOC_INFORMATION_CIPHER_SUITES    = 2;  // Provisional
+public static final int EDHOC_INFORMATION_MESSAGE_4        = 3;  // Provisional
+public static final int EDHOC_INFORMATION_COMB_REQ         = 4;  // Provisional
+public static final int EDHOC_INFORMATION_URI_PATH         = 5;  // Provisional
+public static final int EDHOC_INFORMATION_CRED_TYPES       = 6;  // Provisional
+public static final int EDHOC_INFORMATION_ID_CRED_TYPES    = 7;  // Provisional
+public static final int EDHOC_INFORMATION_EADS             = 8;  // Provisional
+public static final int EDHOC_INFORMATION_INITIATOR        = 9;  // Provisional
+public static final int EDHOC_INFORMATION_RESPONDER        = 10; // Provisional
+public static final int EDHOC_INFORMATION_TRUST_ANCHORS    = 11; // Provisional
+public static final int EDHOC_INFORMATION_PSK_RESUMPTION   = 21; // Provisional
+public static final int EDHOC_INFORMATION_EXPORTER_OUT_LEN = 22; // Provisional
+public static final int EDHOC_INFORMATION_APP_PROF         = 23; // Provisional
 
 }

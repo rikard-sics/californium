@@ -216,7 +216,13 @@ public class VectorsTxtTest {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = false;
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+		List <CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		boolean advertiseAsInitiator = false;
+		boolean advertiseAsResponder = false;
+		boolean askResponderToAdvertise = false;
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, advertiseAsInitiator,
+				                               advertiseAsResponder, askResponderToAdvertise);
 		int trustModel = Constants.TRUST_MODEL_NO_LEARNING;
 		
 		// Specify the database of OSCORE Security Contexts

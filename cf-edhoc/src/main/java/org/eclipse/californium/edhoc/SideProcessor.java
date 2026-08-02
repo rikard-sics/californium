@@ -3,6 +3,7 @@ package org.eclipse.californium.edhoc;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -41,6 +42,9 @@ public class SideProcessor {
 		
 	// The EDHOC session this side process object is tied to
 	private EdhocSession session;
+	
+	// The application profile to use
+	private AppProfile appProfile;
 	
 	// The following data structures are used to collect the results from the side processing of each incoming EDHOC message.
 	// For message_2 and message_3, each of those refer to two different data structures, in order to separately collect the
@@ -93,18 +97,52 @@ public class SideProcessor {
 	// The inner map value is the number of times that the EAD item with that EAD label has occurred in that EDHOC message 
 	private HashMap<Integer, HashMap<Integer, Integer>> eadItemsOccurrences = new HashMap<Integer, HashMap<Integer, Integer>>();
 
+	// This data structure tracks the prescriptive information that has been specified in the
+	// EAD item "Supported EDHOC Application Profiles" of an outgoing EDHOC message during an EDHOC session
+	//
+	// The map key is the CBOR Object used as abbreviation for a prescriptive EDHOC_Information parameter
+	// that has been exchanged between the two peers during the EDHOC session
+	//
+	// The map value specifies details about the occurred use of the EDHOC_Information parameter during the
+	// EDHOC session. The semantics of the map value depends on the specific EDHOC_Information parameter
+	private HashMap<CBORObject, CBORObject> prescriptiveInfoOutgoing = new HashMap<CBORObject, CBORObject>();
+	
+	// This data structure tracks the prescriptive information that has been specified in the
+	// EAD item "Supported EDHOC Application Profiles" of an incoming EDHOC message during an EDHOC session
+	//
+	// The map key is the CBOR Object used as abbreviation for a prescriptive EDHOC_Information parameter
+	// that has been exchanged between the two peers during the EDHOC session
+	//
+	// The map value specifies details about the occurred use of the EDHOC_Information parameter during the
+	// EDHOC session. The semantics of the map value depends on the specific EDHOC_Information parameter
+	private HashMap<CBORObject, CBORObject> prescriptiveInfoIncoming = new HashMap<CBORObject, CBORObject>();
+	
+	// Set of prescriptive EDHOC_Information parameters identified by their integer Profile ID
+	private Set<Integer> prescriptiveParameters = new HashSet<>();
+	
+	// Catalogue of EDHOC application profiles identified by the respective Profile ID
+	// 
+	// The map label is the Profile ID of the EDHOC application profile stored in the map entry
+	// The map value is a CBOR map, i.e., the EDHOC Application Profile Object
+	//     specifying the EDHOC application profile stores in the map entry
+	private AppProfileCatalogue appProfileCatalogue = new AppProfileCatalogue();
 
 	public SideProcessor(int trustModel, HashMap<CBORObject, OneKey> peerPublicKeys,
 						 HashMap<CBORObject, CBORObject> peerCredentials,
-						 HashMap<Integer, List<CBORObject>> eadProductionInput) {
+						 HashMap<Integer, List<CBORObject>> eadProductionInput,
+						 AppProfile appProfile) {
 
 		this.trustModel = trustModel;
 		this.peerPublicKeys = peerPublicKeys;
 		this.peerCredentials = peerCredentials;
 		this.session = null;
+		this.appProfile = appProfile;
 		
 		this.eadProductionInput = eadProductionInput;
-
+		
+		prescriptiveParameters.add(Integer.valueOf(Constants.EDHOC_INFORMATION_MESSAGE_4));
+		prescriptiveParameters.add(Integer.valueOf(Constants.EDHOC_INFORMATION_EXPORTER_OUT_LEN));
+		
 	}
 	
 	/**
@@ -187,9 +225,10 @@ public class SideProcessor {
 	  * Contextually with the deletion of the results from the processing
 	  * of an EAD item, perform cleanup actions specific to that EAD item, 
 	  *  
-	  * @param messageNumber  The number of EDHOC message that the EAD items refer to
-	  * @param keyValue   The identifier of the result set to delete
-	  * @param postValidation  True to select the results of EAD processing after EDHOC message validation, or false otherwise
+	  * @param myResults  The set of results to look into
+	  * @param eadLabel  The EAD label of the EAD item for which cleanup has to be performed.
+	  *                  When the value is 0, it does not actually refer to the EAD item Padding,
+	  *                  but rather to the processed authentication credential of the other peer.
 	*/
 	private void eadSpecificCleanup(HashMap<Integer, List<HashMap<Integer, CBORObject>>> myResults, final int eadLabel) {
 		
@@ -301,7 +340,7 @@ public class SideProcessor {
   	 * @param ead1  The EAD items from EAD_1, including only items that the endpoint understands and excluding padding
 	 */
 	// sideProcessorInfo includes useful pieces information for processing EAD_1
-	// 0) A CBOR integer, with value MEHOD
+	// 0) A CBOR integer, with value METHOD
 	// 1) A CBOR array of integers, including all the integers specified in SUITES_I, in the same order
 	// 2) A CBOR byte string, with value G_X
 	// 3) A CBOR byte string, with value C_I (in its original, binary format)
@@ -545,12 +584,12 @@ public class SideProcessor {
 			index++;
 			CBORObject productionInput = myList.get(Integer.valueOf(index));
 			CBORObject[] eadItem = eadProductionDispatcher(eadLabel, critical, messageNumber, productionInput);
-			
+						
 			// The production of this EAD item is actually not supported. Silently continue.
 			if (eadItem == null) {
 				continue;
 			}
-			
+						
 			if (eadItem[0].getType() != CBORType.Integer && eadItem[0].getType() != CBORType.TextString)
 				return false;
 			
@@ -564,6 +603,12 @@ public class SideProcessor {
 			}
 			
 			addProducedEAD(messageNumber, eadItem[0], eadItem[1]);
+			
+			System.out.println("\n@SideProcessor produceIndependentEADs():");
+			for (int i = 0; i < eadItem.length; i++) {
+				System.out.println(eadItem[i].toString());
+			}
+			System.out.println("");
 			
 			index++;
 			
@@ -586,6 +631,9 @@ public class SideProcessor {
 		
 		// This has to be populated with the invocation of the produce() method for the EAD item to produce
 		switch(eadLabel) {
+			case Constants.EAD_LABEL_SUPPORTED_EDHOC_APP_PROF:
+				return eadProduceSupportedEdhocApplicationProfiles(critical, messageNumber, input);
+		
 			// CASE NNN:
 			// return EAD_NNN.produce(critical, messageNumber, productionInput);
 		}
@@ -593,6 +641,407 @@ public class SideProcessor {
 		return null; // placeholder, until the invocation to an actual produce() method is included above
 		
 	}
+	
+	/**
+	 * Production of the EAD item "Supported EDHOC Application Profiles"
+	 * 
+	 * @param critical  True if the EAD item has to be produced as critical, or false otherwise
+ 	 * @param messageNumber  The number of the next, outgoing EDHOC message that will include the produced EAD item
+ 	 * @param input  A CBOR map providing input on how to produce the EAD item.
+ 	 *               The map keys belong to a namespace specific of the ead_label. 
+ 	 * @return  Null in case of error with no follow-up. Otherwise, a CBOR array with two elements:
+ 	 *           i) the EAD label and the EAD value; or
+ 	 *          ii) the error text string and the response error code 
+	 */
+	private CBORObject[] eadProduceSupportedEdhocApplicationProfiles(boolean critical, int messageNumber, CBORObject input) {
+		
+		if (critical == false) {
+			return null;
+		}
+		switch (messageNumber) {
+			case Constants.EDHOC_MESSAGE_1:
+			case Constants.EDHOC_MESSAGE_2:
+				break;
+			default:
+				return null;
+		}
+		if (input == null || (input.getType() != CBORType.Map)) {
+			return null;
+		}
+		if (input.ContainsKey(Constants.EAD_ITEM_INPUT_SUPPORTED_EDHOC_APP_PROF_VALUE) == false) {
+			return null;
+		}
+		if (input.get(Constants.EAD_ITEM_INPUT_SUPPORTED_EDHOC_APP_PROF_VALUE).getType() != CBORType.ByteString) {
+			return null;
+		}
+		
+		byte[] rawEadValue = input.get(Constants.EAD_ITEM_INPUT_SUPPORTED_EDHOC_APP_PROF_VALUE).GetByteString();
+		CBORObject[] objectList = null;
+		try {
+		    objectList = CBORObject.DecodeSequenceFromBytes(rawEadValue);
+		}
+		catch (Exception e) {
+		    return null;
+		}
+		
+		CBORObject paramLabel = null;
+		CBORObject paramValue = null;
+		CBORObject profileObject = null;
+		
+	    for (int i = 0; i < objectList.length; i++) {
+	    	if (objectList[i].equals(CBORObject.True)) {
+	    		continue;
+	    	}
+	    	if (objectList[i].getType() == CBORType.Integer || objectList[i].getType() == CBORType.Array) {
+	    		int profileId;
+	    		
+	    		// Determine the Profile ID identifying the EDHOC_Application_Profile Object
+	    		if (objectList[i].getType() == CBORType.Integer) {
+	    			profileId = objectList[i].AsInt32();
+	    		}
+	    		else if (objectList[i].getType() == CBORType.Array && objectList[i].get(0).getType() == CBORType.Integer) {
+	    			profileId = objectList[i].get(0).AsInt32();
+	    		}
+	    		else {
+	    			return null;
+	    		}
+	    		profileObject = appProfileCatalogue.getAppProfileById(profileId);
+	    		if (profileObject == null) {
+	    			// Unknown EDHOC Application Profile
+	    			continue;
+	    		}
+	    		
+	    	}
+	    	if (objectList[i].getType() == CBORType.Map) {
+	    		profileObject = objectList[i];
+	    	}
+	    	
+	    	// Check whether a prescriptive parameter is specified
+	    	Iterator<Integer> paramIterator = prescriptiveParameters.iterator();
+	    	while(paramIterator.hasNext()) {
+	    		paramLabel = CBORObject.FromObject(paramIterator.next().intValue());
+				paramValue = profileObject.get(paramLabel);
+				
+		    	if (paramValue == null) {
+					continue;
+				}
+				if (handlePrescriptiveParameters(paramLabel, paramValue, messageNumber, false) == false) {
+					return null;
+				}
+	    	}
+	    	
+	    }
+	    
+	    CBORObject eadLabel = CBORObject.FromObject(-1 * Constants.EAD_LABEL_SUPPORTED_EDHOC_APP_PROF);
+	    CBORObject eadValue = input.get(Constants.EAD_ITEM_INPUT_SUPPORTED_EDHOC_APP_PROF_VALUE);
+	    
+	    if (messageNumber == Constants.EDHOC_MESSAGE_2 &&
+	    	prescriptiveInfoIncoming.isEmpty() == false &&
+	    	prescriptiveInfoOutgoing.isEmpty() == false) {
+	    	// This peer is the Responder and it has specified prescriptive information in the prepared EAD item.
+	    	//
+	    	// If such information contradicts prescriptive information from the Initiator, redact the ead_value
+	    	// prepared by the Responder accordingly, and use the result for the EAD item to include in EDHOC message_2
+	    	
+	    	List<CBORObject> redactedList = redactSupportedEdhocApplicationProfilesFromResponder(objectList);
+	    	if (redactedList.isEmpty()) {
+	    		eadValue = CBORObject.FromObject(CBORObject.NewMap().EncodeToBytes());
+	    	}
+	    	else {
+	    		eadValue = CBORObject.FromObject(Util.buildCBORSequence(redactedList));
+	    	}
+	    	
+	    }
+	    
+		CBORObject[] ret = new CBORObject[2];
+		ret[0] = eadLabel;
+		ret[1] = eadValue;
+		
+		return ret;
+	}
+	
+	private List<CBORObject> redactSupportedEdhocApplicationProfilesFromResponder(CBORObject[] objectList) {
+		
+		CBORObject paramLabel = null;
+		CBORObject paramValue = null;
+		List<CBORObject> redactedList = new ArrayList<>();
+		
+		for (int i = 0; i < objectList.length; i++) {
+			
+			if (objectList[i].getType() == CBORType.Integer || objectList[i].getType() == CBORType.Array) {
+				int profileId;
+				CBORObject obj = null;
+				
+				if (objectList[i].getType() == CBORType.Integer) {
+					profileId = objectList[i].AsInt32();
+					obj = appProfileCatalogue.getAppProfileById(profileId);
+				}
+				if (objectList[i].getType() == CBORType.Array) {
+					profileId = objectList[i].get(0).AsInt32();
+					obj = appProfileCatalogue.getAppProfileById(profileId);
+				}
+				if (obj == null) {
+					continue;
+				}
+				
+				boolean keep = true;
+				Iterator<Integer> paramIterator = prescriptiveParameters.iterator();
+		    	while(paramIterator.hasNext()) {
+		    		paramLabel = CBORObject.FromObject(paramIterator.next().intValue());
+					paramValue = obj.get(paramLabel);
+					
+			    	if (paramValue == null) {
+			    		continue;
+					}
+
+			    	if (paramLabel.AsInt32() == Constants.EDHOC_INFORMATION_MESSAGE_4) {
+			    		CBORObject baselineValue = prescriptiveInfoIncoming.get(paramLabel);
+			    		if (baselineValue != null && paramValue.equals(baselineValue) == false) {
+			    			// Do not include this item in the redacted list and move to the next one
+			    			keep = false;
+							break;
+			    		}
+			    	}
+		    	}
+		    	
+		    	if (keep == true) {
+			    	// Confirm this item in the redacted list
+			    	redactedList.add(objectList[i]);
+		    	}
+				
+			}
+			
+			if (objectList[i].getType() == CBORType.Map) {
+				
+				CBORObject redactedMap = CBORObject.NewMap();
+				for (CBORObject key : objectList[i].getKeys()) {
+					redactedMap.Add(key, objectList[i].get(key));
+				}
+				
+				Iterator<Integer> paramIterator = prescriptiveParameters.iterator();
+		    	while(paramIterator.hasNext()) {
+		    		paramLabel = CBORObject.FromObject(paramIterator.next().intValue());
+					paramValue = redactedMap.get(paramLabel);
+					
+			    	if (paramValue == null) {
+			    		continue;
+					}
+
+			    	if (paramLabel.AsInt32() == Constants.EDHOC_INFORMATION_MESSAGE_4) {
+			    		CBORObject baselineValue = prescriptiveInfoIncoming.get(paramLabel);
+			    		if (baselineValue != null && paramValue.equals(baselineValue) == false) {
+			    			// Do not include this element in the redacted map
+			    			redactedMap.Remove(paramLabel);
+			    		}
+			    	}
+			    	
+			    	if (paramLabel.AsInt32() == Constants.EDHOC_INFORMATION_EXPORTER_OUT_LEN) {
+			    		CBORObject baselineValue = prescriptiveInfoIncoming.get(paramLabel);
+			    		if (baselineValue != null) {
+			    			// Revise or remove this element in the redacted map
+			    			
+			    			CBORObject revisedArray = CBORObject.NewArray();
+			    			Set<Integer> usedExporterLabels = new HashSet<>();
+			    			for (CBORObject key : baselineValue.getKeys()) {
+			    				usedExporterLabels.add(Integer.valueOf(key.AsInt32()));
+			    			}
+			    			for (int pair = 0; pair < paramValue.size(); pair++) {
+		    					int exporterLabel = paramValue.get(pair).get(0).AsInt32();
+		    					if (usedExporterLabels.contains(Integer.valueOf(exporterLabel)) == false) {
+		    						CBORObject innerArray = CBORObject.NewArray();
+		    						int exporterOutputLength = paramValue.get(pair).get(1).AsInt32();
+		    						innerArray.Add(exporterLabel);
+		    						innerArray.Add(exporterOutputLength);
+		    						revisedArray.Add(innerArray);
+		    					}
+		    				}
+			    			redactedMap.Remove(paramLabel);
+			    			if (revisedArray.size() != 0) {
+			    				redactedMap.Add(paramLabel, revisedArray);
+			    			}
+			    		}
+			    	}
+
+		    	}
+		    	
+		    	// Add the redacted map to the redacted list
+		    	redactedList.add(redactedMap);
+				
+			}
+			
+		}
+		
+		return redactedList;
+		
+	}
+	
+	/**
+	 * Handle prescriptive information exchanged during the EDHOC session
+	 * 
+     * @param paramLabel  A CBOR object used as label to identify the EDHOC_Information parameter
+ 	 * @param paramValue  A CBOR object specifying the value of the EDHOC_Information parameter
+ 	 * @param messageNumber  The number of the incoming/outgoing EDHOC message that specifies the prescriptive information
+ 	 * @param direction  True if the EDHOC message is incoming, or false otherwise
+ 	 * @return  True if the prescriptive information is used in a consistent way, or false otherwise
+	 */
+	private boolean handlePrescriptiveParameters(CBORObject paramLabel, CBORObject paramValue, int messageNumber, boolean incoming) {
+		
+		HashMap<CBORObject, CBORObject> prescriptiveInfo;
+		if (incoming == false) {
+			prescriptiveInfo = prescriptiveInfoOutgoing;
+		}
+		else {
+			prescriptiveInfo = prescriptiveInfoIncoming;
+		}
+		
+		if (paramLabel.getType() == CBORType.Integer && paramLabel.AsInt32() == Constants.EDHOC_INFORMATION_MESSAGE_4) {
+		
+			if (paramValue.equals(CBORObject.True) == false && paramValue.equals(CBORObject.False) == false) {
+				return false;
+			}
+			
+			boolean success = true;
+			
+			// Check whether the prescriptive parameter message_4 is being used in a consistent way
+			CBORObject foundObj = prescriptiveInfo.get(CBORObject.FromObject(Constants.EDHOC_INFORMATION_MESSAGE_4));
+			if (foundObj == null) {
+				// The parameter message_4 has not been found yet during the EDHOC session.
+				// Hence, track this first use for future checks during the EDHOC session.
+				prescriptiveInfo.put(CBORObject.FromObject(Constants.EDHOC_INFORMATION_MESSAGE_4), paramValue);
+			}
+			else {
+				if (foundObj.equals(paramValue) == false) {
+					// The parameter message_4 has been found multiple times during the EDHOC session,
+					// but not always with the same value; hence, abort the EDHOC session
+					success = false;
+				}
+				// Else, the parameter message_4 has been found multiple times during the EDHOC session,
+				// but always with the same value; hence, continue the EDHOC session
+			}
+			
+			if (messageNumber == Constants.EDHOC_MESSAGE_1) {
+				return success;
+			}
+			
+			if (messageNumber == Constants.EDHOC_MESSAGE_2 && incoming == true) {
+				// The Initiator also verifies that the prescriptive parameter message_4 is used by the Responder in
+				// a way that is consistent with any previous indication given by the Initiator in EDHOC message_1
+				foundObj = prescriptiveInfoOutgoing.get(CBORObject.FromObject(Constants.EDHOC_INFORMATION_MESSAGE_4));
+				if (foundObj != null) {
+					if (foundObj.equals(paramValue) == false) {
+						// The parameter message_4 has been found multiple times during the EDHOC session,
+						// but not always with the same value; hence, abort the EDHOC session
+						success = false;
+					}
+					// Else, the indications about the parameter message_4 from the Responder are not
+					// contradicting the indications from the Initiator; hence, continue the EDHOC session
+				}
+			}
+
+			return success;
+			
+		}
+		
+		if (paramLabel.getType() == CBORType.Integer && paramLabel.AsInt32() == Constants.EDHOC_INFORMATION_EXPORTER_OUT_LEN) {
+			
+			if (paramValue.getType() != CBORType.Array || paramValue.size() < 1) {
+				return false;
+			}
+			
+			// Check whether the prescriptive parameter exporter_out_len is being used in a consistent way
+			CBORObject foundObj = prescriptiveInfo.get(CBORObject.FromObject(Constants.EDHOC_INFORMATION_EXPORTER_OUT_LEN));
+			
+			if (foundObj == null) {
+				// The parameter exporter_out_en has not been found yet during the EDHOC session.
+				// Hence, track this first use for future checks during the EDHOC session.
+				foundObj = CBORObject.NewMap();
+				prescriptiveInfo.put(CBORObject.FromObject(Constants.EDHOC_INFORMATION_EXPORTER_OUT_LEN), foundObj);
+			}
+							
+			for (int i = 0; i < paramValue.size(); i++) {
+				CBORObject innerArray = paramValue.get(i);
+				if (innerArray.getType() != CBORType.Array || innerArray.size() != 2) {
+					return false;
+				}
+				CBORObject exporterLabelAsCbor = innerArray.get(0);
+				CBORObject exporterOutLenAsCbor = innerArray.get(1);
+				if (exporterLabelAsCbor.getType() != CBORType.Integer || exporterOutLenAsCbor.getType() != CBORType.Integer) {
+					return false;
+				}
+				if (exporterLabelAsCbor.AsInt32() < 0 || exporterOutLenAsCbor.AsInt32() < 0) {
+					return false;
+				}
+				
+				if (foundObj.get(exporterLabelAsCbor) == null) {
+					// Exporter output lengths for a given exporter label have not been found yet during the EDHOC session,
+					// but always with the same value; hence, continue the EDHOC session
+					foundObj.Add(exporterLabelAsCbor, exporterOutLenAsCbor);
+					
+					// Update the Exporter output length to be used later in the EDHOC session
+					boolean updateExporterOutputLength = true;
+					if (messageNumber == Constants.EDHOC_MESSAGE_2 && incoming == false) {
+						CBORObject initiatorObj = prescriptiveInfoIncoming.get(CBORObject.FromObject(
+								   											   Constants.EDHOC_INFORMATION_EXPORTER_OUT_LEN));
+						if (initiatorObj != null) {
+							if (initiatorObj.ContainsKey(exporterLabelAsCbor)) {
+								// If the Initiator indicated an output length for this Exporter Label, the Responder must
+								// use that length; the length from the Responder is later going to be removed from ead_value
+								updateExporterOutputLength = false;
+							}
+						}
+					}
+					
+					if (updateExporterOutputLength == true) {
+						appProfile.setExporterOutputLength(exporterLabelAsCbor.AsInt32Value(), exporterOutLenAsCbor.AsInt32());
+					}
+										
+					continue;
+				}
+				else {						
+					if (foundObj.get(exporterLabelAsCbor).AsInt32() != exporterOutLenAsCbor.AsInt32()) {
+						// Exporter output lengths for a given exporter label have been found multiple times during
+						// the EDHOC session, but not always with the same value; hence, abort the EDHOC session
+						return false;
+					}
+					// Else, exporter output lengths for a given exporter label have been found multiple times
+					// during the EDHOC session, but always with the same value; hence, continue the EDHOC session
+					continue;
+				}
+			}
+
+			if (messageNumber == Constants.EDHOC_MESSAGE_1) {
+				return true;
+			}
+			
+			if (messageNumber == Constants.EDHOC_MESSAGE_2 && incoming == true) {
+				// The Initiator also verifies that the prescriptive parameter exporter_out_len is used by the Responder in
+				// a way that is consistent with any previous indication given by the Initiator in EDHOC message_1
+				foundObj = prescriptiveInfoOutgoing.get(CBORObject.FromObject(Constants.EDHOC_INFORMATION_EXPORTER_OUT_LEN));
+				if (foundObj != null) {
+					CBORObject responderObj = prescriptiveInfoIncoming.get(CBORObject.FromObject(
+																		   Constants.EDHOC_INFORMATION_EXPORTER_OUT_LEN));
+					if (responderObj != null) {
+						for (CBORObject key : foundObj.getKeys()) {
+							if (responderObj.ContainsKey(key)) {
+								// If the Initiator indicated an output length for an Exporter Label, the Responder must not
+								// indicate the same or a different output length for that Exporter label
+								return false;
+							}
+						}
+					}
+					// Else, the indications about the parameter exporter_out_len from the Responder are not
+					// contradicting the indications from the Initiator; hence, continue the EDHOC session
+				}
+			}
+
+			return true;
+		
+		}
+		
+		return false;
+		
+	}
+	
 	
 	/**
 	 * Invoke the consume() method of the right EAD item to consume
@@ -603,10 +1052,11 @@ public class SideProcessor {
  	 * @param postValidation  True to indicate EAD processing after EDHOC message validation, or false otherwise
  	 * @param sideProcessorInfo  Information generally required for processing the EAD field. It can be null, when processing the EAD_4 field
  	 * @param eadField  The EAD field from the incoming EDHOC message
- 	 * @return  True in case of no error when processing any critical item, in order to continue the EDHOC session can continue 
+ 	 * @return  True in case of no error when processing any critical item, in order to continue the EDHOC session 
  	 *          False in case of error when processing any critical item, in order to abort the EDHOC session 
 	 */
-	public boolean eadConsumptionDispatcher(int messageNumber, boolean postValidation, CBORObject[] sideProcessorInfo, CBORObject[] eadField) {
+	public boolean eadConsumptionDispatcher(int messageNumber, boolean postValidation,
+										    CBORObject[] sideProcessorInfo, CBORObject[] eadField) {
 		
 		int index = 0;
 		boolean success = true;
@@ -626,8 +1076,8 @@ public class SideProcessor {
 				eadLabel = -eadLabel;
 			}
 			
+			HashMap<Integer, Integer> innerMap = new HashMap<Integer, Integer>();
 			if (eadItemsOccurrences.containsKey(Integer.valueOf(eadLabel)) == false) {
-				HashMap<Integer, Integer> innerMap = new HashMap<Integer, Integer>();
 				innerMap.put(Integer.valueOf(Constants.EDHOC_MESSAGE_1), Integer.valueOf(0));
 				innerMap.put(Integer.valueOf(Constants.EDHOC_MESSAGE_2), Integer.valueOf(0));
 				innerMap.put(Integer.valueOf(Constants.EDHOC_MESSAGE_3), Integer.valueOf(0));
@@ -637,6 +1087,28 @@ public class SideProcessor {
 			
 			// This has to be populated with the invocation of the consume() method for the EAD item to produce
 			switch(eadLabel) {
+			
+				 case Constants.EAD_LABEL_SUPPORTED_EDHOC_APP_PROF:
+					 if (postValidation == false) {
+						// This EAD item must not be present multiple times in the EAD field of EDHOC message_1
+						// and message_2, while it is always silently ignored if present in the EAD field of
+						// EDHOC message_3 of message_4
+						if (messageNumber == Constants.EDHOC_MESSAGE_1 || messageNumber == Constants.EDHOC_MESSAGE_2) {
+							if (eadItemsOccurrences.get(Integer.valueOf(eadLabel)).
+								get(Integer.valueOf(messageNumber)) != Integer.valueOf(0)) {
+								addErrorResult(messageNumber, postValidation,
+											   "Error when processing the EAD item \"Supported EDHOC Application Profiles\""
+											   + "in EDHOC message",
+											   ResponseCode.BAD_REQUEST.value);
+								return false;
+							}
+						}
+						
+						success = eadConsumeSupportedEdhocApplicationProfiles(critical, messageNumber, postValidation,
+								                                              sideProcessorInfo, eadValue);
+					 }
+					 break;
+
 				/*
 				 Template case
 				
@@ -649,6 +1121,12 @@ public class SideProcessor {
 				*/
 			}
 			
+			if (postValidation == false) {
+				innerMap = eadItemsOccurrences.get(Integer.valueOf(eadLabel));
+				int newValue = innerMap.get(Integer.valueOf(messageNumber)).intValue() + 1;
+				innerMap.put(Integer.valueOf(messageNumber), Integer.valueOf(newValue));
+			}
+			
 			if (success == false) {
 				break;
 			}
@@ -656,6 +1134,367 @@ public class SideProcessor {
 		return success;
 		
 	}
+	
+	private boolean eadConsumeSupportedEdhocApplicationProfiles(boolean critical, int messageNumber, boolean postValidation,
+												  				CBORObject[] sideProcessorInfo, byte[] eadValue) {
+		if (critical == false || eadValue == null) {
+			addErrorResult(messageNumber, postValidation,
+						   "Error when processing the EAD item \"Supported EDHOC Application Profiles\" in EDHOC message",
+						   ResponseCode.BAD_REQUEST.value);
+			return false;
+		}
+		switch (messageNumber) {
+			// This EAD item is intended only for message_1 and message_2. It is silently ignored otherwise.
+			case Constants.EDHOC_MESSAGE_1:
+			case Constants.EDHOC_MESSAGE_2:
+				break;
+			case Constants.EDHOC_MESSAGE_3:
+			case Constants.EDHOC_MESSAGE_4:
+				return true;
+			default:
+				addErrorResult(messageNumber, postValidation,
+							   "Error when processing the EAD item \"Supported EDHOC application profiles\" in EDHOC message",
+							   ResponseCode.BAD_REQUEST.value);
+				return false;
+		}
+		
+		System.out.println("\n@SideProcessor eadConsumeSupportedEdhocApplicationProfiles():");
+		System.out.println("Supported EDHOC Application Profiles: " + CBORObject.FromObject(eadValue).toString() + "\n");
+		
+		boolean success = true;
+				
+		// Check ead_value
+		
+		CBORObject[] objectList = null;
+		try {
+			objectList = CBORObject.DecodeSequenceFromBytes(eadValue);
+		}
+		catch (Exception e) {
+			addErrorResult(messageNumber, postValidation,
+					   "Error when processing the EAD item \"Supported EDHOC Application Profiles\" in EDHOC message",
+					   ResponseCode.BAD_REQUEST.value);
+			return false;
+		}
+	
+		CBORObject paramLabel = null;
+		CBORObject paramValue = null;
+		CBORObject profileObject = null;
+		
+		for (int i = 0; i < objectList.length; i++) {
+			
+			if (objectList[i].equals(CBORObject.True) == false && objectList[i].getType() != CBORType.Integer &&
+				objectList[i].getType() != CBORType.Array && objectList[i].getType() != CBORType.Map) {
+				success = false;
+				break;
+			}
+
+			if (objectList[i].equals(CBORObject.True)) {
+				
+				if (i != 0 || messageNumber != Constants.EDHOC_MESSAGE_1) {
+					success = false;
+					break;
+				}
+
+				continue;
+			}
+			
+			if (objectList[i].getType() == CBORType.Integer) {
+				
+				int profileId = objectList[i].AsInt32();
+				profileObject = appProfileCatalogue.getAppProfileById(profileId);
+	    		if (profileObject == null) {
+	    			// Unknown EDHOC Application Profile
+	    			continue;
+	    		}
+
+			}
+			
+			if (objectList[i].getType() == CBORType.Array) {
+				
+				if (objectList[i].size() < 2) {
+					success = false;
+					break;
+				}
+				
+				for (int j = 0; j < objectList[i].size(); j++) {
+					if (j == 0) {
+						if (objectList[i].get(j).getType() != CBORType.Integer) {
+							success = false;
+							break;
+						}
+					}
+					else if (objectList[i].get(j).getType() != CBORType.Integer || objectList[i].get(j).AsInt32() < 0) {
+						success = false;
+						break;
+					}
+				}
+				
+				int profileId = objectList[i].get(0).AsInt32();
+				profileObject = appProfileCatalogue.getAppProfileById(profileId);
+	    		if (profileObject == null) {
+	    			// Unknown EDHOC Application Profile
+	    			continue;
+	    		}
+
+			}
+			
+			if (objectList[i].getType() == CBORType.Map) {
+				
+				if (eadConsumeSupportedEdhocApplicationProfilesCheckMap(objectList[i], messageNumber, sideProcessorInfo) == false) {
+					success = false;
+					break;
+				}
+								
+				profileObject = objectList[i];
+
+			}
+			
+	    	// Check whether a prescriptive parameter is specified
+	    	Iterator<Integer> paramIterator = prescriptiveParameters.iterator();
+	    	while(paramIterator.hasNext()) {
+	    		paramLabel = CBORObject.FromObject(paramIterator.next().intValue());
+				paramValue = profileObject.get(paramLabel);
+				
+		    	if (paramValue == null) {
+					continue;
+				}
+				if (handlePrescriptiveParameters(paramLabel, paramValue, messageNumber, true) == false) {
+					success = false;
+					break;
+				}
+	    	}
+
+	    	if (success == false) {
+	    		break;
+	    	}
+	    	
+		}
+
+		if (success == false) {
+			addErrorResult(messageNumber, postValidation,
+					   "Error when processing the EAD item \"Supported EDHOC Application Profiles\" in EDHOC message",
+					   ResponseCode.BAD_REQUEST.value);
+			return false;
+		}
+		
+		// If this peer is the Responder and the Initiator has asked to advertise
+		// the supported EDHOC application profiles, be sure to do so in EDHOC message_2
+		if (messageNumber == Constants.EDHOC_MESSAGE_1 && appProfile.getAdvertiseAsResponder() == false) {
+			if (objectList[0].equals(CBORObject.True)) {
+				List <CBORObject> baselineList = new ArrayList<CBORObject>(appProfile.getAdvertisedAppProfiles());
+				
+				CBORObject nextValue;
+				CBORObject input = CBORObject.NewMap();
+				if (baselineList.isEmpty() == true) {
+					List <CBORObject> dummyList = new ArrayList<CBORObject>();
+					dummyList.add(CBORObject.NewMap());
+					nextValue = CBORObject.FromObject(Util.buildCBORSequence(dummyList));
+				}
+				else {
+					nextValue = CBORObject.FromObject(Util.buildCBORSequence(baselineList));
+				}
+				input.Add(Constants.EAD_ITEM_INPUT_SUPPORTED_EDHOC_APP_PROF_VALUE, nextValue);
+				
+				List<CBORObject> listMessage2 = new ArrayList<CBORObject>();
+				listMessage2.add(CBORObject.FromObject(-1 * Constants.EAD_LABEL_SUPPORTED_EDHOC_APP_PROF));
+				listMessage2.add(CBORObject.FromObject(input));
+				eadProductionInput.put(Integer.valueOf(Constants.EDHOC_MESSAGE_2), listMessage2);
+				
+			}
+		}
+		
+		// Prepare the result
+		HashMap<Integer, CBORObject> results = new HashMap<Integer, CBORObject>();
+		
+		results.put(Constants.SIDE_PROCESSOR_INNER_SUPPORTED_EDHOC_APP_PROF_VALUE, CBORObject.FromObject(eadValue));
+		
+		addResult(messageNumber, postValidation, Constants.EAD_LABEL_SUPPORTED_EDHOC_APP_PROF, results);
+
+		return success;
+		
+	}
+	
+	// Perform consistency checks on an EDHOC Information Object within the
+	// EAD value of an incoming EAD item "Supported EDHOC Application Profiles"
+	private boolean eadConsumeSupportedEdhocApplicationProfilesCheckMap(CBORObject object, int messageNumber,
+																		CBORObject[] sideProcessorInfo) {
+		
+		for (CBORObject key : object.getKeys()) {
+			if (key.getType() != CBORType.Integer &&
+				key.getType() != CBORType.TextString) {
+					return false;
+			}
+			if (key.AsInt32() == Constants.EDHOC_INFORMATION_SESSION_ID ||
+				key.AsInt32() == Constants.EDHOC_INFORMATION_URI_PATH ||
+				key.AsInt32() == Constants.EDHOC_INFORMATION_INITIATOR ||
+				key.AsInt32() == Constants.EDHOC_INFORMATION_RESPONDER ||
+				key.AsInt32() == Constants.EDHOC_INFORMATION_APP_PROF) {
+				return false;
+			}
+			if (key.AsInt32() == Constants.EDHOC_INFORMATION_METHODS ||
+				key.AsInt32() == Constants.EDHOC_INFORMATION_CIPHER_SUITES ||
+				key.AsInt32() == Constants.EDHOC_INFORMATION_CRED_TYPES) {
+				if (object.get(key).getType() != CBORType.Integer &&
+					object.get(key).getType() != CBORType.Array) {
+					return false;
+				}
+				if (object.get(key).getType() == CBORType.Array) {
+					if (object.get(key).size() < 2) {
+						return false;
+					}
+					for (int i = 0; i < object.get(key).size(); i++) {
+						if (object.get(key).get(i).getType() != CBORType.Integer) {
+							return false;
+						}
+					}
+				}
+			}
+			if (key.AsInt32() == Constants.EDHOC_INFORMATION_ID_CRED_TYPES) {
+				if (object.get(key).getType() != CBORType.Integer &&
+					object.get(key).getType() != CBORType.TextString &&
+					object.get(key).getType() != CBORType.Array) {
+					return false;
+				}
+				if (object.get(key).getType() == CBORType.Array) {
+					if (object.get(key).size() < 2) {
+						return false;
+					}
+					for (int i = 0; i < object.get(key).size(); i++) {
+						if (object.get(key).get(i).getType() != CBORType.Integer &&
+							object.get(key).get(i).getType() != CBORType.TextString) {
+							return false;
+						}
+					}
+				}
+			}
+			if (key.AsInt32() == Constants.EDHOC_INFORMATION_MESSAGE_4 ||
+				key.AsInt32() == Constants.EDHOC_INFORMATION_COMB_REQ ||
+				key.AsInt32() == Constants.EDHOC_INFORMATION_PSK_RESUMPTION) {
+				if (object.get(key).getType() != CBORType.Boolean) {
+					return false;
+				}
+				if (key.AsInt32() == Constants.EDHOC_INFORMATION_MESSAGE_4) {
+					boolean b = object.get(key).equals(CBORObject.True) ? true : false;
+					if (b != appProfile.getUseMessage4()) {
+						return false;
+					}
+				}
+			}
+			if (key.AsInt32() == Constants.EDHOC_INFORMATION_EADS) {
+				if (object.get(key).getType() != CBORType.Integer &&
+					object.get(key).getType() != CBORType.Array) {
+					return false;
+				}
+				if (object.get(key).getType() == CBORType.Integer && object.get(key).AsInt32() < 0) {
+					return false;
+				}
+				if (object.get(key).getType() == CBORType.Array) {
+					if (object.get(key).size() < 2) {
+						return false;
+					}
+					for (int i = 0; i < object.get(key).size(); i++) {
+						if (object.get(key).get(i).getType() != CBORType.Integer ||
+							object.get(key).AsInt32() < 0) {
+							return false;
+						}
+					}
+				}
+			}
+			if (key.AsInt32() == Constants.EDHOC_INFORMATION_TRUST_ANCHORS) {
+				if (object.get(key).getType() != CBORType.Map) {
+					return false;
+				}
+				if (object.get(key).size() < 1) {
+					return false;
+				}
+				for (CBORObject outerKey : object.get(key).getKeys()) {
+					if (outerKey.getType() != CBORType.Integer) {
+						return false;
+					}
+					if (object.get(key).get(outerKey).getType() != CBORType.Map &&
+						object.get(key).get(outerKey).getType() != CBORType.Array) {
+						return false;
+					}
+					if (object.get(key).get(outerKey).getType() == CBORType.Map) {
+						if (object.get(key).get(outerKey).size() != 1) {
+							return false;
+						}
+						for (CBORObject innerKey : object.get(key).get(outerKey).getKeys()) {
+							if (innerKey.getType() != CBORType.Integer && innerKey.getType() != CBORType.TextString) {
+								return false;
+							}
+						}
+					}
+					if (object.get(key).get(outerKey).getType() == CBORType.Array) {
+						if (object.get(key).get(outerKey).size() < 2) {
+							return false;
+						}
+						for (int i = 0; i < object.get(key).get(outerKey).size(); i++) {
+							if (object.get(key).get(outerKey).get(i).getType() != CBORType.Map) {
+								return false;
+							}
+							if (object.get(key).get(outerKey).get(i).size() != 1) {
+								return false;
+							}
+							for (CBORObject innerKey : object.get(key).get(outerKey).get(i).getKeys()) {
+								if (innerKey.getType() != CBORType.Integer && innerKey.getType() != CBORType.TextString) {
+									return false;
+								}
+							}
+						}
+					}
+				}
+			}
+			
+			if (key.AsInt32() == Constants.EDHOC_INFORMATION_EXPORTER_OUT_LEN) {
+				if (object.get(key).getType() != CBORType.Array) {
+					return false;
+				}
+				if (object.get(key).size() < 1) {
+					return false;
+				}
+				for (int i = 0; i < object.get(key).size(); i++) {
+					if (object.get(key).get(i).getType() != CBORType.Array) {
+						return false;
+					}
+					if (object.get(key).get(i).size() != 2) {
+						return false;
+					}
+					if (object.get(key).get(i).get(0).getType() != CBORType.Integer ||
+						object.get(key).get(i).get(1).getType() != CBORType.Integer) {
+						return false;
+					}
+					int exporterLabel = object.get(key).get(i).get(0).AsInt32();
+					int indicatedLength = object.get(key).get(i).get(1).AsInt32();
+					if (exporterLabel < 0 || indicatedLength < 0) {
+						return false;
+					}
+					if (exporterLabel != Constants.EXPORTER_LABEL_OSCORE_MASTER_SECRET &&
+						exporterLabel != Constants.EXPORTER_LABEL_OSCORE_MASTER_SALT) {
+						return false;
+					}
+					if (exporterLabel == Constants.EXPORTER_LABEL_OSCORE_MASTER_SECRET) {
+						int selectedCipherSuite = Constants.EDHOC_CIPHER_SUITE_23;
+						if (messageNumber == Constants.EDHOC_MESSAGE_1) {
+							int indexLast = sideProcessorInfo[1].size() - 1;
+							selectedCipherSuite = sideProcessorInfo[1].get(indexLast).AsInt32();
+						}
+						if (messageNumber == Constants.EDHOC_MESSAGE_2) {
+							selectedCipherSuite = session.getSelectedCipherSuite();
+						}
+						int defaultLength = EdhocSession.getKeyLengthAppAEAD(selectedCipherSuite);
+						if (defaultLength == 0 || indicatedLength < defaultLength) {
+							return false;
+						}
+					}
+				}
+			}
+			
+		}
+		
+		return true;
+		
+    }
 	
 	public void showResultsFromSideProcessing(int messageNumber, boolean postValidation) {
 		HashMap<Integer, List<HashMap<Integer, CBORObject>>> myResults = whichResults(messageNumber, postValidation);

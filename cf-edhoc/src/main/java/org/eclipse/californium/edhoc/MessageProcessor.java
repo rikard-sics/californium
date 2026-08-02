@@ -42,6 +42,11 @@ public class MessageProcessor {
 	
 	private static final boolean debugPrint = true;
 	
+	// The complete advertisement of supported EDHOC application profiles
+	//
+	// Each element of the list is a CBOR object composing the CBOR sequence APP_PROF_SEQ
+	private static List<CBORObject> advertisedAppProfiles = new ArrayList<>();
+	
     /**
      *  Determine the type of a received EDHOC message
      *  
@@ -554,7 +559,11 @@ public class MessageProcessor {
 		/* Return an EDHOC Error Message */
 		
 		if (error == true) {
-			
+
+			// Bring in the information for advertising the supported EDHOC application profiles, in the case
+			// that the error message has error code "Unspecified error and supported EDHOC application profiles"
+			advertisedAppProfiles = appProfile.getAdvertisedAppProfiles();
+
 			// Prepare SUITES_R
 			suitesR = Util.buildSuitesR(cipherSuitesToOffer);
 			
@@ -3071,7 +3080,7 @@ public class MessageProcessor {
 		
 		if (replyTo != Constants.EDHOC_MESSAGE_1 && replyTo != Constants.EDHOC_MESSAGE_2 &&
 			replyTo != Constants.EDHOC_MESSAGE_3 && replyTo != Constants.EDHOC_MESSAGE_4) {
-				   return null;
+			return null;
 		}
 		
 		if (suitesR != null && suitesR.getType() != CBORType.Integer && suitesR.getType() != CBORType.Array)

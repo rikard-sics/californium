@@ -811,7 +811,20 @@ public class EdhocSession {
 	    int selectedCipherSuite = session.getSelectedCipherSuite();
 	    
 	    CBORObject context = CBORObject.FromObject(new byte[0]);
-	    int keyLength = getKeyLengthAppAEAD(selectedCipherSuite);
+	    
+	    // int keyLength = getKeyLengthAppAEAD(selectedCipherSuite);
+	    int keyLength;
+	    int expectedKeyLenght = session.getApplicationProfile().
+	    								getExporterOutputLength(Constants.EXPORTER_LABEL_OSCORE_MASTER_SECRET);
+	    if (expectedKeyLenght < -1) {
+	    	return null;
+	    }
+	    if (expectedKeyLenght == -1) {
+	    	keyLength = getKeyLengthAppAEAD(selectedCipherSuite);
+	    }
+	    else {
+	    	keyLength = expectedKeyLenght;
+	    }
 	    
 	    try {
 			masterSecret = session.edhocExporter(Constants.EXPORTER_LABEL_OSCORE_MASTER_SECRET, context, keyLength);
@@ -834,9 +847,18 @@ public class EdhocSession {
 
 	    byte[] masterSalt = null;
 	    CBORObject context = CBORObject.FromObject(new byte[0]);
+
+	    int saltLength;
+	    int expectedSaltLenght = session.getApplicationProfile().
+										 getExporterOutputLength(Constants.EXPORTER_LABEL_OSCORE_MASTER_SALT);
+		if (expectedSaltLenght < 0) {
+		return null;
+		}
+		
+		saltLength = expectedSaltLenght;
 	    
 	    try {
-			masterSalt = session.edhocExporter(Constants.EXPORTER_LABEL_OSCORE_MASTER_SALT, context, 8);
+			masterSalt = session.edhocExporter(Constants.EXPORTER_LABEL_OSCORE_MASTER_SALT, context, saltLength);
 		} catch (InvalidKeyException e) {
 			System.err.println("Error when the OSCORE Master Salt" + e.getMessage());
 		} catch (NoSuchAlgorithmException e) {

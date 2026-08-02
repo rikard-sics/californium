@@ -134,6 +134,17 @@ public class EdhocClient {
 	
 	// The collection of application profiles - The lookup key is the full URI of the EDHOC resource
 	private static HashMap<String, AppProfile> appProfiles = new HashMap<String, AppProfile>();
+
+	// Set to true if this peer acting as Initiator will advertise its application profiles
+	private static boolean APP_PROFILES_ADVERTISE_AS_INITIATOR = false;
+
+	// Set to true if this peer acting as Responder will advertise its application profiles
+	private static boolean APP_PROFILES_ADVERTISE_AS_RESPONDER = false;
+
+	// Set to true if this peer acting as Initiator will ask the other peer
+	// acting as Responder to advertise its application profiles 
+	private static boolean REQUEST_APP_PROFILES_ADVERTISE_FROM_RESPONDER = false;
+	
 	
 	// The database of OSCORE Security Contexts
 	private final static HashMapCtxDB db = new HashMapCtxDB();
@@ -233,7 +244,14 @@ public class EdhocClient {
 		boolean useMessage4 = false;
 		boolean usedForOSCORE = true;
 		boolean supportCombinedRequest = true; // If set to true, it overrides the ID conversion method to CONVERSION_ID_CORE
-		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest);
+
+		// Prepare the complete advertisement of supported EDHOC application profiles.
+		// Each element of the list is a CBOR object composing the CBOR sequence APP_PROF_SEQ
+		List<CBORObject> advertisedAppProfiles = setupAdvertisementEdhocApplicationProfiles(edhocURI);
+		
+		AppProfile appProfile = new AppProfile(authMethods, useMessage4, usedForOSCORE, supportCombinedRequest,
+				                               advertisedAppProfiles, APP_PROFILES_ADVERTISE_AS_INITIATOR,
+				                               APP_PROFILES_ADVERTISE_AS_RESPONDER, REQUEST_APP_PROFILES_ADVERTISE_FROM_RESPONDER);
 		
 		appProfiles.put(edhocURI, appProfile);
 		
@@ -273,6 +291,74 @@ public class EdhocClient {
 		// The CBOR map provides input on how to produce the EAD item,
 		// with the map keys from a namespace specific of the ead_label.
 		HashMap<Integer, List<CBORObject>> eadProductionInput = null;
+		
+		List<CBORObject> listMessage1 = new ArrayList<CBORObject>();
+		List<CBORObject> listMessage2 = new ArrayList<CBORObject>();
+		List<CBORObject> listMessage3 = new ArrayList<CBORObject>();
+		List<CBORObject> listMessage4 = new ArrayList<CBORObject>();
+		
+		if (APP_PROFILES_ADVERTISE_AS_INITIATOR || REQUEST_APP_PROFILES_ADVERTISE_FROM_RESPONDER ||
+			APP_PROFILES_ADVERTISE_AS_RESPONDER) {
+		
+			int eadLabel = -1 * Constants.EAD_LABEL_SUPPORTED_EDHOC_APP_PROF;
+			List <CBORObject> baselineList = new ArrayList<CBORObject>(advertisedAppProfiles);
+			
+			// Instructions to prepare the EAD item "Supported EDHOC Application Profiles" for EDHOC message_1
+			if (APP_PROFILES_ADVERTISE_AS_INITIATOR || REQUEST_APP_PROFILES_ADVERTISE_FROM_RESPONDER) {
+				List <CBORObject> finalList = new ArrayList<CBORObject>();
+				
+				if (REQUEST_APP_PROFILES_ADVERTISE_FROM_RESPONDER == true) {
+					finalList.add(CBORObject.True);
+				}
+				if (APP_PROFILES_ADVERTISE_AS_INITIATOR == true) {
+					finalList.addAll(baselineList);
+				}
+				if (finalList.isEmpty() == false) {
+					CBORObject input = CBORObject.NewMap();
+					CBORObject eadValue = CBORObject.FromObject(Util.buildCBORSequence(finalList));
+					input.Add(Constants.EAD_ITEM_INPUT_SUPPORTED_EDHOC_APP_PROF_VALUE, eadValue);
+					
+					listMessage1.add(CBORObject.FromObject(eadLabel));
+					listMessage1.add(CBORObject.FromObject(input));
+				}
+			}
+			
+			// Instructions to prepare the EAD item "Supported EDHOC Application Profiles" for EDHOC message_2
+			if (APP_PROFILES_ADVERTISE_AS_RESPONDER) {
+				if (baselineList.isEmpty() == false) {
+					CBORObject input = CBORObject.NewMap();
+					CBORObject eadValue = CBORObject.FromObject(Util.buildCBORSequence(baselineList));
+					input.Add(Constants.EAD_ITEM_INPUT_SUPPORTED_EDHOC_APP_PROF_VALUE, eadValue);
+					
+					listMessage2.add(CBORObject.FromObject(eadLabel));
+					listMessage2.add(CBORObject.FromObject(input));
+				}
+			}
+		}
+		
+		eadProductionInput = new HashMap<Integer, List<CBORObject>>();
+		
+		eadProductionInput.put(Integer.valueOf(Constants.EDHOC_MESSAGE_1), listMessage1);
+		eadProductionInput.put(Integer.valueOf(Constants.EDHOC_MESSAGE_2), listMessage2);
+		
+		System.out.println("\nInstructions to prepare EAD_1");
+		for (CBORObject obj : listMessage1) {
+			System.out.println(obj.toString());
+		}
+		System.out.println("\nInstructions to prepare EAD_2");
+		for (CBORObject obj : listMessage2) {
+			System.out.println(obj.toString());
+		}
+		System.out.println("\nInstructions to prepare EAD_3");
+		for (CBORObject obj : listMessage3) {
+			System.out.println(obj.toString());
+		}
+		System.out.println("\nInstructions to prepare EAD_4");
+		for (CBORObject obj : listMessage4) {
+			System.out.println(obj.toString());
+		}
+		System.out.println();
+		
 		
 		// Prepare the set of information for this EDHOC endpoint
 		EdhocEndpointInfo edhocEndpointInfo = new EdhocEndpointInfo(idCreds, creds, keyPairs, peerPublicKeys,
@@ -404,6 +490,72 @@ public class EdhocClient {
 		
 		// Add the supported EAD items, as per the example line below
 		// supportedEADs.add(Integer.valueOf(1));
+		
+		supportedEADs.add(Integer.valueOf(Constants.EAD_LABEL_SUPPORTED_EDHOC_APP_PROF));
+		
+	}
+
+	private static List<CBORObject> setupAdvertisementEdhocApplicationProfiles(String uri) {
+		
+		// Build the CBOR sequence APP_PROF_SEQ
+		List<CBORObject> advertisedAppProfiles = new ArrayList<CBORObject>();
+		
+		// Add elements here ...
+		if (uri.equals(edhocURI)) {
+				
+			CBORObject element;
+			element = CBORObject.FromObject(Constants.APPLICATION_PROFILE_MINIMAL_CS_2);
+			advertisedAppProfiles.add(element);
+			
+			element = CBORObject.NewArray();
+			element.Add(Constants.APPLICATION_PROFILE_MINIMAL_CS_0);
+			element.Add(Constants.EAD_LABEL_SUPPORTED_EDHOC_APP_PROF);
+			advertisedAppProfiles.add(element);
+			
+			element = CBORObject.NewMap();
+			CBORObject field;
+			field = CBORObject.NewArray();
+			field.Add(Constants.EDHOC_AUTH_METHOD_0);
+			field.Add(Constants.EDHOC_AUTH_METHOD_1);
+			field.Add(Constants.EDHOC_AUTH_METHOD_2);
+			field.Add(Constants.EDHOC_AUTH_METHOD_3);
+			element.Add(Constants.EDHOC_INFORMATION_METHODS, field);
+			field = CBORObject.NewArray();
+			field.Add(Constants.EDHOC_CIPHER_SUITE_0);
+			field.Add(Constants.EDHOC_CIPHER_SUITE_1);
+			field.Add(Constants.EDHOC_CIPHER_SUITE_2);
+			field.Add(Constants.EDHOC_CIPHER_SUITE_3);
+			element.Add(Constants.EDHOC_INFORMATION_CIPHER_SUITES, field);
+			element.Add(Constants.EDHOC_INFORMATION_COMB_REQ, true);
+			
+			/*
+			element.Add(Constants.EDHOC_INFORMATION_MESSAGE_4, false);
+			*/
+			
+			/*
+			CBORObject subfield;
+			field = CBORObject.NewArray();
+			
+			subfield = CBORObject.NewArray();
+			subfield.Add(Constants.EXPORTER_LABEL_OSCORE_MASTER_SECRET);
+			subfield.Add(32);
+			field.Add(subfield);
+			
+			subfield = CBORObject.NewArray();
+			subfield.Add(Constants.EXPORTER_LABEL_OSCORE_MASTER_SALT);
+			subfield.Add(16);
+			field.Add(subfield);
+			
+			element.Add(Constants.EDHOC_INFORMATION_EXPORTER_OUT_LEN, field);
+			*/
+			
+			advertisedAppProfiles.add(element);
+
+		}
+		
+		System.out.println("\nApplication profiles to be advertised:\n" + advertisedAppProfiles.toString() + "\n");
+		
+		return advertisedAppProfiles;
 		
 	}
 	

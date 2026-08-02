@@ -200,7 +200,8 @@ public class ClientEdhocExecutor {
 		SideProcessor sideProcessor = new SideProcessor(edhocEndpointInfo.getTrustModel(),
 														edhocEndpointInfo.getPeerPublicKeys(),
 														edhocEndpointInfo.getPeerCredentials(),
-														edhocEndpointInfo.getEadProductionInput());
+														edhocEndpointInfo.getEadProductionInput(),
+														appProfile);
 		
 		// Provide the side processor object with the just created EDHOC session.
 		// A reference to the sideProcessor is also going to be stored in the EDHOC session.
