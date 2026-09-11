@@ -38,7 +38,9 @@ import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
+import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.config.CoapConfig;
+import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
 import org.eclipse.californium.elements.exception.ConnectorException;
@@ -271,6 +273,15 @@ public class EdhocClient {
 		// helloWorldExchange(args, uri);
 		
 		
+		try {
+			uri = new URI("coap://localhost/.well-known/core");
+		} catch (URISyntaxException e) {
+			System.err.println("Invalid URI: " + e.getMessage());
+			System.exit(-1);
+		}
+		// wellKnownCoreExchange(uri);
+		
+		
 		// Run EDHOC
 		try {
 			uri = new URI(edhocURI);
@@ -471,6 +482,39 @@ public class EdhocClient {
 		} else {
 			System.out.println("No response received.");
 		}
+		client.shutdown();
+		
+	}
+	
+	private static void wellKnownCoreExchange(final URI targetUri) {
+		
+		System.out.println("\n\n=============\nGET request to /.well-known/core");
+
+		CoapClient client = new CoapClient(targetUri);
+
+		CoapResponse response = null;
+		try {
+			response = client.get();
+		} catch (ConnectorException | IOException e) {
+			System.err.println("Got an error: " + e);
+		}
+		
+		if (response != null) {
+		  System.out.println(response.getCode());
+		  System.out.println(response.getOptions());
+
+		  System.out.println(response.getResponseText());
+		  
+		  System.out.println(System.lineSeparator() + "ADVANCED" + System.lineSeparator());
+		  // access advanced API with access to more details through
+		  // .advanced()
+		  System.out.println(Utils.prettyPrint(response));
+		}
+		else {
+		  System.out.println("No response received.");
+		}
+
+		System.out.println("\n=============\n");
 		client.shutdown();
 		
 	}

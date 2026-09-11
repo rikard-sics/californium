@@ -34,6 +34,9 @@ import java.util.Set;
 
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
+import org.eclipse.californium.core.coap.Response;
+import org.eclipse.californium.core.coap.CoAP.ResponseCode;
+import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.CoapExchange;
@@ -252,6 +255,10 @@ public class EdhocServer extends CoapServer {
 		CoapResource wellKnownResource = new WellKnown();
 		add(wellKnownResource);
 		
+		// provide an instance of a .well-known resource
+		CoapResource wellKnownCoreResource = new WellKnownCore();
+		wellKnownResource.add(wellKnownCoreResource);
+		
 		// If EAD items have to be produced for outgoing EDHOC messages (irrespective of the consumption of EAD items
 		// in incoming EDHOC message, this data structure specifies instructions on how to produce those.
 		//
@@ -388,6 +395,41 @@ public class EdhocServer extends CoapServer {
 
 			// respond to the request
 			exchange.respond(".well-known");
+		}
+	}
+	
+	/*
+	 * Definition of the .well-known/core Resource
+	 */
+	class WellKnownCore extends CoapResource {
+
+		public WellKnownCore() {
+
+			// set resource identifier
+			super("core");
+
+			// set display name
+			getAttributes().setTitle("core");
+
+		}
+
+		@Override
+		public void handleGET(CoapExchange exchange) {
+
+			// respond to the request
+			
+			ResponseCode responseCode = ResponseCode.CONTENT;
+			
+			String payload = "</helloWorld>,\n" + 
+					         "</.well-known/edhoc>;rt=core.edhoc;ed-prof=" + Constants.APPLICATION_PROFILE_MINIMAL_CS_2 + ";" +
+					                                            "ed-prof=" + Constants.APPLICATION_PROFILE_MINIMAL_CS_0 + ";" +
+					                                            "ed-ead="  + Constants.EAD_LABEL_SUPPORTED_EDHOC_APP_PROF;
+			
+			Response myResponse = new Response(responseCode);
+			myResponse.getOptions().setContentFormat(MediaTypeRegistry.APPLICATION_LINK_FORMAT);
+			myResponse.setPayload(payload);
+			
+			exchange.respond(myResponse);
 		}
 	}
 	
