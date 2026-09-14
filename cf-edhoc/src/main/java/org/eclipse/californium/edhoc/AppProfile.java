@@ -72,7 +72,10 @@ public class AppProfile {
 		this.usedForOSCORE = usedForOSCORE;
 		this.supportCombinedRequest = supportCombinedRequest;
 		
-		this.advertisedAppProfiles = advertisedAppProfiles;
+		if (advertisedAppProfiles != null) {
+			this.advertisedAppProfiles = advertisedAppProfiles;
+		}
+
 		this.advertiseAsInitiator = advertiseAsInitiator;
 		this.advertiseAsResponder = advertiseAsResponder;
 		this.askResponderToAdvertise = askResponderToAdvertise;
