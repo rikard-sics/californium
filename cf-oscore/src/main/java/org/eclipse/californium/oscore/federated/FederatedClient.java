@@ -145,6 +145,20 @@ public class FederatedClient {
 	static boolean unicastMode = false;
 
 	/**
+	 * Use unicast but send requests to all servers in parallel (with a small
+	 * delay between each send to avoid overloading the medium) instead of
+	 * waiting for each server's response before contacting the next one.
+	 * Requires unicastMode to also be enabled.
+	 */
+	static boolean parallelUnicastMode = false;
+
+	/**
+	 * Delay in milliseconds between sending unicast requests to consecutive
+	 * servers when using parallel unicast.
+	 */
+	private static final long PARALLEL_UNICAST_SEND_DELAY_MS = 5;
+
+	/**
 	 * Multicast address to send to (use the first line to set a custom one).
 	 */
 	// static final InetAddress multicastIP = new
@@ -274,6 +288,7 @@ public class FederatedClient {
 			useFederatedLearning = Boolean.parseBoolean(cmdArgs.getOrDefault("--federated-learning", "true"));
 			useOSCORE = Boolean.parseBoolean(cmdArgs.getOrDefault("--oscore", "false"));
 			unicastMode = Boolean.parseBoolean(cmdArgs.getOrDefault("--unicast", "false"));
+			parallelUnicastMode = Boolean.parseBoolean(cmdArgs.getOrDefault("--parallel-unicast", "false"));
 			MAX_GLOBAL_EPOCHS = Integer.parseInt(cmdArgs.getOrDefault("--max-epochs", "100"));
 			debugPrint = Boolean.parseBoolean(cmdArgs.getOrDefault("--debug", "true"));
 			modelsize = Integer.parseInt(cmdArgs.getOrDefault("--model-size", "-1"));
@@ -314,6 +329,14 @@ public class FederatedClient {
 			printHelp();
 		}
 
+		if (parallelUnicastMode && !unicastMode) {
+			DebugOut.println("Invalid config:");
+			DebugOut.println("parallelUnicastMode: " + parallelUnicastMode);
+			DebugOut.println("unicastMode: " + unicastMode);
+			DebugOut.println();
+			printHelp();
+		}
+
 		// Parse list of IPs for the servers
 		List<String> unicastServerIps = new ArrayList<String>();
 		if (unicastMode) {
@@ -334,7 +357,9 @@ public class FederatedClient {
 
 			}
 		}
-		if (unicastMode) {
+		if (unicastMode && !parallelUnicastMode) {
+			// Sequential unicast waits for each server individually, so use
+			// shortened windows for that per-server wait.
 			CHECK1_TIMEOUT = UNICAST_TIMEOUT / 3;
 			CHECK2_TIMEOUT = 2 * (UNICAST_TIMEOUT / 3);
 			FINAL_TIMEOUT = UNICAST_TIMEOUT;
@@ -401,6 +426,7 @@ public class FederatedClient {
 		DebugOut.println("Uses Group OSCORE: " + useGroupOSCORE);
 		DebugOut.println("Uses OSCORE: " + useOSCORE);
 		DebugOut.println("Use multicast: " + !unicastMode);
+		DebugOut.println("Use parallel unicast: " + parallelUnicastMode);
 		DebugOut.println("Request destination: " + requestURI);
 		DebugOut.println("Request destination port: " + destinationPort);
 		DebugOut.println("Outgoing port: " + endpoint.getAddress().getPort());
@@ -515,12 +541,75 @@ public class FederatedClient {
 			// Create handler for responses
 			MultiCoapHandler handler = new MultiCoapHandler(serverCount);
 
-			// Either loop and send unicast requests or send 1 multicast
-			if (unicastMode) {
+			// Either send unicast requests to all servers in parallel, loop
+			// and send unicast requests one by one, or send 1 multicast
+			if (unicastMode && parallelUnicastMode) {
+
+				handler.clearResponses();
+				handler.resumeWaiting(true);
+				Collections.shuffle(unicastServerIps);
+
+				for (int n = 0; n < unicastServerIps.size(); n++) {
+
+					// Empty payload for servers being contacted first time
+					byte[] emptyPayload = new byte[0];
+					// Append version number to payload
+					byte[] tempArray2 = Arrays.copyOf(emptyPayload, emptyPayload.length + 1);
+					tempArray2[tempArray2.length - 1] = (byte) latestModelVersion;
+					emptyPayload = Arrays.copyOf(tempArray2, tempArray2.length);
+
+					Request parallelRequest = Request.newPost();
+
+					// Use empty request for servers not yet contacted
+					if (sentInitialRequest.containsKey(unicastServerIps.get(n)) == false
+							|| sentInitialRequest.get(unicastServerIps.get(n)) == false) {
+						parallelRequest.setPayload(emptyPayload);
+						sentInitialRequest.put(unicastServerIps.get(n), true);
+					} else {
+						parallelRequest.setPayload(payloadReq);
+					}
+
+					URI unicastURI;
+					if (unicastServerIps.get(n).contains(":")) {
+						unicastURI = URI.create("coap://" + "[" + unicastServerIps.get(n) + "]");
+					} else {
+						unicastURI = URI.create("coap://" + unicastServerIps.get(n));
+					}
+					String parallelRequestURI = unicastURI + requestResource;
+
+					if (useOSCORE) {
+						parallelRequest.getOptions().setOscore(Bytes.EMPTY);
+					}
+
+					parallelRequest.setType(Type.NON);
+					CoapClient parallelClient = new CoapClient();
+					parallelClient.setURI(parallelRequestURI);
+					parallelRequest.setURI(parallelRequestURI);
+
+					DebugOut.println("Sending request to: " + parallelClient.getURI());
+					DebugOut.println(Utils.prettyPrint(parallelRequest));
+					parallelClient.advanced(handler, parallelRequest);
+
+					// Small delay before contacting the next server, to avoid
+					// overloading the medium with simultaneous sends
+					if (n < unicastServerIps.size() - 1) {
+						try {
+							Thread.sleep(PARALLEL_UNICAST_SEND_DELAY_MS);
+						} catch (InterruptedException e) {
+							//
+						}
+					}
+				}
+
+				while (handler.waitOn(FINAL_TIMEOUT)) {
+					// Wait for responses
+				}
+
+			} else if (unicastMode) {
 
 				handler.clearResponses();
 				Collections.shuffle(unicastServerIps);
-				
+
 				for (int n = 0; n < unicastServerIps.size(); n++) {
 
 					// Empty payload for servers being contacted first time
@@ -908,9 +997,10 @@ public class FederatedClient {
 			// Add response to list of responses
 			responses.add(response);
 
-			// Stop waiting if all servers have responded (or for unicast wait
-			// only for 1 response)
-			if (responses.size() == serverCount || unicastMode) {
+			// Stop waiting if all servers have responded (or for sequential
+			// unicast wait only for 1 response, since parallel unicast and
+			// multicast should keep waiting for further responses)
+			if (responses.size() == serverCount || (unicastMode && !parallelUnicastMode)) {
 				keepWaiting = false;
 			}
 		}
@@ -930,6 +1020,8 @@ public class FederatedClient {
 		System.out.println("--multicast-ip: IPv4 or IPv6 [Optional. Default: ipv4]");
 		System.out.println("--oscore: Use OSCORE [Optional. Default: false]");
 		System.out.println("--unicast: Use unicast one-by-one to the servers [Optional. Default: false]");
+		System.out.println(
+				"--parallel-unicast: When using unicast, send to all servers in parallel instead of one-by-one (requires --unicast true) [Optional. Default: false]");
 		System.out.println("--max-epochs: Stop the training after this many epochs [Optional. Default: 100]");
 		System.out.println("--debug: Enable/disable debug printing [Optional. Default: true]");
 		System.exit(1);
