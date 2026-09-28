@@ -601,9 +601,7 @@ public class FederatedClient {
 					}
 				}
 
-				while (handler.waitOn(FINAL_TIMEOUT)) {
-					// Wait for responses
-				}
+				handler.waitOn(FINAL_TIMEOUT);
 
 			} else if (unicastMode) {
 
@@ -657,9 +655,7 @@ public class FederatedClient {
 					DebugOut.println("Sending request to: " + client.getURI());
 					DebugOut.println(Utils.prettyPrint(request));
 					client.advanced(handler, request);
-					while (handler.waitOn(UNICAST_TIMEOUT)) {
-						// Wait for responses
-					}
+					handler.waitOn(UNICAST_TIMEOUT);
 				}
 
 			} else {
@@ -670,9 +666,7 @@ public class FederatedClient {
 				DebugOut.println(Utils.prettyPrint(request));
 
 				client.advanced(handler, request);
-				while (handler.waitOn(FINAL_TIMEOUT)) {
-					// Wait for responses
-				}
+				handler.waitOn(FINAL_TIMEOUT);
 			}
 
 			// Print received responses

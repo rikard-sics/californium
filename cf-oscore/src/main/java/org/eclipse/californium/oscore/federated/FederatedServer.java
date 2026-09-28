@@ -397,6 +397,16 @@ public class FederatedServer {
 		DebugOut.println("");
 		DebugOut.println("==================");
 
+		if (useFederatedLearning == false) {
+			// No dataset or model needed when not using federated learning,
+			// since requests are served from HelloWorldResource instead.
+			DebugOut.println("Skipping dataset loading and model setup (--federated-learning false)");
+			DebugOut.println("==================");
+			DebugOut.println("Server Ready");
+			System.out.println("Server Ready");
+			return;
+		}
+
 		/*
 		 * Create an iterator using the batch size for one iteration for
 		 * MnistData
