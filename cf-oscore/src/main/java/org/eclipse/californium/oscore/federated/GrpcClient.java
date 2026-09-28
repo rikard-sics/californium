@@ -31,8 +31,11 @@ import java.util.regex.Pattern;
 import java.util.Collections;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpContentResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpField;
@@ -68,6 +71,23 @@ public class GrpcClient {
 	private static final double SERVER_RESPONSE_RATIO = 0.8;
 
 	/**
+	 * Time to wait before checking for the first time if responses from 80%
+	 * of the servers have been received (parallel unicast).
+	 */
+	private static final int CHECK1_TIMEOUT = 15000;
+
+	/**
+	 * Time to wait before checking for the second time if responses from 80%
+	 * of the servers have been received (parallel unicast).
+	 */
+	private static final int CHECK2_TIMEOUT = 22000;
+
+	/**
+	 * Maximum time to wait for replies when using parallel unicast.
+	 */
+	private static final int FINAL_TIMEOUT = UNICAST_TIMEOUT;
+
+	/**
 	 * Whether to use gRPC or not.
 	 */
 	static boolean useGrpc = true;
@@ -76,6 +96,20 @@ public class GrpcClient {
 	 * Use unicast one-by-one to the servers
 	 */
 	static boolean unicastMode = true;
+
+	/**
+	 * Use unicast but send requests to all servers in parallel (with a small
+	 * delay between each send to avoid overloading the medium) instead of
+	 * waiting for each server's response before contacting the next one.
+	 * Requires unicastMode to also be enabled.
+	 */
+	static boolean parallelUnicastMode = false;
+
+	/**
+	 * Delay in milliseconds between sending unicast requests to consecutive
+	 * servers when using parallel unicast.
+	 */
+	private static final long PARALLEL_UNICAST_SEND_DELAY_MS = 5;
 
 	/**
 	 * Multicast address to send to (use the first line to set a custom one).
@@ -162,6 +196,7 @@ public class GrpcClient {
 			useGrpc = Boolean.parseBoolean(cmdArgs.getOrDefault("--grpc", "true"));
 			useTls = Boolean.parseBoolean(cmdArgs.getOrDefault("--tls", "false"));
 			unicastMode = Boolean.parseBoolean(cmdArgs.getOrDefault("--unicast", "true"));
+			parallelUnicastMode = Boolean.parseBoolean(cmdArgs.getOrDefault("--parallel-unicast", "false"));
 			MAX_GLOBAL_EPOCHS = Integer.parseInt(cmdArgs.getOrDefault("--max-epochs", "100"));
 			debugPrint = Boolean.parseBoolean(cmdArgs.getOrDefault("--debug", "true"));
 			modelsize = Integer.parseInt(cmdArgs.getOrDefault("--model-size", "-1"));
@@ -182,6 +217,14 @@ public class GrpcClient {
 		if (useGrpc && !unicastMode) {
 			DebugOut.println("Invalid config:");
 			DebugOut.println("useGprc: " + useGrpc);
+			DebugOut.println("unicastMode: " + unicastMode);
+			DebugOut.println();
+			printHelp();
+		}
+
+		if (parallelUnicastMode && !unicastMode) {
+			DebugOut.println("Invalid config:");
+			DebugOut.println("parallelUnicastMode: " + parallelUnicastMode);
 			DebugOut.println("unicastMode: " + unicastMode);
 			DebugOut.println();
 			printHelp();
@@ -356,8 +399,104 @@ public class GrpcClient {
 
 			List<ContentResponse> responses = new ArrayList<ContentResponse>(serverCount);
 
-			// Either loop and send unicast requests or send 1 multicast
-			if (unicastMode) {
+			// Either send unicast requests to all servers in parallel, loop
+			// and send unicast requests one by one, or send 1 multicast
+			if (unicastMode && parallelUnicastMode) {
+
+				responses.clear();
+				MultiHttpHandler handler = new MultiHttpHandler(serverCount);
+				Collections.shuffle(unicastServerIps);
+
+				for (int n = 0; n < unicastServerIps.size(); n++) {
+
+					boolean useEmptyPayload = false;
+
+					// Empty payload for servers being contacted first time
+					byte[] emptyPayload = new byte[0];
+
+					// Append version number to payload
+					byte[] tempArray2 = Arrays.copyOf(emptyPayload, emptyPayload.length + 1);
+					tempArray2[tempArray2.length - 1] = (byte) latestModelVersion;
+					emptyPayload = Arrays.copyOf(tempArray2, tempArray2.length);
+
+					// Use empty request for servers not yet contacted
+					if (sentInitialRequest.containsKey(unicastServerIps.get(n)) == false
+							|| sentInitialRequest.get(unicastServerIps.get(n)) == false) {
+						useEmptyPayload = true;
+						sentInitialRequest.put(unicastServerIps.get(n), true);
+					} else {
+						useEmptyPayload = false;
+					}
+
+					// Send request using gRPC
+
+					// Perform a GET request over HTTP/2
+					httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, "grpc-java-netty/1.69.1"));
+
+					final String targetUri = scheme + "://[" + unicastServerIps.get(n) + "]:" + port
+							+ "/helloworld.Greeter/SayHello";
+					Request req = httpClient.POST(targetUri);
+					req.header("content-type", "application/grpc");
+					req.header("grpc-accept-encoding", "gzip");
+					req.header("te", "trailers");
+					req.timeout(UNICAST_TIMEOUT, TimeUnit.MILLISECONDS);
+					req.idleTimeout(UNICAST_TIMEOUT, TimeUnit.MILLISECONDS);
+
+					BytesContentProvider myCont;
+					if (useEmptyPayload == false) {
+						myCont = new BytesContentProvider(payloadReq);
+					} else {
+						myCont = new BytesContentProvider(emptyPayload);
+					}
+					req.content(myCont);
+
+					// Prepare to save RTT
+					final String serverRid = req.getHost();
+					if (!rtts.containsKey(serverRid)) {
+						rtts.put(serverRid, new long[MAX_GLOBAL_EPOCHS]);
+						Arrays.fill(rtts.get(serverRid), -1);
+					}
+
+					DebugOut.println("Sending request to: " + targetUri);
+					final long sendStartNanos = System.nanoTime();
+					req.send(new BufferingResponseListener() {
+						@Override
+						public void onComplete(Result result) {
+							if (result.isFailed()) {
+								DebugOut.println("Request failed for " + targetUri + ": " + result.getFailure());
+								return;
+							}
+
+							long rttNanos = System.nanoTime() - sendStartNanos;
+							ContentResponse response = new HttpContentResponse(result.getResponse(), getContent(),
+									getMediaType(), getEncoding());
+
+							DebugOut.println("Status: " + response.getStatus());
+							DebugOut.println("Response: " + response.getContentAsString());
+
+							handler.onResponse(response, serverRid, rttNanos);
+						}
+					});
+
+					// Small delay before contacting the next server, to avoid
+					// overloading the medium with simultaneous sends
+					if (n < unicastServerIps.size() - 1) {
+						try {
+							Thread.sleep(PARALLEL_UNICAST_SEND_DELAY_MS);
+						} catch (InterruptedException e) {
+							//
+						}
+					}
+				}
+
+				handler.waitOn(FINAL_TIMEOUT);
+
+				for (Map.Entry<String, Long> entry : handler.getRttNanosByHost().entrySet()) {
+					rtts.get(entry.getKey())[currentEpoch] = entry.getValue();
+				}
+				responses.addAll(handler.getResponses());
+
+			} else if (unicastMode) {
 
 				responses.clear();
 				Collections.shuffle(unicastServerIps);
@@ -685,6 +824,102 @@ public class GrpcClient {
 		return avg;
 	}
 
+	/**
+	 * Handler for sending requests to all servers in parallel and collecting
+	 * their responses. Mirrors the CoAP/OSCORE client's MultiCoapHandler:
+	 * waitOn() waits in three phases (CHECK1_TIMEOUT / CHECK2_TIMEOUT /
+	 * FINAL_TIMEOUT), checking after each phase whether more than
+	 * SERVER_RESPONSE_RATIO of the servers have responded, and returns once
+	 * that holds, once all servers have responded, or the final timeout is
+	 * reached.
+	 */
+	private static class MultiHttpHandler {
+
+		private final int interval1 = CHECK1_TIMEOUT;
+		private final int interval2 = CHECK2_TIMEOUT - CHECK1_TIMEOUT;
+		private final int interval3 = FINAL_TIMEOUT - CHECK2_TIMEOUT;
+
+		private final List<ContentResponse> responses = new ArrayList<ContentResponse>();
+		private final Map<String, Long> rttNanosByHost = new HashMap<>();
+		private boolean on;
+		private final int serverCount;
+		private boolean keepWaiting = true;
+
+		public MultiHttpHandler(int serverCount) {
+			this.serverCount = serverCount;
+
+			if (interval1 <= 0 || interval2 <= 0 || interval3 <= 0) {
+				DebugOut.errPrintln("error: invalid wait intervals in handler");
+				throw new IllegalArgumentException("Invalid wait intervals in handler");
+			}
+		}
+
+		public synchronized List<ContentResponse> getResponses() {
+			return responses;
+		}
+
+		public synchronized Map<String, Long> getRttNanosByHost() {
+			return rttNanosByHost;
+		}
+
+		public synchronized boolean waitOn(long timeout) {
+			on = false;
+			try {
+
+				// First waiting period (split into parts of 10 to stop early
+				// if enough responses are received)
+				for (int i = 0; keepWaiting && i < 10; i++) {
+					wait(interval1 / 10);
+				}
+				if (responses.size() > serverCount * SERVER_RESPONSE_RATIO) {
+					keepWaiting = false;
+				}
+
+				// Second waiting period
+				for (int i = 0; keepWaiting && i < 10; i++) {
+					wait(interval2 / 10);
+				}
+				if (responses.size() > serverCount * SERVER_RESPONSE_RATIO) {
+					keepWaiting = false;
+				}
+
+				// Final waiting period
+				for (int i = 0; keepWaiting && i < 10; i++) {
+					wait(interval3 / 10);
+				}
+				if (responses.size() > serverCount * SERVER_RESPONSE_RATIO) {
+					keepWaiting = false;
+				}
+
+			} catch (InterruptedException e) {
+				//
+			}
+			return on;
+		}
+
+		private synchronized void on() {
+			on = true;
+			notifyAll();
+		}
+
+		/**
+		 * Record a received response. Only touches this handler's own
+		 * synchronized state (never the static rtts/accuracies/models
+		 * fields), since this runs on Jetty's I/O threads, concurrently with
+		 * the main thread still sending requests to other servers.
+		 */
+		public synchronized void onResponse(ContentResponse response, String serverRid, long rttNanos) {
+			on();
+			responses.add(response);
+			rttNanosByHost.put(serverRid, rttNanos);
+
+			// Stop waiting once all servers have responded
+			if (responses.size() == serverCount) {
+				keepWaiting = false;
+			}
+		}
+	}
+
 	private static void printHelp() {
 		System.out.println("Arguments: ");
 		System.out.println("--server-count: Total number of servers [Mandatory.]");
@@ -694,6 +929,8 @@ public class GrpcClient {
 		System.out.println("--grpc: Use gRPC [Optional. Default: true]");
 		System.out.println("--tls: Use TLS (for gRPC) [Optional. Default: false]");
 		System.out.println("--unicast: Use unicast one-by-one to the servers [Optional. Default: true]");
+		System.out.println(
+				"--parallel-unicast: Use unicast but send requests to all servers in parallel [Optional. Default: false]");
 		System.out.println("--max-epochs: Stop the training after this many epochs [Optional. Default: 100]");
 		System.out.println("--debug: Enable/disable debug printing [Optional. Default: true]");
 		System.out.println("--server-data: Dataset for this server [IoT, SD, Diabetes] (only for logging)");

@@ -112,6 +112,8 @@ public class GrpcServer {
 	private static DataSetIterator trainIter;
 	private static DataSetIterator testIter;
 	private static boolean serverIsInitialized = false;
+	private static boolean useFederatedLearning = true;
+	private static int helloWorldRequestCount = 0;
 
 	private static int latestVersionNumber = -1;
 
@@ -148,7 +150,6 @@ public class GrpcServer {
 		}
 
 		String serverDataset = null;
-		boolean useFederatedLearning = true;
 		boolean debugPrint = true;
 		try {
 			serverId = Integer.parseInt(cmdArgs.get("--server-id"));
@@ -208,6 +209,16 @@ public class GrpcServer {
 		DebugOut.println("Dataset: " + serverDataset);
 		DebugOut.println("");
 		DebugOut.println("==================");
+
+		if (useFederatedLearning == false) {
+			// No dataset or model needed when not using federated learning,
+			// since requests are served with a canned response instead.
+			DebugOut.println("Skipping dataset loading and model setup (--federated-learning false)");
+			DebugOut.println("==================");
+			DebugOut.println("Server Ready");
+			System.out.println("Server Ready");
+			return;
+		}
 
 		/*
 		 * Create an iterator using the batch size for one iteration for
@@ -580,14 +591,6 @@ public class GrpcServer {
 	public byte[] handleIncoming(byte[] incomingPayload) {
 		DebugOut.println("Accessing model resource");
 
-		// Parse and handle request
-		byte[] payloadReq = incomingPayload;
-
-		// Extract model version from payload
-		int receivedVersion = (int) payloadReq[payloadReq.length - 1];
-		byte[] newArray = Arrays.copyOf(payloadReq, payloadReq.length - 1);
-		payloadReq = Arrays.copyOf(newArray, newArray.length);
-
 		// Check for exiting (experiment over)
 		if (incomingPayload.length <= 20) {
 			String payloadText = new String(incomingPayload, StandardCharsets.UTF_8);
@@ -595,6 +598,25 @@ public class GrpcServer {
 				System.exit(0);
 			}
 		}
+
+		if (useFederatedLearning == false) {
+			// No model to train; return a small canned response quickly.
+			DebugOut.println("Received request #" + helloWorldRequestCount);
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+			return ("Response count: " + (helloWorldRequestCount++)).getBytes(StandardCharsets.UTF_8);
+		}
+
+		// Parse and handle request
+		byte[] payloadReq = incomingPayload;
+
+		// Extract model version from payload
+		int receivedVersion = (int) payloadReq[payloadReq.length - 1];
+		byte[] newArray = Arrays.copyOf(payloadReq, payloadReq.length - 1);
+		payloadReq = Arrays.copyOf(newArray, newArray.length);
 
 		// Parse bytes in request payload into float vector
 		float[] modelReq = FloatConverter.bytesToFloatVector(payloadReq);
