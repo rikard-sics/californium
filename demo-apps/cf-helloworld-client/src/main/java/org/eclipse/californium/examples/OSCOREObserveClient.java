@@ -2,10 +2,6 @@ package org.eclipse.californium.examples;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
 
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
@@ -13,19 +9,11 @@ import org.eclipse.californium.core.CoapObserveRelation;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.CoAP.Code;
-import org.eclipse.californium.core.coap.CoAP.Type;
-import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Request;
-import org.eclipse.californium.core.coap.Token;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.core.network.CoapEndpoint;
-import org.eclipse.californium.core.observe.ObservationInfo;
-import org.eclipse.californium.elements.AddressEndpointContext;
-import org.eclipse.californium.elements.UDPConnector;
-import org.eclipse.californium.elements.UdpMulticastConnector;
 import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.elements.config.UdpConfig;
-import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
@@ -115,11 +103,6 @@ public class OSCOREObserveClient {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(OSCOREObserveClient.class);
 
-	private static UDPConnector udpConnector;
-	private static UdpMulticastConnector multicastReceiver;
-	private static CoapEndpoint endpoint;
-	private static CoapClient multicastClient;
-	private static boolean receiverReady = false;
 	private static int clientId = 1;
 
 	private static class ObserveHandler implements CoapHandler {
@@ -184,22 +167,6 @@ public class OSCOREObserveClient {
 		public void onError() {
 			LOGGER.error("Error receiving notification");
 		}
-	}
-
-	/**
-	 * Creates a phantom request to register an observe relation for receiving multicast notifications.
-	 */
-	private static Request createPhantomRequest(Token multicastToken, String requestedURI, InetAddress groupAddr, int groupPort) {
-		Request phantomRequest = Request.newGet();
-		phantomRequest.setToken(multicastToken);
-		phantomRequest.setObserve();
-		phantomRequest.setDestinationContext(new AddressEndpointContext(new InetSocketAddress(groupAddr, groupPort)));
-		phantomRequest.setURI(requestedURI);
-		phantomRequest.setType(Type.NON);
-		phantomRequest.setClientInjection(true);
-		phantomRequest.getOptions().setOscore(Bytes.EMPTY);
-		LOGGER.debug("Created phantom request: {}", phantomRequest);
-		return phantomRequest;
 	}
 
 	private static void setupOscore(String requestURI, int sender) throws OSException {
@@ -275,10 +242,10 @@ public class OSCOREObserveClient {
 			client.setEndpoint(endpoint);
 			client.setURI(requestURI);
 
-			Request multicastRequest = createRequest(Code.GET, requestURI);
+			Request observeRequest = createRequest(Code.GET, requestURI);
 
 			ObserveHandler handler = new ObserveHandler(40);
-			CoapObserveRelation relation = client.observe(multicastRequest, handler);
+			CoapObserveRelation relation = client.observe(observeRequest, handler);
 
 			handler.waitForNotifications();
 
@@ -286,12 +253,8 @@ public class OSCOREObserveClient {
 			Request deregisterRequest = createRequest(Code.GET, requestURI);
 			deregisterRequest.getOptions().setObserve(1); // Observe=1 means cancel
 			deregisterRequest.send();
-
-			if (multicastClient != null) {
-				multicastClient.shutdown();
-			}
 		} catch (Exception e) {
-			LOGGER.error("Error in multicast observe client", e);
+			LOGGER.error("Error in observe client", e);
 		}
 	}
 }

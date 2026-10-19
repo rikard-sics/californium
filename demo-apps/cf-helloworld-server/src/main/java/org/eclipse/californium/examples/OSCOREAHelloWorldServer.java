@@ -235,10 +235,8 @@ public class OSCOREAHelloWorldServer extends CoapServer {
 
 		Endpoint endpoint = server.getEndpoint(listenPort);
 		
-		//resource.add(new MulticastObservableResource("mult", true, server.getMessageDeliverer()));
 		resource.add(new ObservableResource());
 		resource.add(new MulticastObservableResource("OSCORE-mult", true, db, multicastAddress));
-		//resource.add(new MulticastObservableResource("OSCORE-mult", true, multicastAddress));
 
 		server.start();
 

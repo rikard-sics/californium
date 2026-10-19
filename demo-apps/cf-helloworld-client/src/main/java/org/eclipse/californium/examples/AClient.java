@@ -16,24 +16,38 @@
 package org.eclipse.californium.examples;
 
 import java.io.IOException;
+import java.net.InetAddress;
 
 import org.eclipse.californium.elements.exception.ConnectorException;
+import org.eclipse.californium.elements.util.NetworkInterfacesUtil;
 
 /**
  * Main starter class for jar execution.
  */
 public class AClient {
 
+	/**
+	 * The IPv4 address of this host's multicast interface, as selected by the
+	 * demo servers, or the loopback address if there is none.
+	 */
+	private static String defaultHost() {
+		InetAddress address = NetworkInterfacesUtil.getMulticastInterfaceIpv4();
+		if (address == null) {
+			address = InetAddress.getLoopbackAddress();
+		}
+		return address.getHostAddress();
+	}
+
 	public static void main(String[] args) throws IOException, ConnectorException, InterruptedException {
 
 		if (args.length < 1) {
 			System.out.println("Usage: AClient <command> [host] [port]");
-			System.out.println("  host defaults to 192.168.0.33");
+			System.out.println("  host defaults to this host's multicast interface IPv4 address");
 			System.out.println("  port defaults to 5683");
 			System.exit(1);
 		}
 
-		String host = args.length >= 2 ? args[1] : "192.168.0.33";
+		String host = args.length >= 2 ? args[1] : defaultHost();
 		int port = args.length >= 3 ? Integer.parseInt(args[2]) : 5683;
 		String uri = "coap://" + host + ":" + port + "/";
 		String uri_get = "get";
@@ -80,7 +94,7 @@ public class AClient {
 				OSCOREMulticastObserveClient.main(uri + "OSCORE-mult", 2,true);
 				break;
 			case "OSCORE-mult-3":
-				System.out.println(uri + "OSCORE-obs");
+				System.out.println(uri + "OSCORE-mult");
 				OSCOREMulticastObserveClient.main(uri + "OSCORE-mult", 3, true);
 				break;
 			case "OSCORE-obs-1":

@@ -17,10 +17,10 @@
  ******************************************************************************/
 package org.eclipse.californium.examples;
 
-import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 
 import org.eclipse.californium.core.CoapExchange;
 import org.eclipse.californium.core.CoapResource;
@@ -53,26 +53,37 @@ public class AHelloWorldServer extends CoapServer {
 
 	/**
 	 * Application entry point.
+	 *
+	 * Usage: AHelloWorldServer [bindAddress]
+	 *
+	 * @param args optional address to bind the physical interface endpoint
+	 *            to. Defaults to the IPv4 address of the multicast interface.
 	 */
 	public static void main(String[] args) {
 		try {
+			String bindAddress = args.length > 0 ? args[0] : null;
 			AHelloWorldServer server = new AHelloWorldServer();
-			server.addEndpoint();
+			server.addEndpoint(bindAddress);
 			server.start();
 			try {
 				Thread.currentThread().join();
 			} catch (InterruptedException e) {
 				LOGGER.warn("Main thread interrupted", e);
 			}
-		} catch (SocketException e) {
+		} catch (SocketException | UnknownHostException e) {
 			LOGGER.error("Failed to initialize server: {}", e.getMessage());
 		}
 	}
 
 	/**
 	 * Add endpoints listening on the default CoAP port.
+	 *
+	 * @param bindAddress address of the physical interface endpoint, or
+	 *            {@code null} to use the IPv4 address of the multicast
+	 *            interface
+	 * @throws UnknownHostException if the bind address can't be resolved
 	 */
-	private void addEndpoint() {
+	private void addEndpoint(String bindAddress) throws UnknownHostException {
 		Configuration config = Configuration.getStandard();
 		int port = config.get(CoapConfig.COAP_PORT);
 
@@ -89,9 +100,10 @@ public class AHelloWorldServer extends CoapServer {
 		this.setExecutor(executorService, isRunning());
 
 		// Physical interface endpoint for multicast support
-		Inet4Address ipv4 = NetworkInterfacesUtil.getMulticastInterfaceIpv4();
-		if (ipv4 != null) {
-			InetSocketAddress physicalSocket = new InetSocketAddress(ipv4, port);
+		InetAddress physicalAddr = bindAddress != null ? InetAddress.getByName(bindAddress)
+				: NetworkInterfacesUtil.getMulticastInterfaceIpv4();
+		if (physicalAddr != null) {
+			InetSocketAddress physicalSocket = new InetSocketAddress(physicalAddr, port);
 			CoapEndpoint.Builder physicalBuilder = new CoapEndpoint.Builder();
 			physicalBuilder.setInetSocketAddress(physicalSocket);
 			physicalBuilder.setConfiguration(config);
