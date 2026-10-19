@@ -20,6 +20,7 @@ import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.option.OptionRegistry;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Message;
+import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.Token;
@@ -78,6 +79,27 @@ public class OSCOREMulticastObserveClient {
 			(byte) 0x78, (byte) 0x63, (byte) 0x40 };
 
 	private static final int REPLAY_WINDOW = 32;
+
+	/* --- Unicast leg: RFC 8613 OSCORE, one pairwise Security Context per client ---
+	 * draft-ietf-core-observe-multicast-notifications-15 §9: the original registration
+	 * request and the informative response MUST be protected; §10 uses pairwise OSCORE.
+	 * Sender IDs are distinct from the Group OSCORE ones (as 0x01/0x02 vs 0x05 in §10):
+	 * client N (OSCORE-mult-N) = 0x0N, server = 0x00. Master Secret: the group one with
+	 * its last byte set to 0x10 + N, so each pairwise context has its own keys.
+	 * Master Salt: as the group. No ID Context. AES-CCM-16-64-128, HKDF SHA-256. */
+	private final static byte[] PAIRWISE_SERVER_ID = new byte[] { 0x00 };
+
+	// The DB maps a URI to one context per host. The pairwise context is mapped while the
+	// unicast registration runs; the group context is mapped back before the client-injected
+	// phantom request, so the multicast token is bound to the Group OSCORE context.
+	private static GroupCtx groupCtx;
+	private static String groupCtxUri;
+
+	private static byte[] pairwiseMasterSecret(int client) {
+		byte[] ms = master_secret.clone();
+		ms[ms.length - 1] = (byte) (0x10 + client);
+		return ms;
+	}
 
 	private final static byte[] gm_public_key_bytes = StringUtil.hex2ByteArray(
 			"A501781A636F6170733A2F2F6D79736974652E6578616D706C652E636F6D026C67726F75706D616E6167657203781A636F6170733A2F2F646F6D61696E2E6578616D706C652E6F7267041AAB9B154F08A101A4010103272006215820CDE3EFD3BC3F99C9C9EE210415C6CBA55061B5046E963B8A58C9143A61166472");
@@ -140,10 +162,15 @@ public class OSCOREMulticastObserveClient {
     private static final int CSV_WRITE_THRESHOLD = 20;
     private int notificationCount = 0;
     private final int targetCount;
+    /* The original Observe registration request of this client. Kept because the
+     * informative response may carry no 'ph_req': the phantom request is then rebuilt
+     * from the transport-independent information of this request (Section 5.2, step 2). */
+    private final Request registrationRequest;
     private final java.util.List<long[]> timingRecords = new ArrayList<>();
 
-    public MulticastObserveHandler(int targetCount) {
+    public MulticastObserveHandler(int targetCount, Request registrationRequest) {
       this.targetCount = targetCount;
+      this.registrationRequest = registrationRequest;
     }
 
     public synchronized void waitForNotifications() {
@@ -179,10 +206,12 @@ public class OSCOREMulticastObserveClient {
 		}
 
 		try {
-			// Mark as phantom request so AAD computation uses empty OSCORE option,
-			// matching the server-side behavior in ObjectSecurityLayer.receiveRequest.
+			// Mark as phantom request so that the replay check is skipped (Section 9.3.1).
+			// This exception applies only here, to the client's own verification
+			// of the ph_req it received; it must not apply to the server's
+			// processing of an incoming phantom request.
 			request.setIsPhantomRequest(true);
-			request = RequestDecryptor.decrypt(db, request, ctx);
+			request = RequestDecryptor.decrypt(db, request, ctx, true);
 			request.getOptions().setOscore(Bytes.EMPTY);
 			return request;
 		} catch (CoapOSException e) {
@@ -207,6 +236,7 @@ public class OSCOREMulticastObserveClient {
         byte[] phantomRequestBytes = info.getPhReq();
         int phantomSeqNr = 0;
         byte[] phantomOscoreOption = null;
+        Request finalPhantomRequest = null;
 
         if (useOscore) {
           // OSCORE mode: ph_req MUST be present (RFC Section 9.3.1)
@@ -215,18 +245,19 @@ public class OSCOREMulticastObserveClient {
             return;
           }
 
-          UdpDataParser parser = new UdpDataParser();
-          Message mess = parser.parseMessage(phantomRequestBytes);
-
-          Request phantomRequest = null;
-          if (mess instanceof Request) {
-            phantomRequest = (Request) mess;
-          }
-
-          if (phantomRequest == null) {
-            LOGGER.error("Failed to parse phantom request from informative response");
-            return;
-          }
+          // ph_req is transport-independent information (Section 4.2.2): code byte
+          // followed by options and optional payload. Parse it the same way as
+          // last_notif below, using tpi_token (Section 5.2 step 2) as the Token.
+          int phantomCode = phantomRequestBytes[0] & 0xFF;
+          byte[] phantomOptionsAndPayload = new byte[phantomRequestBytes.length - 1];
+          System.arraycopy(phantomRequestBytes, 1, phantomOptionsAndPayload, 0, phantomOptionsAndPayload.length);
+          Request phantomRequest = new Request(Code.valueOf(phantomCode));
+          phantomRequest.setToken(multicastToken);
+          // ph_req was sent by the server: as for any received message, the external_aad
+          // uses the OSCORE option carried in it (Group OSCORE, Section 3.4)
+          phantomRequest.setSourceContext(response.advanced().getSourceContext());
+          DataParser phantomParser = new UdpDataParser(true, (OptionRegistry) null);
+          phantomParser.parseOptionsAndPayload(new DatagramReader(phantomOptionsAndPayload), phantomRequest);
 
           phantomOscoreOption = phantomRequest.getOptions().getOscore();
 
@@ -236,6 +267,7 @@ public class OSCOREMulticastObserveClient {
             return;
           }
           LOGGER.info("Phantom request verified successfully");
+          finalPhantomRequest = decryptedPhantomRequest;
 
           try {
             OscoreOptionDecoder phantomOptionDecoder = new OscoreOptionDecoder(phantomOscoreOption);
@@ -268,6 +300,8 @@ public class OSCOREMulticastObserveClient {
             Message mess = parser.parseMessage(phantomRequestBytes);
             if (mess instanceof Request) {
               LOGGER.info("Phantom request parsed successfully: {}", mess);
+              finalPhantomRequest = (Request) mess;
+              finalPhantomRequest.setToken(multicastToken);
             } else {
               LOGGER.warn("Failed to parse phantom request from informative response");
             }
@@ -318,13 +352,57 @@ public class OSCOREMulticastObserveClient {
         if (!receiverReady) {
           try {
             LOGGER.info("Setting up multicast receiver...");
-            setupMulticastReceiverOnce(groupAddr, groupPort, Configuration.createStandardWithoutFile(), multicastToken);
+            setupMulticastReceiverOnce(groupAddr, groupPort, Configuration.createStandardWithoutFile(), multicastToken,
+                info.getTpInfo().getTpiServer().toSocketAddress());
             LOGGER.info("Multicast receiver activated.");
 
-            Request phantomRequest1 = createPhantomRequest(multicastToken, info.getTpInfo().getTpiServer().toString(), groupAddr, groupPort);
-            LOGGER.info("Created PhantomRequest with token: {}", multicastToken);
+            if (finalPhantomRequest == null) {
+              // No 'ph_req' in the informative response: rebuild the phantom request from the
+              // transport-independent information of the original Observe registration request
+              // (Section 5.2, step 2, second bullet).
+              if (registrationRequest == null) {
+                LOGGER.error("No original registration request available to rebuild the phantom request");
+                return;
+              }
+              finalPhantomRequest = createPhantomRequest(registrationRequest, multicastToken,
+                  info.getTpInfo().getTpiServer().toString(),
+                  info.getTpInfo().getTpiServer().toSocketAddress());
+              LOGGER.info("Created PhantomRequest with token: {}", multicastToken);
+            } else {
+              finalPhantomRequest.setDestinationContext(new AddressEndpointContext(new InetSocketAddress(groupAddr, groupPort)));
+              finalPhantomRequest.setClientInjection(true);
 
-            multicastClient.observe(phantomRequest1, this);
+              String fullUri = info.getTpInfo().getTpiServer().toString();
+              String path = finalPhantomRequest.getOptions().getUriPathString();
+              if (path != null && !path.isEmpty()) {
+                  if (!fullUri.endsWith("/")) fullUri += "/";
+                  fullUri += path;
+              }
+              String query = finalPhantomRequest.getOptions().getUriQueryString();
+              if (query != null && !query.isEmpty()) {
+                  fullUri += "?" + query;
+              }
+              finalPhantomRequest.setURI(fullUri);
+              finalPhantomRequest.setType(Type.NON);
+              finalPhantomRequest.setObserve();
+
+              if (useOscore && phantomOscoreOption != null) {
+                  finalPhantomRequest.getOptions().setOscore(phantomOscoreOption);
+              }
+
+              LOGGER.info("Using rebuilt PhantomRequest with token: {} URI: {}", multicastToken, fullUri);
+            }
+
+            if (useOscore) {
+              // Unicast registration is complete: bind the server URI to the group context
+              // again, so the phantom request / multicast token uses Group OSCORE (§9.3.2).
+              try {
+                db.addContext(groupCtxUri, groupCtx);
+              } catch (OSException e) {
+                LOGGER.error("Failed to rebind the group context: {}", e.getMessage());
+              }
+            }
+            multicastClient.observe(finalPhantomRequest, this);
             LOGGER.info("Registered phantom observe relation.");
 
             receiverReady = true;
@@ -430,6 +508,15 @@ public class OSCOREMulticastObserveClient {
 				commonCtx.addRecipientCtxCcs(server_id, REPLAY_WINDOW, new MultiKey(server_public_key_bytes));
 				db.addContext(contextUri, commonCtx);
 
+				// Unicast leg: register the pairwise RFC 8613 context under the same URI, after
+				// the group context, so it protects the registration request. The group
+				// recipient context (server 0x52) stays in the DB for ph_req and notifications.
+				OSCoreCtx pairwiseCtx = new OSCoreCtx(pairwiseMasterSecret(sender), true, alg,
+						new byte[] { (byte) sender }, PAIRWISE_SERVER_ID, kdf, REPLAY_WINDOW, master_salt, null, 4096);
+				db.addContext(contextUri, pairwiseCtx);
+				groupCtx = commonCtx;
+				groupCtxUri = contextUri;
+
 				OSCoreCoapStackFactory.useAsDefault(db);				
 
 }
@@ -439,9 +526,10 @@ public class OSCOREMulticastObserveClient {
       Request r = new Request(code);
       r.setConfirmable(true);
       r.setURI(resourceUri);
-      //if (useOscore) {
-        //r.getOptions().setOscore(Bytes.EMPTY);
-      //}
+      if (useOscore) {
+        // draft-15 §9: the original registration request MUST be protected (RFC 8613 OSCORE)
+        r.getOptions().setOscore(Bytes.EMPTY);
+      }
       r.setObserve();
 
       // Section 5.1: Observation request MUST NOT have link-local source or destination addresses
@@ -456,33 +544,76 @@ public class OSCOREMulticastObserveClient {
       return r;
   }
   /**
-   * Creates a phantom request to register an observe relation for receiving multicast notifications.
+   * Creates a phantom request to register an observe relation for receiving multicast
+   * notifications, rebuilt from the client's own original Observe registration request.
+   * <p>
+   * draft-ietf-core-observe-multicast-notifications-15 Section 5.2, step 2, second bullet:
+   * "If the 'ph_req' parameter is not present in the informative response, the client uses
+   * the transport-independent information from its original Observe registration request."
+   * The rebuilt request therefore carries the same REST code and the same options as
+   * {@code registrationRequest}, except that the Observe option is 0 (this is a new
+   * registration). Like the original registration request it is addressed to the server, not
+   * to the multicast group: the group address is where the notifications arrive, and the
+   * phantom request is only registered locally. The destination is the one of the original
+   * registration request, with the default CoAP port 5683 when that one carries no port. The
+   * URI is assembled exactly as in the 'ph_req' case: the requested URI, plus the Uri-Path
+   * and Uri-Query options carried by the original request.
    */
-  private static Request createPhantomRequest(Token multicastToken, String requestedURI, InetAddress groupAddr, int groupPort) {
-    Request phantomRequest = Request.newGet();
+  private static Request createPhantomRequest(Request registrationRequest, Token multicastToken,
+      String requestedURI, InetSocketAddress serverAddress) {
+    Request phantomRequest = new Request(registrationRequest.getCode());
+    phantomRequest.setOptions(registrationRequest.getOptions());
     phantomRequest.setToken(multicastToken);
-    phantomRequest.setObserve();
-    phantomRequest.setDestinationContext(new AddressEndpointContext(new InetSocketAddress(groupAddr, groupPort)));
-    phantomRequest.setURI(requestedURI);
-    phantomRequest.setType(Type.NON);
-	phantomRequest.setClientInjection(true);
-
-    if (useOscore) {
-      phantomRequest.getOptions().setOscore(Bytes.EMPTY);
+    InetSocketAddress destination = serverAddress;
+    if (destination == null || destination.getPort() <= 0) {
+      // No port on the server address: apply the default CoAP port (RFC 7252 §4.1).
+      destination = new InetSocketAddress(destination == null ? null : destination.getAddress(),
+          CoAP.DEFAULT_COAP_PORT);
     }
+    phantomRequest.setDestinationContext(new AddressEndpointContext(destination));
+    phantomRequest.setClientInjection(true);
+    phantomRequest.setType(Type.NON);
+
+    String fullUri = requestedURI;
+    String path = phantomRequest.getOptions().getUriPathString();
+    if (path != null && !path.isEmpty()) {
+        if (!fullUri.endsWith("/")) fullUri += "/";
+        fullUri += path;
+    }
+    String query = phantomRequest.getOptions().getUriQueryString();
+    if (query != null && !query.isEmpty()) {
+        fullUri += "?" + query;
+    }
+    phantomRequest.setURI(fullUri);
+    // A registration, like the original request: Observe = 0.
+    phantomRequest.setObserve();
 
     LOGGER.debug("Created phantom request: {}", phantomRequest);
+    LOGGER.info("Rebuilt PhantomRequest from the original registration request, URI: {}", fullUri);
     return phantomRequest;
   }
 
-  public static void setupMulticastReceiverOnce(InetAddress groupAddr, int port, Configuration config, Token multicastToken) throws IOException {
-    NetworkInterface ni = NetworkInterfacesUtil.getMulticastInterface();
+  public static void setupMulticastReceiverOnce(InetAddress groupAddr, int port, Configuration config, Token multicastToken,
+      InetSocketAddress srvAddr) throws IOException {
+    // Join the group on the interface that reaches the server rather than on a
+    // globally selected one, exactly as the unprotected client does: the multicast
+    // traffic of a server which is reached over loopback leaves through the loopback
+    // interface, so a receiver joined on a physical interface never sees it. If
+    // srvAddr is not an address of this host, the previous global selection is used
+    // unchanged.
+    NetworkInterface ni = NetworkInterfacesUtil.getNetworkInterface(srvAddr.getAddress());
+    Inet4Address ipv4 = null;
+    if (ni != null && srvAddr.getAddress() instanceof Inet4Address) {
+      ipv4 = (Inet4Address) srvAddr.getAddress();
+    }
+    if (ni == null) {
+      ni = NetworkInterfacesUtil.getMulticastInterface();
+      ipv4 = NetworkInterfacesUtil.getMulticastInterfaceIpv4();
+    }
     if (ni == null) {
       throw new IOException("No multicast network interface found");
     }
 
-    // Get IPv4 address on that interface (prevents binding to ::)
-    Inet4Address ipv4 = NetworkInterfacesUtil.getMulticastInterfaceIpv4();
     if (ipv4 == null) {
       throw new IOException("No IPv4 address found on multicast interface " + ni.getDisplayName());
     }
@@ -521,6 +652,7 @@ public class OSCOREMulticastObserveClient {
     endpoint = new CoapEndpoint.Builder()
         .setConfiguration(config)
         .setConnector(udpConnector)
+        .setEndpointContextMatcher(new GroupObservationContextMatcher(srvAddr))
         .build();
 
     endpoint.start();
@@ -560,7 +692,7 @@ public class OSCOREMulticastObserveClient {
 
       Request multicastRequest = createRequest(Code.GET, requestURI);
 
-      MulticastObserveHandler handler = new MulticastObserveHandler(100);
+      MulticastObserveHandler handler = new MulticastObserveHandler(100, multicastRequest);
       client.observe(multicastRequest, handler);
 
       handler.waitForNotifications();

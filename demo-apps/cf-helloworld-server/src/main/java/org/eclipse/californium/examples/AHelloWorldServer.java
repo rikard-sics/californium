@@ -107,7 +107,7 @@ public class AHelloWorldServer extends CoapServer {
 		GroupObservationsInfo.init();
 		add(new HelloWorldResource());
 		add(new ObservableResource());
-		add(new MulticastObservableResource("mult", true, this.getMessageDeliverer()));
+		add(new MulticastObservableResource("mult", true, new InetSocketAddress("224.0.1.187", 56830)));
 	}
 
 	/**

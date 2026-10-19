@@ -352,13 +352,7 @@ public class OSSerializer {
 		// Check if this is an outgoing message //TODO: Check with option null?
 		boolean outgoing = message.getSourceContext() == null;
 
-		// For phantom requests, use empty OSCORE option in AAD to match
-		// encryption side (phantom is created with empty OSCORE option and
-		// sourceContext set, so encryption also uses empty option in AAD)
-		boolean isPhantom = message.getIsPhantomRequest();
-		if (isPhantom) {
-			oscoreOption = Bytes.EMPTY;
-		} else if (outgoing) {
+		if (outgoing) {
 
 			if (message instanceof Request) {
 				boolean groupModeRequest = OptionEncoder.getPairwiseMode(oscoreOption) == false;

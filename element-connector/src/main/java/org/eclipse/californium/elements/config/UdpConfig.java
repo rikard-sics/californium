@@ -70,6 +70,12 @@ public final class UdpConfig {
 	public static final IntegerDefinition UDP_CONNECTOR_OUT_CAPACITY = new IntegerDefinition(
 			MODULE + "CONNECTOR_OUT_CAPACITY", "Maximum number of pending outgoing messages.", Integer.MAX_VALUE, 32);
 
+	/**
+	 * Enable IPv4/IPv6 multicast loopback.
+	 */
+	public static final BooleanDefinition UDP_MULTICAST_LOOP = new BooleanDefinition(
+			MODULE + "MULTICAST_LOOP", "Enable IPv4/IPv6 multicast loopback. Default is true.", true);
+
 	public static final ModuleDefinitionsProvider DEFINITIONS = new ModuleDefinitionsProvider() {
 
 		@Override
@@ -88,6 +94,7 @@ public final class UdpConfig {
 			config.set(UDP_RECEIVE_BUFFER_SIZE, null);
 			config.set(UDP_SEND_BUFFER_SIZE, null);
 			config.set(UDP_CONNECTOR_OUT_CAPACITY, Integer.MAX_VALUE);
+			config.set(UDP_MULTICAST_LOOP, true);
 			DefinitionUtils.verify(UdpConfig.class, config);
 		}
 	};

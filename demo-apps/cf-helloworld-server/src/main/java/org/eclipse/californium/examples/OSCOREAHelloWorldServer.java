@@ -168,6 +168,21 @@ public class OSCOREAHelloWorldServer extends CoapServer {
 
 	private static final int REPLAY_WINDOW = 32;
 
+	/* --- Unicast leg: RFC 8613 OSCORE, one pairwise Security Context per client ---
+	 * draft-ietf-core-observe-multicast-notifications-15 §9: the original registration
+	 * request and the informative response MUST be protected; §10 uses pairwise OSCORE.
+	 * Sender IDs are distinct from the Group OSCORE ones (as 0x01/0x02 vs 0x05 in §10):
+	 * client N (OSCORE-mult-N) = 0x0N, server = 0x00. Master Secret: the group one with
+	 * its last byte set to 0x10 + N, so each pairwise context has its own keys.
+	 * Master Salt: as the group. No ID Context. AES-CCM-16-64-128, HKDF SHA-256. */
+	private final static byte[] PAIRWISE_SERVER_ID = new byte[] { 0x00 };
+
+	private static byte[] pairwiseMasterSecret(int client) {
+		byte[] ms = master_secret.clone();
+		ms[ms.length - 1] = (byte) (0x10 + client);
+		return ms;
+	}
+
 	private final static byte[] gm_public_key_bytes = StringUtil.hex2ByteArray(
 			"A501781A636F6170733A2F2F6D79736974652E6578616D706C652E636F6D026C67726F75706D616E6167657203781A636F6170733A2F2F646F6D61696E2E6578616D706C652E6F7267041AAB9B154F08A101A4010103272006215820CDE3EFD3BC3F99C9C9EE210415C6CBA55061B5046E963B8A58C9143A61166472");
 
@@ -270,7 +285,12 @@ public class OSCOREAHelloWorldServer extends CoapServer {
 			commonCtx.setResponsesIncludePartialIV(false);
 			commonCtx.setPairwiseModeResponses(false);
 
-			OSCoreCtx.DISABLE_REPLAY_CHECKS = true;
+			// Unicast leg: one pairwise RFC 8613 context per client (see PAIRWISE_SERVER_ID)
+			for (int client = 1; client <= 3; client++) {
+				db.addContext(new OSCoreCtx(pairwiseMasterSecret(client), false, alg, PAIRWISE_SERVER_ID,
+						new byte[] { (byte) client }, kdf, REPLAY_WINDOW, master_salt, null, 4096));
+			}
+
 			db.addContext("OSCORE-mult", commonCtx);
 			db.addContext("coap://" + address.getHostString() + ":" + address.getPort() + "/OSCORE-mult", commonCtx);
 

@@ -84,13 +84,15 @@ public class MulticastObserveClient {
 
 				byte[] phantomRequestBytes = info.getPhReq();
 				if (phantomRequestBytes != null && phantomRequestBytes.length > 0) {
-					UdpDataParser parser = new UdpDataParser();
-					Message mess = parser.parseMessage(phantomRequestBytes);
-					if (mess instanceof Request) {
-						LOGGER.info("Phantom request parsed successfully: {}", mess);
-					} else {
-						LOGGER.warn("Failed to parse phantom request from informative response");
-					}
+					int reqCode = phantomRequestBytes[0] & 0xFF;
+					byte[] reqOptionsAndPayload = new byte[phantomRequestBytes.length - 1];
+					System.arraycopy(phantomRequestBytes, 1, reqOptionsAndPayload, 0, reqOptionsAndPayload.length);
+					Request mess = new Request(org.eclipse.californium.core.coap.CoAP.Code.valueOf(reqCode));
+					DataParser reqParser = new UdpDataParser(true, (OptionRegistry) null);
+					reqParser.parseOptionsAndPayload(
+							new DatagramReader(reqOptionsAndPayload),
+							mess);
+					LOGGER.info("Phantom request parsed successfully: {}", mess);
 				}
 
 				LOGGER.info("Requested URI: {}", info.getTpInfo().getTpiServer().toString());
@@ -117,7 +119,8 @@ public class MulticastObserveClient {
 				if (!receiverReady) {
 					try {
 						LOGGER.info("Setting up multicast receiver...");
-						setupMulticastReceiverOnce(groupAddr, groupPort, Configuration.createStandardWithoutFile(), multicastToken);
+						setupMulticastReceiverOnce(groupAddr, groupPort, Configuration.createStandardWithoutFile(), multicastToken,
+								info.getTpInfo().getTpiServer().toSocketAddress());
 						LOGGER.info("Multicast receiver activated.");
 
 						Request phantomRequest = createPhantomRequest(multicastToken, info.getTpInfo().getTpiServer().toString(), groupAddr, groupPort);
@@ -196,15 +199,38 @@ public class MulticastObserveClient {
 		return phantomRequest;
 	}
 
-	public static void setupMulticastReceiverOnce(InetAddress groupAddr, int port, Configuration config, Token multicastToken) throws IOException {
-		NetworkInterface ni = NetworkInterfacesUtil.getMulticastInterface();
+	public static void setupMulticastReceiverOnce(InetAddress groupAddr, int port, Configuration config, Token multicastToken,
+			InetSocketAddress srvAddr) throws IOException {
+		// Join the group on the interface that reaches the server rather than on a
+		// globally selected one: the multicast traffic of a server which is reached
+		// over loopback leaves through the loopback interface, so a receiver joined
+		// on a physical interface never sees it. If srvAddr is not an address of
+		// this host, the previous global selection is used unchanged.
+		NetworkInterface ni = NetworkInterfacesUtil.getNetworkInterface(srvAddr.getAddress());
+		Inet4Address ipv4 = null;
+		if (ni != null && srvAddr.getAddress() instanceof Inet4Address) {
+			ipv4 = (Inet4Address) srvAddr.getAddress();
+		}
+		if (ni == null) {
+			ni = NetworkInterfacesUtil.getMulticastInterface();
+			ipv4 = NetworkInterfacesUtil.getMulticastInterfaceIpv4();
+		}
 		if (ni == null) {
 			throw new IOException("No multicast network interface found");
 		}
 
-		Inet4Address ipv4 = NetworkInterfacesUtil.getMulticastInterfaceIpv4();
+		if (ipv4 == null && ni != null) {
+			java.util.Enumeration<InetAddress> addrs = ni.getInetAddresses();
+			while (addrs.hasMoreElements()) {
+				InetAddress a = addrs.nextElement();
+				if (a instanceof Inet4Address) {
+					ipv4 = (Inet4Address) a;
+					break;
+				}
+			}
+		}
 		if (ipv4 == null) {
-			throw new IOException("No IPv4 address found on multicast interface " + ni.getDisplayName());
+			throw new IOException("No IPv4 address found on multicast interface " + (ni != null ? ni.getDisplayName() : "null"));
 		}
 
 		InetSocketAddress bind = new InetSocketAddress(ipv4, 0);
@@ -241,6 +267,7 @@ public class MulticastObserveClient {
 		endpoint = new CoapEndpoint.Builder()
 				.setConfiguration(config)
 				.setConnector(udpConnector)
+				.setEndpointContextMatcher(new GroupObservationContextMatcher(srvAddr))
 				.build();
 
 		endpoint.start();

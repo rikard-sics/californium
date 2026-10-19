@@ -81,13 +81,19 @@ public abstract class Decryptor {
 	 * @param seqByToken the sequence number
 	 * @param phantomValues phantom registration request values associated with
 	 *            this observation token, or {@code null} if not applicable
+	 * @param skipPhantomReplayCheck whether the replay check may be skipped for
+	 *            a phantom request. Only the client's own verification of the
+	 *            ph_req it received (Section 9.3.1) sets this; the server
+	 *            processing an incoming phantom request must not, since that is
+	 *            the first time it sees that sequence number and the check (and
+	 *            the resulting window update) applies normally
 	 *
 	 * @return the decrypted plaintext
 	 *
 	 * @throws OSException if decryption or decoding fails
 	 */
 	protected static byte[] decryptAndDecode(Encrypt0Message enc, Message message, OSCoreCtx ctx, Integer seqByToken,
-			PhantomRequestValues phantomValues) throws OSException {
+			PhantomRequestValues phantomValues, boolean skipPhantomReplayCheck) throws OSException {
 		int seq = -2;
 		boolean isRequest = message instanceof Request;
 		byte[] nonce = null;
@@ -174,7 +180,10 @@ public abstract class Decryptor {
 						
 				// DET_REQ
 				// Skip the replay check if this is a deterministic request
-				if (!isDetReq && !message.getIsPhantomRequest()) {
+				// Skip it also for the client's own verification of a phantom
+				// request (Section 9.3.1); this exception is narrow and does not
+				// apply when the server processes a phantom request it received
+				if (!isDetReq && !(message.getIsPhantomRequest() && skipPhantomReplayCheck)) {
 					//Note that the code below can throw an OSException when replays are detected
 					ctx.checkIncomingSeq(seq);
 				}
@@ -191,7 +200,9 @@ public abstract class Decryptor {
 				throw new OSException(ErrorDescriptions.DECRYPTION_FAILED);
 			}
     
-			GroupCtx groupCtx = ((GroupRecipientCtx) ctx).getCommonCtx();
+			// Only Group OSCORE recipient contexts have a common context; an unconditional
+			// cast here broke RFC 8613 (plain OSCORE) response decryption.
+			GroupCtx groupCtx = ctx instanceof GroupRecipientCtx ? ((GroupRecipientCtx) ctx).getCommonCtx() : null;
 			// Use phantom request PIV if available, otherwise original request sequence
 			if (phantomValues != null && phantomValues.getPiv() != null) {
 				seq = ByteBuffer.wrap(expandToIntSize(phantomValues.getPiv())).getInt();

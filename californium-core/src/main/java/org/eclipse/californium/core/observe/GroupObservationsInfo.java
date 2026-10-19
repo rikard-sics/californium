@@ -251,9 +251,12 @@ public class GroupObservationsInfo {
 	/**
 	 * Creates a phantom request for multicast group observation setup.
 	 * <p>
-	 * The phantom request is a self-generated observe request whose source
-	 * context is set to the server's own address. The ObserveLayer will
-	 * recognize it and redirect the source to the multicast group address.
+	 * The phantom request is a self-generated observe request sent to the
+	 * server's own address. Like any outgoing request it has no source
+	 * context, so that, when OSCORE is used, its OSCORE option is finalized
+	 * before computing the external_aad (Group OSCORE, Section 3.4). When it
+	 * is received, the ObserveLayer recognizes it and redirects the source
+	 * to the multicast group address.
 	 *
 	 * @param resource the resource to observe
 	 * @param multicastToken the token allocated for multicast notifications
@@ -275,9 +278,6 @@ public class GroupObservationsInfo {
 
 		InetSocketAddress localAddress = triggeringCoapExchange.advanced().getEndpoint().getAddress();
 		phantomRequest.setDestinationContext(new AddressEndpointContext(localAddress));
-		
-		
-		phantomRequest.setSourceContext(new AddressEndpointContext(getMulticastAdressByToken(multicastToken)));		
 		
 		phantomRequest.setMultiResponse(true);
 		phantomRequest.setServerInjection(true);

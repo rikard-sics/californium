@@ -243,6 +243,17 @@ public class OptionJuggle {
 	}
 
 	/**
+	 * Sets 2.05 (Content) as the fake code in the coap header and returns the updated response.
+	 * This is intended to finalize an observe notification response (RFC 8613 Section 4.1.3.5).
+	 *
+	 * @param response the response where to set 2.05 (Content) as fake code.
+	 * @return response with 2.05 as fake code.
+	 */
+	public static Response setFakeCodeObserveResponse(Response response) {
+		return responseWithNewCode(response, ResponseCode.CONTENT);
+	}
+
+	/**
 	 * Sets the Request's CoAP Code with realCode and returns the updated request.
 	 * 
 	 * @param request the request that receives its real code

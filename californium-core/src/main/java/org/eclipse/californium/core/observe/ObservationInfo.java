@@ -58,8 +58,8 @@ public class ObservationInfo {
 
     public ObservationInfo(InetSocketAddress serverAddress, InetSocketAddress multicastAddress, Token token) {
         // Section 4.2: tp_info MUST NOT provide link-local or site-local addresses
-        //validateNotLinkLocalOrSiteLocal(serverAddress, "server");
-        //validateNotLinkLocalOrSiteLocal(multicastAddress, "multicast");
+        validateNotLinkLocalOrSiteLocal(serverAddress, "server");
+        validateNotLinkLocalOrSiteLocal(multicastAddress, "multicast");
         this.tpInfo = new TpInfo(serverAddress, multicastAddress, token);
     }
 
@@ -78,7 +78,7 @@ public class ObservationInfo {
                     "tp_info " + label + " address " + addr.getHostAddress()
                     + " is link-local (RFC Section 4.2)");
         }
-        if (addr.isSiteLocalAddress()) {
+        if (addr instanceof java.net.Inet6Address && addr.isSiteLocalAddress()) {
             throw new IllegalArgumentException(
                     "tp_info " + label + " address " + addr.getHostAddress()
                     + " is site-local (RFC Section 4.2)");
@@ -485,14 +485,14 @@ public class ObservationInfo {
             try {
                 InetAddress hostAddr = InetAddress.getByAddress(hostBytes);
                 // Section 4.2/5.2: tp_info MUST NOT contain link-local or site-local addresses
-                /*if (hostAddr.isLinkLocalAddress()) {
+                if (hostAddr.isLinkLocalAddress()) {
                     throw new IllegalArgumentException(
                             "CRI host " + hostAddr.getHostAddress() + " is link-local (RFC Section 4.2)");
                 }
-                if (hostAddr.isSiteLocalAddress()) {
+                if (hostAddr instanceof java.net.Inet6Address && hostAddr.isSiteLocalAddress()) {
                     throw new IllegalArgumentException(
                             "CRI host " + hostAddr.getHostAddress() + " is site-local (RFC Section 4.2)");
-                }*/
+                }
                 cri.setHost(hostAddr);
             } catch (UnknownHostException e) {
                 throw new IllegalArgumentException("Invalid CRI host", e);

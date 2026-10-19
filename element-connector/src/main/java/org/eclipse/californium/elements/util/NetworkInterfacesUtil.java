@@ -584,6 +584,43 @@ public class NetworkInterfacesUtil {
 	}
 
 	/**
+	 * Gets the local network interface the provided address is assigned to.
+	 *
+	 * In contrast to {@link #getMulticastInterface()}, neither the
+	 * "COAP_NETWORK_INTERFACES" filters nor the loopback exclusion of
+	 * {@link #initialize()} are applied. That is intended: this method follows
+	 * the reachability of a specific address, e.g. the address of the unicast
+	 * server endpoint of a multicast sender. If that address is a loopback
+	 * address, the loopback interface is returned, and only then.
+	 *
+	 * @param address address to get the local network interface for. May be
+	 *            {@code null}.
+	 * @return multicast supporting local network interface for that address, or
+	 *         {@code null}, if the address is {@code null}, not an address of
+	 *         this host, or its network interface doesn't support multicast.
+	 * @since 4.0
+	 */
+	public static NetworkInterface getNetworkInterface(InetAddress address) {
+		if (address == null) {
+			return null;
+		}
+		try {
+			NetworkInterface networkInterface = NetworkInterface.getByInetAddress(address);
+			if (networkInterface == null) {
+				return null;
+			}
+			if (!networkInterface.supportsMulticast()) {
+				LOGGER.debug("interface {} of {} doesn't support multicast", networkInterface.getDisplayName(), address);
+				return null;
+			}
+			return networkInterface;
+		} catch (SocketException e) {
+			LOGGER.debug("no local network interface for {}", address, e);
+			return null;
+		}
+	}
+
+	/**
 	 * Get collection of available local inet addresses of network interfaces.
 	 * 
 	 * Applies environment "COAP_NETWORK_INTERFACES" to define a regular

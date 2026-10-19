@@ -61,6 +61,23 @@ public class RequestDecryptor extends Decryptor {
 	 * @throws CoapOSException if decryption fails
 	 */
 	public static Request decrypt(OSCoreCtxDB db, Request request, OSCoreCtx ctx) throws CoapOSException {
+		return decrypt(db, request, ctx, false);
+	}
+
+	/**
+	 * @param db the context database used
+	 * @param request the request to decrypt
+	 * @param ctx the OSCore context
+	 * @param skipPhantomReplayCheck whether the replay check may be skipped if
+	 *            this is a phantom request; only the client's own verification
+	 *            of the ph_req it received may set this (Section 9.3.1)
+	 *
+	 * @return the decrypted request
+	 *
+	 * @throws CoapOSException if decryption fails
+	 */
+	public static Request decrypt(OSCoreCtxDB db, Request request, OSCoreCtx ctx, boolean skipPhantomReplayCheck)
+			throws CoapOSException {
 
 		discardEOptions(request);
 
@@ -108,7 +125,7 @@ public class RequestDecryptor extends Decryptor {
 
 		byte[] plaintext;
 		try {
-			plaintext = decryptAndDecode(enc, request, ctx, null, null);
+			plaintext = decryptAndDecode(enc, request, ctx, null, null, skipPhantomReplayCheck);
 		} catch (OSException e) {
 			//First check for replay exceptions
 			if (e.getMessage().equals(ErrorDescriptions.REPLAY_DETECT)) { 

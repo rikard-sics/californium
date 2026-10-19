@@ -115,8 +115,9 @@ public class ResponseEncryptor extends Encryptor {
 			
 			// The response to a deterministic request includes a Max-Age option
 			response.getOptions().setMaxAge(3600);
-		}
-		else {
+		} else if (response.getOptions().hasObserve()) {
+			response = OptionJuggle.setFakeCodeObserveResponse(response);
+		} else {
 			response = OptionJuggle.setFakeCodeResponse(response);
 		}
 		
@@ -129,13 +130,26 @@ public class ResponseEncryptor extends Encryptor {
 			options.removeBlock1();
 		}
 		
-		byte[] confidential = OSSerializer.serializeConfidentialData(options, response.getPayload(), realCode);
+		OptionSet innerOptions = options;
+		if (options.hasObserve()) {
+			// RFC 8613 Section 4.1.3.5.2: notifications carry an empty Inner Observe.
+			// Keep the original value in options for the Outer Observe.
+			innerOptions = new OptionSet(options).setObserve(0);
+		}
+		byte[] confidential = OSSerializer.serializeConfidentialData(innerOptions, response.getPayload(), realCode);
 		Encrypt0Message enc = prepareCOSEStructure(confidential);
 		byte[] cipherText = encryptAndEncode(enc, ctx, response, newPartialIV, requestSequenceNr, requestOption);
 		compression(ctx, cipherText, response, newPartialIV);
 
 		options = response.getOptions();
-		response.setOptions(OptionJuggle.prepareUoptions(options));
+		OptionSet outerOptions = OptionJuggle.prepareUoptions(options);
+		if (outerOptions.hasObserve()) {
+			// RFC 8613 Section 4.1.3.5: a protected response with outer code 2.05 (hence with an
+			// Outer Observe Option) includes an Outer Max-Age Option with value 0. Only the outer
+			// option is set, so the Inner Max-Age (60 s by default) is unaffected.
+			outerOptions.setMaxAge(0);
+		}
+		response.setOptions(outerOptions);
 
 		if (outerBlockwise) {
 			response.setOptions(response.getOptions().setBlock1(block1Option));

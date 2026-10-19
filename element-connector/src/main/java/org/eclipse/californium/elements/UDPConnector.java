@@ -128,17 +128,11 @@ public class UDPConnector implements Connector {
 	private final int receiverPacketSize;
 	private final Integer configReceiveBufferSize;
 	private final Integer configSendBufferSize;
+	private final boolean multicastLoop;
 
 	private final AtomicBoolean running = new AtomicBoolean();
 
 	private volatile DatagramSocket socket;
-
-	/**
-	 * Dedicated socket for outgoing multicast traffic. Bound to an ephemeral
-	 * port on the same interface as the main socket. Required on macOS where
-	 * the main socket bound to a fixed port cannot send to multicast addresses.
-	 */
-	private volatile MulticastSocket multicastSendSocket;
 
 	protected volatile InetSocketAddress effectiveAddr;
 
@@ -202,6 +196,7 @@ public class UDPConnector implements Connector {
 		this.receiverPacketSize = configuration.get(UdpConfig.UDP_DATAGRAM_SIZE);
 		this.configReceiveBufferSize = configuration.get(UdpConfig.UDP_RECEIVE_BUFFER_SIZE);
 		this.configSendBufferSize = configuration.get(UdpConfig.UDP_SEND_BUFFER_SIZE);
+		this.multicastLoop = configuration.get(UdpConfig.UDP_MULTICAST_LOOP);
 		this.receiveBufferSize = configReceiveBufferSize;
 		this.sendBufferSize = configSendBufferSize;
 	}
@@ -222,27 +217,27 @@ public class UDPConnector implements Connector {
 			multicastReceiver.start();
 		}
 
-		DatagramSocket socket = new DatagramSocket(null);
+		DatagramSocket socket;
+		if (multicastReceivers.isEmpty()) {
+			socket = new DatagramSocket(null);
+		} else {
+			// Multicast notifications MUST be sent from the same address and
+			// port as the informative responses (draft-ietf-core-observe-
+			// multicast-notifications-15, Section 4.3). Use a MulticastSocket
+			// as the main socket and set the outgoing multicast interface.
+			MulticastSocket mcSocket = new MulticastSocket(null);
+			NetworkInterface ni = NetworkInterface.getByInetAddress(localAddr.getAddress());
+			if (ni != null) {
+				mcSocket.setNetworkInterface(ni);
+			}
+			mcSocket.setLoopbackMode(!multicastLoop);
+			LOGGER.info("Multicast sent from {} interface {}, loopback {}", StringUtil.toString(localAddr),
+					ni != null ? ni.getDisplayName() : "default", multicastLoop);
+			socket = mcSocket;
+		}
 		socket.setReuseAddress(reuseAddress);
 		socket.bind(localAddr);
 
-		if (!multicastReceivers.isEmpty()) {
-			// Create a dedicated MulticastSocket for outgoing multicast traffic,
-			// bound to an ephemeral port on the same interface. Required on macOS
-			// where the main DatagramSocket cannot send to multicast addresses.
-			NetworkInterface ni = NetworkInterface.getByInetAddress(localAddr.getAddress());
-			InetSocketAddress mcBindAddr = new InetSocketAddress(localAddr.getAddress(), 0);
-			MulticastSocket mcSend = new MulticastSocket(null);
-			mcSend.setReuseAddress(true);
-			mcSend.bind(mcBindAddr);
-			if (ni != null) {
-				mcSend.setNetworkInterface(ni);
-			}
-			multicastSendSocket = mcSend;
-			LOGGER.info("Multicast send socket created on {} interface {}",
-					StringUtil.toString((InetSocketAddress) mcSend.getLocalSocketAddress()),
-					ni != null ? ni.getDisplayName() : "default");
-		}
 		init(socket);
 	}
 
@@ -339,10 +334,6 @@ public class UDPConnector implements Connector {
 			if (socket != null) {
 				socket.close();
 				socket = null;
-			}
-			if (multicastSendSocket != null) {
-				multicastSendSocket.close();
-				multicastSendSocket = null;
 			}
 			// stop all threads
 			for (Thread t : senderThreads) {
@@ -524,13 +515,7 @@ public class UDPConnector implements Connector {
 			datagram.setData(raw.getBytes());
 			datagram.setSocketAddress(destinationAddress);
 
-			DatagramSocket currentSocket;
-			MulticastSocket mcSocket = multicastSendSocket;
-			if (mcSocket != null && destinationAddress.getAddress().isMulticastAddress()) {
-				currentSocket = mcSocket;
-			} else {
-				currentSocket = socket;
-			}
+			DatagramSocket currentSocket = socket;
 			if (currentSocket != null) {
 				try {
 					raw.onContextEstablished(connectionContext);

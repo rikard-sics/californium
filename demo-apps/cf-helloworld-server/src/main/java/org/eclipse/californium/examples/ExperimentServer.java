@@ -5,6 +5,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 
+import org.eclipse.californium.oscore.MulticastObservableResource;
+
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.core.network.CoapEndpoint;
@@ -49,7 +51,7 @@ public class ExperimentServer extends CoapServer {
 
 	public ExperimentServer() throws SocketException {
 		GroupObservationsInfo.init();
-		add(new MulticastObservableResource("mult", true, this.getMessageDeliverer()));
+		add(new MulticastObservableResource("mult", true, new InetSocketAddress("224.0.1.187", 56830)));
 	}
 
 	private void addEndpoints(String bindAddress) throws Exception {

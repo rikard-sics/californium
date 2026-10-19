@@ -38,6 +38,7 @@ import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.core.network.stack.AbstractLayer;
 import org.eclipse.californium.core.observe.GroupObservationsInfo;
+import org.eclipse.californium.core.observe.ObservationInfo;
 import org.eclipse.californium.elements.util.Bytes;
 import org.eclipse.californium.oscore.ContextRederivation.PHASE;
 import org.eclipse.californium.oscore.group.GroupDeterministicRecipientCtx;
@@ -112,6 +113,9 @@ public class ObjectSecurityLayer extends AbstractLayer {
 	 * @throws CoapOSException error while decrypting request
 	 */
 	public static Request prepareReceive(OSCoreCtxDB ctxDb, Request request, OSCoreCtx ctx) throws CoapOSException {
+		// The replay-check exception for phantom requests (Section 9.3.1) applies
+		// only to the client's own verification of the ph_req it received; the
+		// server processing an incoming phantom request enforces it normally.
 		return RequestDecryptor.decrypt(ctxDb, request, ctx);
 	}
 
@@ -337,6 +341,12 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 				response = preparedResponse;
 				exchange.setResponse(response);
+
+				// draft-15 §4.1 step 6, §4.3, §9.2.2: last_notif is the latest
+				// multicast notification as sent, protected only once
+				if (exchange.isPhantomRequest() && response.isNotification()) {
+					storeLastNotif(exchange, response);
+				}
 			} catch (OSException e) {
 				LOGGER.error("Error sending response: {}", e.getMessage());
 				return;
@@ -355,6 +365,21 @@ public class ObjectSecurityLayer extends AbstractLayer {
 			return;
 		}
 		super.sendResponse(exchange, response);
+	}
+
+	/**
+	 * Stores the protected multicast notification of a group observation as
+	 * its {@code last_notif}, in the transport-independent serialization
+	 * (Section 4.2.2), so that it is not protected a second time.
+	 */
+	private void storeLastNotif(Exchange exchange, Response protectedNotification) {
+		String uriPath = "/" + exchange.getRequest().getOptions().getUriPathString();
+		ObservationInfo observationInfo = GroupObservationsInfo.getInstance().getGroupObservationInfo(uriPath);
+		if (observationInfo == null || !exchange.getRequest().getToken().equals(observationInfo.getToken())) {
+			return;
+		}
+		observationInfo.setLastNotifBytes(ObservationInfo.serializeTransportIndependent(protectedNotification));
+		LOGGER.debug("Stored sent OSCORE-protected notification as last_notif for {}", uriPath);
 	}
 
 	@Override
@@ -616,8 +641,7 @@ public class ObjectSecurityLayer extends AbstractLayer {
 
 	private static boolean shouldProtectRequest(Request request) {
 		OptionSet options = request.getOptions();
-		return options.hasOscore();
-
+		return options.hasOscore() && !request.getClientInjection();
 	}
 
 	private static boolean isProtected(Message message) {

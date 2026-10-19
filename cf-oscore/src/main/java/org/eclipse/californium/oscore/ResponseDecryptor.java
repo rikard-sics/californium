@@ -152,7 +152,7 @@ public class ResponseDecryptor extends Decryptor {
 
 		//Check if parsing of response plaintext succeeds
 		try {
-			byte[] plaintext = decryptAndDecode(enc, response, ctx, requestSequenceNr, phantomValues);
+			byte[] plaintext = decryptAndDecode(enc, response, ctx, requestSequenceNr, phantomValues, false);
 	
 			DatagramReader reader = new DatagramReader(new ByteArrayInputStream(plaintext));
 			
@@ -171,6 +171,14 @@ public class ResponseDecryptor extends Decryptor {
 
 		OptionSet eOptions = response.getOptions();
 		eOptions = OptionJuggle.merge(eOptions, uOptions);
+		if (eOptions.hasObserve()) {
+			// RFC 8613 Section 4.1.3.5.2 permits using the low 24 bits of
+			// the Partial IV for existing Observe notification orderers.
+			int partialIV = OptionJuggle.getPartialIV(uOptions.getOscore());
+			if (partialIV >= 0) {
+				eOptions.setObserve(partialIV & 0xffffff);
+			}
+		}
 		response.setOptions(eOptions);
 
 		/*

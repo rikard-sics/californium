@@ -88,7 +88,7 @@ public class MulticastObservableResource extends OSCoreResource {
 		setObserveType(Type.NON);
 		this.isGroupObservable = groupObservable;
 		this.multicastAdress = multicastAdress;
-		timer.schedule(new UpdateTask(), 20000, 2000);
+		timer.schedule(new UpdateTask(), 20000, 10000);
 	}
 	
 	/**
@@ -265,7 +265,9 @@ public class MulticastObservableResource extends OSCoreResource {
 			//if it is OSCORE protected
 			byte[] phReqBytes;
 			if (this.isProtected()){
-				phReqBytes = exchange.advanced().getProtectedRequest();
+				// getProtectedRequest() holds the full UDP datagram (ObjectSecurityLayer);
+				// convert to the transport-independent form required by Section 4.2.2.
+				phReqBytes = ObservationInfo.extractTransportIndependent(exchange.advanced().getProtectedRequest());
 			}else {
 				//if it is not oscore protected request
 				phReqBytes = serializeRequestTransportIndependent(exchange.advanced().getRequest());
@@ -297,12 +299,13 @@ public class MulticastObservableResource extends OSCoreResource {
 			Response initNotif = new Response(ResponseCode.CONTENT);
 			initNotif.setPayload(this.content.toString());
 			initNotif.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
-			initNotif.getOptions().setObserve(1);
+			initNotif.getOptions().setObserve(0);
 			
-			// with Group OSCORE before storing as last_notif.
+			// with Group OSCORE before storing as last_notif. INIT_NOTIF is never
+			// sent, so this is its only protection (one Sender Sequence Number).
 			if(this.isProtected()) {
 				byte[] lastNotif;
-				lastNotif = encryptNotificationForLastNotif(initNotif, observationInfo);
+				lastNotif = protectInitNotif(initNotif, observationInfo);
 				
 				observationInfo.setLastNotifBytes(lastNotif);
 				LOGGER.debug("Stored OSCORE-protected INIT_NOTIF as last_notif ({} bytes)", lastNotif.length);
@@ -334,16 +337,19 @@ public class MulticastObservableResource extends OSCoreResource {
 		notification.setPayload(this.content.toString());
 		notification.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 
-		// Encrypt last_notif with Group OSCORE before storing (Section 9.2)
-		ObservationInfo observationInfo = groupObservationsInfo.getGroupObservationInfo(uriPath);
-		if (ctxDb != null) {
-			byte[] encryptedLastNotif = encryptNotificationForLastNotif(notification, observationInfo);
-			if (encryptedLastNotif != null) {
-				observationInfo.setLastNotifBytes(encryptedLastNotif);
-			} else {
-				observationInfo.setLastNotif(notification);
-			}
-		}else {
+		// draft-15 §4.3: the stored latest multicast notification must be what that notification
+		// had when it was sent on the wire, so that a client registering later is served the same
+		// last_notif (Section 4.2). Set the Observe Option here, from the same counter
+		// ObserveRelation would have used: ObserveRelation.onResponse() only fills the option in
+		// when it is absent (Response.isNotification() reports whether it is already set), and the
+		// send is queued on the exchange's executor, so a copy taken afterwards would still be
+		// missing it. Setting it up front makes the stored and the sent message identical.
+		notification.getOptions().setObserve(getNotificationSequenceNumber());
+
+		// With Group OSCORE, the notification is protected once when sent and
+		// ObjectSecurityLayer stores that protected message as last_notif (Section 9.2.2)
+		if (ctxDb == null) {
+			ObservationInfo observationInfo = groupObservationsInfo.getGroupObservationInfo(uriPath);
 			observationInfo.setLastNotif(notification);
 		}
 		exchange.respond(notification);
@@ -403,15 +409,16 @@ public class MulticastObservableResource extends OSCoreResource {
 	}
 	
 	/**	
-	 * Encrypts a plaintext notification response using Group OSCORE and returns
-	 * its transport-independent serialization for use as {@code last_notif}.
-	 * Per RFC Section 9.2: last_notif must be protected with Group OSCORE.
+	 * Protects INIT_NOTIF using Group OSCORE and returns its transport-independent
+	 * serialization for use as the first {@code last_notif} (Section 4.1 step 6,
+	 * Section 9.2.2). INIT_NOTIF is never sent, so this consumes its one Sender
+	 * Sequence Number; sent notifications are stored by ObjectSecurityLayer.
 	 *
-	 * @param response the plaintext notification to encrypt
+	 * @param response the plaintext INIT_NOTIF to protect
 	 * @param obsInfo the observation info containing the phantom request's OSCORE parameters
 	 * @return the transport-independent bytes of the protected response, or {@code null} on failure
 	 */
-	private byte[] encryptNotificationForLastNotif(Response response, ObservationInfo obsInfo) {
+	private byte[] protectInitNotif(Response response, ObservationInfo obsInfo) {
 		try {
 			byte[] requestOption = obsInfo.getRequestOscoreOption();
 			int requestSeqNr = obsInfo.getRequestSequenceNumber();
